@@ -7,11 +7,24 @@ remote API and presents the content to the client. Multiple clients can
 be connected per account, all staying in sync. Accounts are created and
 logged in through Friend, no setup required.
 
-### Live
+### Video / Audio Conferencing, aka Live
 
 FriendChat allows p2p video and audio calls over webRTC, supported by the presence 
 service. The limits to number of participants is practical; the bandwidth and 
 power of your device.
+
+#### Invites
+
+Live invites can be sent through any module. It is sent as a data string, 
+and as long as the invitee is also using FriendChat, it will be intercepted 
+and presented to the user. The live session is then established over the 
+presence service.
+
+#### Guests
+
+Any live session can be shared through a clickable link. This is a public invite 
+and can be used by any number of people until it is explicitly canceled. People 
+using this link will join as a guest with a randomly generated name.
 
 ### Modules
 
@@ -44,6 +57,7 @@ FriendChat depends on the user existing in Friend and calls FriendCore to
 authenticate them when they log in.
 
 ### Client
+
 
 
 ### Server
