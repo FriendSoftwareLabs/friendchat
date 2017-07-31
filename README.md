@@ -5,7 +5,7 @@ it fairly straightforward to add access to 3rd party chat APIs. It is a
 client - server architecture where the server handles the connection to the
 remote API and presents the content to the client. Multiple clients can
 be connected per account, all staying in sync. Accounts are created and
-logged in through Friend, no setup required.
+logged in through Friend, no extra setup required.
 
 Friend Chat consists of three elements : the Friend Chat application, that
 runs under the Friend Workspace, and two servers, the Presence server who
@@ -33,22 +33,34 @@ using this link will join as a guest with a randomly generated name.
 
 ### Modules
 
-Modules currently exist for IRC, Presence and Treeroot. Presence is always there
-and IRC is added by default.
+Modules are integrations towards 3rd party chat services. They have a server part 
+that communicates  with the remote service/server and a client part with a custom
+UI that presents the data. Current modules are IRC, Presence and Treeroot. Presence 
+is always there and IRC is added by default.
 
 #### IRC
 
-Internet Relay Chat. Because it would be weird not to have it.
+Internet Relay Chat, because it would be weird not to have it. Covers 
+most basic needs and commands. An abbrevated list of commands if you are new to IRC:
+* /nick new_nick - change your nick
+* /action something silly - do something silly
+* /join #channel_name - join a channel
+* /part - in channel, leave the channel
+
+Except for the sillyness, this can also be found in settings.
 
 #### Presence
 
 Presence provides temporary or persistent many-to-many rooms for chatting and 
-video / audio conferencing.
+video / audio conferencing. Invites to presence rooms can be sent through the other 
+modules. More info in the FriendSoftwareLabs/presence repo!
 
 #### Treeroot
 
 The Treeroot module integrates the chat part of the Treeroot system. It provides
-one to one chat, optionaly end to end encrypted.
+one to one chat, optionaly end to end encrypted. You'll need to add the module 
+( 'add chat account' in the menu ) then log in with ( or create a new ) Treeroot 
+account.
 
 ## Setup
 
