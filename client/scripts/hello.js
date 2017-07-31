@@ -603,7 +603,7 @@ var hello = null;
 		var self = this;
 		self.view.setMenuItems([
 			{
-				name : 'File',
+				name : Application.i18n('i18n_file'),
 				items : [
 					{
 						name    : Application.i18n('i18n_about'),
@@ -616,7 +616,7 @@ var hello = null;
 				]
 			},
 			{
-				name : 'Account',
+				name : Application.i18n('i18n_account_menu'),
 				items : [
 					{
 						name    : Application.i18n('i18n_account_settings'),
@@ -629,7 +629,7 @@ var hello = null;
 				],
 			},
 			{
-				name : 'Tools',
+				name : Application.i18n('i18n_tools'),
 				items : [
 					{
 						name    : Application.i18n('i18n_add_chat_account'),
