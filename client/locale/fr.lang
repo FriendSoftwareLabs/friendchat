@@ -78,7 +78,7 @@ i18n_new_passphrase : Nouveau mot de passe
 i18n_forgot_your_password : Mot de passe oublié?
 i18n_retry_now : Ré-essayer
 i18n_an_account_can_be : Un compte peut-être créé automatiquement pour vous, à partir de vos informations FriendUP.
-18n_you_can_choose : Vous pouvez créer un compte manuellement. Plus long, mais plus de contrôle.
+i18n_you_can_choose : Vous pouvez créer un compte manuellement. Plus long, mais plus de contrôle.
 i18n_if_you_have_already : Si vous avez déjà un compte, entrez ses paramètres dans le dialogue.
 i18n_automatic : Automatique
 i18n_i_have_an_account : J'ai déjà un compte
@@ -234,4 +234,7 @@ i18n_toggle_cover_contain : Vidéo zoom
 i18n_no_account_to_login : Pas de compte de connexion
 i18n_logged_in_as : Connecté en tant que
 i18n_unknown_data_for_api_user : Données inconnues pour l'utilisateur API - Annulation
+i18n_file : Fichier
+i18n_account_menu : Compte
+i18n_tools : Outils
 

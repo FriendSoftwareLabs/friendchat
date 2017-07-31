@@ -79,7 +79,7 @@ i18n_new_passphrase : New passphrase
 i18n_forgot_your_password : Forgot your password?
 i18n_retry_now : Retry now
 i18n_an_account_can_be : An account can be automatically created for you, based on your FriendUP info.
-18n_you_can_choose : You can choose to create an account manually. More typing, more control.
+i18n_you_can_choose : You can choose to create an account manually. More typing, more control.
 i18n_if_you_have_already : If you already have an account, enter your things in the settings.
 i18n_automatic : Automatic
 i18n_i_have_an_account : I have an account
