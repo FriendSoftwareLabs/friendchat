@@ -48,7 +48,7 @@ Except for the sillyness, this can also be found in settings.
 
 Presence provides temporary or persistent many-to-many rooms for chatting and 
 video / audio conferencing. Invites to presence rooms can be sent through the other 
-modules. More info in the FriendSoftwareLabs/presence repo!
+modules. More info in the FriendSoftwareLabs/presence repository!
 
 #### Treeroot
 
