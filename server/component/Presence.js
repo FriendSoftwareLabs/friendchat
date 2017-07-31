@@ -835,6 +835,7 @@ ns.ServerConn.prototype.handleClose = function() {
 
 ns.ServerConn.prototype.handleError = function( err ) {
 	const self = this;
+	connLog( 'handleError', err );
 	self.handleDisconnect();
 	
 }
@@ -857,12 +858,6 @@ ns.ServerConn.prototype.handleDisconnect = function( err ) {
 
 ns.ServerConn.prototype.tryReconnect = function() {
 	var self = this;
-	connLog( 'tryReconnect', {
-		timeout : self.connectTimeout,
-		sess : self.session,
-		auth : self.auth,
-		attempt : self.connectAttempt,
-	} );
 	if ( self.connectTimeout ||
 		( !self.session &&  !self.auth )
 	) {
@@ -946,7 +941,6 @@ ns.ServerConn.prototype.handleConMsg = function( event ) {
 
 ns.ServerConn.prototype.handleAuthenticate = function( success ) {
 	const self = this;
-	connLog( 'handleAuthenticate', success );
 	// yep, authenticated. that should do it, lets do nothing.
 	if ( true === success )
 		return;
@@ -980,7 +974,6 @@ ns.ServerConn.prototype.handleAuthenticate = function( success ) {
 
 ns.ServerConn.prototype.handleSession = function( sessionId ) {
 	const self = this;
-	connLog( 'handleSession', sessionId );
 	self.session = sessionId;
 	if ( false === sessionId ) {
 		self.disconnect();

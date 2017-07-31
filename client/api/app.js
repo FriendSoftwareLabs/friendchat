@@ -32,7 +32,7 @@ var friend = window.friend || {}; // already instanced stuff
 	var script = document.createElement( 'script' );
 	script.type = 'text/javascript';
 	script.src = scriptPath;
-	script.onload = function( event ) { console.log( 'script loaded', event ); }
+	script.onload = function( event ) {}
 	document.head.appendChild( script );
 	
 	function setPath( script ) { return path + script; }
@@ -249,7 +249,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleLoaded = function( e ) {
 		const self = this;
-		console.log( 'handleLoaded', e );
 		self.sendMessage({
 			type : 'initialize',
 			data : self.initData,
@@ -263,7 +262,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleReady = function( e ) {
 		const self = this;
-		console.log( 'handleReady', e );
 		self.ready = true;
 		self.sendEventQueue();
 		if ( self.onready ) {
@@ -274,7 +272,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.doClose = function() {
 		const self = this;
-		console.log( 'View.doClose', self );
 		self.ready = false;
 		var onclose = self.onclose;
 		delete self.onclose;
@@ -286,7 +283,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.close = function() {
 		var self = this;
-		console.log( 'View.close', self );
 		if ( !self.app )
 			return;
 		
@@ -315,7 +311,6 @@ var friend = window.friend || {}; // already instanced stuff
 		self.eventQueue.forEach( send );
 		self.eventQueue = [];
 		function send( event ) {
-			console.log( 'sendEventQueue', event );
 			self.sendMessage( event );
 		}
 	}
@@ -503,10 +498,6 @@ var friend = window.friend || {}; // already instanced stuff
 		self.initAppEvent();
 		
 		function unhandledEvent( type, data ) {
-			console.log( 'unhandledEvent', {
-				type : type,
-				data : data,
-			});
 			self.receiveMessage( data );
 		}
 	}
@@ -582,7 +573,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleCallback = function( msg ) {
 		var self = this;
-		console.log( 'app.handleCallback', msg );
 		var cid = msg.callback || msg.clickcallback;
 		var callback = self.getCallback( cid );
 		if ( !callback )
@@ -752,7 +742,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.closeView = function( msg ) {
 		var self = this;
-		console.log( 'closeView', msg );
 		const viewId = msg.viewId;
 		var view = self.getView( viewId );
 		if ( !view )
@@ -933,7 +922,6 @@ var friend = window.friend || {}; // already instanced stuff
 	{
 		var self = this;
 		var view = self.views[ viewId ];
-		console.log( 'App.removeView', viewId );
 		if ( !view )
 			return;
 		
@@ -946,39 +934,27 @@ var friend = window.friend || {}; // already instanced stuff
 		locale = locale || self.locale;
 		const localeFile = locale + '.lang';
 		const path = 'Progdir:locale/' + localeFile;
-		console.log( 'setLocale', {
-			l : self.locale,
-			f : localeFile,
-			p : path,
-		});
-		
 		self.loadFile( path, fileBack );
 		
 		function fileBack( res ) {
-			console.log( 'locale load back', res );
 			if ( !res ) {
 				callback( false );
 				return;
 			}
 			
 			const lines = res.split( '\n' );
-			//console.log( 'lines', lines );
 			onlyValid = lines.filter( cleanLines );
-			//console.log( 'onlyValid', onlyValid );
 			const translations = {};
 			onlyValid.forEach( setKeyValue );
 			self.translations = translations;
-			console.log( 'translations', self.translations );
 			callback( true );
 			
 			function setKeyValue( line ) {
 				let parts = line.split( ':' );
-				//console.log( 'parts', parts );
 				translations[ parts[ 0 ].trim() ] = parts[ 1 ].trim();
 			}
 			
 			function cleanLines( line ) {
-				console.log( 'cleanLines', line );
 				if ( !line || !line.trim )
 					return false;
 				

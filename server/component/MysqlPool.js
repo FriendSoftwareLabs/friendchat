@@ -98,7 +98,7 @@ ns.MysqlPool.prototype.applyUpdates = function( conn, doneBack ) {
 
 ns.MysqlPool.prototype.runStartupProc = function( db, callback ) {
 	var self = this;
-	log( 'purge orphaned settnigs' );
+	log( 'purge orphaned settings' );
 	db.query( "CALL purge_orphaned_settings()", null, queryBack );
 	function queryBack( res ) {
 		callback( true );

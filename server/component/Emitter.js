@@ -83,11 +83,8 @@ ns.Emitter.prototype.emit = function() {
 	return null;
 	function sendOnListener( id ) {
 		var listener = self._emitterListeners[ id ];
-		if ( !listener ) {
-			log( 'emit - getSub - no listener for id',
-				{ id: id, listener : self._emitterListeners });
+		if ( !listener )
 			return;
-		}
 		
 		listener.apply( self, handlerArgs );
 	}

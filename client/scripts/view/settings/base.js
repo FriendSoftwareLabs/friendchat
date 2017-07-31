@@ -39,7 +39,6 @@ library.view = library.view || {};
 		
 		var fragments = document.getElementById( 'fragments' );
 		let fragString = fragments.innerHTML;
-		console.log( 'fragString', fragString );
 		hello.template = new friendUP.gui.TemplateManager( fragString );
 		
 		self.bindView();

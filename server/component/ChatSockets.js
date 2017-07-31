@@ -81,9 +81,6 @@ ns.ChatSockets.prototype.send = function( msg, socketId ) {
 	};
 	var socket = self.sockets[ socketId ];
 	if ( !socket ) {
-		log( 'waitwat, no socket?', {
-		m : msg,
-		sid : socketId });
 		return;
 	}
 	
@@ -344,7 +341,6 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 ns.ChatSockets.prototype.unsetAccount = function( id ) {
 	var self = this;
 	var account = self.state.account[ id ];
-	log( 'unsetAccount' );
 	if ( !account ) {
 		log( 'unsetAccount - wut, no account found for???', id );
 		return;
@@ -358,7 +354,6 @@ ns.ChatSockets.prototype.unsetAccount = function( id ) {
 		var accountSessions = account.sessionKeys;
 		accountSessions.forEach( close );
 		function close( sessionId ) {
-			log( 'unsetAccount - close', sessionId );
 			var socket = self.sessions[ sessionId ]; // a session is really just a
 			                                         // socket with  a sessionid set
 			self.removeSocket( socket.id );

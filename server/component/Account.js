@@ -251,8 +251,6 @@ ns.Account.prototype.toClient = function( msg, sessionId ) {
 	function toSocket( msg, sessionId ) {
 		var session = self.sessions[ sessionId ];
 		if ( !session ) {
-			log( 'invalid session Id for msg', msg );
-			log( sessionId );
 			return;
 		}
 		

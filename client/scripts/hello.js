@@ -255,7 +255,6 @@ var hello = null;
 		const conf = self.config.run;
 		if ( 'live-invite' === conf.type ) {
 			self.loggedIn = true;
-			console.log( 'live-invite', conf );
 			let identity = conf.data.identity || {
 				name   : library.tool.getName(),
 				avatar : library.component.Identity.prototype.avatar,

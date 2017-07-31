@@ -84,7 +84,6 @@ ns.IRC.prototype.reconnect = function( msg ) {
 
 ns.IRC.prototype.disconnect = function( msg ) {
 	var self = this;
-	log( 'disconnect' );
 	if ( !self.ircClient )
 		return;
 	
@@ -767,7 +766,6 @@ ns.IrcClient.prototype.doJoin = function( channels ) {
 
 ns.IrcClient.prototype.updateIrcTheme = function( filepath ) {
 	var self = this;
-	clog( 'udpateIrcTheme', filepath );
 	self.doPersist( 'ircTheme', filepath, persistBack );
 	function persistBack( update ) {
 		if ( !update.success )
@@ -1743,7 +1741,6 @@ ns.IrcClient.prototype.setMessageMap = function() {
 
 ns.IrcClient.prototype.handleRawCommand = function( msg ) {
 	var self = this;
-	console.log( 'handleRawCommand', msg );
 	self.send( msg );
 }
 
@@ -1793,7 +1790,7 @@ ns.IrcClient.prototype.parseCommand = function( msg, source ) {
 		copyToSelf( cmd );
 	
 	function discard( msg ) {
-		clog( 'command - invalid command, in some way', msg );
+		//clog( 'command - invalid command, in some way', msg );
 	}
 	
 	function copyToSelf( msg ) {
@@ -2714,7 +2711,6 @@ ns.Private.prototype.sendLog = function( e, cid ) {
 
 ns.Private.prototype.remove = function() {
 	var self = this;
-	plog( 'remove', self );
 }
 
 ns.Private.prototype.toClient = function( msg, cid ) {
@@ -3009,7 +3005,6 @@ ns.CmdChecker.prototype.init = function() {
 	}
 	
 	function buildModeO( args, source ) {
-		log( 'buildModeO', { a : args, s : source });
 		args.shift(); // remove 'op'
 		if ( self.isChannel( args[ 0 ] )) // keep the target if its there
 			source = args.shift();
@@ -3023,7 +3018,6 @@ ns.CmdChecker.prototype.init = function() {
 	}
 	
 	function buildModeV( args, source ) {
-		log( 'buildModeV', { a : args, s : source });
 	}
 	
 	function buildKickMsg( args, source ) {

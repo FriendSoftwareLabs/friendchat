@@ -170,7 +170,6 @@ var friend = window.friend || {};
 		if ( !friend.template )
 			friend.template = new friendUP.gui.TemplateManager();
 		
-		console.log( 'setBody', friend );
 		const frags = document.getElementById( 'fragments' );
 		if ( !frags )
 			return false;
@@ -208,7 +207,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.focus = function( msg ) {
 		var self = this;
-		console.log( 'view.focus', msg );
+		//console.log( 'view.focus', msg );
 	}
 	
 	ns.View.prototype.blur = function( msg ) {
@@ -428,7 +427,7 @@ var friend = window.friend || {};
 	ns.View.prototype.setDeviceType = function( type ) {
 		var self = this;
 		self.deviceType = type;
-		console.log( 'deviceType set to', type );
+		//console.log( 'deviceType set to', type );
 	}
 	
 	ns.View.prototype.detectDeviceType = function() {
