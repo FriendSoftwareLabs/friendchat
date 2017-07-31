@@ -16,9 +16,8 @@ if [ $? -eq "1" ]; then
     exit 1
 fi
 
-# Checks friend default directory
-FRIEND_FOLDER="/home/$USER/friendup"
 # Asks for friendup directory
+FRIEND_FOLDER="/home/$USER/friendup"
 while true; do
     temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Please enter the path to the FriendUp directory." 11 60 "$FRIEND_FOLDER" --output-fd 1)
@@ -47,25 +46,6 @@ FRIEND_BUILD="$FRIEND_FOLDER/build"
 PRESENCE_FOLDER="$FRIEND_BUILD/services/Presence"
 FRIENDCHATSERVER_FOLDER="$FRIEND_BUILD/services/FriendChat"
 FRIENDCHATAPP_FOLDER="$FRIEND_BUILD/resources/webclient/apps/FriendChat"
-
-# Checks if TLS keys are defined
-NEWTLS="0"
-if [ ! -f "$FRIEND_BUILD/cfg/crt/key.pem" ]
-then
-    dialog --backtitle "Friend Chat installer" --msgbox "\
-Friend Chat needs TLS keys to work.\n\n\
-This script will now create them for you.\n\
-Please answer the following questions..." 11 70
-    clear
-
-    # Call openssl to create the keys
-    if [ ! -d "$FRIEND_BUILD/cfg/crt" ]; then
-        mkdir "$FRIEND_BUILD/cfg/crt"
-    fi
-    echo "Calling openssl to create the keys."
-    openssl req -newkey rsa:2048 -nodes -sha512 -x509 -days 3650 -nodes -out "$FRIEND_BUILD/cfg/crt/certificate.pem" -keyout "$FRIEND_BUILD/cfg/crt/key.pem"
-    TLSNEW="1"
-fi
 
 # Get information from setup.ini if it exists
 turnAddress="your_turn_server.com"
@@ -114,6 +94,33 @@ else
     presenceDbPort="$dbport"
     presenceDbUser="$dbuser"
     presenceDbPass="$dbpass"
+fi
+
+# Checks if TLS keys are defined
+NEWTLS="0"
+SELFSIGNED="false"
+if [ ! -f "$FRIEND_BUILD/cfg/crt/key.pem" ]
+then
+    dialog --backtitle "Friend Chat installer" --msgbox "\
+Friend Chat needs TLS keys to work.\n\n\
+This script will now create them for you.\n\
+Please answer the following questions..." 11 70
+    clear
+
+    # Call openssl to create the keys
+    if [ ! -d "$FRIEND_BUILD/cfg/crt" ]; then
+        mkdir "$FRIEND_BUILD/cfg/crt"
+    fi
+    echo "Calling openssl to create the keys."
+    openssl req -newkey rsa:2048 -nodes -sha512 -x509 -days 3650 -nodes -out "$FRIEND_BUILD/cfg/crt/certificate.pem" -keyout "$FRIEND_BUILD/cfg/crt/key.pem"
+    TLSNEW="1"
+    SELFSIGNED="true"
+else
+    temp=$(openssl verify -CAfile "$FRIEND_BUILD/cfg/crt/certificate.pem" -CApath "$FRIEND_BUILD/cfg/crt/certificate.pem" "$FRIEND_BUILD/cfg/crt/certificate.pem")
+    echo $temp
+    if [ "$temp" == "$FRIEND_BUILD/cfg/crt/certificate.pem: OK" ]; then
+        SELFSIGNED="true";
+    fi
 fi
 
 # Asks for Friend Chat information
@@ -249,7 +256,7 @@ Please enter the stun server address:" 10 50 "$stunAddress" --output-fd 1)
     if [ "$temp" != "" ]; then
         stunAddress="$temp"
     fi
-    dialog --defaultno --backtitle "Friend installer" --yesno "\
+    dialog --defaultno --backtitle "Friend Chat installer" --yesno "\
 Using the following values for Friend Chat:\n\n\
 Friend Chat domain: $friendCoreDomain\n\
 Presence server database name: $presenceDbName\n\
@@ -261,8 +268,8 @@ Friend Chat server database password: $helloDbPass\n\
 TURN server address: $turnAddress\n\
 TURN server username: $turnUser\n\
 TURN server password: $turnPass\n\
-STUN server address: $stunAddress\n\
-Please check the values and confirm..." 19 75
+STUN server address: $stunAddress\n\n\
+Please check the values and confirm..." 20 75
     if [ $? = "0" ]; then
         break;
     fi
@@ -279,7 +286,7 @@ installNode() {
 nv=$(node -v)
 npm=$(npm -v)
 if [ -z $nv ]; then
-    dialog --backtitle "Friend installer" --yesno "\
+    dialog --backtitle "Friend Chat installer" --yesno "\
 Friend Chat need Node.js to work and it was not found.\n\n\
 If you want to install it manually,\n\
 exit and restart this script.\n\
@@ -298,7 +305,7 @@ Install node automatically?" 13 60
 fi
 
 if [ "v4.5.0" != "$nv" ]; then
-    dialog --backtitle "Friend installer" --yesno "\
+    dialog --backtitle "Friend Chat installer" --yesno "\
 Warning! node version found: $nv.\n\
 Recommended version: v4.5.0\n\n\
 Choose YES to switch to version 4.5.0,\n\
@@ -310,7 +317,7 @@ or NO to use the current version..." 11 60
 fi
 
 if [ -z "$npm" ]; then
-    dialog --backtitle "Friend installer" --msgbox "\
+    dialog --backtitle "Friend Chat installer" --msgbox "\
 Node was found, but not npm." 10 70
     clear
     echo "Friend Chat installation aborted."
@@ -319,7 +326,7 @@ fi
 
 # Asks for database root password
 while true; do
-    mysqlRootPass=$(dialog --backtitle "Friend installer" --passwordbox "Please enter mysql root password:" 8 50 --output-fd 1)
+    mysqlRootPass=$(dialog --backtitle "Friend Chat installer" --passwordbox "Please enter mysql root password:" 8 50 --output-fd 1)
     if [ $? = "1" ]
     then
         clear
@@ -330,7 +337,7 @@ while true; do
     if [ $? == "0" ]; then
         break;
     fi
-    dialog --backtitle "Friend installer" --msgbox "Invalid password, please try again." 8 50 --output-fd 1
+    dialog --backtitle "Friend Chat installer" --msgbox "Invalid password, please try again." 8 50 --output-fd 1
 done
 clear
 
@@ -455,6 +462,7 @@ cd "$FRIENDCHAT_FOLDER"
 cp "$FRIENDCHATSERVER_FOLDER"/example.config.js "$FRIENDCHATSERVER_FOLDER"/config.js
 
 # Pokes the new values in the presence/config.js file
+sed -i -- "s/dev : false/dev : $SELFSIGNED/g" "$FRIENDCHATSERVER_FOLDER"/config.js
 sed -i -- "s/hello_database_host/${dbhost//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
 sed -i -- "s/3206/${dbport//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
 sed -i -- "s/hello_database_user/${helloDbUser//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
