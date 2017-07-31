@@ -55,7 +55,9 @@ library.component = library.component || {};
 		}
 		//
 		var fragments = document.getElementById( 'fragments' );
-		hello.template = new friendUP.gui.TemplateManager( fragments );
+		var fragStr = fragments.innerHTML;
+		fragStr = View.i18nReplaceInString( fragStr );
+		hello.template = new friendUP.gui.TemplateManager( fragStr );
 		
 		//
 		var dropConf = {
