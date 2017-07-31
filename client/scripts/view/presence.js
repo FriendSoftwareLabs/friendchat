@@ -195,7 +195,6 @@ library.view = library.view || {};
 		friend.template.addFragments( conf.fragments );
 		const state = conf.state;
 		// things
-		console.log( 'pres.initialize', conf );
 		self.name = state.roomName;
 		self.ownerId = state.ownerId;
 		self.userId = state.userId;
@@ -226,7 +225,6 @@ library.view = library.view || {};
 			onFetch
 		);
 		function onFetch() {
-			console.log( 'onFetch' );
 			const firstMsgId = self.msgBuilder.getFirstMsgId();
 			const logFrom = {
 				type : 'log',
@@ -356,7 +354,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleLog = function( items ) {
 		const self = this;
-		console.log( 'addLog', items );
 		if ( null == items ) {
 			self.logFetcher.unlock();
 			self.logFetcher.setNoLogs( true );
@@ -1049,7 +1046,6 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.buildMsg = function( conf ) {
 		const self = this;
-		console.log( 'msg', conf );
 		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
 		const event = conf.event;
 		const uid = event.fromId;
@@ -1332,7 +1328,6 @@ library.view = library.view || {};
 	
 	ns.LogFetcher.prototype.setNoLogs = function( isNoLogs ) {
 		const self = this;
-		console.log( 'setNoLogs', isNoLogs );
 		self.noLogs = isNoLogs;
 		if ( self.lockOut )
 			clearTimeout( self.lockOut );
@@ -1358,7 +1353,6 @@ library.view = library.view || {};
 	
 	ns.LogFetcher.prototype.init = function() {
 		const self = this;
-		console.log( 'LogFetcher.init', self );
 		// make sure we have valid ids
 		self.parent = document.getElementById( self.parentId );
 		if ( !self.parent ) {
@@ -1422,7 +1416,6 @@ library.view = library.view || {};
 		self.infoFetch.classList.toggle( 'hidden', isUnlocked );
 		
 		function unlock() {
-			console.log( 'unlock' );
 			self.lockOut = null;
 			if ( !self.locked )
 				self.toggleFetching ( false );

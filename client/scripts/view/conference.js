@@ -328,7 +328,6 @@ library.view = library.view || {};
 	
 	ns.Conference.prototype.kick = function( event ) {
 		const self = this;
-		console.log( 'kick', event );
 		self.removeParticipant( event.victim );
 		let victim = event.victim;
 		if ( victim === self.user.name ) {
@@ -346,7 +345,6 @@ library.view = library.view || {};
 	
 	ns.Conference.prototype.ban = function( event ) {
 		const self = this;
-		console.log( 'ban', event );
 		self.removeParticipant( event.victim );
 		const conf = {
 			type    : 'ban',
@@ -953,7 +951,6 @@ library.view = library.view || {};
 	
 	ns.Conference.prototype.getModeStyle = function( mode ) {
 		var self = this;
-		console.log( 'getModeStyle', mode );
 		if ( !mode || !mode.length )
 			mode = '';
 		
@@ -963,7 +960,6 @@ library.view = library.view || {};
 		}
 		
 		const style = self.modeStyleMap[ mode ] || '';
-		console.log( 'returnModeStyle', style )
 		return style;
 	}
 	

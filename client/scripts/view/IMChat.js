@@ -142,7 +142,6 @@ library.component = library.component || {};
 	ns.IMChat.prototype.handleMessage = function( data ) {
 		var self = this;
 		if ( data.mid && self.checkExists( data.mid )) {
-			console.log( 'duplicate message', data );
 			return;
 		}
 		

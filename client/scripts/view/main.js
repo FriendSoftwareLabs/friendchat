@@ -2046,7 +2046,6 @@ library.view = library.view || {};
 	ns.Main.prototype.init = function()
 	{
 		var self = this;
-		console.log( 'MAIN', window.View.translations );
 		self.bindEvents();
 		self.bindView();
 		self.setTemplate();
