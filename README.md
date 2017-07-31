@@ -15,7 +15,7 @@ power of your device.
 
 #### Invites
 
-Live invites can be sent through any module. It is sent as a data string, 
+Live invites can be sent through any module. It is sent as a string, 
 and as long as the invitee is also using FriendChat, it will be intercepted 
 and presented to the user. The live session is then established over the 
 presence service.
