@@ -273,7 +273,7 @@ echo "Checking for node.js and npm"
 
 installNode() {
 	curl -L http://git.io/n-install | bash
-	n 4.4.4
+	n 4.5.0
 }
 
 nv=$(node -v)
@@ -297,15 +297,15 @@ Install node automatically?" 13 60
     fi
 fi
 
-if [ "v4.4.4" != "$nv" ]; then
+if [ "v4.5.0" != "$nv" ]; then
     dialog --backtitle "Friend installer" --yesno "\
 Warning! node version found: $nv.\n\
-Recommended version: v4.4.4\n\n\
-Continue anyway?" 10 70
+Recommended version: v4.5.0\n\n\
+Choose YES to switch to version 4.5.0,\n\
+or NO to use the current version..." 11 60
     if [ $? -eq "0" ]; then
-        clear
-        echo "Friend Chat installation aborted."
-        exit 1
+        echo "Calling 'n' to change the version of node."
+        n 4.5.0
     fi
 fi
 

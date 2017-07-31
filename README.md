@@ -31,7 +31,7 @@ Any live session can be shared through a clickable link. This is a public invite
 and can be used by any number of people until it is explicitly canceled. People 
 using this link will join as a guest with a randomly generated name.
 
-### Modules
+## Modules
 
 Modules are integrations towards 3rd party chat services. They have a server part 
 that communicates  with the remote service/server and a client part with a custom
@@ -58,7 +58,7 @@ modules. More info in the FriendSoftwareLabs/presence repository!
 #### Treeroot
 
 The Treeroot module integrates the chat part of the Treeroot system. It provides
-one to one chat, optionaly end to end encrypted. You'll need to add the module 
+one to one chat, optionally end to end encrypted. You'll need to add the module
 ( 'add chat account' in the menu ) then log in with ( or create a new ) Treeroot 
 account.
 
@@ -78,10 +78,9 @@ If you are running on a virtual machine, you will have to define a real
 domain name for both Friend Core and Friend Chat, as 'localhost' will not work.
 To do so, open the 'host' file in /etc/ and add your domain to the list, for
 example :
-127.0.0.1   test.localfriend
-and enter this domain name when the installation script asks for it. The
-script will update Friend Core accordingly and configure Friend Chat with this
-domain.
+'127.0.0.1   test.localfriend'.
+Enter this very domain name when the installation script asks for it. The
+script will update Friend Core accordingly and configure Friend Chat.
 In order for Friend Chat to work within the Friend Workspace, you must
 connect to your machine using the domain name you entered during installation.
 For example, connecting to your Friend machine with
@@ -97,10 +96,11 @@ installation script directly in Friend build folder.
 #### How to install Friend Chat?
 
 Go to the directory where you cloned Friend Chat from GIT.
-Run ./install.sh and answer the questions.
+Run './install.sh' and answer the questions.
 The installation script will gather as much data from the Friend Core
-installation as it can, and will only ask for the undefined values. You can
-restart this script at any time, after pulling changes from GIT for example.
+installation as it can, and will show as many pre-filled value as it can.
+You can restart this script at any time, after pulling changes from GIT
+for example.
 
 #### Launching Friend Core, Friend Chat and Presence servers
 
@@ -108,7 +108,7 @@ The installation script automatically adds an 'autostart' folder to your
 Friend Core build directory, containing two scripts that launch the Presence
 and Friend Chat server when Friend Core is started.
 So after installation, the whole system is launched with this command :
-./FriendCore
+'./FriendCore'
 If you kill Friend Core instead of exiting it, the two servers will continue
 to run and will have to be killed manually. We suggest that you use the
 killfriendcore.sh script that can be found in the friendup directory.
