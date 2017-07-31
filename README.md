@@ -1,6 +1,6 @@
-# FriendChat
+# Friend Chat
 
-FriendChat is a chat integration platform for Friend. It is built to make 
+Friend Chat is a chat integration platform for Friend. It is built to make
 it fairly straightforward to add access to 3rd party chat APIs. It is a
 client - server architecture where the server handles the connection to the
 remote API and presents the content to the client. Multiple clients can
@@ -14,14 +14,14 @@ itself.
 
 ## Video / Audio Conferencing, aka Live
 
-FriendChat allows p2p video and audio calls over webRTC, supported by the presence 
+Friend Chat allows p2p video and audio calls over webRTC, supported by the presence
 service. The limits to number of participants is practical; the bandwidth and 
 power of your device.
 
 #### Invites
 
 Live invites can be sent through any module. It is sent as a data string, 
-and as long as the invitee is also using FriendChat, it will be intercepted 
+and as long as the invitee is also using Friend Chat, it will be intercepted
 and presented to the user. The live session is then established over the 
 presence service.
 
@@ -41,13 +41,13 @@ is always there and IRC is added by default.
 #### IRC
 
 Internet Relay Chat, because it would be weird not to have it. Covers 
-most basic needs and commands. An abbrevated list of commands if you are new to IRC:
+most basic needs and commands. An abbreviated list of commands if you are new to IRC:
 * /nick new_nick - change your nick
 * /action something silly - do something silly
 * /join #channel_name - join a channel
 * /part - in channel, leave the channel
 
-Except for the sillyness, this can also be found in settings.
+This information can also be found in settings.
 
 #### Presence
 
@@ -152,7 +152,7 @@ Friend Core.
 You will find the sourcecode of the Friend Chat server in the 'server' folder
 of the friendchat directory.
 As for the client, you will need to run the 'update.sh' script to copy the
-modified files at in the Friend build/services/FriendChat folder.
+modified files in the Friend build/services/FriendChat folder.
 Please note that the server must be killed before doing so, otherwise the
 files will not be written. 'update.sh' also calls 'npm install' automatically
 to update the node.js modules used by the Friend Chat server : if you copy
