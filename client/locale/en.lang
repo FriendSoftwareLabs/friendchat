@@ -237,3 +237,6 @@ i18n_toggle_cover_contain : Toggle cover / contain
 i18n_no_account_to_login : No account in login, wat
 i18n_logged_in_as : Logged in as
 i18n_unknown_data_for_api_user : Unknown data for API user - aborting
+i18n_file : File
+i18n_account_menu : Account
+i18n_tools : Tools
