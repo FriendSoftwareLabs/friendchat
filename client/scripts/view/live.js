@@ -761,7 +761,7 @@ library.component = library.component || {};
 			id     : 'screen-mode',
 			name   : View.i18n('i18n_toggle_cover_contain'),
 			faIcon : 'fa-arrows-alt',
-			toggle : true,
+			toggle : false,
 			close  : false,
 		};
 		const popped = {
@@ -1918,6 +1918,8 @@ library.component = library.component || {};
 	ns.Peer.prototype.updateScreenMode = function() {
 		const self = this;
 		console.log( 'updateScreenMode', self.peer.screenMode );
+		const isCover = ( 'contain' === self.peer.screenMode );
+		self.menu.setState( 'screen-mode', isCover );
 		self.doResize();
 	}
 	

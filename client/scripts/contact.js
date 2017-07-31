@@ -169,11 +169,6 @@ library.contact = library.contact || {};
 	// returns true if the intercept was acted on, otherwise returns false
 	ns.Contact.prototype.handleIntercept = function( msg, intercept ) {
 		var self = this;
-		console.log( 'handleIntercept', {
-			d : msg,
-			i : intercept,
-		});
-		
 		var event = intercept.data;
 		var handler = self.interceptMap[ event.type ];
 		if ( !handler ) {
@@ -305,7 +300,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.startLive = function( invite, from ) {
 		var self = this;
-		console.log( 'startLive', invite );
 		var invite = invite || null;
 		var module = hello.module.get( self.moduleId );
 		var user = module.identity;
@@ -316,7 +310,6 @@ library.contact = library.contact || {};
 			setupSession( user );
 		
 		function joinSession( user, invite ) {
-			console.log( 'joinSession', invite );
 			var host = self.identity || { name : from }; // this contact is inviting you
 			hello.rtc.askClient( invite, host, user );
 		}
@@ -465,7 +458,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.contactClose = function() {
 		var self = this;
-		console.log( 'contactClose', self );
 		self.conn.close();
 		self.view.close();
 		if ( self.chatView )
@@ -532,7 +524,6 @@ library.contact = library.contact || {};
 		function chat( e ) { self.sendChatEvent( e ); }
 		function invite( e ) { self.handleLiveInvite( e ); }
 		function onClose( e ) {
-			console.log( 'presence live closed', !!self.live );
 			self.closeLive();
 			const leave = {
 				type : 'leave',
@@ -1008,7 +999,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.buildInvites = function( event ) {
 		const self = this;
-		console.log( 'buildInvites', event );
 		if ( 'state' === event.type )
 			event.data = parseState( event.data );
 		else
@@ -1133,7 +1123,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.closeLive = function() {
 		const self = this;
-		console.log( 'closeLive', !!self.live );
 		if ( !self.live )
 			return;
 		
@@ -1146,7 +1135,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleCloseLive = function( liveId ) {
 		const self = this;
-		console.log( 'handleCloseLive', liveId );
 		// close the things
 		if ( !liveId ) {
 			clearView();
@@ -1160,7 +1148,6 @@ library.contact = library.contact || {};
 			return;
 		}
 		
-		console.log( 'handleCloseLive.id', self.live.id );
 		// yep, we're closing
 		if ( liveId === self.live.id ) {
 			clearView();

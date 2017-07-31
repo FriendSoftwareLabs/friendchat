@@ -157,7 +157,6 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.handleConnectionError = function( error ) {
 		var self = this;
-		console.log( 'handleConnectionError', error );
 		var handler = self.connectionErrorMap[ error.type ];
 		if ( !handler ) {
 			console.log( 'no handler for connection error', error );
@@ -634,7 +633,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccount = function( account ) {
 		var self = this;
-		console.log( 'handleAccount', account );
 		self.account = account;
 		self.accountId = account.clientId;
 		if ( account.name !== self.identity.name )

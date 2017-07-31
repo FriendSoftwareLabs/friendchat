@@ -613,7 +613,6 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.createResult = function( res ) {
 		var self = this;
-		console.log( 'createResult', res );
 		if ( self.createView )
 			self.createView.close();
 		
@@ -1055,10 +1054,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Account.prototype.updateMsgAlert = function( value ) {
 		var self = this;
-		console.log( 'updateMsgAlert', {
-			v : value,
-			s : self.settings,
-		});
 		self.settings.msgAlert = value;
 	}
 	
