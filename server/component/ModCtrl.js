@@ -86,7 +86,6 @@ ns.ModCtrl.prototype.initializeClient = function( sessionId ) {
 
 ns.ModCtrl.prototype.addDefaultModules = function( defaultUsername ) {
 	var self = this;
-	log( 'addDefaultModules', defaultUsername );
 	var live = {
 		type     : 'presence',
 		settings : {
@@ -162,7 +161,6 @@ ns.ModCtrl.prototype.init = function() {
 
 ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
 	var self = this;
-	log( 'create', modConf );
 	var dbSet = new DbModule( self.db, self.accountId );
 	var dbGet = null;
 	
@@ -171,7 +169,6 @@ ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
 		dbSet.set( modConf, setBack );
 	}
 	function setBack( modId ) {
-		log( 'create setback', modId );
 		if ( !modId ) {
 			done( false );
 			return;
@@ -189,7 +186,6 @@ ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
 		dbGet.get( getBack );
 	}
 	function getBack( mod ) {
-		log( 'create getBack', mod );
 		self.add( mod );
 		dbGet.conn.release();
 	}
@@ -225,7 +221,6 @@ ns.ModCtrl.prototype.sortModules = function( modList ) {
 
 ns.ModCtrl.prototype.add = function( module ) {
 	var self = this;
-	log( 'add', module );
 	self.start( module );
 	var addEvent = {
 		type : 'module',
@@ -239,7 +234,6 @@ ns.ModCtrl.prototype.add = function( module ) {
 
 ns.ModCtrl.prototype.remove = function( moduleId ) {
 	var self = this;
-	log( 'remove', moduleId );
 	var module = self.modules[ moduleId ];
 	if ( !module ) {
 		log( 'ModCtrl.remove - no such module', {
@@ -300,7 +294,6 @@ ns.ModCtrl.prototype.load = function( callback ) {
 
 ns.ModCtrl.prototype.start = function( mod ) {
 	var self = this;
-	log( 'start', mod.type );
 	var clientId = mod.clientId;
 	var conn = self.modules[ clientId ];
 	if ( conn ) {
@@ -559,7 +552,6 @@ ns.ModuleProxy.prototype.kill = function( callback ) {
 
 ns.ModuleProxy.prototype.handle = function( event, data ) {
 	var self = this;
-	log( 'modProxy.handle', { e : event, d : data });
 	self.emit( event, data );
 }
 

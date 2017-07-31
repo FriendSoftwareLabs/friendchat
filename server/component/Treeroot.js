@@ -101,7 +101,7 @@ ns.Treeroot.prototype.init = function() {
 	function getUserList( e, socketId ) { self.getUserList( e, socketId ); }
 	function subscription( e ) { self.subscription( e ); }
 	function resetPassphrase( e, socketId ) { self.resetPassphrase( e, socketId ); }
-	function stop( e ) { self.log( 'treeroot stop event - this isnt event a real handler!?', self.conf ); }
+	function stop( e ) { self.log( 'treeroot stop event - this isnt evenn a real handler!?', self.conf ); }
 	function kill( callback ) { self.kill( callback ); }
 	
 	//
@@ -343,7 +343,6 @@ ns.Treeroot.prototype.getUniqueId = function( callback ) {
 		if ( !data )
 			return;
 		
-		self.log( 'getUniqueId - res', { uid : data.uniqueid, u : self.conf });
 		if ( !data.uniqueid ) {
 			self.uniqueId = null;
 			self.identityError();
@@ -551,7 +550,6 @@ ns.Treeroot.prototype.keyExchangeComplete = function( sessionId, socketId ) {
 
 ns.Treeroot.prototype.keyExchangeFailed = function() {
 	var self = this;
-	self.log( 'keyExchangeFailed - resetting', self.conf );
 	self.resetCrypto( resetDone );
 	function resetDone() {
 		self.getUniqueId( uidBack );
@@ -1111,9 +1109,6 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 	var contactState = self.contactState[ relation.ID ];
 	var contact = self.contacts.get( relation.ID );
 	if ( contactState || contact ) {
-		self.log( 'exists? - relation', relation );
-		self.log( 'exists? - self.constactState', self.contactState );
-		self.log( 'exists? - self.contacts', self.contacts );
 		return;
 	}
 	
@@ -1313,7 +1308,6 @@ ns.Treeroot.prototype.postMessage = function( clientId, message ) {
 		'Date' : self.getNow(),
 	};
 	
-	self.log( 'postMessage', message );
 	self.queueRequest({
 		type : 'request',
 		path : self.postMessagePath,
@@ -1349,7 +1343,6 @@ ns.Treeroot.prototype.postCryptoMessage = function( clientId, data ) {
 		postData[ 'CryptoKeys' ] = JSON.stringify( keys );
 	}
 	
-	self.log( 'postCryptoMessage', postData );
 	self.queueRequest({
 		type     : 'request',
 		path     : self.postMessagePath,
@@ -2465,7 +2458,6 @@ ns.Treeroot.prototype.clearRequestQueue = function() {
 
 ns.Treeroot.prototype.clearRequestTimeouts = function() {
 	const  self = this;
-	self.log( 'clearRequestTimeouts', self.requestsOnTimeout );
 	self.requestsOnTimeout.forEach( clear );
 	self.requestsOnTimeout = [];
 	function clear( id ) {
@@ -2476,7 +2468,6 @@ ns.Treeroot.prototype.clearRequestTimeouts = function() {
 ns.Treeroot.prototype.startRequestLoop = function() {
 	var self = this;
 	if ( self.reqLoopInterval ) {
-		self.log( 'startRequestLoop - reqLoop aready running', self.reqLoopInterval );
 		clearInterval( self.reqLoopInterval );
 		self.reqLoopInterval = null;
 	}
@@ -2570,7 +2561,6 @@ ns.Treeroot.prototype.sendRequest = function( request, done ) {
 
 ns.Treeroot.prototype.handleRequestError = function( errCode, request ) {
 	var self = this;
-	self.log( 'request err', { e : errCode, r : request }, 4 );
 	if ( self.shouldRetry( request ) )
 		self.requeueRequest( request, 'ERR_HOST_' + errCode );
 	else
@@ -2606,7 +2596,6 @@ ns.Treeroot.prototype.handleResponse = function( xml, request ) {
 			return;
 		}
 		
-		self.log( 'response not OK', { d : data, r : request, u : self.conf.login }, 4 );
 		if ( '0004' === data.code ) {
 			self.log( '0004, reconnecting' );
 			done( false );
@@ -2668,10 +2657,6 @@ ns.Treeroot.prototype.requeueRequest = function( req, errCode ) {
 	var reqTimeoutId = setTimeout( requeueReq, timeout );
 	self.requestsOnTimeout.push( reqTimeoutId );
 	function requeueReq() {
-		self.log( 'requeueueing', { 
-			err : errCode, 
-			req : req
-		}, 4 );
 		var idIndex = self.requestsOnTimeout.indexOf( reqTimeoutId );
 		if ( -1 === idIndex )
 			return;

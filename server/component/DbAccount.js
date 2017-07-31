@@ -177,7 +177,7 @@ this.DbAccount.prototype.checkPassword = function( name, password, callback ) {
 		
 		var validPass = bcrypt.compareSync( password, account.password );
 		if ( !validPass ) {
-			log( 'account.checkpassword - invalid pass', { p: password, v: validPass });
+			log( 'account.checkpassword - invalid pass' );
 			callback( false );
 			return;
 		}

@@ -2046,6 +2046,7 @@ library.view = library.view || {};
 	ns.Main.prototype.init = function()
 	{
 		var self = this;
+		console.log( 'MAIN', window.View.translations );
 		self.bindEvents();
 		self.bindView();
 		self.setTemplate();
@@ -2221,7 +2222,9 @@ library.view = library.view || {};
 	{
 		var self = this;
 		var fragments = document.getElementById( 'fragments' );
-		hello.template = new friendUP.gui.TemplateManager( fragments );
+		var fragStr = fragments.innerHTML;
+		fragStr = View.i18nReplaceInString( fragStr );
+		hello.template = new friendUP.gui.TemplateManager( fragStr );
 	}
 	
 	ns.Main.prototype.receiveMessage = function( msg )
