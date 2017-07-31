@@ -326,8 +326,7 @@ while true; do
         exit 1
     fi
     # Checks mysql root password
-    mysql --host=$dbhost --port=$dbport --user=root --password=$mysqlRootPass \
-          --execute="SELECT mu.User FROM mysql.user AS mu WHERE mu.User='$dbuser'"
+    mysql -u root -p$mysqlRootPass -e ";"
     if [ $? == "0" ]; then
         break;
     fi
