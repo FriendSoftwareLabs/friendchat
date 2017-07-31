@@ -1,0 +1,81 @@
+#head {}
+#mode {}
+
+#topic,
+#chatting-with {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow : ellipsis;
+}
+
+#content {
+	width: 100%;
+	height: 100%;
+}
+
+#message-container { position : relative }
+
+#messages {
+	position : absolute;
+	bottom : 0px;
+	max-height : 100%;
+	width : 100%;
+	overflow : auto;
+}
+
+#participants-container { overflow: visible; }
+
+#participants-info {}
+#participants-info .info { overflow : hidden; }
+#participants-info .info .info-num {}
+
+#participants-position { position: relative; }
+#participants {
+	position: absolute;
+	top: 0;
+	right : 0;
+	bottom : 0;
+	left : 0;
+	overflow-x: hidden;
+}
+
+.participant {
+	min-height: 2em;
+}
+.participant .mode {}
+.participant .name {
+	overflow: hidden;
+	text-overflow : ellipsis;
+}
+
+.participant .name > div {
+	position: absolute;
+	left: 0;
+	right: 0;
+	
+}
+
+#input-form input {
+	border: none;
+	height:100%;
+	width:100%;
+	outline : none;
+}
+
+.msg,
+.action {
+	max-width: 100%;
+}
+
+.str {
+	
+	word-break: break-word;
+	white-space : pre-wrap;
+}
+
+.msg .avatar { align-self: flex-start; }
+.msg .avatar .img {
+	background-size: cover;
+	height: 100%;
+	width: 100%;
+}

@@ -1,0 +1,53 @@
+#join .label {
+	margin-top : 0.4em;
+}
+
+.join-channels {
+	flex-wrap : wrap;
+}
+
+.join-channel,
+.add-channel {
+	flex-wrap : wrap;
+	min-height: 2.5em;
+	margin-right : 0.5em;
+	margin-bottom : 0.2em;
+	border: 2px solid rgb( 140, 140, 140 );
+	border-radius : 4px;
+	transition: all 0.2s;
+}
+
+.join-channell:hover {
+	border-color: rgb( 70, 70, 70 );
+	transition: all 0.3s;
+}
+
+.channel-name {
+	word-break: break-word;
+	line-height: 1.4em;
+	padding : 0 0.5em;
+}
+
+.remove-channel {
+	
+}
+
+.add-channel {
+	padding-left : 0.5em;
+}
+
+.add-channel-input-wrap {
+	line-height: 2em;
+}
+
+#add-channel-text {
+	padding : 0 0.5em;
+}
+
+#add-channel-input {
+	
+}
+
+.port {
+	width : 6em;
+}

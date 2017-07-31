@@ -1,0 +1,1 @@
+ALTER TABLE `module` DROP INDEX `type`;

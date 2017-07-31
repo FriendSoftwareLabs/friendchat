@@ -1,0 +1,116 @@
+#form {
+	height: 100%;
+}
+
+.fieldset {
+	padding : 0.5em;
+	border-radius: 3px;
+	margin-bottom : 1em;
+}
+
+.control {
+	position: relative;
+	padding: 0.2em 0;
+}
+
+.label {
+	min-width : 8em;
+	padding-right : 0.5em;
+	text-align: right;
+	line-height: 2em;
+}
+
+.input {
+	position: relative;
+}
+
+.input-wrap {
+	padding : 0.2em 0;
+}
+
+.input-wrap > input {
+	width : 100%;
+}
+
+/* error tooltip */
+.has-error {
+	
+}
+
+.error-tooltip {
+	position: absolute;
+	width : 100%;
+	top : 100%;
+	background-color: rgb( 152, 59, 37 );
+	padding : 0.5em 0.4em;
+	color : white;
+	z-index : 1;
+	left : 0;
+}
+
+.error-tooltip::before {
+	content : "";
+	position: absolute;
+	top : -0.5em;
+	left : 1.8em;
+	height : 1em;
+	width : 1em;
+	background-color : rgb( 152, 59, 37 );
+	transform : rotate( 45deg);
+}
+
+.error-tooltip .message {
+	padding : 0em 0.5em;
+}
+
+
+/* secure confiremd */
+.secure-confirmed {
+	margin : 0.6em 0;
+}
+
+.secure-confirmed .toggle-secure,
+.secure-confirmed .confirm-status {
+	width : 2.5em;
+	text-align: center;
+}
+
+.strength-bar-wrap {
+	height : 1.5em;
+	border : 1px solid black;
+	border-radius: 2px;
+}
+
+.strength-bar {
+	position : relative;
+	height : 100%;
+	background-color : #B6381A;
+	transition : width 0.1s;
+}
+
+.strength-bar-spark {
+	position: absolute;
+	right: 0;
+	height: 100%;
+	width: 20%;
+	background-image : linear-gradient( to right, #B6381A, #FF9797 );
+}
+
+/*
+.strength-bar.weak { background-color : #B6381A; }
+.strength-bar.weak .strength-bar-spark {
+	background-image : linear-gradient( to right, #B6381A, #FF9797 );
+}
+*/
+
+.strength-bar.meh { background-color : #CEC811; }
+.strength-bar.meh .strength-bar-spark {
+	background-image : linear-gradient( to right, #CEC811, #FDFF97 );
+}
+
+.strength-bar.strong { background-color : #519039; }
+.strength-bar.strong .strength-bar-spark {
+	background-image : linear-gradient( to right, #519039, #9FD912 );
+}
+
+/* */

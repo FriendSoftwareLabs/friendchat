@@ -1,0 +1,89 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			../scripts/component/tool.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/view/rtcAsk.js
+		" type="text/javascript"></script>
+		
+		
+		<link rel="stylesheet" href="
+			../css/common.css;
+			webclient/apps/FriendChat/css/form.css;
+			webclient/apps/FriendChat/css/rtcAsk.css
+		" type="text/css">
+	</head>
+	<body id="hello" class="">
+		
+		<div id="fragments">
+		
+<!-- body
+
+-->
+<script id="body-tmpl" type="text/html">
+<form id="form" action="" method="" class="form hello bar column">
+	<div class="group column expand">
+		<div id="session-warning" class="error fortify hidden">
+			{i18n_you_have_to_have_an_active}
+		</div>
+		<div class="center-child expand">
+			<div id="message" class="Padding">
+				
+			</div>
+		</div>
+	</div>
+	<!--
+	<div class="main expand pad">
+		<table>
+			<tr>
+				<td><input name="allowAudio" id="allowAudio" type="checkbox" checked="true"></td>
+				<td><label for="allowAudio">allow audio</label></td>
+			</tr>
+			<tr>
+				<td><input name="allowVideo" id="allowVideo" type="checkbox" checked="true"></td>
+				<td><label for="allowVideo">allow video</label></td>
+			</tr>
+		</table>
+	</div>
+	-->
+	<div class="fortify group row tighten Box">
+		<button id="confirm" type="submit" class="button accept">
+			<i class="fa fa-fw fa-check"></i>
+			{i18n_accept}
+		</button>
+		<button id="open-guest" type="button" class="button hidden">
+			<i class="fa fa-fw fa-user-secret"></i>
+			{i18n_join_as_guest}
+		</button>
+		<button id="deny" type="button" class="button danger">
+			<i class="fa fa-fw fa-times"></i>
+			{i18n_cancel}
+		</button>
+	</div>
+</form>
+</script>
+
+<!-- message
+message,
+time,
+-->
+<script id="message-tmpl" type="text/html">
+<div>
+	<div id="time" class="group row start">
+		<div id="time-received">
+			<%= time %>
+		</div>
+		<div id="time-passed" class="hidden">
+			<span id="time-since"></span><span> since invite</span>
+		</div>
+	</div>
+	<div id="invite-from">
+		<%= message %>
+	</div>
+</div>
+</script>
+
+		</div>
+	</body>
+</html>

@@ -1,0 +1,23 @@
+#form {
+	height: 100%;
+}
+
+.inputs .group {
+	margin-bottom : 0.5em;
+}
+
+.inputs .group > div:last-child {
+	padding-left: 1em;
+}
+
+.inputs .text,
+.inputs .password {
+	width: 100%;
+}
+
+.error {
+	padding : 0.5em;
+	background-color: rgb( 152, 59, 37 );
+	color : white;
+	font-weight: bold;
+}

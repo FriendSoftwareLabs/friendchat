@@ -1,0 +1,94 @@
+/* menu */
+
+.menu {
+	width : 20em;
+	max-width : 100%;
+	min-height: 100%;
+	position: relative;
+	top : 0;
+	left : 0;
+}
+
+.menu-navigation {
+	padding-top : 0.2em;
+	position: absolute;
+	top: 0;
+	right: 0;
+	left : 0;
+	height : 2.7em;
+}
+
+.menu-navigation > div {
+	margin-left : 0.2em;
+}
+
+.menu-nav-current {
+	padding-left : 0.5em;
+	font-weight: bold;
+}
+
+.menu-pos-reset {
+	position: absolute;
+	top: 2.9em;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	overflow : auto;
+}
+
+.menu-content {
+	padding : 0.2em 0;
+}
+
+.menu-folder {
+	overflow : hidden;
+	min-width : 0em;
+}
+
+.menu-folder,
+.menu-parent-folder,
+.menu-current-folder {
+	transition : width 0.2s;
+	width : 0%;
+}
+
+.menu-parent-folder,
+.menu-current-folder {
+	
+}
+
+.menu-parent-folder {
+	flex : 0 0 auto;
+}
+
+.menu-current-folder {
+	flex : 1 1 auto;
+	width : 100%;
+}
+
+.menu-parent-folder ~ .menu-current-folder {
+	
+}
+
+.menu-item {
+	height: 4em;
+	white-space : nowrap;
+}
+
+.disable {
+	opacity: 0;
+}
+
+.menu-item-pre,
+.menu-item-post {
+	width : 2.5em;
+	height: 2.5em;
+}
+
+.menu-item-name {
+	padding-left : 0.5em;
+}
+
+.menu-item-folder .menu-item-name {
+	font-weight: bold;
+}

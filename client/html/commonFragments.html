@@ -1,0 +1,1196 @@
+<!--
+headString
+-->
+<script id="settings-base-tmpl" type="text/html">
+<div id="hello" class="bar column">
+	<div id="head" class="BorderBottom center-child hidden">
+		<div><%= headString %></div>
+	</div>
+	<div id="main" class="expand">
+		<div id="settings" class="settings ZebraList">
+		</div>
+	</div>
+	<div class="Box BorderTop fortify group row end">
+		<button id="done" type="button" class="button group row">
+			<i class="fa fa-fw fa-check"></i>
+			{i18n_done}
+		</button>
+	</div>
+</div>
+</script>
+
+
+<!-- viewpane-share-tmpl
+
+
+-->
+<script id="viewpane-share-tmpl" type="text/html">
+<div id="share-view" class="BackgroundDefault ColorDefault">
+	<div id="share-invite" class="Padding">
+		<div class="share-title group row start">
+			<i class="fa fa-fw fa-share"></i>
+			{i18n_share}
+		</div>
+		<div class="description">
+			{i18n_share_links}
+		</div>
+		<div id="share-public-invites" class="invite-section">
+			<div class="share-sub-title">
+				{i18n_public}
+			</div>
+			<div class="description">
+				{i18n_a_public_link}
+			</div>
+			<div id="share-public" class="invite-container group row hidden">
+				<div class="input-wrap expand">
+					<input id="share-public-input" type="text">
+				</div>
+				<button id="share-public-to-email" class="button fortify" type="button">
+					<i class="fa fa-fw fa-paper-plane"></i>
+					{i18n_create_email}
+				</button>
+				<button id="share-public-to-clippy" class="button fortify" type="button">
+					<i class="fa fa-fw fa-clipboard"></i>
+					{i18n_copy_to_clipboard}
+				</button>
+				<button id="share-unset-public"
+					class="button danger fortify"
+					type="button"
+					title="{i18n_make_the_session_private}"
+				>
+					<i class="fa fa-fw fa-close"></i>
+				</button>
+			</div>
+			<button id="share-set-public"
+				type="button"
+				class="button add-invite"
+				title="{i18n_make_the_session_public}"
+			>
+				<i class="fa fa-fw fa-users"></i>
+				Public link
+			</button>
+		</div>
+		<div id="share-email-invite" class="BorderTop hidden">
+			<div class="description">
+				Email a link.
+			</div>
+			<div id="share-email" class="group row">
+				<button id="share-email-btn" type="button" title="Send to email">
+					<i class="fa fa-fw fa-paper-plane"></i>
+				</button>
+				<div class="input-wrap expand">
+					<input id="share-email-input" type="email" placeholder="< email >">
+				</div>
+			</div>
+		</div>
+		<div id="share-private-invites" class="invite-section BorderTop">
+			<div class="share-sub-title">
+				Private
+			</div>
+			<div class="description">
+				{i18n_these_links_on_to_one}
+			</div>
+			<div id="share-invites" class="">
+				<!-- invites go here -->
+			</div>
+			<button id="share-add-invite" type="button" class="button add-invite">
+				<i class="fa fa-fw fa-plus"></i>
+				{i18n_add_invite}
+			</button>
+		</div>
+	</div>
+	<button id="share-close" class="button danger center-child">
+		<i class="fa fa-fw fa-close"></i>
+	</button>
+</div>
+</script>
+
+<!-- share invite
+id,
+invite,
+-->
+<script id="viewpane-share-invite-tmpl" type="text/html">
+<div id="<%= id %>" class="invite-container group row">
+	<div class="input-wrap expand">
+		<input type="text" value="<%= invite %>">
+	</div>
+	<button class="button create-email" type="button" title="Create an email with this link">
+		<i class="fa fa-fw fa-paper-plane"></i>
+			{i18n_create_email}
+	</button>
+	<button class="button copy-to-clippy" type="button" title="Copy to clipboard">
+		<i class="fa fa-fw fa-clipboard"></i>
+			{i18n_copy_to_clipboard}
+	</button>
+	<button class="button danger remove" type="button" title="Remove invite">
+		<i class="fa fa-fw fa-close"></i>
+	</button>
+</div>
+</script>
+
+
+<!-- MENU -->
+
+<!-- menu-container-tmpl
+id,
+contentId,
+-->
+<script id="menu-container-tmpl" type="text/html">
+<div id="<%= id %>" class="menu BackgroundDefault">
+	<div class="menu-navigation group row start">
+		<button class="button disable menu-nav-top fortify">
+			<i class="fa fa-fw fa-angle-double-left"></i>
+		</button>
+		<button class="button disable menu-nav-prev fortify">
+			<i class="fa fa-fw fa-angle-left"></i>
+		</button>
+		<div class="menu-nav-current expand">
+			curr menu folder here
+		</div>
+		<button class="button danger menu-nav-close danger fortify">
+			<i class="fa fa-fw fa-close"></i>
+		</button>
+	</div>
+	<div class="menu-pos-reset">
+		<div id="<%= contentId %>" class="menu-content group row left">
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- menu-folder-tmpl
+elId,
+-->
+<script id="menu-folder-tmpl" type="text/html">
+<div id="<%= elId %>" class="menu-folder ZebraList Interactive">
+</div>
+</script>
+
+<!-- menu-item-tmpl
+elId,
+faIcon,
+name,
+-->
+<script id="menu-item-tmpl" type="text/html">
+<div id="<%= elId %>" class="menu-item fortify group row">
+	<div class="menu-item-pre fortify center-child">
+		<i class="fa fa-fw <%= faIcon %>"></i>
+	</div>
+	<div class="menu-item-name expand">
+		<%= name %>
+	</div>
+	<div class="menu-item-post toggle fortify center-child hidden">
+		<i class="fa fa-fw fa-toggle-off"></i>
+	</div>
+</div>
+</script>
+
+<!-- menu-folder-item-tmpl
+elId,
+name,
+faIcon,
+-->
+<script id="menu-item-folder-tmpl" type="text/html">
+<div id="<%= elId %>" class="menu-item menu-item-folder fortify group row">
+	<div class="menu-item-pre fortify center-child">
+		<i class="fa fa-fw <%= faIcon %>"></i>
+	</div>
+	<div class="menu-item-name expand">
+		<%= name %>
+	</div>
+	<div class="menu-item-post folder fortify center-child">
+		<i class="fa fa-fw fa-caret-right"></i>
+	</div>
+</div>
+</script>
+
+
+<!-- MULTILINE INPUT
+-->
+<script id="multiline-input-tmpl" type="text/html">
+<div class="textarea-wrap">
+	<textarea name="chat-input" id="chat-input" autocomplete="off"></textarea>
+</div>
+</script>
+
+<!-- LINK EXPAND FRAGMENTS -->
+
+<!-- link-expand-tmpl
+href
+content
+-->
+<script id="link-expand-tmpl" type="text/html">
+<div class="link-expand">
+	<div class="link-expand-ui group row start">
+		<div class="pre-icon center-child fortify">
+			<i class="fa fa-fw fa-link"></i>
+		</div>
+		<div class="raw-link expand">
+			&nbsp;
+			<div>
+				<a href="<%= href %>" target="_blank">
+					<%= file %>
+				</a>
+			</div>
+		</div>
+		<a class="button fortify center-child" href="<%= href %>" download>
+			<i class="fa fa-fw fa-download"></i>
+		</a>
+	</div>
+	<div class="link-expand-content">
+		<%= content %>
+	</div>
+</div>
+</script>
+
+<!-- image-expand-tmpl
+src
+-->
+<script id="image-expand-tmpl" type="text/html">
+<div class="link-expand-image" alt="<%= src %>"
+	style="background-image : url( <%= src %> )">
+</div>
+</script>
+
+<!-- audio-expand-tmpl
+src
+-->
+<script id="audio-expand-tmpl" type="text/html">
+<audio class="link-expand-audio" src="<%= src %>" controls></audio>
+</script>
+
+<!-- video-expand-tmpl
+src
+-->
+<script id="video-expand-tmpl" type="text/html">
+<video class="link-expand-video" src="<%= src %>" controls></video>
+</script>
+
+<!-- file-expand-tmpl
+typeClass
+-->
+<script id="file-expand-tmpl" type="text/html">
+<div class="link-expand-file <%=typeClass%>">
+</div>
+</script>
+
+
+<!-- NESTED APP
+id
+-->
+<script id="nested-app-tmpl" type="text/html">
+<div id="<%= id %>" class="nested-app">
+	<iframe class="" sandbox="allow-forms allow-scripts allow-same-origin">
+	</iframe>
+	<div class="nested-close center-child">
+		<i class="fa fa-fw fa-close"></i>
+	</div>
+</div>
+</script>
+
+<!-- PING BAR
+id
+-->
+<script id="ping-bar-tmpl" type="text/html">
+<div id="<%= id %>" class="ping-bar group row start right">
+	<div class="ping-bar-label">
+		Latency:
+	</div>
+	<div class="ping-bar-content">
+		<div class="ping-bumps LED group row start hidden">
+			<div class="ping-bump On hide-bump"></div>
+			<div class="ping-bump On hide-bump"></div>
+			<div class="ping-bump Warning hide-bump"></div>
+			<div class="ping-bump Warning hide-bump"></div>
+			<div class="ping-bump Alert hide-bump"></div>
+			<div class="ping-bump Alert hide-bump"></div>
+		</div>
+		<div class="ping-bar-info center-child">
+			<div class="waiting">
+				<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+			</div>
+			<div class="timeout hidden">
+				<i class="fa fa-fw fa-power-off"></i>
+			</div>
+		</div>
+	</div>
+</div>
+</script>
+
+
+<!-- FORM COMMON FRAGMENTS -->
+
+<!-- SUCCESS
+-->
+
+<!-- FAIL
+-->
+
+<!-- ERROR TOOLTIP
+id,
+message
+-->
+<script id="form-error-tooltip-tmpl" type="text/html">
+<div id="<%= id %>" class="error-tooltip group row start">
+	<i class="fa fa-fw fa-exclamation-triangle"></i>
+	<div class="message">
+		<%= message %>
+	</div>
+</div>
+</script>
+
+<!-- CONTAINER
+id,
+legend,
+-->
+<script id="form-container-tmpl" type="text/html">
+<fieldset id="<%= id %>" class="fieldset">
+	<legend>
+		<%= legend %>
+	</legend>
+</fieldset>
+</script>
+
+<!-- TEXT-INPUT
+id,
+label,
+name,
+type,
+tabIndex,
+placeholder,
+-->
+<script id="form-text-input-tmpl" type="text/html">
+<div id="<%= id %>" class="control group row">
+	<label class="label fortify" for="<%= id %>-input">
+		<%= label %>:
+	</label>
+	<div class="input expand input-wrap">
+		<input
+			id="<%= id %>-input"
+			name="<%= name %>"
+			type="<%= type %>"
+			tabindex="<%= tabIndex %>"
+			placeholder="<%= placeholder %>"
+		>
+	</div>
+</div>
+</script>
+
+<!-- PULLDOWN
+id,
+label,
+name,
+options,
+-->
+<script id="form-pulldown-tmpl" type="text/html">
+<div id="<%= id %>" class="control group row">
+	<label class="label fortify" for="<%= id %>-select">
+		<%= label %>:
+	</label>
+	<div class="input expand input-wrap">
+		<select id="<%= id %>-select" name="<%= name %>">
+			<%= options %>
+		</select>
+	</div>
+</div>
+</script>
+
+<!-- PULLDOWN-OPTION
+value,
+label,
+-->
+<script id="form-pulldown-option-tmpl" type="text/html">
+<option value="<%= value %>"><%= label %></option>
+</script>
+
+<!-- SECURE-CONFIRMED
+id,
+label,
+name,
+placeholder,
+-->
+<script id="form-secure-confirmed-tmpl" type="text/html">
+<div id="<%= id %>" class="control secure-confirmed">
+	<div class="group row">
+		<label class="label fortify" for="<%= id %>">
+			<%= label %>:
+		</label>
+		<div class="input expand group row">
+			<div class="input-wrap expand">
+				<input
+					id="<%= id %>-pass-secure"
+					name="<%= name %>"
+					type="password"
+					tabindex="<%= tabIndex %>"
+					placeholder="<%= placeholder %>"
+					class="secure-confirmed-input pass"
+				>
+				<input
+					id="<%= id %>-pass-plain"
+					name="<%= name %>"
+					type="text"
+					tabindex="0"
+					placeholder="<%= placeholder %>"
+					class="secure-confirmed-input pass hidden"
+				>
+			</div>
+			<div class="toggle-secure fortify">
+				<button id="<%= id %>-set-plain" type="button" class="button danger set-plain">
+					<i class="fa fa-fw fa-eye"></i>
+				</button>
+				<button id="<%= id %>-set-secure" type="button" class="button accept set-secure hidden">
+					<i class="fa fa-fw fa-eye-slash"></i>
+				</button>
+			</div>
+		</div>
+	</div>
+	<div class="group row">
+		<label class="label fortify" for="<%= id %>-confirm">
+			Confirm:
+		</label>
+		<div class="input expand group row">
+			<div class="input-wrap expand">
+				<input
+					id="<%= id %>-confirm-secure"
+					name="<%= name %>-confirm"
+					type="password"
+					tabindex="<%= tabIndex %>"
+					placeholder="Repeat"
+					class="secure-confirmed-input"
+				>
+				<input
+					id="<%= id %>-confirm-plain"
+					name="<%= name %>-confirm"
+					type="text"
+					tabindex="0"
+					placeholder="Repeat"
+					class="secure-confirmed-input hidden"
+				>
+			</div>
+			<div class="confirm-status fortify">
+				<div id="<%= id %>-confirm-valid" class="confirmed valid">
+					<i class="fa fa-fw fa-check good"></i>
+				</div>
+				<div id="<%= id %>-confirm-invalid" class="confirmed invalid hidden">
+					<i class="fa fa-fw fa-exclamation-triangle bad"></i>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="group row">
+		<label class="label fortify">
+			Strength:
+		</label>
+		<div class="strength-bar-wrap expand">
+			<div id="<%= id %>-strength-bar" class="strength-bar">
+				<div class="strength-bar-spark">
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</script>
+
+
+<!-- SETTINGS COMMON FRAGMENTS -->
+
+
+<!-- status
+setting
+-->
+<script id="settings-status-tmpl" type="text/html">
+<div id="<%= setting %>-status" class="status fortify">
+	<i class="good fa fa-fw fa-check"></i>
+	<i class="changed fa fa-fw fa-pencil-square hidden"></i>
+	<i class="working fa fa-fw fa-spin fa-cog hidden"></i>
+	<i class="bad fa fa-fw fa-warning hidden"></i>
+</div>
+</script>
+
+<!-- PLAININPUT
+setting,
+label,
+value,
+status,
+-->
+<script id="settings-plaintext-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting plaintext group row">
+	<div class="label fortify">
+		<%= label %>:
+	</div>
+	<div class="input expand group row">
+		<div class="wrap expand">
+			<input id="<%= setting %>" type="text" value="<%= value %>">
+		</div>
+		<%= status %>
+	</div>
+	<button type="submit" class="hidden"></button>
+</form>
+</script>
+
+<!-- NUMBER
+setting,
+label,
+value,
+status,
+-->
+<script id="settings-number-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting number group row start">
+	<div class="label fortify">
+		<%= label %>:
+	</div>
+	<div class="input expand group row">
+		<div class="wrap expand">
+			<input id="<%= setting %>" type="text" value="<%= value %>">
+		</div>
+		<%= status %>
+	</div>
+	<button type="submit" class="hidden"></button>
+</form>
+</script>
+
+<!-- SECUREINPUT
+setting,
+label,
+value,
+status,
+-->
+<script id="settings-securetext-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting securetext group row left">
+	<div class="label fortify">
+		<%= label %>:
+	</div>
+	<div class="input expand group row">
+		<div class="wrap expand">
+			<input id="<%= setting %>" type="password" value="<%= value %>">
+			<input id="<%= setting %>-plain" type="text" value="" class="hidden">
+		</div>
+		<div class="fortify">
+			<button id="<%= setting %>-btn-secure" type="button" class="button accept hidden">
+				<i class="fa fa-fw fa-eye-slash"></i>
+			</button>
+			<button id="<%= setting %>-btn-plain" type="button" class="button danger">
+				<i class="fa fa-fw fa-eye"></i>
+			</button>
+		</div>
+		<%= status %>
+	</div>
+	<button type="submit" class="hidden"></button>
+</form>
+</script>
+
+<!-- SINGLECHECK
+setting,
+label,
+checked,
+status,
+-->
+<script id="settings-singlecheck-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting singlecheck group row left">
+	<div class="label">
+		<%= label %>:
+	</div>
+	<div class="input expand group row">
+		<div class="fortify">
+			<input id="<%= setting %>" type="checkbox" <%= checked %>>
+		</div>
+		<div class="checklabel expand">
+			&nbsp;
+		</div>
+		<%= status %>
+	</div>
+</form>
+</script>
+
+<!-- MULTICHECK
+setting,
+label,
+checkers,
+status
+-->
+<script id="settings-checkbox-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting multicheck group row left">
+	<div class="label">
+		<%= label %>:
+	</div>
+	<div class="input expand group row">
+		<div class="checkers expand">
+			<%= checkers %>
+		</div>
+		<%= status %>
+	</div>
+	<button type="submit" class="hidden"></button>
+</form>
+</script>
+
+<!-- CHECKER
+id,
+checked,
+label,
+-->
+<script id="settings-checkbox-checker-tmpl" type="text/html">
+<div class="checker expand group row">
+	<div class="fortify">
+		<input id="<%= id %>" type="checkbox" <%= checked %>>
+	</div>
+	<div class="check-name expand">
+		<%= label %>
+	</div>
+</div>
+</script>
+
+
+<!-- TEXTAREA
+setting,
+label,
+value,
+status,
+-->
+<script id="settings-textarea-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting textarea group row left">
+	<div class="label fortify">
+		<%= label %>:
+	</div>
+	<div class="input expand group row">
+		<div class="wrap expand">
+			<textarea id="<%= setting %>" placeholder="perform"><%= value %></textarea>
+		</div>
+		<%= status %>
+	</div>
+	<button type="submit" class="hidden"></button>
+</form>
+</script>
+
+<!-- FILESELECT
+setting,
+label,
+value,
+status,
+-->
+<script id="settings-fileselect-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting file-select group row left">
+	<div class="label fortify">
+		<%= label %>:
+	</div>
+	<div class="input expand group row">
+		<div class="wrap expand">
+			<input id="<%= setting %>" type="text" placeholder="< select file >" value="<%= value %>">
+		</div>
+		<div class="fortify">
+			<button type="button" class="button select-btn">
+				<i class="fa fa-fw fa-file"></i>
+				Select
+			</button>
+		</div>
+		<%= status %>
+	</div>
+</form>
+</script>
+
+<!-- CONFIRMED PASSWORD
+setting,
+label,
+value,
+-->
+<script id="password-input-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting group row">
+	<div class="expand">
+		<div class="group row">
+			<div class="label fortify">
+				<%= label %>
+			</div>
+			<div class="input expand group row">
+				<div class="wrap expand group row">
+					<input id="<%= setting %>" type="password" value="<%= value %>">
+					<input id="<%= setting %>-plain" type="text" value="" class="hidden">
+				</div>
+				<div class="secure-input fortify">
+					<button id="<%= setting %>-show-plain" type="button" class="button accept">
+						<i class="fa fa-fw fa-eye-slash"></i>
+					</button>
+					<button id="<%= setting %>-show-secure"type="button" class="button danger hidden">
+						<i class="fa fa-fw fa-eye"></i>
+					</button>
+				</div>
+			</div>
+		</div>
+		<div class="group row">
+			<div class="label fortify">
+				confirm
+			</div>
+			<div class="input expand group row">
+				<div class=" wrap expand group row">
+					<input id="<%= setting %>-confirm" type="password" value="">
+					<input id="<%= setting %>-plain-confirm" type="text" value="" class="hidden">
+				</div>
+				<div class="submit">
+					<button id="<%= setting %>-btn-submit" type="submit" class="button disabled" disabled>
+						<i class="fa fa-fw fa-paper-plane"></i>
+					</button>
+					<button id="<%= setting %>-btn-error"type="button" class="button danger hidden" disabled>
+						<i class="fa fa-fw fa-warning"></i>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</form>
+</script>
+
+
+<!-- OTHER STUFF -->
+
+<!-- BUTTONPOINTER
+title,
+explanation,
+figureClass,
+-->
+<script id="guide-tmpl" type="text/html">
+<div id="buttonpointer" class="">
+	<div class="<%= figureClass %>">
+	</div>
+	<div class="title">
+		<%= title %>
+	</div>
+	<div class="text">
+		<p><%= explanation %><span class="emo">😢</span></p>
+		<p>{i18n_use_the_menu}</p>
+	</div>
+</div>
+</script>
+
+
+<!-- FOLDIT
+-->
+<script id="foldit-tmpl" type="text/html">
+<i class="fa fa-fw fa-sort-asc fa-rotate-180"></i>
+</script>
+
+
+<!-- STATUS INDICATOR LED
+indicatorClass
+-->
+<script id ="status-indicator-led-tmpl" type="text/html">
+<div class="status-indicator led-status LED <%= indicatorClass %>">
+	<div class="Off">
+	</div>
+</div>
+</script>
+
+<!-- STATUS INDICATOR ICON
+indicatorClass
+-->
+<script id="status-indicator-icon-tmpl" type="text/html">
+<div class="status-indicator icon-status center-child LED">
+	<i class="fa fa-fw <%= indicatorClass %>">
+	</i>
+</div>
+</script>
+
+<!-- STATUS DISPLAY LED
+indicatorClass
+-->
+<script id ="status-display-led-tmpl" type="text/html">
+<div class="status-display group row">
+	<div class="led-status LED <%= indicatorClass %>">
+		<div class="Off">
+		</div>
+	</div>
+	<div class="display-area">
+	</div>
+</div>
+</script>
+
+<!-- STATUS DISPLAY ICON
+indicatorClass
+-->
+<script id="status-display-icon-tmpl" type="text/html">
+<div class="status-display group row">
+	<div class="icon-status center-child LED">
+		<i class="fa fa-fw <%= indicatorClass %>">
+		</i>
+	</div>
+	<div class="display-area">
+	</div>
+</div>
+</script>
+
+
+<!-- OPTION MENU
+buttonId,
+menuId,
+title
+-->
+<script id="option-menu-tmpl" type="text/html">
+<button id="<%= buttonId %>" class="button">
+	<i class="fa fa-fw fa-bars"></i>
+</button>
+<div id="<%= menuId %>" class="option-menu-container Overlay">
+	<div class="center-child">
+		<div class="option-menu BordersDefault">
+			<div class="title BorderBottom">
+				<%= title %>
+			</div>
+			<div class="menu-items">
+			</div>
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- OPTION MENU ITEM
+faIconClass,
+description
+-->
+<script id="option-menu-item-tmpl" type="text/html">
+<div class="menu-item Item bar row textcolor">
+	<i class="fa fa-fw <%= faIconClass %> fortify"></i>
+	<div class="description expand"><%= description %></div>
+</div>
+</script>
+
+
+<!-- MODULE
+-->
+<script id="hello-module-tmpl" type="text/html">
+<div id="<%= clientId %>" class="flex-list">
+	<div id="<%= folditId %>" class="module-head flex-row">
+		<div class="foldit-status">
+		</div>
+		<div class="module-title">
+			<%= displayName %>
+		</div>
+		<div class="module-actions flex-row toolbar">
+			<div class="afk-state">
+				<div id="<%= presenceId %>">
+				</div>
+			</div>
+			<div class="connection-status">
+				<div id="<%= connectionStateId %>">
+				</div>
+			</div>
+			<div class="module-add">
+				<%= add %>
+			</div>
+			<div class="module-settings">
+				<%= settings %>
+			</div>
+		</div>
+	</div>
+	<div id="<%= contactsId %>" class="contacts flex-list">
+	</div>
+</div>
+</script>
+
+<script id="hello-jabber-contact-tmpl" type="text/html">
+<div id="<%= clientId %>" class="contact flex-row">
+	<div class="contact-name">
+		<%= displayName %>
+	</div>
+	<div class="contact-status flex-row toolbar">
+		<div class="contact-status-message">
+			<span></span>
+		</div>
+		<div class="message-waiting">
+			<div id="<%= messageWaitingId %>">
+			</div>
+		</div>
+		<div class="afk-state">
+			<div id="<%= presenceId %>">
+			</div>
+		</div>
+	</div>
+	<div class="contact-actions flex-row">
+		<div class="button-container-flat">
+			<button class="action-live button">
+				<div class="button-image"></div>
+			</button>
+		</div>
+		<div class="button-container-flat">
+			<button class="action-chat button">
+				<div class="button-image"></div>
+			</button>
+		</div>
+		<div class="button-container-flat">
+			<button class="action-options button">
+				<div class="button-image"></div>
+			</button>
+		</div>
+	</div>
+</div>
+</script>
+
+
+<!-- Form overlay
+-->
+<script id="form-overlay-tmpl" type="text/html">
+<div id="form-overlay" class="form-overlay hidden">
+	<div class="position center-child">
+		<div class="content">
+			<div class="message-container">
+			</div>
+			<div class="spinner center-child">
+				<i class="fa fa-fw fa-cog fa-spin"></i>
+			</div>
+		</div>
+	</div>
+</div>
+</script>
+
+<!--Form overlay message
+type,
+typeText,
+message,
+buttonClass,
+-->
+<script id="form-overlay-message-tmpl" type="text/html">
+<div class="form-overlay-message request-<%= type %> flex-list">
+	<div class="message">
+		<div><%= typeText %></div>
+		<div><%= message %></div>
+	</div>
+	<div class="button-container">
+		<button type="button" class="button <%= buttonClass%> group row">
+			<i class="fa fa-fw fa-cube"></i>
+			OK
+		</button>
+	</div>
+</div>
+</script>
+
+<script id="hello-form-create-module-tmpl" type="text/html">
+<div class="label">
+	<div><label for="create-module-type">module type</label></div>
+	<div><label for="create-module-login">login</label></div>
+	<div><label for="create-module-password">password</label></div>
+</div>
+<div class="input">
+	<div><select name="type" id="create-module-type"><%= typeOptions %></select></div>
+	<div><input placeholder="login" type="text" name="login" id="create-module-login"></div>
+	<div><input placeholder="password" type="password" name="password" id="create-module-password"></div>
+</div>
+<style>
+#<%= formId %> .head-container {
+	justify-content : center;
+}
+
+#<%= formId %> .head-container > div {
+	flex : 0 0 auto;
+}
+</style>
+</script>
+
+<script id="hello-form-jabber-settings-tmpl" type="text/html">
+<div class="label">
+	<div><label for="jabber-settings-login">login</label></div>
+	<div><label for="jabber-settings-password">password</label></div>
+</div>
+<div class="input">
+	<div><input value="<%= login %>" type="text" name="login" id="jabber-settings-login"></div>
+	<div><input placeholder="password" type="password" name="password" id="jabber-settings-password"></div>
+</div>
+<style>
+#<%= formId %> button[type="submit"] .button-image {
+	background-image : url( ac2/icsmall/accept.png );
+}
+#<%= formId %> .button-container:last-child .button-image {
+	background-image : url( ac2/icsmall/bin.png );
+}
+</style>
+</script>
+
+<script id="hello-form-create-contact-tmpl" type="text/html">
+<div class="label">
+	<div><label for="create-contact-name">name</label></div>
+	<div><label for="create-contact-displayName">alias</label></div>
+</div>
+<div class="input">
+	<div><input type="text" id="create-contact-name" name="name" placeholder="name"></div>
+	<div><input type="text" id="create-contact-displayName" name="displayName" placeholder="alias"></div>
+</div>
+<div class="form-hidden-input">
+	<input type="text" id="create-contact-moduleId" value="<%= moduleId %>" name="moduleName">
+</div>
+<style>
+#<%= formId %> button[type="submit"] .button-image {
+	background-image : url( ac2/icsmall/user_add.png );
+}
+</style>
+</script>
+
+<script id="hello-form-treeroot-subscribe-tmpl" type="text/html">
+<div class="label">
+	<div><label for="treeroot-subscribe-id-type">id-type</label></div>
+	<div><label for="treeroot-subscribe-id">id</label></div>
+</div>
+<div class="input">
+	<div><select id="treeroot-subscribe-id-type" name="id-type">
+		<option value="ContactUsername" selected>Username</option>
+		<option value="ContactEmail">E-mail</option>
+		<option value="ContactNumber">phone number</option>
+	</select></div>
+	<div><input type="text" id="treeroot-subscribe-id" placeholder="id"></div>
+</div>
+<style>
+#<%= formId %> button[type="submit"] .button-image {
+	background-image : url( ac2/icsmall/user_add.png );
+}
+</style>
+</script>
+
+<script id="hello-rtc-tmpl" type="text/html">
+<div id="<%= contentId %>" class="rtc-container hello-style">
+	<div class="video-container">
+		<div id="<%= peerStreamsId %>" class="remote">
+		</div>
+		<div id="<%= selfieId %>" class="selfie">
+			<video src="" autoplay="autoplay">
+			</video>
+		</div>
+	</div>
+</div>
+<style>
+.rtc-container {
+	height:100%;
+}
+
+.rtc-container .video-container {
+	overflow: hidden;
+	position : relative;
+	height:100%;
+}
+
+.video-container .remote {
+	position : relative;
+	background-color: green;
+}
+
+.video-container .remote video {
+	display: block;
+	width:100%;
+}
+
+.video-container .selfie {
+	position : absolute;
+	background-color: black;
+	width: 30%;
+	bottom : 1em;
+	right : 1em;
+}
+
+.video-container .selfie video {
+	display: block;
+	width: 100%;
+}
+
+</style>
+</script>
+
+
+
+<script id="hello-infoscreen-tmpl" type="text/html">
+<div id="hello-infoscreen" class="flex-row">
+	<div class="aspect-ratio-container">
+		<div class="dummy"></div>
+		<div class="contentContainer flex-row">
+			<div class="content">
+				No connection to server.
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+
+#hello-infoscreen {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background-color: #eee;
+	justify-content: center;
+}
+
+#hello-infoscreen .aspect-ratio-container {
+	flex: 0 1 auto;
+	width:75%;
+	min-width: 16em;
+	position:relative;
+}
+
+#hello-infoscreen .dummy {
+	padding-top: 100%; /* much aspect ratio haxxx */
+}
+
+#hello-infoscreen .contentContainer {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	
+	padding: 2em 2em;
+	color: #666;
+	font-weight: bold;
+	font-size: 110%;
+	border: 2em solid #000;
+	border-radius: 50%;
+}
+
+#hello-infoscreen .contentContainer.fail {
+	-webkit-animation: failBorder ease-in-out 2s infinite alternate;
+	-moz-animation: failBorder ease-in-out 2s infinite alternate;
+	-o-animation: failBorder ease-in-out 2s infinite alternate;
+	animation: failBorder ease-in-out 2s infinite alternate;
+}
+
+#hello-infoscreen .contentContainer.success {
+	-webkit-animation: successBorder ease-in-out 2s infinite alternate;
+	-moz-animation: successBorder ease-in-out 2s infinite alternate;
+	-o-animation: successBorder ease-in-out 2s infinite alternate;
+	animation: successBorder ease-in-out 2s infinite alternate;
+}
+
+#hello-infoscreen .content {
+	flex: 1 1 auto;
+	text-align: center;
+}
+
+@-webkit-keyframes failBorder {
+	from { border-color: #800707; }
+	to { border-color: #f00; }
+}
+@-moz-keyframes failBorder {
+	from { border-color: #800707; }
+	to { border-color: #f00; }
+}
+@-o-keyframes failBorder {
+	from { border-color: #800707; }
+	to { border-color: #f00; }
+}
+@keyframes failBorder {
+	from { border-color: #800707; }
+	to { border-color: #f00; }
+}
+
+
+@-webkit-keyframes successBorder {
+	from { border-color: #078007; }
+	to { border-color: #0f0; }
+}
+@-moz-keyframes successBorder {
+	from { border-color: #078007; }
+	to { border-color: #0f0; }
+}
+@-o-keyframes successBorder {
+	from { border-color: #078007; }
+	to { border-color: #0f0; }
+}
+@keyframes successBorder {
+	from { border-color: #078007; }
+	to { border-color: #0f0; }
+}
+
+</style>
+</script>

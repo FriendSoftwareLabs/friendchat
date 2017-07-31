@@ -1,0 +1,192 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			../scripts/component/tool.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/component/parser.js;
+			webclient/apps/FriendChat/scripts/component/voice.js;
+			webclient/apps/FriendChat/scripts/component/drop.js;
+			webclient/apps/FriendChat/scripts/component/viewComponent.js;
+			webclient/apps/FriendChat/scripts/view/IMChat.js
+		" type="text/javascript"></script>
+		
+		<link rel="stylesheet" href="
+			../css/common.css;
+			webclient/apps/FriendChat/css/emojii.css;
+			webclient/apps/FriendChat/css/linkExpand.css;
+			webclient/apps/FriendChat/css/chatTheme.css;
+			webclient/apps/FriendChat/css/IMChat.css
+		" type=" text/css">
+		
+		<!--<meta name="viewport" content="width=device-width,user-scalable=no">-->
+	</head>
+	<body>
+		
+		<div id="fragments" class="hidden">
+		
+<!-- body
+
+-->
+<script id="body-tmpl" type="text/html">
+<div id="hello" class=" im-chat bar column BackgroundDefault">
+	<div id="head" class="group row BorderBottom">
+		<div id="chatting-with" class="expand">
+		</div>
+		<div class="actions fortify">
+			<button
+				id="leeloodallasmultiline"
+				type="button"
+				class="button"
+				title="{i18n_toggle_multiline_input}"
+			>
+				<i class="fa fa-fw fa-align-left"></i>
+			</button>
+			<button
+				id="toggle-voice"
+				type="button"
+				class="button"
+				title="{i18n_messages_will_be}"
+			>
+				<i class="fa fa-fw fa-tty"></i>
+			</button>
+			<button
+				id="live-invite"
+				type="button"
+				class="button"
+			>
+				<i class="fa fa-fw fa-video-camera"></i>
+			</button>
+			<button
+				id="toggle-encrypt"
+				type="button"
+				class="button hidden"
+				title="{i18n_encrypt_the_message}"
+			>
+				<i class="fa fa-fw fa-lock"></i>
+			</button>
+		</div>
+	</div>
+	<div id="main" class="bar column">
+		<div id="message-container" class="expand">
+			<div id="messages" class="SelectableText BackgroundLists">
+				<div id="waiting" class="sw2 group row">
+					<div id="waiting-message" class="expand">
+						{i18n_checking_for_chat_log}
+					</div>
+					<i class="fa fa-fw fa-spinner fa-pulse fortify"></i>
+				</div>
+			</div>
+		</div>
+		<div id="message-confirm" class="fortify bar row hidden">
+			<i class="fa fa-spinner fa-pulse fortify"></i>
+			<div id="message-ph" class="light-text expand">
+			</div>
+		</div>
+	</div>
+	<div id="foot">
+		<form id="input-form" action="" class="bar row">
+			<div id="input-container" class="expand BorderTop">
+				<!-- multiline input stuff goes here -->
+			</div>
+			<div class="actions fortify">
+				<button type="submit" class="button flat">
+					<i class="fa fa-fw fa-paper-plane"></i>
+				</button>
+			</div>
+		</form>
+	</div>
+</div>
+</script>
+
+<!-- message
+speakerClass,
+mId,
+from,
+time,
+message,
+encrypted,
+cipherText,
+-->
+<script id="IM-msg-tmpl" type="text/html">
+<div id="<%= mId %>" class="msg <%= speakerClass %> group row">
+	<div class="avatar fortify">
+		<div class="img">
+		</div>
+	</div>
+	<div class="msg-content expand">
+		<div class="message-meta group row">
+			<div class="name fortify">
+				<%= from %>
+			</div>
+			<div class="encrypted expand <%= encrypted %>">
+				<i class="fa fa-fw fa-lock"></i>
+			</div>
+			<div class="time fortify">
+				<%= time %>
+			</div>
+		</div>
+		<div class="str"><%= message %></div>
+		<div class="cipher-text hidden">
+			<%= cipherText %>
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- action
+speakerClass,
+from,
+time,
+message,
+-->
+<script id="IM-action-tmpl" type="text/html">
+<div class="msg action <%= speakerClass %> group row">
+	<div class="icon fortify">
+		<i class="fa fa-fw fa-asterisk"></i>
+	</div>
+	<div class="str expand"><%= from %> <%= message %></div>
+	<div class="time fortify">
+		<%= time %>
+	</div>
+</div>
+</script>
+
+<!-- notification
+level,
+message,
+time,
+-->
+<script id="chat-notie-tmpl" type="text/html">
+<div class="msg Sw2">
+	<div class="notice <%= level %> group row">
+		<div class="icon fortify">
+			<i class="fa fa-fw fa-exclamation-circle"></i>
+		</div>
+		<div class="str expand"><%= message %></div>
+		<div class="time fortify">
+			<%= time %>
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- contact css
+styleId,
+avatarUrl
+-->
+<script id="chatIM-custom-css-tmpl" type="text/html">
+<style id="<%= styleId %>">
+.msg.contact .avatar .img {
+	background-image : url("<%= contactAvatarUrl %>");
+}
+
+.msg.self .avatar .img {
+	background-image : url("<%= selfAvatarUrl %>");
+}
+</style>
+</script>
+
+		</div>
+	</body>
+</html>

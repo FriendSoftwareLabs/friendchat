@@ -1,0 +1,35 @@
+#hello-login .main-container {
+	display : block;
+	padding: 0;
+}
+
+.login-list-container {
+	max-width: 25em;
+	overflow: auto;
+}
+
+.login-list-account {
+	padding: 0.4em 0.4em 0.7em 0.7em;
+	border : 3px solid rgb( 210, 210, 210 );
+	border-radius: 2px;
+	margin-bottom : 0.5em;
+}
+
+.login-list-account.focus {
+	border-color : rgb( 60, 60, 60 );
+}
+
+.login-list-account .login-info * {
+	line-height: 2em;
+	width: 100%;
+}
+
+.login-list-account .name {
+	padding-left: 0.5em;
+	font-size : 110%;
+	font-weight : bold;
+}
+
+.login-list-account .buttons {
+	padding-left:0.5em;
+}

@@ -1,0 +1,210 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			../scripts/component/tool.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/component/parser.js;
+			webclient/apps/FriendChat/scripts/component/drop.js;
+			webclient/apps/FriendChat/scripts/component/viewComponent.js;
+			webclient/apps/FriendChat/scripts/view/conference.js
+		" type="text/javascript"></script>
+		
+		<link type="text/css" rel="stylesheet" href="
+			../css/common.css;
+			webclient/apps/FriendChat/css/emojii.css;
+			webclient/apps/FriendChat/css/linkExpand.css;
+			webclient/apps/FriendChat/css/chatTheme.css;
+			webclient/apps/FriendChat/css/conference.css
+		">
+	</head>
+	<body>
+		
+		<div id="fragments" class="hidden">
+		
+<!-- body
+
+-->
+<script id="body-tmpl" type="text/html">
+<div id="hello" class="conference bar column BackgroundDefault">
+	<div id="head" class="BorderBottom fortify group row">
+		<div id="mode" class="fortify"></div>
+		<div id="topic" class="expand"></div>
+		<div class="actions fortify group row">
+			<button 
+				id="settings-btn" 
+				type="button" 
+				class="button hidden" 
+				title="{i18n_open_channel_settings}"
+			>
+				<i class="fa fa-fw fa-cog"></i>
+			</button>
+			<button 
+				id="showhide-btn" 
+				type="button" 
+				class="button" 
+				title="{i18n_show_hide_userlist}"
+			>
+				<i class="fa fa-fw fa-users"></i>
+			</button>
+		</div>
+	</div>
+	<div id="main" class="main expand group row cover">
+		<div id="message-container" class="expand BorderRight">
+			<div id="messages" class="SelectableText BackgroundLists">
+			</div>
+		</div>
+		<div id="participants-container" class="fortify group column cover">
+			<div id="participants-info" class="fortify group row">
+				<div class="info expand MouseDefault">
+					<i class="fa fa-fw fa-at"></i>
+					<span id="num-op" class="info-num">
+					</span>
+					<i class="fa fa-fw fa-plus"></i>
+					<span id="num-voice" class="info-num">
+					</span>
+					<i class="fa fa-fw fa-male"></i>
+					<span id="num-peon" class="info-num">
+					</span>
+				</div>
+			</div>
+			<div id="participants-position" class="expand">
+				<div id="participants" class="ZebraList Interactive">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="foot">
+		<form id="input-form" action="" class="bar row">
+			<div id="input-container" class="expand BorderTop">
+				<!-- input component goes here -->
+			</div>
+			<div class="actions fortify">
+				<button type="submit" class="button flat">
+					<i class="fa fa-fw fa-paper-plane"></i>
+				</button>
+			</div>
+		</form>
+	</div>
+	<div id="participant-css" class="hidden">
+	</div>
+</div>
+</script>
+
+<!-- message
+speakerClass,
+name,
+time,
+message,
+-->
+<script id="message-tmpl" type="text/html">
+<div class="msg <%= speakerClass %> group row ">
+	<div class="avatar fortify">
+		<div class="img">
+		</div>
+	</div>
+	<div class="content expand">
+		<div class="message-meta group row">
+			<div class="name"><%= from %></div>
+			<div class="time">
+				<%= time %>
+			</div>
+		</div>
+		<div class="str"><%= message %></div>
+	</div>
+</div>
+</script>
+
+<!-- action
+speakerClass,
+from,
+time,
+message,
+-->
+<script id="action-tmpl" type="text/html">
+<div class="msg action <%= speakerClass %> group row">
+	<div class="msg-icon fortify center-child">
+		<i class="fa fa-fw fa-asterisk"></i>
+	</div>
+	<div class="str expand"><%= from %> <%= message %></div>
+	<div class="time fortify">
+		<%= time %>
+	</div>
+</div>
+</script>
+
+<!-- TODO move to system fragments, its used in atleast two views -->
+<!-- notification
+level,
+message,
+time,
+-->
+<script id="chat-notie-tmpl" type="text/html">
+<div class="msg Sw2">
+	<div class="notice <%= level %> group row">
+		<div class="icon fortify">
+			<i class="fa fa-fw fa-exclamation-circle"></i>
+		</div>
+		<div class="str expand"><%= message %></div>
+		<div class="time fortify">
+			<%= time %>
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- system message
+type,
+icon,
+message,
+time,
+-->
+<script id="system-msg-tmpl", type="text/html">
+<div class="msg <%= type %>">
+	<div class="group row">
+		<div class="msg-icon fortify center-child">
+			<i class="fa fa-fw <%= icon %>"></i>
+		</div>
+		<div class="time fortify">
+			<%= time %>
+		</div>
+	</div>
+	<div class="str"><%= message %></div>
+</div>
+</script>
+
+<!--participant
+id,
+modeStyle,
+name,
+-->
+<script id="participant-tmpl" type="text/html">
+<div id="<%= id %>" class="participant group row MousePointer">
+	<div class="mode fortify  center-child">
+		<i class="fa fa-fw <%= modeStyle %>"></i>
+	</div>
+	<div class="name expand">
+		<%= name %>
+	</div>
+	<div class="list-avatar fortify">
+		<div class="img">
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- participant css
+participantId,
+avatarUrl
+-->
+<script id="participant-css-tmpl" type="text/html">
+<style id="<%= participantId %>-style">
+#<%= participantId%> .list-avatar .img {
+	background-image : url("<%= avatarUrl %>");
+}
+</style>
+</script>
+
+		</div>
+	</body>
+</html>

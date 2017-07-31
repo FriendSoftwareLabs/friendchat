@@ -1,0 +1,174 @@
+
+
+.section-head {
+	font-weight: bold;
+	font-size: 90%;
+	opacity: 0.7;
+	text-align: center;
+	line-height: 2em;
+}
+
+#message-container { position : relative }
+
+#messages {
+	position : absolute;
+	bottom : 0px;
+	max-height : 100%;
+	width : 100%;
+	overflow : auto;
+}
+
+.log-fetch {
+	padding : 0em 1em;
+	padding-top : 1em;
+	height: 3em
+}
+
+.log-fetch-msg,
+.log-no-logs {
+	line-height: 2em;
+}
+
+.log-fetch-msg > div {
+	padding-left: 0.5em;
+}
+
+.time-envelope {
+	padding : 0 0.5em;
+}
+
+.time-envelope .envelope-date,
+.time-envelope .envelope-splitter {
+	padding : 0 1em;
+}
+
+.time-envelope .envelope-head {
+	padding : 1em 0;
+}
+
+.msg-item {
+	
+}
+
+.msg-item .avatar {
+	width  : 3em;
+	height : 3em;
+	border-radius : 3px;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+.msg-item .content {
+	padding-left : 0.5em;
+}
+
+.msg,
+.msg-group {
+	padding: 0.2em 0em;
+}
+
+.msg-group {
+	margin-top: 0.3em;
+}
+
+.msg-group .name {
+	font-weight: bold;
+}
+
+.time {
+	padding-left : 0.5em;
+	text-align: right;
+	opacity: 0.3;
+}
+
+.msg-group:hover .time,
+.msg:hover .time {
+	opacity: 0.8;
+}
+
+.msg-meta {
+	margin-bottom : 0.2em;
+}
+
+.str {
+	margin-left : 0.5em;
+	word-break: break-word;
+}
+
+#users-container {
+	width : 12em;
+	transition : width 0.2s;
+	overflow: visible;
+}
+
+#users-container.users-hide {
+	width : 0em;
+	transition : width 0.2s;
+}
+
+#users-position { position: relative; }
+#user-groups {
+	position: absolute;
+	top: 0;
+	right : 0;
+	bottom : 0;
+	left : 0;
+	overflow-x: hidden;
+}
+
+#emojii-panel-button,
+#chat-submit {
+	width: 3em;
+}
+
+.user-item {
+	line-height: 2em;
+}
+
+.user-item .name {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	padding-right: 0.2em;
+}
+
+#typing-hint {
+	padding : 0 0.2em;
+}
+
+.blink-icon > i {
+	-webkit-animation : ikonblink 2s ease-in-out infinite alternate;
+	animation : ikonblink 0.4s ease-in-out infinite alternate;
+}
+
+@-webkit-keyframes ikonblink {
+	from { opacity : 1; }
+	to { opacity : 0.5; }
+}
+
+@keyframes ikonblink {
+	from { opacity : 1; }
+	to { opacity : 0.5; }
+}
+
+.emojii-panel {
+	position: absolute;
+	width: 20em;
+	max-width: 20em;
+	height: 20em;
+	max-height: 20em;
+	top : -20em;
+	left: 0;
+	overflow: hidden;
+	overflow-y: auto;
+	outline: none;
+}
+
+.emojii-item {
+	opacity: 0.8;
+}
+
+.emojii-item:hover {
+	opacity: 1;
+}

@@ -1,0 +1,47 @@
+#messageContainer {
+	position : relative;
+	height : 100%;
+	width : 100%;
+}
+
+#messages {
+	position : absolute;
+	bottom : 0px;
+	width: 100%;
+}
+
+.log-item {
+	padding : 0.2em;
+	margin-bottom : 0.2em;
+}
+
+.log-item.info {
+	
+}
+
+.log-item.positive {
+	background-color : rgb( 81, 144, 57 );
+	color : white;
+}
+
+.log-item.notification {
+	background-color : #c28747;
+	color : white;
+}
+
+.log-item.alert,
+.log-item.waiting {
+	background-color : #B06447;
+	color : white;
+}
+
+.log-item .message {
+	padding : 0 0.5em;
+	word-break : break-word;
+	line-height: 1.8em;
+}
+
+.log-item .type-icon {
+	padding: 0.3em 0;
+	border : 0;
+}

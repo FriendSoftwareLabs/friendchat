@@ -1,0 +1,228 @@
+/* 
+
+Prepend with .im-chat or .conference classes to specify for view type
+
+*/
+/*
+#hello {
+	-webkit-touch-callout: initial;
+	-webkit-user-select: initial;
+	-khtml-user-select: initial;
+	-moz-user-select: initial;
+	-ms-user-select: initial;
+	user-select: initial;
+}
+*/
+
+#head {
+	padding : 0em 0.5em;
+	height : 3em;
+}
+
+#topic,
+#chatting-with {
+	font-size: 120%;
+}
+
+#main {}
+
+.messages {
+	
+}
+
+.msg,
+.action { padding:0em 0.3em 0.3em 0.3em; }
+
+/*
+.msg.self { background-color: #DBE1E7; }
+.msg.contact {} /* not applied in conference view
+*/
+
+.msg-icon {
+	min-height : 1.7em;
+	width : 2em;
+}
+
+.msg .name { font-weight: bold; }
+.msg .time {
+	text-align : right;
+}
+
+/*
+#hello .msg.action {
+	color : purple;
+}
+*/
+
+#hello .msg.action .str {
+	line-height: 1.4em;
+	font-weight: bold;
+}
+
+#hello .msg.flourish-message {
+	-webkit-animation : green-fade 1.5s ease-out;
+	animation : green-fade 1.5s ease-out;
+}
+
+#hello .msg.hajlajt.flourish-message {
+	-webkit-animation : fade-to-hajlajt 1.5s ease-out;
+	animation : fade-to-hajlajt 1.5s ease-out;
+}
+
+#hello .msg.hajlajt {
+	background-color : #444;
+	color : #eee;
+}
+
+#hello .msg.hajlajt.action {
+	color : #f36bf3;
+}
+
+#hello .light-text {
+	color : rgba( 0, 0, 0, 0.4 );
+}
+
+#hello .msg.log {
+	color : #444;
+	font-style: italic;
+}
+
+.msg .notice {
+	color : white;
+	padding : 0.3em;
+}
+
+.msg .notice.log {
+	background-color : #888;
+	color : white;
+}
+
+.msg .notice.positive {
+	background-color: #3D9718;
+}
+
+.msg .notice.warn {
+	background-color : #c28747;
+}
+
+.msg .notice.negative,
+.msg .notice.error {
+	background-color : #B06447;
+}
+
+.msg .cipher-text {
+	word-break : break-all;
+}
+
+#foot {}
+
+#input-form .actions {
+	width : 3em;
+}
+
+.avatar .img {
+	background-repeat   : no-repeat;
+	background-position : center;
+	background-size     : cover;
+	border-radius       : 15%;
+}
+
+
+/* IM specific */
+
+.im-chat .avatar {
+	height: 3em;
+	width: 3em;
+}
+
+.im-chat .avatar .img {
+}
+
+#message-confirm { padding: 0.3em 1em; }
+#message-ph {
+	padding-left: 1em;
+	line-height : 2em;
+}
+
+#waiting { padding : 1em; }
+
+.msg-content { padding-left: 0.7em; }
+.msg-content > div { line-height: 1.5em; }
+
+/* conference specific */
+
+#mode {
+	padding-right : 0.5em;
+	font-weight: bold;
+}
+
+#content {
+}
+
+#content > div {
+	line-height: 1.5em;
+}
+
+#participants-container {
+	width : 10em;
+	transition : width 0.2s;
+}
+
+#participants-container.hide {
+	width : 0em;
+	transition : width 0.2s;
+}
+
+#participants-info { height: 2.5em; }
+
+.participant {
+	margin-bottom : 0.1em;
+}
+
+.participant .mode { line-height: 2em }
+.participant .name {}
+.participant .name > div { line-height: 2em; }
+.participant .avatar .img,
+.participant .avatar { display : none; }
+
+.participant.flourish-join {
+	-webkit-animation : green-fade 3s ease-out;
+	animation : green-fade 3s ease-out;
+}
+
+.conference .msg .avatar { display : none; }
+
+.msg.join { background-color : transparent; }
+.msg.join .msg-icon { color : #2D590F; }
+
+.msg.topic { background-color : rgb( 135, 209, 97 ); }
+.msg.topic .msg-icon { color : black; }
+
+.msg.part { background-color : transparent; }
+.msg.part .msg-icon { color : #6A1010; }
+
+.msg.quit { background-color : transparent; }
+.msg.quit .msg-icon { color : #6A1010; }
+
+/* things */
+
+@-webkit-keyframes green-fade {
+	from { background-color : rgba( 135, 209, 97, 1 ); }
+	to { background-color : rgba( 135, 209, 97, 0 ); }
+}
+
+@keyframes green-fade {
+	from { background-color : rgba( 135, 209, 97, 1 ); }
+	to { background-color : rgba( 135, 209, 97, 0 ); }
+}
+
+@-webkit-keyframes fade-to-hajlajt {
+	from { background-color : rgba( 135, 209, 97, 1 ); }
+	to { background-color : rgba( 68, 68, 68, 1 ); }
+}
+
+@keyframes fade-to-hajlajt {
+	from { background-color : rgba( 135, 209, 97, 1 ); }
+	to { background-color : rgba( 68, 68, 68, 1 ); }
+}
+

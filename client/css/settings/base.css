@@ -1,0 +1,62 @@
+#hello {
+	height: 100%;
+}
+
+.settings {
+	width : 100%;
+	padding : 1em 0;
+}
+
+.setting {
+	padding : 0.3em 0.5em;
+}
+
+.label {
+	min-width : 10em;
+	padding-right : 0.5em;
+	text-align: right;
+	line-height: 2em;
+}
+
+.status {
+	width: 2em;
+}
+
+.status i {
+	width : 100%;
+	text-align: center;
+}
+
+.wrap input {
+	width: 100%;
+	text-overflow: ellipsis;
+}
+
+.nubmer {
+	
+}
+
+.number .wrap {
+	max-width: 5em;
+}
+
+.number input {
+	text-align: right;
+}
+
+.checker {
+	
+}
+
+.wrap textarea {
+	width : 100%;
+	height : 6em;
+	resize : none;
+}
+
+.setting.singlecheck {
+	
+}
+.setting.singlecheck .checklabel {
+	line-height: 2em;
+}

@@ -10,7 +10,7 @@ logged in through Friend, no setup required.
 ### Video / Audio Conferencing, aka Live
 
 FriendChat allows p2p video and audio calls over webRTC, supported by the presence 
-service. The limits to number of participants is practical; the bandwidth and 
+service. The limit to number of participants is practical; the bandwidth and 
 power of your device.
 
 #### Invites

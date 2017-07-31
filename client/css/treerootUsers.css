@@ -1,0 +1,32 @@
+p {
+	padding : 0 1em;
+}
+
+#user-list-container {
+	position: relative;
+}
+
+#user-list-position {
+	overflow-y: scroll;
+	position: absolute;
+	top : 0;
+	left : 0;
+	bottom : 0;
+	right : 0;
+}
+
+#user-list {
+	
+}
+
+.user {
+	padding : 0em 0.5em;
+}
+
+.user .name {
+	padding: 0.7em 0.5em;
+}
+
+.user .add-working {
+	padding : 0.2em;
+}

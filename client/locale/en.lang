@@ -1,0 +1,239 @@
+i18n_share : Share
+i18n_share_links : Share links with someone who is not using FriendUP, so they can join your live session.
+i18n_public : Public
+i18n_a_public_link : A public link can be used an unlimited number of times, by anyone, until removed.
+i18n_create_email : Create email
+i18n_copy_to_clipboard : Copy to clipboard
+i18n_make_the_session_private : Make the session private and invalidates the link
+i18n_make_the_session_public : Make the session public, and generate a link
+i18n_these_links_on_to_one : These links are one-time-use. Links marked in red have been used and are no longer valid.
+i18n_add_invite : Add invite
+i18n_create_email : Create email
+i18n_use_the_menu : Use the menu to get started.
+i18n_create_a_new_account : Create a new account
+i18n_create : Create
+i18n_reset : Reset
+i18n_submit : Submit
+i18n_create_an_account : Create an account
+i18n_done : Done
+i18n_channel_settings : Channel settings
+i18n_irc_settings : IRC settings
+i18n_join : join
+i18n_treeroot_settings : Treeroot settings
+i18n_a : A
+i18n_friendup : FriendUP
+i18n_communication_tool : communication tool
+i18n_friend_chat : Friend Chat
+i18n_made_by : made by
+i18n_sokken : sokken
+i18n_used_under_creative : used under Creative Commons ( attribution )
+i18n_about : About
+i18n_legal : Legal
+i18n_add_an_image : Add an image
+i18n_confirm : Confirm
+i18n_cancel : Cancel
+i18n_deny : Deny
+i18n_warning_message_encryption : WARNING! Message encryption is enabled on
+i18n_if_you_forget : If you forget your password, you will never be able to read old messages again.
+i18n_continue_to_encrypt : Continue to encrypt messages
+i18n_turn_off_encryption : Turn off encryption
+i18n_toggle_multiline_input : Toggle multiline input. Enter/return will no longer send the message, instead inserting a new line. While multiline is off shift+enter will insert a newline.
+i18n_messages_will_be : Messages will be read out to you
+i18n_encrypt_the_message : Encrypt the message before sending
+i18n_checking_for_chat_log : Checking for chat log...
+i18n_stream : Stream
+i18n_audio : Audio
+i18n_video : Video
+i18n_error : Error
+i18n_closed : Closed
+i18n_select_input_source : Select input source
+i18n_these_are_the_media : These are the media input sources your browser has access to.
+i18n_show_available : Show available
+i18n_ignore : Ignore
+i18n_available_audio_sources : Available audio sources
+i18n_checking_input_source : Checking input source
+i18n_apply : Apply
+i18n_refresh : Refresh
+i18n_discard : Discard
+i18n_well_thats : Well, thats unfortunate.
+i18n_fatal_no_service : Fatal - No service availability. The problem is shown in the list below. Please report it to an administrator.
+i18n_warning_a_problem_might : Warning - A problem that might degrade or prevent normal operation has occured. It is shown in the list below. If the problem persists, please contact an administrator.
+i18n_continue : Continue
+i18n_close : Close
+i18n_verifying_resources : Verifying resources
+i18n_capabilities : Capabilities
+i18n_constraints : Constraints
+i18n_choose_input : Choose input
+i18n_room_settings : Room settings
+i18n_max_users : Max users
+i18n_connecting : Connecting...
+i18n_could_not_connect : Could not connect.
+i18n_if_the_problem_persist : If the problem persists show this error to an administrator
+i18n_add : Add
+i18n_account : account
+i18n_other : Other
+i18n_the_module_is_initializing : The module is initializing...
+i18n_offline : Offline
+i18n_recovery_key : Recovery key
+i18n_new_passphrase : New passphrase
+i18n_forgot_your_password : Forgot your password?
+i18n_retry_now : Retry now
+i18n_an_account_can_be : An account can be automatically created for you, based on your FriendUP info.
+18n_you_can_choose : You can choose to create an account manually. More typing, more control.
+i18n_if_you_have_already : If you already have an account, enter your things in the settings.
+i18n_automatic : Automatic
+i18n_i_have_an_account : I have an account
+i18n_could_not_connect_to : Could not connect to
+i18n_try_again : Try again
+i18n_invalid_login : Invalid login
+i18n_there_was_a_problem : There was a problem, reconnecting...
+i18n_reconnect_now : Reconnect now
+i18n_module_is_offline : Module is offline
+i18n_connect : Connect
+i18n_no_presence_login : No Presence login found. Do you wish to create a new account or do you already have one?
+i18n_create_new : Create new
+i18n_use_existing : Use existing
+i18n_create_a_new_presence_account : Create a new Presence account. Login is a suggestion, you may change it.
+i18n_admins : Admins
+i18n_online : Online
+i18n_guests : Guests
+i18n_checking_for_log : Checking for log...
+i18n_end_of_history : End of history.
+i18n_you_have_to_have_an_active : You have an active Live session, accepting will close the old one.
+i18n_accept : Accept
+i18n_join_as_guest : Join as guest
+i18n_share_links_with : Share links with someone who is not using FriendUP, so they can join your live session.
+i18n_a_public_link_can : A public link can be used an unlimited number of times, by anyone.
+i18n_create_email : Create email
+i18n_public_link : Public link
+i18n_email_a_link : Email a link.
+i18n_these_links_are_one_to_one : These links are one-time-use. Links marked in red have been used and are no longer valid.
+i18n_add_contacts : Add contacts
+i18n_if_you_know_the_username : If you know the username or email, you can add a specific contact
+i18n_subscribe : Subscribe
+i18n_loading : Loading...
+i18n_these_are_all_available : These are all available contacts
+i18n_username  : Username
+i18n_passphrase : Passphrase
+i18n_first_name : First name
+i18n_middle_name : Middle name
+i18n_last_name : Last name
+i18n_gender : Gender
+i18n_phone_number : Phonenumber
+i18n_required : Required
+i18n_optional : Optional
+i18n_autologin : Autologin
+i18n_pop_up_new_chat : Pop up new chat
+i18n_message_beep : Message beep
+i18n_in_app_menu : In-app menu
+i18n_open_on_new_screen : Open on new screen
+i18n_select_irc_channel : Select IRC channel css
+i18n_channel_modes : Channel modes
+i18n_server_name : Server name
+i18n_server_login : Server login
+i18n_server_pass : Server pass
+i18n_nick : Nick
+i18n_away_nick : Away nick
+i18n_auto_away : Auto away
+i18n_auto_back : Auto back
+i18n_perform : Perform
+i18n_on_startup : On startup
+i18n_auto_connect : auto-connect
+i18n_require_encryption : require encryption
+i18n_use_sasl : use SASL
+i18n_send_perform_on : send perform on connect
+i18n_use_rainbow : use rainbow tables
+i18n_use_script_kitties : use script kitties
+i18n_autojoin_channels : autojoin channels
+i18n_show_channel_on_join : show channel on join
+i18n_channels : Channels
+i18n_irc_theme_file : IRC theme file( css )
+i18n_message_alert : Message alert
+i18n_host : Host
+i18n_port : Port
+i18n_login : Login
+i18n_history_length : History length
+i18n_encrypt_messages : Encrypt messages
+i18n_message_alert : Message alert
+i18n_host_was_not_found : Host was not found
+i18n_host_is_unreachable : Host is unreachable
+i18n_connection_timed_out : Connection timed out
+i18n_host_declined_request : Host declined the request
+i18n_has_joined : has joined.
+i18n_left : left.
+i18n_has_quit : has quit(
+i18n_you : << you >>
+i18n_was_kicked_by : was kicked by
+i18n_sets_mode : sets mode
+i18n_is_now_known_as : is now known as
+i18n_changed_topic_to : changed topic to
+i18n_participants : Participants
+i18n_stream_quality : Stream quality
+i18n_default : Default
+i18n_medium : Medium ( 320 / 10 )
+i18n_low : Low ( 128 / 4 )
+i18n_mute_your_audio : Mute your audio
+i18n_pause_your_video : Pause your video
+i18n_select_media_sources : Select media sources
+i18n_text_chat : Text Chat
+i18n_restart_stream : Restart stream
+i18n_toggle_popped_selfie : Toggle popped selfie
+i18n_change_participant_order : Change participant order
+i18n_clean_ui : Clean UI
+i18n_leave : Leave
+i18n_mute : Mute
+i18n_pause : Pause
+i18n_remove : Remove
+i18n_updating : < updating >
+i18n_browser_compatibility : Browser compatibility
+i18n_checking : checking...
+i18n_video_input : Video input
+i18n_ice_servers : ICE servers
+i18n_audio_input : Audio input
+i18n_video_input : Video input
+i18n_no_devices_detected : No devices detected
+i18n_devices_detected_unavailable : Devices detected, but unavailable. Check your browser settings
+i18n_no_selection : < no selection >
+i18n_not_available : not available
+i18n_connection  : Connection
+i18n_create_room : Create room
+i18n_settings : Settings
+i18n_reconnect : Reconnect
+i18n_modules: Modules
+i18n_add_chat_account : Add chat account
+i18n_account_settings : Account settings
+i18n_start_live_session : Start live session
+i18n_log_out : Log out
+i18n_quit : Quit
+i18n_live_invite : Live invite
+i18n_calendar_event : Calendar event
+i18n_local_config_not_found : Local config not found, aborting.
+i18n_no_user_data_returned : No user data returned from FriendCore
+i18n_host_config_failed : Host config failed - empty response from
+i18n_host_config_failed_invalid : Host config failed - invalid data from
+i18n_host_config_failed_error : Host config failed, error on:
+i18n_start_live : Start live
+i18n_please_provide_email : Please provide an email address
+i18n_please_set_passphrase : Please set a passphrase
+i18n_create_account : Create account
+i18n_a_recovery_key : A recovery key was sent to
+i18n_please_set_a_host : Please set a host
+i18n_please_set_a_nick : Please set a nick
+i18n_no_contacts : No contacts
+i18n_media_not_available : Media not available - check your browser settings to make sure it has found your hardware and that the domain is not blocked from using it. ( settings -> show advanced -> content settings -> microphone / camera ). Restarting your browser might help if the problem persists.
+i18n_create_new_account : Create new account
+i18n_has_invited_you_to_live : has invited you to a live session.
+i18n_friend_chat_log : Friend Chat - Log
+i18n_live_session : Live session
+i18n_console : Console
+i18n_add_image : Add image
+i18n_share_invite_link : Share invite link
+i18n_join_me_live : Join me live
+i18n_encryption_warning : Friend Chat - Encryption Warning
+i18n_open_channel_settings : Open channel settings
+i18n_show_hide_userlist : Show / hide userlist
+i18n_go_live : Go live
+i18n_toggle_cover_contain : Toggle cover / contain
+i18n_no_account_to_login : No account in login, wat
+i18n_logged_in_as : Logged in as
+i18n_unknown_data_for_api_user : Unknown data for API user - aborting

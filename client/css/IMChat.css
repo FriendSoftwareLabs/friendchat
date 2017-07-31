@@ -1,0 +1,39 @@
+
+#message-container {
+	width: 100%;
+	position: relative;
+}
+
+#messages {
+	position : absolute;
+	bottom : 0px;
+	max-height : 100%;
+	width : 100%;
+	overflow : auto;
+}
+
+#message-confirm {}
+#message-ph {
+	text-overflow : ellipsis;
+	white-space : nowrap;
+	overflow : hidden;
+}
+
+#input-form input {
+	border: none;
+	height: 100%;
+	width: 100%;
+	outline: none;
+}
+
+.avatar { align-self: flex-start; }
+.avatar .img {
+	height: 100%;
+	width: 100%;
+}
+
+.str {
+	max-width: 100%;
+	word-break: break-word;
+	white-space : pre-wrap;
+}

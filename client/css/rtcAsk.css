@@ -1,0 +1,25 @@
+#time {
+	
+}
+
+#time-received {
+	
+}
+
+#time-passed {
+	margin-left : 0.5em;
+	font-weight: bold;
+}
+
+#time-since {
+	
+}
+
+#message {
+	width : 100%;
+}
+
+#invite-from {
+	padding : 0.5em 0;
+	font-size: 130%;
+}

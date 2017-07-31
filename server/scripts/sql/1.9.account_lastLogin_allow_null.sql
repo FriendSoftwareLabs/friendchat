@@ -1,0 +1,2 @@
+ALTER TABLE `account` 
+MODIFY `lastLogin` TIMESTAMP NULL;

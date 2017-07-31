@@ -1,0 +1,57 @@
+#share-view {
+	width: 100%;
+	min-height: 100%;
+}
+
+#share-close {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+#share-view input {
+	width : 100%;
+}
+
+#share-invite > div {
+	margin : 0.5em 0;
+}
+
+.share-title {
+	font-size: 140%;
+}
+
+.share-sub-title {
+	margin-top: 0.5em;
+	font-weight: bold;
+}
+
+.description {
+	padding : 0.5em 0;
+}
+
+.invite-section > button {
+	margin-top : 0.5em;
+}
+
+.invite-container {
+	padding : 0.5em 0.3em;
+	border-radius : 2px;
+	margin-bottom : 2px;
+}
+
+.previously-copied {
+	background-color : rgb( 150, 150, 150 );
+}
+
+.on-clipboard {
+	background-color : rgb( 81, 144, 57 );
+}
+
+.in-email {
+	background-color : rgb( 195, 192, 49 );
+}
+
+.invalid {
+	background-color : rgb( 152, 59, 37 );
+}

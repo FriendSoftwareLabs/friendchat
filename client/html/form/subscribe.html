@@ -1,0 +1,66 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			../../scripts/component/viewComponent.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/view/base.js;
+			webclient/apps/FriendChat/scripts/view/form/subscribe.js
+		" type="text/javascript"></script>
+		
+		<link rel="stylesheet" href="
+			../../css/common.css;
+			webclient/apps/FriendChat/css/form.css
+		" type="text/css">
+	</head>
+	<body id="hello">
+		<div id="fragments">
+		
+<!-- subscribe ( treeroot )
+
+-->
+<script id="form-treeroot-subscribe-tmpl" type="text/html">
+<form id="form" action="" method="" class="form bar column">
+	<div class="head BorderBottom fortify center-child">
+		<div>{i18n_add_a_contact}</div>
+	</div>
+	<div class="main expand pad">
+		<table class="inputs">
+			<tr>
+				<td><label for="type" class="label">Id type</label></td>
+				<td>
+					<select name="type" id="type" required>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td><label for="id">Id</label></td>
+				<td>
+					<input
+						name="id"
+						id="id"
+						class="text"
+						placeholder="Id"
+						type="text"
+						required
+					>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<div class="Box BorderTop fortify group row end">
+		<button id="submit" type="submit" class="button accept group row">
+			<i class="fa fa-check"></i>
+			{i18n_send}
+		</button>
+		<button id="reset" type="button" class="button danger group row">
+			<i class="fa fa-recycle"></i>
+			{i18n_reset}
+		</button>
+	</div>
+</form>
+</script>
+
+		</div>
+	</body>
+</html>

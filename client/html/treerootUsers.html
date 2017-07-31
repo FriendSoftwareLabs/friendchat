@@ -1,0 +1,105 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			../scripts/view/base.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/view/treerootUsers.js
+		" type="text/javascript"></script>
+		
+		<link rel="stylesheet" href="
+			../css/common.css;
+			webclient/apps/FriendChat/css/forms/base.css;
+			webclient/apps/FriendChat/css/treerootUsers.css
+		" type="text/css">
+	</head>
+	<body>
+		<div id="fragments">
+
+<!-- body
+
+-->
+<script id="body-tmpl" type="text/html">
+<div id="hello" class="bar column">
+	<div id="head" class="BorderBottom center-child hidden">
+		<div>
+			{i18n_add_contacts}
+		</div>
+	</div>
+	<div id="main" class="bar column">
+		<form id="sub-form" action="" class="pad-light fortify">
+			<p class="">
+				{i18n_if_you_know_the_username}:
+			</p>
+			<div class="inputs group row">
+				<div class="input expand input-wrap fortify">
+					<select id="id-type" name="id-type">
+						<option value="ContactUsername">Username</option>
+						<option value="ContactEmail">Email</option>
+					</select>
+				</div>
+				<div class="input expand input-wrap expand">
+					<input id="id-value" type="text" placeholder="">
+				</div>
+				<button id="confirm" type="submit" class="button accept group row">
+					<i class="fa fa-check"></i>
+					{i18n_subscribe}
+				</button>
+			</div>
+		</form>
+		<div id="users" class="BorderTop expand bar column">
+			<div class="pad-light fortify">
+				<div id="list-loading" class="group row">
+					<i class="fa fa-fw fa-pulse fa-spinner"></i>
+					<p class="expand">
+						{i18n_loading}
+					</p>
+				</div>
+				<p id="list-title" class="hidden">
+					{i18n_these_are_all_available}:
+				</p>
+			</div>
+			<div id="user-list-container" class="expand">
+				<div id="user-list-position">
+					<div id="user-list" class="ZebraList">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="Box Box fortify group row end">
+		<button id="done" type="button" class="button group row">
+			<i class="fa fa-check"></i>
+			{i18n_done}
+		</button>
+	</div>
+</div>
+</script>
+
+<!--
+elementId,
+displayName,
+email,
+-->
+<script id="treeroot-user-tmpl" type="text/html">
+<div id="<%= elementId %>" class="user group row start">
+	<div class="add fortify">
+		<button type="button" class="button group row" title="Add contact">
+			<i class="fa fa-fw fa-plus"></i>
+		</button>
+		<div class="add-working hidden">
+			<i class="fa fa-fw fa-pulse fa-spinner"></i>
+		</div>
+	</div>
+	<div class="name expand">
+		<%= displayName %>
+	</div>
+	<div class="email hidden">
+		<%= email %>
+	</div>
+</div>
+</script>
+		
+		</div>
+	</body>
+</html>

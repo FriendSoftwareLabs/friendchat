@@ -1,0 +1,45 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			../../scripts/component/viewComponent.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/view/base.js;
+			webclient/apps/FriendChat/scripts/view/form/base.js;
+			webclient/apps/FriendChat/scripts/view/form/createAccount.js
+		" type="text/javascript"></script>
+		
+		<link rel="stylesheet" href="
+			../../css/common.css;
+			webclient/apps/FriendChat/css/forms/base.css
+		" type="text/css">
+	</head>
+	<body id="hello">
+		<div id="fragments">
+		
+<!--
+
+-->
+<script id="form-create-account-tmpl" type="text/html">
+<form id="form" action="" method="" class="form bar column">
+	<div class="head BorderBottom fortify center-child hidden">
+		<div>{i18n_create_a_new_account}</div>
+	</div>
+	<div id="input" class="main expand pad">
+	</div>
+	<div class="Box BorderTop fortify group row end">
+		<button id="submit" type="submit" class="button accept group row">
+			<i class="fa fa-check"></i>
+			{i18n_create}
+		</button>
+		<button id="reset" type="reset" class="button danger group row">
+			<i class="fa fa-recycle"></i>
+			{i18n_reset}
+		</button>
+	</div>
+</form>
+</script>
+		
+		</div>
+	</body>
+</html>

@@ -1,0 +1,70 @@
+.link-expand {
+	overflow: hidden;
+	white-space : normal;
+}
+
+.link-expand-ui {
+	margin-bottom : 2px;
+	background-color: #333;
+	color : #ccc;
+}
+
+.link-expand-ui > .button {
+	background-color : #ccc;
+}
+
+.link-expand-ui a,
+.link-expand-ui a:hover,
+.link-expand-ui a:visited {
+	color : #ccc;
+}
+
+.link-expand-ui a.button,
+.link-expand-ui a.button:hover,
+.link-expand-ui a.button:visited {
+	color : #333;
+}
+
+.pre-icon {
+	width : 2.5em;
+	height: 2.5em;
+	margin-right : 0.5em;
+}
+
+.link-expand .raw-link {
+	position: relative;
+}
+
+.link-expand .raw-link > div {
+	position: absolute;
+	top : 0;
+	right : 0;
+	left : 0;
+}
+
+.link-expand .raw-link a {
+	display : inline-block;
+	width : 100%;
+	overflow: hidden;
+	text-overflow : ellipsis;
+	white-space: nowrap;
+}
+
+
+.link-expand .link-expand-video,
+.link-expand .link-expand-image {
+	width : 20em;
+	height: 13em;
+}
+
+.link-expand .link-expand-image {
+	background-size : contain;
+	background-repeat: no-repeat;
+}
+
+.link-expand .link-expand-file {
+	width : 64px;
+	height: 64px;
+	background-size: contain;
+	background-repeat: none;
+}

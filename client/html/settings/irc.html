@@ -1,0 +1,98 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			../../scripts/view/base.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/view/settings/base.js;
+			webclient/apps/FriendChat/scripts/view/settings/irc.js
+		" type="text/javascript"></script>
+		
+		<link rel="stylesheet" href="
+			../../css/common.css;
+			webclient/apps/FriendChat/css/settings/base.css;
+			webclient/apps/FriendChat/css/settings/irc.css
+		" type="text/css">
+	</head>
+	<body id="hello" class="bar column">
+
+		<div id="fragments">
+
+<!-- HOST
+host,
+port,
+hostStatus,
+portStatus,
+-->
+<script id="host-tmpl" type="text/html">
+<form id="hostform" class="setting group row">
+	<div class="label fortify">
+		host:
+	</div>
+	<div class="input expand group row">
+		<div class="host expand group row">
+			<div class="wrap expand">
+				<input id="host" type="text" value="<%= host %>">
+			</div>
+			<%= hostStatus %>
+		</div>&nbsp;:&nbsp;
+		<div class="port fortify group row">
+			<div class="wrap expand">
+				<input id="port" type="text" value="<%= port %>">
+			</div>
+			<%= portStatus %>
+		</div>
+	</div>
+	<button type="submit" class="hidden"></button>
+</form>
+</script>
+
+<!-- JOIN channel
+id,
+name,
+-->
+<script id="join-channel-tmpl" type="text/html">
+<div id="<%= id %>" class="join-channel group row fortify MouseDefault">
+	<div class="channel-name expand">
+		<%= name %>
+	</div>
+	<div class="remove-channel fortify">
+		<button type="button" class="button danger">
+			<i class="fa fa-fw fa-close"></i>
+		</button>
+	</div>
+</div>
+</script>
+
+<!-- JOIN container
+status
+-->
+<script id="join-tmpl" type="text/html">
+<div id="join" class="setting group row left">
+	<div class="label fortify">
+		{i18n_join}:
+	</div>
+	<div class="input expand group row">
+		<div class="join-wrap group column left">
+			<div class="join-channels group row start">
+			</div>
+			<div class="add-channel group row">
+				<button type="button" class="button">
+					<i class="fa fa-fw fa-plus"></i>
+				</button>
+				<form class="add-channel-form hidden">
+					<div class="add-channel-input-wrap group row">
+						#&nbsp;<input id="add-cahnnel-input" type="text" placeholder="channel">
+					</div>
+					<button type="submit" class="hidden"></button>
+				</form>
+			</div>
+		</div>
+		<%= status %>
+	</div>
+</div>
+</script>
+
+		</div>
+	</body>
+</html>

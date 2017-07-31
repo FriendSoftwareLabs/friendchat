@@ -1,0 +1,109 @@
+#hello {
+	height: 100%;
+}
+
+#content {
+	height: 100%;
+	font-size: 1em;
+	z-index: 1;
+}
+
+#menu {
+	padding-bottom : 1em;
+	z-index: 1;
+}
+
+.menu-item {
+	padding-right : 0.3em;
+	border-bottom : 2px solid transparent;
+	transition : border 0.2s;
+}
+
+.menu-item:hover {
+	border-bottom : 2px solid #222;
+	transition : border 0.2s;
+}
+
+.icon-wrap {
+	width : 2em;
+	height : 2em;
+}
+
+#about {
+	text-align: center;
+	font-weight: bold;
+}
+
+#about,
+#legal {
+	font-size: 110%;
+}
+
+.text-container > div {
+	opacity: 0.9;
+	padding : 0.7em;
+}
+
+.text-container .txt {
+}
+
+.text-container .fup,
+.text-container .sokken {
+	font-size: 115%;
+	
+}
+
+.text-container .fc {
+	font-size: 130%;
+}
+
+#legal {
+	padding : 1em;
+}
+
+#license {
+	font-size: 130%;
+}
+
+.license-item {
+	padding : 1em 0.5em;
+	margin : 0.3em;
+}
+
+.license-item .icon-wrap {
+	font-size: 130%;
+}
+
+.license-item a {
+	border-bottom : 2px solid transparent;
+	transition : border 0.2s;
+}
+
+.license-item a:hover {
+	border-bottom : 2px solid #333;
+	transition : border 0.2s;
+}
+
+.license-item .license-text {
+	padding-left : 1em;
+}
+
+#bg {
+	opacity: 0;
+	position: absolute;
+	top : 0;
+	right : 0;
+	bottom : 0;
+	left : 0;
+	z-index: 0;
+}
+
+.skummel {
+	height: 100%;
+	width: 100%;
+	background-image: url( /webclient/apps/FriendChat/gfx/about.png );
+	background-position: center center;
+	background-repeat: no-repeat;
+	background-size: cover;
+}
+

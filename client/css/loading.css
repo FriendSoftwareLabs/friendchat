@@ -1,0 +1,45 @@
+#hello {
+	box-sizing : border-box;
+	overflow : hidden;
+}
+
+.hepp {
+	padding : 1em;
+	display : flex;
+	flex-direction : row;
+	align-items : center;
+	width : 100%;
+	height: 100%;
+	font-weight: bold;
+}
+
+.hepp .icon {
+	font-size: 180%;
+	flex : 0 0 auto;
+}
+
+.hepp .content {
+	padding-left : 1em;
+	flex : 1 1 auto;
+}
+
+.hepp .state {
+	font-size: 140%;
+}
+
+#error {
+	
+}
+
+#error .err-title {
+	margin-bottom : 0.4em;
+}
+
+#error .err-title .state {
+	padding-left : 0.5em;
+}
+
+#error-message {
+	padding : 0.5em;
+	font-size: 120%;
+}

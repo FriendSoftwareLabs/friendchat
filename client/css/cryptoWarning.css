@@ -1,0 +1,18 @@
+#hello {
+	height: 100%;
+}
+
+#warning {
+	background-color: rgb( 152, 59, 37 );
+	color : white;
+	padding : 0.5em 2em;
+}
+
+#crypto-host {
+	font-size: 120%;
+	font-weight: bold;
+}
+
+#hello .button {
+	color :white;
+}

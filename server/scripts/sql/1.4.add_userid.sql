@@ -1,0 +1,3 @@
+ALTER TABLE `account`
+ADD COLUMN `userId` VARCHAR(255) NOT NULL
+AFTER `clientId`;
