@@ -67,22 +67,6 @@ var hello = null;
 		if ( fupConf )
 			self.config.run = fupConf;
 		
-		const contentMsg = {
-			type : 'robotunicorns',
-			data : {
-				type          : 'getdeviceid',
-				returnAddress : {
-					applicationId : self.app.id,
-					callback      : 'screen-share-extension',
-				},
-			},
-		};
-		self.app.on( 'screen-share-extension', screenShareBack );
-		function screenShareBack( e ) {
-			console.log( 'screen-share-back', e );
-		}
-		
-		window.postMessage( contentMsg, '*' );
 		self.config.emojii = window.emojii_conf;
 		self.config.protocol = document.location.protocol + '//';
 		self.config.appName = 'Friend Chat';

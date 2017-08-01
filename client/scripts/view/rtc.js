@@ -91,6 +91,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.init = function() {
 		var self = this;
+		
 		console.log( 'RTC.init', self );
 		if ( self.quality )
 			self.view.currentQuality = self.quality.level;
@@ -682,7 +683,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.init =function() {
 		var self = this;
 		self.supported = navigator.mediaDevices.getSupportedConstraints();
-		console.log( 'supported', self.supported );
+		//console.log( 'supported', self.supported );
+		self.screenShare = new library.rtc.ScreenShare();
 		
 		self.isSpeaking = new library.rtc.IsSpeaking();
 		self.isChrome = !!( !!window.chrome && !!window.chrome.webstore );
@@ -744,6 +746,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.showError = function( errMsg ) {
 		var self = this;
 		self.emit( 'error', errMsg );
+	}
+	
+	ns.Selfie.prototype.shareScreen = function() {
+		const self = this;
+		self.screenShare.getDeviceId( getBack );
+		function getBack( deviceId ) {
+			console.log( 'screenshare getBack', deviceId );
+		}
 	}
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
@@ -4693,6 +4703,43 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function onselect( devices ) {
 			self.onselect( devices );
 		}
+	}
+	
+})( library.rtc );
+
+/* screenShare
+
+*/
+(function( ns, undefined ) {
+	ns.ScreenShare = function() {
+		const self = this;
+	}
+	
+	ns.ScreenShare.prototype.getDeviceId = function( callback ) {
+		const self = this;
+		console.log( 'getDeviceId' );
+		const contentMsg = {
+			type   : 'robotunicorns',
+			things : {
+				origin        : View.parentOrigin,
+				type          : 'view',
+				method        : 'sendmessage',
+				applicationId : View.applicationId,
+				viewId        : View.id,
+				data          : {
+					type : 'screen-share-extension',
+					data : {},
+				},
+			},
+		};
+		View.on( 'screen-share-extension', screenShareBack );
+		window.parent.postMessage( contentMsg, '*' );
+		
+		function screenShareBack( e ) {
+			console.log( 'screen-share-back', e );
+			callback( e );
+		}
+		
 	}
 	
 })( library.rtc );
