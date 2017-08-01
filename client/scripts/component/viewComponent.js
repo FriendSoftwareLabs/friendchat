@@ -1231,16 +1231,18 @@ library.component = library.component || {};
 		return htmlStr;
 	}
 	
-	ns.LinkExpand.prototype.expandText = function( a ) {
+	ns.LinkExpand.prototype.expandText = function( a, mime ) {
 		var self = this;
 		console.log( 'expandText', a );
 		return null;
 		//return a.href;
 	}
 	
-	ns.LinkExpand.prototype.expandOther = function( a ) {
+	ns.LinkExpand.prototype.expandOther = function( a, mime ) {
 		var self = this;
-		console.log( 'expandOther', a )
+		console.log( 'expandOther', {
+			a : a,
+			m : mime });
 		return null;
 		//return a.href;
 	}
