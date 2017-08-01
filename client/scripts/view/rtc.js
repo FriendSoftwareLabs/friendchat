@@ -2628,8 +2628,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
+		self.switchingTracks = true;
 		if ( !self.conn.addTrack ) {
 			legacyAddStream( stream );
+			done();
 			return;
 		}
 		
@@ -2640,6 +2642,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.log( 'addStream - tracks', { type : self.type, tracks : tracks });
 		tracks.forEach( add );
 		self.log( 'senders after adding tracks', self.senders );
+		done();
 		
 		function add( track ) {
 			if (( track.kind !== self.type ) && ( 'stream' !== self.type )) {
@@ -2667,6 +2670,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			self.conn.addStream( stream );
+		}
+		
+		function done() {
+			self.log( 'tracks update done, unlocking negotiation', 
+				self.negotiationIsNeeded );
+			
+			self.switchingTracks = false;
+			if ( self.negotiationIsNeeded )
+				self.tryNegotiation();
 		}
 	}
 	
@@ -2843,7 +2855,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.tryNegotiation = function() {
 		var self = this;
-		self.log( 'tryNegotiation' );
+		self.log( 'tryNegotiation - switching?', self.switchingTracks );
+		if ( self.switchingTracks ) {
+			self.negotiationIsNeeded = true;
+			return;
+		}
+		
+		self.negotiationIsNeeded = false;
 		self.setState( 'negotiation-waiting' );
 		if ( self.conn.signalingState !== 'stable' ) {
 			self.negotiationWaiting = true;
@@ -3049,6 +3067,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function err( e ) {
+			console.log( 'remoteOffer err', e );
 			self.log( 'remoteOffer err', e );
 		}
 	}
