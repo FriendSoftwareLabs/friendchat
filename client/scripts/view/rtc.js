@@ -2606,7 +2606,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false;
+		self.spam = true;
 		
 		self.init();
 	}
@@ -2617,6 +2617,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.addStream = function( stream ) {
 		var self = this;
+		console.log( 'Session.addStream', {
+			stream : stream,
+			conn : self.conn, 
+		});
+		
 		if ( !self.conn ) {
 			self.log( 'addStream - OMG NO CONN DUDE; CHILL',
 				{ conn : self.conn, stream : stream });
@@ -2648,7 +2653,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function legacyAddStream( stream ) {
-			self.log( 'legacyAddStream', stream );
+			self.log( 'Session.legacyAddStream', stream );
 			var localStreams = self.conn.getLocalStreams();
 			if ( localStreams && localStreams.length ) {
 				self.log( 'legacyAddStream - hasStream', {

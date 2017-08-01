@@ -324,7 +324,6 @@ inherits from EventEmitter
 	
 	ns.SubView.prototype.close = function() {
 		var self = this;
-		console.log( 'SubView.close', self.type );
 		if ( self.parent.off )
 			self.parent.off( self.type );
 		if ( self.parent.release )
