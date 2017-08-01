@@ -1,7 +1,7 @@
 i18n_share : Partager
-i18n_share_links : Partager un lien avec une personne qui n'utilise pas FriendUP, pour qu'il puisse vous rejoindre en live.
+i18n_share_links : Partager un lien avec une personne qui n&#39;utilise pas FriendUP, pour qu&#39;il puisse vous rejoindre en live.
 i18n_public : Public
-i18n_a_public_link : Un lien public peut être utilisé un nombre illimité de fois, par tout le monde, jusqu'à sa supression.
+i18n_a_public_link : Un lien public peut être utilisé un nombre illimité de fois, par tout le monde, jusqu&#39;à sa supression.
 i18n_create_email : Créer un email
 i18n_copy_to_clipboard : Copier vers p. papier
 i18n_make_the_session_private : Rend la session privée et invalide le lien
@@ -32,25 +32,25 @@ i18n_add_an_image : Ajouter une image
 i18n_confirm : Confirmer
 i18n_cancel : Annuler
 i18n_deny : Refuser
-i18n_warning_message_encryption : ATTENTION! L'encryption des message est activée sur
+i18n_warning_message_encryption : ATTENTION! L&#39;encryption des message est activée sur
 i18n_if_you_forget : Si vous oubliez votre mot de passe, vous ne pourrez jamais plus voir les anciens messages.
 i18n_continue_to_encrypt : Continuer à crypter les messages
-i18n_turn_off_encryption : Arréter l'encryption
-i18n_toggle_multiline_input : Change l'entrée multiligne. Entrée/return n'envoie plus le message, mais insère une nouvelle ligne. Shift-enter insère une nouvelle ligne si multiligne est inactif.
+i18n_turn_off_encryption : Arréter l&#39;encryption
+i18n_toggle_multiline_input : Change l&#39;entrée multiligne. Entrée/return n&#39;envoie plus le message, mais insère une nouvelle ligne. Shift-enter insère une nouvelle ligne si multiligne est inactif.
 i18n_messages_will_be : Les messages vont vous être lus
 i18n_encrypt_the_message : Encrypter le message avant envoi
-i18n_checking_for_chat_log : Recheche de l'historique...
+i18n_checking_for_chat_log : Recheche de l&#39;historique...
 i18n_stream : Flux
 i18n_audio : Audio
 i18n_video : Video
 i18n_error : Erreur
 i18n_closed : Fermé
-i18n_select_input_source : Choisir la source d'entrée
-i18n_these_are_the_media : Voici les sources d'entrée média auxquelles votre navigateur a accès.
+i18n_select_input_source : Choisir la source d&#39;entrée
+i18n_these_are_the_media : Voici les sources d&#39;entrée média auxquelles votre navigateur a accès.
 i18n_show_available : Montrer disponibles
 i18n_ignore : Ignorer
 i18n_available_audio_sources : Sources audio disponibles
-i18n_checking_input_source : Verification des sources d'entrée
+i18n_checking_input_source : Verification des sources d&#39;entrée
 i18n_apply : Appliquer
 i18n_refresh : Rafraichir
 i18n_discard : Détruire
@@ -62,7 +62,7 @@ i18n_close : Fermer
 i18n_verifying_resources : Vérification des ressources.
 i18n_capabilities : Capabilités
 i18n_constraints : Contraintes
-i18n_choose_input : Choisir l'entrée
+i18n_choose_input : Choisir l&#39;entrée
 i18n_room_settings : Préférences salon
 i18n_max_users : Utilisateurs max
 i18n_connecting : Connexion...
@@ -71,7 +71,7 @@ i18n_if_the_problem_persist : Montrez cette erreur à un administrateur si le pr
 i18n_add : Ajouter
 i18n_account : compte
 i18n_other : Autre
-i18n_the_module_is_initializing : Le module s'initialise...
+i18n_the_module_is_initializing : Le module s&#39;initialise...
 i18n_offline : Hors-ligne
 i18n_recovery_key : Clé de récupération
 i18n_new_passphrase : Nouveau mot de passe
@@ -81,7 +81,7 @@ i18n_an_account_can_be : Un compte peut-être créé automatiquement pour vous, 
 i18n_you_can_choose : Vous pouvez créer un compte manuellement. Plus long, mais plus de contrôle.
 i18n_if_you_have_already : Si vous avez déjà un compte, entrez ses paramètres dans le dialogue.
 i18n_automatic : Automatique
-i18n_i_have_an_account : J'ai déjà un compte
+i18n_i_have_an_account : J&#39;ai déjà un compte
 i18n_could_not_connect_to : Connexion impossible à
 i18n_try_again : Ré-essayer
 i18n_invalid_login : Login invalide
@@ -97,18 +97,18 @@ i18n_admins : Admins
 i18n_online : En ligne
 i18n_guests : Invités
 i18n_checking_for_log : Recherche du log...
-i18n_end_of_history : Fin de l'historique.
-i18n_you_have_to_have_an_active : Vous avez déjà une session live active, accepter une nouvelle fermera l'ancienne.
+i18n_end_of_history : Fin de l&#39;historique.
+i18n_you_have_to_have_an_active : Vous avez déjà une session live active, accepter une nouvelle fermera l&#39;ancienne.
 i18n_accept : Accepter
 i18n_join_as_guest : Joindre comme invité
-i18n_share_links_with : Partager des liens avec des personnes n'utilisant pas FriendUP, qu'ils puissent rejoindre votre session live.
 i18n_a_public_link_can : Un lien public peut-être utilisé un nombre illimité de fois, par tout le monde.
+i18n_share_links_with : Partager des liens avec des personnes n&#39;utilisant pas FriendUP, qu&#39;ils puissent rejoindre votre session live.
 i18n_create_email : Créer email
 i18n_public_link : Lien public
 i18n_email_a_link : Envoyer lien par email.
 i18n_these_links_are_one_to_one : Ces liens sont à usage unique. Ceux marqués en rouge on été utilisés et ne sont plus valides.
 i18n_add_contacts : Ajouter contacts
-i18n_if_you_know_the_username : Vous pouvez ajouter un contact spécifique si vous en connaissez le nom ou l'email
+i18n_if_you_know_the_username : Vous pouvez ajouter un contact spécifique si vous en connaissez le nom ou l&#39;email
 i18n_subscribe : Souscrire
 i18n_loading : Chargement...
 i18n_these_are_all_available : Liste des contacts disponibles
@@ -142,7 +142,7 @@ i18n_require_encryption : necessite encryption
 i18n_use_sasl : utiliser SASL
 i18n_send_perform_on : envoyer perform à la connexion
 i18n_use_rainbow : utiliser tables rainbow
-i18n_use_script_kitties : utiliser 'script kitties'
+i18n_use_script_kitties : utiliser script kitties
 i18n_autojoin_channels : auto-rejoindre canaux
 i18n_show_channel_on_join : montrer canal dès rejoint
 i18n_channels : Canaux
@@ -156,7 +156,7 @@ i18n_encrypt_messages : Encrypter messages
 i18n_host_was_not_found : Hôte introuvable
 i18n_host_is_unreachable : Hôte non joignable
 i18n_connection_timed_out : Time-out connexion
-i18n_host_declined_request : L'hôte a refusé la requète
+i18n_host_declined_request : L&#39;hôte a refusé la requète
 i18n_has_joined : a rejoint.
 i18n_left : est parti.
 i18n_has_quit : est parti(
@@ -176,8 +176,8 @@ i18n_select_media_sources : Choisir les sources média
 i18n_text_chat : Conversation texte
 i18n_restart_stream : Relancer le flux
 i18n_toggle_popped_selfie : Montrer selfie
-i18n_change_participant_order : Changer l'ordre des participants
-i18n_clean_ui : Nettoyer l'interface
+i18n_change_participant_order : Changer l&#39;ordre des participants
+i18n_clean_ui : Nettoyer l&#39;interface
 i18n_leave : Quitter
 i18n_mute : Muet
 i18n_pause : Pause
@@ -197,7 +197,7 @@ i18n_create_room : Créer salon
 i18n_settings : Préférences
 i18n_reconnect : Reconnecter
 i18n_modules: Modules
-i18n_add_chat_account : Ajouter un compte 'chat'
+i18n_add_chat_account : Ajouter un compte chat
 i18n_account_settings : Préférences compte
 i18n_start_live_session : Lancer session live
 i18n_log_out : Déconnexion
@@ -217,7 +217,7 @@ i18n_a_recovery_key : Une clé de récupération a été envoyée à
 i18n_please_set_a_host : Veuillez entrer un hôte
 i18n_please_set_a_nick : Veuillez entrer un surnom
 i18n_no_contacts : Pas de contact
-i18n_media_not_available : Media non disponible - vérifiez votre navigateur pour être sur qu'il trouve vos périphériques et que son domaine ne l'empèche pas de les utiliser. ( préférences -> avancées -> préférences contenu -> microphone / camera ). Relancez votre navigateur si le problème persiste.
+i18n_media_not_available : Media non disponible - vérifiez votre navigateur pour être sur qu&#39;il trouve vos périphériques et que son domaine ne l&#39;empèche pas de les utiliser. ( préférences -> avancées -> préférences contenu -> microphone / camera ). Relancez votre navigateur si le problème persiste.
 i18n_create_new_account : Créer un nouveau compte
 i18n_has_invited_you_to_live : vous a invité à une session live.
 i18n_friend_chat_log : Friend Chat - Log
@@ -233,7 +233,7 @@ i18n_go_live : Aller en live
 i18n_toggle_cover_contain : Vidéo zoom
 i18n_no_account_to_login : Pas de compte de connexion
 i18n_logged_in_as : Connecté en tant que
-i18n_unknown_data_for_api_user : Données inconnues pour l'utilisateur API - Annulation
+i18n_unknown_data_for_api_user : Données inconnues pour l&#39;utilisateur API - Annulation
 i18n_file : Fichier
 i18n_account_menu : Compte
 i18n_tools : Outils
