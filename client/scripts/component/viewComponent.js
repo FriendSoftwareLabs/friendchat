@@ -1028,6 +1028,9 @@ library.component = library.component || {};
 					return;
 				
 				var content = handler( a, mime );
+				if ( !content )
+					return null;
+				
 				self.replace( a, content );
 			}
 			
@@ -1231,13 +1234,15 @@ library.component = library.component || {};
 	ns.LinkExpand.prototype.expandText = function( a ) {
 		var self = this;
 		console.log( 'expandText', a );
-		return a.href;
+		return null;
+		//return a.href;
 	}
 	
 	ns.LinkExpand.prototype.expandOther = function( a ) {
 		var self = this;
 		console.log( 'expandOther', a )
-		return a.href;
+		return null;
+		//return a.href;
 	}
 	
 	
