@@ -464,7 +464,7 @@ cp "$FRIENDCHATSERVER_FOLDER"/example.config.js "$FRIENDCHATSERVER_FOLDER"/confi
 # Pokes the new values in the presence/config.js file
 sed -i -- "s/dev : false/dev : $SELFSIGNED/g" "$FRIENDCHATSERVER_FOLDER"/config.js
 sed -i -- "s/hello_database_host/${dbhost//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/3206/${dbport//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
+sed -i -- "s/3306/${dbport//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
 sed -i -- "s/hello_database_user/${helloDbUser//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
 sed -i -- "s/hello_database_password/${helloDbPass//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
 sed -i -- "s/hello_database_name/${helloDbName//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
