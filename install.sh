@@ -1,5 +1,25 @@
 #!/bin/bash
 
+#
+# Friend Chat installation script
+#
+# This script will install Friend Chat within an existing Friend Core
+# installation. If you have not installed Friend Core, you must do it before
+# running it (it will detect it and abort).
+#
+# This script installs the three components that turns Friend Chat into to life:
+# 1) The Friend Chat server
+# 2) The Presence server
+# 3) The Friend Chat client application
+#
+# You will need TLS keys: if they are not already present for Friend Core,
+# this script will offer you the option to create self-signed keys using
+# openssl. After Friend Chat installation, Friend Core will run in TLS mode.
+# Self-signed keys will generate a warning in your browser the first
+# time you connect to your Friend machine : just proceed to the Workspace
+# by ignoring it..
+#
+
 QUIT="Installation aborted. Please restart script to complete it."
 GIT="https://github.com/FriendSoftwareLabs/presence.git"
 
@@ -86,6 +106,17 @@ else
     dbport=$(sed -nr "/^\[DatabaseUser\]/ { :l /^port[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
     friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^fchost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
     friendNetwork=$(sed -nr "/^\[FriendNetwork\]/ { :l /^enabled[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
+
+    # Removes eventual ';' left by previous versions of Friend Core installers
+    dbhost=${dbhost//;}
+    dbname=${dbname//;}
+    dbuser=${dbuser//;}
+    dbpass=${dbpass//;}
+    dbport=${dbport//;}
+    friendCoreDomain=${friendCoreDomain//;}
+    friendNetwork=${friendNetwork//;}
+
+    # Set other variables default
     helloDbHost="$dbhost"
     helloDbPort="$dbport"
     helloDbUser="$dbuser"
@@ -278,23 +309,17 @@ done
 # Installs node.js
 echo "Checking for node.js and npm"
 
-installNode() {
-	curl -L http://git.io/n-install | bash
-	n 4.5.0
-}
-
 nv=$(node -v)
 npm=$(npm -v)
 if [ -z $nv ]; then
     dialog --backtitle "Friend Chat installer" --yesno "\
-Friend Chat need Node.js to work and it was not found.\n\n\
-If you want to install it manually,\n\
-exit and restart this script.\n\
-Recommended version of Node for Friend Chat is 4.4.4\n\
-We also suggest you install 'n' to manage node versions.\n\n\
-Install node automatically?" 13 60
+Friend Chat needs Node.js to work and it was not found.\n\n\
+Choose YES to install it automatically\n\
+or NO to install it manually: the script will\n\
+exit, you install node and restart the script.\n\
+Please note that you also need to install 'npm' and 'n'." 15 65
     if [ $? -eq "0" ]; then
-        installNode
+        curl -L http://git.io/n-install | bash
         nv=$(node -v)
         npm=$(npm -v)
     else
@@ -304,21 +329,26 @@ Install node automatically?" 13 60
     fi
 fi
 
-if [ "v4.5.0" != "$nv" ]; then
+if [ "$nv" \< "v4.5.0" ]; then
     dialog --backtitle "Friend Chat installer" --yesno "\
 Warning! node version found: $nv.\n\
-Recommended version: v4.5.0\n\n\
+Recommended version: v4.5.0 and above.\n\n\
 Choose YES to switch to version 4.5.0,\n\
-or NO to use the current version..." 11 60
+or NO to abort this script..." 11 60
     if [ $? -eq "0" ]; then
         echo "Calling 'n' to change the version of node."
         n 4.5.0
+    else
+        clear
+        echo "$QUIT"
+        exit 1
     fi
 fi
 
 if [ -z "$npm" ]; then
     dialog --backtitle "Friend Chat installer" --msgbox "\
-Node was found, but not npm." 10 70
+Node was found, but not npm. \n\
+Please install npm and restart the script." 10 70
     clear
     echo "Friend Chat installation aborted."
 	exit 1
@@ -330,6 +360,7 @@ while true; do
     if [ $? = "1" ]
     then
         clear
+        echo "$QUIT"
         exit 1
     fi
     # Checks mysql root password
@@ -337,7 +368,7 @@ while true; do
     if [ $? == "0" ]; then
         break;
     fi
-    dialog --backtitle "Friend Chat installer" --msgbox "Invalid password, please try again." 8 50 --output-fd 1
+    dialog --backtitle "Friend Chat installer" --msgbox "Invalid mysql password, please try again." 8 55 --output-fd 1
 done
 clear
 
