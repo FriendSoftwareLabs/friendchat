@@ -3522,56 +3522,44 @@ library.component = library.component || {};
 		},
 	};
 	
-	ns.InitChecksPane.prototype.checks = [
-		{
-			id     : 'check-browser',
-			type   : View.i18n('i18n_browser_compatibility'),
-			tmpl   : 'initchecks-browser',
-		},
-		{
-			id      : 'selfie-check',
-			type    : 'Self check',
-			state   : 'checking..',
-			btnIcon : 'fa-user',
-			tmpl    : 'initchecks-selfie-tmpl',
-		},
-		/*
-		{
-			id     : 'host-signal',
-			hidden : 'hidden',
-			type   : 'Room setup',
-			state  : 'waiting..',
-		},
-		{
-			id     : 'room-signal',
-			type   : 'Room signal',
-			state  : 'waiting..',
-		},
-		*/
-		{
-			id     : 'ice-servers',
-			type   : View.i18n('i18n_ice_servers'),
-			state  : View.i18n('i18n_connecting'),
-			tmpl   : 'initchecks-ice-tmpl',
-		},
-		{
-			id      : 'audio-input',
-			type    : View.i18n('i18n_audio_input'),
-			state   : View.i18n('i18n_checking'),
-			btnIcon : 'fa-microphone',
-			tmpl    : 'initchecks-media-tmpl',
-		},
-		{
-			id      : 'video-input',
-			hidden  : 'hidden',
-			type    : View.i18n('i18n_video_input'),
-			btnIcon : 'fa-eye',
-			state   : View.i18n('i18n_checking'),
-		},
-	];
-	
 	ns.InitChecksPane.prototype.build = function() {
 		var self = this;
+		self.checks = [
+			{
+				id     : 'check-browser',
+				type   : View.i18n('i18n_browser_compatibility'),
+				tmpl   : 'initchecks-browser',
+			},
+			{
+				id      : 'selfie-check',
+				type    : View.i18n('i18n_self_check'),
+				state   : View.i18n('i18n_checking'),
+				btnIcon : 'fa-user',
+				tmpl    : 'initchecks-selfie-tmpl',
+			},
+			{
+				id     : 'ice-servers',
+				type   : View.i18n('i18n_ice_servers'),
+				state  : View.i18n('i18n_connecting'),
+				tmpl   : 'initchecks-ice-tmpl',
+			},
+			{
+				id      : 'audio-input',
+				type    : View.i18n('i18n_audio_input'),
+				state   : View.i18n('i18n_checking'),
+				btnIcon : 'fa-microphone',
+				tmpl    : 'initchecks-media-tmpl',
+			},
+			{
+				id      : 'video-input',
+				hidden  : 'hidden',
+				type    : View.i18n('i18n_video_input'),
+				btnIcon : 'fa-eye',
+				state   : View.i18n('i18n_checking'),
+			},
+		];
+		
+		
 		var checksHTML = self.buildChecks();
 		var conf = {
 			checks : checksHTML,

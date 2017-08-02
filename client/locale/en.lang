@@ -240,3 +240,4 @@ i18n_unknown_data_for_api_user : Unknown data for API user - aborting
 i18n_file : File
 i18n_account_menu : Account
 i18n_tools : Tools
+i18n_self_check : Self check

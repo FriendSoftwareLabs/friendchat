@@ -148,7 +148,6 @@ Please answer the following questions..." 11 70
     SELFSIGNED="true"
 else
     temp=$(openssl verify -CAfile "$FRIEND_BUILD/cfg/crt/certificate.pem" -CApath "$FRIEND_BUILD/cfg/crt/certificate.pem" "$FRIEND_BUILD/cfg/crt/certificate.pem")
-    echo $temp
     if [ "$temp" == "$FRIEND_BUILD/cfg/crt/certificate.pem: OK" ]; then
         SELFSIGNED="true";
     fi
