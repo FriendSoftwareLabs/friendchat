@@ -24,14 +24,9 @@ var friendUP = window.friendUP || {};
 var Doors = window.Doors || {};
 var friend = window.friend || {};
 
-// dummy View to collect .run() handler from application
-//window.View = {};
-
 // ViewEvent
-(function( ns, undefined )
-{
-	ns.ViewEvent = function()
-	{
+(function( ns, undefined ) {
+	ns.ViewEvent = function() {
 		if ( !( this instanceof ns.ViewEvent ))
 			return new ns.ViewEvent();
 		
@@ -41,8 +36,7 @@ var friend = window.friend || {};
 		self.eventInit();
 	}
 	
-	ns.ViewEvent.prototype.eventInit = function()
-	{
+	ns.ViewEvent.prototype.eventInit = function() {
 		var self = this;
 		self.eventMap = {
 			'focus'        : focus,
@@ -78,7 +72,23 @@ var friend = window.friend || {};
 	
 	ns.ViewEvent.prototype.receiveEvent = function( e ) {
 		var self = this;
-		var msg = friendUP.tool.objectify( e.data );
+		if ( !e.data ) {
+			console.log( 'View.receiveEvent - no data', e );
+			return;
+		}
+		
+		var msg = null;
+		if ( e.data.toUpperCase ) {
+			try {
+				msg = JSON.parse( e.data );
+			} catch ( e ) {
+				console.log( 'View.receiveEvent - invalid JSON string', e.data );
+				return;
+			}
+		} else
+		
+		msg = e.data;
+		//var msg = friendUP.tool.objectify( e.data );
 		if ( !msg ) {
 			console.log( 'view.receiveEvent - no msg for event', e );
 			return;
@@ -94,8 +104,7 @@ var friend = window.friend || {};
 		handler( msg );
 	}
 	
-	ns.ViewEvent.prototype.viewEvent = function( msg )
-	{
+	ns.ViewEvent.prototype.viewEvent = function( msg ) {
 		var self = this;
 		var handler = self.listener[ msg.type ];
 		if ( !handler ) {
@@ -106,8 +115,7 @@ var friend = window.friend || {};
 		handler( msg.data );
 	}
 	
-	ns.ViewEvent.prototype.notify = function( msg )
-	{
+	ns.ViewEvent.prototype.notify = function( msg ) {
 		var self = this;
 		var handler = self.notifyMap[ msg.method ];
 		if ( !handler ) {
@@ -118,21 +126,18 @@ var friend = window.friend || {};
 		handler( msg );
 	}
 	
-	ns.ViewEvent.prototype.on = function( event, handler )
-	{
+	ns.ViewEvent.prototype.on = function( event, handler ) {
 		var self = this;
 		self.listener[ event ] = handler;
 	}
 	
-	ns.ViewEvent.prototype.off = function( event )
-	{
+	ns.ViewEvent.prototype.off = function( event ) {
 		var self = this;
 		if ( self.listener[ event ])
 			delete self.listener[ event ];
 	}
 	
-	ns.ViewEvent.prototype.allOff = function()
-	{
+	ns.ViewEvent.prototype.allOff = function() {
 		var self = this;
 		self.listener = {};
 	}
@@ -140,10 +145,8 @@ var friend = window.friend || {};
 })( api );
 
 // View
-(function( ns, undefined )
-{
-	ns.View = function()
-	{
+(function( ns, undefined ) {
+	ns.View = function() {
 		if ( !( this instanceof ns.View ))
 			return new ns.View( conf );
 		
@@ -204,8 +207,7 @@ var friend = window.friend || {};
 		});
 	}
 	
-	ns.View.prototype.close = function( msg )
-	{
+	ns.View.prototype.close = function( msg ) {
 		var self = this;
 		self.sendMessage({
 			type : 'close',
@@ -312,8 +314,7 @@ var friend = window.friend || {};
 		});
 	}
 	
-	ns.View.prototype.initialize = function( conf )
-	{
+	ns.View.prototype.initialize = function( conf ) {
 		var self = this;
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
@@ -476,8 +477,7 @@ var friend = window.friend || {};
 		self.sendViewEvent( msg );
 	}
 	
-	ns.View.prototype.activated = function()
-	{
+	ns.View.prototype.activated = function() {
 		var self = this;
 		self.viewEvent({
 			type : 'focus',
@@ -488,8 +488,7 @@ var friend = window.friend || {};
 		document.body.classList.add( 'activated' );
 	}
 	
-	ns.View.prototype.deactivated = function()
-	{
+	ns.View.prototype.deactivated = function() {
 		var self = this;
 		self.viewEvent({
 			type : 'focus',
@@ -519,8 +518,7 @@ var friend = window.friend || {};
 		}
 	}
 	
-	ns.View.prototype.sendMessage = function( data, callback )
-	{
+	ns.View.prototype.sendMessage = function( data, callback ) {
 		var self = this;
 		if ( !self.id )
 			throw new Error( 'View not yet initialized' );
@@ -535,15 +533,13 @@ var friend = window.friend || {};
 		self.send( msg );
 	}
 	
-	ns.View.prototype.sendViewEvent = function( msg )
-	{
+	ns.View.prototype.sendViewEvent = function( msg ) {
 		var self = this;
 		msg.type = 'view';
 		self.send( msg );
 	}
 	
-	ns.View.prototype.send = function( msg )
-	{
+	ns.View.prototype.send = function( msg ) {
 		const self = this;
 		msg.viewId = self.id;
 		msg.applicationId = self.applicationId;
@@ -552,8 +548,7 @@ var friend = window.friend || {};
 		window.parent.postMessage( msgString, self.parentOrigin );
 	}
 	
-	ns.View.prototype.receiveMessage = function( msg )
-	{
+	ns.View.prototype.receiveMessage = function( msg ) {
 		var self = this;
 		/*
 		console.log( 'View.receiveMessage - '
@@ -563,30 +558,30 @@ var friend = window.friend || {};
 	}
 	
 	// Get a translated string
-	ns.View.prototype.i18n = function( string )
-	{
-		if( this.translations && this.translations[string] )
-			return this.translations[string];
-		return string;
+	ns.View.prototype.i18n = function( string ) {
+		const self = this;
+		if ( !self.translations )
+			return string;
+		
+		const translation = self.translations[string];
+		return translation || string;
 	}
 	
 	// Search and execute replacements in string
-	ns.View.prototype.i18nReplaceInString = function( str )
-	{
+	ns.View.prototype.i18nReplaceInString = function( str ) {
+		const self = this;
 		var pos = 0;
-		while ( ( pos = str.indexOf( "{i18n_", pos ) ) >= 0 )
-		{
+		while ( ( pos = str.indexOf( "{i18n_", pos ) ) >= 0 ) {
 			var pos2 = str.indexOf( "}", pos );
-			if ( pos2 >=0 )
-			{
-				var key = str.substring( pos + 1, pos2 );
-				str = str.substring( 0, pos ) + View.i18n( key ) + str.substring( pos2 + 1 );
-				pos = pos2 + 1;
-			}
-			else
-			{
+			if ( -1 === pos2 )
 				break;
-			}
+			
+			var key = str.substring( pos + 1, pos2 );
+			str = str.substring( 0, pos ) 
+				+ View.i18n( key ) 
+				+ str.substring( pos2 + 1 );
+			pos = pos2 + 1;
+			
 		}
 		return str;
 	}
