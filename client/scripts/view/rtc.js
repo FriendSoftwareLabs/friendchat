@@ -2893,9 +2893,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		//console.log( 'checkICEProp', checkICEProp );
 		
 		var peerConf = {
-			iceServers    : self.rtc.ICE,
+			iceServers         : self.rtc.ICE,
+			iceTransportPolicy : 'relay',
 		};
-		//iceTransports : 'auto', // throws
+		//iceServers : 'auto', // throws
 		
 		//let checkProp = Object.getOwnPropertyDescriptor( peerConf, 'iceServers' );
 		//console.log( 'session.checkProp', checkProp );
