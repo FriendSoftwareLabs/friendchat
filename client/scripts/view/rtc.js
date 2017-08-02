@@ -2894,7 +2894,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		var peerConf = {
 			iceServers         : self.rtc.ICE,
-			iceTransportPolicy : 'relay',
 		};
 		//iceServers : 'auto', // throws
 		
