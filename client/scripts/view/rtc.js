@@ -3086,7 +3086,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function err( e ) {
 			console.log( 'remoteOffer err', e );
 			self.log( 'remoteOffer err', e );
-			self.emit( 'reset', e );
+			self.emit( 'error', e );
 		}
 	}
 	
@@ -3123,10 +3123,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			+ ' Failed to push down transport description:'
 			+ ' Failed to set ssl role for the channel.';
 			
-			if ( err ) {
+			console.log( 'remoteAnswer error', err );
+			if ( errTest === err ) {
 				sdp = self.toggleSDPActivePassive( sdp );
 				self.handleRemoteAnswer( sdp );
+			} else {
+				self.emit( 'error', err );
 			}
+			
 		}
 	}
 	
