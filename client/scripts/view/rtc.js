@@ -695,7 +695,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.videoQualityMap = {
 			'low'     : [ 64, 64, 4 ],
 			'medium'  : [ 480, 480, 24 ],
-			'normal'  : [ 6720, 6720, 24 ],
+			'normal'  : [ 720, 720, 24 ],
 			'default' : [ null, null, null ],
 		};
 		
@@ -739,7 +739,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function mute( e ) { self.toggleMute(); }
 		function blind( e ) { self.toggleBlind(); }
-		function qualityDefault( e ) { self.handleQuality( 'default' ); }
+		function qualityDefault( e ) { self.handleQuality( 'normal' ); }
 		function qualityMedium( e ) { self.handleQuality( 'medium' ); }
 		function qualityLow( e ) { self.handleQuality( 'low' ); }
 		function leave( e ) { self.leave(); }
