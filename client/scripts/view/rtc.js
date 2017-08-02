@@ -2435,7 +2435,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.handleSessionError = function( event ) {
 		var self = this;
 		console.log( 'handleSessionError', event );
-		
+		self.restart();
 	}
 	
 	ns.Peer.prototype.toggleMute = function( force ) {
@@ -3086,6 +3086,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function err( e ) {
 			console.log( 'remoteOffer err', e );
 			self.log( 'remoteOffer err', e );
+			self.emit( 'reset', e );
 		}
 	}
 	
