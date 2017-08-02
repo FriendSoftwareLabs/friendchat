@@ -751,7 +751,7 @@ library.component = library.component || {};
 			type   : 'item',
 			id     : 'screen-share',
 			name   : View.i18n( 'i18n_share_screen' ),
-			faIcon : 'fa-cubes',
+			faIcon : 'fa-tv',
 			toggle : false,
 			close  : true,
 		};

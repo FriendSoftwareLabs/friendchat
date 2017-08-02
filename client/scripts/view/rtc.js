@@ -2391,6 +2391,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			state : {
 				isMuted : self.selfie.isMute,
 				isBlinded : self.selfie.isBlind,
+				screenMode : self.screenMode,
 			},
 		};
 		console.log( 'sendMeta', meta );
@@ -2442,6 +2443,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			if ( null != state.isBlinded )
 				self.setRemoteBlind( state.isBlinded );
+			
+			if ( null != state.screenMode )
+				self.setScreenMode( state.screenMode );
 		}
 	}
 	
