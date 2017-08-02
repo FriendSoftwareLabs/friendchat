@@ -7,11 +7,6 @@ remote API and presents the content to the client. Multiple clients can
 be connected per account, all staying in sync. Accounts are created and
 logged in through Friend, no extra setup required.
 
-Friend Chat consists of three elements : the Friend Chat application, that
-runs under the Friend Workspace, and two servers, the Presence server who
-handles the connections between various rooms, and the Friend Chat server
-itself.
-
 ## Video / Audio Conferencing, aka Live
 
 Friend Chat allows p2p video and audio calls over webRTC, supported by the presence

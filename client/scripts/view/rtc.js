@@ -91,6 +91,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.init = function() {
 		var self = this;
+		
 		console.log( 'RTC.init', self );
 		if ( self.quality )
 			self.view.currentQuality = self.quality.level;
@@ -682,7 +683,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.init =function() {
 		var self = this;
 		self.supported = navigator.mediaDevices.getSupportedConstraints();
-		console.log( 'supported', self.supported );
+		//console.log( 'supported', self.supported );
+		self.screenShare = new library.rtc.ScreenShare();
 		
 		self.isSpeaking = new library.rtc.IsSpeaking();
 		self.isChrome = !!( !!window.chrome && !!window.chrome.webstore );
@@ -744,6 +746,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.showError = function( errMsg ) {
 		var self = this;
 		self.emit( 'error', errMsg );
+	}
+	
+	ns.Selfie.prototype.shareScreen = function() {
+		const self = this;
+		self.screenShare.getDeviceId( getBack );
+		function getBack( deviceId ) {
+			console.log( 'screenshare getBack', deviceId );
+		}
 	}
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
@@ -2425,7 +2435,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.handleSessionError = function( event ) {
 		var self = this;
 		console.log( 'handleSessionError', event );
-		
+		self.restart();
 	}
 	
 	ns.Peer.prototype.toggleMute = function( force ) {
@@ -2613,7 +2623,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false;
+		self.spam = true;
 		
 		self.init();
 	}
@@ -2624,14 +2634,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.addStream = function( stream ) {
 		var self = this;
+		console.log( 'Session.addStream', {
+			stream : stream,
+			conn : self.conn, 
+		});
+		
 		if ( !self.conn ) {
 			self.log( 'addStream - OMG NO CONN DUDE; CHILL',
 				{ conn : self.conn, stream : stream });
 			return;
 		}
 		
+		self.switchingTracks = true;
 		if ( !self.conn.addTrack ) {
 			legacyAddStream( stream );
+			done();
 			return;
 		}
 		
@@ -2642,6 +2659,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.log( 'addStream - tracks', { type : self.type, tracks : tracks });
 		tracks.forEach( add );
 		self.log( 'senders after adding tracks', self.senders );
+		done();
 		
 		function add( track ) {
 			if (( track.kind !== self.type ) && ( 'stream' !== self.type )) {
@@ -2655,7 +2673,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function legacyAddStream( stream ) {
-			self.log( 'legacyAddStream', stream );
+			self.log( 'Session.legacyAddStream', stream );
 			var localStreams = self.conn.getLocalStreams();
 			if ( localStreams && localStreams.length ) {
 				self.log( 'legacyAddStream - hasStream', {
@@ -2669,6 +2687,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			self.conn.addStream( stream );
+		}
+		
+		function done() {
+			self.log( 'tracks update done, unlocking negotiation', 
+				self.negotiationIsNeeded );
+			
+			self.switchingTracks = false;
+			if ( self.negotiationIsNeeded )
+				self.tryNegotiation();
 		}
 	}
 	
@@ -2845,7 +2872,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.tryNegotiation = function() {
 		var self = this;
-		self.log( 'tryNegotiation' );
+		self.log( 'tryNegotiation - switching?', self.switchingTracks );
+		if ( self.switchingTracks ) {
+			self.negotiationIsNeeded = true;
+			return;
+		}
+		
+		self.negotiationIsNeeded = false;
 		self.setState( 'negotiation-waiting' );
 		if ( self.conn.signalingState !== 'stable' ) {
 			self.negotiationWaiting = true;
@@ -3051,7 +3084,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function err( e ) {
+			console.log( 'remoteOffer err', e );
 			self.log( 'remoteOffer err', e );
+			self.emit( 'reset', e );
 		}
 	}
 	
@@ -4669,6 +4704,43 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function onselect( devices ) {
 			self.onselect( devices );
 		}
+	}
+	
+})( library.rtc );
+
+/* screenShare
+
+*/
+(function( ns, undefined ) {
+	ns.ScreenShare = function() {
+		const self = this;
+	}
+	
+	ns.ScreenShare.prototype.getDeviceId = function( callback ) {
+		const self = this;
+		console.log( 'getDeviceId' );
+		const contentMsg = {
+			type   : 'robotunicorns',
+			things : {
+				origin        : View.parentOrigin,
+				type          : 'view',
+				method        : 'sendmessage',
+				applicationId : View.applicationId,
+				viewId        : View.id,
+				data          : {
+					type : 'screen-share-extension',
+					data : {},
+				},
+			},
+		};
+		View.on( 'screen-share-extension', screenShareBack );
+		window.parent.postMessage( contentMsg, '*' );
+		
+		function screenShareBack( e ) {
+			console.log( 'screen-share-back', e );
+			callback( e );
+		}
+		
 	}
 	
 })( library.rtc );
