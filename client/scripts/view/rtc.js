@@ -734,6 +734,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.menu.on( 'q-medium' , qualityMedium );
 		self.menu.on( 'q-low'    , qualityLow );
 		self.menu.on( 'leave'    , leave );
+		self.menu.on( 'screen-mode', screenMode );
+		self.menu.on( 'screen-share', screenShare );
 		
 		function mute( e ) { self.toggleMute(); }
 		function blind( e ) { self.toggleBlind(); }
@@ -741,6 +743,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function qualityMedium( e ) { self.handleQuality( 'medium' ); }
 		function qualityLow( e ) { self.handleQuality( 'low' ); }
 		function leave( e ) { self.leave(); }
+		function screenMode( e ) { self.toggleScreenMode(); }
+		function screenShare( e ) { self.shareScreen(); }
 	}
 	
 	ns.Selfie.prototype.showError = function( errMsg ) {
@@ -750,9 +754,28 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.shareScreen = function() {
 		const self = this;
-		self.screenShare.getDeviceId( getBack );
-		function getBack( deviceId ) {
-			console.log( 'screenshare getBack', deviceId );
+		console.log( 'shareScreen' );
+		if ( self.chromeSourceId )
+			revert();
+		else
+			share();
+		
+		function revert() {
+			self.chromeSourceId = null;
+			self.menu.setState( 'screen-share', false );
+			self.setupStream();
+		}
+		
+		function share() {
+			self.screenShare.getDeviceId( getBack );
+			function getBack( res ) {
+				console.log( 'screenshare getBack', res );
+				if ( !res || !res.sid )
+					return;
+				
+				self.chromeSourceId = res.sid;
+				self.setupStream();
+			}
 		}
 	}
 	
@@ -979,6 +1002,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( self.video )
 				conf[ "video" ] = self.mediaConf.video;
 			
+			if ( self.chromeSourceId ) {
+				console.log( 'found chromeSourceId', self.chromeSourceId );
+				conf.video = {
+					mandatory : {
+						chromeMediaSource : 'desktop',
+						maxWidth : 2560,
+						maxHeight : 1440,
+						chromeMediaSourceId : self.chromeSourceId,
+					}
+				}
+				console.log( 'chrome media source set', conf.video );
+				conf.audio = false;
+				getMedia( conf );
+				return;
+			}
+			
 			// specify aduio device
 			if ( self.audio && self.currentDevices.audioinput )
 				setDevice( 'audio', self.currentDevices.audioinput );
@@ -991,9 +1030,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			function setDevice( type, label ) {
 				console.log( 'setupStream - setDevice', {
-					t : type,
-					l : label,
+					type   : type,
+					label  : label,
+					screen : self.chromeSourceId,
 				});
+				
 				var sourceType = type + 'input';
 				var device = availableDevices[ sourceType ][ label ];
 				if ( !device ) {
@@ -1189,6 +1230,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		else
 			self.screenMode = 'cover';
 		
+		const isCover = ( 'contain' === self.screenMode );
+		self.menu.setState( 'screen-mode', isCover );
 		self.emit( 'screenmode', self.screenMode );
 	}
 	

@@ -6,14 +6,17 @@ function connection( port ) {
 	function onMessage( e ) {
 		console.log( 'background.onMessage', e );
 		chrome.desktopCapture.chooseDesktopMedia(
-			[ 'screen', 'window' ],
+			[ 'window', 'screen' ],
 			port.sender.tab,
 			onSource
 		);
 	}
 	
-	function onSource( sourceId ) {
+	function onSource( sourceId, opts ) {
 		console.log( 'background.onSource', sourceId );
-		port.postMessage({ sid : sourceId });
+		port.postMessage({
+			sid  : sourceId,
+			opts : opts,
+		});
 	}
 }

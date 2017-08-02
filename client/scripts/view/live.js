@@ -747,6 +747,14 @@ library.component = library.component || {};
 			toggle : false,
 			close  : false,
 		};
+		var screenShare = {
+			type   : 'item',
+			id     : 'screen-share',
+			name   : View.i18n( 'i18n_share_screen' ),
+			faIcon : 'fa-cubes',
+			toggle : false,
+			close  : true,
+		};
 		var source = {
 			type   : 'item',
 			id     : 'source-select',
@@ -821,8 +829,9 @@ library.component = library.component || {};
 			quality,
 			restart,
 			screenMode,
-			popped,
+			screenShare,
 			source,
+			popped,
 			settings,
 			dragger,
 			cleanUI,
@@ -1927,8 +1936,6 @@ library.component = library.component || {};
 	ns.Peer.prototype.updateScreenMode = function() {
 		const self = this;
 		console.log( 'updateScreenMode', self.peer.screenMode );
-		const isCover = ( 'contain' === self.peer.screenMode );
-		self.menu.setState( 'screen-mode', isCover );
 		self.doResize();
 	}
 	
@@ -2218,9 +2225,7 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.initSelf = function() {
 		var self = this;
-		self.screenModeId = self.menu.on( 'screen-mode', screenMode );
 		
-		function screenMode( e ) { self.peer.toggleScreenMode(); }
 	}
 	
 	ns.Selfie.prototype.setupMenu = function() {
