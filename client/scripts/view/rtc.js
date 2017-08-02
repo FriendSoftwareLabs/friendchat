@@ -756,14 +756,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		console.log( 'shareScreen' );
 		if ( self.chromeSourceId )
-			revert();
+			unshare();
 		else
 			share();
 		
+		function unshare() {
+			revert();
+			self.setupStream();
+		}
+		
 		function revert() {
 			self.chromeSourceId = null;
+			self.chromeSourceOpts = null;
 			self.menu.setState( 'screen-share', false );
-			self.setupStream();
+			self.isScreenSharing = false;
+			self.toggleScreenMode( 'cover' );
 		}
 		
 		function share() {
@@ -774,7 +781,107 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					return;
 				
 				self.chromeSourceId = res.sid;
-				self.setupStream();
+				self.chromeSourceOpts = res.opts;
+				var screenMedia = null;
+				var audioMedia = null;
+				getScreenMedia( screenBack );
+				function screenBack( err, res ) {
+					if ( err ) {
+						failed( err );
+						return;
+					}
+					
+					screenMedia = res;
+					getAudioTrack( audioBack );
+				}
+				
+				function audioBack ( err, res ) {
+					if ( err ) {
+						failed( err );
+						return;
+					}
+					
+					audioMedia = res;
+					const media = combineMedia( screenMedia, audioMedia );
+					self.menu.setState( 'screen-share', true );
+					self.toggleScreenMode( 'contain' );
+					self.isScreenSharing = true;
+					self.setStream( media );
+				}
+			}
+			
+			function getScreenMedia( callback ) {
+				console.log( 'found chromeSourceId', self.chromeSourceId );
+				const conf = {
+					audio : false,
+				};
+				
+				conf.video = {
+					mandatory : {
+						chromeMediaSource : 'desktop',
+						maxWidth  : screen.width,
+						maxHeight : screen.height,
+						chromeMediaSourceId : self.chromeSourceId,
+					}
+				}
+				console.log( 'chrome media source set', conf.video );
+				getMedia( conf )
+					.then( screenOk )
+					.catch( err );
+					
+				function screenOk( res ) {
+					console.log( 'have screen media',  res );
+					callback( null, res );
+				}
+				
+				function err( e ) {
+					console.log( 'screen failed', e );
+					callback( e, null );
+				}
+			}
+			
+			function getAudioTrack( callback ) {
+				const conf = {
+					video : false,
+					audio : {
+						echoCancellation : true,
+					},
+				};
+				getMedia( conf )
+					.then( audioOk )
+					.catch( err );
+				
+				function audioOk( media ) {
+					console.log( 'have audio media', media );
+					callback( null, media );
+				}
+				
+				function err( e ) {
+					console.log( 'audio failed', e );
+					callback( e, null );
+				}
+			}
+			
+			function getMedia( conf ) {
+				return window.navigator.mediaDevices.getUserMedia( conf );
+			}
+			
+			function combineMedia( screen, audio ) {
+				let sT = screen.getTracks();
+				let aT = audio.getTracks();
+				console.log( 'combineMedia', {
+					sT : sT,
+					aT : aT,
+				} );
+				const media = new MediaStream();
+				media.addTrack( sT[ 0 ] );
+				media.addTrack( aT[ 0 ] );
+				return media;
+			}
+			
+			function failed( e ) {
+				console.log( 'screen share - something failed, revert', e );
+				revert();
 			}
 		}
 	}
@@ -850,10 +957,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setRoomQuality = function( quality ) {
 		var self = this;
+		console.log( 'setRoomQuality - is sahring?', self.isScreenSharing );
 		self.streamQuality = quality;
 		var level = self.applyStreamQuality();
 		if ( !level )
 			return;
+		
+		if ( self.isScreenSharing ) {
+			console.log( 'is screen sharing, dont reinit stream' );
+			return;
+		}
 		
 		self.setupStream();
 		self.emit( 'room-quality', level ); // updating ui
@@ -1001,22 +1114,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				conf[ "audio" ] = self.mediaConf.audio;
 			if ( self.video )
 				conf[ "video" ] = self.mediaConf.video;
-			
-			if ( self.chromeSourceId ) {
-				console.log( 'found chromeSourceId', self.chromeSourceId );
-				conf.video = {
-					mandatory : {
-						chromeMediaSource : 'desktop',
-						maxWidth : 2560,
-						maxHeight : 1440,
-						chromeMediaSourceId : self.chromeSourceId,
-					}
-				}
-				console.log( 'chrome media source set', conf.video );
-				conf.audio = false;
-				getMedia( conf );
-				return;
-			}
 			
 			// specify aduio device
 			if ( self.audio && self.currentDevices.audioinput )
@@ -1223,12 +1320,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'reflow' );
 	}
 	
-	ns.Selfie.prototype.toggleScreenMode = function() {
+	ns.Selfie.prototype.toggleScreenMode = function( mode ) {
 		const self = this;
 		if ( !self.screenMode || 'cover' === self.screenMode )
 			self.screenMode = 'contain';
 		else
 			self.screenMode = 'cover';
+		
+		if ( mode )
+			self.screenMode = mode;
 		
 		const isCover = ( 'contain' === self.screenMode );
 		self.menu.setState( 'screen-mode', isCover );
