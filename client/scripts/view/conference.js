@@ -430,10 +430,17 @@ library.view = library.view || {};
 		self.updateParticipantMode( data.target );
 		const mode = data.mode;
 		const mote = '+' === mode[0] ? 'upmode' : 'downmode';
+		let message = mode + ' ' + target;
+		if ( data.source && data.source.name ) {
+			message = data.source.name + ' ' 
+			+ View.i18n('i18n_sets_mode') + ' '
+			+ message;
+		}
+		
 		var msgConf = {
 			type      : 'usermode',
 			klassType : mote,
-			message   : data.source.name + ' ' + View.i18n('i18n_sets_mode') + ' ' + mode + ' ' + target,
+			message   : message,
 			time      : data.time,
 		};
 		self.systemMsg( msgConf );
