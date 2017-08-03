@@ -685,6 +685,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.supported = navigator.mediaDevices.getSupportedConstraints();
 		//console.log( 'supported', self.supported );
 		self.screenShare = new library.rtc.ScreenShare();
+		self.screenShare.checkIsAvailable( shareCheckBack );
+		function shareCheckBack( err, isAvailable ) {
+			if ( err ) {
+				console.log( 'shareCheckBack - err', err )
+				return;
+			}
+			
+			console.log( 'shareCheckBack', isAvailable );
+		}
 		
 		self.isSpeaking = new library.rtc.IsSpeaking();
 		self.isChrome = !!( !!window.chrome && !!window.chrome.webstore );
@@ -774,7 +783,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function share() {
-			self.screenShare.getDeviceId( getBack );
+			self.screenShare.getSourceId( getBack );
 			function getBack( res ) {
 				console.log( 'screenshare getBack', res );
 				if ( !res || !res.sid )
@@ -4865,14 +4874,64 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.ScreenShare = function() {
 		const self = this;
+		self.requests = {};
+		
+		self.init();
 	}
 	
-	ns.ScreenShare.prototype.getDeviceId = function( callback ) {
+	ns.ScreenShare.prototype.getSourceId = function( callback ) {
 		const self = this;
 		console.log( 'getDeviceId' );
-		const contentMsg = {
-			type   : 'robotunicorns',
-			things : {
+		const getSource = {
+			type : 'getSource'
+		};
+		self.sendToExt( getSource, sourceBack );
+		function sourceBack( res ) {
+			console.log( 'getSourceId - sourceBack', res );
+			callback( res );
+		}
+	}
+	
+	ns.ScreenShare.prototype.checkIsAvailable = function( callback ) {
+		const self = this;
+		console.log( 'ScreenShare.checkIsAvailable', self );
+		const checkAvailable = {
+			type : 'ready',
+		};
+		self.sendToExt( checkAvailable, checkBack );
+		self.availableTimeout = setTimeout( checkTimeout, 2000 );
+		function checkBack( res ) {
+			console.log( 'checkIsAvailable - checkBack', res );
+			if ( !self.availableTimeout )
+				return;
+			
+			clearTimeout( self.availableTimeout );
+			delete self.availableTimeout;
+			
+			callback( null, res );
+		}
+		
+		function checkTimeout() {
+			
+		}
+	}
+	
+	// private
+	
+	ns.ScreenShare.prototype.init = function() {
+		const self = this;
+		if ( !View ) {
+			console.log( 'ScreenShare.init - no window.View, aborting' );
+			return;
+		}
+		
+		console.log( 'ScreenShare init' );
+		View.on( 'screen-share-extension', extEvent );
+		function extEvent( e ) { self.handleExtEvent( e ); }
+		
+		const init = {
+			type : 'init',
+			data : {
 				origin        : View.parentOrigin,
 				type          : 'view',
 				method        : 'sendmessage',
@@ -4884,14 +4943,45 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				},
 			},
 		};
-		View.on( 'screen-share-extension', screenShareBack );
-		window.parent.postMessage( contentMsg, '*' );
+		self.sendToExt( init, initBack );
+		function initBack( res ) {
+			console.log( 'initBack', res );
+		}
+	}
+	
+	ns.ScreenShare.prototype.handleExtEvent = function( res ) {
+		const self = this;
+		console.log( 'handleExtEvent', {
+			res  : res,
+			reqs : self.requests,
+		});
+		if ( !res )
+			return;
 		
-		function screenShareBack( e ) {
-			console.log( 'screen-share-back', e );
-			callback( e );
+		const handler = self.requests[ res.type ];
+		if ( !handler ){
+			console.log( 'ShareScreen.handleExtEvent - no handler for', res );
+			return;
 		}
 		
+		handler( res.data );
+		
+	}
+	
+	ns.ScreenShare.prototype.sendToExt = function( event, callback ) {
+		const self = this;
+		const reqId = friendUP.tool.uid( 'ext-req' );
+		self.requests[ reqId ] = callback;
+		const req = {
+			type : reqId,
+			data : event,
+		};
+		const extMsg = {
+			type : 'robotunicorns',
+			data : req,
+		};
+		console.log( 'sendToExt', extMsg );
+		window.parent.postMessage( extMsg, '*' );
 	}
 	
 })( library.rtc );

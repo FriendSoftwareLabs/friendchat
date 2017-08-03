@@ -34,8 +34,11 @@ function connection( port ) {
 	function onSource( sourceId, opts ) {
 		console.log( 'background.onSource', sourceId );
 		port.postMessage({
-			sid  : sourceId,
-			opts : opts,
+			type : 'sourceId',
+			data : {
+				sid  : sourceId,
+				opts : opts,
+			},
 		});
 	}
 }
