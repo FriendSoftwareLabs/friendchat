@@ -771,7 +771,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.openScreenExtInstall = function() {
 		const self = this;
-		console.log( 'onpenScreenExtInstall' );
+		console.log( 'openScreenExtInstall' );
 		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/\
 			ipakdgondpoahmhclacfgekboimhgpap' );
 	}
