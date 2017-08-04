@@ -159,6 +159,13 @@
 	color : white;
 }
 
+.abs-center {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform : translate( -50%, -50% );
+}
+
 .abs-cover {
 	position: absolute;
 	top : 0;
@@ -1309,4 +1316,14 @@
 
 .menu-item-folder .menu-item-name {
 	font-weight: bold;
+}
+
+/* ExtConn pane */
+
+#ext-conn-ui {
+	padding : 1em;
+}
+
+#ext-conn-ui .message {
+	padding : 0 0.5em;
 }

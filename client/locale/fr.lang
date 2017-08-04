@@ -65,6 +65,7 @@ i18n_constraints : Contraintes
 i18n_choose_input : Choisir l&#39;entrée
 i18n_room_settings : Préférences salon
 i18n_max_users : Utilisateurs max
+i18n_public_room : Salon public
 i18n_connecting : Connexion...
 i18n_could_not_connect : Connexion impossible.
 i18n_if_the_problem_persist : Montrez cette erreur à un administrateur si le problème persiste.
@@ -173,8 +174,10 @@ i18n_low : bas ( 128 / 4 )
 i18n_mute_your_audio : Audio muet
 i18n_pause_your_video : Vidéo en pause
 i18n_share_screen : Partager un écran ou app
-i18n_toggle_share_screen : Toggle shareing a screen or app
-i18n_get_screenshare_ext : Get screen share extesion
+i18n_toggle_share_screen : Partager écran ou application
+i18n_get_screenshare_ext : Charger l&#39;extension Screen Share
+i18n_waiting_for_extension :  En attente des extensions..
+i18n_extension_found : Extension trouvee!
 i18n_select_media_sources : Choisir les sources média
 i18n_text_chat : Conversation texte
 i18n_restart_stream : Relancer le flux

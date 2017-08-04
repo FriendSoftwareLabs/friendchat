@@ -66,6 +66,7 @@ i18n_constraints : Constraints
 i18n_choose_input : Choose input
 i18n_room_settings : Room settings
 i18n_max_users : Max users
+i18n_public_room : Public room
 i18n_connecting : Connecting...
 i18n_could_not_connect : Could not connect.
 i18n_if_the_problem_persist : If the problem persists show this error to an administrator
@@ -177,6 +178,8 @@ i18n_pause_your_video : Pause your video
 i18n_share_screen : Share a screen or app
 i18n_toggle_share_screen : Toggle sharing a screen or app
 i18n_get_screenshare_ext : Get screen share extension
+i18n_waiting_for_extension : Waiting for extension..
+i18n_extension_found : Extension found!
 i18n_select_media_sources : Select media sources
 i18n_text_chat : Text Chat
 i18n_restart_stream : Restart stream

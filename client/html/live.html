@@ -936,7 +936,7 @@ message,
 	</div>
 	<div id="setting-is-public" class="setting group row">
 		<div class="label fortify">
-			Public room
+			{i18n_public_room}
 		</div>
 		<div class="input expand">
 			<div class="input-wrap check">
@@ -944,6 +944,33 @@ message,
 			</div>
 			<div class="input-wrap link hidden">
 				<input type="text" placeholder="< nope.jpg >">
+			</div>
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- Extension load pane
+
+-->
+<script id="viewpane-ext-connect-tmpl" type="text/html">
+<div id="ext-conn-ui" class="std-bg abs-center">
+	<div id="ext-conn-waiting" class="group row">
+		<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+		<div class="message expand">
+			{i18n_waiting_for_extension}
+		</div>
+	</div>
+	<div id="ext-conn-connected" class="group row hidden">
+		<div class="message expand">
+			{i18n_extension_found}
+		</div>
+		<div class="btn-row group row">
+			<div id="ext-conn-share" class="btn accept">
+				<i class="fa fa-fw fa-tv"></i>
+			</div>
+			<div id="ext-conn-close" class="btn danger">
+				<i class="fa fa-fw fa-close"></i>
 			</div>
 		</div>
 	</div>

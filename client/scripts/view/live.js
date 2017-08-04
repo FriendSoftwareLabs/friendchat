@@ -179,6 +179,7 @@ library.component = library.component || {};
 		self.uiPaneMap = {
 			'init-checks'   : library.view.InitChecksPane,
 			'source-select' : library.view.SourceSelectPane,
+			'ext-connect'   : library.view.ExtConnectPane,
 			'settings'      : library.view.SettingsPane,
 			'share'         : library.view.SharePane,
 			'menu'          : library.view.MenuPane,
@@ -931,6 +932,15 @@ library.component = library.component || {};
 		};
 		self.settingsUI = self.addUIPane( 'settings', conf );
 		return self.settingsUI;
+	}
+	
+	ns.Live.prototype.addExtConnPane = function( onshare ) {
+		const self = this;
+		const conf = {
+			onshare : onshare,
+		};
+		self.extConnUI = self.addUIPane( 'ext-connect', conf );
+		return self.extConnUI;
 	}
 	
 	ns.Live.prototype.updateQualityLevel = function( level ) {
@@ -3211,6 +3221,79 @@ library.component = library.component || {};
 	
 })( library.component );
 
+// ExtConnectPane
+(function( ns, undefined ) {
+	ns.ExtConnectPane = function( paneConf ) {
+		console.log( 'ExtConnectPane', paneConf );
+		const self = this;
+		let conf = paneConf.conf;
+		self.onshare = conf.onshare;
+		library.component.UIPane.call( self, paneConf );
+		
+	}
+	
+	ns.ExtConnectPane.prototype = Object.create( library.component.UIPane.prototype );
+	
+	// Public
+	
+	ns.ExtConnectPane.prototype.setConnected = function() {
+		const self = this;
+		console.log( 'ExtConnectPane.setConected', self );
+		self.waiting.classList.toggle( 'hidden', true );
+		self.connected.classList.toggle( 'hidden', false );
+	}
+	
+	ns.ExtConnectPane.prototype.close = function() {
+		const self = this;
+		console.log( 'ExtConnectPane.close' );
+		if ( self.ui )
+			self.ui.parentNode.removeChild( self.ui );
+		
+		delete self.ui;
+		delete self.onshare;
+		self.paneClose();
+	}
+	
+	// Private
+	
+	ns.ExtConnectPane.prototype.build = function() {
+		const self = this;
+		const conf = {};
+		const extLoadHTML = hello.template.get( 'viewpane-ext-connect-tmpl', conf );
+		const pid = self.insertPane( extLoadHTML );
+		
+		self.bind();
+	}
+	
+	ns.ExtConnectPane.prototype.bind = function() {
+		const self = this;
+		console.log( 'ExtConnectPane.bind', self );
+		self.ui = document.getElementById( 'ext-conn-ui' );
+		self.waiting = document.getElementById( 'ext-conn-waiting' );
+		self.connected = document.getElementById( 'ext-conn-connected' );
+		self.shareBtn = document.getElementById( 'ext-conn-share' );
+		self.closeBtn = document.getElementById( 'ext-conn-close' );
+		
+		self.shareBtn.addEventListener( 'click', shareClick, false );
+		self.closeBtn.addEventListener( 'click', closeClick, false );
+		
+		function shareClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			if ( self.onshare )
+				self.onshare();
+		}
+		
+		function closeClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.close();
+		}
+		
+	}
+})( library.view );
+
+
 // Share pane
 
 (function( ns, undefined ) {
@@ -3303,13 +3386,6 @@ library.component = library.component || {};
 	ns.MenuPane.prototype.build = function() {
 		var self = this;
 		var pId = self.insertPane( '' );
-		/*
-		self.baseTmplId = conf.baseTmplId || 'live-menu-container-tmpl';
-		self.folderTmplId = conf.folderTmplId || 'live-menu-folder-tmpl';
-		self.itemFolderTmplId = conf.itemFolderTmplId || 'live-menu-item-folder-tmpl';
-		self.itemTmplId = conf.itemTmplId || 'live-menu-item-tmpl';
-		*/
-		
 		var conf = {
 			id               : friendUP.tool.uid( 'menu' ),
 			parentId         : pId,

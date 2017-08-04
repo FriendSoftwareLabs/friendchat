@@ -543,6 +543,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			};
 		
 		var selfie = new library.rtc.Selfie({
+			view              : self.view,
 			menu              : self.menu,
 			identity          : identity,
 			permissions       : self.permissions,
@@ -644,6 +645,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		var self = this;
 		self.id = 'selfie';
+		self.view = conf.view;
 		self.menu = conf.menu;
 		self.identity = conf.identity;
 		self.permissions = conf.permissions;
@@ -678,12 +680,39 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'identity', identity );
 	}
 	
+	ns.Selfie.prototype.close = function() {
+		var self = this;
+		self.release(); // component.EventEmitter, component/common.js
+		if ( self.stream )
+			self.clearStream();
+		
+		if ( self.shareMedia )
+			self.clearShareMedia();
+		
+		delete self.stream;
+		delete self.shareMedia;
+		delete self.view;
+		delete self.extConn;
+		delete self.menu;
+		delete self.onleave;
+		delete self.doneBack;
+	}
+	
 	// Private
 	
 	ns.Selfie.prototype.init =function() {
 		var self = this;
 		self.supported = navigator.mediaDevices.getSupportedConstraints();
 		//console.log( 'supported', self.supported );
+		
+		//
+		self.extConn = self.view.addExtConnPane( onExtConnShare );
+		function onExtConnShare( e ) {
+			console.log( 'onExtConnShare', e );
+			self.extConn.close();
+			self.toggleShareScreen();
+		}
+		
 		self.screenShare = new library.rtc.ScreenShare();
 		self.screenShare.checkIsAvailable( shareCheckBack );
 		function shareCheckBack( err, isAvailable ) {
@@ -692,8 +721,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					err       : err,
 					available : isAvailable });
 				
-				self.menu.disable( 'toggle-screen-share' );
-				self.menu.enable( 'screen-share-ext' );
+				self.toggleMenuScreenShareInstall( true );
 				return;
 			}
 			
@@ -701,6 +729,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 		}
 		
+		//
 		self.isSpeaking = new library.rtc.IsSpeaking();
 		self.isChrome = !!( !!window.chrome && !!window.chrome.webstore );
 		self.isFirefox = !!window.InstallTrigger;
@@ -769,11 +798,38 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'error', errMsg );
 	}
 	
+	ns.Selfie.prototype.toggleMenuScreenShareInstall = function( showInstall ) {
+		const self = this;
+		if ( showInstall ) {
+			self.menu.disable( 'toggle-screen-share' );
+			self.menu.enable( 'screen-share-ext' );
+		} else {
+			self.menu.disable( 'screen-share-ext' );
+			self.menu.enable( 'toggle-screen-share' );
+		}
+	}
+	
 	ns.Selfie.prototype.openScreenExtInstall = function() {
 		const self = this;
 		console.log( 'openScreenExtInstall' );
 		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/\
 			ipakdgondpoahmhclacfgekboimhgpap' );
+		
+		self.extConn.show();
+		self.screenShare.connect( connBack );
+		function connBack( err, res ) {
+			console.log( 'selfie.screenShare.connBack', {
+				err : err,
+				res : res,
+			});
+			if ( err ) {
+				self.close();
+				return;
+			}
+			
+			self.extConn.setConnected( true );
+			self.toggleMenuScreenShareInstall( false );
+		}
 	}
 	
 	ns.Selfie.prototype.toggleShareScreen = function() {
@@ -1475,22 +1531,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.leave = function() {
 		var self = this;
 		self.onleave();
-	}
-	
-	ns.Selfie.prototype.close = function() {
-		var self = this;
-		self.release(); // component.EventEmitter, component/common.js
-		if ( self.stream )
-			self.clearStream();
-		
-		if ( self.shareMedia )
-			self.clearShareMedia();
-		
-		delete self.stream;
-		delete self.shareMedia;
-		delete self.menu;
-		delete self.onleave;
-		delete self.doneBack;
 	}
 	
 })( library.rtc );
@@ -4972,6 +5012,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
+	ns.ScreenShare.prototype.connect = function( callback ) {
+		const self = this;
+		console.log( 'ScreenShare.connect' );
+		self.connectCallback = callback;
+		self.initInterval = setInterval( sendInit, 2000 );
+		function sendInit() {
+			if ( !self.initInterval )
+				return;
+			
+			self.sendInit();
+		}
+	}
+	
 	ns.ScreenShare.prototype.checkIsAvailable = function( callback ) {
 		const self = this;
 		console.log( 'ScreenShare.checkIsAvailable', self );
@@ -5011,6 +5064,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		View.on( 'screen-share-extension', extEvent );
 		function extEvent( e ) { self.handleExtEvent( e ); }
 		
+		self.sendInit();
+	}
+	
+	ns.ScreenShare.prototype.sendInit = function() {
+		const self = this;
+		console.log( 'ScreenShare.sendInit' );
 		const init = {
 			type : 'init',
 			data : {
@@ -5028,6 +5087,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.sendToExt( init, initBack );
 		function initBack( res ) {
 			console.log( 'initBack', res );
+			if ( self.initInterval ) {
+				clearInterval( self.initInterval );
+				delete self.initInterval;
+			}
+			
+			if ( !self.connectCallback )
+				return;
+			
+			self.connectCallback( null, true );
+			delete self.connectCallback;
 		}
 	}
 	
