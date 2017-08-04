@@ -749,11 +749,18 @@ library.component = library.component || {};
 		};
 		var screenShare = {
 			type   : 'item',
-			id     : 'screen-share',
-			name   : View.i18n( 'i18n_share_screen' ),
+			id     : 'toggle-screen-share',
+			name   : View.i18n( 'i18n_toggle_share_screen' ),
 			faIcon : 'fa-tv',
 			toggle : false,
 			close  : true,
+		};
+		var screenShareExt = {
+			type    : 'item',
+			id      : 'screen-share-ext',
+			name    : View.i18n( 'i18n_get_screenshare_ext' ),
+			faIcon  : 'fa-download',
+			disable : true,
 		};
 		var source = {
 			type   : 'item',
@@ -803,9 +810,9 @@ library.component = library.component || {};
 			faIcon : 'fa-share-alt',
 		};
 		var dragger = {
-			type : 'item',
-			id : 'dragger',
-			name : View.i18n('i18n_change_participant_order'),
+			type   : 'item',
+			id     : 'dragger',
+			name   : View.i18n('i18n_change_participant_order'),
 			faIcon : 'fa-hand-stop-o',
 		}
 		var cleanUI = {
@@ -830,6 +837,7 @@ library.component = library.component || {};
 			restart,
 			screenMode,
 			screenShare,
+			screenShareExt,
 			source,
 			popped,
 			settings,

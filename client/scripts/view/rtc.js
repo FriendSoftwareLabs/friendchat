@@ -687,12 +687,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.screenShare = new library.rtc.ScreenShare();
 		self.screenShare.checkIsAvailable( shareCheckBack );
 		function shareCheckBack( err, isAvailable ) {
-			if ( err ) {
-				console.log( 'shareCheckBack - err', err )
+			if ( err || !isAvailable ) {
+				console.log( 'shareCheckBack - screen share not available', {
+					err       : err,
+					available : isAvailable });
+				
+				self.menu.disable( 'toggle-screen-share' );
+				self.menu.enable( 'screen-share-ext' );
 				return;
 			}
 			
-			console.log( 'shareCheckBack', isAvailable );
+			console.log( 'shareCheckBack - sharing available', isAvailable );
+			
 		}
 		
 		self.isSpeaking = new library.rtc.IsSpeaking();
@@ -744,7 +750,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.menu.on( 'q-low'    , qualityLow );
 		self.menu.on( 'leave'    , leave );
 		self.menu.on( 'screen-mode', screenMode );
-		self.menu.on( 'screen-share', screenShare );
+		self.menu.on( 'toggle-screen-share', screenShare );
+		self.menu.on( 'screen-share-ext', screenExtInstall );
 		
 		function mute( e ) { self.toggleMute(); }
 		function blind( e ) { self.toggleBlind(); }
@@ -753,7 +760,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function qualityLow( e ) { self.handleQuality( 'low' ); }
 		function leave( e ) { self.leave(); }
 		function screenMode( e ) { self.toggleScreenMode(); }
-		function screenShare( e ) { self.shareScreen(); }
+		function screenShare( e ) { self.toggleShareScreen(); }
+		function screenExtInstall( e ) { self.openScreenExtInstall( e ); }
 	}
 	
 	ns.Selfie.prototype.showError = function( errMsg ) {
@@ -761,9 +769,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'error', errMsg );
 	}
 	
-	ns.Selfie.prototype.shareScreen = function() {
+	ns.Selfie.prototype.openScreenExtInstall = function() {
 		const self = this;
-		console.log( 'shareScreen' );
+		console.log( 'onpenScreenExtInstall' );
+		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/\
+			ipakdgondpoahmhclacfgekboimhgpap' );
+	}
+	
+	ns.Selfie.prototype.toggleShareScreen = function() {
+		const self = this;
+		console.log( 'toggleShareScreen' );
 		if ( self.chromeSourceId )
 			unshare();
 		else
@@ -777,7 +792,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function revert() {
 			self.chromeSourceId = null;
 			self.chromeSourceOpts = null;
-			self.menu.setState( 'screen-share', false );
+			self.menu.setState( 'toggle-screen-share', false );
 			self.isScreenSharing = false;
 			self.toggleScreenMode( 'cover' );
 		}
@@ -812,10 +827,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					
 					audioMedia = res;
 					const media = combineMedia( screenMedia, audioMedia );
-					self.menu.setState( 'screen-share', true );
+					self.menu.setState( 'toggle-screen-share', true );
 					self.toggleScreenMode( 'contain' );
 					self.isScreenSharing = true;
 					self.setStream( media );
+					self.bindShareTracks( screenMedia );
 				}
 			}
 			
@@ -828,8 +844,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				conf.video = {
 					mandatory : {
 						chromeMediaSource : 'desktop',
-						maxWidth  : screen.width,
-						maxHeight : screen.height,
+						//maxWidth  : screen.width,
+						//maxHeight : screen.height,
 						chromeMediaSourceId : self.chromeSourceId,
 					}
 				}
@@ -892,6 +908,61 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				console.log( 'screen share - something failed, revert', e );
 				revert();
 			}
+		}
+	}
+	
+	ns.Selfie.prototype.bindShareTracks = function( media ) {
+		const self = this;
+		console.log( 'bindShareTracks', media );
+		
+		// TODO .close()
+		
+		self.shareMedia = media;
+		const tracks = media.getTracks();
+		tracks.forEach( bindOnEnded );
+		
+		function bindOnEnded( track ) {
+			console.log( 'bindOnEdned', track );
+			track.onended = onEnded;
+			function onEnded( e ) {
+				console.log( 'onEnded', e );
+				track.onended = null;
+				if ( !self.shareMedia )
+					return;
+				
+				self.shareMedia.removeTrack( track );
+				checkMediaEmpty();
+			}
+		}
+		
+		function checkMediaEmpty() {
+			console.log( 'checkMediaEmpty', self.shareMedia );
+			if ( !self.shareMedia )
+				return;
+			
+			let tracks = self.shareMedia.getTracks();
+			if ( tracks.length )
+				return;
+			
+			// no tracks, lets close share thingie
+			self.shareMedia = null;
+			self.toggleShareScreen();
+		}
+	}
+	
+	ns.Selfie.clearShareMedia = function() {
+		const self = this;
+		console.log( 'clearShareMedia', self.shareMedia );
+		if ( !self.shareMedia )
+			return;
+		
+		let tracks = self.shareMedia.getTracks();
+		tracks.forEach( stop );
+		delete self.shareMedia;
+		
+		function stop( track ) {
+			self.shareMedia.removeTrack( track );
+			track.stop();
 		}
 	}
 	
@@ -1300,6 +1371,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'stream', null );
 		
 		function stop( track ) {
+			self.stream.removeTrack( track );
 			track.stop();
 		}
 	}
@@ -1408,6 +1480,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.close = function() {
 		var self = this;
 		self.release(); // component.EventEmitter, component/common.js
+		if ( self.stream )
+			self.clearStream();
+		
+		if ( self.shareMedia )
+			self.clearShareMedia();
+		
+		delete self.stream;
+		delete self.shareMedia;
 		delete self.menu;
 		delete self.onleave;
 		delete self.doneBack;
@@ -4912,7 +4992,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkTimeout() {
-			
+			console.log( 'no reply from ext' );
+			delete self.availableTimeout;
+			callback( null, false );
 		}
 	}
 	

@@ -175,6 +175,8 @@ i18n_low : Low ( 128 / 4 )
 i18n_mute_your_audio : Mute your audio
 i18n_pause_your_video : Pause your video
 i18n_share_screen : Share a screen or app
+i18n_toggle_share_screen : Toggle shareing a screen or app
+i18n_get_screenshare_ext : Get screen share extesion
 i18n_select_media_sources : Select media sources
 i18n_text_chat : Text Chat
 i18n_restart_stream : Restart stream

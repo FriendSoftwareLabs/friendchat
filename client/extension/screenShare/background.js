@@ -42,3 +42,19 @@ function connection( port ) {
 		});
 	}
 }
+
+chrome.runtime.onInstalled.addListener( installed );
+function installed( e ) {
+	console.log( 'background.js - on installed', e );
+	chrome.tabs.query( {}, tabsBack );
+	function tabsBack( tabs ) {
+		console.log( 'tabs', tabs );
+		tabs.forEach( inject );
+	}
+	
+	function inject( tab ) {
+		chrome.tabs.executeScript( tab.id, {
+			file : 'content.js',
+		});
+	}
+}

@@ -17,6 +17,8 @@
 *                                                                              *
 *****************************************************************************©*/
 
+console.log( 'content.js loaded' );
+
 ScreenShare = function() {
 	const self = this;
 	self.init();
@@ -47,10 +49,12 @@ ScreenShare.prototype.init = function() {
 	function getSource( e, r ) { self.handleGetSource( e, r ); }
 	
 	self.bgEventMap = {
-		sourceId : sourceId,
+		installed : isInstalled,
+		sourceId  : sourceId,
 	}
 	
 	function sourceId( e ) { self.handleSourceId( e ); }
+	function isInstalled( e ) { self.handleIsInstalled( e ); }
 	
 	window.addEventListener( 'message', webMessage );
 	function webMessage( e ) {

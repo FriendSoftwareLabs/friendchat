@@ -1,7 +1,7 @@
 {
 	"name"                   : "Friend screen share",
 	"author"                 : "Friend Software Labs",
-	"version"                : "0.0.1",
+	"version"                : "0.0.2",
 	"manifest_version"       : 2,
 	"minimum_chrome_version" : "34",
 	"description"            : "Share your screen in FriendChat",
@@ -23,7 +23,11 @@
 		}
 	],
 	"permissions"            : [
-		"desktopCapture"
+		"desktopCapture",
+		"tabs",
+		"https://*.friendup.cloud/*",
+		"https://*.friendsky.cloud/*",
+		"https://*.friendup.no/*"
 	],
 	"icons" : {
 		"128" : "ext_icon.png"
