@@ -165,6 +165,23 @@ script, which will copy the modification at their proper location and run
 'npm install' automatically. Remember to kill the Presence server before
 running the script.
 
+## Branches
+
+* Create a new branch for each feature or patch.
+* Only finished features or patches will be merged with master.
+* All commits to master must be reviewed by atleast one person ( Espen )
+* Squash commit log on merge to master. Make the merge commit descriptive.
+* Dev is for fooling around. It will be updated from master.
+
+The purpose here is to keep master git log as a useful history, for things 
+like writing patch notes and checking up on what was added when by who.
+
+#### Version, x.y.z
+
+* x is incremented when the team feels like it.
+* y is incremented when a feature is merged into master
+* z is incremented when a patch is merged into master
+
 ## License
 
 FriendChat is licenced under AGPL3
