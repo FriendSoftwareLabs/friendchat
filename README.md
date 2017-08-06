@@ -9,9 +9,9 @@ logged in through Friend, no extra setup required.
 
 ## Video / Audio Conferencing, aka Live
 
-Friend Chat allows p2p video and audio calls over webRTC, supported by the presence
-service. The limits to number of participants is practical; the bandwidth and 
-power of your device.
+Friend Chat allows peer to peer video and audio calls over webRTC, supported 
+by the presence service. The limits to number of participants is 
+practical; the bandwidth and power of your device.
 
 #### Invites
 
@@ -26,6 +26,12 @@ Any live session can be shared through a clickable link. This is a public invite
 and can be used by any number of people until it is explicitly canceled. People 
 using this link will join as a guest with a randomly generated name.
 
+#### Share your screen or app
+
+Screensharing is now available for chrome through an extension. The option 
+is found in the live view menu, and will either prompt you install the 
+extension or offer to initiate screen sharing.
+
 ## Modules
 
 Modules are integrations towards 3rd party chat services. They have a server part 
@@ -38,11 +44,12 @@ is always there and IRC is added by default.
 Internet Relay Chat, because it would be weird not to have it. Covers 
 most basic needs and commands. An abbreviated list of commands if you are new to IRC:
 * /nick new_nick - change your nick
-* /action something silly - do something silly
+* /action does something silly - *me does something silly*
 * /join #channel_name - join a channel
 * /part - in channel, leave the channel
 
-This information can also be found in settings.
+This can also be changed in settings. More commands and how irc works in general 
+can be found on the internet.
 
 #### Presence
 
@@ -171,7 +178,7 @@ running the script.
 * Only finished features or patches will be merged with master.
 * All commits to master must be reviewed by atleast one person ( Espen )
 * Squash commit log on merge to master. Make the merge commit descriptive.
-* Dev is for fooling around. It will be updated from master.
+* Dev is for fooling around / testing. It will be updated from master.
 
 The purpose here is to keep master git log as a useful history, for things 
 like writing patch notes and checking up on what was added when by who.
@@ -179,8 +186,8 @@ like writing patch notes and checking up on what was added when by who.
 #### Version, x.y.z
 
 * x is incremented when the team feels like it.
-* y is incremented when a feature is merged into master
-* z is incremented when a patch is merged into master
+* y is incremented when a feature is merged into master.
+* z is incremented when a patch is merged into master.
 
 ## License
 
