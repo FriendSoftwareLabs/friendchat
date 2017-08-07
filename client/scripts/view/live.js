@@ -3067,7 +3067,10 @@ library.component = library.component || {};
 		var self = this;
 		var element = document.getElementById( self.id );
 		var iframe = element.querySelector( 'iframe' );
-		var src = '/webclient/app.html?app=' + self.app.Filename;
+		var src = '/webclient/app.html?app=' 
+			+ self.app.Filename 
+			+ '&theme=borderless';
+			
 		iframe.src = src;
 	}
 	
