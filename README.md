@@ -28,7 +28,7 @@ using this link will join as a guest with a randomly generated name.
 
 #### Share your screen or app
 
-Screensharing is now available for chrome through an extension. The option 
+Screen-sharing is available for chrome through an extension. The option 
 is found in the live view menu, and will either prompt you install the 
 extension or offer to initiate screen sharing.
 
