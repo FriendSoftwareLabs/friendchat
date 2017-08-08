@@ -1,7 +1,7 @@
 {
 	"name"                   : "Friend screen share",
 	"author"                 : "Friend Software Labs",
-	"version"                : "0.1.2",
+	"version"                : "0.1.4",
 	"manifest_version"       : 2,
 	"minimum_chrome_version" : "34",
 	"description"            : "Share your screen in FriendChat",
