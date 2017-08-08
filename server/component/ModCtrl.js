@@ -529,7 +529,6 @@ ns.ModuleProxy.prototype.connect = function( data ) {
 
 ns.ModuleProxy.prototype.kill = function( callback ) {
 	var self = this;
-	modLog( 'kill', self.moduleId );
 	delete self.toClient;
 	delete self.persistModuleSetting;
 	delete self.getModuleSettings;

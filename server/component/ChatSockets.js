@@ -327,11 +327,7 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 	function done() {
 		var loggedInIds = Object.keys( self.state.account );
 		var loggedInList = loggedInIds.map( getName );
-		log( 'account logged in', {
-			"logged_in" : msg.response.data,
-			"total_logged_in" : loggedInList.length,
-			"login_list" : loggedInList,
-		});
+		log( 'account logged in', loggedInList );
 		
 		if( dbAccount && dbAccount.conn )
 			dbAccount.conn.release();

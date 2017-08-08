@@ -364,30 +364,47 @@ ns.Presence.prototype.tryLogin = function() {
 
 ns.Presence.prototype.handleInitialize = function( state ) {
 	var self = this;
-	if ( self.account ) {
-		log( 'handleInitialize - already initialized', state, 3 );
-		return;
-	}
-	
 	// account
+	let accId = state.account.clientId;
+	if ( !self.account )
+		bindServerConn( accId )
+		
 	self.account = state.account;
 	self.client.setState( 'online', Date.now() );
-	self.client.on( self.account.clientId, toAccount );
 	self.updateClientAccount();
 	
-	function toAccount( e ) { self.server.send( e ); }
-	
 	// rooms
+	
+	// check if we lost any
+	let currRooms = Object.keys( self.rooms );
+	let left = currRooms.filter( notInState );
+	left.forEach( remove );
+	
+	function notInState( rid ) {
+		let found = state.rooms.indexOf( rid );
+		if ( -1 === found )
+			return true;
+		else
+			return false;
+	}
+	
+	function remove( rid ) { self.handleRoomClosed( rid ); }
+	
+	// join new
 	state.rooms
 		.forEach( add );
+		
+	function add( e ) { self.handleJoinedRoom( e ); }
 	
-	self.server.on( 'join', joined );
-	self.server.on( 'close', closed );
-	function joined( e ) { self.handleJoinedRoom( e ); }
-	function closed( e ) { self.handleRoomClosed( e ); }
-	
-	function add( room ) {
-		self.handleJoinedRoom( room );
+	//
+	function bindServerConn( accId ) {
+		self.client.on( accId, toAccount );
+		self.server.on( 'join', joined );
+		self.server.on( 'close', closed );
+		
+		function toAccount( e ) { self.server.send( e ); }
+		function joined( e ) { self.handleJoinedRoom( e ); }
+		function closed( e ) { self.handleRoomClosed( e ); }
 	}
 }
 
@@ -539,7 +556,7 @@ ns.Config.prototype.labels = [
 
 ns.Config.prototype.set = function( conf ) {
 	var self = this;
-	confLog( 'set', conf );
+	
 	self.labels.forEach( set );
 	function set( label ) {
 		self[ label ] = conf[ label ];
@@ -680,7 +697,7 @@ ns.ServerConn = function( conf, onstate, onclose ) {
 	self.socket = null;
 	self.connected = false;
 	self.connectAttempt = 0;
-	self.maxConnectAttempts = 1;
+	self.maxConnectAttempts = 0;
 	self.parts = [];
 	
 	self.init();
@@ -697,7 +714,7 @@ ns.ServerConn.prototype.connect = function( conf ) {
 		self.port = ( null == conf.port ) ? self.port : conf.port;
 	}
 	
-	if ( self.connectTimeout )
+	if ( self.connectTimeout || self.isConnecting )
 		return;
 	
 	if ( !self.host || !self.port ) {
@@ -705,6 +722,7 @@ ns.ServerConn.prototype.connect = function( conf ) {
 		return null;
 	}
 	
+	self.isConnecting = true;
 	var opts = {
 		host : self.host,
 		port : self.port,
@@ -750,30 +768,14 @@ ns.ServerConn.prototype.reconnect = function( conf ) {
 ns.ServerConn.prototype.disconnect = function() {
 	var self = this;
 	self.connected = false;
-	if ( !self.socket )
-		return;
+	self.isConnecting = false;
+	self.clearSocket();
 	
 	const offline = {
 		type : 'offline',
 		data : Date.now(),
 	};
 	self.emitState( offline );
-	
-	const socket = self.socket;
-	delete self.socket;
-	try {
-		socket.destroy();
-	} catch( e ) {
-		connLog( 'tried destroying socket, but it oopsied', e );
-	}
-	socket.removeAllListeners( 'secureConnect' );
-	socket.removeAllListeners( 'close' );
-	socket.removeAllListeners( 'error' );
-	socket.removeAllListeners( 'end' );
-	socket.removeAllListeners( 'data' );
-	socket.unref();
-	
-	socket.on( 'error', function(){});
 }
 
 ns.ServerConn.prototype.close = function() {
@@ -819,6 +821,7 @@ ns.ServerConn.prototype.emitState = function( state ) {
 ns.ServerConn.prototype.handleOpen = function() {
 	var self = this;
 	self.connected = true;
+	self.isConnecting = false;
 	self.connectAttempt = 0;
 	if ( self.onopen )
 		self.onopen( true );
@@ -842,7 +845,6 @@ ns.ServerConn.prototype.handleClose = function() {
 
 ns.ServerConn.prototype.handleError = function( err ) {
 	const self = this;
-	connLog( 'handleError', err );
 	self.handleDisconnect();
 	
 }
@@ -854,7 +856,8 @@ ns.ServerConn.prototype.handleEnded = function( err ) {
 
 ns.ServerConn.prototype.handleDisconnect = function( err ) {
 	const self = this;
-	self.disconnect();
+	connLog( 'handleDisconnect', err );
+	self.clearSocket();
 	const error = {
 		type : 'error',
 		data : 'ERR_CONN_DISCONNECT',
@@ -863,25 +866,35 @@ ns.ServerConn.prototype.handleDisconnect = function( err ) {
 	self.tryReconnect();
 }
 
-ns.ServerConn.prototype.tryReconnect = function() {
+ns.ServerConn.prototype.tryReconnect = function( force ) {
 	var self = this;
-	if ( self.connectTimeout ||
-		( !self.session &&  !self.auth )
-	) {
+	if ( !self.session && !self.auth ) {
+		self.disconnect();
 		return;
 	}
 	
-	if ( self.connectAttempt >= self.maxConnectAttempts ) {
-		self.onclose( 'ERR_CONN_REFUSED' );
+	if ( self.maxConnectAttempts
+		&& ( self.connectAttempt >= self.maxConnectAttempts )) {
+		self.onclose( 'ERR_CONN_GIVING_UP' );
 		return;
 	}
 	
-	self.connectAttempt++;
 	const reconn = {
 		type : 'connecting',
 		data : Date.now(),
 	};
 	self.emitState( reconn );
+	
+	if ( self.connectTimeout || self.isConnecting )
+		return;
+	
+	self.clearSocket();
+	self.connectAttempt++;
+	if ( force ) {
+		connect();
+		return;
+	}
+	
 	self.connectTimeout = setTimeout( connect, 1000 * 10 );
 	function connect() {
 		self.connectTimeout = null;
@@ -983,15 +996,16 @@ ns.ServerConn.prototype.handleSession = function( sessionId ) {
 	const self = this;
 	self.session = sessionId;
 	if ( false === sessionId ) {
+		self.tryReconnect( true );
+		return;
+		/*
 		self.disconnect();
 		if ( self.onclose )
 			self.onclose( 'ERR_SESSION_INVALID' );
 		
 		return;
+		*/
 	}
-	
-	if ( !self.session )
-		self.disconnect();
 }
 
 ns.ServerConn.prototype.handlePing = function( timestamp ) {
@@ -1036,6 +1050,28 @@ ns.ServerConn.prototype.sendOnSocket = function( event ) {
 	}
 	
 	self.socket.write( str );
+}
+
+ns.ServerConn.prototype.clearSocket = function() {
+	const self = this;
+	if ( !self.socket )
+		return;
+	
+	const socket = self.socket;
+	delete self.socket;
+	try {
+		socket.destroy();
+	} catch( e ) {
+		connLog( 'tried destroying socket, but it oopsied', e );
+	}
+	socket.removeAllListeners( 'secureConnect' );
+	socket.removeAllListeners( 'close' );
+	socket.removeAllListeners( 'error' );
+	socket.removeAllListeners( 'end' );
+	socket.removeAllListeners( 'data' );
+	socket.unref();
+	
+	socket.on( 'error', function(){});
 }
 
 module.exports = ns.Presence;
