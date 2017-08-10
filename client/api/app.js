@@ -716,7 +716,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.userId = msg.userId;
 		self.authId = msg.authId;
 		
-		self.setLocale( 'no', setBack );
+		self.setLocale( null, setBack );
 		function setBack() {
 			console.log( 'setLocaleBack' );
 			self.registered( msg );
