@@ -716,8 +716,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.userId = msg.userId;
 		self.authId = msg.authId;
 		
-		self.setLocale( null, setBack );
-		
+		self.setLocale( 'no', setBack );
 		function setBack() {
 			console.log( 'setLocaleBack' );
 			self.registered( msg );
@@ -949,7 +948,21 @@ var friend = window.friend || {}; // already instanced stuff
 				return;
 			}
 			
-			const lines = res.split( '\n' );
+			if ( 0 === res.indexOf( '<!DOC')) {
+				console.log( 'no file for locale', {
+					locale : localeFile,
+					res    : res,
+				});
+				self.locale = 'en';
+				self.setLocale( null, callback );
+				return;
+			}
+			
+			parseTranslations( res );
+		}
+		
+		function parseTranslations( file ) {
+			const lines = file.split( '\n' );
 			onlyValid = lines.filter( cleanLines );
 			const translations = {};
 			onlyValid.forEach( setKeyValue );
