@@ -55,11 +55,8 @@
 	
 }
 
-#input-form input {
-	border: none;
-	height:100%;
-	width:100%;
-	outline : none;
+#input-form {
+	height: 100%;
 }
 
 .msg,
