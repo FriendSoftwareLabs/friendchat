@@ -834,7 +834,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.toggleShareScreen = function() {
 		const self = this;
-		console.log( 'toggleShareScreen' );
+		console.log( 'toggleShareScreen', self.chromeSourceId );
 		if ( self.chromeSourceId )
 			unshare();
 		else
@@ -856,7 +856,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function share() {
 			self.screenShare.getSourceId( getBack );
 			function getBack( res ) {
-				console.log( 'screenshare getBack', res );
 				if ( !res || !res.sid )
 					return;
 				
@@ -905,13 +904,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 						chromeMediaSourceId : self.chromeSourceId,
 					}
 				}
-				console.log( 'chrome media source set', conf.video );
 				getMedia( conf )
 					.then( screenOk )
 					.catch( err );
 					
 				function screenOk( res ) {
-					console.log( 'have screen media',  res );
 					callback( null, res );
 				}
 				
@@ -933,7 +930,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					.catch( err );
 				
 				function audioOk( media ) {
-					console.log( 'have audio media', media );
 					callback( null, media );
 				}
 				
@@ -950,10 +946,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			function combineMedia( screen, audio ) {
 				let sT = screen.getTracks();
 				let aT = audio.getTracks();
-				console.log( 'combineMedia', {
-					sT : sT,
-					aT : aT,
-				} );
 				const media = new MediaStream();
 				media.addTrack( sT[ 0 ] );
 				media.addTrack( aT[ 0 ] );
@@ -969,19 +961,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.bindShareTracks = function( media ) {
 		const self = this;
-		console.log( 'bindShareTracks', media );
-		
-		// TODO .close()
-		
 		self.shareMedia = media;
 		const tracks = media.getTracks();
 		tracks.forEach( bindOnEnded );
 		
 		function bindOnEnded( track ) {
-			console.log( 'bindOnEdned', track );
 			track.onended = onEnded;
 			function onEnded( e ) {
-				console.log( 'onEnded', e );
 				track.onended = null;
 				if ( !self.shareMedia )
 					return;
@@ -992,7 +978,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkMediaEmpty() {
-			console.log( 'checkMediaEmpty', self.shareMedia );
 			if ( !self.shareMedia )
 				return;
 			
@@ -1000,13 +985,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( tracks.length )
 				return;
 			
-			// no tracks, lets close share thingie
-			self.shareMedia = null;
-			self.toggleShareScreen();
+			self.clearShareMedia();
+			
+			// no tracks, lets close share thingie, maybe
+			if ( self.chromeSourceId )
+				self.toggleShareScreen();
 		}
 	}
 	
-	ns.Selfie.clearShareMedia = function() {
+	ns.Selfie.prototype.clearShareMedia = function() {
 		const self = this;
 		console.log( 'clearShareMedia', self.shareMedia );
 		if ( !self.shareMedia )
@@ -1018,6 +1005,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function stop( track ) {
 			self.shareMedia.removeTrack( track );
+			track.onended = null;
 			track.stop();
 		}
 	}
@@ -1093,7 +1081,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setRoomQuality = function( quality ) {
 		var self = this;
-		console.log( 'setRoomQuality - is sahring?', self.isScreenSharing );
 		self.streamQuality = quality;
 		var level = self.applyStreamQuality();
 		if ( !level )
@@ -2515,12 +2502,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		var meta = {
-			isChrome : self.selfie.isChrome,
+			isChrome  : self.selfie.isChrome,
 			isFirefox : self.selfie.isFirefox,
-			state : {
-				isMuted : self.selfie.isMute,
-				isBlinded : self.selfie.isBlind,
-				screenMode : self.screenMode,
+			state     : {
+				isMuted    : self.selfie.isMute,
+				isBlinded  : self.selfie.isBlind,
+				screenMode : self.selfie.screenMode,
 			},
 		};
 		console.log( 'sendMeta', meta );
@@ -2899,7 +2886,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = true;
+		self.spam = false;
 		
 		self.init();
 	}
@@ -5001,7 +4988,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.ScreenShare.prototype.getSourceId = function( callback ) {
 		const self = this;
-		console.log( 'getDeviceId' );
 		const getSource = {
 			type : 'getSource'
 		};
@@ -5027,7 +5013,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.ScreenShare.prototype.checkIsAvailable = function( callback ) {
 		const self = this;
-		console.log( 'ScreenShare.checkIsAvailable', self );
 		const checkAvailable = {
 			type : 'ready',
 		};
@@ -5060,7 +5045,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
-		console.log( 'ScreenShare init' );
 		View.on( 'screen-share-extension', extEvent );
 		function extEvent( e ) { self.handleExtEvent( e ); }
 		
@@ -5069,7 +5053,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.ScreenShare.prototype.sendInit = function() {
 		const self = this;
-		console.log( 'ScreenShare.sendInit' );
 		const init = {
 			type : 'init',
 			data : {
@@ -5084,9 +5067,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				},
 			},
 		};
+		console.log( 'ScreenShare.sendInit', init );
 		self.sendToExt( init, initBack );
 		function initBack( res ) {
-			console.log( 'initBack', res );
 			if ( self.initInterval ) {
 				clearInterval( self.initInterval );
 				delete self.initInterval;
@@ -5102,10 +5085,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.ScreenShare.prototype.handleExtEvent = function( res ) {
 		const self = this;
-		console.log( 'handleExtEvent', {
-			res  : res,
-			reqs : self.requests,
-		});
 		if ( !res )
 			return;
 		
@@ -5131,7 +5110,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			type : 'robotunicorns',
 			data : req,
 		};
-		console.log( 'sendToExt', extMsg );
 		window.parent.postMessage( extMsg, '*' );
 	}
 	
