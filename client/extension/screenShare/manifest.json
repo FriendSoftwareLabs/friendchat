@@ -1,11 +1,11 @@
 {
 	"name"                   : "Friend screen share",
 	"author"                 : "Friend Software Labs",
-	"version"                : "0.1.4",
+	"version"                : "1.0.0",
 	"manifest_version"       : 2,
 	"minimum_chrome_version" : "34",
 	"description"            : "Share your screen in FriendChat",
-	"homepage_url"           : "https://friendos.com/",
+	"homepage_url"           : "https://friendup.cloud/",
 	"background"             : {
 		"scripts"                : [ "background.js" ],
 		"persistent"             : false
