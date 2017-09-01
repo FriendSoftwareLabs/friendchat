@@ -79,6 +79,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.quality = conf.rtcConf.quality || null;
 		self.permissions = conf.rtcConf.permissions;
 		self.constraints = conf.rtcConf.constraints;
+		self.preferedDevices = conf.preferedDevices;
 		self.onclose = onclose;
 		self.onready = onready;
 		
@@ -91,8 +92,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.init = function() {
 		var self = this;
-		
-		console.log( 'RTC.init', self );
 		if ( self.quality )
 			self.view.currentQuality = self.quality.level;
 		
@@ -543,13 +542,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			};
 		
 		var selfie = new library.rtc.Selfie({
-			view              : self.view,
-			menu              : self.menu,
-			identity          : identity,
-			permissions       : self.permissions,
-			quality           : self.quality,
-			isAdmin           : self.isAdmin,
-			onleave           : onLeave,
+			conn            : self.conn,
+			view            : self.view,
+			menu            : self.menu,
+			identity        : identity,
+			permissions     : self.permissions,
+			quality         : self.quality,
+			preferedDevices : self.preferedDevices,
+			isAdmin         : self.isAdmin,
+			onleave         : onLeave,
 		}, done );
 		
 		function onLeave() {
@@ -644,11 +645,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		library.component.EventEmitter.call( this );
 		
 		var self = this;
+		console.log( 'Selfie', conf );
 		self.id = 'selfie';
+		self.conn = conf.conn;
 		self.view = conf.view;
 		self.menu = conf.menu;
 		self.identity = conf.identity;
 		self.permissions = conf.permissions;
+		self.preferedDevices = conf.preferedDevices;
 		self.streamQuality = conf.quality || {
 			level : 'medium',
 			scale : 1,
@@ -696,6 +700,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		delete self.menu;
 		delete self.onleave;
 		delete self.doneBack;
+		delete self.conn;
 	}
 	
 	// Private
@@ -703,7 +708,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.init =function() {
 		var self = this;
 		self.supported = navigator.mediaDevices.getSupportedConstraints();
-		//console.log( 'supported', self.supported );
+		console.log( 'supported', self.supported );
 		
 		//
 		self.extConn = self.view.addExtConnPane( onExtConnShare );
@@ -752,22 +757,56 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		};
 		
 		self.sources = new library.rtc.MediaDevices();
-		self.mediaConf = {
-			audio : self.permissions.audio,
-			video : self.permissions.video,
-		};
-		self.applyStreamQuality();
-		self.setupStream( streamBack );
-		function streamBack( err, res ) {
-			if ( !self.doneBack )
-				return;
+		if ( self.preferedDevices )
+			tryPreferedDevices();
+		else
+			setupSelfie();
+		
+		function tryPreferedDevices() {
+			self.sources.getByType()
+				.then( check )
+				.catch( error );
+				
+			function check( available ) {
+				console.log( 'available', available );
+				let pref = self.preferedDevices;
+				let prefAudio = available.audioinput[ pref.audioinput ];
+				let prefVideo = available.videoinput[ pref.videoinput ];
+				if ( prefAudio )
+					self.currentDevices.audioinput = pref.audioinput;
+				
+				if ( prefVideo )
+					self.currentDevices.videoinput = pref.videoinput;
+				
+				delete self.preferedDevices;
+				console.log( 'currentDevices', self.currentDevices );
+				setupSelfie();
+			}
 			
-			var doneBack = self.doneBack;
-			delete self.doneBack;
-			doneBack( err, res );
+			function error( err ) {
+				console.log( 'RTC.Selfie.tryPreferedDevices - sources error', err );
+			}
 		}
 		
-		self.bindMenu();
+		function setupSelfie() {
+			console.log( 'setupSelfie' );
+			self.mediaConf = {
+				audio : self.permissions.audio,
+				video : self.permissions.video,
+			};
+			self.applyStreamQuality();
+			self.setupStream( streamBack );
+			function streamBack( err, res ) {
+				if ( !self.doneBack )
+					return;
+				
+				var doneBack = self.doneBack;
+				delete self.doneBack;
+				doneBack( err, res );
+			}
+			
+			self.bindMenu();
+		}
 	}
 	
 	ns.Selfie.prototype.bindMenu = function() {
@@ -1023,7 +1062,27 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.permissions.video = true;
 		
 		self.currentDevices = devices;
-		self.setupStream();
+		self.setupStream( streamBack );
+		function streamBack( err, res ) {
+			console.log( 'setMediaSources - streamBack', {
+				err : err,
+				res : res,
+			});
+			if ( err )
+				return;
+			
+			self.savePreferedDevices();
+		}
+	}
+	
+	ns.Selfie.prototype.savePreferedDevices = function() {
+		const self = this;
+		console.log( 'savePreferedDevices', self.currentDevices );
+		const pref = {
+			type : 'prefered-devices',
+			data : self.currentDevices,
+		};
+		self.conn.send( pref );
 	}
 	
 	ns.Selfie.prototype.buildVideoQualityConf = function( level ) {
@@ -1226,7 +1285,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function init( availableDevices ) {
-			console.log( 'setupStream - init - availabledevices', availableDevices );
 			var conf = {
 				audio : false,
 				video : false,

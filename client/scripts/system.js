@@ -2009,6 +2009,7 @@ library.rtc = library.rtc || {};
 			onClose
 		);
 		
+		
 		delete self.identities;
 		
 		function eventSink( type, data ) {

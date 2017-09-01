@@ -297,7 +297,6 @@ library.view = library.view || {};
 		
 		function exit( msg ) { self.close(); }
 		function handleDropped( e ) { self.drop.handle( e ); }
-		function shareFile( e ) { self.shareFile( e ); }
 		function handleHighlight( e ) {
 			if ( self.onhighlight )
 				self.onhighlight( e );
@@ -375,15 +374,8 @@ library.view = library.view || {};
 		self.onevent = onEvent,
 		self.onclose = onClose;
 		
-		//library.component.EventEmitter.call( self, eventsink );
-		
 		self.init();
 	}
-	
-	/*
-	ns.Live.prototype =
-		Object.create( library.component.EventEmitter.prototype );
-	*/
 	
 	ns.Live.prototype.init = function() {
 		var self = this;
@@ -405,59 +397,62 @@ library.view = library.view || {};
 			self.onevent( 'chat', chat );
 		}
 		
-		const windowConf = {
-			title : Application.i18n('i18n_live_session'),
-			width : 850,
-			height : 450,
-		};
+		api.ApplicationStorage.get( 'prefered-devices', loadBack );
+		function loadBack( event ) {
+			console.log( 'loadBack', event );
+			const devices = event.data;
+			initLive( devices );
+		}
 		
-		const viewConf = {
-			fragments : hello.commonFragments,
-			emojii    : hello.config.emojii,
-		};
-		viewConf.liveConf = self.liveConf;
-		
-		self.view = hello.app.createView(
-			'html/live.html',
-			windowConf,
-			viewConf,
-			self.onevent,
-			closed
-		);
-		
-		function closed( e ) { self.closed(); }
-		
-		self.bindView();
-		delete self.initConf;
+		function initLive( preferedDevices ) {
+			const windowConf = {
+				title : Application.i18n('i18n_live_session'),
+				width : 850,
+				height : 450,
+			};
+			
+			self.liveConf.preferedDevices = preferedDevices;
+			const viewConf = {
+				fragments : hello.commonFragments,
+				emojii    : hello.config.emojii,
+				liveConf  : self.liveConf,
+			};
+			
+			self.view = hello.app.createView(
+				'html/live.html',
+				windowConf,
+				viewConf,
+				self.onevent,
+				closed
+			);
+			
+			function closed( e ) { self.closed(); }
+			
+			self.bindView();
+			delete self.initConf;
+		}
 	}
 	
 	ns.Live.prototype.bindView = function() {
 		var self = this;
+		self.view.on( 'prefered-devices', storePrefered );
 		self.view.on( 'drag-n-drop', heyYouDroppedThis );
 		self.view.on( 'close'      , ohOkayThen );
 		
+		function storePrefered( e ) { self.storePrefered( e ); }
 		function heyYouDroppedThis( e ) { self.drop.handle( e ); }
 		function ohOkayThen( e ) { self.closed(); }
 	}
 	
-	ns.Live.prototype.shareFile = function( msg ) {
-		var self = this;
-		var file = new api.File( msg.path );
-		file.expose( back );
-		function back( res ) {
-			var success = !!res;
-			var msg = {
-				type : 'link',
-				data : {
-					success : success,
-					'public' : res,
-				},
-			};
-			var rtc = {
-				type : 'rtc',
-				data : msg,
-			};
-			self.sendMessage( rtc );
+	ns.Live.prototype.storePrefered = function( devices ) {
+		const self = this;
+		console.log( 'view.live.storePrefered', {
+			d : devices,
+			a : api,
+		});
+		api.ApplicationStorage.set( 'prefered-devices', devices, setBack );
+		function setBack( e ) {
+			console.log( 'storePrefered - setback', e );
 		}
 	}
 	
