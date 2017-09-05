@@ -309,6 +309,11 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 		
 		// hand over socket to account
 		var socket = self.sockets[ socketId ];
+		if ( !socket ) {
+			self.unsetAccount( account.clientId );
+			return;
+		}
+		
 		socket.removeAllListeners( 'msg' );
 		self.setSession( socket, account.clientId );
 		account.attachSession( socket );
