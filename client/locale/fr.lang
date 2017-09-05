@@ -169,8 +169,10 @@ i18n_changed_topic_to : a changé le sujet vers
 i18n_participants : Participants
 i18n_stream_quality : Qualité du flux
 i18n_default : Par défaut
-i18n_medium : Moyen ( 320 / 10 )
-i18n_low : bas ( 128 / 4 )
+i18n_unconstrained : Unconstrained
+i18n_normal : Normal
+i18n_medium : Moyen
+i18n_low : bas
 i18n_mute_your_audio : Audio muet
 i18n_pause_your_video : Vidéo en pause
 i18n_share_screen : Partager un écran ou app
@@ -182,6 +184,7 @@ i18n_select_media_sources : Choisir les sources média
 i18n_text_chat : Conversation texte
 i18n_restart_stream : Relancer le flux
 i18n_toggle_popped_selfie : Montrer selfie
+i18n_toggle_mode_speaker_only : <words le french>
 i18n_change_participant_order : Changer l&#39;ordre des participants
 i18n_clean_ui : Nettoyer l&#39;interface
 i18n_leave : Quitter

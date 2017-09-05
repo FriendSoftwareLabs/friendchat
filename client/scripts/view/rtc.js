@@ -188,6 +188,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.conn.on( 'ping'       , ping );
 		self.conn.on( 'identity'   , identity );
 		self.conn.on( 'identities' , identities );
+		self.conn.on( 'speaking'   , speaking );
 		self.conn.on( 'nested-app' , nestedApp );
 		self.conn.on( 'quality'    , quality );
 		self.conn.on( 'join'       , join );
@@ -197,6 +198,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function roomConf(   e ) { self.initialize(       e ); }
 		function identity(   e ) { self.handleIdentity(   e ); }
 		function identities( e ) { self.handleIdentities( e ); }
+		function speaking(   e ) { self.handleSpeaking(   e ); }
 		function nestedApp(  e ) { self.handleNestedApp(  e ); }
 		function quality(    e ) { self.handleQuality(    e ); }
 		function ping(       e ) { self.handlePing(       e ); }
@@ -279,6 +281,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.identities[ idKey ] = id;
 			self.updatePeerIdentity( idKey, id );
 		}
+	}
+	
+	ns.RTC.prototype.handleSpeaking = function( peerId ) {
+		const self = this;
+		console.log( 'speaking', peerId );
+		if ( self.userId === peerId ) {
+			console.log( 'selfie speaker' );
+			peerId = 'selfie';
+		}
+		
+		self.view.setSpeaker( peerId );
 	}
 	
 	ns.RTC.prototype.handleQuality = function( quality ) {
@@ -693,6 +706,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.shareMedia )
 			self.clearShareMedia();
 		
+		if ( self.speaking )
+			self.speaking.close();
+		
+		if ( self.volume )
+			self.volume.close();
+		
+		delete self.speaking;
+		delete self.volume;
 		delete self.stream;
 		delete self.shareMedia;
 		delete self.view;
@@ -709,6 +730,32 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		self.supported = navigator.mediaDevices.getSupportedConstraints();
 		console.log( 'supported', self.supported );
+		
+		// IsSpeaking
+		self.speaking = new library.rtc.IsSpeaking(
+			self.identity.clientId,
+			null,
+			onSpeaking
+		);
+		
+		function onSpeaking( speakerId ) {
+			console.log( 'onSpeaking', speakerId );
+			if ( speakerId !== self.identity.clientId )
+				return;
+			
+			const speaking = {
+				type : 'speaking',
+				data : Date.now(),
+			};
+			self.conn.send( speaking );
+		}
+		
+		self.conn.on( 'speaking', speaking );
+		function speaking( peerId ) {
+			console.log( 'Selfie.speaking', peerId );
+			if ( self.speaking )
+				self.speaking.setSpeaker( peerId );
+		}
 		
 		//
 		self.extConn = self.view.addExtConnPane( onExtConnShare );
@@ -735,17 +782,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		//
-		self.isSpeaking = new library.rtc.IsSpeaking();
+		//self.isSpeaking = new library.rtc.IsSpeaking();
 		self.isChrome = !!( !!window.chrome && !!window.chrome.webstore );
 		self.isFirefox = !!window.InstallTrigger;
 		
 		// lowest quality first or things will break
 		self.videoQualityKeys = [ 'width', 'height', 'frameRate' ];
 		self.videoQualityMap = {
-			'low'     : [ 64, 64, 4 ],
-			'medium'  : [ 480, 480, 24 ],
-			'normal'  : [ 720, 720, 24 ],
-			'default' : [ null, null, null ],
+			'low'     : [ 256, 144, 4 ],
+			'medium'  : [ 640, 360, 24 ],
+			'normal'  : [ 1280, 720, 24 ],
+			'default' : [],
 		};
 		
 		self.opusQualityKeys = [ 'maxcodecaudiobandwidth', 'maxaveragebitrate', 'usedtx' ];
@@ -811,19 +858,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.bindMenu = function() {
 		var self = this;
-		self.menu.on( 'mute'     , mute );
-		self.menu.on( 'blind'    , blind );
-		self.menu.on( 'q-default', qualityDefault );
-		self.menu.on( 'q-medium' , qualityMedium );
-		self.menu.on( 'q-low'    , qualityLow );
-		self.menu.on( 'leave'    , leave );
-		self.menu.on( 'screen-mode', screenMode );
-		self.menu.on( 'toggle-screen-share', screenShare );
-		self.menu.on( 'screen-share-ext', screenExtInstall );
+		self.menu.on( 'mute'                , mute );
+		self.menu.on( 'blind'               , blind );
+		self.menu.on( 'q-default'           , qualityDefault );
+		self.menu.on( 'q-normal'            , qualityNormal );
+		self.menu.on( 'q-medium'            , qualityMedium );
+		self.menu.on( 'q-low'               , qualityLow );
+		self.menu.on( 'leave'               , leave );
+		self.menu.on( 'screen-mode'         , screenMode );
+		self.menu.on( 'toggle-screen-share' , screenShare );
+		self.menu.on( 'screen-share-ext'    , screenExtInstall );
 		
 		function mute( e ) { self.toggleMute(); }
 		function blind( e ) { self.toggleBlind(); }
-		function qualityDefault( e ) { self.handleQuality( 'normal' ); }
+		function qualityDefault( e ) { self.handleQuality( 'default' )}
+		function qualityNormal( e ) { self.handleQuality( 'normal' ); }
 		function qualityMedium( e ) { self.handleQuality( 'medium' ); }
 		function qualityLow( e ) { self.handleQuality( 'low' ); }
 		function leave( e ) { self.leave(); }
@@ -1091,12 +1140,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.currentQuality = self.currentQuality || {};
 		self.currentQuality.scale = scale;
 		var arr = self.videoQualityMap[ level ];
-		if ( !arr ) {
+		if ( !arr || !arr.length ) {
 			console.log( 'buildVideoQualityConf - invalid level or missing in map', {
 				level     : level,
 				available : self.videoQualityMap,
 			});
-			return null;
+			return true;
 		}
 		
 		var conf = {};
@@ -1181,41 +1230,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		return level;
 	}
 	
-	ns.Selfie.prototype.getLowestQualityLevel = function( a, b ) {
-		var self = this;
-		// convention : lowest quality first
-		var level = null;
-		var levels = Object.keys( self.videoQualityMap );
-		var aI = levels.indexOf( a );
-		var bI = levels.indexOf( b );
-		
-		// undefined level
-		if (( -1 === aI ) ||  ( -1 === bI ))
-			throw new Error( 'selfie.getLowestQualityLevel - undefined level: '
-				+ a + ' / ' + b );
-		
-		if ( aI > bI ) // b quality is lower
-			level = b;
-		else
-			level = a;
-		
-		return level;
-	}
-	
-	ns.Selfie.prototype.getVideoMandatory = function() {
-		var self = this;
-		if ( 'object' !== typeof( self.mediaConf.video ))
-			self.mediaConf.video = {};
-		
-		var conf = self.mediaConf.video;
-		conf.mandatory = conf.mandatory || {}
-		return conf.mandatory;
-	}
-	
 	ns.Selfie.prototype.applyVideoConstraints = function( conf ) {
 		var self = this;
 		if ( !conf ) {
 			console.log( 'applyVideoConstraints - conf not defined', conf );
+			return;
+		}
+		
+		if ( 'boolean' === typeof( conf )) {
+			self.mediaConf.video = conf;
 			return;
 		}
 		
@@ -1324,8 +1347,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				}
 				
 				if ( 'boolean' === typeof( conf[ type ] ))
-					conf[ type ] = {
-					};
+					conf[ type ] = {};
 				
 				conf[ type ].deviceId = device.deviceId;
 				console.log( 'setupStream - setDevice - conf', conf );
@@ -1448,6 +1470,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var vTrack = self.getVideoTrack();
 		var aTrack = self.getAudioTrack();
 		
+		if ( aTrack )
+			self.bindVolume( stream );
+		
 		console.log( 'emit selfie', stream );
 		self.emit( 'selfie', stream );
 		self.emit( 'video', !!vTrack );
@@ -1475,6 +1500,31 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.stream.removeTrack( track );
 			track.stop();
 		}
+	}
+	
+	ns.Selfie.prototype.bindVolume = function() {
+		const self = this;
+		if ( self.volume )
+			self.releaseVolume();
+		
+		self.volume = new library.rtc.Volume(
+			self.stream,
+			onVolume,
+			onBuffer
+		);
+		self.speaking.setSource( self.volume );
+		
+		function onVolume( e ) {}
+		function onBuffer( e ) {}
+	}
+	
+	ns.Selfie.prototype.releaseVolume = function() {
+		const self = this;
+		if ( !self.volume )
+			return;
+		
+		self.volume.release();
+		self.volume.close();
 	}
 	
 	/*
@@ -4074,87 +4124,234 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 // Is speaking
 (function( ns, undefined ) {
-	ns.IsSpeaking = function( mediaStream ) {
-		if ( !( this instanceof ns.IsSpeaking ))
-			return new ns.IsSpeaking( mediaStream );
+	ns.IsSpeaking = function( userId, source, onSpeaking ) {
+		const self = this;
+		self.userId = userId;
+		self.source = source;
+		self.onSpeaking = onSpeaking;
 		
-		var self = this;
-		self.stream = mediaStream || null;
+		self.isSpeaking = false;
+		self.speakerId = null;
+		self.volumeLimit = 20;
+		self.tickLimit = 5;
+		self.init();
+	}
+	
+	// Public
+	
+	ns.IsSpeaking.prototype.setSource = function( source ) {
+		const self = this;
+		console.log( 'IsSpeaking.setSource', source );
+		if ( self.source )
+			self.releaseSource();
+		
+		self.source = source;
+		self.bindSource();
+	}
+	
+	ns.IsSpeaking.prototype.setSpeaker = function( speakerId ) {
+		const self = this;
+		self.speakerId = speakerId;
+	}
+	
+	ns.IsSpeaking.prototype.close = function() {
+		const self = this;
+		console.log( 'IsSpeaking.close' );
+		self.releaseSource();
+		
+		delete self.onSpeaking;
+	}
+	
+	// Pivate
+	
+	ns.IsSpeaking.prototype.init = function() {
+		const self = this;
+		self.bindSource();
+	}
+	
+	ns.IsSpeaking.prototype.bindSource = function() {
+		const self = this;
+		if ( !self.source )
+			return;
+		
+		self.source.onVolume = onVolume;
+		
+		function onVolume( current, overTime ) {
+			if ( self.volumeLimit > current )
+				return;
+			
+			if ( self.speakerId === self.userId )
+				return;
+			
+			let req = self.tickLimit;
+			let len = overTime.length -1;
+			// check history for valid values
+			// i is required for 
+			for( ; req-- ; ) {
+				let ndx = len - req;
+				let val = overTime[ ndx ];
+				if ( self.volumeLimit > val )
+					return;
+			}
+			
+			self.onSpeaking( self.userId );
+		}
+	}
+	
+	ns.IsSpeaking.prototype.releaseSource = function() {
+		const self = this;
+		if ( self.source )
+			self.source.onVolume = null;
+		
+		delete self.source;
+	}
+	
+})( library.rtc );
+
+// Volume
+(function( ns, undefined ) {
+	ns.Volume = function( mediaStream, onVolume, onBuffer ) {
+		const self = this;
+		self.stream = mediaStream;
+		self.onVolume = onVolume;
+		self.onBuffer = onBuffer;
 		
 		self.actx = null;
-		self.isSpeaking = false;
+		self.volume = 0;
+		self.volumeAverage = 0;
+		self.timeBuffer = null;
+		
+		self.volumeHistory = new Array( 10 );
+		self.volumeHistory.fill( 0 );
+		
+		self.averageOverTime = new Array( 40 );
+		self.averageOverTime.fill( 0 );
 		
 		self.init();
 	}
 	
 	// Public
 	
-	ns.IsSpeaking.prototype.set = function( mediaStream ) {
-		var self = this;
-		console.log( 'IsSpeaking.set', mediaStream );
-		if ( self.stream )
-			delete self.stream;
+	ns.Volume.prototype.start = function() {
+		const self = this;
+		console.log( 'Volume.start' );
+		if ( self.loop )
+			return;
 		
-		self.stream = mediaStream;
-		self.bind();
+		self.loop = true;
+		self.animFrame = window.requestAnimationFrame( update );
+		function update() {
+			if ( !self.loop )
+				return;
+			
+			setBuffer();
+			setVolume();
+			self.animFrame = window.requestAnimationFrame( update );
+			
+			function setBuffer() {
+				self.analyser.getByteTimeDomainData( self.timeBuffer );
+				if ( self.onBuffer )
+					setTimeout( emitBuffer, 0 );
+				
+				function emitBuffer() {
+					self.onBuffer( self.timeBuffer, self.volumeHistory );
+				}
+			}
+			
+			function setVolume() {
+				let max = 0;
+				let buf = self.timeBuffer;
+				
+				// find max
+				let i = ( buf.length );
+				for( ; i-- ; ) {
+					let val = buf[ i ];
+					val = Math.abs( val - 128.0 );
+					if ( max < val )
+						max = val;
+				}
+				
+				updateAverageVolume( max );
+				self.volume = max;
+				if ( self.onVolume )
+					setTimeout( emitVolume, 0 );
+				
+				function emitVolume() {
+					self.onVolume( self.volumeAverage, self.averageOverTime );
+				}
+			}
+			
+			function updateAverageVolume( current ) {
+				let vh = self.volumeHistory;
+				vh.shift();
+				vh.push( current );
+				let total = 0;
+				
+				// sum
+				let i = vh.length;
+				for( ; i-- ; )
+					total += vh[ i ];
+				
+				self.volumeAverage = Math.floor( total / vh.length );
+				self.averageOverTime.shift();
+				self.averageOverTime.push( self.volumeAverage );
+				self.votIndex++;
+			}
+		}
 	}
 	
-	ns.IsSpeaking.prototype.close = function() {
-		var self = this;
-		console.log( 'IsSpeaking.close' );
-		self.release();
+	ns.Volume.prototype.stop = function() {
+		const self = this;
+		console.log( 'Volume.stop' );
+		self.loop = false;
+		if ( !self.animFrame )
+			return;
+		
+		window.cancelAnimationFrame( self.animFrame );
+		self.animFrame = null;
+	}
+	
+	ns.Volume.prototype.release = function() {
+		const self = this;
+		if ( self.actx )
+			self.actx.close();
+		
+		if ( self.source )
+			self.source.disconnect();
+		
 		delete self.actx;
+		delete self.source;
+	}
+	
+	ns.Volume.prototype.close = function() {
+		const self = this;
+		self.loop = false;
+		self.release();
+		
+		delete self.onVolume;
+		delete self.onBuffer;
+		delete self.analyser;
 		delete self.stream;
 	}
 	
-	// Pivate
+	// Private
 	
-	ns.IsSpeaking.prototype.bind = function() {
-		var self = this;
-		console.log( 'IsSpeaking.bind - disabled' )
-		
-		//
-		return;
-		//
-		
-		if ( self.actx )
-			self.release();
-		
+	ns.Volume.prototype.init = function() {
+		const self = this;
+		console.log( 'volume.init', self );
 		self.actx = new window.AudioContext();
-		var source = self.actx.createMediaStreamSource( self.stream );
+		console.log( 'actx', self.actx );
+		self.source = self.actx.createMediaStreamSource( self.stream );
 		self.analyser = self.actx.createAnalyser();
-		source.connect( self.analyser );
-		self.analyser.fftSize = 128;
-		var buffLen = self.analyser.frequencyBinCount;
-		console.log( 'analyser', {
-			a : self.analyser,
-			bl : buffLen,
-		});
-		//startChecks();
+		self.analyser.fftSize = 1024;
+		self.analyser.minDecibels = -200;
+		const bufLen = self.analyser.frequencyBinCount;
+		self.timeBuffer = new Uint8Array( bufLen );
 		
-		function startChecks() {
-			if ( self.interval )
-				window.clearInterval( self.interval );
-			
-			self.interval = window.setInterval( readout, 500 );
-		}
+		self.source.connect( self.analyser );
+		//self.scriptBuf = new UIntArray(  ); 
 		
-		function readout() {
-			var arr = new Uint8Array( buffLen );
-			self.analyser.getByteTimeDomainData( arr );
-			console.log( 'readout', arr );
-		}
-	}
-	
-	ns.IsSpeaking.prototype.release = function() {
-		var self = this;
-		self.actx.close();
-	}
-	
-	ns.IsSpeaking.prototype.init = function() {
-		var self = this;
-		if ( self.stream )
-			self.set( self.stream );
+		self.start();
 	}
 	
 })( library.rtc );

@@ -166,6 +166,7 @@ library.component = library.component || {};
 		self.peerAddQueue = [];
 		
 		self.selfiePopped = true;
+		self.currentSpeaker = null;
 		self.uiVisible = false;
 		self.ui = null;
 		self.uiPanes = {};
@@ -479,6 +480,9 @@ library.component = library.component || {};
 		peer.close();
 		delete self.peers[ peerId ];
 		removeFromPeerOrder( peerId );
+		if ( self.modeSpeaker && self.currentSpeaker === peerId )
+			self.setSpeaker();
+		
 		if ( self.peerOrder.length === 1 ) {
 			self.peers[ 'selfie' ].stopDurationTimer();
 		}
@@ -534,18 +538,29 @@ library.component = library.component || {};
 		var container = document.getElementById( self.peerContainerId );
 		self.currentGridKlass = self.currentGridKlass || 'grid1';
 		container.classList.remove( self.currentGridKlass );
-		const peers = getPeerNum();
-		console.log( 'peerNum', peers );
-		self.currentGridKlass = getGridKlass( peers );
+		const peerNum = getPeerNum();
+		let newGridKlass = 'grid1';
+		if ( self.modeSpeaker )
+			newGridKlass = 'grid1';
+		else {
+			newGridKlass = getGridKlass( peerNum );
+		}
+		
+		self.currentGridKlass = newGridKlass;
 		console.log( 'setting grid klass', self.currentGridKlass );
 		container.classList.add( self.currentGridKlass );
 		self.reflowPeers();
 		
-		self.waiting.classList.toggle( 'hidden', !!peers );
+		self.waiting.classList.toggle( 'hidden', !!peerNum );
 		
 		function removeOld() {
 			var classes = container.className;
 			container.classList.remove( classes );
+		}
+		
+		function getGridKlass( peerNum ) {
+			let newKlass = 'grid' + peerNum;
+			return newKlass;
 		}
 		
 		function getPeerNum() {
@@ -559,12 +574,6 @@ library.component = library.component || {};
 			
 			return peerNum;
 		}
-		
-		function getGridKlass( peerNum ) {
-			
-			var newKlass = 'grid' + peerNum;
-			return newKlass;
-		}
 	}
 	
 	ns.Live.prototype.reflowPeers = function() {
@@ -575,7 +584,7 @@ library.component = library.component || {};
 			if ( !peer )
 				return;
 			
-			peer.reflowVideoElement();
+			peer.reflow();
 		}
 	}
 	
@@ -590,6 +599,7 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.onDrag = function( type, peerId ) {
 		var self = this;
+		console.log( 'onDrag', type );
 		if ( type === 'enable' )
 			dragEnable();
 		if ( type === 'start' )
@@ -699,14 +709,14 @@ library.component = library.component || {};
 	}
 	
 	ns.Live.prototype.addMenu = function() {
-		var self = this;
-		var peers = {
+		const self = this;
+		const peers = {
 			type : 'folder',
 			id : 'peers',
 			name : View.i18n('i18n_participants'),
 			faIcon : 'fa-users',
 		};
-		var quality = {
+		const quality = {
 			type   : 'folder',
 			id     : 'quality',
 			name   : View.i18n('i18n_stream_quality'),
@@ -715,7 +725,13 @@ library.component = library.component || {};
 				{
 					type   : 'item',
 					id     : 'q-default',
-					name   : 'Unconstrained',
+					name   : View.i18n( 'i18n_unconstrained' ),
+					faIcon : 'fa-diamond',
+				},
+				{
+					type   : 'item',
+					id     : 'q-normal',
+					name   : View.i18n( 'i18n_normal' ),
 					faIcon : 'fa-eye',
 				},
 				{
@@ -728,11 +744,11 @@ library.component = library.component || {};
 					type   : 'item',
 					id     : 'q-low',
 					name   : View.i18n('i18n_low'),
-					faIcon : 'fa-cubes',
+					faIcon : 'fa-cube',
 				},
 			],
 		};
-		var mute = {
+		const mute = {
 			type   : 'item',
 			id     : 'mute',
 			name   : View.i18n('i18n_mute_your_audio'),
@@ -740,7 +756,7 @@ library.component = library.component || {};
 			toggle : false,
 			close  : false,
 		};
-		var blind = {
+		const blind = {
 			type   : 'item',
 			id     : 'blind',
 			name   : View.i18n('i18n_pause_your_video'),
@@ -748,7 +764,7 @@ library.component = library.component || {};
 			toggle : false,
 			close  : false,
 		};
-		var screenShare = {
+		const screenShare = {
 			type   : 'item',
 			id     : 'toggle-screen-share',
 			name   : View.i18n( 'i18n_toggle_share_screen' ),
@@ -756,35 +772,35 @@ library.component = library.component || {};
 			toggle : false,
 			close  : true,
 		};
-		var screenShareExt = {
+		const screenShareExt = {
 			type    : 'item',
 			id      : 'screen-share-ext',
 			name    : View.i18n( 'i18n_get_screenshare_ext' ),
 			faIcon  : 'fa-download',
 			disable : true,
 		};
-		var source = {
+		const source = {
 			type   : 'item',
 			id     : 'source-select',
-			name   : View.i18n('i18n_select_media_sources'),
+			name   : View.i18n( 'i18n_select_media_sources' ),
 			faIcon : 'fa-cog',
 		};
-		var chat = {
+		const chat = {
 			type   : 'item',
 			id     : 'chat',
-			name   : View.i18n('i18n_text_chat'),
+			name   : View.i18n( 'i18n_text_chat' ),
 			faIcon : 'fa-keyboard-o',
 		};
-		var restart = {
+		const restart = {
 			type   : 'item',
 			id     : 'restart',
-			name   : View.i18n('i18n_restart_stream'),
+			name   : View.i18n( 'i18n_restart_stream' ),
 			faIcon : 'fa-recycle',
 		};
 		const screenMode = {
 			type   : 'item',
 			id     : 'screen-mode',
-			name   : View.i18n('i18n_toggle_cover_contain'),
+			name   : View.i18n( 'i18n_toggle_cover_contain' ),
 			faIcon : 'fa-arrows-alt',
 			toggle : false,
 			close  : false,
@@ -792,44 +808,52 @@ library.component = library.component || {};
 		const popped = {
 			type   : 'item',
 			id     : 'popped',
-			name   : View.i18n('i18n_toggle_popped_selfie'),
+			name   : View.i18n( 'i18n_toggle_popped_selfie' ),
 			faIcon : 'fa-external-link',
 			toggle : true,
 			close  : false,
 		};
-		var settings = {
+		const speaker = {
+			type   : 'item',
+			id     : 'mode-speaker',
+			name   : View.i18n( 'i18n_toggle_mode_speaker_only' ),
+			faIcon : 'fa-user-circle-o',
+			toggle : false,
+			close  : true,
+		};
+		const settings = {
 			type    : 'item',
 			id      : 'settings',
-			name    : View.i18n('i18n_room_settings'),
+			name    : View.i18n( 'i18n_room_settings' ),
 			faIcon  : 'fa-ellipsis-v',
 			disable : true,
 		};
-		var share = {
+		const share = {
 			type   : 'item',
 			id     : 'share',
-			name   : View.i18n('i18n_share'),
+			name   : View.i18n( 'i18n_share' ),
 			faIcon : 'fa-share-alt',
 		};
-		var dragger = {
+		const dragger = {
 			type   : 'item',
 			id     : 'dragger',
-			name   : View.i18n('i18n_change_participant_order'),
+			name   : View.i18n( 'i18n_change_participant_order' ),
 			faIcon : 'fa-hand-stop-o',
 		}
-		var cleanUI = {
+		const cleanUI = {
 			type   : 'item',
 			id     : 'clean-ui',
-			name   : View.i18n('i18n_clean_ui'),
+			name   : View.i18n( 'i18n_clean_ui' ),
 			faIcon : 'fa-square-o',
 		}
-		var leave = {
+		const leave = {
 			type   : 'item',
 			id     : 'leave',
-			name   : View.i18n('i18n_leave'),
+			name   : View.i18n( 'i18n_leave' ),
 			faIcon : 'fa-sign-out',
 		};
 		
-		var content = [
+		const content = [
 			share,
 			chat,
 			blind,
@@ -841,6 +865,7 @@ library.component = library.component || {};
 			screenShareExt,
 			source,
 			popped,
+			speaker,
 			settings,
 			dragger,
 			cleanUI,
@@ -861,6 +886,7 @@ library.component = library.component || {};
 		self.menu.on( 'clean-ui', cleanUIHandler );
 		self.menu.on( 'dragger', reorderHandler );
 		self.menu.on( 'popped', togglePopped );
+		self.menu.on( 'mode-speaker', modeSpeaker );
 		return self.menu;
 		
 		function noListenerFor( e ) {
@@ -890,19 +916,79 @@ library.component = library.component || {};
 		}
 		
 		function togglePopped( state ) {
-			console.log( 'togglePopped', state );
 			self.togglePopped();
+		}
+		
+		function modeSpeaker( state ) {
+			const isModeSpeaker = self.toggleModeSpeaker();
+			console.log( 'modeSpeaker', isModeSpeaker );
+			self.menu.setState( 'mode-speaker', isModeSpeaker );
 		}
 	}
 	
-	ns.Live.prototype.togglePopped = function() {
+	ns.Live.prototype.togglePopped = function( force ) {
 		const self = this;
 		const selfie = self.peers[ 'selfie' ];
-		if ( !selfie )
-			return;
-		
-		self.selfiePopped = selfie.togglePopped();
+		self.selfiePopped = selfie.togglePopped( force );
 		self.updateGridClass();
+	}
+	
+	ns.Live.prototype.toggleModeSpeaker = function() {
+		const self = this;
+		console.log( 'toggleModeSpeaker' );
+		self.modeSpeaker = !self.modeSpeaker;
+		const container = document.getElementById( self.peerContainerId );
+		if ( self.modeSpeaker )
+			enable();
+		else
+			disable();
+		
+		self.updateGridClass();
+		return self.modeSpeaker;
+		
+		function enable() {
+			self.setSpeaker();
+			container.classList.toggle( 'mode-speaker', true );
+			self.wasPopped = self.selfiePopped;
+			self.togglePopped( false );
+			self.onDrag( 'disable' );
+			self.menu.disable( 'popped' );
+			self.menu.disable( 'dragger' );
+		}
+		
+		function disable() {
+			self.togglePopped( self.wasPopped );
+			self.wasPopped = null;
+			container.classList.toggle( 'mode-speaker', false );
+			self.menu.enable( 'popped' );
+			self.menu.enable( 'dragger' );
+		}
+	}
+	
+	ns.Live.prototype.setSpeaker = function( peerId ) {
+		const self = this;
+		if ( !peerId )
+			peerId = 'selfie';
+		
+		console.log( 'Live.setSpeaker', peerId );
+		set( false );
+		self.currentSpeaker = peerId;
+		set( true );
+		
+		function set( isSpeaker ) {
+			const peerEl = document.getElementById( self.currentSpeaker );
+			console.log( 'setSpeaker', peerEl );
+			if ( !peerEl )
+				return;
+			
+			peerEl.classList.toggle( 'speaker', isSpeaker );
+			
+			if ( !isSpeaker )
+				return;
+			
+			const peer = self.peers[ self.currentSpeaker ];
+			peer.reflow();
+		}
 	}
 	
 	ns.Live.prototype.addChat = function( userId, identities, conn ) {
@@ -1569,7 +1655,6 @@ library.component = library.component || {};
 		function isBlinded( e ) { self.handleSelfBlind( e ); }
 		function screenMode( e ) { self.updateScreenMode( e ); }
 		function handleLocalQuality( e ) {
-			self.localQuality = e;
 			self.applyQualityLevel( e );
 		}
 	}
@@ -1771,13 +1856,15 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Peer.prototype.reflowVideoElement = function() {
+	ns.Peer.prototype.reflow = function() {
 		var self = this;
 		if ( !self.stream )
 			return;
 		
 		var resize = new Event( 'resize' );
 		self.stream.dispatchEvent( resize );
+		if ( self.volume )
+			self.volume.start();
 	}
 	
 	ns.Peer.prototype.setStream = function( id, src ) {
@@ -1947,7 +2034,7 @@ library.component = library.component || {};
 			self.avatar.classList.toggle( 'visible', !visible );
 			
 			if ( visible )
-				self.reflowVideoElement();
+				self.reflow();
 		}
 	}
 	
@@ -1989,12 +2076,12 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.applyQualityLevel = function( level ) {
 		var self = this;
-		if ( 'low' === self.localQuality )
-			level = 'low';
-		
 		self.currentQuality = level || self.currentQuality;
 		self.useCoverMode = 'low' === self.currentQuality ? false : true;
-		self.reflowVideoElement();
+		const isLow = ( 'low' === self.currentQuality );
+		self.el.classList.toggle( 'quality-low', isLow );
+		
+		self.reflow();
 	}
 	
 	ns.Peer.prototype.setButtonIcon = function( btn, remove, add ) {
@@ -2230,20 +2317,24 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype = Object.create( ns.Peer.prototype );
 	
-	ns.Selfie.prototype.togglePopped = function() {
+	ns.Selfie.prototype.togglePopped = function( force ) {
 		const self = this;
 		console.log( 'selfie.togglePopped' );
-		self.isPopped = !self.isPopped;
+		if ( null == force )
+			self.isPopped = !self.isPopped;
+		else
+			self.isPopped = force;
+		
 		const el = document.getElementById( self.id );
 		el.classList.toggle( 'popped', self.isPopped );
 		self.menu.setState( 'popped', self.isPopped );
 		self.toggleDurationUpdate();
+		self.toggleAVGraph();
 		return self.isPopped;
 	}
 	
 	ns.Selfie.prototype.initSelf = function() {
 		var self = this;
-		
 	}
 	
 	ns.Selfie.prototype.setupMenu = function() {
@@ -2332,7 +2423,6 @@ library.component = library.component || {};
 			if ( !self.durationLoopId )
 				return;
 			
-			console.log( 'timeloops!!' );
 			self.durationLoopId = window.requestAnimationFrame( timeLoop );
 			updateTime();
 		}
@@ -2413,8 +2503,38 @@ library.component = library.component || {};
 	ns.Selfie.prototype.handleSelfie = function( media ) {
 		var self = this;
 		console.log( 'selfie.handleSelfie', media );
+		self.toggleAVGraph();
 		self.handleMedia( media );
 		self.stream.muted = true;
+	}
+	
+	ns.Selfie.prototype.toggleAVGraph = function() {
+		const self = this;
+		if ( self.isPopped )
+			self.hideAVGraph();
+		else
+			self.showAVGraph();
+	}
+	
+	ns.Selfie.prototype.showAVGraph = function() {
+		const self = this;
+		setTimeout( hepp, 100 );
+		function hepp() {
+			self.AVGraph = new library.view.AudioVisualizer(
+				self.peer.volume,
+				hello.template,
+				'selfie-volume'
+			);
+		}
+	}
+	
+	ns.Selfie.prototype.hideAVGraph = function() {
+		const self = this;
+		if ( !self.AVGraph )
+			return;
+		
+		self.AVGraph.close();
+		delete self.AVGraph;
 	}
 	
 	ns.Selfie.prototype.resetState = function() {
@@ -4763,6 +4883,287 @@ library.component = library.component || {};
 			input.checked = update.value;
 		}
 	}
+	
+})( library.view );
+
+(function( ns, undefined ) {
+	ns.AudioVisualizer = function(
+		source,
+		templateManager,
+		containerId
+	) {
+		const self = this;
+		self.source = source;
+		self.template = templateManager;
+		self.containerId = containerId;
+		
+		self.id = null;
+		self.canvasId = null;
+		self.ctx = null;
+		self.draw = false;
+		self.drawVolume = true;
+		
+		self.init();
+	}
+	
+	// Public
+	
+	ns.AudioVisualizer.prototype.start = function() {
+		const self = this;
+		console.log( 'AudioVisualizer.start', self );
+		self.setupCanvas();
+		if ( !self.el )
+			return;
+		
+		if ( self.draw )
+			return;
+		
+		self.draw = true;
+		self.drawAV();
+	}
+	
+	ns.AudioVisualizer.prototype.stop = function() {
+		const self = this;
+		console.log( 'AudioVisualizer.stop', self );
+		self.draw = false;
+		if ( self.animFReq )
+			window.cancelAnimationFrame( self.animFReq );
+		
+		self.removeCanvas();
+	}
+	
+	ns.AudioVisualizer.prototype.close = function() {
+		const self = this;
+		console.log( 'AudioVisualizer.close' );
+		self.stop();
+		
+		let el = document.getElementById( self.id );
+		if ( self.el )
+			self.el.parentNode.removeChild( self.el );
+		
+		//self.releaseSource();
+		delete self.id;
+		delete self.canvasId;
+		delete self.containerId;
+		delete self.ctx;
+		delete self.source;
+		delete self.template;
+	}
+	
+	// Private
+	
+	ns.AudioVisualizer.prototype.init = function() {
+		const self = this;
+		console.log( 'AudioVisualizer.init', self );
+		self.start();
+	}
+	
+	ns.AudioVisualizer.prototype.setupCanvas = function() {
+		const self = this;
+		console.log( 'setupCanvas' );
+		const container = document.getElementById( self.containerId );
+		self.id = self.id || friendUP.tool.uid( 'AV' );
+		self.canvasId = self.canvasId || friendUP.tool.uid( 'canvas' );
+		const conf = {
+			id       : self.id,
+			canvasId : self.canvasId,
+			width    : container.clientWidth,
+			height   : container.clientHeight,
+		};
+		self.el = self.template.getElement( 'peer-av-tmpl', conf );
+		container.appendChild( self.el );
+		self.el.addEventListener( 'click', click, true );
+		function click( e ) {
+			self.drawVolume = !self.drawVolume;
+			self.drawAV();
+		}
+		
+		var cw = self.el.clientWidth;
+		var ch = self.el.clientHeight;
+		if ( !ch || !cw ) {
+			console.log( 'element is hidden.. no, its FINE, forget it.' );
+			self.stop();
+			return;
+		}
+		
+		self.canvas = document.getElementById( self.canvasId );
+		if ( !self.canvas ) {
+			console.log( 'AV - no canvas?', self.el );
+			self.stop();
+			return;
+		}
+		
+		// anim setup
+		self.ctx = self.canvas.getContext( '2d' );
+		if ( !self.ctx ) {
+			self.stop();
+			return;
+		}
+		
+		self.cW = self.ctx.canvas.clientWidth;
+		self.cH = self.ctx.canvas.clientHeight;
+		self.ctx.lineWidth = 3;
+		self.ctx.lineCap = 'round';
+		
+		console.log( 'canvas setup complete', {
+			cW : self.cW,
+			cH : self.cH,
+			c  : self.ctx,
+		});
+	}
+	
+	ns.AudioVisualizer.prototype.removeCanvas = function() {
+		const self = this;
+		delete self.cW;
+		delete self.cH;
+		delete self.ctx;
+		if ( self.canvas )
+			self.canvas.parentNode.removeChild( self.canvas );
+		
+		if ( self.el )
+			self.el.parentNode.removeChild( self.el );
+		
+		delete self.canvas;
+		delete self.el;
+	}
+	
+	ns.AudioVisualizer.prototype.drawAV = function() {
+		const self = this;
+		if ( !self.ctx )
+			return;
+		
+		if ( self.animFReq ) {
+			cancelAnimationFrame( self.animFReq );
+			self.animFReq = null;
+		}
+		
+		if ( self.drawVolume )
+			self.updateVolume();
+		else
+			self.updateWaveform();
+	}
+	
+	ns.AudioVisualizer.prototype.updateVolume = function() {
+		const self = this;
+		self.animFReq = window.requestAnimationFrame( loop );
+		function loop() {
+			if ( !self.draw || !self.drawVolume )
+				return;
+			
+			self.animFReq = window.requestAnimationFrame( loop );
+			redraw();
+		}
+		
+		function redraw() {
+			if ( !self.source.averageOverTime )
+				return;
+			
+			let buf = self.source.averageOverTime.slice( -18 );
+			if ( !buf || !buf.length ) {
+				console.log( 'AV - invalid volumeHistory', self.source );
+				return;
+			}
+			
+			self.clearCanvas();
+			let  stepLength = ( self.cW * 1.0  ) / buf.length;
+			
+			// move line to pos
+			let len = buf.length;
+			let i = buf.length;
+			for( ; i-=3 ; ) {
+				self.ctx.beginPath();
+				let alpha = i / len;
+				if ( alpha > 1 )
+					alpha = 1;
+				self.ctx.strokeStyle = 'rgba( 255, 255, 255, ' + alpha + ')';
+				let v1 = buf[ i ];
+				let v2 = buf[ i - 3 ];
+				let y1 = self.cH - (( v1 / 128.0 ) * self.cH );
+				let y2 = self.cH - (( v2 / 128.0 ) * self.cH );
+				y1+=1;
+				y2+=1;
+				let x1 = ( i * stepLength );
+				let x2 = (( i - 3 ) * stepLength );
+				self.ctx.moveTo( x1, y1 );
+				self.ctx.lineTo( x2, y2 );
+				self.ctx.stroke();
+			}
+		}
+	}
+	
+	ns.AudioVisualizer.prototype.updateWaveform = function() {
+		const self = this;
+		self.ctx.strokeStyle = 'white';
+		self.animFReq = window.requestAnimationFrame( loop );
+		function loop() {
+			if ( !self.draw || self.drawVolume )
+				return;
+			
+			self.animFReq = window.requestAnimationFrame( loop );
+			redraw();
+		}
+		
+		function redraw() {
+			let buf = self.source.timeBuffer;
+			if ( !buf || !buf.length ) {
+				console.log( 'AV - invalid time buffer', self.source );
+				return;
+			}
+			
+			self.clearCanvas();
+			self.ctx.beginPath();
+			let stepLength = ( self.cW * 1.0 ) / buf.length;
+			
+			// move line to pos
+			let i = buf.length;
+			for ( ; i-- ; ) {
+				let value = buf[ i ];
+				let y = ( value / 128.0 ) * ( self.cH / 2.0 );
+				let x = ( self.cW - ( i * stepLength ));
+				if ( i === buf.length )
+					self.ctx.moveTo( x, y );
+				else
+					self.ctx.lineTo( x, y );
+			}
+			
+			self.ctx.stroke();
+		}
+	
+	}
+	
+	ns.AudioVisualizer.prototype.clearCanvas = function() {
+		const self = this;
+		if ( !self.ctx )
+			return;
+		
+		self.ctx.clearRect( 0, 0, self.cW, self.cH );
+	}
+	
+	/*
+	ns.AudioVisualizer.prototype.connectSource = function() {
+		const self = this;
+		console.log( 'connectSource' );
+		if ( !self.source )
+			throw new Error( 'AudioVisualizer.connectSource - \
+				no source, called after .close?' );
+		
+		self.bufferId = self.source.on( '')
+	}
+	
+	ns.AudioVisualizer.prototype.disconnectSource = function() {
+		const self = this;
+		console.log( 'releaseSource', self.source );
+		if ( !self.source )
+			return;
+		
+		if ( self.bufferId )
+			self.source.off( self.bufferId );
+		
+		if ( self.volumeId )
+			self.source.off( self.volumeId );
+		
+	}
+	*/
 	
 })( library.view );
 

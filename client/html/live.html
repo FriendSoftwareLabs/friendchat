@@ -132,7 +132,7 @@ avatar,
 				</div>
 			</div>
 		</div>
-		<div class="ui-peer-info std-bg fortify group row">
+		<div class="ui-peer-info std-bg fortify group row cover">
 			<div class="fortify">
 				<div id="mute-self" class="btn" title="Mute yourself">
 					<i class="fa fa-fw fa-microphone-slash"></i>
@@ -142,6 +142,8 @@ avatar,
 				<div class="name">
 					<%= name %>
 				</div>
+			</div>
+			<div id="selfie-volume" class="volume-indicator-container fortify">
 			</div>
 			<div id="session-duration" class="fortify group row">
 				<div class="time expand">
@@ -977,6 +979,20 @@ message,
 </div>
 </script>
 
+<!-- peer audio visualizer
+id,
+canvasId,
+width,
+heigth,
+-->
+<script id="peer-av-tmpl" type="text/html">
+<div id="<%= id %>" class="av-visualizer">
+	<canvas id="<%= canvasId %>" width="<%= width%>"" height="<%= height %>">
+	</canvas>
+</div>
+</script>
+
 		</div>
 	</body>
 </html>
+

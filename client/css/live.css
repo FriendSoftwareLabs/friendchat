@@ -874,21 +874,6 @@
 	}
 }
 
-/* contain mode for streams
-.width {
-	width : 100%;
-	height : auto;
-}
-
-.height {
-	width : auto;
-	height : 100%;
-}
-*/
-
-
-/* cover mode for streams */
-
 .video-border {
 	border : 2px solid rgb( 0, 0, 0 );
 }
@@ -897,12 +882,6 @@
 	border : none;
 }
 
-/*
-#selfie.popped .video {
-	width: 100%;
-	height: auto;
-}
-*/
 .avatar {
 	opacity: 1;
 }
@@ -923,17 +902,19 @@
 	
 }
 
-
 .width {
 	width : auto;
-	height : 100%;
+	height : calc( 100% + 2px );
 }
 
 .height {
-	width : 100%;
+	width : calc( 100% + 2px );
 	height : auto;
 }
 
+.peer:not(.popped ).quality-low .video {
+	transform : scale( 2 ) translate( -25%, -25% );
+}
 
 .grid1 > div {
 	height : 100%;
@@ -1326,4 +1307,37 @@
 
 #ext-conn-ui .message {
 	padding : 0 0.5em;
+}
+
+/* AV */
+
+.volume-indicator-container {
+	position: relative;
+	width : 2.5em;
+}
+
+.av-visualizer {
+	position: absolute;
+	top    : 0;
+	right  : 0;
+	bottom : 0;
+	left   : 0;
+	border-radius: 25%;
+}
+
+/* Volume */
+
+
+/* Speaker only mode */
+
+.mode-speaker {
+	
+}
+
+.mode-speaker > .peer {
+	display: none;
+}
+
+.mode-speaker > .peer.speaker {
+	display: inherit;
 }

@@ -171,8 +171,10 @@ i18n_changed_topic_to : changed topic to
 i18n_participants : Participants
 i18n_stream_quality : Stream quality
 i18n_default : Default
-i18n_medium : Medium ( 320 / 10 )
-i18n_low : Low ( 128 / 4 )
+i18n_unconstrained : Unconstrained
+i18n_normal : Normal
+i18n_medium : Medium
+i18n_low : Low
 i18n_mute_your_audio : Mute your audio
 i18n_pause_your_video : Pause your video
 i18n_share_screen : Share a screen or app
@@ -184,6 +186,7 @@ i18n_select_media_sources : Select media sources
 i18n_text_chat : Text Chat
 i18n_restart_stream : Restart stream
 i18n_toggle_popped_selfie : Toggle popped selfie
+i18n_toggle_mode_speaker_only : Only show speaker
 i18n_change_participant_order : Change participant order
 i18n_clean_ui : Clean UI
 i18n_leave : Leave
