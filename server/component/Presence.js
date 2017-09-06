@@ -92,6 +92,13 @@ ns.Presence.prototype.initialize = function( initConf, socketId ) {
 
 ns.Presence.prototype.connect = function( conf, socketId ) {
 	const self = this;
+	log( 'connect - conf', conf, 3 );
+	if ( conf && conf.mod ) {
+		conf.mod.host = conf.conf.host;
+		conf.mod.port = conf.conf.port;
+		conf = conf.mod;
+	}
+	
 	if ( conf && ( self.type !== conf.type )) {
 		log( 'connect - invalid conf', conf );
 		return;

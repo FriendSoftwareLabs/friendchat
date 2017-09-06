@@ -161,6 +161,9 @@ ns.Treeroot.prototype.init = function() {
 
 ns.Treeroot.prototype.connect = function( conf ) {
 	var self = this;
+	if ( conf && conf.mod )
+		conf = conf.mod;
+	
 	self.validHost = true;
 	self.clearReconnect();
 	

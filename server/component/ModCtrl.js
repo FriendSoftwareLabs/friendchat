@@ -152,7 +152,7 @@ ns.ModCtrl.prototype.init = function() {
 	var self = this;
 	// these ( Presence, Tree.., etc ) are loaded/require at the top ^^^
 	self.available = {
-		'presence'     : Presence,
+		'presence' : Presence,
 		'treeroot' : Treeroot,
 		'irc'      : IRC,
 	};
@@ -168,6 +168,7 @@ ns.ModCtrl.prototype.init = function() {
 
 ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
 	var self = this;
+	log( 'create', modConf );
 	var dbSet = new DbModule( self.db, self.accountId );
 	var dbGet = null;
 	
@@ -323,7 +324,12 @@ ns.ModCtrl.prototype.start = function( mod ) {
 	
 	new Module( conn, clientId );
 	self.modules[ clientId ] = conn;
-	conn.connect( mod );
+	const conf = global.config.server.defaults.module[ mod.type ];
+	const init = {
+		mod  : mod,
+		conf : conf,
+	};
+	conn.connect( init );
 	
 	function toClient( msg, sessionId ) {
 		self.send( msg, sessionId );
@@ -522,9 +528,10 @@ ns.ModuleProxy.prototype.emitState = function( sessionId ) {
 	self.send( stateEvent, sessionId );
 }
 
-ns.ModuleProxy.prototype.connect = function( data ) {
+ns.ModuleProxy.prototype.connect = function( conf ) {
 	var self = this;
-	self.emit( 'connect', data );
+	modLog( 'connect', conf )
+	self.emit( 'connect', conf );
 }
 
 ns.ModuleProxy.prototype.kill = function( callback ) {

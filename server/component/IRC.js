@@ -65,6 +65,9 @@ ns.IRC.prototype.init = function() {
 
 ns.IRC.prototype.connect = function( conf ) {
 	var self = this;
+	if ( conf && conf.mod )
+		conf = conf.mod;
+	
 	self.ircConf = conf || self.ircConf;
 	
 	if ( self.ircClient  ) {
