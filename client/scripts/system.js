@@ -1944,8 +1944,10 @@ library.rtc = library.rtc || {};
 	//
 	ns.RtcSession.prototype.send = function( event ) {
 		var self = this;
-		if ( !self.view )
+		if ( !self.view )  {
+			console.log( '!rtc.session.view - dropping', event );
 			return;
+		}
 		
 		self.view.sendMessage( event );
 	}
@@ -1982,12 +1984,10 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcSession.prototype.init = function() {
 		const self = this;
-		console.log( 'rtcsession init', self );
 	}
 	
 	ns.RtcSession.prototype.initialize = function( init ) {
 		const self = this;
-		console.log( 'RtcSession.initalize', init.liveId );
 		self.id = init.liveId;
 		const liveConf = init.liveConf;
 		const conf = self.conf;
@@ -1995,7 +1995,7 @@ library.rtc = library.rtc || {};
 			userId     : liveConf.userId,
 			peerList   : liveConf.peerList,
 			isGuest    : conf.isGuest || false,
-			identities : conf.identities,
+			identities : init.identities,
 			rtcConf    : {
 				ICE         : liveConf.ICE,
 				constraints : conf.constraints,

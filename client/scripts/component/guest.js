@@ -29,6 +29,7 @@ library.component = library.component || {};
 		self.onclose = onclose;
 		
 		self.roomId = null;
+		self.identities = {};
 		
 		self.init();
 	}
@@ -102,7 +103,6 @@ library.component = library.component || {};
 		self.identities = state.identities;
 		const conf = {
 			roomId      : self.roomId,
-			identities  : self.identities,
 			isGuest     : true,
 			permissions : {
 				video : true,
@@ -129,7 +129,6 @@ library.component = library.component || {};
 		}
 		function chat( e ) { self.handleLiveChat( e ); }
 		function onclose( e ) {
-			console.log( 'guest live onclose' );
 			const leave = {
 				type : 'leave',
 			};
@@ -141,12 +140,14 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.GuestRoom.prototype.updateIdentity = function( event ) {
+	ns.GuestRoom.prototype.updateIdentity = function( data ) {
 		const self = this;
-		console.log( 'GuestRoom - updateIdentity', event );
+		let uid = data.userId;
+		let id = data.identity;
+		self.identities[ uid ] = id;
 		const uptd = {
 			type : 'identity',
-			data : event,
+			data : data,
 		};
 		self.handleLiveEvent( uptd );
 	}
@@ -169,7 +170,9 @@ library.component = library.component || {};
 			if ( !self.live )
 				return;
 			
-			self.live.initialize( event.data );
+			let init = event.data;
+			init.identities = self.identities;
+			self.live.initialize( init );
 			return;
 		}
 		

@@ -61,7 +61,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 })();
 
 // RTC
-// data-model-in-view side of the session
 // holds all the actual peer objects and connections
 (function( ns, undefined ) {
 	ns.RTC = function( conn, view, conf, onclose, onready ) {
@@ -275,7 +274,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleIdentities = function( identities ) {
 		const self = this;
-		//self.identities = identities;
 		for ( let idKey in identities ) {
 			const id = identities[ idKey ];
 			self.identities[ idKey ] = id;
@@ -285,9 +283,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleSpeaking = function( peerId ) {
 		const self = this;
-		console.log( 'speaking', peerId );
 		if ( self.userId === peerId ) {
-			console.log( 'selfie speaker' );
 			peerId = 'selfie';
 		}
 		
@@ -370,7 +366,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.setupAdmin = function() {
 		var self = this;
-		console.log( 'setupAdmin', self );
+		console.log( 'setupAdmin - NYI', self );
 		return;
 		
 		self.menu.enable( 'settings' );
@@ -476,19 +472,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.updatePeerIdentity = function( peerId, identity ) {
 		const self = this;
-		console.log( 'updateIdentity', {
-			pid : peerId,
-			id : identity,
-		});
-		
 		if ( peerId === self.userId && self.selfie ) {
 			self.selfie.updateIdentity( identity );
 			return;
 		}
 		
 		const peer = self.peers[ peerId ];
-		if ( !peer )
+		if ( !peer ) {
+			console.log( 'no peer found for', {
+				pid : peerId,
+				id : identity,
+				peers : self.peers,
+			});
 			return;
+		}
 		
 		peer.updateIdentity( identity );
 	}
@@ -4141,7 +4138,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.IsSpeaking.prototype.setSource = function( source ) {
 		const self = this;
-		console.log( 'IsSpeaking.setSource', source );
 		if ( self.source )
 			self.releaseSource();
 		
@@ -4156,7 +4152,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.IsSpeaking.prototype.close = function() {
 		const self = this;
-		console.log( 'IsSpeaking.close' );
 		self.releaseSource();
 		
 		delete self.onSpeaking;
@@ -4234,7 +4229,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Volume.prototype.start = function() {
 		const self = this;
-		console.log( 'Volume.start' );
 		if ( self.loop )
 			return;
 		
@@ -4302,7 +4296,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Volume.prototype.stop = function() {
 		const self = this;
-		console.log( 'Volume.stop' );
 		self.loop = false;
 		if ( !self.animFrame )
 			return;
@@ -4338,9 +4331,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Volume.prototype.init = function() {
 		const self = this;
-		console.log( 'volume.init', self );
 		self.actx = new window.AudioContext();
-		console.log( 'actx', self.actx );
 		self.source = self.actx.createMediaStreamSource( self.stream );
 		self.analyser = self.actx.createAnalyser();
 		self.analyser.fftSize = 1024;

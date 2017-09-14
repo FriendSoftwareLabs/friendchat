@@ -506,7 +506,6 @@ library.contact = library.contact || {};
 			return; // we already are in a live _in this room_
 		
 		conf.roomId = self.clientId;
-		conf.identities = self.identities;
 		self.live = hello.rtc.createSession( conf, liveToServer, onClose );
 		if ( !self.live )
 			return; // session wasnt created, because :reasons:
@@ -730,6 +729,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
+		console.log( 'handleInitialize', state );
 		self.ownerId = state.ownerId;
 		self.identities = state.identities;
 		self.onlineList = state.online;
@@ -912,6 +912,8 @@ library.contact = library.contact || {};
 			if ( !self.live )
 				return;
 			
+			let init = event.data;
+			init.identities = self.identities;
 			self.live.initialize( event.data );
 			return;
 		}

@@ -455,7 +455,6 @@ library.component = library.component || {};
 		}
 		
 		function togglePopped( e ) {
-			console.log( 'view.peer.togglePopped', e );
 			self.togglePopped();
 		}
 		
@@ -547,7 +546,6 @@ library.component = library.component || {};
 		}
 		
 		self.currentGridKlass = newGridKlass;
-		console.log( 'setting grid klass', self.currentGridKlass );
 		container.classList.add( self.currentGridKlass );
 		self.reflowPeers();
 		
@@ -599,7 +597,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.onDrag = function( type, peerId ) {
 		var self = this;
-		console.log( 'onDrag', type );
 		if ( type === 'enable' )
 			dragEnable();
 		if ( type === 'start' )
@@ -921,7 +918,6 @@ library.component = library.component || {};
 		
 		function modeSpeaker( state ) {
 			const isModeSpeaker = self.toggleModeSpeaker();
-			console.log( 'modeSpeaker', isModeSpeaker );
 			self.menu.setState( 'mode-speaker', isModeSpeaker );
 		}
 	}
@@ -935,7 +931,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.toggleModeSpeaker = function() {
 		const self = this;
-		console.log( 'toggleModeSpeaker' );
 		self.modeSpeaker = !self.modeSpeaker;
 		const container = document.getElementById( self.peerContainerId );
 		if ( self.modeSpeaker )
@@ -970,14 +965,12 @@ library.component = library.component || {};
 		if ( !peerId )
 			peerId = 'selfie';
 		
-		console.log( 'Live.setSpeaker', peerId );
 		set( false );
 		self.currentSpeaker = peerId;
 		set( true );
 		
 		function set( isSpeaker ) {
 			const peerEl = document.getElementById( self.currentSpeaker );
-			console.log( 'setSpeaker', peerEl );
 			if ( !peerEl )
 				return;
 			
@@ -1153,17 +1146,14 @@ library.component = library.component || {};
 		}
 		
 		function toggleMute() {
-			console.log( 'toggleMute' );
 			self.peer.toggleMute();
 		}
 		
 		function toggleBlind() {
-			console.log( 'toggleBlind' );
 			self.peer.toggleBlind();
 		}
 		
 		function doRemove() {
-			console.log( 'doRemove' );
 			self.peer.remove();
 		}
 	}
@@ -1720,7 +1710,6 @@ library.component = library.component || {};
 			return;
 		}
 		
-		console.log( 'handleTrack - adding and load()ing', self.stream );
 		self.stream.srcObject.addTrack( track );
 		self.stream.load();
 		
@@ -2040,7 +2029,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.updateScreenMode = function() {
 		const self = this;
-		console.log( 'updateScreenMode', self.peer.screenMode );
 		self.doResize();
 	}
 	
@@ -2052,7 +2040,6 @@ library.component = library.component || {};
 	ns.Peer.prototype.updateIdentity = function( identity ) {
 		var self = this;
 		identity = identity || self.identity;
-		console.log( 'updateIdentity', identity );
 		var id = identity;
 		if ( !id ) {
 			console.log( 'updateIdentity - no identity' )
@@ -2319,7 +2306,6 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.togglePopped = function( force ) {
 		const self = this;
-		console.log( 'selfie.togglePopped' );
 		if ( null == force )
 			self.isPopped = !self.isPopped;
 		else
@@ -2404,10 +2390,6 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.toggleDurationUpdate = function() {
 		const self = this;
-		console.log( 'toggleDurationUpdate', {
-			isDruationTimer : self.isDurationTimer,
-			isPopped : self.isPopped,
-		});
 		if ( !self.isDurationTimer || self.isPopped ) {
 			stop();
 			return;
@@ -2416,7 +2398,6 @@ library.component = library.component || {};
 		if ( self.durationLoopId )
 			return;
 		
-		console.log( 'start timeloop' );
 		self.durationLoopId = 1;
 		timeLoop();
 		function timeLoop() {
@@ -2547,10 +2528,6 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.updateButtonVisibility = function() {
 		var self = this;
-		console.log( 'selfie.updateButtonVisibility', {
-			iv : self.isVideo,
-			ia : self.isAudio,
-		} );
 		if ( self.isAudio )
 			self.menu.enable( 'mute' );
 		else
@@ -4041,7 +4018,6 @@ library.component = library.component || {};
 		errIgnoreBtn.addEventListener( 'click', errIgnore, false );
 		
 		function letsPlay( e ) {
-			console.log( 'onloadedmetadata', e );
 			self.previewEl.play();
 		}
 		
@@ -4086,7 +4062,6 @@ library.component = library.component || {};
 			.catch( showErr );
 		
 		function show( devices ) {
-			console.log( 'devices', devices );
 			self.allDevices = devices;
 			self.populate();
 		}
@@ -4198,7 +4173,6 @@ library.component = library.component || {};
 		if ( !mediaConf.audio && !mediaConf.video )
 			return;
 		
-		console.log( 'sourceSelect, mediaConf', mediaConf );
 		navigator.mediaDevices.getUserMedia( mediaConf )
 			.then( setMedia )
 			.catch( mediaErr );
@@ -4211,25 +4185,15 @@ library.component = library.component || {};
 			
 			*/
 			const tracks = stream.getTracks();
-			console.log( 'setMedia', {
-				s : stream,
-				t : tracks,
-			});
 			const srcObject = self.previewEl.srcObject;
 			if ( !srcObject )
 				self.previewEl.srcObject = stream;
 			else
 				tracks.forEach( add );
 			
-			console.log( '.load()' );
 			self.previewEl.load();
-			console.log( 'stats', {
-				readyState   : self.previewEl.readyState,
-				networkState : self.previewEl.networkState,
-			});
 			
 			function add( track ) {
-				console.log( 'srcSelect adding tracks', track );
 				srcObject.addTrack( track );
 			}
 		}
@@ -4241,7 +4205,6 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.clearPreview = function() {
 		var self = this;
-		console.log( '.pause()' );
 		self.previewEl.pause();
 		let srcObj = self.previewEl.srcObject;
 		
@@ -4249,23 +4212,12 @@ library.component = library.component || {};
 			return;
 		
 		var tracks = srcObj.getTracks();
-		console.log( 'clearPreview', {
-			el  : self.previewEl,
-			t   : tracks,
-			src : srcObj,
-		});
 		
 		tracks.forEach( stop );
 		self.previewEl.load();
 		
-		console.log( 'clearPreview - post', {
-			el : self.previewEl,
-			src : self.previewEl.srcObject,
-			ts : srcObj.getTracks(),
-		});
 		
 		function stop( track ) {
-			console.log( 'stopping track', track );
 			track.stop();
 			if ( srcObj.removeTrack )
 				srcObj.removeTrack( track );
@@ -4274,7 +4226,6 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.checkAudioInput = function( stream ) {
 		var self = this;
-		console.log( 'checkAudioInput', stream );
 		var checkEl = document.getElementById( 'audioinput-checking' );
 		checkEl.classList.toggle( 'hidden', false );
 		new library.rtc.AudioInputDetect( stream, doneBack );
