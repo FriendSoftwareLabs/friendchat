@@ -1759,14 +1759,21 @@ api.DoorFun.prototype.init = function() {
 				error   : onError,
 			});
 			
-		}
-		
-		function onSuccess( res ) {
-			console.log( 'tiny.onSuccess', res );
-		}
-		
-		function onError( err ) {
-			console.log( 'tiny.onError', err );
+			function onSuccess( res ) {
+				console.log( 'tiny.onSuccess', res );
+				let data = friendUP.tool.objectify( res );
+				if ( !data ) {
+					reject( 'ERR_INVALID_JSON' );
+					return;
+				}
+				
+				resolve( data );
+			}
+			
+			function onError( err ) {
+				console.log( 'tiny.onError', err );
+				reject( 'ERR_SOME_ERR' );
+			}
 		}
 	}
 	
@@ -1774,6 +1781,7 @@ api.DoorFun.prototype.init = function() {
 	ns.TinyURL.prototype.expand = function( tinyUrl ) {
 		const self = this;
 		console.log( 'expand', tinyURL );
+		
 	}
 	
 	// Private

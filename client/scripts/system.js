@@ -1758,41 +1758,48 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Interceptor.prototype.buildURL = function( data, enableIntercept, message ) {
-		var self = this;
-		var dataString = friendUP.tool.stringify( data );
+		const self = this;
+		const res = {
+			prefix : null,
+			url    : null,
+		};
+		const dataString = friendUP.tool.stringify( data );
 		if ( !dataString ) {
 			console.log( 'Interceptor.buildURL - could not stringify', data );
 			return null;
 		}
 		
-		var urlData = window.encodeURIComponent( dataString );
-		var intercept = '';
-		var msgStr = '';
+		let urlData = window.encodeURIComponent( dataString );
+		let intercept = '';
+		let msgStr = '';
 		if ( enableIntercept )
 			intercept = self.interceptToken;
 		
 		if ( message && ( 'string' === typeof( message )) )
 			msgStr = message + ' :: ';
 		
-		var str = ':: ' + intercept
-			+ msgStr
-			+ hello.app.domain
-			+ self.appUrl
-			+ urlData;
+		let prefix = ':: ' + intercept + msgStr;
+		let url = hello.app.domain + self.appUrl + urlData;
+		res.prefix = prefix;
+		res.url = url;
 		
-		return str;
+		return res;
 	}
 	
 	ns.Interceptor.prototype.buildJSON = function( data ) {
-		var self = this;
+		const self = this;
+		let res = {
+			prefix : null,
+			url    : null,
+		};
 		var dataString = friendUP.tool.stringify( data );
 		if ( !dataString ) {
 			console.log( 'Interceptor.buildJSON - could not stringify', data );
 			return;
 		}
-		
-		var str = '::' + self.interceptToken + 'json://' + dataString;
-		return str;
+		res.prefix = '::' + self.interceptToken;
+		res.url = 'json://' + dataString;
+		return res;
 	}
 	
 	// private
