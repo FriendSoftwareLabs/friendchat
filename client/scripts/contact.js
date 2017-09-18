@@ -60,7 +60,7 @@ library.contact = library.contact || {};
 			'calendar-event' : addCalendarEvent,
 		};
 		
-		function startLive( event, from ) { self.startLive( event, from ); }
+		function startLive( event, from, msg ) { self.startLive( event, from, msg ); }
 		function addCalendarEvent( event, from ) { self.addCalendarEvent( event, from ); }
 		
 		self.messageMap = {
@@ -190,7 +190,22 @@ library.contact = library.contact || {};
 		if ( !msg.from )
 			return true;
 		
-		handler( event.data, msg.from );
+		let now = Date.now();
+		let oneHourAgo = now - 1000 * 60 * 60;
+		if ( msg && !msg.time )
+			msg.time = now;
+		
+		if ( msg && msg.time < oneHourAgo ) {
+			console.log( 'handleIntercept - stale event', {
+				i : event,
+				m : msg,
+			});
+			hello.log.notify( 'Stale event, dropping - type: ' + event.type );
+			hello.log.show();
+			return true;
+		}
+		
+		handler( event.data, msg.from, msg );
 		return true;
 	}
 	

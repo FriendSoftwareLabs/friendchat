@@ -186,7 +186,7 @@ ns.Treeroot.prototype.connect = function( conf ) {
 	function start() {
 		self.stopped = false;
 		self.clearRequestQueue();
-		self.connectionStatus( 'connecting' );
+		self.connectionStatus( 'connecting', Date.now());
 		self.getUniqueId( idBack );
 		
 		function idBack( success ) {
@@ -591,7 +591,7 @@ ns.Treeroot.prototype.initializeClient = function( socketId ) {
 	var self = this;
 	self.client.emitState( socketId );
 	var connState = self.client.getState();
-	if ( connState.type != 'online' ) {
+	if ( !connState || connState.type != 'online' ) {
 		return;
 	}
 	
@@ -886,16 +886,20 @@ ns.Treeroot.prototype.stop = function( callback ) {
 	
 	self.unloadContacts();
 	if ( isOnline())
-		self.connectionStatus( 'offline' );
+		self.connectionStatus( 'offline', Date.now());
 	
 	if ( callback )
 		callback( true );
 	
 	function isOnline() {
+		if ( !self.client )
+			return false;
+		
 		var connStatus = self.client.getState();
-		if ( connStatus.type == 'online' )
-			return true;
-		return false;
+		if ( !connStatus || 'online' != connStatus.type )
+			return false;
+		
+		return true;
 	}
 }
 
@@ -1282,7 +1286,7 @@ ns.Treeroot.prototype.getLog = function( clientId, socketId ) {
 	}
 	
 	var cId = contact.serviceId;
-	self.contactState[ cId ].lastMessageId = 0;
+	//self.contactState[ cId ].lastMessageId = 0;
 	self.startMessageUpdates( cId );
 	self.getMessages( cId, null, messagesBack );
 	function messagesBack( messages ) {
@@ -1318,15 +1322,21 @@ ns.Treeroot.prototype.postMessage = function( clientId, message ) {
 		'Date' : self.getNow(),
 	};
 	
-	self.queueRequest({
+	let req = {
 		type : 'request',
 		path : self.postMessagePath,
 		data : postData,
 		callback : postResponse
-	});
+	};
+	self.queueRequest( req );
 	
 	function postResponse( data ) {
-		self.postResponse( cId, data );
+		if ( !data ) {
+			self.log( 'postMessage - null data for req', req );
+			return;
+		}
+		
+		self.postResponse( cId, data, req );
 	}
 }
 
@@ -1338,7 +1348,7 @@ ns.Treeroot.prototype.postCryptoMessage = function( clientId, data ) {
 	var postData = {
 		'ContactID' : cId,
 		'Message'   : data.message,
-		'Date'      : self.getNow,
+		'Date'      : self.getNow(),
 		'IsCrypto'  : 1,
 		'CryptoID'  : data.encId,
 	};
@@ -1353,19 +1363,25 @@ ns.Treeroot.prototype.postCryptoMessage = function( clientId, data ) {
 		postData[ 'CryptoKeys' ] = JSON.stringify( keys );
 	}
 	
-	self.queueRequest({
+	let req = {
 		type     : 'request',
 		path     : self.postMessagePath,
 		data     : postData,
 		callback : postResponse,
-	});
+	};
+	self.queueRequest( req );
 	
 	function postResponse( data ) {
-		self.postResponse( cId, data );
+		if ( !data ) {
+			self.log( 'postCryptoMessage - null response', req );
+			return;
+		}
+		
+		self.postResponse( cId, data, req );
 	}
 }
 
-ns.Treeroot.prototype.postResponse = function( serviceId, data ) {
+ns.Treeroot.prototype.postResponse = function( serviceId, data, req ) {
 	var self = this;
 	var cId = serviceId;
 	self.startMessageUpdates( cId );
@@ -1373,6 +1389,13 @@ ns.Treeroot.prototype.postResponse = function( serviceId, data ) {
 	function messageBack( messages ) {
 		if ( !messages )
 			return;
+		
+		if ( 2 < messages.length ) {
+			self.log( 'postResponse - abnormal messages.length in new messages', {
+				length : messages.length,
+				req    : req,
+			});
+		}
 		
 		self.messagesToClient( messages, cId );
 	}
@@ -1393,12 +1416,14 @@ ns.Treeroot.prototype.getNewMessages = function(
 	
 	lastMessageId = lastMessageId
 		|| self.contactState[ contactId ].lastMessageId
-		|| 0;
+		|| null;
 	
 	var postData = {
 		'ContactID' : contactId,
-		'LastMessage' : lastMessageId,
 	};
+	
+	if ( null != lastMessageId )
+		postData[ 'LastMessage' ] = lastMessageId;
 	
 	var req = {
 		path : self.getMessagesPath,
@@ -1409,6 +1434,12 @@ ns.Treeroot.prototype.getNewMessages = function(
 	self.queueRequest( req );
 	function messageBack( data ) {
 		var messages = self.handleMessages( data, contactId );
+		if ( !messages || !messages.length )
+			self.log( 'getNewMessages - res, no messages fetched', {
+				name : contact.Name,
+				lmid : lastMessageId,
+			});
+		
 		callback( messages );
 	}
 }
@@ -1513,16 +1544,16 @@ ns.Treeroot.prototype.messagesToClient = function(
 	type,
 	socketId )
 {
-	var self = this;
+	const self = this;
 	if( !messages )
 		return;
 	
-	var contact = self.contacts.get( contactId );
+	const contact = self.contacts.get( contactId );
 	if( !contact ) {
 		self.log( 'wtf, no contact for: ', contactId );
 		return;
 	}
-	var cState = self.contactState[ contactId ];
+	const cState = self.contactState[ contactId ];
 	
 	messages.forEach( push );
 	self.startMessageUpdates( contactId );
@@ -1531,13 +1562,21 @@ ns.Treeroot.prototype.messagesToClient = function(
 		if ( data.Message === undefined )
 			return;
 		
-		var lastMessageId = cState.lastMessageId || 0;
-		if ( data.ID <= lastMessageId )
-			return;
+		let lastMessageId = cState.lastMessageId || 0;
+		if ( 'log' !== type ) {
+			if ( data.ID <= lastMessageId )
+				return;
+			
+			cState.lastMessageId = data.ID;
+		}
 		
-		cState.lastMessageId = data.ID;
+		
 		//self.log( 'data date', data.Date );
-		var timestamp = Date.parse( data.Date );
+		let timestamp = null;
+		if ( data.TimeCreated )
+			timestamp = data.TimeCreated * 1000;
+		else
+			timestamp = Date.parse( data.Date );
 		
 		var from = contact.serviceId == data.PosterID ? contact.clientId : null;
 		var msgId = 'mid-' + data.ID;
@@ -1554,24 +1593,10 @@ ns.Treeroot.prototype.messagesToClient = function(
 		if ( data.IsCrypto )
 			msg.data = addCrypto( msg.data, data, cState );
 		
-		if ( type ) {
+		if ( type )
 			msg =  wrapIn( type, msg );
-		} else
-			msg = setLogMaybe( msg );
 		
 		self.toClientContact( msg, contact.clientId, socketId );
-	}
-	
-	function setLogMaybe( msg ) {
-		return msg;
-		
-		var currentTime = Date.now();
-		currentTime = currentTime - ( 1000 * 60 * 15 )// remove 15minutes
-		
-		if ( msg.data.time < currentTime ) // msg time older than ( curent - 15min )
-			msg = wrapIn( 'log', msg );
-		
-		return msg;
 	}
 	
 	function wrapIn( type, msg ) {
@@ -1639,7 +1664,7 @@ ns.Treeroot.prototype.fetchContacts = function( callback ) {
 		callback : contactsResponse
 	};
 	self.queueRequest( req );
-	function contactsResponse( data ) {
+	function contactsResponse( data, req, res ) {
 		if ( !data ) {
 			self.log( 'fetchContacts - failed - req:', req );
 			done( false );
@@ -1658,12 +1683,12 @@ ns.Treeroot.prototype.fetchContacts = function( callback ) {
 		
 		contacts.relations = self.getArr( data.items.Relations );
 		contacts.requests = self.getArr( data.items.Requests );
-		done( contacts );
+		done( contacts, req, res );
 	}
 	
-	function done( result ) {
+	function done( result, req, res ) {
 		if( callback )
-			callback( result );
+			callback( result, req, res );
 	}
 }
 
@@ -1878,9 +1903,11 @@ ns.Treeroot.prototype.updateContacts = function() {
 	var newRelations = [];
 	var newRelationIds = [];
 	var contactServiceIds = null;
+	var req = null;
+	var res = null;
 	
 	self.fetchContacts( contactsBack );
-	function contactsBack( result ) {
+	function contactsBack( result, rq, rs ) {
 		if ( !result ) {
 			done( false );
 			return;
@@ -1888,14 +1915,16 @@ ns.Treeroot.prototype.updateContacts = function() {
 		
 		relations = result.relations;
 		requests = result.requests;
+		req = rq;
+		res = rs;
 		
-		relations.forEach( isOnline );
+		//relations.forEach( isOnline );
 		function isOnline( relation ) {
 			var str = 'rel: '
 				+ relation.Username
 				+ ' - IsOnline: '
 				+ relation.IsOnline;
-			//self.log( str );
+			self.log( str );
 		}
 		
 		if ( !relations.length && !requests.length )
@@ -2071,30 +2100,58 @@ ns.Treeroot.prototype.updateContacts = function() {
 		}
 		
 		function hasMessage( relation, contact, contactState, done ) {
-			// no message has been sent either way
-			if ( null == relation.LastMessage ) {
-				contactState.lastMessageId = 0;
+			// derp
+			let rlm = relation.LastMessage;
+			let clmid = contactState.lastMessageId;
+			
+			if ( !rlm && clmid ) {
+				/*
+				self.log( 'hasMessage - no LastMesage', {
+					relation  : relation,
+					stateLMID : contactState.lastMessageId,
+					request   : req,
+					response  : res,
+				}, 4 );
+				*/
+				done();
+				return;
+			}
+			
+			// no message v0v
+			if ( null == rlm ) {
+				done();
+				return;
+			}
+			
+			// no new message( ? )
+			if ( rlm === clmid ) {
 				done();
 				return;
 			}
 			
 			// only triggers on first update with a contact that have a LastMessage id
-			if ( null == contactState.lastMessageId ) {
-				contactState.lastMessageId = relation.LastMessage;
-				done();
-				return;
-			}
-			
-			// all messages have been checked
-			if ( relation.LastMessage === contactState.lastMessageId ) {
-				done();
-				return;
-			}
+			if ( null == clmid )
+				contactState.lastMessageId = rlm;
 			
 			// well, then. lets do this
+			let reqTime = Date.now();
+			self.log( 'hasMessage - lets do this', {
+				rlm   : rlm,
+				clmid : clmid,
+			});
+			
+			let lastMsgId = null;
+			if ( clmid ) {
+				if ( clmid < rlm )
+					lastMsgId = clmid;
+				
+			} else
+				lastMsgId = rlm;
+			
+			
 			self.getNewMessages(
 				contact.serviceId,
-				contactState.lastMessageId,
+				lastMsgId,
 				messagesBack
 			);
 			
@@ -2104,6 +2161,13 @@ ns.Treeroot.prototype.updateContacts = function() {
 					return;
 				}
 				
+				let resTime = Date.now();
+				let runTimeMS = resTime - reqTime;
+				self.log( 'hasMessage - messagesBack', {
+					mlength : messages.length,
+					timeMS   : runTimeMS,
+					timeS    : runTimeMS / 1000,
+				});
 				self.messagesToClient( messages, contact.serviceId );
 				done();
 			}
@@ -2356,7 +2420,7 @@ ns.Treeroot.prototype.activate = function( data, socketId ) {
 			return;
 		}
 		
-		self.connectionStatus( 'connecting' );
+		self.connectionStatus( 'connecting', Date.now() );
 		self.uniqueId = res.data;
 		var registerSuccess = {
 			type : 'register',
@@ -2525,7 +2589,7 @@ ns.Treeroot.prototype.doRequestStep = function() {
 	
 	self.busy = true;
 	self.sendRequest( request, reqBack );
-	function reqBack( err, data ) {
+	function reqBack( err, data, req ) {
 		self.busy = false;
 		if ( err ) {
 			self.failedRequests++;
@@ -2534,7 +2598,7 @@ ns.Treeroot.prototype.doRequestStep = function() {
 		}
 		
 		self.failedRequests = 0;
-		self.handleResponse( data, request );
+		self.handleResponse( data, request, req );
 	}
 }
 
@@ -2548,6 +2612,14 @@ ns.Treeroot.prototype.sendRequest = function( request, done ) {
 	var query = querystring.stringify( data );
 	var options = self.getPostOptions( path, query.length );
 	var req = https.request( options, requestBack );
+	let d = new Date();
+	let rq = {
+		timestamp : Date.now(),
+		time      : d.toLocaleString() + ':' + d.getMilliseconds(),
+		path      : path,
+		query     : query,
+		options   : options,
+	};
 	req.on( 'error', errorResponse );
 	req.write( query );
 	req.end();
@@ -2564,7 +2636,7 @@ ns.Treeroot.prototype.sendRequest = function( request, done ) {
 		function read( chunk ) { chunks.push( chunk ); }
 		function end() {
 			var data = chunks.join( '' );
-			done( null, data );
+			done( null, data, rq );
 		}
 	}
 }
@@ -2577,7 +2649,7 @@ ns.Treeroot.prototype.handleRequestError = function( errCode, request ) {
 		request.callback( false );
 }
 
-ns.Treeroot.prototype.handleResponse = function( xml, request ) {
+ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
 	var self = this;
 	self.delouse( xml, dataBack );
 	function dataBack( data ) {
@@ -2621,7 +2693,7 @@ ns.Treeroot.prototype.handleResponse = function( xml, request ) {
 	
 	function done( res ) {
 		if ( request.callback )
-			request.callback( res );
+			request.callback( res, reqData, xml );
 	}
 }
 
@@ -2646,7 +2718,7 @@ ns.Treeroot.prototype.shouldRetry = function( req ) {
 
 ns.Treeroot.prototype.requeueRequest = function( req, errCode ) {
 	const self = this;
-	self.connectionStatus( 'connecting' );
+	self.connectionStatus( 'connecting', Date.now());
 	req.attempts = req.attempts ? ( req.attempts + 1 ) : 1;
 	var timeout = self.reqRetryBaseStep * req.attempts;
 	if ( req.attempts > 5 ) {

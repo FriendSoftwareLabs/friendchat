@@ -168,7 +168,6 @@ ns.ModCtrl.prototype.init = function() {
 
 ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
 	var self = this;
-	log( 'create', modConf );
 	var dbSet = new DbModule( self.db, self.accountId );
 	var dbGet = null;
 	
@@ -456,12 +455,12 @@ ns.ModuleProxy.prototype.setState = function( type, data ) {
 		return;
 	}
 	
-	if ( !data && ( 'string' !== typeof( type )) )
+	if ( 'string' !== typeof( type ))
 		self.state = type;
 	else
 		self.state = {
 			type : type,
-			data : data || {},
+			data : data || Date.now(),
 		};
 	
 	self.emitState();
@@ -530,7 +529,6 @@ ns.ModuleProxy.prototype.emitState = function( sessionId ) {
 
 ns.ModuleProxy.prototype.connect = function( conf ) {
 	var self = this;
-	modLog( 'connect', conf )
 	self.emit( 'connect', conf );
 }
 

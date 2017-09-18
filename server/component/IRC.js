@@ -104,7 +104,7 @@ ns.IRC.prototype.initializeClient = function( e, socketId ) {
 	var self = this;
 	self.conn.emitState();
 	var state = self.conn.getState();
-	if ( state.type != 'online' ) {
+	if ( state.type !== 'online' ) {
 		return;
 	}
 	
@@ -312,7 +312,7 @@ ns.IrcClient.prototype.connect = function() {
 ns.IrcClient.prototype.connEnd = function( e ) {
 	var self = this;
 	self.clearState();
-	self.connectionState( 'offline', null );
+	self.connectionState( 'offline' );
 }
 
 ns.IrcClient.prototype.connError = function( e ) {
@@ -668,7 +668,7 @@ ns.IrcClient.prototype.updateNick = function( value ) {
 		
 		self.conf.settings.nick = update.value;
 		var state = self.connectionState();
-		if ( state.type != 'online' )
+		if ( state.type !== 'online' )
 			self.reconnect();
 		else
 			self.setNick();
