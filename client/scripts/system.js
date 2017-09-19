@@ -823,8 +823,7 @@ library.rtc = library.rtc || {};
 				data : invite,
 			};
 			let link = hello.intercept.buildURL( bundle, false, null );
-			let parts = link.split( ' ' );
-			link = parts.pop();
+			link = link.url;
 			link += '&theme=borderless';
 			return link;
 		}
