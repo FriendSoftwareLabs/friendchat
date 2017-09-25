@@ -208,7 +208,10 @@ library.view = library.view || {};
 		self.view.on( 'presence', presence );
 		self.view.on( 'messagewaiting', messageWaiting );
 		
-		function presence( state ) { self.presence.set( state ); }
+		function presence( state ) {
+			console.log( 'presence', state );
+			self.presence.set( state );
+		}
 		function messageWaiting( isWaiting ) { self.messageWaiting.set( isWaiting ); }
 	}
 	

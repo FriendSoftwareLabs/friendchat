@@ -852,7 +852,7 @@ ns.ServerConn.prototype.handleClose = function() {
 
 ns.ServerConn.prototype.handleError = function( err ) {
 	const self = this;
-	self.handleDisconnect();
+	self.handleDisconnect( err );
 	
 }
 

@@ -42,6 +42,9 @@ ns.Treeroot = function( clientConnection, clientId ) {
 	self.contacts = new Contactlist();
 	self.contactState = {};
 	self.subscriptions = new Contactlist();
+	self.longpolls = {};
+	self.longpollMsgTimeout = 120;
+	self.longpollContactsTimeout = 300;
 	self.requestQueue = [];
 	self.updateQueue = [];
 	self.cryptoQueue = [];
@@ -65,6 +68,7 @@ ns.Treeroot = function( clientConnection, clientId ) {
 	self.init();
 }
 
+ns.Treeroot.prototype.apiPath = '/api-json/v1';
 ns.Treeroot.prototype.registerPath = '/components/register/';
 ns.Treeroot.prototype.passResetPath = '/components/register/recover/';
 ns.Treeroot.prototype.registerActivatePath = '/components/register/activate/';
@@ -882,6 +886,7 @@ ns.Treeroot.prototype.stop = function( callback ) {
 	self.stopContactUpdate();
 	self.stopMessageUpdate();
 	self.stopRequestLoop();
+	self.clearLongpolls();
 	self.stopped = true;
 	
 	self.unloadContacts();
@@ -954,6 +959,10 @@ ns.Treeroot.prototype.unloadContacts = function() {
 
 ns.Treeroot.prototype.startContactUpdate = function() {
 	var self = this;
+	self.updateContacts();
+	self.startLongpollContacts();
+	
+	/*
 	if ( self.contactsUpdater ) {
 		self.stopContactUpdate();
 	}
@@ -967,10 +976,14 @@ ns.Treeroot.prototype.startContactUpdate = function() {
 		if ( self.sessionId )
 			self.updateContacts();
 	}
+	*/
 }
 
 ns.Treeroot.prototype.stopContactUpdate = function() {
 	var self = this;
+	self.stopLongpollContacts();
+	return;
+	
 	if ( !self.contactsUpdater )
 		return;
 	
@@ -981,7 +994,6 @@ ns.Treeroot.prototype.stopContactUpdate = function() {
 ns.Treeroot.prototype.startMessageUpdates = function( contactId ) {
 	var self = this;
 	var contact = self.contacts.get( contactId );
-	
 	if ( !contact ) {
 		self.log( 'statContactUpdates: no contact for id ' + contactId );
 		return;
@@ -994,8 +1006,12 @@ ns.Treeroot.prototype.startMessageUpdates = function( contactId ) {
 		contactState.msgUpdater = null;
 	}
 	
-	contactState.msgUpdater = setInterval( contactUpdate, self.msgUpdateStep );
+	//contactState.msgUpdater = setInterval( contactUpdate, self.msgUpdateStep );
+	self.startMessageLongPoll( contactId );
+	
 	function contactUpdate() {
+		self.log( 'contactUpdate - Hey, what are yoDONT TOUCH THAT!' );
+		return;
 		self.doMessageUpdate( contactId );
 	}
 	
@@ -1007,7 +1023,35 @@ ns.Treeroot.prototype.startMessageUpdates = function( contactId ) {
 	
 	contactState.idleTimeout = setTimeout( stopUpdates, 300000 );
 	function stopUpdates() {
-		clearInterval( contactState.msgUpdater );
+		self.stopMessageUpdate( contactId );
+	}
+}
+
+ns.Treeroot.prototype.startMessageLongPoll = function( contactId ) {
+	const self = this;
+	const cState = self.contactState[ contactId ];
+	if ( !cState )
+		return;
+	
+	if ( cState.longpoll ) {
+		//self.log( 'startMessageLongPoll - already polling ' + contactId );
+		return;
+	}
+	
+	cState.longpoll = true;
+	doLongpoll();
+	
+	function doLongpoll() {
+		self.longpollMessages( contactId, null, longBack );
+		function longBack( res ) {
+			//self.log( 'longBack', res );
+			if ( res )
+				self.messagesToClient( res, contactId );
+			
+			if ( cState.longpoll )
+				setTimeout( doLongpoll, 1 );
+			
+		}
 	}
 }
 
@@ -1048,6 +1092,7 @@ ns.Treeroot.prototype.stopMessageUpdate = function( serviceId ) {
 	
 	function stopChatUpdate( serviceId ) {
 		var cState = self.contactState[ serviceId ];
+		self.stopMessageLongpoll( serviceId );
 		if ( cState.msgUpdater ) 
 			clearInterval( cState.msgUpdater );
 		
@@ -1057,6 +1102,15 @@ ns.Treeroot.prototype.stopMessageUpdate = function( serviceId ) {
 		cState.msgUpdater = null;
 		cState.idleTimeout = null;
 	}
+}
+
+ns.Treeroot.prototype.stopMessageLongpoll = function( contactId ) {
+	const self = this;
+	const cState = self.contactState[ contactId ];
+	if ( !cState )
+		return;
+	
+	cState.longpoll = false;
 }
 
 ns.Treeroot.prototype.getUserList = function( data, socketId ) {
@@ -1186,7 +1240,7 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		contact.publicKey = relation.PublicKey;
 		contact.clientId = uuid.v4() + '-' + contact.serviceId ;
 		contact.displayName = relation.Name || relation.Username;
-		contact.online = relation.IsOnline ? true : false;
+		contact.online = !!relation.IsOnline;
 		contact.imagePath = relation.ProfileImage;
 		return contact;
 	}
@@ -1203,7 +1257,8 @@ ns.Treeroot.prototype.addSubscription = function( request ) {
 	var action = {
 		type : 'add',
 		data : sub,
-	}
+	};
+	
 	self.subscriptionEvent( action );
 	return sub.serviceId;
 	
@@ -1220,9 +1275,8 @@ ns.Treeroot.prototype.addSubscription = function( request ) {
 ns.Treeroot.prototype.removeContact = function( serviceId ) {
 	var self = this;
 	var contact = self.contacts.get( serviceId );
-	if ( !contact ) {
-		self.log( 'removeContact: contact does not exists: ' + serviceId );
-	}
+	if ( !contact )
+		return;
 	
 	var action = {
 		type : 'remove',
@@ -1244,10 +1298,9 @@ ns.Treeroot.prototype.removeSubscription = function( serviceId ) {
 	var self = this;
 	var sub = self.subscriptions.get( serviceId );
 	
-	if( !sub ) {
-		self.log( 'no subscription found for ' + serviceId );
+	if( !sub )
 		return;
-	}
+	
 	var action = {
 		type : 'remove',
 		data : {
@@ -1256,7 +1309,7 @@ ns.Treeroot.prototype.removeSubscription = function( serviceId ) {
 	};
 	self.subscriptionEvent( action );
 	
-	delete self.subscriptions.remove( sub.serviceId ); // ?????????
+	self.subscriptions.remove( sub.serviceId );
 }
 
 ns.Treeroot.prototype.contactEvent = function( action ) {
@@ -1408,7 +1461,6 @@ ns.Treeroot.prototype.getNewMessages = function(
 {
 	var self = this;
 	var contact = self.contacts.get( contactId );
-	
 	if ( !contact ) {
 		self.log( 'no contact: ', contactId );
 		return;
@@ -1434,12 +1486,6 @@ ns.Treeroot.prototype.getNewMessages = function(
 	self.queueRequest( req );
 	function messageBack( data ) {
 		var messages = self.handleMessages( data, contactId );
-		if ( !messages || !messages.length )
-			self.log( 'getNewMessages - res, no messages fetched', {
-				name : contact.Name,
-				lmid : lastMessageId,
-			});
-		
 		callback( messages );
 	}
 }
@@ -1451,7 +1497,6 @@ ns.Treeroot.prototype.getMessages = function(
 {
 	var self = this;
 	var contact = self.contacts.get( contactId );
-	
 	if ( !contact ) {
 		self.log( 'no contact for id: ', contactId );
 		return;
@@ -1473,6 +1518,53 @@ ns.Treeroot.prototype.getMessages = function(
 	
 	function getMessagesResponse( data ) {
 		var messages = self.handleMessages( data, contactId );
+		callback( messages );
+	}
+}
+
+ns.Treeroot.prototype.longpollMessages = function(
+	contactId,
+	lastMessageId,
+	callback
+) {
+	const self = this;
+	const cState = self.contactState[ contactId ];
+	if ( cState.isPollingMessages ) {
+		self.log( 'longpollMessages - already longing', contactId );
+		return;
+	}
+	
+	cState.isPollingMessages = true;
+	const contact = self.contacts.get( contactId );
+	if ( !contact ) {
+		self.log( 'no contact: ', contactId );
+		return;
+	}
+	
+	lastMessageId = lastMessageId
+		|| cState.lastMessageId
+		|| null;
+	
+	var postData = {
+		'ContactID'   : contactId,
+		'Test'        : true,
+		'Loop'        : self.longpollMsgTimeout,
+	};
+	
+	if ( null != lastMessageId )
+		postData[ 'LastMessage' ] = lastMessageId;
+	
+	var req = {
+		path     : self.apiPath + self.getMessagesPath,
+		data     : postData,
+		callback : messageBack,
+		longpoll : contactId,
+	};
+	
+	self.queueRequest( req );
+	function messageBack( data ) {
+		var messages = self.handleMessages( data, contactId );
+		cState.isPollingMessages = false;
 		callback( messages );
 	}
 }
@@ -1611,7 +1703,7 @@ ns.Treeroot.prototype.messagesToClient = function(
 		var id = data.CryptoID;
 		var key = data.CryptoKey;
 		if ( !id || !key ) {
-			self.log( 'messageToClient.addCrypto - missing stuff', data );
+			//self.log( 'messageToClient.addCrypto - missing stuff', data );
 			return msg;
 		}
 		
@@ -1689,6 +1781,124 @@ ns.Treeroot.prototype.fetchContacts = function( callback ) {
 	function done( result, req, res ) {
 		if( callback )
 			callback( result, req, res );
+	}
+}
+
+ns.Treeroot.prototype.startLongpollContacts = function() {
+	const self = this;
+	if ( self.isPollingContacts )
+		return;
+	
+	self.isPollingContacts = true;
+	longpollContacts();
+	
+	function longpollContacts( lastActivity ) {
+		if ( !self.isPollingContacts )
+			return;
+		
+		self.longpollContacts( self.lastActivity, longBack );
+		function longBack( res ) {
+			//self.log( 'contactsLongBack', res );
+			self.lastActivity = null;
+			if ( res && res.timestamp )
+				self.lastActivity = res.timestamp;
+			
+			if ( res && res.items )
+				self.handleContactsUpdate( res.items );
+			
+			setTimeout( resend, 1 );
+			function resend() {
+				longpollContacts();
+			}
+		}
+	}
+}
+
+ns.Treeroot.prototype.longpollContacts = function( lastActivity, callback ) {
+	const self = this;
+	if ( self.contactsLongpollSent )
+		return;
+	
+	self.contactsLongpollSent = true;
+	const postData = {
+		'LastActivity' : lastActivity || ( Math.floor( Date.now() / 1000 )),
+		'Test'         : true,
+		'Loop'         : self.longpollContactsTimeout,
+	};
+	
+	var req = {
+		path     : self.apiPath + self.relationsPath,
+		data     : postData,
+		callback : contactsBack,
+		longpoll : 'contacts',
+	};
+	self.queueRequest( req );
+	function contactsBack( data, req, res ) {
+		self.contactsLongpollSent = false;
+		callback( data );
+	}
+}
+
+ns.Treeroot.prototype.stopLongpollContacts = function() {
+	const self = this;
+	self.isPollingContacts = false;
+}
+
+ns.Treeroot.prototype.handleContactsUpdate = function( items ) {
+	const self = this;
+	let meta = items.TypeActivity;
+	let rel = self.getArr( items.Relations );
+	let sub = self.getArr( items.Requests );
+	
+	if ( meta )
+		meta = parse( meta );
+	
+	if ( meta && meta.type ) {
+		if (   'Relation' === meta.type
+			&& 'remove' === meta.action
+		) {
+			self.handleRelationRemoved( rel, meta.id );
+			return;
+		}
+		
+		if ( 'Message' === meta.type ) {
+			self.handleHasNewMessage( rel[ 0 ], meta.id );
+			return;
+		}
+	}
+	
+	self.checkContacts( rel, sub );
+	
+	function parse( type ) {
+		let res = null;
+		if ( !type )
+			return null;
+		
+		try {
+			res = JSON.parse( type )
+		} catch( e ) {
+			return null;
+		}
+		
+		return res;
+	}
+}
+
+ns.Treeroot.prototype.handleRelationRemoved = function( rel, uid ) {
+	const self = this;
+	self.removeContact( uid );
+	self.removeSubscription( uid );
+}
+
+ns.Treeroot.prototype.handleHasNewMessage = function( rel, sId ) {
+	const self = this;
+	const cState = self.contactState[ sId ];
+	if ( cState.longpoll )
+		return;
+	
+	self.checkHasMessage( rel, sId, done );
+	function done() {
+		//self.log( 'handleHasNewMessage - done?' );
 	}
 }
 
@@ -1898,52 +2108,49 @@ ns.Treeroot.prototype.updateContacts = function() {
 	self.isUpdatingContacts = true;
 	//self.log( '--- updateContactcs ---' );
 	
-	var relations = null;
-	var requests = null;
-	var newRelations = [];
-	var newRelationIds = [];
-	var contactServiceIds = null;
-	var req = null;
-	var res = null;
-	
 	self.fetchContacts( contactsBack );
-	function contactsBack( result, rq, rs ) {
+	function contactsBack( result ) {
 		if ( !result ) {
-			done( false );
+			self.isUpdatingContacts = false;
 			return;
 		}
 		
-		relations = result.relations;
-		requests = result.requests;
-		req = rq;
-		res = rs;
-		
-		//relations.forEach( isOnline );
-		function isOnline( relation ) {
-			var str = 'rel: '
-				+ relation.Username
-				+ ' - IsOnline: '
-				+ relation.IsOnline;
-			self.log( str );
-		}
-		
+		let relations = result.relations;
+		let requests = result.requests;
 		if ( !relations.length && !requests.length )
 			sendNullContact();
 		
-		sortNewContacts();
+		self.checkContacts( relations, requests );
+		
+		function sendNullContact() {
+			var action = {
+				type : 'add',
+				data : {
+					contact : null
+				}
+			};
+			self.contactEvent( action );
+		}
 	}
+}
+
+ns.Treeroot.prototype.checkContacts = function( relations, requests ) {
+	const self = this;
+	/*
+	self.log( 'checkContacts', {
+		rel : relations,
+		req : requests,
+	});
+	*/
 	
-	function sendNullContact() {
-		var action = {
-			type : 'add',
-			data : {
-				contact : null
-			}
-		};
-		self.contactEvent( action );
-	}
+	relations = relations || [];
+	requests = requests || [];
+	const newRelations = [];
+	const newRelationIds = [];
+	let contactServiceIds = null;
+	sortContacts();
 	
-	function sortNewContacts() {
+	function sortContacts() {
 		relations.forEach( addNew );
 		function addNew( relation ) {
 			if( self.contacts.get( relation.ID ))
@@ -1990,7 +2197,8 @@ ns.Treeroot.prototype.updateContacts = function() {
 			}
 		}
 		
-		removeOldContacts();
+		//removeOldContacts();
+		addNewContacts();
 	}
 	
 	function removeOldContacts() {
@@ -2017,6 +2225,7 @@ ns.Treeroot.prototype.updateContacts = function() {
 		newRelations.forEach( add );
 		function add( relation ) {
 			self.addContact( relation );
+			self.removeSubscription( relation.ID );
 		}
 		
 		updateStatus();
@@ -2031,6 +2240,7 @@ ns.Treeroot.prototype.updateContacts = function() {
 			updateSubscriptions();
 		
 		function checkRelation( relation ) {
+			//self.log( 'checkRelation', relation );
 			checkRelationStatus( relation, back );
 			function back() {
 				self.contactChecksDone += 1;
@@ -2061,7 +2271,7 @@ ns.Treeroot.prototype.updateContacts = function() {
 			}
 			
 			onlineChange( relation, contact, contactState );
-			hasMessage( relation, contact, contactState, messageDone );
+			self.checkHasMessage( relation, contact.serviceId, messageDone );
 			function messageDone() {
 				hasCryptSetup( relation, contact, contactState, done );
 			}
@@ -2086,6 +2296,7 @@ ns.Treeroot.prototype.updateContacts = function() {
 				+ ' - '
 				+ ( !!isOnline ).toString());
 			*/
+			
 			contact.online = isOnline;
 			var online = isOnline ? 'online' : 'offline';
 			var presence = {
@@ -2097,80 +2308,6 @@ ns.Treeroot.prototype.updateContacts = function() {
 				},
 			};
 			self.contactEvent( presence );
-		}
-		
-		function hasMessage( relation, contact, contactState, done ) {
-			// derp
-			let rlm = relation.LastMessage;
-			let clmid = contactState.lastMessageId;
-			
-			if ( !rlm && clmid ) {
-				/*
-				self.log( 'hasMessage - no LastMesage', {
-					relation  : relation,
-					stateLMID : contactState.lastMessageId,
-					request   : req,
-					response  : res,
-				}, 4 );
-				*/
-				done();
-				return;
-			}
-			
-			// no message v0v
-			if ( null == rlm ) {
-				done();
-				return;
-			}
-			
-			// no new message( ? )
-			if ( rlm === clmid ) {
-				done();
-				return;
-			}
-			
-			// only triggers on first update with a contact that have a LastMessage id
-			if ( null == clmid )
-				contactState.lastMessageId = rlm;
-			
-			// well, then. lets do this
-			let reqTime = Date.now();
-			self.log( 'hasMessage - lets do this', {
-				rlm   : rlm,
-				clmid : clmid,
-			});
-			
-			let lastMsgId = null;
-			if ( clmid ) {
-				if ( clmid < rlm )
-					lastMsgId = clmid;
-				
-			} else
-				lastMsgId = rlm;
-			
-			
-			self.getNewMessages(
-				contact.serviceId,
-				lastMsgId,
-				messagesBack
-			);
-			
-			function messagesBack( messages ) {
-				if ( !messages ) {
-					done();
-					return;
-				}
-				
-				let resTime = Date.now();
-				let runTimeMS = resTime - reqTime;
-				self.log( 'hasMessage - messagesBack', {
-					mlength : messages.length,
-					timeMS   : runTimeMS,
-					timeS    : runTimeMS / 1000,
-				});
-				self.messagesToClient( messages, contact.serviceId );
-				done();
-			}
 		}
 		
 		function hasCryptSetup( relation, contact, cState, done ) {
@@ -2186,7 +2323,8 @@ ns.Treeroot.prototype.updateContacts = function() {
 	
 	function updateSubscriptions() {
 		var currentSubIds = self.subscriptions.getServiceIdList();
-		removeOld();
+		//self.log( 'updateSubscriptions', requests );
+		//removeOld();
 		requests.forEach( addNew );
 		done( true );
 		
@@ -2215,6 +2353,73 @@ ns.Treeroot.prototype.updateContacts = function() {
 			callback( success );
 		
 		self.isUpdatingContacts = false;
+	}
+}
+
+ns.Treeroot.prototype.checkHasMessage = function( relation, serviceId, done ) {
+	const self = this;
+	const contactState = self.contactState[ serviceId ];
+	let rlm = relation.LastMessage;
+	let clmid = contactState.lastMessageId;
+	if ( rlm )
+		rlm = parseInt( rlm, 10 );
+	
+	/*
+	self.log( 'hasMessage', {
+		rlm : rlm,
+		clmid : clmid,
+	});
+	*/
+	
+	if ( !rlm && clmid ) {
+		done();
+		return;
+	}
+	
+	// no message v0v
+	if ( null == rlm ) {
+		done();
+		return;
+	}
+	
+	// no new message( ? )
+	if ( rlm === clmid ) {
+		done();
+		return;
+	}
+	
+	// only triggers on first update with a contact that have a LastMessage id
+	if ( null == clmid )
+		contactState.lastMessageId = rlm;
+	
+	// well, then. lets do this
+	let reqTime = Date.now();
+	let lastMsgId = null;
+	if ( clmid ) {
+		if ( clmid < rlm )
+			lastMsgId = clmid;
+		
+	} else
+		lastMsgId = rlm;
+	
+	//self.log( 'checkContacts - hasMessage', lastMsgId );
+	self.getNewMessages(
+		serviceId,
+		lastMsgId,
+		messagesBack
+	);
+	
+	function messagesBack( messages ) {
+		if ( !messages ) {
+			done();
+			return;
+		}
+		
+		//self.log( 'checkContacts - hasMessage messageBack', messages );
+		let resTime = Date.now();
+		let runTimeMS = resTime - reqTime;
+		self.messagesToClient( messages, serviceId );
+		done();
 	}
 }
 
@@ -2587,10 +2792,19 @@ ns.Treeroot.prototype.doRequestStep = function() {
 	if ( !request )
 		return;
 	
-	self.busy = true;
+	if ( request.longpoll ) {
+		self.registerLongpoll( request );
+		setTimeout( anotherOnePlease, 1 );
+	} else
+		self.busy = true;
+	
 	self.sendRequest( request, reqBack );
 	function reqBack( err, data, req ) {
-		self.busy = false;
+		if ( request.longpoll )
+			self.finishLongpoll( request.longpoll );
+		else
+			self.busy = false;
+		
 		if ( err ) {
 			self.failedRequests++;
 			self.handleRequestError( err, request );
@@ -2599,6 +2813,61 @@ ns.Treeroot.prototype.doRequestStep = function() {
 		
 		self.failedRequests = 0;
 		self.handleResponse( data, request, req );
+	}
+	
+	function anotherOnePlease() {
+		self.doRequestStep();
+	}
+}
+
+ns.Treeroot.prototype.registerLongpoll = function( id ) {
+	const self = this;
+	if ( self.longpolls[ id ])
+		abortLongpoll( id );
+	
+	self.longpolls[ id ] = true;
+	return true;
+	
+	function abortLongpoll( id ) {
+		self.abortLongpoll( id );
+	}
+}
+
+ns.Treeroot.prototype.setLongpoll = function( id, req ) {
+	const self = this;
+	self.longpolls[ id ] = req;
+}
+
+ns.Treeroot.prototype.finishLongpoll = function( id ) {
+	const self = this;
+	delete self.longpolls[ id ];
+}
+
+ns.Treeroot.prototype.abortLongpoll = function( id ) {
+	const self = this;
+	const req = self.longpolls[ id ];
+	delete self.longpolls[ id ];
+	if ( !req )
+		return;
+	
+	if ( 'boolean' === typeof( req ))
+		return;
+	
+	try {
+		req.abort();
+	} catch( e ) {
+		self.log( 'exp while aborting longpoll', e );
+	}
+}
+
+ns.Treeroot.prototype.clearLongpolls = function() {
+	const self = this;
+	let ids = Object.keys( self.longpolls );
+	ids.forEach( abort );
+	self.longpolls = {};
+	
+	function abort( id ) {
+		self.abortLongpoll( id );
 	}
 }
 
@@ -2612,6 +2881,9 @@ ns.Treeroot.prototype.sendRequest = function( request, done ) {
 	var query = querystring.stringify( data );
 	var options = self.getPostOptions( path, query.length );
 	var req = https.request( options, requestBack );
+	if ( request.longpoll )
+		self.setLongpoll( request.longpoll, req );
+	
 	let d = new Date();
 	let rq = {
 		timestamp : Date.now(),
@@ -2660,9 +2932,14 @@ ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
 			return;
 		}
 		
-		var res = data.xml;
+		let res = null;
+		if ( data.response )
+			res = data;
+		else
+			res = data.xml;
+		
 		if ( !res ) {
-			self.log( 'no xml in response - req',
+			self.log( 'no data in response - req',
 				{ r : request, d : data, u : self.conf.login }, 4 );
 			done( false );
 			return;
@@ -2764,6 +3041,14 @@ ns.Treeroot.prototype.getArr = function( data ) {
 
 ns.Treeroot.prototype.delouse = function( xml, callback ) {
 	var self = this;
+	// first, lets pretend its json
+	let json = self.objectify( xml );
+	if ( json ) {
+		callback( json );
+		return;
+	}
+	
+	// ohokay, so its xml :(((((((
 	var clean = null;
 	var options = {
 		explicitArray : false,
@@ -2804,10 +3089,11 @@ ns.Treeroot.prototype.objectify = function( str ) {
 	if ( 'string' !== typeof( str ))
 		return str;
 	
+	str = str.trim();
 	try {
 		return JSON.parse( str );
 	} catch( e ) {
-		return str;
+		return null;
 	}
 }
 
