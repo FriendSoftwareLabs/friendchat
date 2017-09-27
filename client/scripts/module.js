@@ -349,6 +349,8 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.setIdentity = function() {
 		var self = this;
 		self.identity = hello.identity;
+		if ( !self.identity.name )
+			self.identity.name = self.identity.alias;
 	}
 	
 	ns.BaseModule.prototype.toView = function( msg ) {

@@ -310,15 +310,10 @@ ns.Presence.prototype.createAccount = function() {
 		return;
 	}
 	
-	const login = self.identity.alias;
-	const name = self.identity.name;
+	let login = self.identity.alias;
+	let name = self.identity.name;
 	if ( !login || !login.length ) {
 		askClientFor( 'login' );
-		return;
-	}
-	
-	if ( !name || !name.length ) {
-		askClientFor( 'name' );
 		return;
 	}
 	
