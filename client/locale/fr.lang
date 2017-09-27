@@ -21,7 +21,7 @@ i18n_join : rejoindre
 i18n_treeroot_settings : Préférences Treeroot
 i18n_a : Un outil de communication
 i18n_friendup : pour FriendUP
-i18n_communication_tool : ...
+i18n_communication_tool : outil de communication
 i18n_friend_chat : Friend Chat
 i18n_made_by : écrit par
 i18n_sokken : sokken
@@ -94,7 +94,7 @@ i18n_no_presence_login : Compte Presence introuvable. Voulez-vous créer uun nou
 i18n_create_new : Créer nouveau
 i18n_use_existing : Existant
 i18n_create_a_new_presence_account : Créer un nouveau compte Presence. Les infos sont une suggestion, vous pouvez les changer.
-i18n_admins : Admins
+i18n_admins : Administrateurs
 i18n_online : En ligne
 i18n_guests : Invités
 i18n_checking_for_log : Recherche du log...
@@ -169,7 +169,7 @@ i18n_changed_topic_to : a changé le sujet vers
 i18n_participants : Participants
 i18n_stream_quality : Qualité du flux
 i18n_default : Par défaut
-i18n_unconstrained : Unconstrained
+i18n_unconstrained : Sans restriction
 i18n_normal : Normal
 i18n_medium : Moyen
 i18n_low : bas
@@ -184,7 +184,7 @@ i18n_select_media_sources : Choisir les sources média
 i18n_text_chat : Conversation texte
 i18n_restart_stream : Relancer le flux
 i18n_toggle_popped_selfie : Montrer selfie
-i18n_toggle_mode_speaker_only : <words le french>
+i18n_toggle_mode_speaker_only : Ne montrer que le haut-parleur
 i18n_change_participant_order : Changer l&#39;ordre des participants
 i18n_clean_ui : Nettoyer l&#39;interface
 i18n_leave : Quitter
@@ -194,8 +194,8 @@ i18n_remove : Enlever
 i18n_updating : < mise à jour >
 i18n_browser_compatibility : Compatibilité navigateur
 i18n_checking : vérification...
-i18n_video_input : Entrée vidéo
 i18n_ice_servers : Serveur ICE
+i18n_video_input : Entrée vidéo
 i18n_audio_input : Entrée audio
 i18n_no_devices_detected : Aucun périphérique détecté
 i18n_devices_detected_unavailable : Périphériques détectés, mais indisponibles. Vérifiez votre navigateur
@@ -247,4 +247,3 @@ i18n_file : Fichier
 i18n_account_menu : Compte
 i18n_tools : Outils
 i18n_self_check : Auto contrôle
-

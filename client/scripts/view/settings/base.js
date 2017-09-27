@@ -43,7 +43,6 @@ library.view = library.view || {};
 	ns.Settings.prototype.settingsInit = function() {
 		var self = this;
 		self.view = window.View;
-		
 		var fragments = document.getElementById( 'fragments' );
 		let fragString = fragments.innerHTML;
 		hello.template = new friendUP.gui.TemplateManager( fragString );

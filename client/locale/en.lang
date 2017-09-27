@@ -8,7 +8,6 @@ i18n_make_the_session_private : Make the session private and invalidates the lin
 i18n_make_the_session_public : Make the session public, and generate a link
 i18n_these_links_on_to_one : These links are one-time-use. Links marked in red have been used and are no longer valid.
 i18n_add_invite : Add invite
-i18n_create_email : Create email
 i18n_use_the_menu : Use the menu to get started.
 i18n_create_a_new_account : Create a new account
 i18n_create : Create
@@ -155,7 +154,6 @@ i18n_port : Port
 i18n_login : Login
 i18n_history_length : History length
 i18n_encrypt_messages : Encrypt messages
-i18n_message_alert : Message alert
 i18n_host_was_not_found : Host was not found
 i18n_host_is_unreachable : Host is unreachable
 i18n_connection_timed_out : Connection timed out
@@ -196,10 +194,9 @@ i18n_remove : Remove
 i18n_updating : < updating >
 i18n_browser_compatibility : Browser compatibility
 i18n_checking : checking...
-i18n_video_input : Video input
 i18n_ice_servers : ICE servers
-i18n_audio_input : Audio input
 i18n_video_input : Video input
+i18n_audio_input : Audio input
 i18n_no_devices_detected : No devices detected
 i18n_devices_detected_unavailable : Devices detected, but unavailable. Check your browser settings
 i18n_no_selection : < no selection >

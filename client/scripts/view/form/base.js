@@ -41,7 +41,8 @@ library.view = library.view || {};
 	ns.ComponentForm.prototype.initComponentForm = function() {
 		var self = this;
 		const frags = document.getElementById( 'fragments' );
-		const fragStr = frags.innerHTML;
+		let fragStr = frags.innerHTML;
+		fragStr = View.i18nReplaceInString( fragStr );
 		hello.template = new friendUP.gui.TemplateManager( fragStr );
 		self.buildView();
 		
