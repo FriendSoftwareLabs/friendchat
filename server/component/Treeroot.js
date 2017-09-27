@@ -1917,6 +1917,11 @@ ns.Treeroot.prototype.handleRelationRemoved = function( rel, uid ) {
 ns.Treeroot.prototype.handleHasNewMessage = function( rel, meta ) {
 	const self = this;
 	const sId = meta.id;
+	if ( null == rel.LastMessage ) {
+		self.log( 'handleHasMessage - LastMessage is not defined', rel );
+		return;
+	}
+	
 	const lmId = parseInt( rel.LastMessage, 10 );
 	self.getNewMessages(
 		sId,
