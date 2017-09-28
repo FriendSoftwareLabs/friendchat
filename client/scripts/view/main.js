@@ -558,7 +558,6 @@ library.view = library.view || {};
 	
 	ns.Treeroot.prototype.addContact = function( data ) {
 		var self = this;
-		console.log( 'treeroot.addContact', data );
 		self.serverMessage.hide();
 		var conf = {
 			contact : data,
