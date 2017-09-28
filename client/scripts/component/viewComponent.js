@@ -332,7 +332,7 @@ library.component = library.component || {};
 	ns.StatusDisplay = function( conf ) {
 		
 		var self = this;
-		self.display = conf.display || 'c==8';
+		self.display = conf.display || '';
 		self.displayArea = null;
 		
 		ns.StatusIndicator.call( self, conf );

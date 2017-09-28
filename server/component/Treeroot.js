@@ -1243,6 +1243,7 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		contact.displayName = relation.Name || relation.Username;
 		contact.online = !!relation.IsOnline;
 		contact.imagePath = relation.ProfileImage;
+		contact.unreadMessages = relation.UnSeenMessages;
 		return contact;
 	}
 }
@@ -2148,7 +2149,6 @@ ns.Treeroot.prototype.updateContacts = function() {
 	self.fetchContacts( contactsBack );
 	function contactsBack( result ) {
 		if ( !result ) {
-			self.isUpdatingContacts = false;
 			return;
 		}
 		
@@ -2158,6 +2158,7 @@ ns.Treeroot.prototype.updateContacts = function() {
 			sendNullContact();
 		
 		self.checkContacts( relations, requests );
+		self.isUpdatingContacts = false;
 		
 		function sendNullContact() {
 			var action = {
@@ -2277,7 +2278,6 @@ ns.Treeroot.prototype.checkContacts = function( relations, requests ) {
 			updateSubscriptions();
 		
 		function checkRelation( relation ) {
-			//self.log( 'checkRelation', relation );
 			checkRelationStatus( relation, back );
 			function back() {
 				self.contactChecksDone += 1;
@@ -2308,10 +2308,7 @@ ns.Treeroot.prototype.checkContacts = function( relations, requests ) {
 			}
 			
 			onlineChange( relation, contact, contactState );
-			//self.checkHasMessage( relation, contact.serviceId, messageDone );
-			function messageDone() {
-				hasCryptSetup( relation, contact, contactState, done );
-			}
+			done( true );
 		}
 		
 		function onlineChange( relation, contact, contactState ) {
@@ -2360,8 +2357,6 @@ ns.Treeroot.prototype.checkContacts = function( relations, requests ) {
 	
 	function updateSubscriptions() {
 		var currentSubIds = self.subscriptions.getServiceIdList();
-		//self.log( 'updateSubscriptions', requests );
-		//removeOld();
 		requests.forEach( addNew );
 		done( true );
 		

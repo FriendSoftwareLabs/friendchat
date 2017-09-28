@@ -176,6 +176,7 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.handleOffline =  function( e ) {
 		var self = this;
 		console.log( 'offline', e );
+		self.viewInfo( 'offline', e );
 	}
 	
 	ns.BaseModule.prototype.queryUser = function( type, message, value, callback ) {

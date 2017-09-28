@@ -128,10 +128,12 @@ library.view = library.view || {};
 			return new ns.TreerootContact( conf );
 		
 		var self = this;
+		//console.log( 'TreerootContact', conf );
 		self.data = conf.contact;
 		self.online = conf.contact.online;
 		self.messageWaiting = friendUP.tool.uid( 'msgWaiting' ); // id is later replaced by the component
 		self.presence = friendUP.tool.uid( 'presence' );
+		self.unreadMessages = 0;
 		
 		library.view.BaseContact.call( self, conf );
 		
@@ -142,15 +144,22 @@ library.view = library.view || {};
 	
 	ns.TreerootContact.prototype.init = function() {
 		var self = this;
-		self.messageWaiting = new library.component.StatusIndicator({
+		self.messageWaiting = new library.component.StatusDisplay({
 			containerId : self.messageWaiting,
-			type : 'icon',
-			cssClass : 'fa-comment',
-			statusMap : {
-				'false' : 'Off',
-				'true' : 'Notify',
-			}
+			type        : 'icon',
+			cssClass    : 'fa-comment',
+			statusMap   : {
+				'false'   : 'Off',
+				'true'    : 'Notify',
+				'offline' : 'Available',
+			},
+			display : '',
 		});
+		if ( self.data.unreadMessages ) {
+			self.unreadMessages = self.data.unreadMessages;
+			self.messageWaiting.setDisplay( self.data.unreadMessages );
+			self.messageWaiting.set( 'offline' );
+		}
 		
 		self.presence = new library.component.StatusIndicator({
 			containerId : self.presence,
@@ -212,7 +221,19 @@ library.view = library.view || {};
 			console.log( 'presence', state );
 			self.presence.set( state );
 		}
-		function messageWaiting( isWaiting ) { self.messageWaiting.set( isWaiting ); }
+		function messageWaiting( isWaiting ) {
+			if ( 'false' === isWaiting )
+				self.unreadMessages = 0;
+			else
+				self.unreadMessages += 1;
+			
+			self.messageWaiting.set( isWaiting );
+			let num = '';
+			if ( 2 <= self.unreadMessages )
+				num = self.unreadMessages.toString();
+			
+			self.messageWaiting.setDisplay( num );
+		}
 	}
 	
 })( library.view );
@@ -330,7 +351,9 @@ library.view = library.view || {};
 			var reconnectBtn = element.querySelector( '.reconnect' );
 			reconnectBtn.addEventListener( 'click', sendConnect, false );
 			function sendConnect( e ) {
-				console.log( 'sendConenct - NYI', e );
+				self.send({
+					type : 'reconnect',
+				});
 			}
 		}
 	}
@@ -535,6 +558,7 @@ library.view = library.view || {};
 	
 	ns.Treeroot.prototype.addContact = function( data ) {
 		var self = this;
+		console.log( 'treeroot.addContact', data );
 		self.serverMessage.hide();
 		var conf = {
 			contact : data,
