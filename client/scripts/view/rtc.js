@@ -37,12 +37,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 */
 (function wrapTheWrapBeforeTheOtherWrap() {
-	//console.log( 'wrapTheWrapBeforeTheOtherWrap', window.RTCPeerConnection );
+	console.log( 'wrapTheWrapBeforeTheOtherWrap', window.RTCPeerConnection );
 	const origRTCPeerConn = window.RTCPeerConnection;
 	window.RTCPeerConnection = function( pcConfig, pcConstraints ) {
-		var prop = Object.getOwnPropertyDescriptor( pcConfig, 'iceServers' );
-		//console.log( 'unfuck.checkProp', prop );
-		return new origRTCPeerConn( pcConfig, pcConstraints );
+		//var prop = Object.getOwnPropertyDescriptor( pcConfig, 'iceServers' );
+		console.log( 'unfuck rtcConf', window.rtcConf );
+		return new origRTCPeerConn( window.rtcConf, pcConstraints );
 	}
 	
 	window.RTCPeerConnection.prototype = origRTCPeerConn.prototype;
@@ -3116,6 +3116,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var peerConf = {
 			iceServers         : self.rtc.ICE,
 		};
+		
+		window.rtcConf = peerConf;
 		//iceServers : 'auto', // throws
 		
 		//let checkProp = Object.getOwnPropertyDescriptor( peerConf, 'iceServers' );
@@ -4885,6 +4887,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function checkTheICE( resolve, reject ) {
 			var returned = false;
 			var timeout = window.setTimeout( checkTimedOut, self.timeoutMS );
+			window.rtcConf = conf;
 			var test = new window.RTCPeerConnection( conf );
 			test.onicecandidate = onICE;
 			test.createDataChannel( 'test' );
