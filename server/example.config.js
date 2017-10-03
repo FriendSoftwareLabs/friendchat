@@ -59,7 +59,7 @@ var server = {
 			},
 			// TREEROOT
 			treeroot : {
-				host : 'store.openfriendup.net',
+				host : 'friendup.world',
 				settings : {
 					msgCrypto : false,
 				},
@@ -90,8 +90,7 @@ var server = {
 
 var shared = {
 	tls : true,
-	force_no_tls : false,
-	
+
 	// port, listen
 	// port is used by the client, set a number or fragment, 
 	// depending on proxys and stuff.
@@ -110,32 +109,13 @@ var shared = {
 	// listen : null ( or simply undefined )
 	
 	http : {
-		port : '/hello/', // not actually used, set in client config
+		// not actually used, set in client config
+		port : '/hello/',
 		listen : 3000,
 	},
 	chat : {
 		port : 3001,
 		listen : null,
-	},
-	rtc : {
-		signal : {
-			port : 3002,
-			listen : 3002,
-		},
-		iceServers : [
-			{
-				urls : [
-					"stun:stun_url.com:3478",
-				],
-			},
-			{
-				urls : [
-					"turn:turn_url.com:3478",
-				],
-				username : 'turn_username',
-				credential : 'turn_password',
-			},
-		],
 	},
 	modules : {
 		treeroot : {
