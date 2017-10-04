@@ -36,6 +36,55 @@ if [ $? -eq "1" ]; then
     exit 1
 fi
 
+# Installs node.js
+echo "Checking for node.js and npm"
+
+nv=$(node -v)
+npm=$(npm -v)
+if [ -z $nv ]; then
+    dialog --backtitle "Friend Chat installer" --yesno "\
+Friend Chat needs node.js to work and it was not found.\n\n\
+Choose YES to install it automatically\n\
+or NO to install it manually: the script will\n\
+exit, you install node and restart the script.\n\
+Please note: it is advised to install 'n',\n\
+instruction at: https://github.com/tj/n " 16 65
+    if [ $? -eq "0" ]; then
+        curl -L http://git.io/n-install | bash
+        nv=$(node -v)
+        npm=$(npm -v)
+    else
+        clear
+        echo "$QUIT"
+        exit 1
+    fi
+fi
+
+if [ "$nv" \< "v8.6.0" ]; then
+    dialog --backtitle "Friend Chat installer" --yesno "\
+Warning! node version found: $nv.\n\
+Recommended version: v8.6.0 and above.\n\n\
+Choose YES to switch to version 8.6.0',\n\
+or NO to abort this script..." 11 60
+    if [ $? -eq "0" ]; then
+        echo "Calling 'n' to change the version of node."
+        n 8.6.0
+    else
+        clear
+        echo "$QUIT"
+        exit 1
+    fi
+fi
+
+if [ -z "$npm" ]; then
+    dialog --backtitle "Friend Chat installer" --msgbox "\
+Node was found, but not npm. \n\
+Please install npm and restart the script." 10 70
+    clear
+    echo "Friend Chat installation aborted."
+    exit 1
+fi
+
 # Asks for friendup directory
 FRIEND_FOLDER="/home/$USER/friendup"
 while true; do
@@ -304,54 +353,6 @@ Please check the values and confirm..." 20 75
         break;
     fi
 done
-
-# Installs node.js
-echo "Checking for node.js and npm"
-
-nv=$(node -v)
-npm=$(npm -v)
-if [ -z $nv ]; then
-    dialog --backtitle "Friend Chat installer" --yesno "\
-Friend Chat needs Node.js to work and it was not found.\n\n\
-Choose YES to install it automatically\n\
-or NO to install it manually: the script will\n\
-exit, you install node and restart the script.\n\
-Please note that you also need to install 'npm' and 'n'." 15 65
-    if [ $? -eq "0" ]; then
-        curl -L http://git.io/n-install | bash
-        nv=$(node -v)
-        npm=$(npm -v)
-    else
-        clear
-        echo "$QUIT"
-        exit 1
-    fi
-fi
-
-if [ "$nv" \< "v4.5.0" ]; then
-    dialog --backtitle "Friend Chat installer" --yesno "\
-Warning! node version found: $nv.\n\
-Recommended version: v4.5.0 and above.\n\n\
-Choose YES to switch to version 4.5.0,\n\
-or NO to abort this script..." 11 60
-    if [ $? -eq "0" ]; then
-        echo "Calling 'n' to change the version of node."
-        n 4.5.0
-    else
-        clear
-        echo "$QUIT"
-        exit 1
-    fi
-fi
-
-if [ -z "$npm" ]; then
-    dialog --backtitle "Friend Chat installer" --msgbox "\
-Node was found, but not npm. \n\
-Please install npm and restart the script." 10 70
-    clear
-    echo "Friend Chat installation aborted."
-	exit 1
-fi
 
 # Asks for database root password
 while true; do
