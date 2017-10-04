@@ -75,11 +75,9 @@ modifications in Friend Core configuration files.
 Please note that self-signed keys will generate warning messages from your
 browser, and the only way (starting from Chrome v57) to avoid these warnings
 is to have the keys certified by an external party.
-* A real domain name for both Friend Core and Friend Chat servers.
-If you are running on a virtual machine, you will have to define a real
-domain name for both Friend Core and Friend Chat, as 'localhost' will not work.
-To do so, open the 'host' file in /etc/ and add your domain to the list, for
-example :
+* A domain name for both Friend Core and Friend Chat servers. If you are running
+things localy, defining it in etc/hosts and pointing to localhost or a 
+virtual machine will be fine. For example :
 '127.0.0.1   test.localfriend'.
 Enter this very domain name when the installation script asks for it. The
 script will update Friend Core accordingly and configure Friend Chat.
@@ -88,6 +86,15 @@ connect to your machine using the domain name you entered during installation.
 For example, connecting to your Friend machine with
 https://localhost:6502 and having the Friend Chat domain as 'test.localfriend'
 will not work, even if 'test.localfriend' points to 127.0.0.1...
+* Ports used by the server components are 3000 ( https GET ), 3001 ( https/wss ),
+27970 ( TCP with TLS ), 27960 ( https/wss ). Except for 27970, which is a 
+FriendChat-Presence servers connection, these ports need to be open or proxied for
+ a working setup.
+* STUN/TURN: while setting up the STUN/TURN servers(s) is not part of this installation,
+they are vital to a working live chats/conference setup. Public STUN servers 
+are out there ( google it, also google has one ), but TURN servers are far more 
+resource intensive and you will likely have to set up your own. Ports used for these
+are usually UPD 3478, 5449 and they set up p2p connections in the UDP 40000-65k range.
 * mysql - which should be already installed for Friend Core. Friend Chat and
 Presence servers need their own database. The installation script will create
 them for you.
