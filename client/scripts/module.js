@@ -578,6 +578,7 @@ library.module = library.module || {};
 	ns.Presence.prototype.handleServiceOnRoom = function( event ) {
 		var self = this;
 		var reqId = friendUP.tool.uid( 'req' );
+		console.log( 'handleServiceOnRoom', event );
 		var session = event.data;
 		self.roomRequests[ reqId ] = {
 			action  : event.type,
@@ -717,6 +718,7 @@ library.module = library.module || {};
 		if ( !req )
 			return;
 		
+		console.log( 'handleRequest', req );
 		delete self.roomRequests[ reqId ];
 		
 		if ( 'create' == req.action ) {
@@ -765,9 +767,12 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.joinRoom = function( conf ) {
 		var self = this;
+		console.log( 'module.joinRoom', conf );
 		const roomId = conf.invite.roomId;
 		if ( isInRoom( roomId )) {
-			rejoinLive( roomId );
+			const req = self.roomRequests[ conf.req ];
+			delete self.roomRequests[ conf.req ];
+			rejoinLive( roomId, req.session );
 			return;
 		}
 		
@@ -787,9 +792,10 @@ library.module = library.module || {};
 				return false;
 		}
 		
-		function rejoinLive( roomId ) {
+		function rejoinLive( roomId, conf ) {
+			console.log( 'rejoinLive', conf );
 			const room = self.contacts[ roomId ];
-			room.joinLive();
+			room.joinLive( conf );
 		}
 	}
 	
@@ -835,6 +841,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.joinLiveSession = function( roomId, sessConf ) {
 		const self = this;
+		console.log( 'joinLiveSession', sessConf );
 		const room = self.getRoom( roomId );
 		if ( !room )
 			return;

@@ -82,7 +82,7 @@ avatar,
 <script id="selfie-tmpl" type="text/html">
 <div id="selfie" class="peer selfie popped group column">
 	<div class="stream-container expand">
-		<div class="avatar abs-cover" style="background-image: url(<%= avatar %>)">
+		<div class="avatar" style="background-image: url(<%= avatar %>)">
 		</div>
 		<!--
 		// Selfie video element is inserted here
@@ -661,6 +661,28 @@ statusIcon,
 	</div>
 	<div class="browser-cap-label">
 		<%= label %>
+	</div>
+</div>
+</script>
+
+<!-- initchecks-devices
+type,
+-->
+<script id="initchecks-devices-tmpl" type="text/html">
+<div>
+	<div class="init-type">
+		<%= type %>
+	</div>
+	<div class="init-info group row start hidden">
+		<div class="init-icon">
+			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+		</div>
+		<div class="init-desc">
+			{i18n_device_access_error}
+		</div>
+		<div class="init-state">
+			<%= state %>
+		</div>
 	</div>
 </div>
 </script>

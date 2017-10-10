@@ -188,8 +188,8 @@ i18n_toggle_mode_speaker_only : Ne montrer que le haut-parleur
 i18n_change_participant_order : Changer l&#39;ordre des participants
 i18n_clean_ui : Nettoyer l&#39;interface
 i18n_leave : Quitter
-i18n_mute : Muet
-i18n_pause : Pause
+i18n_mute : Audio muet
+i18n_pause : Vidéo en pause
 i18n_remove : Enlever
 i18n_updating : < mise à jour >
 i18n_browser_compatibility : Compatibilité navigateur
@@ -247,3 +247,11 @@ i18n_file : Fichier
 i18n_account_menu : Compte
 i18n_tools : Outils
 i18n_self_check : Auto contrôle
+
+i18n_device_check : Vérification des périphériques
+i18n_device_access_error : Erreur d'accès aux périphériques
+i18n_err_enumerate_devices_failed : La liste des périphériques n'a pas pu ẽtre chargée
+i18n_err_devices_blocked : L'accès aux périphéŕiques est bloqué par votre navigateur
+i18n_err_no_devices_found : Aucun périphérique trouvé
+i18n_err_gum_not_allowed : L'accès aux périphériques est refusé
+i18n_err_gum_no_media : Aucun média disponible

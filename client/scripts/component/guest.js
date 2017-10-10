@@ -94,7 +94,7 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleRoomEvent = function( e ) {
 		const self = this;
-		console.log( 'unhandled room event', e );;
+		console.log( 'unhandled room event', e );
 	}
 	
 	ns.GuestRoom.prototype.handleRoomInit = function( state ) {
@@ -105,12 +105,14 @@ library.component = library.component || {};
 			roomId      : self.roomId,
 			isGuest     : true,
 			permissions : {
-				video : true,
-				audio : true,
-			},
-			constraints : {
-				video : true,
-				audio : true,
+				send : {
+					audio : true,
+					video : true,
+				},
+				receive : {
+					audio : true,
+					video : true,
+				},
 			},
 		};
 		self.live = new library.rtc.RtcSession( conf, liveEvent, onclose );

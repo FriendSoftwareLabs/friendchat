@@ -838,18 +838,62 @@ library.component = library.component || {};
 			name   : View.i18n( 'i18n_share' ),
 			faIcon : 'fa-share-alt',
 		};
+		const sendAudio = {
+			type : 'item',
+			id : 'send-audio',
+			name : View.i18n( 'i18n_menu_send_audio' ),
+			faIcon : 'fa-microphone',
+			toggle : true,
+			close : false,
+		};
+		const sendVideo = {
+			type : 'item',
+			id : 'send-video',
+			name : View.i18n( 'i18n_menu_send_video' ),
+			faIcon : 'fa-video-camera',
+			toggle : true,
+			close : false,
+		};
+		const receiveAudio = {
+			type   : 'item',
+			id     : 'receive-audio',
+			name   : View.i18n( 'i18n_menu_receive_audio' ),
+			faIcon : 'fa-volume-up',
+			toggle : true,
+			close  : false,
+		};
+		const receiveVideo = {
+			type   : 'item',
+			id     : 'receive-video',
+			name   : View.i18n( 'i18n_menu_receive_video' ),
+			faIcon : 'fa-film',
+			toggle : true,
+			close  : false,
+		};
+		const sendReceive = {
+			type : 'folder',
+			id : 'send-receive',
+			name : View.i18n( 'Send / Receive media' ),
+			faIcon : 'fa-exchange',
+			items : [
+				sendAudio,
+				sendVideo,
+				receiveAudio,
+				receiveVideo,
+			],
+		};
 		const dragger = {
 			type   : 'item',
 			id     : 'dragger',
 			name   : View.i18n( 'i18n_change_participant_order' ),
 			faIcon : 'fa-hand-stop-o',
-		}
+		};
 		const cleanUI = {
 			type   : 'item',
 			id     : 'clean-ui',
 			name   : View.i18n( 'i18n_clean_ui' ),
 			faIcon : 'fa-square-o',
-		}
+		};
 		const leave = {
 			type   : 'item',
 			id     : 'leave',
@@ -864,13 +908,14 @@ library.component = library.component || {};
 			mute,
 			quality,
 			restart,
-			screenMode,
 			fullscreen,
 			screenShare,
 			screenShareExt,
 			source,
 			popped,
 			speaker,
+			sendReceive,
+			screenMode,
 			settings,
 			dragger,
 			cleanUI,
@@ -1643,6 +1688,7 @@ library.component = library.component || {};
 		self.peer.on( 'audio'         , handleAudio );
 		self.peer.on( 'identity'      , updateIdentity );
 		self.peer.on( 'nostream'      , handleNoStream );
+		self.peer.on( 'stop'          , handleStop)
 		self.peer.on( 'mute'          , isMuted );
 		self.peer.on( 'blind'         , isBlinded );
 		self.peer.on( 'screenmode'    , screenMode );
@@ -1655,6 +1701,7 @@ library.component = library.component || {};
 		function handleAudio( e ) { self.handleAudio( e ); }
 		function updateIdentity( e ) { self.updateIdentity( e ); }
 		function handleNoStream( e ) { self.handleNoStream( e ); }
+		function handleStop( e ) { self.handleStop( e ); }
 		function isMuted( e ) { self.handleSelfMute( e ); }
 		function isBlinded( e ) { self.handleSelfBlind( e ); }
 		function screenMode( e ) { self.updateScreenMode( e ); }
@@ -2073,6 +2120,12 @@ library.component = library.component || {};
 	ns.Peer.prototype.handleNoStream = function() {
 		var self = this;
 		self.toggleSpinner( false );
+	}
+	
+	ns.Peer.prototype.handleStop = function() {
+		const self = this;
+		console.log( 'peer.handleStop' );
+		self.releaseStream();
 	}
 	
 	ns.Peer.prototype.applyQualityLevel = function( level ) {
@@ -3667,6 +3720,24 @@ library.component = library.component || {};
 		console.log( 'VideoInputState', state );
 	}
 	
+	ns.InitChecksPane.prototype.updateDevicesCheck = function( state ) {
+		const self = this;
+		console.log( 'updateDevicesCheck', state );
+		const id = 'check-devices';
+		if ( !state || !state.err )
+			return;
+		
+		let errMsg = self.errorCodes[ state.err ] || state.err;
+		self.update( id, {
+			type    : 'error',
+			message : errMsg,
+		});
+		
+		self.showCheck( id, {
+			type : 'error',
+		});
+	}
+	
 	ns.InitChecksPane.prototype.updateSelfieCheck = function( state ) {
 		const self = this;
 		const id = 'selfie-check';
@@ -3727,11 +3798,26 @@ library.component = library.component || {};
 	
 	ns.InitChecksPane.prototype.build = function() {
 		var self = this;
+		self.errorCodes = {
+			'ERR_ENUMERATE_DEVICES_FAILED' : View.i18n( 'i18n_err_enumerate_devices_failed' ),
+			'ERR_NO_DEVICES_BLOCKED'       : View.i18n( 'i18n_err_devices_blocked' ),
+			'ERR_NO_DEVICES_FOUND'         : View.i18n( 'i18n_err_no_devices_found' ),
+			'ERR_GUM_NOT_ALLOWED'          : View.i18n( 'i18n_err_gum_not_allowed' ),
+			'ERR_GUM_NO_MEDIA'             : View.i18n( 'i18n_err_gum_no_media' ),
+		};
+		
 		self.checks = [
 			{
 				id     : 'check-browser',
 				type   : View.i18n('i18n_browser_compatibility'),
 				tmpl   : 'initchecks-browser',
+			},
+			{
+				id      : 'check-devices',
+				type    : View.i18n( 'i18n_device_check' ),
+				state   : View.i18n( 'i18n_checking' ),
+				//btnIcon : 'fa-cube',
+				tmpl    : 'initchecks-devices-tmpl',
 			},
 			{
 				id      : 'selfie-check',
@@ -3761,7 +3847,6 @@ library.component = library.component || {};
 				state   : View.i18n('i18n_checking'),
 			},
 		];
-		
 		
 		var checksHTML = self.buildChecks();
 		var conf = {

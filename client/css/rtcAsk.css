@@ -23,3 +23,10 @@
 	padding : 0.5em 0;
 	font-size: 130%;
 }
+.main {
+    padding : 0 1em;
+}
+
+.type-select {
+    margin : 1em;
+}

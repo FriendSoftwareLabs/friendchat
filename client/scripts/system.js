@@ -783,12 +783,13 @@ library.rtc = library.rtc || {};
 		}
 		
 		const askView = new library.view.RtcAsk( conf, permissionBack );
-		function permissionBack( permissions ) {
-			if ( !permissions || !permissions.accept ) {
+		function permissionBack( result ) {
+			if ( !result || !result.accept ) {
 				return;
 			}
 			
-			self.joinRoom( invite, inviteFrom, selfie );
+			console.log( 'rtcAskBack', result );
+			self.joinRoom( invite, inviteFrom, selfie, result.permissions );
 		}
 		
 		function isInRoomSession( roomId ) {
@@ -829,7 +830,7 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
-	ns.RtcControl.prototype.joinRoom = function( invite, inviteFrom, selfie ) {
+	ns.RtcControl.prototype.joinRoom = function( invite, inviteFrom, selfie, permissions ) {
 		var self = this;
 		if ( self.session )
 			self.closeSession();
@@ -847,6 +848,7 @@ library.rtc = library.rtc || {};
 			user       : selfie,
 			isHost     : false,
 			contacts   : null,
+			permissions : permissions,
 		};
 		self.getRoom( 'join', sessionConf );
 	}
@@ -884,6 +886,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.createSession = function( conf, eventSink, onclose ) {
 		var self = this;
+		console.log( 'createSession', conf );
 		if ( self.session ) {
 			const session = self.session;
 			self.session = null;
@@ -892,12 +895,14 @@ library.rtc = library.rtc || {};
 		
 		conf.user = conf.user || self.service.getIdentity();
 		conf.permissions = conf.permissions || {
-			audio : true,
-			video : true,
-		};
-		conf.constraints = conf.constraints || {
-			audio : true,
-			video : true,
+			send : {
+				audio : true,
+				video : true,
+			},
+			receive : {
+				audio : true,
+				video : true,
+			},
 		};
 		
 		self.session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
@@ -2004,7 +2009,6 @@ library.rtc = library.rtc || {};
 			identities : init.identities,
 			rtcConf    : {
 				ICE         : liveConf.ICE,
-				constraints : conf.constraints,
 				permissions : conf.permissions,
 				quality     : liveConf.quality,
 			},
@@ -2014,7 +2018,6 @@ library.rtc = library.rtc || {};
 			eventSink,
 			onClose
 		);
-		
 		
 		delete self.identities;
 		

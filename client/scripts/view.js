@@ -1022,8 +1022,8 @@ library.view = library.view || {};
 		var self = this;
 		const windowConf = {
 			title : 'Live invite',
-			width : 350,
-			height : 190,
+			width : 400,
+			height : 400,
 		};
 		self.view = hello.app.createView(
 			'html/rtcAsk.html',

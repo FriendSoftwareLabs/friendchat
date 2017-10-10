@@ -23,30 +23,44 @@
 -->
 <script id="body-tmpl" type="text/html">
 <form id="form" action="" method="" class="form hello bar column">
-	<div class="group column expand">
+	<div class="group column fortify">
 		<div id="session-warning" class="error fortify hidden">
 			{i18n_you_have_to_have_an_active}
 		</div>
-		<div class="center-child expand">
+		<div class="center-child fortify">
 			<div id="message" class="Padding">
 				
 			</div>
 		</div>
 	</div>
-	<!--
-	<div class="main expand pad">
-		<table>
-			<tr>
-				<td><input name="allowAudio" id="allowAudio" type="checkbox" checked="true"></td>
-				<td><label for="allowAudio">allow audio</label></td>
-			</tr>
-			<tr>
-				<td><input name="allowVideo" id="allowVideo" type="checkbox" checked="true"></td>
-				<td><label for="allowVideo">allow video</label></td>
-			</tr>
-		</table>
+	<div class="main expand">
+		<fieldset class="type-select">
+			<legend>{i18n_sending_types}</legend>
+			<table>
+				<tr>
+					<td><input name="allowAudio" id="allowAudio" type="checkbox" checked="true"></td>
+					<td><label for="allowAudio">{i18n_audio}</label></td>
+				</tr>
+				<tr>
+					<td><input name="allowVideo" id="allowVideo" type="checkbox" checked="true"></td>
+					<td><label for="allowVideo">{i18n_video}</label></td>
+				</tr>
+			</table>
+		</fieldset>
+		<fieldset class="type-select">
+			<legend>{i18n_receive_types}</legend>
+			<table>
+				<tr>
+					<td><input name="receiveAudio" id="receiveAudio" type="checkbox" checked="true"></td>
+					<td><label for="receiveAudio">{i18n_audio}</label></td>
+				</tr>
+				<tr>
+					<td><input name="receiveVideo" id="receiveVideo" type="checkbox" checked="true"></td>
+					<td><label for="receiveVideo">{i18n_video}</label></td>
+				</tr>
+			</table>
+		</fieldset>
 	</div>
-	-->
 	<div class="fortify group row tighten Box">
 		<button id="confirm" type="submit" class="button accept">
 			<i class="fa fa-fw fa-check"></i>

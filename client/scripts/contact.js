@@ -516,6 +516,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		var self = this;
+		console.log( 'joinLive', Object.keys( conf ));
 		conf = conf || {};
 		if ( self.live )
 			return; // we already are in a live _in this room_
@@ -663,27 +664,31 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.startVideo = function() {
 		const self = this;
 		const permissions = {
-			video : true,
-			audio : true,
+			send : {
+				video : true,
+				audio : true,
+			},
+			receive : {
+				video : true,
+				audio : true,
+			},
 		};
-		const constraints = {
-			video : true,
-			audio : true,
-		};
-		self.setupLive( permissions, constraints );
+		self.setupLive( permissions );
 	}
 	
 	ns.PresenceRoom.prototype.startAudio = function() {
 		const self = this;
 		const permissions = {
-			video : false,
-			audio : true,
+			send : {
+				video : false,
+				audio : true,
+			},
+			receive : {
+				video : false,
+				audio : true,
+			},
 		};
-		const constraints = {
-			video : false,
-			audio : true,
-		};
-		self.setupLive( permissions, constraints );
+		self.setupLive( permissions );
 	}
 	
 	ns.PresenceRoom.prototype.toggleChat = function() {
@@ -921,11 +926,10 @@ library.contact = library.contact || {};
 		self.toView( users );
 	}
 	
-	ns.PresenceRoom.prototype.setupLive = function( permissions, constraints ) {
+	ns.PresenceRoom.prototype.setupLive = function( permissions ) {
 		const self = this;
 		const conf = {
-			permissions : permissions || null,
-			constraints : constraints || null,
+			permissions : permissions,
 		};
 		
 		self.joinLive( conf );

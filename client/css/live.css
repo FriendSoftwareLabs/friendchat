@@ -186,13 +186,20 @@
 
 .peer .avatar {
 	position : absolute;
-	top : 0;
-	right : 0;
-	bottom : 0;
-	left : 0;
+	top      : 1px;
+	right    : 1px;
+	bottom   : 1px;
+	left     : 1px;
 	background-repeat: no-repeat;
 	background-size: cover;
 	background-position: center center;
+}
+
+#selfie.popped .avatar {
+	top    : 0;
+	right  : 0;
+	bottom : 0;
+	left   : 0;
 }
 
 .peer .video {
@@ -204,6 +211,10 @@
 	top : 50%;
 	left: 50%;
 	transform : translate( -50%, -50% );
+}
+
+.peer .visualizer {
+	position: absolute;
 }
 
 .peer .ui {
@@ -904,11 +915,11 @@
 
 .width {
 	width : auto;
-	height : calc( 100% + 2px );
+	height : 100%;
 }
 
 .height {
-	width : calc( 100% + 2px );
+	width : 100%;
 	height : auto;
 }
 

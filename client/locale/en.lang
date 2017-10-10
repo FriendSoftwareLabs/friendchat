@@ -188,8 +188,8 @@ i18n_toggle_mode_speaker_only : Only show speaker
 i18n_change_participant_order : Change participant order
 i18n_clean_ui : Clean UI
 i18n_leave : Leave
-i18n_mute : Mute
-i18n_pause : Pause
+i18n_mute : Mute Audio
+i18n_pause : Pause Video
 i18n_remove : Remove
 i18n_updating : < updating >
 i18n_browser_compatibility : Browser compatibility
@@ -247,3 +247,17 @@ i18n_file : File
 i18n_account_menu : Account
 i18n_tools : Tools
 i18n_self_check : Self check
+i18n_device_check : Device check
+i18n_device_access_error : Device access error
+i18n_err_enumerate_devices_failed : Device list could not be loaded
+i18n_err_devices_blocked : Device access denied by browser
+i18n_err_no_devices_found : No devices were found
+i18n_err_gum_not_allowed : Media access denied
+i18n_err_gum_no_media : No media available
+
+i18n_sending_types : You will send..
+i18n_receive_types : You will receive..
+i18n_menu_send_audio : Send audio
+i18n_menu_send_video : Send video
+i18n_menu_receive_audio : Receive Audio
+i18n_menu_receive_video : Receive Video

@@ -101,10 +101,6 @@ library.view = library.view || {};
 			var now = Date.now();
 			var passed = now - self.inviteTime;
 			var steps = Math.floor( passed / 10000 ); // we are counting in steps of 10 sec
-			console.log( 'updatetimePassed', {
-				passed : passed,
-				steps : steps,
-			});
 			
 			if ( 2 <= steps )
 				showPassed();
@@ -116,14 +112,12 @@ library.view = library.view || {};
 			if ( self.passedIsVisible )
 				return;
 			
-			console.log( 'showPassed' );
 			self.passedIsVisible = true;
 			var el = document.getElementById( 'time-passed' );
 			el.classList.toggle( 'hidden', false );
 		}
 		
 		function updatePassed( steps ) {
-			console.log( 'updatePassed', steps );
 			var postfix = 'sec';
 			if ( 6 <= steps ) {
 				postfix = 'min';
@@ -155,25 +149,27 @@ library.view = library.view || {};
 		var self = this;
 		e.preventDefault();
 		e.stopPropagation();
-		//var inputs = e.target.elements;
-		//var allowAudio = inputs.allowAudio.checked;
-		//var allowVideo = inputs.allowVideo.checked;
-		//console.log( 'rtcAsk.submit', { a : allowAudio, v : allowVideo } );
-		console.log( 'rtcAsk.submit' );
-		/*
-		var response = {
-			audio : allowAudio,
-			video : allowVideo,
-		};
-		*/
+		var inputs = e.target.elements;
+		var allowA = inputs.allowAudio.checked;
+		var allowV = inputs.allowVideo.checked;
+		let receiveA = inputs.receiveAudio.checked;
+		let receiveV = inputs.receiveVideo.checked;
+		console.log( 'rtcAsk.submit', { a : allowA, v : allowV } );
 		
 		self.send({
 			type : 'response',
-			//data : response,
 			data : {
 				accept : true,
-				audio : null,
-				video : null,
+				permissions : {
+					send : {
+						audio : allowA,
+						video : allowV,
+					},
+					receive : {
+						audio : receiveA,
+						video : receiveV,
+					},
+				},
 			},
 		});
 	}
