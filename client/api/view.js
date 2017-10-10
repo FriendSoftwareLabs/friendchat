@@ -175,6 +175,84 @@ var friend = window.friend || {};
 	
 	// public
 	
+	ns.View.prototype.toggleFullscreen = function( targetElement ) {
+		const self = this;
+		console.log( 'toggleFullscreen' );
+		if ( !canHasFullscreen()) {
+			return;
+		}
+		
+		if ( getFullscreenElement() ) {
+			exitFullscreen();
+			return;
+		}
+		
+		let el = targetElement ? targetElement : document.body;
+		setFullscreen( el );
+		
+		function canHasFullscreen() {
+			return !document.fullscreenEnabled
+				|| !document.mozFullscreenEnabled
+				|| !document.webkitFullscreenEnabled
+				|| !document.msFullscreenEnabled;
+		}
+		
+		function getFullscreenElement() {
+			let el = document.fullscreenElement
+				|| document.webkitFullscreenElement
+				|| document.webkitFullscreenElement
+				|| document.mozFullScreenElement
+				|| document.msFullscreenElement
+				|| null;
+				
+			console.log( 'getFullscreenElement', el );
+			return el;
+		}
+		
+		function exitFullscreen() {
+			console.log( 'exitFullscreen')
+			if ( document.exitFullscreen )
+				document.exitFullscreen();
+			
+			if ( document.webkitCancelFullscreen )
+				document.webkitCancelFullscreen();
+			
+			if ( document.webkitCancelFullScreen )
+				document.webkitCancelFullScreen();
+			
+			if ( document.mozCancelFullscreen )
+				document.mozCancelFullscreen();
+		}
+		
+		function setFullscreen( el ) {
+			console.log( 'setFullscreen', el );
+			if ( el.requestFullscreen ) {
+				console.log( 'reqFull')
+				el.requestFullscreen();
+				return;
+			}
+			
+			if ( el.webkitRequestFullscreen ) {
+				console.log( 'webkitReqFullscreen' );
+				el.webkitRequestFullscreen();
+				return;
+			}
+			
+			if ( el.webkitRequestFullScreen ) {
+				console.log( 'webkitRequestFullScreen' );
+				el.webkitRequestFullScreen();
+				return;
+			}
+			
+			if ( el.mozRequestFullScreen ) {
+				console.log( 'mozRequestFullScreen' );
+				el.mozRequestFullScreen();
+				return;
+			}
+			
+		}
+	}
+	
 	ns.View.prototype.setBody = function( conf ) {
 		const self = this;
 		if ( !friend.template )
@@ -316,6 +394,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.initialize = function( conf ) {
 		var self = this;
+		console.log( 'View.initialize', conf );
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
 		self.authId = conf.authId;
@@ -430,6 +509,11 @@ var friend = window.friend || {};
 		
 		if ( self.config.translations )
 			self.translations = self.config.translations;
+	}
+	
+	ns.View.prototype.register = function() {
+		const self = this;
+		console.log( 'register?', arguments );
 	}
 	
 	ns.View.prototype.setDeviceType = function( type ) {

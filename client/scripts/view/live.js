@@ -765,7 +765,7 @@ library.component = library.component || {};
 			type   : 'item',
 			id     : 'toggle-screen-share',
 			name   : View.i18n( 'i18n_toggle_share_screen' ),
-			faIcon : 'fa-tv',
+			faIcon : 'fa-laptop',
 			toggle : false,
 			close  : true,
 		};
@@ -780,7 +780,7 @@ library.component = library.component || {};
 			type   : 'item',
 			id     : 'source-select',
 			name   : View.i18n( 'i18n_select_media_sources' ),
-			faIcon : 'fa-cog',
+			faIcon : 'fa-random',
 		};
 		const chat = {
 			type   : 'item',
@@ -801,6 +801,13 @@ library.component = library.component || {};
 			faIcon : 'fa-arrows-alt',
 			toggle : false,
 			close  : false,
+		};
+		const fullscreen = {
+			type   : 'item',
+			id     : 'fullscreen',
+			name   : View.i18n( 'i18n_toggle_fullscreen' ),
+			faIcon : 'fa-tv',
+			toggle : false,
 		};
 		const popped = {
 			type   : 'item',
@@ -858,6 +865,7 @@ library.component = library.component || {};
 			quality,
 			restart,
 			screenMode,
+			fullscreen,
 			screenShare,
 			screenShareExt,
 			source,
@@ -884,6 +892,7 @@ library.component = library.component || {};
 		self.menu.on( 'dragger', reorderHandler );
 		self.menu.on( 'popped', togglePopped );
 		self.menu.on( 'mode-speaker', modeSpeaker );
+		self.menu.on( 'fullscreen', toggleFullscreen );
 		return self.menu;
 		
 		function noListenerFor( e ) {
@@ -919,6 +928,11 @@ library.component = library.component || {};
 		function modeSpeaker( state ) {
 			const isModeSpeaker = self.toggleModeSpeaker();
 			self.menu.setState( 'mode-speaker', isModeSpeaker );
+		}
+		
+		function toggleFullscreen() {
+			console.log( 'menu.togglefullscreen' );
+			View.toggleFullscreen();
 		}
 	}
 	

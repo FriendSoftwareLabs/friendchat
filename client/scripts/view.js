@@ -406,11 +406,13 @@ library.view = library.view || {};
 		
 		function initLive( preferedDevices ) {
 			const windowConf = {
-				title : Application.i18n('i18n_live_session'),
-				width : 850,
-				height : 450,
+				title              : Application.i18n('i18n_live_session'),
+				width              : 850,
+				height             : 450,
+				fullscreenenabled  : true,
 			};
 			
+			console.log( 'windowConf', windowConf );
 			self.liveConf.preferedDevices = preferedDevices;
 			const viewConf = {
 				fragments : hello.commonFragments,
