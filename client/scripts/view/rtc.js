@@ -1525,7 +1525,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			// try only audio, set giveUp so we dont try
 			// again if it still fails.
-			if ( simpleConf.video ) {
+			if ( self.simpleConf.video ) {
 				self.simpleConf.video = false;
 				self.giveUp = true;
 				getMedia( self.simpleConf );
