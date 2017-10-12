@@ -883,7 +883,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.bindMenu();
 		self.sources = new library.rtc.MediaDevices();
-		self.setupSelfie( done );
+		self.sources.getByType()
+			.then( devsBack )
+			.catch( devErr );
+		
+		function devsBack( devices ) {
+			self.tryPreferedDevices( devices );
+			self.setupSelfie( done );
+		}
+		
+		function devErr( err ) {
+			done( err, null );
+		}
 		
 		function done( err, res ) {
 			console.log( 'selfie.init.done', {
