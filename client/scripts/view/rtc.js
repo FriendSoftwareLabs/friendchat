@@ -345,13 +345,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.handleSpeaking = function( peerId ) {
+	ns.RTC.prototype.handleSpeaking = function( speaker ) {
 		const self = this;
-		if ( self.userId === peerId ) {
-			peerId = 'selfie';
+		if ( self.userId === speaker.peerId ) {
+			speaker.peerId = 'selfie';
 		}
 		
-		self.view.setSpeaker( peerId );
+		self.view.setSpeaker( speaker );
 	}
 	
 	ns.RTC.prototype.handleQuality = function( quality ) {
@@ -811,28 +811,32 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		// IsSpeaking
 		self.speaking = new library.rtc.IsSpeaking(
-			self.identity.clientId,
 			null,
 			onSpeaking
 		);
 		
-		function onSpeaking( speakerId ) {
-			console.log( 'onSpeaking', speakerId );
-			if ( speakerId !== self.identity.clientId )
-				return;
-			
+		function onSpeaking( isSpeaking ) {
+			console.log( 'onSpeaking', isSpeaking );
 			const speaking = {
 				type : 'speaking',
-				data : Date.now(),
+				data : {
+					time       : Date.now(),
+					isSpeaking : isSpeaking,
+				},
 			};
 			self.conn.send( speaking );
 		}
 		
 		self.conn.on( 'speaking', speaking );
-		function speaking( peerId ) {
-			console.log( 'Selfie.speaking', peerId );
-			if ( self.speaking )
-				self.speaking.setSpeaker( peerId );
+		function speaking( speaker ) {
+			if ( !self.speaking )
+				return;
+			
+			console.log( 'Selfie.speaking', speaker );
+			if ( speaker.peerId === self.identity.clientId )
+				self.speaking.setIsSpeaker( speaker.isSpeaking );
+			else
+				self.speaking.setIsSpeaker( false );
 		}
 		
 		//
@@ -4341,16 +4345,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 // Is speaking
 (function( ns, undefined ) {
-	ns.IsSpeaking = function( userId, source, onSpeaking ) {
+	ns.IsSpeaking = function( source, onSpeaking ) {
 		const self = this;
-		self.userId = userId;
 		self.source = source;
 		self.onSpeaking = onSpeaking;
 		
 		self.isSpeaking = false;
-		self.speakerId = null;
-		self.volumeLimit = 20;
-		self.tickLimit = 5;
+		self.speakingLimit = 20;
+		self.speakingTicks = 5;
+		self.notSpeakingLimit = 5;
+		self.notSpeakingTicks = 30;
 		self.init();
 	}
 	
@@ -4358,6 +4362,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.IsSpeaking.prototype.setSource = function( source ) {
 		const self = this;
+		console.log( 'setSource', source );
 		if ( self.source )
 			self.releaseSource();
 		
@@ -4365,9 +4370,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.bindSource();
 	}
 	
-	ns.IsSpeaking.prototype.setSpeaker = function( speakerId ) {
+	ns.IsSpeaking.prototype.setIsSpeaker = function( isSpeaker ) {
 		const self = this;
-		self.speakerId = speakerId;
+		self.isSpeaking = !!isSpeaker;
+		console.log( 'IsSpeaking.setIsSpeaker', self.isSpeaking );
 	}
 	
 	ns.IsSpeaking.prototype.close = function() {
@@ -4392,24 +4398,58 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.source.onVolume = onVolume;
 		
 		function onVolume( current, overTime ) {
-			if ( self.volumeLimit > current )
-				return;
-			
-			if ( self.speakerId === self.userId )
-				return;
-			
-			let req = self.tickLimit;
+			self.handleVolume( current, overTime );
+		}
+	}
+	
+	ns.IsSpeaking.prototype.handleVolume = function( current, overTime ) {
+		const self = this;
+		if ( isOverLimit( current ) && !self.isSpeaking ) {
+			checkIsSpeaking( overTime );
+			return;
+		}
+		
+		if ( isUnderLimit( current ) && self.isSpeaking )
+			checkIsNotSpeaking( overTime );
+		
+		function checkIsSpeaking( overTime ) {
+			let req = self.speakingTicks;
 			let len = overTime.length -1;
-			// check history for valid values
-			// i is required for 
+			if ( req > len )
+				req = len;
+			// check history for values over limit
 			for( ; req-- ; ) {
-				let ndx = len - req;
-				let val = overTime[ ndx ];
-				if ( self.volumeLimit > val )
+				let val = overTime[ len - req ];
+				if ( val < self.speakingLimit )
 					return;
 			}
 			
-			self.onSpeaking( self.userId );
+			console.log( 'trigger speaking' );
+			self.onSpeaking( true );
+		}
+		
+		function checkIsNotSpeaking( overTime ) {
+			let req = self.notSpeakingTicks;
+			let len = overTime.length -1;
+			if ( req > len )
+				req = len;
+			
+			for ( ; req-- ; ) {
+				let val = overTime[ len - req ];
+				if ( val > self.notSpeakingLimit )
+					return;
+			}
+			
+			console.log( 'trigger not speaking' );
+			self.onSpeaking( false );
+		}
+		
+		function isOverLimit( volume ) {
+			return volume > self.speakingLimit;
+		}
+		
+		function isUnderLimit( volume ) {
+			return volume < self.notSpeakingLimit;
 		}
 	}
 	

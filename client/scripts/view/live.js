@@ -539,7 +539,7 @@ library.component = library.component || {};
 		container.classList.remove( self.currentGridKlass );
 		const peerNum = getPeerNum();
 		let newGridKlass = 'grid1';
-		if ( self.modeSpeaker )
+		if ( self.modeSpeaker && self.currentSpeaker )
 			newGridKlass = 'grid1';
 		else {
 			newGridKlass = getGridKlass( peerNum );
@@ -991,55 +991,79 @@ library.component = library.component || {};
 	ns.Live.prototype.toggleModeSpeaker = function() {
 		const self = this;
 		self.modeSpeaker = !self.modeSpeaker;
-		const container = document.getElementById( self.peerContainerId );
 		if ( self.modeSpeaker )
 			enable();
 		else
 			disable();
 		
-		self.updateGridClass();
+		self.updateModeSpeaker();
 		return self.modeSpeaker;
 		
 		function enable() {
-			self.setSpeaker();
-			container.classList.toggle( 'mode-speaker', true );
+			self.onDrag( 'end' );
+			self.onDrag( 'disable' );
+			self.menu.disable( 'dragger' );
+		}
+		
+		function disable() {
+			self.menu.enable( 'dragger' );
+		}
+	}
+	
+	ns.Live.prototype.updateModeSpeaker = function() {
+		const self = this;
+		const container = document.getElementById( self.peerContainerId );
+		const modeSpeaker = ( !!self.modeSpeaker && !!self.currentSpeaker );
+		console.log( 'updateModeSpeaker', modeSpeaker );
+		container.classList.toggle( 'mode-speaker', modeSpeaker );
+		if ( modeSpeaker )
+			enable();
+		else
+			disable();
+		
+		function enable() {
 			self.wasPopped = self.selfiePopped;
 			self.togglePopped( false );
-			self.onDrag( 'disable' );
 			self.menu.disable( 'popped' );
-			self.menu.disable( 'dragger' );
 		}
 		
 		function disable() {
 			self.togglePopped( self.wasPopped );
 			self.wasPopped = null;
-			container.classList.toggle( 'mode-speaker', false );
 			self.menu.enable( 'popped' );
-			self.menu.enable( 'dragger' );
 		}
 	}
 	
-	ns.Live.prototype.setSpeaker = function( peerId ) {
+	ns.Live.prototype.setSpeaker = function( speaker ) {
 		const self = this;
-		if ( !peerId )
-			peerId = 'selfie';
+		console.log( 'setSpeaker', speaker );
+		if ( !speaker || !speaker.isSpeaking )
+			unset();
+		else
+			set( speaker );
 		
-		set( false );
-		self.currentSpeaker = peerId;
-		set( true );
+		self.updateModeSpeaker();
 		
-		function set( isSpeaker ) {
-			const peerEl = document.getElementById( self.currentSpeaker );
-			if ( !peerEl )
-				return;
-			
-			peerEl.classList.toggle( 'speaker', isSpeaker );
-			
-			if ( !isSpeaker )
+		function unset() {
+			if ( !self.currentSpeaker )
 				return;
 			
 			const peer = self.peers[ self.currentSpeaker ];
-			peer.reflow();
+			if ( !peer )
+				return;
+			
+			self.currentSpeaker = false;
+			peer.setIsSpeaking( false );
+		}
+		
+		function set( speaker ) {
+			unset();
+			const peer = self.peers[ speaker.peerId ];
+			if ( !peer )
+				return;
+			
+			self.currentSpeaker = speaker.peerId;
+			peer.setIsSpeaking( true );
 		}
 	}
 	
@@ -1138,6 +1162,17 @@ library.component = library.component || {};
 		
 		self.init();
 	}
+	
+	// Public
+	
+	ns.Peer.prototype.setIsSpeaking = function( isSpeaker ) {
+		const self = this;
+		console.log( 'Peer.setIsSpeaking', isSpeaker );
+		self.el.classList.toggle( 'speaker', isSpeaker );
+		self.reflow();
+	}
+	
+	// Private
 	
 	ns.Peer.prototype.init = function() {
 		var self = this;
