@@ -1887,7 +1887,15 @@ ns.Treeroot.prototype.handleContactsUpdate = function( items ) {
 		}
 		
 		if ( 'Message' === meta.type ) {
-			self.handleHasNewMessage( rel[ 0 ], meta );
+			if ( !rel[ 0 ] ) {
+				self.log( 'handleContactsUpdate, type Message - missing rel', {
+					rel   : rel,
+					meta  : meta,
+					items : items,
+				});
+			} else
+				self.handleHasNewMessage( rel[ 0 ], meta );
+				
 			return;
 		}
 	}
