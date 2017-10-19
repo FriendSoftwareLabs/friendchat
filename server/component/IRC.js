@@ -2686,6 +2686,11 @@ ns.Private.prototype.actionMsg = function( data ) {
 
 ns.Private.prototype.sendMessage = function( message ) {
 	var self = this;
+	if ( 'string' !== typeof( message )) {
+		plog( 'sendMessage - not string', message );
+		return;
+	}
+	
 	var isCommand = ( '/' === message[ 0 ] ) || ( 0 === message.indexOf( '\x01ACTION ' ));
 	if ( isCommand ) {
 		self.toServer( message );
