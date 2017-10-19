@@ -192,18 +192,21 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootContact.prototype.bindEvents = function() {
-		var self = this;
-		var element = document.getElementById( self.clientId );
-		var chatBtn = element.querySelector( '.actions .chat' );
-		var liveBtn = element.querySelector( '.actions .live' );
-		var removeBtn = element.querySelector( '.actions  .remove' );
+		const self = this;
+		const element = document.getElementById( self.clientId );
+		const chatBtn = element.querySelector( '.actions .chat' );
+		const videoBtn = element.querySelector( '.actions .video' );
+		const audioBtn = element.querySelector( '.actions .audio' );
+		const removeBtn = element.querySelector( '.actions  .remove' );
 		
 		chatBtn.addEventListener( 'click', startChat, false );
-		liveBtn.addEventListener( 'click', startLive, false );
+		videoBtn.addEventListener( 'click', startVideo, false );
+		audioBtn.addEventListener( 'click', startAudio, false );
 		removeBtn.addEventListener( 'click', remove, false );
 		
 		function startChat( e ) { self.startChat( e ); }
-		function startLive( e ) { self.startLive( e ); }
+		function startVideo( e ) { self.startVideo(); }
+		function startAudio( e ) { self.startAudio(); }
 		function remove( e ) { self.remove( e ); }
 	}
 	
@@ -984,17 +987,20 @@ library.view = library.view || {};
 	}
 	
 	ns.IrcPrivate.prototype.bindEvents = function() {
-		var self = this;
-		var element = document.getElementById( self.clientId );
-		var liveBtn = element.querySelector( '.actions .live' );
-		var chatBtn = element.querySelector( '.actions .chat' );
-		var removeBtn = element.querySelector( '.actions .remove' );
+		const self = this;
+		const element = document.getElementById( self.clientId );
+		const video = element.querySelector( '.actions .video' );
+		const audio = element.querySelector( '.actions .audio' );
+		const chatBtn = element.querySelector( '.actions .chat' );
+		const removeBtn = element.querySelector( '.actions .remove' );
 		
-		liveBtn.addEventListener( 'click', sendLiveInvite, false );
+		video.addEventListener( 'click', startVideo, false );
+		audio.addEventListener( 'click', startAudio, false );
 		chatBtn.addEventListener( 'click', toggleChatView, false );
 		removeBtn.addEventListener( 'click', removePriv, false );
 		
-		function sendLiveInvite( e ) { self.startLive(); }
+		function startVideo( e ) { self.startVideo(); }
+		function startAudio( e ) { self.startAudio(); }
 		function toggleChatView( e ) { self.startChat(); }
 		function removePriv( e ) { self.remove(); }
 	}
@@ -1447,13 +1453,11 @@ library.view = library.view || {};
 		self.setNameInput.addEventListener( 'click', nameInputEvent, false );
 		
 		function videoClick( e ) {
-			var video = { type : 'video', };
-			send( video );
+			self.startVideo();
 		}
 		
 		function audioClick( e ) {
-			var audio = { type : 'audio', };
-			send( audio );
+			self.startAudio();
 		}
 		
 		function chatClick( e ) {

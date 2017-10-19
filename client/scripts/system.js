@@ -749,13 +749,14 @@ library.rtc = library.rtc || {};
 		self.service.invite( contact );
 	}
 	
-	ns.RtcControl.prototype.createRoom = function( contacts, selfie ) {
+	ns.RtcControl.prototype.createRoom = function( contacts, selfie, permissions ) {
 		var self = this;
 		var sessionConf = {
-			invite    : null,
-			isHost    : true,
-			user      : selfie,
-			contacts  : contacts,
+			invite      : null,
+			isHost      : true,
+			user        : selfie,
+			contacts    : contacts,
+			permissions : permissions,
 		};
 		self.getRoom( 'create', sessionConf );
 	}
@@ -843,11 +844,11 @@ library.rtc = library.rtc || {};
 		}
 		
 		var sessionConf = {
-			invite     : invite,
-			inviteFrom : inviteFrom,
-			user       : selfie,
-			isHost     : false,
-			contacts   : null,
+			invite      : invite,
+			inviteFrom  : inviteFrom,
+			user        : selfie,
+			isHost      : false,
+			contacts    : null,
 			permissions : permissions,
 		};
 		self.getRoom( 'join', sessionConf );

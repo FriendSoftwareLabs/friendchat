@@ -320,44 +320,58 @@ library.contact = library.contact || {};
 		return false;
 	}
 	
-	ns.Contact.prototype.startLive = function( invite, from ) {
-		var self = this;
-		var invite = invite || null;
-		var module = hello.module.get( self.moduleId );
-		var user = module.identity;
-		
-		if ( invite )
-			joinSession( user, invite );
+	ns.Contact.prototype.handleStartLive = function( event ) {
+		const self = this;
+		console.log( 'handleStartLive', event );
+		const mode = event.mode || 'video';
+		const perms = event.permissions || buildPermsFor( mode );
+		const user = self.getParentIdentity();
+		const contact = self.identity; // create a session and invite this contact
+		contact.invite = sendInvite;
+		const rtcSession = hello.rtc.getSession();
+		if ( rtcSession )
+			hello.rtc.invite( contact, perms );
 		else
-			setupSession( user );
-		
-		function joinSession( user, invite ) {
-			var host = self.identity || { name : from }; // this contact is inviting you
-			hello.rtc.askClient( invite, host, user );
-		}
-		
-		function setupSession( user ) {
-			var contact = self.identity; // create a session and invite this contact
-			contact.invite = sendInvite;
-			var rtcSession = hello.rtc.getSession();
-			/*
-			if ( rtcSession && !rtcSession.isHost ) {
-				hello.log.show();
-				hello.log.notify( 'You are not the host of the Live session, '
-					+ 'so you may not send invites.' );
-				return;
-			}
-			*/
-			
-			if ( rtcSession )
-				hello.rtc.invite( contact );
-			else
-				hello.rtc.createRoom( [ contact ], user );
-		}
+			hello.rtc.createRoom( [ contact ], user, perms );
 		
 		function sendInvite( invite ) {
 			self.sendMessage( invite );
 		}
+		
+		function buildPermsFor( mode ) {
+			console.log( 'buildPermsFor', mode );
+			const video = 'video' === mode ? true : false;
+			const perms = {
+				send : {
+					audio : true,
+					video : video,
+				},
+				receive : {
+					audio : true,
+					video : video,
+				},
+			};
+			
+			return perms;
+		}
+	}
+	
+	ns.Contact.prototype.startLive = function( invite, from ) {
+		const self = this;
+		if ( !invite )
+			throw new Error( 'Contact.startLive - no invite' );
+		
+		const user = self.getParentIdentity();
+		const host = self.identity || { name : from }; // this contact is inviting you
+		hello.rtc.askClient( invite, host, user );
+	}
+	
+	ns.Contact.prototype.getParentIdentity = function() {
+		const self = this;
+		const module = hello.module.get( self.moduleId );
+		const id = module.identity;
+		console.log( 'Contact.getParentIdentity', id );
+		return id;
 	}
 	
 	ns.Contact.prototype.addCalendarEvent = function( event, from ) {
@@ -626,15 +640,13 @@ library.contact = library.contact || {};
 		const self = this;
 		self.view.on( 'persist', persist );
 		self.view.on( 'rename', rename );
-		self.view.on( 'video', video );
-		self.view.on( 'audio', audio );
+		self.view.on( 'start-live', startLive );
 		self.view.on( 'chat', chat );
 		self.view.on( 'leave', leave );
 		
 		function persist( e ) { self.persistRoom( e ); }
 		function rename( e ) { self.renameRoom( e ); }
-		function video( e ) { self.startVideo( e ); }
-		function audio( e ) { self.startAudio( e ); }
+		function startLive( e ) { self.handleStartLive( e ); }
 		function chat( e ) { self.toggleChat( e ); }
 		function leave( e ) { self.leaveRoom( e ); }
 		
@@ -659,6 +671,25 @@ library.contact = library.contact || {};
 			data : name,
 		};
 		self.send( rename );
+	}
+	
+	ns.PresenceRoom.prototype.handleStartLive = function( event ) {
+		const self = this;
+		console.log( 'presenceRoom.handleStartLive', event );
+		if ( !event || !event.mode )
+			return;
+		
+		if ( 'video' === event.mode ) {
+			self.startVideo();
+			return;
+		}
+		
+		if ( 'audio' === event.mode ) {
+			self.startAudio();
+			return;
+		}
+		
+		console.log( 'PresenceRoom.handleStartLvie - unknown mode', event );
 	}
 	
 	ns.PresenceRoom.prototype.startVideo = function() {
@@ -1446,13 +1477,13 @@ library.contact = library.contact || {};
 		
 		// buttons
 		self.view.on( 'chat', startChat );
-		self.view.on( 'live', startLive );
+		self.view.on( 'start-live', startLive );
 		// option menu
 		self.view.on( 'option', option );
 		self.view.on( 'remove', remove );
 		
 		function startChat( msg ) { self.startChat( msg ); }
-		function startLive() { self.startLive(); }
+		function startLive( e ) { self.handleStartLive( e ); }
 		function option( msg ) { console.log( 'contact.option', msg ); }
 		function remove( msg ) { self.removeRequest( msg ); }
 	}
@@ -1673,23 +1704,23 @@ library.contact = library.contact || {};
 			self.chatView.close();
 		
 		var chatConf = {
-			onready : readyCallback,
+			onready   : readyCallback,
 			onmessage : onMessage,
-			onlive : liveInvite,
+			onlive    : startLive,
 			onencrypt : toggleEncrypt,
-			onclose : onClose,
-			state : {
-				contact : self.identity,
-				user : module.identity,
+			onclose   : onClose,
+			state     : {
+				contact          : self.identity,
+				user             : module.identity,
 				encryptIsDefault : true,
-				canEncrypt : true,
-				doEncrypt : !!self.encryptMessages,
-				multilineCap : true,
+				canEncrypt       : true,
+				doEncrypt        : !!self.encryptMessages,
+				multilineCap     : true,
 			},
 		};
 		self.chatView = new library.view.IMChat( chatConf );
 		function onMessage( e ) { self.sendChatMessage( e ); }
-		function liveInvite( e ) { self.startLive(); }
+		function startLive( e ) { self.handleStartLive( e ); }
 		function toggleEncrypt( e ) { self.toggleEncrypt(); }
 		function onClose( e ) { self.chatView = null; }
 	}
@@ -2250,17 +2281,17 @@ library.contact = library.contact || {};
 	ns.IrcPrivMsg.prototype.bindView = function() {
 		var self = this;
 		self.view.on( 'chat', toggleChat );
-		self.view.on( 'live', sendLiveInvite );
+		self.view.on( 'start-live', startLive );
 		self.view.on( 'remove', removePrivate );
 		
-		function toggleChat( msg ) {
+		function toggleChat( e ) {
 			if ( self.chatView )
 				self.chatView.close();
 			else
 				self.startChat();
 		}
-		function sendLiveInvite( msg ) { self.startLive(); }
-		function removePrivate( msg ) { self.remove(); }
+		function startLive( e ) { self.handleStartLive( e ); }
+		function removePrivate( e ) { self.remove(); }
 	}
 	
 	ns.IrcPrivMsg.prototype.remove = function() {
@@ -2301,8 +2332,8 @@ library.contact = library.contact || {};
 		};
 		self.chatView = new library.view.IMChat( conf );
 		
-		function onMessage( msg ) { self.fromChat( msg ); }
-		function onLive( msg ) { self.startLive(); }
+		function onMessage( e ) { self.fromChat( e ); }
+		function onLive( e ) { self.handleStartLive( e ); }
 		function onClose() { self.chatView = null; }
 		function onHighlight( e ) { self.handleHighlight(); }
 	}

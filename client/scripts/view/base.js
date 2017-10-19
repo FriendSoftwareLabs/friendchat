@@ -352,14 +352,25 @@ library.view = library.view || {};
 		});
 	}
 	
-	ns.BaseContact.prototype.startLive = function( e ) {
+	ns.BaseContact.prototype.startVideo = function( perms ) {
+		const self = this;
+		self.startLive( 'video', perms );
+	}
+	
+	ns.BaseContact.prototype.startAudio = function( perms ) {
+		const self = this;
+		self.startLive( 'audio', perms );
+	}
+	
+	ns.BaseContact.prototype.startLive = function( mode, perms ) {
 		var self = this;
-		if ( e ) {
-			e.stopPropagation();
-			e.preventDefault();
-		}
+		mode = mode || 'video';
 		self.send({
-			type : 'live',
+			type : 'start-live',
+			data : {
+				mode        : mode,
+				permissions : perms,
+			},
 		});
 	}
 	

@@ -291,7 +291,7 @@ library.view = library.view || {};
 		self.view.on( 'exit', exit );
 		self.view.on( 'message', self.onmessage );
 		self.view.on( 'highlight', handleHighlight );
-		self.view.on( 'live', self.onlive );
+		self.view.on( 'start-live', self.onlive );
 		self.view.on( 'drag-n-drop', handleDropped );
 		self.view.on( 'encrypt', self.onencrypt );
 		

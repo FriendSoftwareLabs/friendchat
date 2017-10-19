@@ -343,13 +343,15 @@ library.component = library.component || {};
 		self.form = document.getElementById( 'input-form' );
 		self.toggleMultilineBtn = document.getElementById( 'leeloodallasmultiline' );
 		self.toggleVoiceBtn = document.getElementById( 'toggle-voice' );
-		var liveInviteBtn = document.getElementById( 'live-invite' );
+		const startVideoBtn = document.getElementById( 'start-video' );
+		const startAudioBtn = document.getElementById( 'start-audio' );
 		self.encryptBtn = document.getElementById( 'toggle-encrypt' );
 		
 		self.form.addEventListener( 'submit', submit, false );
 		self.toggleMultilineBtn.addEventListener( 'click', toggleMultiline, false );
 		self.toggleVoiceBtn.addEventListener( 'click', toggleVoice, false );
-		liveInviteBtn.addEventListener( 'click', sendLiveInvite, false );
+		startVideoBtn.addEventListener( 'click', startVideo, false );
+		startAudioBtn.addEventListener( 'click', startAudio, false );
 		self.encryptBtn.addEventListener( 'click', toggleEncrypt, false );
 		
 		function submit( e ) {
@@ -359,7 +361,8 @@ library.component = library.component || {};
 		}
 		function toggleMultiline( e ) { self.input.toggleMultiline(); }
 		function toggleVoice( e ) { self.toggleVoice( e ); }
-		function sendLiveInvite( e ) { self.sendLiveInvite( e ); }
+		function startVideo( e ) { self.startLive( 'video' ); }
+		function startAudio( e ) { self.startLive( 'audio' ); }
 		function toggleEncrypt( e ) { self.toggleEncrypt( e ); }
 	}
 	
@@ -445,12 +448,16 @@ library.component = library.component || {};
 		self.toggleVoiceBtn.classList.toggle( 'blink-green', self.voiceSynthActive );
 	}
 	
-	ns.IMChat.prototype.sendLiveInvite = function( e ) {
+	ns.IMChat.prototype.startLive = function( mode ) {
 		var self = this;
-		var invite = {
-			type : 'live'
+		const startLive = {
+			type : 'start-live',
+			data : {
+				mode        : mode,
+				permissions : null,
+			},
 		};
-		self.send( invite );
+		self.send( startLive );
 	}
 	
 	ns.IMChat.prototype.toggleEncrypt = function() {
