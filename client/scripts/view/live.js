@@ -166,6 +166,7 @@ library.component = library.component || {};
 		self.peerAddQueue = [];
 		
 		self.selfiePopped = true;
+		self.wasPopped = true;
 		self.currentSpeaker = null;
 		self.uiVisible = false;
 		self.ui = null;
@@ -187,12 +188,28 @@ library.component = library.component || {};
 			'chat'          : library.view.ChatPane,
 		};
 		
-		var queueConf = {
+		/*
+		let queueConf = {
 			containerId : 'lists-container',
-			label : 'Queue',
-			faIcon : 'fa-ellipsis-h',
+			label       : View.i18n( 'i18n_list_queue' ),
+			faIcon      : 'fa-users',
+			ontoggle    : null,
 		};
 		self.queue = new library.view.List( queueConf );
+		*/
+		
+		let audioConf = {
+			containerId : 'lists-container',
+			id          : 'audio-list',
+			label       : View.i18n( 'i18n_list_voice' ),
+			faIcon      : 'fa-microphone',
+			ontoggle    : audioListToggled,
+		};
+		self.audioList = new library.view.List( audioConf );
+		function audioListToggled( state ) {
+			if ( self.peerOrder.length )
+				self.reflowPeers();
+		}
 		
 		self.bindEvents();
 		self.uiVisible = true;
@@ -227,7 +244,8 @@ library.component = library.component || {};
 	}
 	
 	ns.Live.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
+		self.peerContainer = document.getElementById( self.peerContainerId );
 		
 		// ui
 		self.live = document.getElementById( 'live' );
@@ -415,13 +433,14 @@ library.component = library.component || {};
 		var conf = {
 			peer           : peer,
 			menu           : self.menu,
-			containerId    : self.peerContainerId,
+			connecting     : document.getElementById( 'connecting-peers' ),
 			currentQuality : self.currentQuality,
 			isHost         : peer.isHost,
 			ondrag         : onDrag,
 			onclick        : onClick,
 		};
-		var viewPeer =  null;
+		
+		let viewPeer =  null;
 		if ( peer.id === 'selfie' ) {
 			viewPeer = new library.view.Selfie( conf );
 			peer.on( 'room-quality', handleRoomQuality );
@@ -431,16 +450,22 @@ library.component = library.component || {};
 			conf.onmenu = onMenuClick;
 			viewPeer = new library.view.Peer( conf );
 		}
+		peer.on( 'video', updateHasVideo );
 		
+		// add to ui
 		self.peers[ viewPeer.id ] = viewPeer;
+		self.peerContainer.appendChild( viewPeer.el );
+		viewPeer.el.classList.toggle( 'in-grid', true );
 		self.peerOrder.push( viewPeer.id );
+		self.updateGridClass();
+		self.updateMenu();
 		
 		// start session duration on selfie when the first peer is added
 		if ( self.peerOrder.length === 2 )
 			self.peers[ 'selfie' ].startDurationTimer();
 		
-		// update ui
-		self.updateGridClass();
+		// show/hide waiting splash
+		self.updateWaiting();
 		
 		function onDrag( type ) {
 			self.onDrag( type, peer.id );
@@ -458,6 +483,11 @@ library.component = library.component || {};
 			self.togglePopped();
 		}
 		
+		function updateHasVideo( hasVideo ) {
+			console.log( 'Live.updateHasVideo', hasVideo );
+			self.updateHasVideo( peer.id, hasVideo );
+		}
+		
 		function onMenuClick( e ) {
 			self.menu.show( viewPeer.menuId );
 			self.menuUI.show();
@@ -473,12 +503,21 @@ library.component = library.component || {};
 			return;
 		}
 		
-		if ( 'selfie' === peerId )
-			peer.peer.off( 'qualitylevel' );
+		let model = peer.peer;
+		model.release( 'video' );
+		if ( 'selfie' === peerId ) {
+			model.release( 'room-quality' );
+			model.release( 'popped' );
+		}
 		
 		peer.close();
 		delete self.peers[ peerId ];
-		removeFromPeerOrder( peerId );
+		let pidx = self.peerOrder.indexOf( peerId );
+		if ( -1 === pidx )
+			self.audioList.remove( peerId );
+		else
+			self.peerOrder.splice( pidx, 1 );
+		
 		if ( self.modeSpeaker && self.currentSpeaker === peerId )
 			self.setSpeaker();
 		
@@ -487,16 +526,8 @@ library.component = library.component || {};
 		}
 		
 		self.updateGridClass();
-		
-		function removeFromPeerOrder( peerId ) {
-			var index = self.peerOrder.indexOf( peerId );
-			if ( -1 === index ) {
-				console.log( 'removeFromPeerOrder -\
-					 peerId not found in peerOrder, oops?', peerId );
-				return;
-			}
-			self.peerOrder.splice( index, 1 );
-		}
+		self.updateWaiting();
+		self.updateMenu();
 	}
 	
 	ns.Live.prototype.executePeerAddQueue = function() {
@@ -512,7 +543,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.applyPeerOrder = function( peerOrder ) {
 		var self = this;
-		var peerContainer = document.getElementById( self.peerContainerId );
 		self.isReordering = true;
 		if ( peerOrder )
 			self.peerOrder = peerOrder;
@@ -526,10 +556,27 @@ library.component = library.component || {};
 		function applyPosition( peerId ) {
 			var peer = self.peers[ peerId ];
 			var peerElement = document.getElementById( peerId );
-			peerContainer.appendChild( peerElement );
+			self.peerContainer.appendChild( peerElement );
 			peer.restart();
 		}
-		
+	}
+	
+	ns.Live.prototype.updateWaiting = function() {
+		const self = this;
+		let pids = Object.keys( self.peers );
+		let hideWaiting = pids.length > 1;
+		self.waiting.classList.toggle( 'hidden', hideWaiting );
+	}
+	
+	ns.Live.prototype.updateMenu = function() {
+		const self = this;
+		console.log( 'updateMenu' );
+		let gridNum = self.peerOrder.length;
+		let listNum = self.audioList.length;
+		if ( 2 > gridNum )
+			self.menu.disable( 'dragger' );
+		else
+			self.menu.enable( 'dragger' );
 	}
 	
 	ns.Live.prototype.updateGridClass = function() {
@@ -548,8 +595,6 @@ library.component = library.component || {};
 		self.currentGridKlass = newGridKlass;
 		container.classList.add( self.currentGridKlass );
 		self.reflowPeers();
-		
-		self.waiting.classList.toggle( 'hidden', !!peerNum );
 		
 		function removeOld() {
 			var classes = container.className;
@@ -587,12 +632,82 @@ library.component = library.component || {};
 	}
 	
 	ns.Live.prototype.handleQueue = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'handleQueue', msg );
 		if ( !self.queue )
 			return;
 		
-		self.queue.receiveEvent( msg );
+		self.queue.handle( msg );
+	}
+	
+	ns.Live.prototype.updateHasVideo = function( peerId, hasVideo ) {
+		const self = this;
+		console.log( 'updateHasVideo', {
+			pid : peerId,
+			hv  :  hasVideo,
+		});
+		const peer = self.peers[ peerId ];
+		if ( !peer ) {
+			console.log( 'updateHasVideo - no peer for', peerId );
+			return;
+		}
+		
+		if ( hasVideo )
+			moveToPeers( peer );
+		else
+			moveToAudioList( peer );
+		
+		function moveToPeers( peer ) {
+			console.log( 'moveToPeers', peer );
+			let pid = peer.id;
+			if ( isInVideo( pid ))
+				return;
+			
+			self.audioList.remove( pid );
+			self.peerOrder.push( pid );
+			peer.toggleListMode( false );
+			if ( 'selfie' === peer.id && self.wasPopped )
+				self.togglePopped( true );
+			
+			self.peerContainer.appendChild( peer.el );
+			self.updateGridClass();
+		}
+		
+		function moveToAudioList( peer ) {
+			console.log( 'moveToAudioList', peer );
+			let pid = peer.id;
+			if ( isInAudio( pid ))
+				return;
+			
+			if ( 'selfie' === peer.id )
+				self.togglePopped( false );
+			
+			peer.toggleListMode( true );
+			let pidx = self.peerOrder.indexOf( peer.id );
+			self.peerOrder.splice( pidx, 1 );
+			self.audioList.add( peer.el );
+			self.updateGridClass();
+			let pids = Object.keys( self.peers );
+			/*
+			if (( !self.peerOrder.length ) && ( 1 < pids.length )) {
+				console.log( 'show audio lsst', {
+					pod : self.peerOrder,
+					pids : pids });
+				self.audioList.show();
+			} else
+				console.log( 'dont audio lsst', {
+					pod : self.peerOrder,
+					pids : pids });
+			*/
+			
+			function isInAudio( pid ) {
+				return !isInVideo( pid );
+			}
+		}
+		
+		function isInVideo( pid ) {
+			return self.peerOrder.some( poId => poId === pid );
+		}
 	}
 	
 	ns.Live.prototype.onDrag = function( type, peerId ) {
@@ -645,6 +760,13 @@ library.component = library.component || {};
 				peer.setIsDragging( ayOrNay );
 			}
 		}
+	}
+	
+	ns.Live.prototype.clearDragger = function() {
+		const self = this;
+		console.log( 'clearDragger' );
+		self.onDrag( 'end' );
+		self.onDrag( 'disable' );
 	}
 	
 	ns.Live.prototype.reorderStart = function( sourceId ) {
@@ -983,8 +1105,43 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.togglePopped = function( force ) {
 		const self = this;
+		self.selfiePopped = force || !self.selfiePopped;
+		if ( null == force ) {
+			self.wasPopped = self.selfiePopped;
+		} else {
+			self.wasPopped = self.selfiePopped;
+			self.selfiePopped = force;
+		}
+		
+		self.updateSelfiePopped();
+	}
+	
+	ns.Live.prototype.updateSelfiePopped = function() {
+		const self = this;
 		const selfie = self.peers[ 'selfie' ];
-		self.selfiePopped = selfie.togglePopped( force );
+		let isSpeaker = 'selfie' === self.currentSpeaker;
+		if ( selfie.isInList ) {
+			if ( !self.selfiePopped )
+				return;
+			else {
+				if ( !self.selfiePopped )
+					return;
+				
+				self.selfiePopped = selfie.togglePopped( false );
+				self.wasPopped = true;
+			}
+			
+			return;
+		}
+		
+		if ( self.modeSpeaker && !!self.currentSpeaker ) {
+			self.wasPopped = self.selfiePopped;
+			if ( self.selfiePopped )
+				selfie.togglePopped( false );
+			
+		} else
+			selfie.togglePopped( self.wasPopped );
+			
 		self.updateGridClass();
 	}
 	
@@ -1000,8 +1157,7 @@ library.component = library.component || {};
 		return self.modeSpeaker;
 		
 		function enable() {
-			self.onDrag( 'end' );
-			self.onDrag( 'disable' );
+			self.clearDragger();
 			self.menu.disable( 'dragger' );
 		}
 		
@@ -1014,29 +1170,33 @@ library.component = library.component || {};
 		const self = this;
 		const container = document.getElementById( self.peerContainerId );
 		const modeSpeaker = ( !!self.modeSpeaker && !!self.currentSpeaker );
-		console.log( 'updateModeSpeaker', modeSpeaker );
-		container.classList.toggle( 'mode-speaker', modeSpeaker );
+		const speaker = self.peers[ self.currentSpeaker ];
+		if ( speaker && speaker.isInList )
+			container.classList.toggle( 'mode-speaker', false );
+		else
+			container.classList.toggle( 'mode-speaker', modeSpeaker );
+		
+		self.updateSelfiePopped();
 		if ( modeSpeaker )
 			enable();
 		else
 			disable();
 		
 		function enable() {
-			self.wasPopped = self.selfiePopped;
-			self.togglePopped( false );
-			self.menu.disable( 'popped' );
+			const peer = self.peers[ self.currentSpeaker ];
+			if ( !peer )
+				return;
+			
+			peer.reflow();
 		}
 		
 		function disable() {
-			self.togglePopped( self.wasPopped );
-			self.wasPopped = null;
-			self.menu.enable( 'popped' );
+			self.reflowPeers();
 		}
 	}
 	
 	ns.Live.prototype.setSpeaker = function( speaker ) {
 		const self = this;
-		console.log( 'setSpeaker', speaker );
 		if ( !speaker || !speaker.isSpeaking )
 			unset();
 		else
@@ -1134,7 +1294,7 @@ library.component = library.component || {};
 		self.id = conf.peer.id;
 		self.peer = conf.peer;
 		self.menu = conf.menu;
-		self.containerId = conf.containerId;
+		self.connecting = conf.connecting;
 		self.currentQuality = conf.currentQuality;
 		self.isHost = conf.isHost;
 		self.ondrag = conf.ondrag;
@@ -1165,9 +1325,17 @@ library.component = library.component || {};
 	
 	// Public
 	
+	ns.Peer.prototype.toggleListMode = function( isInList ) {
+		const self = this;
+		self.isInList = isInList;
+		self.el.classList.toggle( 'in-grid', !isInList );
+		self.el.classList.toggle( 'in-list', isInList );
+		self.clickCatch.classList.toggle( 'hidden', isInList );
+	}
+	
 	ns.Peer.prototype.setIsSpeaking = function( isSpeaker ) {
 		const self = this;
-		console.log( 'Peer.setIsSpeaking', isSpeaker );
+		self.isSpeaker = isSpeaker;
 		self.el.classList.toggle( 'speaker', isSpeaker );
 		self.reflow();
 	}
@@ -1283,15 +1451,12 @@ library.component = library.component || {};
 			name : self.peer.name || '',
 			avatar : avatarUrl || '',
 		};
-		var element = hello.template.getElement( 'peer-tmpl', conf );
-		var container = document.getElementById( self.containerId );
-		container.appendChild( element );
+		self.el = hello.template.getElement( 'peer-tmpl', conf );
+		self.connecting.appendChild( self.el );
 	}
 	
 	ns.Peer.prototype.bindUI = function() {
 		var self = this;
-		var element = document.getElementById( self.id );
-		
 		// states
 		self.rtcState = new library.view.RTCState({ peerId : self.id });
 		
@@ -1313,18 +1478,24 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.bindUICommon = function() {
 		var self = this;
-		var element = document.getElementById( self.id );
-		self.el = element;
-		
 		// stream
-		self.avatar = element.querySelector( '.stream-container .avatar' );
-		self.nameBar = element.querySelector( '.name-bar' );
+		self.avatar = self.el.querySelector( '.stream-container .avatar' );
 		
-		// ui
-		self.ui = element.querySelector( '.ui' );
+		// list-ui
+		self.listUI = self.el.querySelector( '.list-ui' );
+		self.listUIState = self.listUI.querySelector( '.list-peer-state' );
+		self.listAvatar = self.listUI.querySelector( '.list-avatar' );
+		self.listIsSpeaking = self.listUI.querySelector( '.list-is-speaking' );
+		self.listMuteRemote = self.listUI.querySelector( '.list-mute-remote' );
+		self.listMuteLocal = self.listUI.querySelector( '.list-mute-local' );
+		self.listName = self.listUI.querySelector( '.name' );
+		
+		// grid-ui
+		self.ui = self.el.querySelector( '.grid-ui' );
+		self.nameBar = self.el.querySelector( '.name-bar' );
 		self.uiView = self.ui.querySelector( '.ui-view' );
 		self.name = self.nameBar.querySelector( '.name' );
-		self.clickCatch = element.querySelector( '.click-catch' );
+		self.clickCatch = self.el.querySelector( '.click-catch' );
 		self.muteState = self.ui.querySelector( '.muted' );
 		self.blindState = self.ui.querySelector( '.blinded' );
 		
@@ -1335,11 +1506,14 @@ library.component = library.component || {};
 		
 		self.clickCatch.addEventListener( 'touchend', touchEnd, false );
 		
+		self.listUIState.addEventListener( 'click', listUIStateClick, false );
+		
+		self.listMuteLocal.addEventListener( 'click', muteStateClick, true );
 		self.muteState.addEventListener( 'click', muteStateClick, false );
 		self.blindState.addEventListener( 'click', blindStateClick, false );
 		
-		element.addEventListener( 'mouseenter', showUI, false );
-		element.addEventListener( 'mouseleave', hideUI, false );
+		self.el.addEventListener( 'mouseenter', showUI, false );
+		self.el.addEventListener( 'mouseleave', hideUI, false );
 		
 		function clickCatch( e ) {
 			self.onclick( true );
@@ -1363,11 +1537,20 @@ library.component = library.component || {};
 		
 		function touchEnd( e ) { self.handleTouchEnd( e ); }
 		
-		function muteStateClick( e ) { self.peer.toggleMute(); }
+		function listUIStateClick( e ) {
+			console.log( 'listAvatarClick', e );
+			self.peer.toggleMute();
+		}
+		
+		function muteStateClick( e ) {
+			console.log( 'muteStateClick' );
+			e.stopPropagation();
+			self.peer.toggleMute();
+		}
 		function blindStateClick( e ) { self.peer.toggleBlind(); }
 		
 		// dragger
-		self.dragger = element.querySelector( '.dragger' );
+		self.dragger = self.el.querySelector( '.dragger' );
 		self.dragCloseBtn = self.dragger.querySelector( '.drag-close' );
 		self.dragHint = self.dragger.querySelector( '.drag-hint' );
 		self.dragHintDraggable = self.dragger.querySelector( '.drag-hint .draggable' );
@@ -1888,10 +2071,8 @@ library.component = library.component || {};
 			var height = e.target.clientHeight;
 			var aspectRatio = width / height;
 			
-			if ( !aspectRatio ) {
-				console.log( 'no aspectratio???', e.target );
+			if ( !aspectRatio )
 				return;
-			}
 			
 			self.videoAspect = aspectRatio;
 			self.doResize();
@@ -1946,7 +2127,7 @@ library.component = library.component || {};
 		if ( !self.stream )
 			return;
 		
-		var resize = new Event( 'resize' );
+		let resize = new Event( 'resize' );
 		self.stream.dispatchEvent( resize );
 		if ( self.volume )
 			self.volume.start();
@@ -1966,12 +2147,12 @@ library.component = library.component || {};
 		
 		var element = document.getElementById( self.id );
 		var container = element.querySelector( '.stream-container' );
-		var beforeThis = container.querySelector( '.main-rtc' );
+		var RTCInfo = container.querySelector( '.main-rtc' );
 		
 		self.stream = hello.template.getElement( 'stream-video-tmpl', conf );
 		self.stream.onloadedmetadata = play;
 		
-		container.insertBefore( self.stream, beforeThis );
+		container.insertBefore( self.stream, RTCInfo );
 		self.toggleSpinner( false );
 		self.bindStreamResize();
 		
@@ -2069,12 +2250,16 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.toggleMuteState = function( isMuted ) {
 		var self = this;
+		console.log( 'toggleMuteState', isMuted );
 		self.toggleElement( self.muteState, isMuted );
+		self.toggleElement( self.listMuteLocal, isMuted );
 	}
 	
 	ns.Peer.prototype.toggleRemoteMute = function( isMuted ) {
 		var self = this;
+		console.log( 'toggleRemoteMute', isMuted );
 		self.toggleUIIndicator( '.remote-mute', isMuted );
+		self.toggleElement( self.listMuteRemote, isMuted );
 	}
 	
 	ns.Peer.prototype.handleSelfBlind = function( isBlinded ) {
@@ -2142,11 +2327,16 @@ library.component = library.component || {};
 			return;
 		}
 		
-		if ( id.name && id.name.length )
+		if ( id.name && id.name.length ) {
 			self.name.innerText = id.name;
+			self.listName.innerText = id.name;
+		}
+		
 		if ( id.avatar && id.avatar.length ) {
-			var avatarUrl = window.encodeURI( id.avatar );
-			self.avatar.style.backgroundImage = 'url("' + avatarUrl + '")';
+			let avatarUrl = window.encodeURI( id.avatar );
+			let avatarStyle = 'url("' + avatarUrl + '")';
+			self.avatar.style.backgroundImage = avatarStyle;
+			self.listAvatar.style.backgroundImage = avatarStyle;
 		}
 		
 		self.menu.update( self.menuId, id.name );
@@ -2243,6 +2433,7 @@ library.component = library.component || {};
 		self.menu.remove( self.menuId );
 		delete self.menu;
 		
+		delete self.connecting;
 		var element = document.getElementById( self.id );
 		if ( !element || !element.parentNode )
 			return;
@@ -2413,11 +2604,13 @@ library.component = library.component || {};
 		else
 			self.isPopped = force;
 		
-		const el = document.getElementById( self.id );
-		el.classList.toggle( 'popped', self.isPopped );
+		self.el.classList.toggle( 'popped', self.isPopped );
 		self.menu.setState( 'popped', self.isPopped );
-		self.toggleDurationUpdate();
-		self.toggleAVGraph();
+		if ( !self.isInList ) {
+			self.toggleDurationUpdate();
+			self.toggleAVGraph();
+		}
+		
 		return self.isPopped;
 	}
 	
@@ -2438,17 +2631,12 @@ library.component = library.component || {};
 			name : self.peer.name,
 			avatar : avatarUrl || '',
 		};
-		var element = hello.template.getElement( 'selfie-tmpl', tmplConf );
-		var container = document.getElementById( self.containerId );
-		container.appendChild( element );
+		self.el = hello.template.getElement( 'selfie-tmpl', tmplConf );
+		self.connecting.appendChild( self.el );
 	}
 	
 	ns.Selfie.prototype.bindUI = function() {
-		var self = this;
-		var element = document.getElementById( self.id );
-		self.liveView = document.getElementById( 'peer-container' );
-		self.sourceView = document.getElementById( 'source-select-container' );
-		
+		const self = this;
 		// poppedui
 		self.poppedMuteBtn = document.getElementById( 'popped-mute-self' );
 		self.unpopBtn = document.getElementById( 'popped-unpop' );
@@ -2635,10 +2823,16 @@ library.component = library.component || {};
 		else
 			self.menu.disable( 'mute' );
 		
-		if ( self.isVideo )
+		if ( self.isVideo ) {
 			self.menu.enable( 'blind' );
-		else
+			self.menu.enable( 'screen-mode' );
+			self.menu.enable( 'popped' );
+		}
+		else {
 			self.menu.disable( 'blind' );
+			self.menu.disable( 'screen-mode' );
+			self.menu.disable( 'popped' );
+		}
 	}
 	
 	ns.Selfie.prototype.handleQueue = function( position ) {
@@ -2739,11 +2933,12 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.List ))
 			return new ns.List( conf );
 		
-		var self = this;
-		// required conf
+		const self = this;
+		self.id = conf.id;
 		self.containerId = conf.containerId;
 		self.label = conf.label;
 		self.faIcon = conf.faIcon;
+		self.ontoggle = conf.ontoggle;
 		
 		// private
 		self.items = {};
@@ -2754,58 +2949,99 @@ library.component = library.component || {};
 	
 	// PUBLIC
 	
-	ns.List.prototype.add = function( item ) {
-		var self = this;
-		self.doAdd( item );
+	ns.List.prototype.add = function( element ) {
+		const self = this;
+		self.doAdd( element );
 	}
 	
 	ns.List.prototype.remove = function( id ) {
-		var self = this;
-		self.doRemove( id );
+		const self = this;
+		return self.doRemove( id );
 	}
 	
 	ns.List.prototype.move = function( id, index ) {
-		var self = this;
+		const self = this;
 		self.doMove( id, index );
 	}
 	
 	// event types allowed is the public api ( the functions up there ^ )
-	ns.List.prototype.receiveEvent = function( e ) {
-		var self = this;
+	ns.List.prototype.handle = function( e ) {
+		const self = this;
 		if ( !self[ e.type ])
 			return;
 		
 		self[ e.type ]( e.data );
 	}
 	
+	ns.List.prototype.show = function() {
+		const self = this;
+		console.log( 'List.show()' );
+		self.toggleShow( true );
+	}
+	
+	ns.List.prototype.peek = function() {
+		const self = this;
+		console.log( 'List.peek()' );
+		self.toggleShow( false );
+	}
+	
+	ns.List.prototype.length = function() {
+		const self = this;
+		return self.itemOrder.length;
+	}
+	
+	ns.List.prototype.close = function() {
+		const self = this;
+		delete self.ontoggle;
+		
+		self.itemOrder.forEach( remove );
+		self.itemOrder = [];
+		
+		function remove( iid ) {
+			self.doRemove( iid );
+		}
+	}
+	
 	// PRIVATE
 	
 	ns.List.prototype.init = function() {
-		var self = this;
-		self.id = self.label + '-list-thingie';
+		const self = this;
+		self.id = self.id || self.label + '-list-thingie';
 		self.build();
 		self.bind();
 	}
 	
 	ns.List.prototype.build = function() {
-		var self = this;
-		var tmplConf = {
-			id : self.id,
+		const self = this;
+		const tmplConf = {
+			id     : self.id,
 			faIcon : self.faIcon,
-			label : self.label,
+			label  : self.label,
 		};
-		var element = hello.template.getElement( 'live-list-tmpl', tmplConf );
-		var container = document.getElementById( self.containerId );
+		const element = hello.template.getElement( 'live-list-tmpl', tmplConf );
+		const container = document.getElementById( self.containerId );
 		container.appendChild( element );
 	}
 	
 	ns.List.prototype.bind = function() {
-		var self = this;
+		const self = this;
 		self.element = document.getElementById( self.id );
-		var head = self.element.querySelector( '.list-head' );
+		const head = self.element.querySelector( '.list-head' );
 		self.itemsContainer = self.element.querySelector( '.list-items' );
 		
+		self.element.addEventListener( 'transitionend', transend, false );
 		head.addEventListener( 'click', toggleShow, false );
+		
+		function transend( e ) {
+			if ( !self.ontoggle )
+				return;
+			
+			if ( 'width' !== e.propertyName )
+				return;
+			
+			console.log( 'transend', e );
+			self.ontoggle( true );
+		}
 		
 		function toggleShow( e ) {
 			e.stopPropagation();
@@ -2813,35 +3049,38 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.List.prototype.doAdd = function( item ) {
+	ns.List.prototype.doAdd = function( el ) {
 		var self = this;
-		if ( self.items[ item.id ]) {
-			console.log( 'List.add - item already added', { item : item, items : self.items });
+		console.log( 'List.doAdd', el );
+		if ( self.items[ el.id ]) {
+			console.log( 'List.add - el already added', { el : el, items : self.items });
 			return;
 		}
 		
-		self.items[ item.id ] = item;
-		self.itemOrder.push( item.id );
-		item.id = item.id + '-list-' + self.label;
-		var element = hello.template.getElement( 'live-list-item-tmpl', item );
-		self.itemsContainer.appendChild( element );
+		self.items[ el.id ] = el;
+		self.itemOrder.push( el.id );
+		self.itemsContainer.appendChild( el );
 		
 		self.updateVisibility();
 	}
 	
 	ns.List.prototype.doRemove = function( id ) {
 		var self = this;
-		var item = self.items[ id ];
-		if ( !item ) {
-			console.log( 'List.remove - item not found', { id : id, items : self.items });
+		var el = self.items[ id ];
+		if ( !el ) {
+			console.log( 'List.remove - el not found', { id : id, items : self.items });
 			return;
 		}
 		
-		var element = document.getElementById( item.id );
-		element.parentNode.removeChild( element );
+		console.log( 'List.doRemove', el );
+		const element = document.getElementById( el.id );
+		if ( element )
+			element.parentNode.removeChild( element );
+		
 		delete self.items[ id ];
 		self.itemOrder = self.itemOrder.filter( notRemoved );
 		self.updateVisibility();
+		return el;
 		
 		function notRemoved( itemId ) {
 			if ( itemId === id )
@@ -2870,10 +3109,14 @@ library.component = library.component || {};
 		self.element.classList.toggle( 'hide', self.hide );
 	}
 	
-	ns.List.prototype.toggleShow = function() {
+	ns.List.prototype.toggleShow = function( force ) {
 		var self = this;
-		self.show = !self.show;
-		self.element.classList.toggle( 'show', self.show );
+		if ( null == force )
+			self.isShow = !self.isShow;
+		else
+			self.isShow = !!force;
+		
+		self.element.classList.toggle( 'show', self.isShow );
 	}
 	
 })( library.view );
@@ -2955,7 +3198,7 @@ library.component = library.component || {};
 		var self = this;
 		var peer = document.getElementById( self.parentId );
 		self.main = peer.querySelector( '.stream-container .main-rtc' );
-		self.mini = peer.querySelector( '.ui .mini-rtc' );
+		self.mini = peer.querySelector( '.grid-ui .mini-rtc' );
 		
 		self.mainState = self.main.querySelector( '.main-rtc-status' );
 		//self.miniState = self.mini.querySelector( '.mini-rtc-state' );
@@ -4995,7 +5238,6 @@ library.component = library.component || {};
 	
 	ns.AudioVisualizer.prototype.start = function() {
 		const self = this;
-		console.log( 'AudioVisualizer.start', self );
 		self.setupCanvas();
 		if ( !self.el )
 			return;
@@ -5009,7 +5251,6 @@ library.component = library.component || {};
 	
 	ns.AudioVisualizer.prototype.stop = function() {
 		const self = this;
-		console.log( 'AudioVisualizer.stop', self );
 		self.draw = false;
 		if ( self.animFReq )
 			window.cancelAnimationFrame( self.animFReq );
@@ -5019,7 +5260,6 @@ library.component = library.component || {};
 	
 	ns.AudioVisualizer.prototype.close = function() {
 		const self = this;
-		console.log( 'AudioVisualizer.close' );
 		self.stop();
 		
 		let el = document.getElementById( self.id );
@@ -5039,13 +5279,11 @@ library.component = library.component || {};
 	
 	ns.AudioVisualizer.prototype.init = function() {
 		const self = this;
-		console.log( 'AudioVisualizer.init', self );
 		self.start();
 	}
 	
 	ns.AudioVisualizer.prototype.setupCanvas = function() {
 		const self = this;
-		console.log( 'setupCanvas' );
 		const container = document.getElementById( self.containerId );
 		self.id = self.id || friendUP.tool.uid( 'AV' );
 		self.canvasId = self.canvasId || friendUP.tool.uid( 'canvas' );
@@ -5089,12 +5327,6 @@ library.component = library.component || {};
 		self.cH = self.ctx.canvas.clientHeight;
 		self.ctx.lineWidth = 3;
 		self.ctx.lineCap = 'round';
-		
-		console.log( 'canvas setup complete', {
-			cW : self.cW,
-			cH : self.cH,
-			c  : self.ctx,
-		});
 	}
 	
 	ns.AudioVisualizer.prototype.removeCanvas = function() {

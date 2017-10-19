@@ -660,7 +660,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.storage = function( msg ) {
 		var self = this;
-		console.log( 'app.storage event', msg );
 		var callback = self.getCallback( msg.callbackId );
 		if ( !callback ) {
 			console.log( 'storage - no callback found for', msg );
@@ -707,7 +706,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.register = function( msg ) {
 		var self = this;
-		console.log( 'register', msg );
 		window.origin = msg.origin;
 		self.domain = msg.domain;
 		self.locale = msg.locale;
@@ -718,7 +716,6 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		self.setLocale( null, setBack );
 		function setBack() {
-			console.log( 'setLocaleBack' );
 			self.registered( msg );
 			self.initialize( msg );
 		}

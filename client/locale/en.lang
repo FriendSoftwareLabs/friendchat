@@ -254,10 +254,11 @@ i18n_err_devices_blocked : Device access denied by browser
 i18n_err_no_devices_found : No devices were found
 i18n_err_gum_not_allowed : Media access denied
 i18n_err_gum_no_media : No media available
-
 i18n_sending_types : You will send..
 i18n_receive_types : You will receive..
 i18n_menu_send_audio : Send audio
 i18n_menu_send_video : Send video
 i18n_menu_receive_audio : Receive Audio
 i18n_menu_receive_video : Receive Video
+i18n_list_voice : Voice
+i18n_toggle_fullscreen : Fullscreen

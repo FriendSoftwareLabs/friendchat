@@ -399,7 +399,6 @@ library.view = library.view || {};
 		
 		api.ApplicationStorage.get( 'prefered-devices', loadBack );
 		function loadBack( event ) {
-			console.log( 'loadBack', event );
 			const devices = event.data;
 			initLive( devices );
 		}
@@ -412,7 +411,6 @@ library.view = library.view || {};
 				fullscreenenabled  : true,
 			};
 			
-			console.log( 'windowConf', windowConf );
 			self.liveConf.preferedDevices = preferedDevices;
 			const viewConf = {
 				fragments : hello.commonFragments,

@@ -2119,7 +2119,6 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.initialize = function( data ) {
 		var self = this;
-		console.log( 'main.initialize', data );
 		hello.template.addFragments( data.fragments );
 		
 		self.addMenu();

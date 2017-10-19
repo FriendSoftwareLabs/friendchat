@@ -1,91 +1,97 @@
 
-/*
-#hello .button {
-	background-image: none;
+
+#hello {
+	background-color: black;
 }
-*/
 
 #live {
-	position: relative;
-	width: 100%;
-	height: 100%;
-	font-size: 130%;
-	color : white;
+	position  : relative;
+	width     : 100%;
+	height    : 100%;
+	font-size : 130%;
+	color     : #eee;
 }
 
 #lists-container {
-	margin-left: -2px;
-	overflow: hidden;
+	margin-left : -2px;
 }
 
-.live-list-container {
-	position: relative;
-	margin : 2px 0 2px 2px;
+#lists-container > div {
+	position   : relative;
+	margin     : 2px 0 2px 2px;
 	transition : width 0.2s;
 }
+#lists-container > div:not( .hide ) { margin-right : 2px; }
 
 /* order is extra important for these */
-.live-list-container.peek { width : 2em; }
-.live-list-container.show { width : 8em; }
+.live-list-container.peek { width : 2.5em; }
+.live-list-container.show { width : 10em; }
 .live-list-container.hide {	width : 0em; }
 
 .live-list {
-	color : white;
+	color : #eee;
 }
 
-.list-head-icon {
-	width: 2em;
-	height: 100%;
+.list-head {
+	overflow                  : hidden;
+	border-bottom-left-radius : 3px;
 }
+
 .list-head:hover {
 	background-color : rgb( 90, 90, 90 );
 }
 
+.list-head-icon {
+	width  : 2.5em;
+	height : 100%;
+}
+
 .list-label {
-	text-align: center;
 	font-weight : bold;
 }
 
 .list-head,
 .live-list-item {
-	height : 2em;
-	width: 100%;
+	height : 2.5em;
+	width  : 100%;
 }
 
-.list-items {}
-
-.live-list-item {
-	margin-top : 1px;
+.list-items {
 }
 
 .live-list-item:nth-child(2n-1) {
-	background-color: rgb( 30, 30, 30 );
+	background-color : rgb( 30, 30, 30 );
 }
 
 .item-head {
-	width: 2em;
-	height: 100%;
+	width  : 2em;
+	height : 100%;
 }
 
 .item-label {
-	padding : 0.4em;
-	text-align: left;
+	padding     : 0.4em;
+	text-align  : left;
 	white-space : nowrap;
 }
 
 #peer-container {
-	position: relative;
-	background-color: rgb( 30, 30, 30 );
+	position         : relative;
+	background-color : rgb( 30, 30, 30 );
+}
+
+#peer-container {
+	width : 100%;
+	height: 100%;
 }
 
 #peers {
-	position: absolute;
-	top : 0;
-	right : 0;
-	bottom : 0;
-	left : 0;
-	height: 100%;
-	width: 100%;
+	position : absolute;
+	top      : 0;
+	right    : 0;
+	bottom   : 0;
+	left     : 0;
+	height   : 100%;
+	width    : 100%;
 }
 
 .std-bg {
@@ -151,14 +157,6 @@
 	height: 100%;
 }
 
-.peer {
-	position: relative;
-	overflow: hidden;
-	border-radius: 3px;
-	border: 2px solid transparent;
-	color : white;
-}
-
 .abs-center {
 	position: absolute;
 	top: 50%;
@@ -174,10 +172,21 @@
 	left : 0;
 }
 
+.peer {
+	position: relative;
+	overflow: hidden;
+	color : white;
+}
+
+.peer.in-grid {
+	border-radius: 3px;
+	border: 2px solid transparent;
+}
+
 .peer .stream-container {
 	position : relative;
 	width    : 100%;
-	overflow : hidden;
+
 }
 
 #selfie.popped .stream-container {
@@ -186,20 +195,20 @@
 
 .peer .avatar {
 	position : absolute;
-	top      : 1px;
-	right    : 1px;
-	bottom   : 1px;
-	left     : 1px;
+	top    : 0;
+	right  : 0;
+	bottom : 0;
+	left   : 0;
 	background-repeat: no-repeat;
 	background-size: cover;
 	background-position: center center;
 }
 
-#selfie.popped .avatar {
-	top    : 0;
-	right  : 0;
-	bottom : 0;
-	left   : 0;
+.peer:not( .popped ).in-grid .avatar {
+	top    : 1px;
+	right  : 1px;
+	bottom : 1px;
+	left   : 1px;
 }
 
 .peer .video {
@@ -217,10 +226,91 @@
 	position: absolute;
 }
 
-.peer .ui {
+.peer .grid-ui {
+	display : none;
 	opacity: 0;
 	transition : opacity 0.2s;
 }
+
+.peer:not( .popped ).in-grid .grid-ui {
+	display: flex;
+}
+
+.peer .list-ui {
+	display : none;
+}
+
+.peer.in-list {
+	height : 2.5em;
+	overflow: unset;
+}
+
+.peer.in-list .list-ui {
+	position: absolute;
+	display : flex;
+	height  : 100%;
+	/*width   : 100%;*/
+	left    : 0;
+	right   : 0;
+	transition : left 0.2s, background-color 0.2s, padding-left 0.2s;
+	background-color: transparent;
+	padding : 2px;
+	padding-left : 0px;
+	border-radius: 3px;
+	z-index: 444;
+}
+
+.peer.in-list.speaker .list-ui {
+	position: absolute;
+	transition: left 0.2s, background-color 0.2s, padding-left 0.2s;
+	left : -3.5em;
+	right: 0;
+	background-color : #555;
+	padding-left: 2px;
+}
+
+.peer.in-list:hover .list-ui {
+	background-color : #888;
+}
+
+.peer.in-list .stream-container {
+	display : none;
+}
+
+.list-ui .list-peer-state {
+	position      : relative;
+	width         : 2.5em;
+	align-self    : stretch;
+	border-radius : 3px;
+	overflow      : hidden;
+}
+
+.list-ui .list-peer-state > div {
+	position: absolute;
+	top    : 0;
+	left   : 0;
+	bottom : 0;
+	right  : 0;
+}
+
+.list-ui .list-avatar {
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-position: center center;
+}
+
+.list-ui .list-is-speaking {
+	display : none;
+}
+
+.peer.speaker .list-ui .list-is-speaking {
+	display: flex;
+}
+
+.list-ui .name {
+	padding-left : 0.5em;
+}
+
 
 .peer .name-bar,
 #session-duration {
@@ -247,6 +337,49 @@
 .peer .ui-view {
 	position: relative;
 	overflow : hidden;
+}
+
+.peer .ui-peer-info {
+	border-top : 2px solid transparent;
+}
+
+#selfie {
+	
+}
+
+#selfie .time {
+	color : rgb( 190, 190, 190 );
+}
+
+#selfie.popped {
+	position: absolute;
+	top    : 0.7em;
+	right  : 0.7em;
+	width  : auto;
+	height : auto;
+	border : 2px solid black;
+	border-radius : 3px;
+	z-index : 333;
+}
+
+#popped-ui {
+	display    : none;
+	transition : opacity 0.2s;
+	border-top : 2px solid black;
+	overflow   : hidden;
+	height     : 0em;
+}
+
+.show-ui #popped-ui {
+	height: auto;
+}
+
+#selfie.popped #popped-ui {
+	display: flex;
+}
+
+.peer:not(.popped ).quality-low .video {
+	transform : scale( 2 ) translate( -25%, -25% );
 }
 
 #chat-container {
@@ -420,49 +553,8 @@
 	line-height: 2em;
 }
 
-.peer .ui-peer-info {
-	border-top : 2px solid transparent;
-}
-
 .click-catch {
 	
-}
-
-#selfie {
-	
-}
-
-#selfie .time {
-	color : rgb( 190, 190, 190 );
-}
-
-#selfie.popped {
-	position: absolute;
-	top    : 0.7em;
-	right  : 0.7em;
-	width  : auto;
-	height : auto;
-	border : 2px solid black;
-	border-radius : 3px;
-	z-index : 333;
-}
-
-#selfie.popped .ui { display : none !important; }
-
-#popped-ui {
-	display    : none;
-	transition : opacity 0.2s;
-	border-top : 2px solid black;
-	overflow   : hidden;
-	height     : 0em;
-}
-
-.show-ui #popped-ui {
-	height: auto;
-}
-
-#selfie.popped #popped-ui {
-	display: flex;
 }
 
 .name,
@@ -698,7 +790,14 @@
 	font-size : 200%;
 }
 
-.ui .stream-state {
+.state {
+	display : flex;
+	flex-direction: row;
+	justify-content : center;
+	align-items : center;
+}
+
+.grid-ui .stream-state {
 	position: absolute;
 	top: 0;
 	left : 50%;
@@ -709,15 +808,21 @@
 	border-bottom-right-radius: 4px;
 }
 
-.ui .stream-state .state {
+.grid-ui .stream-state .state {
 	width: 3em;
 	height : 3em;
 	margin: 0 0 2px 2px;
 	border-radius: 3px;
 }
 
-.ui .stream-state .state i {
+.grid-ui .stream-state .state i {
 	font-size: 200%;
+}
+
+.list-ui .state {
+	/*background-color : rgba( 0, 0, 0, 0.5 );*/
+	text-shadow: 0 0 5px black, 0 0 10px black, 0 0 15px black;
+	border-radius : 3px;
 }
 
 .muted,
@@ -731,20 +836,22 @@
 
 #live-ui {
 	position: absolute;
+	opacity : 0;
 	top : 0;
 	left : 0;
 	background-color : rgba( 0, 0, 0, 0.4 );
 	padding : 2px;
 	max-width : 100%;
 	overflow : hidden;
-	opacity : 0;
 	transition : opacity 0.2s;
 	z-index : 999;
 	border-bottom-right-radius: 4px;
 }
 
 .show-ui #live-ui,
-.show-ui .ui {
+.show-ui #popped-ui,
+.show-ui .grid-ui,
+.show-ui .list-ui {
 	opacity: 1;
 	transition : opacity 0.2s;
 }
@@ -761,11 +868,6 @@
 
 #live-ui-panes {
 	z-index: 444;
-}
-
-#peer-container {
-	width : 100%;
-	height: 100%;
 }
 
 #source-select {
@@ -921,10 +1023,6 @@
 .height {
 	width : 100%;
 	height : auto;
-}
-
-.peer:not(.popped ).quality-low .video {
-	transform : scale( 2 ) translate( -25%, -25% );
 }
 
 .grid1 > div {

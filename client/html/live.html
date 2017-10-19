@@ -29,9 +29,6 @@
 	</head>
 	<body id="hello">
 		<div id="live" class="std-bg group row cover MouseDefault">
-			<div id="lists-container">
-				<!-- lists go here -->
-			</div>
 			<div id="live-content" class="flex-reset expand">
 				<div>
 					<div id="peer-container" class="">
@@ -69,8 +66,13 @@
 					</div>
 				</div>
 			</div>
+			<div id="lists-container" class="group row cover">
+				<!-- lists go here -->
+			</div>
 			<div id="live-ui-panes" class="abs-cover hidden">
 				<!-- UI panes go here -->
+			</div>
+			<div id="connecting-peers" class="hidden">
 			</div>
 		</div>
 		<div id="fragments" class="hidden">
@@ -90,6 +92,26 @@ avatar,
 	</div>
 	<div class="click-catch abs-cover">
 	</div>
+	<div class="list-ui group row">
+		<div class="list-peer-state fortify">
+			<div class="list-avatar" style="background-image: url(<%= avatar %>)">
+			</div>
+			<div class="state list-is-speaking">
+				<i class="fa fa-fw fa-volume-up"></i>
+			</div>
+			<div class="state list-mute-remote hidden">
+				<i class="fa fa-fw fa-microphone-slash"></i>
+			</div>
+			<div class="state list-mute-local blink-red hidden">
+				<i class="fa fa-fw fa-microphone-slash"></i>
+			</div>
+			<div class="state list-rtc-state hidden">
+			</div>
+		</div>
+		<div class="name expand">
+			<%= name %>
+		</div>
+	</div>
 	<div id="popped-ui" class="fortify std-bg">
 		<div class="btn-row group row">
 			<div id="popped-mute-self" class="btn" title="Mute yourself">
@@ -100,13 +122,13 @@ avatar,
 			</div>
 		</div>
 	</div>
-	<div class="ui abs-cover bar column">
+	<div class="grid-ui abs-cover bar column">
 		<div class="ui-view expand">
 			<div class="stream-state std-bg group row center">
-				<div class="state muted blink-red center-child hidden" title="You have muted your audio">
+				<div class="state muted blink-red hidden" title="You have muted your audio">
 					<i class="fa fa-fw fa-microphone-slash"></i>
 				</div>
-				<div class="state blinded blink-red center-child hidden" title="You have paused your video">
+				<div class="state blinded blink-red hidden" title="You have paused your video">
 					<i class="fa fa-fw fa-eye-slash"></i>
 				</div>
 			</div>
@@ -239,24 +261,44 @@ avatar,
 			</div>
 		</div>
 	</div>
+	<div class="list-ui group row">
+		<div class="list-peer-state fortify">
+			<div class="list-avatar" style="background-image: url(<%= avatar %>)">
+			</div>
+			<div class="state list-is-speaking">
+				<i class="fa fa-fw fa-volume-up"></i>
+			</div>
+			<div class="state list-mute-remote hidden">
+				<i class="fa fa-fw fa-microphone-slash"></i>
+			</div>
+			<div class="state list-mute-local blink-red hidden">
+				<i class="fa fa-fw fa-microphone-slash"></i>
+			</div>
+			<div class="state list-rtc-state hidden">
+			</div>
+		</div>
+		<div class="name expand">
+			<%= name %>
+		</div>
+	</div>
 	<div class="click-catch abs-cover">
 	</div>
-	<div class="ui abs-cover bar column">
+	<div class="grid-ui abs-cover bar column">
 		<div class="ui-view expand">
 			<div class="stream-state std-bg group row center">
 				<div class="state say-state hidden" title="Read out chat messages from this participant">
 					<i class="fa fa-fw fa-volume-up"></i>
 				</div>
-				<div class="state muted blink-red center-child hidden" title="You have muted this participant">
+				<div class="state muted blink-red hidden" title="You have muted this participant">
 					<i class="fa fa-fw fa-microphone-slash"></i>
 				</div>
-				<div class="state remote-mute center-child hidden" title="This participant has muted their audio">
+				<div class="state remote-mute  hidden" title="This participant has muted their audio">
 					<i class="fa fa-fw fa-microphone-slash"></i>
 				</div>
-				<div class="state blinded blink-red center-child hidden" title="You have blocked video from this participant">
+				<div class="state blinded blink-red  hidden" title="You have blocked video from this participant">
 					<i class="fa fa-fw fa-eye-slash"></i>
 				</div>
-				<div class="state remote-blind center-child hidden" title="This participant has paused their video">
+				<div class="state remote-blind  hidden" title="This participant has paused their video">
 					<i class="fa fa-fw fa-eye-slash"></i>
 				</div>
 			</div>
@@ -441,7 +483,7 @@ faIcon,
 label,
 -->
 <script id="live-list-tmpl" type="text/html">
-<div id="<%= id %>" class="live-list-container peek hide fortify">
+<div id="<%= id %>" class="live-list-container fortify peek hide">
 	<div class="live-list">
 		<div class="list-head group row">
 			<div class="list-head-icon center-child fortify">

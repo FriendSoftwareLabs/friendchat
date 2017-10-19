@@ -37,11 +37,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 */
 (function wrapTheWrapBeforeTheOtherWrap() {
-	console.log( 'wrapTheWrapBeforeTheOtherWrap', window.RTCPeerConnection );
 	const origRTCPeerConn = window.RTCPeerConnection;
 	window.RTCPeerConnection = function( pcConfig, pcConstraints ) {
 		//var prop = Object.getOwnPropertyDescriptor( pcConfig, 'iceServers' );
-		console.log( 'unfuck rtcConf', window.rtcConf );
 		return new origRTCPeerConn( window.rtcConf, pcConstraints );
 	}
 	
@@ -816,7 +814,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		);
 		
 		function onSpeaking( isSpeaking ) {
-			console.log( 'onSpeaking', isSpeaking );
 			const speaking = {
 				type : 'speaking',
 				data : {
@@ -832,7 +829,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( !self.speaking )
 				return;
 			
-			console.log( 'Selfie.speaking', speaker );
 			if ( speaker.peerId === self.identity.clientId )
 				self.speaking.setIsSpeaker( speaker.isSpeaking );
 			else
@@ -1714,7 +1710,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		console.log( 'toggleReceiveAudio' );
 		let rec = self.permissions.receive;
-		rec.audio = rec.audio;
+		rec.audio = !rec.audio;
 		self.menu.setState( 'receive-audio', rec.audio );
 		self.emit( 'restart', rec );
 	}
@@ -2808,8 +2804,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.updateTracksAvailable = function( tracks ) {
 		const self = this;
 		console.log( 'updateTracksAvailable', tracks );
-		self.emit( 'audio', tracks.audio );
-		self.emit( 'video', tracks.video );
+		
+		if ( self.permissions.receive.audio )
+			self.emit( 'audio', tracks.audio );
+		
+		if ( self.permissions.receive.video )
+			self.emit( 'video', tracks.video );
 	}
 	
 	ns.Peer.prototype.sendMeta = function() {
@@ -2828,6 +2828,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				screenMode : self.selfie.screenMode,
 			},
 			receive : self.permissions.receive,
+			sending : self.permissions.send,
 		};
 		console.log( 'sendMeta', meta );
 		self.send({
@@ -2867,6 +2868,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			video : false,
 		};
 		
+		self.sending = meta.sending || {
+			audio : true,
+			video : true,
+		};
+		
 		// if one peer is chrome and another is firefox, chrome will always be 'it'
 		if ( self.selfie.isFirefox && meta.isChrome )
 			self.doInit = false;
@@ -2875,6 +2881,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.doInit = true;
 		
 		self.emit( 'meta', meta );
+		if ( !self.permissions.receive.audio || !self.sending.audio )
+			self.emit( 'audio', false );
+		
+		if ( !self.permissions.receive.video || !self.sending.video )
+			self.emit( 'video', false );
 		
 		function updateState( state ) {
 			if ( null != state.isMuted )
@@ -4355,6 +4366,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.speakingTicks = 5;
 		self.notSpeakingLimit = 5;
 		self.notSpeakingTicks = 30;
+		self.notSpeakingWait = 1000 * 2;
+		self.notSpeakingTimeout = null;
 		self.init();
 	}
 	
@@ -4362,7 +4375,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.IsSpeaking.prototype.setSource = function( source ) {
 		const self = this;
-		console.log( 'setSource', source );
 		if ( self.source )
 			self.releaseSource();
 		
@@ -4373,7 +4385,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.IsSpeaking.prototype.setIsSpeaker = function( isSpeaker ) {
 		const self = this;
 		self.isSpeaking = !!isSpeaker;
-		console.log( 'IsSpeaking.setIsSpeaker', self.isSpeaking );
 	}
 	
 	ns.IsSpeaking.prototype.close = function() {
@@ -4404,7 +4415,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.IsSpeaking.prototype.handleVolume = function( current, overTime ) {
 		const self = this;
-		if ( isOverLimit( current ) && !self.isSpeaking ) {
+		if ( isOverLimit( current ) && ( !self.isSpeaking || self.notSpeakingTimeout )) {
 			checkIsSpeaking( overTime );
 			return;
 		}
@@ -4424,7 +4435,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					return;
 			}
 			
-			console.log( 'trigger speaking' );
+			clearNotSpeaking();
+			if ( self.isSpeaking )
+				return;
+			
 			self.onSpeaking( true );
 		}
 		
@@ -4440,8 +4454,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					return;
 			}
 			
-			console.log( 'trigger not speaking' );
-			self.onSpeaking( false );
+			emitNotSpeaking();
+		}
+		
+		function emitNotSpeaking() {
+			if ( null != self.notSpeakingTimeout )
+				return;
+			
+			self.notSpeakingTimeout = window.setTimeout( emit, self.notSpeakingWait );
+			function emit() {
+				if ( null == self.notSpeakingTimeout )
+					return;
+				
+				self.notSpeakingTimeout = null;
+				self.onSpeaking( false );
+			}
+		}
+		
+		function clearNotSpeaking() {
+			if ( null == self.notSpeakingTimeout )
+				return;
+			
+			window.clearTimeout( self.notSpeakingTimeout );
+			self.notSpeakingTimeout = null;
 		}
 		
 		function isOverLimit( volume ) {
@@ -4479,7 +4514,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.volumeHistory = new Array( 10 );
 		self.volumeHistory.fill( 0 );
 		
-		self.averageOverTime = new Array( 40 );
+		self.averageOverTime = new Array( 30 );
 		self.averageOverTime.fill( 0 );
 		
 		self.init();
@@ -5776,14 +5811,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		};
 		self.sendToExt( getSource, sourceBack );
 		function sourceBack( res ) {
-			console.log( 'getSourceId - sourceBack', res );
 			callback( res );
 		}
 	}
 	
 	ns.ScreenShare.prototype.connect = function( callback ) {
 		const self = this;
-		console.log( 'ScreenShare.connect' );
 		self.connectCallback = callback;
 		self.initInterval = setInterval( sendInit, 2000 );
 		function sendInit() {
@@ -5802,7 +5835,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.sendToExt( checkAvailable, checkBack );
 		self.availableTimeout = setTimeout( checkTimeout, 2000 );
 		function checkBack( res ) {
-			console.log( 'checkIsAvailable - checkBack', res );
 			if ( !self.availableTimeout )
 				return;
 			
@@ -5850,7 +5882,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				},
 			},
 		};
-		console.log( 'ScreenShare.sendInit', init );
 		self.sendToExt( init, initBack );
 		function initBack( res ) {
 			if ( self.initInterval ) {

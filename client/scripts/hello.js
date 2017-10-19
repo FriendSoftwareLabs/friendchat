@@ -266,7 +266,6 @@ var hello = null;
 			return;
 			
 			function connBack() {
-				console.log( 'connBack' );
 				self.setupLiveRoom( conf );
 			}
 		}
