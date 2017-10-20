@@ -2485,6 +2485,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.showSelfie = function( stream, sessionType ) {
 		var self = this;
+		if ( !self.receive ) {
+			console.log( 'showSelfie - no receive, meta has not been received yet' );
+			return;
+		}
+		
 		if ( !stream ) {
 			stream = self.selfie.getStream();
 			console.log( 'Peer.showSelfie - no stream passed, getStream()', stream );
@@ -2497,14 +2502,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		let media = getReceiveMedia( stream );
-		
 		self.addStream( media );
-		/*
-		if ( self.isChromePair )
-			self.addStream( stream );
-		else
-			self.addTracks( stream, sessionType );
-		*/
 		
 		function getReceiveMedia( source ) {
 			let media = new window.MediaStream();
