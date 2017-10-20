@@ -1183,7 +1183,6 @@ var chromeShim = {
       var OrigPeerConnection = window.RTCPeerConnection;
       window.RTCPeerConnection = function(pcConfig, pcConstraints) {
         var prop = Object.getOwnPropertyDescriptor( pcConfig, 'iceServers' );
-        console.log( 'adapter.checkProp', prop );
         if (pcConfig && pcConfig.iceServers) {
           var newIceServers = [];
           for (var i = 0; i < pcConfig.iceServers.length; i++) {

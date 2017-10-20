@@ -605,7 +605,6 @@ library.component = library.component || {};
 	ns.Menu.prototype.toggleItem = function( id, enable ) {
 		var self = this;
 		var item = self.getItem( id );
-		console.log( 'menu.toggleItem', item );
 		var el = document.getElementById( item.elId );
 		el.classList.toggle( 'hidden', !enable );
 	}

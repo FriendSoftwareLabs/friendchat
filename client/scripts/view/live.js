@@ -42,7 +42,6 @@ library.component = library.component || {};
 	// Private
 	ns.LiveInit.prototype.init = function() {
 		var self = this;
-		console.log( 'LiveInit.init', self );
 		self.conn = new library.component.EventNode(
 			null,
 			null,
@@ -94,10 +93,7 @@ library.component = library.component || {};
 	}
 	
 	ns.LiveInit.prototype.initialize = function( data ) {
-		var self = this;
-		console.log( 'LiveInit.initialize', data );
-		
-		//
+		const self = this;
 		hello.template.addFragments( data.fragments );
 		
 		//
@@ -133,7 +129,6 @@ library.component = library.component || {};
 	
 	ns.LiveInit.prototype.closeAllTheThings = function() {
 		var self = this;
-		console.log( 'Live.closeAllTheThings' );
 		self.rtc.close();
 		self.ui.close();
 		
@@ -429,7 +424,6 @@ library.component = library.component || {};
 			return;
 		}
 		
-		console.log( 'addPeer', peer );
 		var conf = {
 			peer           : peer,
 			menu           : self.menu,
@@ -484,7 +478,6 @@ library.component = library.component || {};
 		}
 		
 		function updateHasVideo( hasVideo ) {
-			console.log( 'Live.updateHasVideo', hasVideo );
 			self.updateHasVideo( peer.id, hasVideo );
 		}
 		
@@ -496,7 +489,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.removePeer = function( peerId ) {
 		var self = this;
-		console.log( 'view.removePeer', self.peers );
 		var peer = self.peers[ peerId ];
 		if ( !peer ) {
 			console.log( 'live - no peer found for ', peerId );
@@ -570,7 +562,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.updateMenu = function() {
 		const self = this;
-		console.log( 'updateMenu' );
 		let gridNum = self.peerOrder.length;
 		let listNum = self.audioList.length;
 		if ( 2 > gridNum )
@@ -642,10 +633,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.updateHasVideo = function( peerId, hasVideo ) {
 		const self = this;
-		console.log( 'updateHasVideo', {
-			pid : peerId,
-			hv  :  hasVideo,
-		});
 		const peer = self.peers[ peerId ];
 		if ( !peer ) {
 			console.log( 'updateHasVideo - no peer for', peerId );
@@ -658,7 +645,6 @@ library.component = library.component || {};
 			moveToAudioList( peer );
 		
 		function moveToPeers( peer ) {
-			console.log( 'moveToPeers', peer );
 			let pid = peer.id;
 			if ( isInVideo( pid ))
 				return;
@@ -674,7 +660,6 @@ library.component = library.component || {};
 		}
 		
 		function moveToAudioList( peer ) {
-			console.log( 'moveToAudioList', peer );
 			let pid = peer.id;
 			if ( isInAudio( pid ))
 				return;
@@ -1538,12 +1523,10 @@ library.component = library.component || {};
 		function touchEnd( e ) { self.handleTouchEnd( e ); }
 		
 		function listUIStateClick( e ) {
-			console.log( 'listAvatarClick', e );
 			self.peer.toggleMute();
 		}
 		
 		function muteStateClick( e ) {
-			console.log( 'muteStateClick' );
 			e.stopPropagation();
 			self.peer.toggleMute();
 		}
@@ -1970,11 +1953,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleTrack = function( type, track ) {
 		const self = this;
-		console.log( 'handleTrack', {
-			type : type,
-			track : track,
-		});
-		
 		// set state
 		const alreadyUpdating = !!self.isUpdatingStream;
 		if ( !self.isUpdatingStream ) {
@@ -2011,10 +1989,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleLegacyStream = function( conf ) {
 		var self = this;
-		console.log( 'peer-ui.handleLegacyStream', {
-			c : conf,
-			id : self.id,
-		});
 		self.isVideo = conf.isVideo;
 		self.isAudio = conf.isAudio;
 		var src = window.URL.createObjectURL( conf.stream );
@@ -2048,7 +2022,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.updateStream = function() {
 		var self = this;
-		console.log( 'peer-ui.updateStream - returning', {
+		console.log( 'peer-ui.updateStream - returning, no-op', {
 			s : self.stream,
 			ms : self.media,
 		});
@@ -2135,7 +2109,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.setStream = function( id, src ) {
 		const self = this;
-		console.log( 'setStream', id );
 		if ( self.stream )
 			self.removeStream();
 		
@@ -2157,7 +2130,6 @@ library.component = library.component || {};
 		self.bindStreamResize();
 		
 		function play( e ) {
-			console.log( 'Live.stream.play', e );
 			self.stream.play();
 		}
 	}
@@ -2167,7 +2139,6 @@ library.component = library.component || {};
 		if ( !self.stream )
 			return;
 		
-		console.log( 'removeStream' );
 		if ( self.stream.pause )
 			self.stream.pause();
 		
@@ -2209,7 +2180,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.releaseStream = function() {
 		var self = this;
-		console.log( 'releaseStream' );
 		self.removeStream();
 		self.isVideo = false;
 		self.isAudio = false;
@@ -2220,7 +2190,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.resetState = function() {
 		var self = this;
-		console.log( 'resetState' );
 		var isMuted = false;
 		var isBlinded = false;
 		self.toggleMuteState( isMuted );
@@ -2250,14 +2219,12 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.toggleMuteState = function( isMuted ) {
 		var self = this;
-		console.log( 'toggleMuteState', isMuted );
 		self.toggleElement( self.muteState, isMuted );
 		self.toggleElement( self.listMuteLocal, isMuted );
 	}
 	
 	ns.Peer.prototype.toggleRemoteMute = function( isMuted ) {
 		var self = this;
-		console.log( 'toggleRemoteMute', isMuted );
 		self.toggleUIIndicator( '.remote-mute', isMuted );
 		self.toggleElement( self.listMuteRemote, isMuted );
 	}
@@ -2349,7 +2316,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleStop = function() {
 		const self = this;
-		console.log( 'peer.handleStop' );
 		self.releaseStream();
 	}
 	
@@ -2773,7 +2739,6 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.handleSelfie = function( media ) {
 		var self = this;
-		console.log( 'selfie.handleSelfie', media );
 		self.toggleAVGraph();
 		self.handleMedia( media );
 		self.stream.muted = true;
@@ -2975,13 +2940,11 @@ library.component = library.component || {};
 	
 	ns.List.prototype.show = function() {
 		const self = this;
-		console.log( 'List.show()' );
 		self.toggleShow( true );
 	}
 	
 	ns.List.prototype.peek = function() {
 		const self = this;
-		console.log( 'List.peek()' );
 		self.toggleShow( false );
 	}
 	
@@ -3039,7 +3002,6 @@ library.component = library.component || {};
 			if ( 'width' !== e.propertyName )
 				return;
 			
-			console.log( 'transend', e );
 			self.ontoggle( true );
 		}
 		
@@ -3051,7 +3013,6 @@ library.component = library.component || {};
 	
 	ns.List.prototype.doAdd = function( el ) {
 		var self = this;
-		console.log( 'List.doAdd', el );
 		if ( self.items[ el.id ]) {
 			console.log( 'List.add - el already added', { el : el, items : self.items });
 			return;
@@ -3072,7 +3033,6 @@ library.component = library.component || {};
 			return;
 		}
 		
-		console.log( 'List.doRemove', el );
 		const element = document.getElementById( el.id );
 		if ( element )
 			element.parentNode.removeChild( element );
@@ -3091,7 +3051,7 @@ library.component = library.component || {};
 	
 	ns.List.prototype.doMove = function( id, index ) {
 		var self = this;
-		console.log( 'List.move', { id : id, i : index });
+		console.log( 'List.move - NYI', { id : id, i : index });
 	}
 	
 	ns.List.prototype.updateVisibility = function() {
@@ -3669,7 +3629,6 @@ library.component = library.component || {};
 // ExtConnectPane
 (function( ns, undefined ) {
 	ns.ExtConnectPane = function( paneConf ) {
-		console.log( 'ExtConnectPane', paneConf );
 		const self = this;
 		let conf = paneConf.conf;
 		self.onshare = conf.onshare;
@@ -3683,14 +3642,12 @@ library.component = library.component || {};
 	
 	ns.ExtConnectPane.prototype.setConnected = function() {
 		const self = this;
-		console.log( 'ExtConnectPane.setConected', self );
 		self.waiting.classList.toggle( 'hidden', true );
 		self.connected.classList.toggle( 'hidden', false );
 	}
 	
 	ns.ExtConnectPane.prototype.close = function() {
 		const self = this;
-		console.log( 'ExtConnectPane.close' );
 		if ( self.ui )
 			self.ui.parentNode.removeChild( self.ui );
 		
@@ -3712,7 +3669,6 @@ library.component = library.component || {};
 	
 	ns.ExtConnectPane.prototype.bind = function() {
 		const self = this;
-		console.log( 'ExtConnectPane.bind', self );
 		self.ui = document.getElementById( 'ext-conn-ui' );
 		self.waiting = document.getElementById( 'ext-conn-waiting' );
 		self.connected = document.getElementById( 'ext-conn-connected' );
@@ -3744,10 +3700,6 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.SharePane = function( paneConf ) {
 		const self = this;
-		console.log( 'SharePane', {
-			s : self,
-			c : paneConf,
-		});
 		self.conf = paneConf.conf;
 		
 		library.component.UIPane.call( self, paneConf );
@@ -3774,13 +3726,11 @@ library.component = library.component || {};
 		};
 		self.share = new library.component.ShareView( conf );
 		const share = document.getElementById( self.id );
-		console.log( 'SharePane.bind - el', self );
 		const closeBtn = document.getElementById( 'share-close' );
 		
 		closeBtn.addEventListener( 'click', closeClick, false );
 		
 		function closeClick( e ) {
-			console.log( 'closeClick', e );
 			e.preventDefault();
 			e.stopPropagation();
 			self.hide();
@@ -3809,7 +3759,6 @@ library.component = library.component || {};
 	ns.MenuPane.prototype.uiShow = ns.MenuPane.prototype.show;
 	ns.MenuPane.prototype.show = function() {
 		var self = this;
-		console.log( 'MenuPane.show' );
 		self.uiShow();
 		self.menu.scrollToTop();
 	}
@@ -3995,12 +3944,11 @@ library.component = library.component || {};
 	
 	ns.InitChecksPane.prototype.updateVideoInput = function( state ) {
 		var self = this;
-		console.log( 'VideoInputState', state );
+		console.log( 'VideoInputState - NYI', state );
 	}
 	
 	ns.InitChecksPane.prototype.updateDevicesCheck = function( state ) {
 		const self = this;
-		console.log( 'updateDevicesCheck', state );
 		const id = 'check-devices';
 		if ( !state || !state.err )
 			return;
@@ -4608,7 +4556,6 @@ library.component = library.component || {};
 		new library.rtc.AudioInputDetect( stream, doneBack );
 		function doneBack( err ) {
 			checkEl.classList.toggle( 'hidden', true );
-			console.log( 'checkAudioInput - doneback', err );
 			if ( !err )
 				err = null;
 			
@@ -5304,14 +5251,12 @@ library.component = library.component || {};
 		var cw = self.el.clientWidth;
 		var ch = self.el.clientHeight;
 		if ( !ch || !cw ) {
-			console.log( 'element is hidden.. no, its FINE, forget it.' );
 			self.stop();
 			return;
 		}
 		
 		self.canvas = document.getElementById( self.canvasId );
 		if ( !self.canvas ) {
-			console.log( 'AV - no canvas?', self.el );
 			self.stop();
 			return;
 		}

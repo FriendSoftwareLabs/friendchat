@@ -196,10 +196,6 @@ library.contact = library.contact || {};
 			msg.time = now;
 		
 		if ( msg && msg.time < oneHourAgo ) {
-			console.log( 'handleIntercept - stale event', {
-				i : event,
-				m : msg,
-			});
 			hello.log.notify( 'Stale event, dropping - type: ' + event.type );
 			hello.log.show();
 			return true;
@@ -322,7 +318,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.handleStartLive = function( event ) {
 		const self = this;
-		console.log( 'handleStartLive', event );
 		const mode = event.mode || 'video';
 		const perms = event.permissions || buildPermsFor( mode );
 		const user = self.getParentIdentity();
@@ -339,7 +334,6 @@ library.contact = library.contact || {};
 		}
 		
 		function buildPermsFor( mode ) {
-			console.log( 'buildPermsFor', mode );
 			const video = 'video' === mode ? true : false;
 			const perms = {
 				send : {
@@ -370,7 +364,6 @@ library.contact = library.contact || {};
 		const self = this;
 		const module = hello.module.get( self.moduleId );
 		const id = module.identity;
-		console.log( 'Contact.getParentIdentity', id );
 		return id;
 	}
 	
@@ -675,7 +668,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleStartLive = function( event ) {
 		const self = this;
-		console.log( 'presenceRoom.handleStartLive', event );
 		if ( !event || !event.mode )
 			return;
 		
@@ -780,7 +772,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
-		console.log( 'handleInitialize', state );
 		self.ownerId = state.ownerId;
 		self.identities = state.identities;
 		self.onlineList = state.online;
@@ -859,14 +850,12 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
-		console.log( 'handleInvite', event );
 		if ( 'revoke' === event.type )
 			send( event );
 		else
 			event = self.buildInvites( event, invitesBack );
 		
 		function invitesBack( event ) {
-			console.log( 'handleInvite.invtesBack', event );
 			if ( event.data.reqId ) {
 				self.handleRequest( event.data );
 			}
@@ -1079,7 +1068,6 @@ library.contact = library.contact || {};
 		}
 		
 		function allDone( conf ) {
-			console.log( 'allDone', conf );
 			event.data = conf;
 			callback( event );
 		}
@@ -1139,7 +1127,6 @@ library.contact = library.contact || {};
 				}, pubBack );
 			
 			let privs = [];
-			console.log( 'privs', privs );
 			state.privateTokens
 				.map( buildPriv );
 			
@@ -1153,23 +1140,16 @@ library.contact = library.contact || {};
 			}
 			
 			function pubBack( conf ) {
-				console.log( 'pubBack', conf );
 				state.publicToken = conf;
 				checkDone();
 			}
 			
 			function privBack( conf ) {
-				console.log( 'privBack', conf );
 				privs.push( conf );
 				checkDone();
 			}
 			
 			function checkDone() {
-				console.log( 'parseState.checkDone', {
-					sl : state.privateTokens.length,
-					pl : privs.length,
-				});
-				
 				if ( state.privateTokens.length !== privs.length )
 					return;
 				
