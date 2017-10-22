@@ -160,8 +160,6 @@ library.component = library.component || {};
 		self.isReordering = false;
 		self.peerAddQueue = [];
 		
-		self.selfiePopped = true;
-		self.wasPopped = true;
 		self.currentSpeaker = null;
 		self.uiVisible = false;
 		self.ui = null;
@@ -571,8 +569,12 @@ library.component = library.component || {};
 	}
 	
 	ns.Live.prototype.updateGridClass = function() {
-		var self = this;
-		var container = document.getElementById( self.peerContainerId );
+		const self = this;
+		const container = document.getElementById( self.peerContainerId );
+		const selfie = self.peers[ 'selfie' ];
+		if ( !selfie )
+			return;
+		
 		self.currentGridKlass = self.currentGridKlass || 'grid1';
 		container.classList.remove( self.currentGridKlass );
 		const peerNum = getPeerNum();
@@ -600,10 +602,12 @@ library.component = library.component || {};
 		function getPeerNum() {
 			var numberOfPeers = self.peerOrder.length;
 			var peerNum = numberOfPeers;
+			
 			if ( self.nestedApp )
 				peerNum += 1;
 			
-			if ( self.selfiePopped )
+			
+			if ( !selfie.isInList && selfie.isPopped )
 				peerNum -= 1;
 			
 			return peerNum;
@@ -639,6 +643,7 @@ library.component = library.component || {};
 			return;
 		}
 		
+		console.log( 'updateHasVideo', hasVideo );
 		if ( hasVideo )
 			moveToPeers( peer );
 		else
@@ -651,11 +656,11 @@ library.component = library.component || {};
 			
 			self.audioList.remove( pid );
 			self.peerOrder.push( pid );
-			peer.toggleListMode( false );
-			if ( 'selfie' === peer.id && self.wasPopped )
-				self.togglePopped( true );
-			
+			peer.setIsInList( false );
 			self.peerContainer.appendChild( peer.el );
+			if ( 'selfie' === peer.id )
+				self.updateSelfieState();
+			
 			self.updateGridClass();
 		}
 		
@@ -664,26 +669,15 @@ library.component = library.component || {};
 			if ( isInAudio( pid ))
 				return;
 			
+			console.log( 'moveToAudioList', peer );
+			peer.setIsInList( true );
 			if ( 'selfie' === peer.id )
-				self.togglePopped( false );
+				self.updateSelfieState();
 			
-			peer.toggleListMode( true );
 			let pidx = self.peerOrder.indexOf( peer.id );
 			self.peerOrder.splice( pidx, 1 );
 			self.audioList.add( peer.el );
 			self.updateGridClass();
-			let pids = Object.keys( self.peers );
-			/*
-			if (( !self.peerOrder.length ) && ( 1 < pids.length )) {
-				console.log( 'show audio lsst', {
-					pod : self.peerOrder,
-					pids : pids });
-				self.audioList.show();
-			} else
-				console.log( 'dont audio lsst', {
-					pod : self.peerOrder,
-					pids : pids });
-			*/
 			
 			function isInAudio( pid ) {
 				return !isInVideo( pid );
@@ -1090,43 +1084,25 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.togglePopped = function( force ) {
 		const self = this;
-		self.selfiePopped = force || !self.selfiePopped;
-		if ( null == force ) {
-			self.wasPopped = self.selfiePopped;
-		} else {
-			self.wasPopped = self.selfiePopped;
-			self.selfiePopped = force;
-		}
+		const selfie = self.peers[ 'selfie' ];
+		if ( !selfie )
+			return;
 		
-		self.updateSelfiePopped();
+		selfie.togglePopped( force );
+		self.updateSelfieState();
 	}
 	
-	ns.Live.prototype.updateSelfiePopped = function() {
+	ns.Live.prototype.updateSelfieState = function() {
 		const self = this;
 		const selfie = self.peers[ 'selfie' ];
-		let isSpeaker = 'selfie' === self.currentSpeaker;
-		if ( selfie.isInList ) {
-			if ( !self.selfiePopped )
-				return;
-			else {
-				if ( !self.selfiePopped )
-					return;
-				
-				self.selfiePopped = selfie.togglePopped( false );
-				self.wasPopped = true;
-			}
-			
+		if ( !selfie )
 			return;
-		}
 		
-		if ( self.modeSpeaker && !!self.currentSpeaker ) {
-			self.wasPopped = self.selfiePopped;
-			if ( self.selfiePopped )
-				selfie.togglePopped( false );
-			
-		} else
-			selfie.togglePopped( self.wasPopped );
-			
+		if ( self.modeSpeaker && 'selfie' === self.currentSpeaker )
+			selfie.updateDisplayState( true );
+		else
+			selfie.updateDisplayState();
+		
 		self.updateGridClass();
 	}
 	
@@ -1161,7 +1137,7 @@ library.component = library.component || {};
 		else
 			container.classList.toggle( 'mode-speaker', modeSpeaker );
 		
-		self.updateSelfiePopped();
+		self.updateSelfieState();
 		if ( modeSpeaker )
 			enable();
 		else
@@ -1310,8 +1286,9 @@ library.component = library.component || {};
 	
 	// Public
 	
-	ns.Peer.prototype.toggleListMode = function( isInList ) {
+	ns.Peer.prototype.setIsInList = function( isInList ) {
 		const self = this;
+		console.log( 'setIsInList', isInList );
 		self.isInList = isInList;
 		self.el.classList.toggle( 'in-grid', !isInList );
 		self.el.classList.toggle( 'in-list', isInList );
@@ -2565,19 +2542,45 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.togglePopped = function( force ) {
 		const self = this;
-		if ( null == force )
-			self.isPopped = !self.isPopped;
-		else
-			self.isPopped = force;
+		console.log( 'togglePopped', {
+			curr   : self.isPopped,
+			force  : force,
+			inList : self.isInList,
+		});
 		
-		self.el.classList.toggle( 'popped', self.isPopped );
-		self.menu.setState( 'popped', self.isPopped );
-		if ( !self.isInList ) {
-			self.toggleDurationUpdate();
-			self.toggleAVGraph();
+		if ( null == force ) {
+			self.isPopped = !self.isPopped;
+			self.wasPopped = self.isPopped;
+		}
+		else {
+			self.wasPopped = self.isPopped;
+			self.isPopped = force;
 		}
 		
+		self.menu.setState( 'popped', self.wasPopped );
+		self.updateDisplayState();
+		self.toggleDurationUpdate();
+		self.toggleAVGraph();
+		
 		return self.isPopped;
+	}
+	
+	ns.Selfie.prototype.updateDisplayState = function( isSpeaker ) {
+		const self = this;
+		// is in list, ignore everything else
+		if ( self.isInList ) {
+			setPopped( false );
+			return;
+		}
+		
+		if ( isSpeaker )
+			setPopped( false );
+		else
+			setPopped( self.isPopped );
+		
+		function setPopped( popped ) {
+			self.el.classList.toggle( 'popped', popped );
+		}
 	}
 	
 	ns.Selfie.prototype.initSelf = function() {
@@ -2610,7 +2613,6 @@ library.component = library.component || {};
 		self.poppedMuteBtn.addEventListener( 'click', muteBtnClick, false );
 		self.unpopBtn.addEventListener( 'click', unpopClick, false );
 		function unpopClick( e ) {
-			//self.togglePopped();
 			self.peer.emit( 'popped', self.isPopped );
 		}
 		
@@ -2646,7 +2648,7 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.toggleDurationUpdate = function() {
 		const self = this;
-		if ( !self.isDurationTimer || self.isPopped ) {
+		if ( !self.isDurationTimer || self.isPopped || self.isInList ) {
 			stop();
 			return;
 		}
@@ -2746,7 +2748,7 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.toggleAVGraph = function() {
 		const self = this;
-		if ( self.isPopped )
+		if ( self.isPopped || self.isInList )
 			self.hideAVGraph();
 		else
 			self.showAVGraph();
