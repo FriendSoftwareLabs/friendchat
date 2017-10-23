@@ -1166,6 +1166,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		else
 			send.video = true;
 		
+		self.menu.setState( 'send-audio', send.audio );
+		self.menu.setState( 'send-video', send.video );
+		
 		self.currentDevices = devices;
 		self.setupStream( streamBack );
 		function streamBack( err, res ) {
