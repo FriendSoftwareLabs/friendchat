@@ -1804,6 +1804,7 @@ library.rtc = library.rtc || {};
 		}
 		res.prefix = '::' + self.interceptToken;
 		res.url = 'json://' + dataString;
+		res.intercept = self.interceptToken + res.url;
 		return res;
 	}
 	

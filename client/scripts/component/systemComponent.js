@@ -375,10 +375,9 @@ library.component = library.component || {};
 			type : 'calendar-event',
 			data : item,
 		};
-		var dataEvent = hello.intercept.buildJSON( event );
-		console.log( 'dataEvent', dataEvent );
-		self.toChat( dataEvent );
-	
+		var res = hello.intercept.buildJSON( event );
+		console.log( 'Droppings.handleCalendar', res );
+		self.toChat( res.intercept );
 	}
 	
 	ns.Droppings.prototype.handleExecutable = function( item ) {
