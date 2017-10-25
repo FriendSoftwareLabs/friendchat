@@ -1945,25 +1945,20 @@ ns.Treeroot.prototype.fetchContactImages = function( imageIds, callback ) {
 	};
 	
 	self.queueRequest({
-		type : 'request',
-		path : self.imagesPath,
-		data : postData,
-		callback : imagesResponse
+		type     : 'request',
+		path     : self.imagesPath,
+		data     : postData,
+		callback : imagesResponse,
 	});
 	
 	function imagesResponse( data ) {
 		if ( !data || !data.items ) {
-			done( [] );
+			callback( [] );
 			return;
 		}
 		
 		var imageData = self.getArr( data.items.Images );
-		done( imageData );
-	}
-	
-	function done( result ) {
-		if( typeof callback == 'function' )
-			callback( result );
+		callback( imageData );
 	}
 }
 
@@ -2480,7 +2475,7 @@ ns.Treeroot.prototype.getAccountInfo = function( callback ) {
 		self.fetchContact( accountId, accountBack );
 	}
 	function accountBack( res ) {
-		if ( !res || ( res.response != 'ok' )) {
+		if ( !res || !res.response || ( res.response.toLowerCase() !== 'ok' )) {
 			self.log( 'getAccountInfo - failed', res );
 			done( false );
 			return;
@@ -2987,8 +2982,14 @@ ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
 			return;
 		}
 		
+		// nothing to list
+		if ( '0002' === data.code ) {
+			done( false );
+			return;
+		}
+		
+		// session not found
 		if ( '0004' === data.code ) {
-			self.log( '0004, reconnecting' );
 			done( false );
 			self.reconnect();
 			return;
