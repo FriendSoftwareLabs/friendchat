@@ -1149,26 +1149,16 @@ ns.Treeroot.prototype.getUserList = function( data, socketId ) {
 		}
 		
 		function buildUserObj( user ) {
+			let name = user.DisplayName || user.Username;
 			var userObj = {
-				id : user.ID,
-				email : user.Email,
+				id       : user.ID,
+				email    : user.Email,
 				username : user.Username,
-				name : getName( user ),
+				name     : name,
 			};
 			
-			userObj.displayName = userObj.name.length ? userObj.name : userObj.username;
+			userObj.displayName = userObj.name || userObj.username;
 			return userObj;
-			
-			function getName( user ) {
-				/*
-				var name = user.Firstname || '';
-				if ( user.Middlename.length )
-					name += ' ' + user.Middlename;
-				if ( user.Lastname.length )
-					name += ' ' + user.Lastname;
-				*/
-				return user.Name || user.Username;
-			}
 		}
 	}
 }
@@ -2497,7 +2487,7 @@ ns.Treeroot.prototype.getAccountInfo = function( callback ) {
 		}
 		
 		var acc = res.items.Contacts[ 0 ];
-		self.account.name = acc.Username;
+		self.account.name = acc.Name || acc.DisplayName || acc.Username || acc.Email;
 		self.account.id = acc.ID;
 		self.account.avatarId = parseInt( acc.ImageID, 10 );
 		
