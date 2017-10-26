@@ -531,26 +531,6 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.applyPeerOrder = function( peerOrder ) {
-		var self = this;
-		self.isReordering = true;
-		if ( peerOrder )
-			self.peerOrder = peerOrder;
-		
-		self.peerOrder.forEach( applyPosition );
-		if ( peerOrder )
-			self.isReordering = false;
-		
-		self.executePeerAddQueue();
-		
-		function applyPosition( peerId ) {
-			var peer = self.peers[ peerId ];
-			var peerElement = document.getElementById( peerId );
-			self.peerContainer.appendChild( peerElement );
-			peer.restart();
-		}
-	}
-	
 	ns.Live.prototype.updateWaiting = function() {
 		const self = this;
 		let pids = Object.keys( self.peers );
@@ -691,6 +671,7 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.onDrag = function( type, peerId ) {
 		var self = this;
+		console.log( 'reorder', type );
 		if ( type === 'enable' )
 			dragEnable();
 		if ( type === 'start' )
@@ -772,6 +753,26 @@ library.component = library.component || {};
 		self.peerOrder[ sIndex ] = tId;
 		self.peerOrder[ tIndex ] = sId;
 		self.applyPeerOrder();
+	}
+	
+	ns.Live.prototype.applyPeerOrder = function( peerOrder ) {
+		var self = this;
+		self.isReordering = true;
+		if ( peerOrder )
+			self.peerOrder = peerOrder;
+		
+		self.peerOrder.forEach( applyPosition );
+		if ( peerOrder )
+			self.isReordering = false;
+		
+		self.executePeerAddQueue();
+		
+		function applyPosition( peerId ) {
+			var peer = self.peers[ peerId ];
+			var peerElement = document.getElementById( peerId );
+			self.peerContainer.appendChild( peerElement );
+			peer.restart();
+		}
 	}
 	
 	ns.Live.prototype.reorderEnd = function() {
@@ -1400,9 +1401,7 @@ library.component = library.component || {};
 			return;
 		}
 		
-		var src = self.stream.src;
-		self.stream.src = "";
-		self.stream.src = src;
+		self.stream.play();
 	}
 	
 	ns.Peer.prototype.buildView = function() {
@@ -1915,6 +1914,7 @@ library.component = library.component || {};
 		}
 		
 		self.stream.srcObject = media;
+		//self.bindStream();
 		self.stream.load();
 		
 		function clear( media ) {
@@ -1926,6 +1926,49 @@ library.component = library.component || {};
 				media.removeTrack( track );
 			}
 		}
+	}
+	
+	ns.Peer.prototype.bindStream = function() {
+		const self = this;
+		console.log( 'bindStream', self.stream );
+		if ( !self.stream )
+			return;
+		
+		self.stream.addEventListener( 'error', err, false );
+		self.stream.addEventListener( 'ended', end, false );
+		self.stream.addEventListener( 'waiting', waiting, false );
+		self.stream.addEventListener( 'suspended', susp, false );
+		self.stream.addEventListener( 'pause', pause, false );
+		
+		function err( e ) {
+			console.log( 'stream err event', e );
+		}
+		
+		function end( e ) {
+			console.log( 'stream end event', e );
+		}
+		
+		function waiting( e ) {
+			console.log( 'stream waiting event', e );
+		}
+		
+		function susp( e ) {
+			console.log( 'stream susp event', e );
+		}
+		
+		function pause( e ) {
+			console.log( 'stream pause event', e );
+		}
+		
+		
+	}
+	
+	ns.Peer.prototype.unbindStream = function() {
+		const self = this;
+		console.log( 'unbindStream', self.stream );
+		if ( !self.stream )
+			return;
+		
 	}
 	
 	ns.Peer.prototype.handleTrack = function( type, track ) {
@@ -2080,8 +2123,10 @@ library.component = library.component || {};
 		
 		let resize = new Event( 'resize' );
 		self.stream.dispatchEvent( resize );
+		/*
 		if ( self.volume )
 			self.volume.start();
+		*/
 	}
 	
 	ns.Peer.prototype.setStream = function( id, src ) {
@@ -2116,6 +2161,7 @@ library.component = library.component || {};
 		if ( !self.stream )
 			return;
 		
+		self.unbindStream();
 		if ( self.stream.pause )
 			self.stream.pause();
 		
