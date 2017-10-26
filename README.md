@@ -87,14 +87,14 @@ For example, connecting to your Friend machine with
 https://localhost:6502 and having the Friend Chat domain as 'test.localfriend'
 will not work, even if 'test.localfriend' points to 127.0.0.1...
 * Ports used by the server components are 3000 ( https GET ), 3001 ( https/wss ),
-27970 ( TCP with TLS ), 27960 ( https/wss ). Except for 27970, which is a 
+27960 ( TCP with TLS ), 27970 ( https/wss ). Except for 27960, which is a 
 FriendChat-Presence servers connection, these ports need to be open or proxied for
  a working setup.
 * STUN/TURN: while setting up the STUN/TURN servers(s) is not part of this installation,
 they are vital to a working live chats/conference setup. Public STUN servers 
 are out there ( google it, also google has one ), but TURN servers are far more 
 resource intensive and you will likely have to set up your own. Ports used for these
-are usually UPD 3478, 5449 and they set up p2p connections in the UDP 40000-65k range.
+are usually UPD 3478, 5349 and they set up p2p connections in the UDP 40k-65k range.
 * mysql - which should be already installed for Friend Core. Friend Chat and
 Presence servers need their own database. The installation script will create
 them for you.
