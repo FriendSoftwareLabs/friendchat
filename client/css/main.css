@@ -92,6 +92,69 @@ body {
 	padding : 0 0.3em;
 }
 
+/* Assist UI */
+
+#assist-ui {
+	padding : 0.5em 0.7em;
+	line-height: 1.8em;
+}
+
+#assist-ui .button > i {
+	font-size: 150%;
+}
+
+#assist-ui .button {
+	font-weight : bold;
+	padding     : 0.6em 0.4em;
+	line-height : 1.6em;
+}
+
+#assist-ui .Select {
+	font-weight: bold;
+}
+
+.assist-conversation {
+	padding     : 0.3em;
+	font-weight : bold;
+}
+
+#assist-select {
+	padding-bottom : 0.8em;
+}
+
+#assist-select > select,
+#assist-status-from > select {
+	width : 100%;
+}
+
+#assist-status {
+	padding-top : 0.8em;
+}
+
+#assist-status-height-dummy {
+	height : 2em;
+}
+
+#assist-status-new {
+	
+}
+
+#assist-status-from {
+	margin-left : 0.5em;
+}
+
+#assist-select-from {
+	
+}
+
+.assist-selected {
+	padding : 0.3em;
+}
+
+.assist-option {
+	line-height : 1.8em
+}
+
 /* QUEries */
 
 .query-pass-reset {

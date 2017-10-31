@@ -592,16 +592,16 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.setCheckbox = function( setting ) {
-		var self = this;
+		const self = this;
 		var settings = self.settings[ setting ];
 		if ( !settings) {
 			console.log( 'no settings for', setting );
 			return;
 		}
 		
-		var checkerKeys = Object.keys( settings );
-		var label = self.labelMap[ setting ] || setting;
-		checkConf = {
+		const checkerKeys = Object.keys( settings );
+		const label = self.labelMap[ setting ] || setting;
+		const checkConf = {
 			setting : setting,
 			label : label,
 			checkers : null,

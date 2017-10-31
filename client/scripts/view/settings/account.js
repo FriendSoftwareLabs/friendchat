@@ -43,14 +43,16 @@ library.view = library.view || {};
 			'msgAlert',
 			'inAppMenu',
 			'onNewScreen',
+			'minimalUI',
 		];
 		self.displayOrder = self.validKeys;
 		self.labelMap = {
-			'skipPass'    : View.i18n('i18n_autologin'),
-			'popupChat'   : View.i18n('i18n_pop_up_new_chat'),
-			'msgAlert'    : View.i18n('i18n_message_beep'),
-			'inAppMenu'   : View.i18n('i18n_in_app_menu'),
-			'onNewScreen' : View.i18n('i18n_open_on_new_screen'),
+			'skipPass'    : View.i18n( 'i18n_autologin' ),
+			'popupChat'   : View.i18n( 'i18n_pop_up_new_chat' ),
+			'msgAlert'    : View.i18n( 'i18n_message_beep' ),
+			'inAppMenu'   : View.i18n( 'i18n_in_app_menu' ),
+			'onNewScreen' : View.i18n( 'i18n_open_on_new_screen' ),
+			'minimalUI'   : View.i18n( 'i18n_minimal_ui' ),
 		};
 		self.defaultMap = {};
 		self.buildMap = {
@@ -59,6 +61,7 @@ library.view = library.view || {};
 			'msgAlert'    : singleCheck,
 			'inAppMenu'   : singleCheck,
 			'onNewScreen' : singleCheck,
+			'minimalUI'   : singleCheck,
 		};
 		
 		function singleCheck( setting ) { self.singleCheck( setting ); }

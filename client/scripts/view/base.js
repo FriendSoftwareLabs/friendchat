@@ -30,213 +30,6 @@ library.view = library.view || {};
 	}
 })( library.view );
 
-
-// BaseFormView
-// anything operating on, but not limited to, self.inputMap
-// will probably fail horribly with more complex forms,
-// so provide your own implementation where you feel it is necessary
-( function( ns, undefined ) {
-	ns.BaseFormView = function() {
-		if ( !( this instanceof ns.BaseFormView ))
-			return new ns.BaseFormView();
-		
-		var self = this;
-		self.inputMap = null;
-		self.baseFormViewInit();
-	}
-	
-	ns.BaseFormView.prototype.baseFormViewInit = function() {
-		var self = this;
-		self.view = window.View;
-		self.setTemplate();
-		self.buildView();
-		self.bindView();
-		self.bindEvents();
-		
-		self.view.sendMessage({ type : 'loaded' });
-	}
-	
-	ns.BaseFormView.prototype.setTemplate = function() {
-		var self = this;
-		hello.template = new friendUP.gui.TemplateManager();
-		const frags = document.getElementById( 'fragments' );
-		var fragStr = frags.innerHTML;
-		fragStr = View.i18nReplaceInString( fragStr );
-		hello.template.addFragments( fragStr );
-	}
-	
-	ns.BaseFormView.prototype.buildView = function() {
-		const self = this;
-		console.log( 'buildView', self.tmplId );
-		const el = hello.template.getElement( self.tmplId, {} );
-		console.log( 'el', el );
-		document.body.appendChild( el );
-	}
-	
-	ns.BaseFormView.prototype.bindView = function() {
-		var self = this;
-		self.view.on( 'initialize', initialize );
-		self.view.on( 'error', error );
-		self.view.on( 'success', success );
-		
-		function initialize( msg ) { self.initialize( msg ); }
-		function error( msg ) { self.handleError( msg ); }
-		function success( msg ) { self.handleSuccess( msg ); }
-	}
-	
-	ns.BaseFormView.prototype.initialize = function( data ) {
-		var self = this;
-		if ( !data.inputMap ) {
-			console.log( 'view.BaseFormView.initialize.data', data );
-			throw new Error( 'view.BaseFormView.initialize - no inputMap in data' );
-		}
-		
-		self.inputMap = data.inputMap;
-		self.setInputValues();
-		
-		if ( data.fragments ) {
-			
-			hello.template.addFragments( data.fragments );
-			self.overlay = new library.component.FormOverlay();
-		}
-		
-		self.view.sendMessage({
-			type : 'ready'
-		});
-	}
-	
-	ns.BaseFormView.prototype.handleError = function( error ) {
-		var self = this;
-		self.overlay.error( error.message, clickBack );
-		
-		function clickBack() { self.doErrorThings(); }
-	}
-	
-	ns.BaseFormView.prototype.handleSuccess = function( success ) {
-		var self = this;
-		if ( success )
-			var msg = success.message || 'success!';
-		
-		self.overlay.success( msg, clickBack );
-		
-		function clickBack() { self.doSuccessThings(); }
-	}
-	
-	ns.BaseFormView.prototype.doErrorThings = function() {
-		var self = this;
-		console.log( 'view.BaseFormView.doErrorThings' );
-		// TODO : a bunch of stuff
-	}
-	
-	ns.BaseFormView.prototype.doSuccessThings = function() {
-		var self = this;
-		console.log( 'view.BaseFormView.doSuccessThings - calling close' );
-		// call close on success confrimation. override this function to get specialised behavior
-		self.view.sendMessage({
-			type : 'exit',
-		});
-	}
-	
-	ns.BaseFormView.prototype.bindEvents = function() {
-		var self = this;
-		var form = document.getElementById( 'form' );
-		var resetButton = document.getElementById( 'reset' );
-		
-		form.addEventListener( 'submit', submit, false );
-		resetButton.addEventListener( 'click', reset, false );
-		
-		function submit( e ) { self.submit( e ); }
-		function reset( e ) { self.reset( e ); }
-	}
-	
-	ns.BaseFormView.prototype.submit = function( e ) {
-		var self = this;
-		e.preventDefault();
-		e.stopPropagation();
-		
-		self.overlay.show();
-		var input = self.collectInput();
-		
-		if ( !input )
-			return; // remember to show a error message, on the overlay, in collectInput
-		
-		self.view.sendMessage({
-			type : 'submit',
-			data : input
-		});
-	}
-	
-	ns.BaseFormView.prototype.collectInput = function() {
-		var self = this;
-		
-		// Reference implementation - build your own for more complex forms
-		
-		// Error checking on client? no thanks! ( TODO )
-		
-		var inputIds = Object.keys( self.inputMap );
-		var formData = {};
-		inputIds.forEach( readValue );
-		function readValue( inputId ) {
-			var input = document.getElementById( inputId );
-			formData[ inputId ] = input.value;
-		};
-		
-		return formData;
-	}
-	
-	ns.BaseFormView.prototype.setInputValues = function() {
-		var self = this;
-		
-		// Reference implementation - build your own for more complex forms
-		
-		var inputIds = Object.keys( self.inputMap );
-		inputIds.forEach( setValue );
-		function setValue( inputId ) {
-			self.setInputText( inputId );
-		}
-	}
-	
-	ns.BaseFormView.prototype.setSelectOptions = function( id ) {
-		var self = this;
-		var select = document.getElementById( id );
-		select.innerHTML = '';
-		var valueMap = self.inputMap[ id ];
-		var ids = Object.keys( valueMap );
-		ids.forEach( add );
-		function add( moduleId, index ) {
-			var displayValue = valueMap[ moduleId ];
-			var option = document.createElement( 'option' );
-			
-			if ( !index ) // by convention, the first index, 0, is the default option
-				option.defaultSelected = true;
-			
-			option.value = moduleId;
-			option.id = moduleId;
-			option.innerHTML = displayValue;
-			select.appendChild( option );
-		}
-	}
-	
-	ns.BaseFormView.prototype.setInputText = function( id ) {
-		var self = this
-		var value = self.inputMap[ id ] || '';
-		var input = document.getElementById( id );
-		input.value = value;
-	}
-	
-	ns.BaseFormView.prototype.reset = function( e ) {
-		var self = this;
-		if ( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-		}
-		
-		self.setInputValues();
-	}
-	
-})( library.view );
-
-
 // BASE CONTACT
 (function( ns, undefined ) {
 	ns.BaseContact = function( conf ) {
@@ -244,14 +37,58 @@ library.view = library.view || {};
 			return new ns.BaseContact( conf );
 		
 		var self = this;
+		library.component.EventEmitter.call( self, eventSink );
 		self.clientId = self.data.clientId;
+		self.id = self.clientId;
 		self.identity = self.data.identity;
 		self.containerId = conf.containerId;
 		
 		self.view = null;
 		
 		self.baseContactInit( conf.parentView );
+		
+		function eventSink() {
+			console.log( 'BaseContact, eventSink', arguments );
+		}
 	}
+	
+	ns.BaseContact.prototype = Object.create( library.component.EventEmitter.prototype );
+	
+	// Public
+	
+	ns.BaseContact.prototype.getName = function() {
+		const self = this;
+		return self.identity.name;
+	}
+	
+	ns.BaseContact.prototype.getOnline = function() {
+		const self = this;
+		return true;
+	}
+	
+	ns.BaseContact.prototype.getUnreadMessages = function() {
+		const self = this;
+		return 0;
+	}
+	
+	ns.BaseContact.prototype.openChat = function() {
+		var self = this;
+		self.send({
+			type : 'chat',
+		});
+	}
+	
+	ns.BaseContact.prototype.startVideo = function( perms ) {
+		const self = this;
+		self.startLive( 'video', perms );
+	}
+	
+	ns.BaseContact.prototype.startVoice = function( perms ) {
+		const self = this;
+		self.startLive( 'audio', perms );
+	}
+	
+	// Private
 	
 	ns.BaseContact.prototype.baseContactInit = function( parentView ) {
 		var self = this;
@@ -337,29 +174,7 @@ library.view = library.view || {};
 	
 	ns.BaseContact.prototype.onDoubleClick = function() {
 		var self = this;
-		self.startChat();
-	}
-	
-	ns.BaseContact.prototype.startChat = function( e ) {
-		var self = this;
-		if ( e ) {
-			e.stopPropagation();
-			e.preventDefault();
-		}
-		
-		self.send({
-			type : 'chat',
-		});
-	}
-	
-	ns.BaseContact.prototype.startVideo = function( perms ) {
-		const self = this;
-		self.startLive( 'video', perms );
-	}
-	
-	ns.BaseContact.prototype.startAudio = function( perms ) {
-		const self = this;
-		self.startLive( 'audio', perms );
+		self.openChat();
 	}
 	
 	ns.BaseContact.prototype.startLive = function( mode, perms ) {
@@ -392,6 +207,7 @@ library.view = library.view || {};
 		
 		var element = document.getElementById( self.clientId );
 		element.parentNode.removeChild( element );
+		self.closeEventEmitter();
 	}
 	
 })( library.view );
@@ -404,10 +220,12 @@ library.view = library.view || {};
 			return new ns.BaseModule( conf );
 		
 		var self = this;
+		library.component.EventEmitter.call( self, eventSink );
+		self.clientId = conf.module.clientId;
+		self.id = self.clientId;
 		self.parentView = conf.parentView;
 		self.containerId = conf.containerId
 		self.type = conf.module.type;
-		self.clientId = conf.module.clientId;
 		self.module = conf.module;
 		self.identity = conf.identity;
 		self.tmplId = conf.tmplId || '';
@@ -423,8 +241,13 @@ library.view = library.view || {};
 		self.options = {};
 		
 		self.initBaseModule();
+		
+		function eventSink() {
+			console.log( 'BaseModule, eventSink', arguments );
+		}
 	}
 	
+	ns.BaseModule.prototype = Object.create( library.component.EventEmitter.prototype );
 	
 	ns.BaseModule.prototype.initBaseModule = function() {
 		var self = this;
@@ -922,7 +745,8 @@ library.view = library.view || {};
 			return;
 		}
 		
-		self.contacts[ clientId ].close();
+		self.emit( 'remove', clientId );
+		contact.close();
 		delete self.contacts[ clientId ];
 	}
 	
@@ -967,6 +791,7 @@ library.view = library.view || {};
 		
 		var element = document.getElementById( self.clientId );
 		element.parentNode.removeChild( element );
+		self.closeEventEmitter();
 	}
 	
 })( library.view );

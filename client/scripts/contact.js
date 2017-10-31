@@ -2291,6 +2291,7 @@ library.contact = library.contact || {};
 	
 	ns.IrcPrivMsg.prototype.openChat = function( readyBack ) {
 		var self =this;
+		console.log( 'openChat', self.chatView );
 		if ( self.chatView ) {
 			self.chatView.activate();
 			return;

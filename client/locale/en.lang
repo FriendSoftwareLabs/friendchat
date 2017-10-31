@@ -262,3 +262,12 @@ i18n_menu_receive_audio : Receive Audio
 i18n_menu_receive_video : Receive Video
 i18n_list_voice : Voice
 i18n_toggle_fullscreen : Fullscreen
+i18n_minimal_ui : Minimal UI
+i18n_start_conversation : Start conversation
+i18n_video_call : Video call
+i18n_voice_call : Voice call
+i18n_text_chat : Text chat
+i18n_select_contact : Select contact
+i18n_unread_open_chat : Unread - open chat
+i18n_new_messages : Unread messages
+i18n_no_new_messages : No unread messages

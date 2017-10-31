@@ -995,7 +995,7 @@ library.rtc = library.rtc || {};
 	ns.Account.prototype.bindView = function() {
 		var self = this;
 		self.view.on( 'settings', loadSettings );
-		self.view.on( 'persist', persistSetting );
+		self.view.on( 'setting', persistSetting );
 		
 		function loadSettings( msg ) { self.getSettings(); }
 		function persistSetting( msg ) { self.persistSetting( msg ); }

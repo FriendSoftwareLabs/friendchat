@@ -128,7 +128,6 @@ library.view = library.view || {};
 			return new ns.TreerootContact( conf );
 		
 		var self = this;
-		//console.log( 'TreerootContact', conf );
 		self.data = conf.contact;
 		self.online = conf.contact.online;
 		self.messageWaiting = friendUP.tool.uid( 'msgWaiting' ); // id is later replaced by the component
@@ -141,6 +140,27 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootContact.prototype = Object.create( library.view.BaseContact.prototype );
+	
+	// Public
+	
+	ns.TreerootContact.prototype.updatePresence = function( event ) {
+		const self = this;
+		self.online = 'online' === event.value;
+		self.presence.set( event.value );
+		self.emit( 'online', self.online );
+	}
+	
+	ns.TreerootContact.prototype.getOnline = function() {
+		const self = this;
+		return self.online;
+	}
+	
+	ns.TreerootContact.prototype.getUnreadMessages = function() {
+		const self = this;
+		return self.unreadMessages;
+	}
+	
+	// Private
 	
 	ns.TreerootContact.prototype.init = function() {
 		var self = this;
@@ -199,14 +219,14 @@ library.view = library.view || {};
 		const audioBtn = element.querySelector( '.actions .audio' );
 		const removeBtn = element.querySelector( '.actions  .remove' );
 		
-		chatBtn.addEventListener( 'click', startChat, false );
+		chatBtn.addEventListener( 'click', openChat, false );
 		videoBtn.addEventListener( 'click', startVideo, false );
-		audioBtn.addEventListener( 'click', startAudio, false );
+		audioBtn.addEventListener( 'click', startVoice, false );
 		removeBtn.addEventListener( 'click', remove, false );
 		
-		function startChat( e ) { self.startChat( e ); }
+		function openChat( e ) { self.openChat( e ); }
 		function startVideo( e ) { self.startVideo(); }
-		function startAudio( e ) { self.startAudio(); }
+		function startVoice( e ) { self.startVoice(); }
 		function remove( e ) { self.remove( e ); }
 	}
 	
@@ -224,6 +244,7 @@ library.view = library.view || {};
 			console.log( 'presence', state );
 			self.presence.set( state );
 		}
+		
 		function messageWaiting( isWaiting ) {
 			if ( 'false' === isWaiting )
 				self.unreadMessages = 0;
@@ -236,6 +257,7 @@ library.view = library.view || {};
 				num = self.unreadMessages.toString();
 			
 			self.messageWaiting.setDisplay( num );
+			self.emit( 'msg-waiting', self.unreadMessages );
 		}
 	}
 	
@@ -570,6 +592,7 @@ library.view = library.view || {};
 		var contact = new library.view.TreerootContact( conf );
 		self.contacts[ contact.clientId ] = contact;
 		self.sortContact( contact );
+		self.emit( 'add', contact, self.module.name );
 	}
 	
 	ns.Treeroot.prototype.addSubscriber = function( subData ) {
@@ -607,7 +630,7 @@ library.view = library.view || {};
 			return;
 		}
 		
-		contact.presence.set( data.value );
+		contact.updatePresence( data );
 		self.sortContact( contact );
 	}
 	
@@ -742,6 +765,7 @@ library.view = library.view || {};
 			return;
 		}
 		
+		self.emit( 'remove', clientId );
 		contact.close();
 		delete self.contacts[ clientId ];
 		
@@ -957,6 +981,10 @@ library.view = library.view || {};
 	
 	ns.IrcPrivate.prototype = Object.create( library.view.BaseContact.prototype );
 	
+	// Public
+	
+	// Private
+	
 	ns.IrcPrivate.prototype.init = function() {
 		var self = this;
 		self.messageWaiting = new library.component.StatusIndicator({
@@ -995,13 +1023,13 @@ library.view = library.view || {};
 		const removeBtn = element.querySelector( '.actions .remove' );
 		
 		video.addEventListener( 'click', startVideo, false );
-		audio.addEventListener( 'click', startAudio, false );
+		audio.addEventListener( 'click', startVoice, false );
 		chatBtn.addEventListener( 'click', toggleChatView, false );
 		removeBtn.addEventListener( 'click', removePriv, false );
 		
 		function startVideo( e ) { self.startVideo(); }
-		function startAudio( e ) { self.startAudio(); }
-		function toggleChatView( e ) { self.startChat(); }
+		function startVoice( e ) { self.startVoice(); }
+		function toggleChatView( e ) { self.openChat(); }
 		function removePriv( e ) { self.remove(); }
 	}
 	
@@ -1010,7 +1038,12 @@ library.view = library.view || {};
 		self.view.on( 'messagewaiting', messageWaiting );
 		self.view.on( 'highlight', handleHighlight );
 		
-		function messageWaiting( isWaiting ) { self.messageWaiting.set( isWaiting ); }
+		function messageWaiting( isWaiting ) {
+			console.log( 'messageWaiting', isWaiting );
+			self.messageWaiting.set( isWaiting );
+			let num = 'true' === isWaiting ? 1 : 0;
+			self.emit( 'msg-waiting', num );
+		}
 		function handleHighlight( msg ) { console.log( 'view.ircPriv - highlight - NYI', msg ); }
 	}
 	
@@ -1052,12 +1085,12 @@ library.view = library.view || {};
 		var tmplId = 'irc-module-tmpl';
 		var title = self.getTitleString();
 		var conf = {
-			clientId : self.clientId,
-			folditId : self.contactsFoldit,
-			moduleTitle : title,
+			clientId          : self.clientId,
+			folditId          : self.contactsFoldit,
+			moduleTitle       : title,
 			connectionStateId : self.connectionState,
-			optionId : self.optionMenu,
-			contactsId : self.contactsId,
+			optionId          : self.optionMenu,
+			contactsId        : self.contactsId,
 		};
 		
 		var element = hello.template.getElement( tmplId, conf );
@@ -1076,10 +1109,11 @@ library.view = library.view || {};
 		self.view.on( 'leave', handleLeave );
 		self.view.on( 'setting', handleSetting );
 		
-		function handlePrivate( msg ) { self.addPrivate( msg ); }
-		function handleJoin( msg ) { self.joinChannel( msg ); }
-		function handleLeave( msg ) { self.leaveChannel( msg ); }
-		function handleSetting( msg ) { self.updateSetting( msg ); }
+		function handlePrivate( e ) { self.addPrivate( e ); }
+		function handleJoin( e ) { self.joinChannel( e ); }
+		function handleLeave( e ) { self.leaveChannel( e ); }
+		function handleRemove( e ) { self.removePriv( e ); }
+		function handleSetting( e ) { self.updateSetting( e ); }
 		
 	}
 	
@@ -1092,6 +1126,7 @@ library.view = library.view || {};
 		};
 		var priv = new library.view.IrcPrivate( conf );
 		self.contacts[ priv.clientId ] = priv;
+		self.emit( 'add', priv, self.module.name );
 	}
 	
 	ns.IRC.prototype.joinChannel = function( data ) {
@@ -1219,6 +1254,11 @@ library.view = library.view || {};
 		var el = hello.template.getElement( tmplId, conf );
 		var container = document.getElementById( self.containerId );
 		container.appendChild( el );
+	}
+	
+	ns.Presence.prototype.getTitleString = function() {
+		const self = this;
+		return 'Conference rooms';
 	}
 	
 	ns.Presence.prototype.bindUI = function() {
@@ -1457,11 +1497,11 @@ library.view = library.view || {};
 		}
 		
 		function audioClick( e ) {
-			self.startAudio();
+			self.startVoice();
 		}
 		
 		function chatClick( e ) {
-			self.startChat();
+			self.openChat();
 		}
 		
 		function renameClick( e ) {
@@ -1720,14 +1760,13 @@ library.view = library.view || {};
 
 // MODULECONTROL sub view
 (function( ns, undefined ) {
-	ns.ModuleControl = function( conf ) {
+	ns.ModuleControl = function( assist ) {
 		if ( !( this instanceof ns.ModuleControl ))
-			return new ns.ModuleControl( conf );
-		
-		conf = conf || {};
+			return new ns.ModuleControl( assist );
 		
 		var self = this;
-		self.parentView = conf.parentView || window.View;
+		self.assist = assist;
+		self.parentView = window.View;
 		self.type = 'module';
 		self.view = null;
 		self.containerId = 'active-modules';
@@ -1773,23 +1812,26 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.add = function( data ) {
-		var self = this;
+		const self = this;
 		if ( data.module.type == self.askAddType || !self.askAddType )
 			self.guide.hide();
 		
-		var conf = {
+		const conf = {
 			module : data.module,
 			identity : data.identity,
 			containerId : 'active-modules',
 			parentView : window.View
 		};
-		var constructor = self.moduleTypeMap[ data.module.type ];
-		if ( !constructor ) {
+		let Constructor = self.moduleTypeMap[ data.module.type ];
+		if ( !Constructor ) {
 			console.log( 'view.ModuleControl.add - no real constructor for ', data.module );
-			constructor = library.view.BaseModule;
+			Constructor = library.view.BaseModule;
 		}
 		
-		self.active[ data.module.clientId ] = constructor( conf );
+		const module = Constructor( conf );
+		self.active[ module.id ] = module;
+		if ( self.assist )
+			self.assist.register( module );
 	}
 	
 	ns.ModuleControl.prototype.remove = function( clientId ) {
@@ -1798,6 +1840,9 @@ library.view = library.view || {};
 		
 		if ( !module )
 			throw new Error( 'view.ModuleControl.remove - invalid clinetId ' + clientId );
+		
+		if ( self.assist )
+			self.assist.release( clientId );
 		
 		module.close();
 		delete self.active[ clientId ];
@@ -2064,6 +2109,534 @@ library.view = library.view || {};
 	
 })( library.view );
 
+(function( ns, undefined ) {
+	ns.AssistUI = function( parentId ) {
+		const self = this;
+		console.log( 'AssistUI', parentId );
+		self.parentId = parentId;
+		
+		self.mode = '';
+		self.modules = {};
+		self.contacts = {};
+		self.unread = {};
+		self.onlineIds = [];
+		
+		self.init();
+		
+	}
+	
+	// Public
+	
+	ns.AssistUI.prototype.register = function( module ) {
+		const self = this;
+		let mId = module.id;
+		if ( self.modules[ mId ]) {
+			console.log( 'AssistUI.register - module already registered', module );
+			throw new Error( 'see above ^^^' );
+		}
+		
+		self.modules[ mId ] = module;
+		module.on( 'add', add );
+		module.on( 'remove', remove );
+		
+		function add( contact, modName ) {
+			self.addContactFor( mId, contact, modName );
+		}
+		
+		function remove( contactId ) {
+			self.removeContactFor( mId, contactId );
+		}
+	}
+	
+	ns.AssistUI.prototype.release = function( modId ) {
+		const self = this;
+		const module = self.modules[ modId ];
+		if ( !module )
+			return;
+		
+		module.release( 'add' );
+		module.release( 'remove' );
+		delete self.modules[ modId ];
+	}
+	
+	ns.AssistUI.prototype.close = function() {
+		const self = this;
+		delete self.parentId;
+		
+		delete self.videoBtn;
+		delete self.videoSel;
+		delete self.voiceBtn;
+		delete self.voiceSel;
+		delete self.textBt;
+		delete self.textSel;
+		
+		delete self.selectUser;
+		delete self.selectUnread;
+		
+		delete self.contacts;
+		delete self.unread;
+		delete self.storage;
+		
+		if ( self.el )
+			self.el.parentNode.removeChild( self.el );
+		
+		delete self.el;
+	}
+	
+	// Private
+	
+	ns.AssistUI.prototype.init = function() {
+		const self = this;
+		self.modeMap = {
+			'video' : startVideo,
+			'voice' : startVoice,
+			'text'  : openChat,
+		};
+		
+		function startVideo( e ) { self.startVideo( e ); }
+		function startVoice( e ) { self.startVoice( e ); }
+		function openChat( e ) { self.openChat( e ); }
+		
+		const parent = document.getElementById( self.parentId );
+		self.el = hello.template.getElement( 'assist-ui-tmpl', {} );
+		parent.appendChild( self.el );
+		parent.classList.toggle( 'hidden', false );
+		
+		self.videoBtn = document.getElementById( 'assist-video-btn' );
+		self.videoSel = document.getElementById( 'assist-video-selected' );
+		self.voiceBtn = document.getElementById( 'assist-voice-btn' );
+		self.voiceSel = document.getElementById( 'assist-voice-selected' );
+		self.textBtn = document.getElementById( 'assist-text-btn' );
+		self.textSel = document.getElementById( 'assist-text-selected' );
+		
+		self.selectUser = document.getElementById( 'assist-select-user' );
+		self.selectUnread = document.getElementById( 'assist-select-from' );
+		
+		self.storage = document.getElementById( 'assist-options-storage' );
+		
+		self.videoBtn.addEventListener( 'click', videoClick, false );
+		self.voiceBtn.addEventListener( 'click', voiceClick, false );
+		self.textBtn.addEventListener( 'click', textClick, false );
+		
+		self.selectUser.addEventListener( 'input', userInput, false );
+		self.selectUnread.addEventListener( 'input', unreadInput, false );
+		
+		self.updateUnread();
+		
+		function videoClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.handleVideoClick();
+		}
+		
+		function voiceClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.handleVoiceClick();
+		}
+		
+		function textClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.handleTextClick();
+		}
+		
+		function userInput( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+			self.handleSelectUser();
+		}
+		
+		function unreadInput( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+			self.handleSelectUnread();
+		}
+		
+	}
+	
+	ns.AssistUI.prototype.handleVideoClick = function() {
+		const self = this;
+		self.clearClicked();
+		self.toggleSelect( self.videoBtn, true );
+		self.toggleOn( self.videoSel, true );
+		self.setSelectUserReady();
+		self.mode = 'video';
+	}
+	
+	ns.AssistUI.prototype.handleVoiceClick = function() {
+		const self = this;
+		self.clearClicked();
+		self.toggleSelect( self.voiceBtn, true );
+		self.toggleOn( self.voiceSel, true );
+		self.setSelectUserReady();
+		self.mode = 'voice';
+	}
+	
+	ns.AssistUI.prototype.handleTextClick = function() {
+		const self = this;
+		self.clearClicked();
+		self.toggleSelect( self.textBtn, true );
+		self.toggleOn( self.textSel, true );
+		self.setSelectUserReady();
+		self.mode = 'text';
+	}
+	
+	ns.AssistUI.prototype.setSelectUserReady = function() {
+		const self = this;
+		self.selectUser.classList.toggle( 'Accept', true );
+	}
+	
+	ns.AssistUI.prototype.clearClicked = function() {
+		const self = this;
+		self.toggleSelect( self.videoBtn, false );
+		self.toggleSelect( self.voiceBtn, false );
+		self.toggleSelect( self.textBtn, false );
+		self.selectUser.classList.toggle( 'Accept', false )
+		self.clearOn();
+	}
+	
+	ns.AssistUI.prototype.clearOn = function() {
+		const self = this;
+		self.toggleOn( self.videoSel, false );
+		self.toggleOn( self.voiceSel, false );
+		self.toggleOn( self.textSel, false );
+	}
+	
+	ns.AssistUI.prototype.toggleSelect = function( el, isOn ) {
+		const self = this;
+		el.classList.toggle( 'Accept', isOn );
+	}
+	
+	ns.AssistUI.prototype.toggleOn = function( el, isOn ) {
+		const self = this;
+		el.classList.toggle( 'On', isOn );
+		el.classList.toggle( 'Off', !isOn );
+	}
+	
+	ns.AssistUI.prototype.handleSelectUser = function() {
+		const self = this;
+		const cId = self.selectUser.value;
+		console.log( 'userInput - value', cId );
+		self.resetSelectUser();
+		if ( !self.mode )
+			return;
+		
+		const handler = self.modeMap[ self.mode ];
+		handler( cId );
+	}
+	
+	ns.AssistUI.prototype.startVideo = function( contactId ) {
+		const self = this;
+		const meta = self.contacts[ contactId ];
+		console.log( 'startVideo', meta );
+		if ( !meta )
+			return;
+		
+		meta.contact.startVideo();
+	}
+	
+	ns.AssistUI.prototype.startVoice = function( contactId ) {
+		const self = this;
+		const meta = self.contacts[ contactId ];
+		console.log( 'startVoice', meta );
+		if ( !meta )
+			return;
+		
+		meta.contact.startVoice();
+	}
+	
+	ns.AssistUI.prototype.openChat = function( contactId ) {
+		const self = this;
+		const meta = self.contacts[ contactId ];
+		console.log( 'openChat', meta );
+		if ( !meta )
+			return;
+		
+		meta.contact.openChat();
+	}
+	
+	ns.AssistUI.prototype.handleSelectUnread = function() {
+		const self = this;
+		const cId = self.selectUnread.value;
+		console.log( 'handleSelectUnread', cId );
+		const meta = self.contacts[ cId ];
+		self.resetSelectUnread();
+		if ( !meta )
+			return;
+		
+		meta.contact.openChat();
+	}
+	
+	ns.AssistUI.prototype.resetSelectUser = function() {
+		const self = this;
+		console.log( 'resetSelectUser' );
+		self.selectUser.value = 'initial';
+	}
+	
+	ns.AssistUI.prototype.resetSelectUnread = function() {
+		const self = this;
+		self.selectUnread.value = 'unread-initial';
+	}
+	
+	ns.AssistUI.prototype.addContactFor = function( modId, contact, modName ) {
+		const self = this;
+		//modName = !!modName ? ' - ' + modName : '';
+		modName = '';
+		const cId = contact.id;
+		const name = contact.getName();
+		const isOnline = contact.getOnline();
+		const unread = contact.getUnreadMessages();
+		const userOptId = cId + '_assist_user';
+		const unreadOptId = cId + '_assist_unread';
+		const optionConf = {
+			id       : userOptId,
+			clientId : cId,
+			name     : name,
+			modName  : modName,
+		};
+		
+		const optEl = hello.template.getElement( 'assist-call-option-tmpl', optionConf );
+		self.storage.appendChild( optEl );
+		self.contacts[ cId ] = {
+			userOptId   : userOptId,
+			unreadOptId : unreadOptId,
+			contact     : contact,
+			name        : name,
+			modName     : modName,
+			el          : optEl,
+		};
+		
+		if ( isOnline )
+			self.updateContactOnline( cId, true );
+		
+		if ( unread )
+			self.setMsgUnread( cId, unread );
+		
+		contact.on( 'online', online );
+		contact.on( 'msg-waiting', waiting );
+		
+		function online( isOnline ) {
+			self.updateContactOnline( cId, isOnline );
+		}
+		
+		function waiting( num ) {
+			self.setMsgUnread( cId, num );
+		}
+	}
+	
+	ns.AssistUI.prototype.removeContactFor = function( modId, contactId ) {
+		const self = this;
+		const meta = self.contacts[ contactId ];
+		if ( !meta )
+			return;
+		
+		self.removeFromUnread( contactId );
+		self.setOffline( contactId, meta );
+		delete self.contacts[ contactId ];
+		if ( meta.el && meta.el.parentNode )
+			meta.el.parentNode.removeChild( meta.el );
+		
+		const contact = meta.contact;
+		delete meta.contact;
+		contact.release( 'online' );
+		contact.release( 'msg-waiting' );
+	}
+	
+	ns.AssistUI.prototype.updateContactOnline = function( cId, isOnline ) {
+		const self = this;
+		const meta = self.contacts[ cId ];
+		if ( !meta )
+			return;
+		
+		if ( isOnline )
+			setOnline( cId );
+		else
+			self.setOffline( cId, meta );
+		
+		function setOnline( cId ) {
+			self.onlineIds.push( cId );
+			self.sortOnline();
+		}
+		
+	}
+	
+	ns.AssistUI.prototype.setOffline = function( cId, meta ) {
+		const self = this;
+		self.onlineIds = self.onlineIds.filter( notCId );
+		self.storage.appendChild( meta.el );
+		
+		function notCId( oId ) {
+			return oId !== cId;
+		}
+	}
+	
+	ns.AssistUI.prototype.sortOnline = function() {
+		const self = this;
+		if ( !self.onlineSortTimeout )
+			self.onlineSortTimeout = setTimeout( sort, 250 );
+		else {
+			clearTimeout( self.onlineSortTimeout );
+			self.onlineSortTimeout = setTimeout( sort, 250 );
+		}
+		
+		function sort() {
+			self.onlineSortTimeout = null;
+			let idNameMap = {};
+			self.onlineIds.forEach( idNamePairs );
+			let sortedIds = self.sortByName( idNameMap );
+			sortedIds.forEach( reAppend );
+			
+			function idNamePairs( id ) {
+				let contact = self.contacts[ id ];
+				idNameMap[ id ] = contact.name;
+			}
+			
+			function reAppend( id ) {
+				let contact = self.contacts[ id ];
+				self.selectUser.appendChild( contact.el );
+			}
+		}
+	}
+	
+	ns.AssistUI.prototype.setMsgUnread = function( cId, unread ) {
+		const self = this;
+		console.log( 'setMsgUnread', {
+			cid : cId,
+			unr : unread,
+		});
+		
+		const unMeta = self.unread[ cId ];
+		if ( !unMeta && unread ) {
+			self.addToUnread( cId, unread );
+			return;
+		}
+		
+		if ( unread )
+			self.updateUnreadFrom( cId, unread );
+		else
+			self.removeFromUnread( cId );
+	}
+	
+	ns.AssistUI.prototype.setMsgWaiting = function( cId, unread ) {
+		const self = this;
+		console.log( 'setMsgWaiting - NYI', {
+			cid : cId,
+			wat : waiting,
+		});
+	}
+	
+	ns.AssistUI.prototype.addToUnread = function( cId, unread ) {
+		const self = this;
+		const meta = self.contacts[ cId ];
+		if ( !meta )
+			return;
+		
+		console.log( 'addToUnread', meta );
+		self.unread[ cId ] = {
+			id     : meta.unreadOptId,
+			el     : null,
+			name   : meta.name,
+			unread : unread,
+		};
+		
+		const el = self.buildUnreadOpt( cId );
+		if ( !el )
+			return;
+		
+		console.log( 'addToUnread - el', el );
+		self.unread[ cId ].el = el;
+		self.selectUnread.appendChild( el );
+		self.updateUnread();
+	}
+	
+	ns.AssistUI.prototype.updateUnreadFrom = function( cId, unread ) {
+		const self = this;
+		const meta = self.unread[ cId ];
+		console.log( 'updateUnreadFrom', meta );
+		meta.el.textContent = unread + ' - ' + meta.name;
+	}
+	
+	ns.AssistUI.prototype.removeFromUnread = function( cId ) {
+		const self = this;
+		const meta = self.unread[ cId ];
+		if ( !meta )
+			return;
+		
+		console.log( 'removeFromUnread', meta );
+		delete self.unread[ cId ];
+		meta.unread = null;
+		meta.el.parentNode.removeChild( meta.el );
+		meta.el = null;
+		self.updateUnread();
+	}
+	
+	ns.AssistUI.prototype.buildUnreadOpt = function( cId ) {
+		const self = this;
+		const meta = self.unread[ cId ];
+		console.log( 'buildUnreadOpt', meta );
+		if ( !meta )
+			return null;
+		
+		const conf = {
+			id       : meta.id,
+			name     : meta.name,
+			unread   : meta.unread,
+			clientId : cId,
+		};
+		const unreadEl = hello.template.getElement( 'assist-msg-option-tmpl', conf );
+		return unreadEl;
+	}
+	
+	ns.AssistUI.prototype.updateUnread = function() {
+		const self = this;
+		const ids = Object.keys( self.unread );
+		console.log( 'updateUnread', ids );
+		const msgEl = document.getElementById( 'assist-status-new' );
+		if ( ids && ids.length ) {
+			showSelect();
+			msgEl.textContent = View.i18n( 'i18n_new_messages' );
+		}
+		else {
+			hideSelect();
+			msgEl.textContent = View.i18n( 'i18n_no_new_messages' );
+		}
+		
+		function showSelect() { toggle( true ); }
+		function hideSelect() { toggle( false ); }
+		function toggle( show ) { self.selectUnread.classList.toggle( 'hidden', !show ); }
+	}
+	
+	ns.AssistUI.prototype.sortByName = function( idNameMap ) {
+		const self = this;
+		let sorted = {};
+		let ids = Object.keys( idNameMap );
+		ids.sort( byName );
+		return ids;
+		
+		function byName( idA, idB ) {
+			let na = idNameMap[ idA ].toLowerCase();
+			let nb = idNameMap[ idB ].toLowerCase();
+			let ci = 0; // character index
+			let a = na[ ci ];
+			let b = nb[ ci ];
+			while ( !!a && !!b ) {
+				if ( a > b )
+					return 1;
+				if ( a < b )
+					return -1;
+				
+				ci++;
+				a = na[ ci ];
+				b = nb[ ci ];
+			}
+			
+			return 0;
+		}
+	}
+	
+})( library.view );
+
 
 // MAIN
 (function( ns, undefined ) {
@@ -2077,6 +2650,7 @@ library.view = library.view || {};
 		self.notification = null;
 		self.account = null;
 		self.module = null;
+		
 		self.init();
 	}
 	
@@ -2122,20 +2696,27 @@ library.view = library.view || {};
 	}
 	
 	ns.Main.prototype.initialize = function( data ) {
-		var self = this;
+		const self = this;
+		console.log( 'view.main.initialize', data );
+		let settings = data.account.settings;
 		hello.template.addFragments( data.fragments );
 		
 		self.addMenu();
 		
-		var notificationRootId = 'notifications-foot';
-		if ( data.inAppMenu ) {
+		let notificationRootId = 'notifications-foot';
+		if ( settings.inAppMenu ) {
 			self.enableInAppMenu();
 			notificationRootId = 'notifications-head';
 		}
 		
+		if ( settings.minimalUI )
+			self.assist = null;
+		else
+			self.assist = new library.view.AssistUI( 'assist-ui-container' );
+		
 		self.notification = new library.view.Notification( notificationRootId );
 		self.account = new library.view.Account();
-		self.module = new library.view.ModuleControl();
+		self.module = new library.view.ModuleControl( self.assist || null );
 		
 		self.view.sendMessage({
 			type : 'ready',

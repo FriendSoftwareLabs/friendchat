@@ -537,7 +537,7 @@ var hello = null;
 		
 		const initData = {
 			fragments : hello.commonFragments,
-			inAppMenu : self.inAppMenu,
+			account   : self.account,
 		};
 		
 		self.view = hello.app.createView(
