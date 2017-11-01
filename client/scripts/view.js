@@ -1084,7 +1084,7 @@ library.view = library.view || {};
 		const filePath = 'html/treerootUsers.html';
 		const windowConf = {
 			title : Application.i18n('i18n_add_contacts'),
-			width : 400,
+			width : 500,
 			height : 700,
 		};
 		const initData = {
