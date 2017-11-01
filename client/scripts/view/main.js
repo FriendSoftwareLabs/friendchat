@@ -2221,6 +2221,7 @@ library.view = library.view || {};
 		self.selectUser.addEventListener( 'input', userInput, false );
 		self.selectUnread.addEventListener( 'input', unreadInput, false );
 		
+		self.handleTextClick();
 		self.updateUnread();
 		
 		function videoClick( e ) {
