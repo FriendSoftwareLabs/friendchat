@@ -670,8 +670,6 @@ then
     cp "startpresence.sh" "$FRIEND_BUILD/autostart/startpresence.sh"
 fi
 
-echo "[FriendChat]" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "enabled = 1" >> "$FRIEND_BUILD/cfg/cfg.ini"
 
 # Saves setup.ini configuration file
 echo "; Friend installation configuration file" > $FC_INI_FILE
@@ -690,6 +688,22 @@ echo "stun = $stunHost" >> $FC_INI_FILE
 echo "turn = $turnHost" >> $FC_INI_FILE
 echo "user = $turnUser" >> $FC_INI_FILE
 echo "pass = $turnPass" >> $FC_INI_FILE
+
+# Enable Friend Chat in Friend
+FUP_CFG_PATH="$FRIEND_BUILD/cfg/cfg.ini"
+CFG_IS_SET="0"
+while read line; do
+    if [[ $line == "[FriendChat]" ]]
+    then
+        CFG_IS_SET="1"
+    fi
+done <$FUP_CFG_PATH
+
+if [ $CFG_IS_SET -eq "0" ]
+then
+    echo "[FriendChat]" >> $FUP_CFG_PATH
+    echo "enabled = 1" >> $FUP_CFG_PATH
+fi
 
 # Successful installation
 if [ "$TLSNEW" == "1" ]; then
