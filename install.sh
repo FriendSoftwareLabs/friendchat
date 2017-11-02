@@ -21,7 +21,7 @@
 #
 
 QUIT="Installation aborted. Please restart script to complete it."
-GIT="https://github.com/FriendSoftwareLabs/presence.git"
+P_GIT="https://github.com/FriendSoftwareLabs/presence.git"
 
 # Installs Dialog
 sudo apt-get install dialog
@@ -37,7 +37,7 @@ if [ $? -eq "1" ]; then
 fi
 
 # Installs node.js
-echo "Checking for node.js and npm"
+echo "Checking for node and npm"
 
 nv=$(node -v)
 npm=$(npm -v)
@@ -45,10 +45,10 @@ if [ -z $nv ]; then
     dialog --backtitle "Friend Chat installer" --yesno "\
 Friend Chat needs node.js to work and it was not found.\n\n\
 Choose YES to install it automatically\n\
-or NO to install it manually: the script will\n\
-exit, you install node and restart the script.\n\
-Please note: it is advised to install 'n',\n\
-instruction at: https://github.com/tj/n " 16 65
+or NO to install it manually; the script will exit.\n\
+\n\
+Please note: it is advised to install and manage node.js\n\
+using 'n', instruction at: https://github.com/tj/n " 16 65
     if [ $? -eq "0" ]; then
         curl -L http://git.io/n-install | bash
         nv=$(node -v)
@@ -78,8 +78,12 @@ fi
 
 if [ -z "$npm" ]; then
     dialog --backtitle "Friend Chat installer" --msgbox "\
-Node was found, but not npm. \n\
-Please install npm and restart the script." 10 70
+node was found, but not npm. This is usually bad,\n\
+please fix your node.js installation \n\
+\n\
+Please note: it is advised to install and manage node.js\n\
+using 'n', instruction at: https://github.com/tj/n
+" 10 70
     clear
     echo "Friend Chat installation aborted."
     exit 1
@@ -113,67 +117,110 @@ done
 FRIENDCHAT_FOLDER=$(pwd)
 FRIEND_BUILD="$FRIEND_FOLDER/build"
 PRESENCE_FOLDER="$FRIEND_BUILD/services/Presence"
-FRIENDCHATSERVER_FOLDER="$FRIEND_BUILD/services/FriendChat"
-FRIENDCHATAPP_FOLDER="$FRIEND_BUILD/resources/webclient/apps/FriendChat"
+FC_SERVER_FOLDER="$FRIEND_BUILD/services/FriendChat"
+FC_CLIENT_FOLDER="$FRIEND_BUILD/resources/webclient/apps/FriendChat"
 
-# Get information from setup.ini if it exists
-turnAddress="your_turn_server.com"
-stunAddress="your_stun_server.com"
-turnUser="your_turn_username"
-turnPass="your_turn_password"
-helloDbName="friendchat"
-presenceDbName="presence"
-friendNetwork="0"
-if [ -f "$FRIEND_BUILD/cfg/setup.ini" ]; then
-    dbhost=$(sed -nr "/^\[FriendCore\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    dbuser=$(sed -nr "/^\[FriendCore\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    dbpass=$(sed -nr "/^\[FriendCore\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    dbport=$(sed -nr "/^\[FriendCore\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    dbname=$(sed -nr "/^\[FriendCore\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    friendNetwork=$(sed -nr "/^\[FriendNetwork\]/ { :l /^enable[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^domain[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    turnAddress=$(sed -nr "/^\[TurnStun\]/ { :l /^turn[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    stunAddress=$(sed -nr "/^\[TurnStun\]/ { :l /^stun[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    turnUser=$(sed -nr "/^\[TurnStun\]/ { :l /^user[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    turnPass=$(sed -nr "/^\[TurnStun\]/ { :l /^pass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    helloDbName=$(sed -nr "/^\[FriendChat\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    helloDbHost=$(sed -nr "/^\[FriendChat\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    helloDbPort=$(sed -nr "/^\[FriendChat\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    helloDbUser=$(sed -nr "/^\[FriendChat\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    helloDbPass=$(sed -nr "/^\[FriendChat\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    presenceDbName=$(sed -nr "/^\[Presence\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    presenceDbHost=$(sed -nr "/^\[Presence\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    presenceDbPort=$(sed -nr "/^\[Presence\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    presenceDbUser=$(sed -nr "/^\[Presence\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
-    presenceDbPass=$(sed -nr "/^\[Presence\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/setup.ini")
+# check for hello and presence config.js files
+# and warn that they will not be overwritten
+FC_CLIENT_CFG_FILE="$FC_CLIENT_FOLDER/local.config.js"
+FC_CFG_FILE="$FC_SERVER_FOLDER/config.js"
+PRESENCE_CFG_FILE="$PRESENCE_FOLDER/config.js"
+
+if [ -f $FC_CLIENT_CFG_FILE ]
+then
+    FOUND_APP_CFG="Friend Chat app config found at\n\
+$FC_CLIENT_CFG_FILE\n\n"
+fi
+
+if [ -f $FC_CFG_FILE ]
+then
+    FOUND_HELLO_CFG="Friend Chat server config found at\n\
+$FC_CFG_FILE\n\n"
+fi
+
+if [ -f $PRESENCE_CFG_FILE ]
+then
+    echo "Found presenc cfg"
+    FOUND_PRESENCE_CFG="Presence server config found at\n\
+$PRESENCE_CFG_FILE\n"
+fi
+
+
+if [[ -f $FC_CLIENT_CFG_FILE || -f $FC_CFG_FILE || -f $PRESENCE_CFG_FILE ]]
+then
+    dialog --backtitle "Friend Chat installer" --yesno "\
+$FOUND_APP_CFG\
+$FOUND_HELLO_CFG\
+$FOUND_PRESENCE_CFG\
+\n\
+If you continue, these files will NOT be
+overwritten with new values.\n\
+Remove the relevant file and restart the installer\n\
+if you wish to create a fresh one.\n\
+\n\
+Abort installer?" 20 75
+    if [ $? -eq "0" ]; then
+        clear
+        echo "$QUIT"
+        exit 1
+    fi
+fi
+
+# FriendCore config file
+FUP_CFG_FILE="$FRIEND_BUILD/cfg/cfg.ini"
+
+# setup files that might exist, created by previous runs of the friendup and/or friendchat installer
+FUP_INI_FILE="$FRIEND_BUILD/cfg/setup.ini"
+FC_INI_FILE="$FC_SERVER_FOLDER/friendchat_setup.ini"
+
+# load friend core things
+if [ -f $FUP_INI_FILE ]; then
+    dbhost=$(sed -nr "/^\[FriendCore\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
+    dbport=$(sed -nr "/^\[FriendCore\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
+    friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^domain[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
 else
     # New version of installer not used, get information from cfg/cfg.ini
-    dbhost=$(sed -nr "/^\[DatabaseUser\]/ { :l /^host[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
-    dbname=$(sed -nr "/^\[DatabaseUser\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
-    dbuser=$(sed -nr "/^\[DatabaseUser\]/ { :l /^login[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
-    dbpass=$(sed -nr "/^\[DatabaseUser\]/ { :l /^password[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
-    dbport=$(sed -nr "/^\[DatabaseUser\]/ { :l /^port[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
-    friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^fchost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
-    friendNetwork=$(sed -nr "/^\[FriendNetwork\]/ { :l /^enabled[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" "$FRIEND_BUILD/cfg/cfg.ini")
+    dbhost=$(sed -nr "/^\[DatabaseUser\]/ { :l /^host[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
+    dbport=$(sed -nr "/^\[DatabaseUser\]/ { :l /^port[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
+    friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^fchost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
 
     # Removes eventual ';' left by previous versions of Friend Core installers
     dbhost=${dbhost//;}
-    dbname=${dbname//;}
-    dbuser=${dbuser//;}
-    dbpass=${dbpass//;}
-    dbport=${dbport//;}
     friendCoreDomain=${friendCoreDomain//;}
-    friendNetwork=${friendNetwork//;}
+fi
 
-    # Set other variables default
+# load friendchat things
+if [ -f $FC_INI_FILE ]
+then
+    helloDbName=$(sed -nr "/^\[FriendChat\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    helloDbHost=$(sed -nr "/^\[FriendChat\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    helloDbPort=$(sed -nr "/^\[FriendChat\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    helloDbUser=$(sed -nr "/^\[FriendChat\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    helloDbPass=$(sed -nr "/^\[FriendChat\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    presenceDbName=$(sed -nr "/^\[Presence\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    presenceDbHost=$(sed -nr "/^\[Presence\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    presenceDbPort=$(sed -nr "/^\[Presence\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    presenceDbUser=$(sed -nr "/^\[Presence\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    presenceDbPass=$(sed -nr "/^\[Presence\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    stunHost=$(sed -nr "/^\[TurnStun\]/ { :l /^stun[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    turnHost=$(sed -nr "/^\[TurnStun\]/ { :l /^turn[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    turnUser=$(sed -nr "/^\[TurnStun\]/ { :l /^user[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+    turnPass=$(sed -nr "/^\[TurnStun\]/ { :l /^pass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+else
+    helloDbName="friendchat"
     helloDbHost="$dbhost"
     helloDbPort="$dbport"
     helloDbUser="$dbuser"
     helloDbPass="$dbpass"
+    presenceDbName="presence"
     presenceDbHost="$dbhost"
     presenceDbPort="$dbport"
     presenceDbUser="$dbuser"
     presenceDbPass="$dbpass"
+    stunHost="your_stun_server.com:xxxx"
+    turnHost="your_turn_server.com:xxxx"
+    turnUser="your_turn_username"
+    turnPass="your_turn_password"
 fi
 
 # Checks if TLS keys are defined
@@ -182,7 +229,7 @@ SELFSIGNED="false"
 if [ ! -f "$FRIEND_BUILD/cfg/crt/key.pem" ]
 then
     dialog --backtitle "Friend Chat installer" --msgbox "\
-Friend Chat needs TLS keys to work.\n\n\
+Friend Chat requires TLS/SSL to work.\n\n\
 This script will now create them for you.\n\
 Please answer the following questions..." 11 70
     clear
@@ -204,17 +251,27 @@ fi
 
 # Asks for Friend Chat information
 dialog --backtitle "Friend Chat installer" --msgbox "\
-Friend Chat needs a TURN and STUN server to function.\n\n\
-It also needs a Friend Chat and Presence server installed\n\
-each one of them with their own database.\n\n\
-This script will now ask for all the necessary information\n\
-and then install the files automatically into your Friend folder." 13 70
+FriendChat service will be installed.\n\
+Presence service will be installed.\n\
+FriendChat client app will be installed.\n\
+\n\
+mySQL databases will be added for the services.\n\
+\n\
+The live/p2p part of Friend Chat also requires\n\
+access to TURN and STUN servers to be useful.\n\
+These are not set up here, but here is a \n\
+project that has proven useful to us:\n\
+https://github.com/coturn/coturn\n\
+\n\
+The installer will now ask for all the necessary\n\
+information and then set things up within Friend." 19 60
 
 while true; do
     temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
-Please enter the domain name on which Friend Chat is to run.\n\n\
-Important! Friend Chat will not run on 'localhost' if\n\
-you are running Friend from a virtual machine..." 12 70 "$friendCoreDomain" --output-fd 1)
+Please enter the FQDN the Friend Chat client app\n\
+will use to connect to the Friend Chat service.\n\
+This is most likely the same domain on which FriendCore\n\
+is running" 12 70 "$friendCoreDomain" --output-fd 1)
     if [ $? = "1" ]; then
         clear
         echo "$QUIT"
@@ -296,14 +353,14 @@ for mysql user $helloDbUser:" 10 50 "$helloDbPass" --output-fd 1)
         helloDbPass="$temp"
     fi
     temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
-Please enter the turn server address:" 10 50 "$turnAddress" --output-fd 1)
+Please enter the turn server address:" 10 50 "$turnHost" --output-fd 1)
     if [ $? = "1" ]; then
         clear
         echo "$QUIT"
         exit 1
     fi
     if [ "$temp" != "" ]; then
-        turnAddress="$temp"
+        turnHost="$temp"
     fi
     temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Please enter the turn server username:" 10 50 "$turnUser" --output-fd 1)
@@ -326,28 +383,29 @@ Please enter the turn server password:" 10 50 "$turnPass" --output-fd 1)
         turnPass="$temp"
     fi
     temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
-Please enter the stun server address:" 10 50 "$stunAddress" --output-fd 1)
+Please enter the stun server address:" 10 50 "$stunHost" --output-fd 1)
     if [ $? = "1" ]; then
         clear
         echo "$QUIT"
         exit 1
     fi
     if [ "$temp" != "" ]; then
-        stunAddress="$temp"
+        stunHost="$temp"
     fi
     dialog --defaultno --backtitle "Friend Chat installer" --yesno "\
-Using the following values for Friend Chat:\n\n\
+Using the following values for Friend Chat:\n\
+\n\
 Friend Chat domain: $friendCoreDomain\n\
-Presence server database name: $presenceDbName\n\
-Presence server database username: $presenceDbUser\n\
-Presence server database password: $presenceDbPass\n\
 Friend Chat server database name: $helloDbName\n\
 Friend Chat server database username: $helloDbUser\n\
 Friend Chat server database password: $helloDbPass\n\
-TURN server address: $turnAddress\n\
+Presence server database name: $presenceDbName\n\
+Presence server database username: $presenceDbUser\n\
+Presence server database password: $presenceDbPass\n\
+TURN server address: $turnHost\n\
 TURN server username: $turnUser\n\
 TURN server password: $turnPass\n\
-STUN server address: $stunAddress\n\n\
+STUN server address: $stunHost\n\n\
 Please check the values and confirm..." 20 75
     if [ $? = "0" ]; then
         break;
@@ -381,7 +439,7 @@ then
     echo "Cloning Presence server from GIT"
     mkdir "$PRESENCE_FOLDER"
     cd "$PRESENCE_FOLDER"
-    git clone $GIT .
+    git clone $P_GIT .
 else
     echo "Pulling new changes to Presence server from GIT"
     cd "$PRESENCE_FOLDER"
@@ -389,25 +447,26 @@ else
 fi
 cd "$FRIENDCHAT_FOLDER"
 
-# Copies example.config.js file to config.js
-cp "$PRESENCE_FOLDER"/example.config.js "$PRESENCE_FOLDER"/config.js
+if [ ! -e $PRESENCE_CFG_FILE ]
+then
+    # Copies example.config.js file to config.js
+    cp "$PRESENCE_FOLDER"/example.config.js $PRESENCE_CFG_FILE
 
-# Pokes the new values in the presence/config.js file
-sed -i -- "s/presence_database_host/${presenceDbHost//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/3306/${presenceDbPort//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/presence_database_user/${presenceDbUser//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/presence_database_password/${presenceDbPass//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/presence_database_name/${presenceDbName//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/presence_domain/${friendCoreDomain//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/path_to_key.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/key.pem/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/path_to_cert.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/certificate.pem/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/friendcore_domain/${friendCoreDomain//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/stun_url.com/${stunAddress//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/turn_url.com/${turnAddress//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/turn_username/${turnUser//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/turn_password/${turnPass//\//\\/}/g" "$PRESENCE_FOLDER"/config.js
-sed -i -- "s/Do not edit this file!/This file can be edited/g" "$PRESENCE_FOLDER"/config.js
-
+    # Pokes the new values in the presence/config.js file
+    sed -i -- "s/presence_database_host/${presenceDbHost//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/3306/${presenceDbPort//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/presence_database_user/${presenceDbUser//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/presence_database_password/${presenceDbPass//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/presence_database_name/${presenceDbName//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/presence_domain/${friendCoreDomain//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/path_to_key.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/key.pem/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/path_to_cert.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/certificate.pem/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/friendcore_domain/${friendCoreDomain//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/stun_url.com/${stunHost//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/turn_url.com/${turnHost//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/turn_username/${turnUser//\//\\/}/g" $PRESENCE_CFG_FILE
+    sed -i -- "s/turn_password/${turnPass//\//\\/}/g" $PRESENCE_CFG_FILE
+fi
 # Temporary store the password in system variable to avoid warnings
 export MYSQL_PWD=$mysqlRootPass
 
@@ -478,33 +537,35 @@ cd "$FRIENDCHAT_FOLDER"
 # ----------------------------------
 
 # Copies files into Friend build directory
-if [ ! -d "$FRIENDCHATSERVER_FOLDER" ]; then
-    mkdir "$FRIENDCHATSERVER_FOLDER"
+if [ ! -d "$FC_SERVER_FOLDER" ]; then
+    mkdir "$FC_SERVER_FOLDER"
 fi
 cd server
 rsync -ravl \
 	--exclude '/.git*' \
 	--exclude '/example.update_to_fup.sh' \
 	--exclude '/update_to_fup.sh' \
-	. "$FRIENDCHATSERVER_FOLDER"
-cd "$FRIENDCHAT_FOLDER"
+	. "$FC_SERVER_FOLDER"
+cd $FRIENDCHAT_FOLDER
 
-# Copies example.config.js file to config.js
-cp "$FRIENDCHATSERVER_FOLDER"/example.config.js "$FRIENDCHATSERVER_FOLDER"/config.js
+if [ ! -e $FC_CFG_FILE ]
+then
+    # Copies example.config.js file to config.js
+    cp "$FC_SERVER_FOLDER/example.config.js" $FC_CFG_FILE
 
-# Pokes the new values in the presence/config.js file
-sed -i -- "s/dev : false/dev : $SELFSIGNED/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/hello_database_host/${dbhost//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/3306/${dbport//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/hello_database_user/${helloDbUser//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/hello_database_password/${helloDbPass//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/hello_database_name/${helloDbName//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/path_to_key.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/key.pem/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/path_to_cert.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/certificate.pem/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/friendcore_host/${friendCoreDomain//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/presence_domain/${friendCoreDomain//\//\\/}/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-sed -i -- "s/Do not edit this file/This file can be edited/g" "$FRIENDCHATSERVER_FOLDER"/config.js
-
+    # Pokes the new values in the presence/config.js file
+    sed -i -- "s/dev : false/dev : $SELFSIGNED/g" $FC_CFG_FILE
+    sed -i -- "s/hello_database_host/${dbhost//\//\\/}/g" $FC_CFG_FILE
+    sed -i -- "s/3306/${dbport//\//\\/}/g" $FC_CFG_FILE
+    sed -i -- "s/hello_database_user/${helloDbUser//\//\\/}/g" $FC_CFG_FILE
+    sed -i -- "s/hello_database_password/${helloDbPass//\//\\/}/g" $FC_CFG_FILE
+    sed -i -- "s/hello_database_name/${helloDbName//\//\\/}/g" $FC_CFG_FILE
+    sed -i -- "s/path_to_key.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/key.pem/g" $FC_CFG_FILE
+    sed -i -- "s/path_to_cert.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/certificate.pem/g" $FC_CFG_FILE
+    sed -i -- "s/friendcore_host/${friendCoreDomain//\//\\/}/g" $FC_CFG_FILE
+    sed -i -- "s/presence_domain/${friendCoreDomain//\//\\/}/g" $FC_CFG_FILE
+    sed -i -- "s/Do not edit this file/This file can be edited/g" $FC_CFG_FILE
+fi
 # Temporary store the password in system variable to avoid warnings
 export MYSQL_PWD=$mysqlRootPass
 
@@ -552,7 +613,7 @@ else
 	# Creates tables
 	echo "Creating tables"
 	mysql $mysqlconnectdb \
-		--execute="SOURCE $FRIENDCHATSERVER_FOLDER/scripts/sql/tables.sql"
+		--execute="SOURCE $FC_SERVER_FOLDER/scripts/sql/tables.sql"
 fi
 sleep 1
 
@@ -561,13 +622,13 @@ export MYSQL_PWD=$helloDbPass
 
 echo "Running update procedures"
 mysql $mysqlconnectdb \
-	--execute="SOURCE $FRIENDCHATSERVER_FOLDER/scripts/sql/procedures.sql"
+	--execute="SOURCE $FC_SERVER_FOLDER/scripts/sql/procedures.sql"
 
 # Removes dangerous variable
 export MYSQL_PWD=''
 
 # Initialize node module
-cd "$FRIENDCHATSERVER_FOLDER"
+cd "$FC_SERVER_FOLDER"
 npm install
 cd "$FRIENDCHAT_FOLDER"
 
@@ -575,88 +636,60 @@ cd "$FRIENDCHAT_FOLDER"
 # ---------------------------------------------
 
 # Copies files into Friend build directory
-if [ ! -d "$FRIENDCHATAPP_FOLDER" ]; then
-    mkdir "$FRIENDCHATAPP_FOLDER"
+if [ ! -d "$FC_CLIENT_FOLDER" ]; then
+    mkdir "$FC_CLIENT_FOLDER"
 fi
 cd client
 rsync -ravl \
 	--exclude '/.git*' \
 	--exclude '/update_to_fup.sh' \
-	. "$FRIENDCHATAPP_FOLDER"
+	. "$FC_CLIENT_FOLDER"
 cd "$FRIENDCHAT_FOLDER"
 
-# Copies example.local.config.js file to local.config.js
-cp "$FRIENDCHATAPP_FOLDER/example.local.config.js" "$FRIENDCHATAPP_FOLDER/local.config.js"
+if [ ! -e "$FC_CLIENT_FOLDER/local.config.js" ]
+then
+    # Copies example.local.config.js file to local.config.js
+    cp "$FC_CLIENT_FOLDER/example.local.config.js" "$FC_CLIENT_FOLDER/local.config.js"
 
-# Pokes the new values in the local.config.js file
-sed -i -- "s/friendcore_host/${friendCoreDomain//\//\\/}/g" "$FRIENDCHATAPP_FOLDER/local.config.js"
+    # Pokes the new values in the local.config.js file
+    sed -i -- "s/friendcore_host/${friendCoreDomain//\//\\/}/g" "$FC_CLIENT_FOLDER/local.config.js"
+fi
 
 # Copy servers autostart
 if [ ! -d "$FRIEND_BUILD/autostart" ]; then
     mkdir "$FRIEND_BUILD/autostart"
 fi
-cp "startfriendchat.sh" "$FRIEND_BUILD/autostart/startfriendchat.sh"
-cp "startpresence.sh" "$FRIEND_BUILD/autostart/startpresence.sh"
 
-# Creates or updates the build/cfg/cfg.ini file
-echo "[DatabaseUser]" > "$FRIEND_BUILD/cfg/cfg.ini"
-echo "login = $dbuser" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "password = $dbpass" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "host = $dbhost" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "dbname = $dbname" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "port = $dbport" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo " " >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "[FriendCore]" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "fchost = $friendCoreDomain" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "port = 6502" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "fcupload = storage/" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo " " >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "[Core]" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "port = 6502" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "SSLEnable = 1" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo " " >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "[FriendNetwork]" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo "enabled = $friendNetwork" >> "$FRIEND_BUILD/cfg/cfg.ini"
-echo " " >> "$FRIEND_BUILD/cfg/cfg.ini"
+if [ ! -e "$FRIEND_BUILD/autostart/startfriendchat.sh" ]
+then
+    cp "startfriendchat.sh" "$FRIEND_BUILD/autostart/startfriendchat.sh"
+fi
+
+if [ ! -e "$FRIEND_BUILD/autostart/startpresence.sh" ]
+then
+    cp "startpresence.sh" "$FRIEND_BUILD/autostart/startpresence.sh"
+fi
+
 echo "[FriendChat]" >> "$FRIEND_BUILD/cfg/cfg.ini"
 echo "enabled = 1" >> "$FRIEND_BUILD/cfg/cfg.ini"
 
 # Saves setup.ini configuration file
-echo "; Friend installation configuration file" > "$FRIEND_BUILD"/cfg/setup.ini
-echo "; Please respect spaces if you edit this manually" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo " " >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "[FriendCore]" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbuser = $dbuser" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbhost = $dbhost" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbport = $dbport" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbname = $dbname" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbpass = $dbpass" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "domain = $friendCoreDomain" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "TLS = 1" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo " " >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "[TurnStun]" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "turn = $turnAddress" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "stun = $stunAddress" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "user = $turnUser" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "pass = $turnPass" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo " " >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "[FriendNetwork]" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "enable = $friendNetwork" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo " " >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "[FriendChat]" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "enable = 1" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbname = $helloDbName" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbhost = $helloDbHost" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbport = $helloDbPort" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbuser = $helloDbUser" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbpass = $helloDbPass" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo " " >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "[Presence]" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbname = $presenceDbName" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbhost = $presenceDbHost" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbport = $presenceDbPort" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbuser = $presenceDbUser" >> "$FRIEND_BUILD"/cfg/setup.ini
-echo "dbpass = $presenceDbPass" >> "$FRIEND_BUILD"/cfg/setup.ini
+echo "; Friend installation configuration file" > $FC_INI_FILE
+echo "; Please respect spaces if you edit this manually" >> $FC_INI_FILE
+echo " " >> $FC_INI_FILE
+echo "[FriendChat]" >> $FC_INI_FILE
+echo "dbname = $helloDbName" >> $FC_INI_FILE
+echo "dbuser = $helloDbUser" >> $FC_INI_FILE
+echo "dbpass = $helloDbPass" >> $FC_INI_FILE
+echo " " >> $FC_INI_FILE
+echo "[Presence]" >> $FC_INI_FILE
+echo "dbname = $presenceDbName" >> $FC_INI_FILE
+echo "dbuser = $presenceDbUser" >> $FC_INI_FILE
+echo "dbpass = $presenceDbPass" >> $FC_INI_FILE
+echo "stun = $stunHost" >> $FC_INI_FILE
+echo "turn = $turnHost" >> $FC_INI_FILE
+echo "user = $turnUser" >> $FC_INI_FILE
+echo "pass = $turnPass" >> $FC_INI_FILE
 
 # Successful installation
 if [ "$TLSNEW" == "1" ]; then
