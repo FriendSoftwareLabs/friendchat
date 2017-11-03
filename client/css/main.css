@@ -100,12 +100,14 @@ body {
 }
 
 #assist-ui .button > i {
-	font-size: 150%;
+	font-size: 180%;
+	margin-right : 0.3em;
 }
 
 #assist-ui .button {
+	display : flex !important;
 	font-weight : bold;
-	padding     : 0.6em 0.4em;
+	padding     : 0.6em 0.6em;
 	line-height : 1.6em;
 }
 
