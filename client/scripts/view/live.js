@@ -165,9 +165,26 @@ library.component = library.component || {};
 		self.ui = null;
 		self.uiPanes = {};
 		self.panesVisible = 0;
+		self.audioSinkId = null;
 		
 		self.init();
 	}
+	
+	// Public
+	
+	ns.Live.prototype.setAudioSink = function( deviceId ) {
+		const self = this;
+		self.audioSinkId = deviceId;
+		const pids = Object.keys( self.peers );
+		pids.forEach( setSinkId );
+		function setSinkId( peerId ) {
+			console.log( 'setting audioSinkId on ', peerId );
+			let peer = self.peers[ peerId ];
+			peer.setAudioSink( self.audioSinkId );
+		}
+	}
+	
+	// Private
 	
 	ns.Live.prototype.init = function() {
 		var self = this;
@@ -427,6 +444,7 @@ library.component = library.component || {};
 			menu           : self.menu,
 			connecting     : document.getElementById( 'connecting-peers' ),
 			currentQuality : self.currentQuality,
+			audioSinkId    : self.audioSinkId,
 			isHost         : peer.isHost,
 			ondrag         : onDrag,
 			onclick        : onClick,
@@ -1258,6 +1276,7 @@ library.component = library.component || {};
 		self.menu = conf.menu;
 		self.connecting = conf.connecting;
 		self.currentQuality = conf.currentQuality;
+		self.audioSinkId = conf.audioSinkId;
 		self.isHost = conf.isHost;
 		self.ondrag = conf.ondrag;
 		self.onclick = conf.onclick;
@@ -2146,6 +2165,8 @@ library.component = library.component || {};
 		
 		self.stream = hello.template.getElement( 'stream-video-tmpl', conf );
 		self.stream.onloadedmetadata = play;
+		if ( self.audioSinkId )
+			self.setAudioSink();
 		
 		container.insertBefore( self.stream, RTCInfo );
 		self.toggleSpinner( false );
@@ -2219,6 +2240,49 @@ library.component = library.component || {};
 		self.toggleRemoteMute( isMuted );
 		self.toggleBlindState( isBlinded );
 		self.toggleRemoteBlind( isBlinded );
+	}
+	
+	ns.Peer.prototype.setAudioSink = function( deviceId ) {
+		const self = this;
+		deviceId = deviceId || self.audioSinkId;
+		console.log( 'ui.setAudioSink', deviceId );
+		if ( !deviceId ) {
+			console.log( 'no deviceId to set' );
+			return;
+		}
+		
+		if ( !self.stream ) {
+			self.audioSinkId = deviceId;
+			console.log( 'setAudioSink - no stream' );
+			return;
+		}
+		
+		if ( !self.stream.setSinkId ) {
+			console.log( 'setAudioSink - setSinkId is not supported' );
+			return;
+		}
+		
+		if ( self.stream.sinkId === deviceId ) {
+			console.log( 'setAudioSink - this deviceId is already set', deviceId );
+			return;
+		}
+		
+		self.stream.setSinkId( deviceId )
+			.then( ok )
+			.catch( fail );
+			
+		function ok() {
+			console.log( 'setAudioSink - success', self.stream.sinkId );
+			self.audioSinkId = deviceId;
+		}
+		
+		function fail( err ) {
+			console.log( 'failed to set audio sink', {
+				err : err,
+				did : deviceId,
+			});
+			self.audioSinkId = null;
+		}
 	}
 	
 	ns.Peer.prototype.updateButtonVisibility = function() {
@@ -2791,6 +2855,7 @@ library.component = library.component || {};
 		self.handleMedia( media );
 		self.stream.muted = true;
 	}
+	
 	
 	ns.Selfie.prototype.toggleAVGraph = function() {
 		const self = this;
@@ -4283,6 +4348,10 @@ library.component = library.component || {};
 		
 		self.previewId = 'source-select-preview';
 		
+		self.audioId = 'audioinput';
+		self.videoId = 'videoinput';
+		self.outputId = 'audiooutput';
+		
 		self.sources = null;
 		self.currentDevices = null;
 		self.selectedDevices = null;
@@ -4290,6 +4359,9 @@ library.component = library.component || {};
 		
 		self.audioinput = null;
 		self.videoinput = null;
+		self.audiooutput = null;
+		
+		self.supportsSinkId = false;
 		
 		library.component.UIPane.call( self, paneConf );
 	}
@@ -4315,14 +4387,22 @@ library.component = library.component || {};
 	}
 	
 	ns.SourceSelectPane.prototype.getSelected = function() {
-		var self = this;
-		var audioDevice = getSelectDevice( self[ self.audioId ]);
-		var videoDevice = getSelectDevice( self[ self.videoId ]);
+		const self = this;
+		const audioDevice = getSelectDevice( self[ self.audioId ]);
+		const videoDevice = getSelectDevice( self[ self.videoId ]);
 		
-		var selected = {
-			audioinput : audioDevice,
-			videoinput : videoDevice,
+		let outputDevice = null;
+		if ( self.supportsSinkId )
+			outputDevice = getSelectDevice( self[ self.outputId ]);
+		
+		const selected = {
+			audioinput  : audioDevice,
+			videoinput  : videoDevice,
+			audiooutput : outputDevice || undefined,
 		};
+		
+		if ( outputDevice )
+			selected.audiooutput = outputDevice;
 		
 		return selected;
 		
@@ -4351,10 +4431,7 @@ library.component = library.component || {};
 	// Private
 	
 	ns.SourceSelectPane.prototype.build = function() {
-		var self = this;
-		self.audioId = 'audioinput';
-		self.videoId = 'videoinput';
-		
+		const self = this;
 		self.sources = new library.rtc.MediaDevices();
 		
 		var tmplConf = {};
@@ -4362,23 +4439,26 @@ library.component = library.component || {};
 		self.insertPane( html );
 		
 		self.bind();
+		self.checkOutputSelectSupport();
 	}
 	
 	ns.SourceSelectPane.prototype.bind = function() {
-		var self = this;
+		const self = this;
 		self.previewEl = document.getElementById( 'source-select-preview' );
 		self.previewEl.preload = 'metadata';
 		
-		var element = document.getElementById( 'source-select' );
-		var closeBtn = document.getElementById( 'source-back' );
-		var selectButtons = document.getElementById( 'source-select-buttons' );
-		var applyBtn = selectButtons.querySelector( '.apply-select' );
-		var refreshBtn = selectButtons.querySelector( '.refresh-select' );
-		var discardBtn = selectButtons.querySelector( '.discard-select' );
+		const element = document.getElementById( 'source-select' );
+		const closeBtn = document.getElementById( 'source-back' );
+		const selectButtons = document.getElementById( 'source-select-buttons' );
+		const applyBtn = selectButtons.querySelector( '.apply-select' );
+		const refreshBtn = selectButtons.querySelector( '.refresh-select' );
+		const discardBtn = selectButtons.querySelector( '.discard-select' );
 		
-		var errElement = document.getElementById( 'source-error' );
-		var errAvailableBtn = errElement.querySelector( '.error-buttons .available' );
-		var errIgnoreBtn = errElement.querySelector( '.error-buttons .ignore' );
+		const errElement = document.getElementById( 'source-error' );
+		const errAvailableBtn = errElement.querySelector( '.error-buttons .available' );
+		const errIgnoreBtn = errElement.querySelector( '.error-buttons .ignore' );
+		
+		self.outputTestEl = document.getElementById( 'audiooutput-test' );
 		
 		self.previewEl.onloadedmetadata = letsPlay;
 		
@@ -4420,6 +4500,18 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.SourceSelectPane.prototype.checkOutputSelectSupport = function() {
+		const self = this;
+		if ( !self.outputTestEl )
+			return;
+		
+		if ( !self.outputTestEl.setSinkId )
+			return;
+		
+		console.log( 'checkOutputSelectSupport - supported', self.outputTestEl.setSinkId );
+		self.supportsSinkId = true;
+	}
+	
 	ns.SourceSelectPane.prototype.refreshDevices = function( current ) {
 		var self = this;
 		self.clear();
@@ -4435,6 +4527,7 @@ library.component = library.component || {};
 			.catch( showErr );
 		
 		function show( devices ) {
+			console.log( 'devices', devices );
 			self.allDevices = devices;
 			self.populate();
 		}
@@ -4446,7 +4539,7 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.showMediaDevicesErr = function( err ) {
 		var self = this;
-		console.log( 'SourceSelectPane.showMediaDevicesErr', err );
+		console.log( 'SourceSelectPane.showMediaDevicesErr', err.stack || err );
 	}
 	
 	ns.SourceSelectPane.prototype.clearErrors = function() {
@@ -4454,18 +4547,23 @@ library.component = library.component || {};
 		self.toggleExplain( true );
 		self.toggleSelectError( self.audioId );
 		self.toggleSelectError( self.videoId );
+		self.toggleSelectError( self.outputId );
 	}
 	
 	ns.SourceSelectPane.prototype.populate = function() {
 		var self = this;
 		setupAudio();
 		setupVideo();
+		
+		if ( self.supportsSinkId )
+			setupOutput();
+		
 		var selected = self.getSelected();
 		self.setPreview( selected );
 		
 		function setupAudio() {
 			var conf = {
-				type : self.audioId,
+				type    : self.audioId,
 				errType : 'audio',
 			};
 			setupSelect( conf );
@@ -4473,9 +4571,17 @@ library.component = library.component || {};
 		
 		function setupVideo() {
 			var conf = {
-				type : self.videoId,
+				type    : self.videoId,
 				errType : 'video',
-			}
+			};
+			setupSelect( conf );
+		}
+		
+		function setupOutput() {
+			const conf = {
+				type    : self.outputId,
+				errType : 'output',
+			};
 			setupSelect( conf );
 		}
 		
@@ -4517,21 +4623,23 @@ library.component = library.component || {};
 	}
 	
 	ns.SourceSelectPane.prototype.setPreview = function( selected ) {
-		var self = this;
+		const self = this;
 		self.clearPreview();
+		let audioDevice = false;
+		let videoDevice = false;
+		let audioDeviceId = null;
+		let videoDeviceId = null;
 		
 		if ( selected.audioinput ) {
-			var aiDev = self.allDevices.audioinput[ selected.audioinput ];
-			var audioDeviceId = aiDev.deviceId;
+			let aiDev = self.allDevices.audioinput[ selected.audioinput ];
+			audioDeviceId = aiDev.deviceId;
 		}
 		
 		if ( selected.videoinput ) {
-			var viDev = self.allDevices.videoinput[ selected.videoinput ];
-			var videoDeviceId = viDev.deviceId;
+			let viDev = self.allDevices.videoinput[ selected.videoinput ];
+			videoDeviceId = viDev.deviceId;
 		}
 		
-		var audioDevice = false;
-		var videoDevice = false;
 		if ( audioDeviceId )
 			audioDevice = { "deviceId" : audioDeviceId };
 		
@@ -4549,7 +4657,7 @@ library.component = library.component || {};
 		navigator.mediaDevices.getUserMedia( mediaConf )
 			.then( setMedia )
 			.catch( mediaErr );
-			
+		
 		function setMedia( stream ) {
 			
 			/*
@@ -4557,6 +4665,7 @@ library.component = library.component || {};
 				self.checkAudioInput( stream );
 			
 			*/
+			
 			const tracks = stream.getTracks();
 			const srcObject = self.previewEl.srcObject;
 			if ( !srcObject )
@@ -4574,6 +4683,7 @@ library.component = library.component || {};
 		function mediaErr( err ) {
 			console.log( 'preview media failed', err );
 		}
+		
 	}
 	
 	ns.SourceSelectPane.prototype.clearPreview = function() {
@@ -4599,6 +4709,7 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.checkAudioInput = function( stream ) {
 		var self = this;
+		console.log( 'checkAudioInput', stream );
 		var checkEl = document.getElementById( 'audioinput-checking' );
 		checkEl.classList.toggle( 'hidden', false );
 		new library.rtc.AudioInputDetect( stream, doneBack );
@@ -4611,12 +4722,36 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.SourceSelectPane.prototype.setAudioSink = function( selected ) {
+		const self = this;
+		if ( !self.previewEl )
+			return;
+		
+		let label = selected[ 'audiooutput' ];
+		let dev = self.allDevices.audiooutput[ label ];
+		
+		self.previewEl.setSinkId( dev.deviceId )
+			.then( ok )
+			.catch( fail );
+			
+		function ok() {
+			console.log( 'source select - sink id set', self.previewEl.sinkId );
+		}
+		
+		function fail( err ) {
+			console.log( 'source select - failed to set sink id', err.stack || err );
+		}
+	}
+	
 	ns.SourceSelectPane.prototype.bindSelect = function( element ) {
 		var self = this;
 		element.addEventListener( 'change', selectChange, false );
 		function selectChange( e ) {
 			var selected = self.getSelected();
-			self.setPreview( selected );
+			if ( 'source-select-audiooutput' === e.target.id )
+				self.setAudioSink( selected );
+			else
+				self.setPreview( selected );
 		}
 	}
 	
@@ -4694,6 +4829,7 @@ library.component = library.component || {};
 		var clear = [
 			self.audioId,
 			self.videoId,
+			self.outputId,
 		];
 		
 		clear.forEach( remove );

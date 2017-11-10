@@ -626,6 +626,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.selfie = selfie;
 		self.view.addPeer( selfie );
 		self.selfie.on( 'error'           , error );
+		self.selfie.on( 'audio-sink'      , audioSink );
 		self.selfie.on( 'mute'            , broadcastMute );
 		self.selfie.on( 'blind'           , broadcastBlind );
 		self.selfie.on( 'screenmode'      , broadcastScreenMode );
@@ -635,6 +636,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.selfie.on( 'restart'         , restart );
 		
 		function error( e ) { self.handleSelfieError( e ); }
+		function audioSink( e ) { self.handleAudioSink( e ); }
 		function broadcastMute( isMuted ) { broadcast( 'mute', isMuted ); }
 		function broadcastBlind( isBlinded ) { broadcast( 'blind', isBlinded ); }
 		function broadcastScreenMode( mode ) { broadcast( 'screenmode', mode ); }
@@ -664,6 +666,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function restart() {
 			self.restartPeers();
 		}
+	}
+	
+	ns.RTC.prototype.handleSelfieError = function( err ) {
+		const self = this;
+		console.log( 'handleSelfieError - NYI', err );
+	}
+	
+	ns.RTC.prototype.handleAudioSink = function( deviceId ) {
+		const self = this;
+		console.log( 'handleAudioSink', deviceId );
+		self.view.setAudioSink( deviceId );
 	}
 	
 	ns.RTC.prototype.broadcast = function( event ) {
@@ -887,11 +900,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		let pref = self.preferedDevices;
 		let prefAudio = available.audioinput[ pref.audioinput ];
 		let prefVideo = available.videoinput[ pref.videoinput ];
+		let prefOut = available.audiooutput[ pref.audiooutput ];
 		if ( prefAudio )
 			self.currentDevices.audioinput = pref.audioinput;
 		
 		if ( prefVideo )
 			self.currentDevices.videoinput = pref.videoinput;
+		
+		if ( prefOut ) {
+			self.currentDevices.audiooutput = pref.audiooutput;
+			self.setAudioSink( pref );
+		}
 		
 		delete self.preferedDevices;
 	}
@@ -1155,6 +1174,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
 		const self = this;
+		console.log( 'setMediaSources', devices );
 		let send = self.permissions.send;
 		if ( typeof( devices.audioinput ) === 'boolean' )
 			send.audio = false;
@@ -1176,6 +1196,25 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return;
 			
 			self.savePreferedDevices();
+			if ( devices.audiooutput )
+				self.setAudioSink( devices );
+		}
+	}
+	
+	ns.Selfie.prototype.setAudioSink = function( selected ) {
+		const self = this;
+		self.sources.getByType()
+			.then( devBack )
+			.catch( fail );
+			
+		function devBack( devices ) {
+			let label = selected.audiooutput;
+			let out = devices.audiooutput[ label ];
+			self.emit( 'audio-sink', out.deviceId );
+		}
+		
+		function fail( err ) {
+			console.log( 'setAudioSink - enumerating devices failed', err );
 		}
 	}
 	

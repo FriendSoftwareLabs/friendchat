@@ -910,10 +910,10 @@
 }
 
 #source-select .error-message {
-	padding : 0.5em;
-	margin-bottom : 0.5em;
+	padding          : 0.5em;
+	margin-bottom    : 0.5em;
 	background-color : rgb( 152, 59, 37 );
-	color : white;
+	color            : white;
 }
 
 #source-select .select-message {
@@ -921,13 +921,15 @@
 }
 
 #source-select #audioinput-container,
-#source-select #videoinput-container {
+#source-select #videoinput-container,
+#source-select #audiooutput-container {
 	margin-top : 0.5em;
-	padding : 0.5em;
+	padding    : 0.5em;
 }
 
 #source-select #audioinput-select,
-#source-select #videoinput-select {
+#source-select #videoinput-select,
+#source-select #audiooutput-select {
 	width : 100%;
 }
 
