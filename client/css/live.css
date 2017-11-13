@@ -13,7 +13,7 @@
 }
 
 #lists-container {
-	margin-left : -2px;
+	
 }
 
 #lists-container > div {
@@ -27,9 +27,13 @@
 .live-list-container.peek { width : 2.5em; }
 .live-list-container.show { width : 10em; }
 .live-list-container.hide {	width : 0em; }
+.live-list-container.full {
+	width : 100%;
+}
 
 .live-list {
 	color : #eee;
+	height: 100%;
 }
 
 .list-head {
@@ -37,7 +41,7 @@
 	border-bottom-left-radius : 3px;
 }
 
-.list-head:hover {
+.live-list-container:not(.full) .list-head:hover {
 	background-color : rgb( 90, 90, 90 );
 }
 
@@ -240,37 +244,23 @@
 	display : none;
 }
 
-.peer.in-list {
-	height : 2.5em;
-	overflow: unset;
+.peer.in-list.list-large {
+	flex : 1 1 auto;
 }
 
 .peer.in-list .list-ui {
-	position: absolute;
-	display : flex;
-	height  : 100%;
-	/*width   : 100%;*/
-	left    : 0;
-	right   : 0;
-	transition : left 0.2s, background-color 0.2s, padding-left 0.2s;
-	background-color: transparent;
-	padding : 2px;
-	padding-left : 0px;
-	border-radius: 3px;
-	z-index: 444;
+	display          : flex;
+	flex-direction   : row;
+	height           : 2.5em;
+	background-color : transparent;
+	border-radius    : 3px;
 }
 
-.peer.in-list.speaker .list-ui {
-	position: absolute;
-	transition: left 0.2s, background-color 0.2s, padding-left 0.2s;
-	left : -3.5em;
-	right: 0;
-	background-color : #555;
-	padding-left: 2px;
-}
-
-.peer.in-list:hover .list-ui {
-	background-color : #888;
+.peer.in-list.list-large .list-ui {
+	flex-direction  : column;
+	align-items     : center;
+	justify-content : center;
+	height          : unset;
 }
 
 .peer.in-list .stream-container {
@@ -280,9 +270,27 @@
 .list-ui .list-peer-state {
 	position      : relative;
 	width         : 2.5em;
-	align-self    : stretch;
+	height:       : 2.5em;
 	border-radius : 3px;
+	border        : 2px solid transparent;
+	transition    : border-color 0.2s;
 	overflow      : hidden;
+	flex          : 0 0 auto;
+}
+
+.list-ui .list-peer-state:hover {
+	transition   : border-color 0.2s;
+	border-color : #eee;
+}
+
+.peer.in-list.speaker .list-peer-state {
+	transition       : background-color 0.2s;
+	background-color : #a7d873;
+}
+
+.peer.in-list.list-large .list-peer-state {
+	height : 4em;
+	width  : 4em;
 }
 
 .list-ui .list-peer-state > div {
@@ -307,8 +315,12 @@
 	display: flex;
 }
 
-.list-ui .name {
+.peer:not(.list-large) .list-ui .name {
 	padding-left : 0.5em;
+}
+
+.list-ui .name {
+	line-height: 2em;
 }
 
 
@@ -444,7 +456,12 @@
 	opacity: 1;
 }
 
+#tease-chat-container {
+	margin : 0;
+}
+
 #tease-chat {
+	margin-left : 2px;
 	max-height: 2.5em;
 	overflow: hidden;
 }
@@ -649,7 +666,7 @@
 	
 }
 
-#waiting-for-peers {
+#waiting-for-peers-fritz {
 	width: 80%;
 	height: 80%;
 	background-image: url(/webclient/apps/FriendChat/gfx/Waiting.png);
@@ -658,6 +675,7 @@
 	background-position: center center;
 }
 
+/* was for a more advanced version of the waiting for img thing.
 #waiting-for-peers-with-spinner {
 	position: absolute;
 	width: 57.8vw;
@@ -682,6 +700,40 @@
 	background-image: url( /webclient/apps/FriendChat/gfx/ICON_2C_150px.png );
 	-webkit-animation : f-spin 4s linear infinite;
 	animation : f-spin 4s linear infinite;
+}
+*/
+
+#waiting-for-peers-dots {
+	
+}
+
+.waiting-dot {
+	position: relative;
+	width : 2em;
+	height: 2em;
+}
+
+.waiting-dot > i {
+	font-size: 1em;
+	transform : scale( 0.5 );
+	
+}
+
+#waiting-for-container:not(.hidden) #waiting-for-peers-dots:not(.hidden) .waiting-dot > i {
+	animation : dot-zoom 0.75s ease-in-out alternate infinite;
+}
+
+#waiting-for-container:not(.hidden) #waiting-for-peers-dots:not(.hidden) .waiting-dot:nth-child(2n) > i {
+	animation-delay: 0.25s;
+}
+
+#waiting-for-container:not(.hidden) #waiting-for-peers-dots:not(.hidden) .waiting-dot:nth-child(3n) > i {
+	animation-delay: 0.50s;
+}
+
+@keyframes dot-zoom {
+	from { transform : scale( 0.5 ); }
+	to { transform : scale( 1 ); }
 }
 
 @-webkit-keyframes f-spin {
@@ -832,6 +884,10 @@
 .remote-mute,
 .remote-blind {
 	color : red;
+}
+
+#live-content {
+	min-width: calc( 2.5em + 4px );
 }
 
 #live-ui {

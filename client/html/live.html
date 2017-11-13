@@ -33,11 +33,22 @@
 				<div>
 					<div id="peer-container" class="">
 						<div id="waiting-for-container" class="abs-cover center-child">
-							<div id="waiting-for-peers">
+							<div id="waiting-for-peers-fritz">
 								<!--
 								<div id="waiting-for-peers-spinner">
 								</div>
 								-->
+							</div>
+							<div id="waiting-for-peers-dots" class="hidden">
+								<div class="waiting-dot center-child">
+									<i class="fa fa-fw fa-user"></i>
+								</div>
+								<div class="waiting-dot center-child">
+									<i class="fa fa-fw fa-user"></i>
+								</div>
+								<div class="waiting-dot center-child">
+									<i class="fa fa-fw fa-user"></i>
+								</div>
 							</div>
 						</div>
 						<div id="peers" class="group row allow-wrap grid1">
@@ -51,22 +62,24 @@
 						<div id="toggle-peer-grid-btn" class="btn fortify hidden">
 							<i class="fa fa-fw fa-users"></i>
 						</div>
-						<div id="tease-chat" class="group row btn-row hidden">
-							<div id="tease-chat-content" class="expand">
-							</div>
-							<div id="tease-chat-num" class="std-icon fortify">
-							</div>
-							<div id="tease-chat-goto-chat" class="btn fortify">
-								<i class="fa fa-fw fa-keyboard-o"></i>
-							</div>
-							<div id="tease-chat-clear" class="btn danger fortify">
-								<i class="fa fa-fw fa-close"></i>
+						<div id="tease-chat-container" class="fortify">
+							<div id="tease-chat" class="group row btn-row hidden">
+								<div id="tease-chat-content" class="expand">
+								</div>
+								<div id="tease-chat-num" class="std-icon fortify">
+								</div>
+								<div id="tease-chat-goto-chat" class="btn fortify">
+									<i class="fa fa-fw fa-keyboard-o"></i>
+								</div>
+								<div id="tease-chat-clear" class="btn danger fortify">
+									<i class="fa fa-fw fa-close"></i>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div id="lists-container" class="group row cover">
+			<div id="lists-container" class="group row cover fortify">
 				<!-- lists go here -->
 			</div>
 			<div id="live-ui-panes" class="abs-cover hidden">
@@ -82,7 +95,7 @@ name,
 avatar,
 -->
 <script id="selfie-tmpl" type="text/html">
-<div id="selfie" class="peer selfie popped group column">
+<div id="selfie" class="peer selfie popped bar column">
 	<div class="stream-container expand">
 		<div class="avatar" style="background-image: url(<%= avatar %>)">
 		</div>
@@ -92,7 +105,7 @@ avatar,
 	</div>
 	<div class="click-catch abs-cover">
 	</div>
-	<div class="list-ui group row">
+	<div class="list-ui expand">
 		<div class="list-peer-state fortify">
 			<div class="list-avatar" style="background-image: url(<%= avatar %>)">
 			</div>
@@ -108,7 +121,7 @@ avatar,
 			<div class="state list-rtc-state hidden">
 			</div>
 		</div>
-		<div class="name expand">
+		<div class="name fortify">
 			<%= name %>
 		</div>
 	</div>
@@ -261,7 +274,7 @@ avatar,
 			</div>
 		</div>
 	</div>
-	<div class="list-ui group row">
+	<div class="list-ui expand">
 		<div class="list-peer-state fortify">
 			<div class="list-avatar" style="background-image: url(<%= avatar %>)">
 			</div>
@@ -277,7 +290,7 @@ avatar,
 			<div class="state list-rtc-state hidden">
 			</div>
 		</div>
-		<div class="name expand">
+		<div class="name fortify">
 			<%= name %>
 		</div>
 	</div>
@@ -494,8 +507,8 @@ label,
 -->
 <script id="live-list-tmpl" type="text/html">
 <div id="<%= id %>" class="live-list-container fortify peek hide">
-	<div class="live-list">
-		<div class="list-head group row">
+	<div class="live-list group column cover">
+		<div class="list-head fortify group row">
 			<div class="list-head-icon center-child fortify">
 				<i class="fa fa-fw <%= faIcon %>"></i>
 			</div>
@@ -503,7 +516,7 @@ label,
 				<%= label %>
 			</div>
 		</div>
-		<div class="list-items">
+		<div class="list-items expand group column start left cover">
 		</div>
 	</div>
 </div>

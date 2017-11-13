@@ -1468,7 +1468,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function mediaFailed( err, constraints ) {
 			self.clearStream();
-			var errData = {
+			console.log( 'mediaFailed', err.stack || err );
+			const errData = {
 				err : err,
 				constraints : constraints,
 			};
@@ -1553,8 +1554,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.emit( 'tracks-available', tracks );
 		self.emit( 'selfie', stream );
+		
+		// TODO refactor these to use tracks-available?
 		self.emit( 'audio', !!aTrack );
 		self.emit( 'video', !!vTrack );
+		
+		self.emitVoiceOnly( tracks );
 	}
 	
 	ns.Selfie.prototype.getStream = function() {
@@ -1664,6 +1669,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		rec.video = !rec.video;
 		self.menu.setState( 'receive-video', rec.video );
 		self.emit( 'restart', rec );
+		self.emitVoiceOnly();
+	}
+	
+	ns.Selfie.prototype.emitVoiceOnly = function( tracks ) {
+		const self = this;
+		const voiceOnly = checkIsVoiceOnly( tracks );
+		self.emit( 'voice-only', voiceOnly );
+		
+		function checkIsVoiceOnly( tracks ) {
+			const send = ( tracks && tracks.video ) || self.permissions.send.video;
+			const receive = self.permissions.receive.video;
+			if ( send || receive )
+				return false;
+			
+			return true;
+		}
 	}
 	
 	ns.Selfie.prototype.toggleScreenMode = function( mode ) {

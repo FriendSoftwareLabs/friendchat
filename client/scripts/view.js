@@ -404,9 +404,13 @@ library.view = library.view || {};
 		}
 		
 		function initLive( preferedDevices ) {
+			let width = 850;
+			if ( isVoiceOnly() )
+				width = 400;
+				
 			const windowConf = {
 				title              : Application.i18n('i18n_live_session'),
-				width              : 850,
+				width              : width,
 				height             : 450,
 				fullscreenenabled  : true,
 			};
@@ -430,6 +434,24 @@ library.view = library.view || {};
 			
 			self.bindView();
 			delete self.initConf;
+			
+			function isVoiceOnly() {
+				if ( 
+					   !self.liveConf 
+					|| !self.liveConf.rtcConf 
+					|| !self.liveConf.rtcConf.permissions 
+					|| !self.liveConf.rtcConf.permissions.send 
+					|| !self.liveConf.rtcConf.permissions.receive 
+				) {
+					return false;
+				}
+				
+				let perm = self.liveConf.rtcConf.permissions;
+				if ( perm.send.video || perm.receive.video )
+					return false;
+				
+				return true;
+			}
 		}
 	}
 	

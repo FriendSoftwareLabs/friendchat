@@ -167,6 +167,9 @@ library.component = library.component || {};
 		self.panesVisible = 0;
 		self.audioSinkId = null;
 		
+		self.isVoiceOnly = false;
+		self.isVoiceListLarge = false;
+		
 		self.init();
 	}
 	
@@ -260,10 +263,15 @@ library.component = library.component || {};
 		// ui
 		self.live = document.getElementById( 'live' );
 		self.waiting = document.getElementById( 'waiting-for-container' );
+		self.waitingFritz = document.getElementById( 'waiting-for-peers-fritz' );
+		self.waitingDots = document.getElementById( 'waiting-for-peers-dots' );
 		self.ui = document.getElementById( 'live-ui' );
 		self.uiMenuBtn = document.getElementById( 'show-menu-btn' );
 		self.uiPeerGridBtn = document.getElementById( 'toggle-peer-grid-btn' );
 		self.uiPaneContainer = document.getElementById( 'live-ui-panes' );
+		self.teaseChat = document.getElementById( 'tease-chat-container' );
+		self.liveContent = document.getElementById( 'live-content' );
+		self.lists = document.getElementById( 'lists-container' );
 		
 		document.addEventListener( 'mousemove', mouseMoved, false );
 		document.addEventListener( 'mouseleave', catchLeave, false );
@@ -455,6 +463,7 @@ library.component = library.component || {};
 			viewPeer = new library.view.Selfie( conf );
 			peer.on( 'room-quality', handleRoomQuality );
 			peer.on( 'popped', togglePopped );
+			peer.on( 'voice-only', voiceOnly );
 		}
 		else {
 			conf.onmenu = onMenuClick;
@@ -464,15 +473,29 @@ library.component = library.component || {};
 		
 		// add to ui
 		self.peers[ viewPeer.id ] = viewPeer;
-		self.peerContainer.appendChild( viewPeer.el );
-		viewPeer.el.classList.toggle( 'in-grid', true );
-		self.peerOrder.push( viewPeer.id );
-		self.updateGridClass();
+		if ( self.isVoiceOnly )
+			addToVoiceList( viewPeer );
+		else
+			addToGrid( viewPeer );
+		
 		self.updateMenu();
+		self.updateVoiceListMode();
 		
 		// start session duration on selfie when the first peer is added
 		if ( self.peerOrder.length === 2 )
 			self.peers[ 'selfie' ].startDurationTimer();
+		
+		function addToVoiceList( peer ) {
+			peer.setIsInList( true );
+			self.audioList.add( peer.el );
+		}
+		
+		function addToGrid( peer ) {
+			self.peerContainer.appendChild( viewPeer.el );
+			viewPeer.el.classList.toggle( 'in-grid', true );
+			self.peerOrder.push( viewPeer.id );
+			self.updateGridClass();
+		}
 		
 		// show/hide waiting splash
 		self.updateWaiting();
@@ -491,6 +514,10 @@ library.component = library.component || {};
 		
 		function togglePopped( e ) {
 			self.togglePopped();
+		}
+		
+		function voiceOnly( e ) {
+			self.handleVoiceOnly( e );
 		}
 		
 		function updateHasVideo( hasVideo ) {
@@ -533,6 +560,7 @@ library.component = library.component || {};
 			self.peers[ 'selfie' ].stopDurationTimer();
 		}
 		
+		self.updateVoiceListMode();
 		self.updateGridClass();
 		self.updateWaiting();
 		self.updateMenu();
@@ -631,6 +659,70 @@ library.component = library.component || {};
 			return;
 		
 		self.queue.handle( msg );
+	}
+	
+	ns.Live.prototype.handleVoiceOnly = function( isVoiceOnly ) {
+		const self = this;
+		console.log( 'handleVoiceOnly', isVoiceOnly );
+		self.isVoiceOnly = isVoiceOnly;
+		updateWaiting();
+		self.teaseChat.classList.toggle( 'hidden', isVoiceOnly );
+		self.liveContent.classList.toggle( 'expand', !isVoiceOnly );
+		self.liveContent.classList.toggle( 'fortify', isVoiceOnly );
+		self.lists.classList.toggle( 'expand', isVoiceOnly );
+		self.lists.classList.toggle( 'fortify', !isVoiceOnly );
+		self.audioList.show( isVoiceOnly );
+		
+		self.updateVoiceListMode();
+		
+		function updateWaiting() {
+			self.waitingFritz.classList.toggle( 'hidden', self.isVoiceOnly );
+			self.waitingDots.classList.toggle( 'hidden', !self.isVoiceOnly );
+		}
+	}
+	
+	ns.Live.prototype.updateVoiceListMode = function() {
+		const self = this;
+		const ids = Object.keys( self.peers );
+		if ( !ids.length )
+			return;
+		
+		console.log( 'updateVoiceListMode', {
+			max2p : hasMaxTwoPeers( ids ),
+			pol   : self.peerOrder,
+		});
+		
+		if ( self.isVoiceOnly && hasMaxTwoPeers( ids ) && !self.peerOrder.length )
+			setToLarge( ids );
+		else
+			setToRows( ids );
+		
+		updatePeers( ids );
+		
+		function setToLarge( ids ) {
+			console.log( 'setToLarge', ids );
+			self.isVoiceListLarge = true;
+		}
+		
+		function setToRows( ids ) {
+			console.log( 'setToRows', ids );
+			self.isVoiceListLarge = false;
+		}
+		
+		function updatePeers( ids ) {
+			ids.forEach( toggleLarge );
+			function toggleLarge( pid ) {
+				let peer = self.peers[ pid ];
+				peer.setVoiceListMode( self.isVoiceListLarge );
+			}
+		}
+		
+		function hasMaxTwoPeers( ids ) {
+			if ( 2 >= ids.length )
+				return true;
+			else
+				return false;
+		}
 	}
 	
 	ns.Live.prototype.updateHasVideo = function( peerId, hasVideo ) {
@@ -1313,6 +1405,13 @@ library.component = library.component || {};
 		self.el.classList.toggle( 'in-grid', !isInList );
 		self.el.classList.toggle( 'in-list', isInList );
 		self.clickCatch.classList.toggle( 'hidden', isInList );
+	}
+	
+	ns.Peer.prototype.setVoiceListMode = function( isLarge ) {
+		const self = this;
+		console.log( 'setVoiceListMode', isLarge );
+		self.isVoiceListLarge = isLarge;
+		self.el.classList.toggle( 'list-large', self.isVoiceListLarge );
 	}
 	
 	ns.Peer.prototype.setIsSpeaking = function( isSpeaker ) {
@@ -3051,9 +3150,12 @@ library.component = library.component || {};
 		self[ e.type ]( e.data );
 	}
 	
-	ns.List.prototype.show = function() {
+	ns.List.prototype.show = function( full ) {
 		const self = this;
-		self.toggleShow( true );
+		if ( null == full)
+			self.toggleShow( true );
+		else
+			self.toggleFull( full );
 	}
 	
 	ns.List.prototype.peek = function() {
@@ -3174,7 +3276,7 @@ library.component = library.component || {};
 	}
 	
 	ns.List.prototype.toggleHide = function( hide ) {
-		var self = this;
+		const self = this;
 		if ( typeof( hide ) === 'undefined' )
 			hide = !self.hide;
 		
@@ -3183,13 +3285,18 @@ library.component = library.component || {};
 	}
 	
 	ns.List.prototype.toggleShow = function( force ) {
-		var self = this;
+		const self = this;
 		if ( null == force )
 			self.isShow = !self.isShow;
 		else
 			self.isShow = !!force;
 		
 		self.element.classList.toggle( 'show', self.isShow );
+	}
+	
+	ns.List.prototype.toggleFull = function( setFull ) {
+		const self = this;
+		self.element.classList.toggle( 'full', setFull );
 	}
 	
 })( library.view );
