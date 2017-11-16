@@ -122,10 +122,8 @@ library.component.parse = library.component.parse || {};
 			return;
 		}
 		
-		console.log( 'moveForward.before', self.parseOrder );
 		self.parseOrder.splice( currentIndex, 1 );
 		self.parseOrder.splice( currentIndex - 1, 0, id );
-		console.log( 'moveForward.after', self.parseOrder );
 	}
 	
 	ns.Parser.prototype.moveParserBack = function( id ) {
@@ -161,7 +159,7 @@ library.component.parse = library.component.parse || {};
 	
 	ns.Parser.prototype.init = function() {
 		var self = this;
-		console.log( 'parser init' );
+		
 	}
 	
 })( library.component.parse );

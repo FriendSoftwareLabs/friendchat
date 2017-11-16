@@ -307,7 +307,6 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Droppings ))
 			return new ns.Droppings( conf );
 		
-		console.log( 'Droppings', conf );
 		var self = this;
 		self.toView = conf.toView;
 		self.toChat = conf.toChat;
@@ -319,7 +318,6 @@ library.component = library.component || {};
 	
 	ns.Droppings.prototype.handle = function( items ) {
 		var self = this;
-		console.log( 'Droppings.handle', items );
 		items.forEach( jajajaja );
 		function jajajaja( item ) {
 			var handler = self.typeMap[ item.Type ];
@@ -349,11 +347,9 @@ library.component = library.component || {};
 	
 	ns.Droppings.prototype.handleFile = function( item ) {
 		var self = this;
-		console.log( 'shareFile', item );
 		var file = new api.File( item.Path );
 		file.expose( back );
 		function back( res ) {
-			console.log( 'shareFile res', res );
 			var success = !!res;
 			var msg = {
 				type : 'link',
@@ -370,7 +366,6 @@ library.component = library.component || {};
 	
 	ns.Droppings.prototype.handleCalendar = function( item ) {
 		var self = this;
-		console.log( 'handleCalendar', item );
 		var event = {
 			type : 'calendar-event',
 			data : item,
@@ -467,12 +462,11 @@ library.component = library.component || {};
 	
 	ns.RTCService.prototype.init = function() {
 		var self = this;
-		console.log( 'RTCService.init' );
+		
 	}
 	
 	ns.RTCService.prototype.handle = function( event ) {
 		var self = this;
-		console.log( 'RTCService.handle', event );
 		self.emit( event.type, event.data );
 	}
 	

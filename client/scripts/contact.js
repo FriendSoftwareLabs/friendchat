@@ -523,7 +523,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		var self = this;
-		console.log( 'joinLive', Object.keys( conf ));
 		conf = conf || {};
 		if ( self.live )
 			return; // we already are in a live _in this room_
@@ -1100,7 +1099,6 @@ library.contact = library.contact || {};
 			
 			//
 			function tinyBack( res ) {
-				console.log( 'tinyBack', res );
 				done( res.url );
 			}
 			
@@ -2291,7 +2289,6 @@ library.contact = library.contact || {};
 	
 	ns.IrcPrivMsg.prototype.openChat = function( readyBack ) {
 		var self =this;
-		console.log( 'openChat', self.chatView );
 		if ( self.chatView ) {
 			self.chatView.activate();
 			return;

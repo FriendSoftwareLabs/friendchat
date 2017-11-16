@@ -181,7 +181,6 @@ library.component = library.component || {};
 		const pids = Object.keys( self.peers );
 		pids.forEach( setSinkId );
 		function setSinkId( peerId ) {
-			console.log( 'setting audioSinkId on ', peerId );
 			let peer = self.peers[ peerId ];
 			peer.setAudioSink( self.audioSinkId );
 		}
@@ -663,7 +662,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.handleVoiceOnly = function( isVoiceOnly ) {
 		const self = this;
-		console.log( 'handleVoiceOnly', isVoiceOnly );
 		self.isVoiceOnly = isVoiceOnly;
 		updateWaiting();
 		self.teaseChat.classList.toggle( 'hidden', isVoiceOnly );
@@ -687,11 +685,6 @@ library.component = library.component || {};
 		if ( !ids.length )
 			return;
 		
-		console.log( 'updateVoiceListMode', {
-			max2p : hasMaxTwoPeers( ids ),
-			pol   : self.peerOrder,
-		});
-		
 		if ( self.isVoiceOnly && hasMaxTwoPeers( ids ) && !self.peerOrder.length )
 			setToLarge( ids );
 		else
@@ -700,12 +693,10 @@ library.component = library.component || {};
 		updatePeers( ids );
 		
 		function setToLarge( ids ) {
-			console.log( 'setToLarge', ids );
 			self.isVoiceListLarge = true;
 		}
 		
 		function setToRows( ids ) {
-			console.log( 'setToRows', ids );
 			self.isVoiceListLarge = false;
 		}
 		
@@ -733,7 +724,6 @@ library.component = library.component || {};
 			return;
 		}
 		
-		console.log( 'updateHasVideo', hasVideo );
 		if ( hasVideo )
 			moveToPeers( peer );
 		else
@@ -759,7 +749,6 @@ library.component = library.component || {};
 			if ( isInAudio( pid ))
 				return;
 			
-			console.log( 'moveToAudioList', peer );
 			peer.setIsInList( true );
 			if ( 'selfie' === peer.id )
 				self.updateSelfieState();
@@ -781,7 +770,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.onDrag = function( type, peerId ) {
 		var self = this;
-		console.log( 'reorder', type );
 		if ( type === 'enable' )
 			dragEnable();
 		if ( type === 'start' )
@@ -834,7 +822,6 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.clearDragger = function() {
 		const self = this;
-		console.log( 'clearDragger' );
 		self.onDrag( 'end' );
 		self.onDrag( 'disable' );
 	}
@@ -1188,7 +1175,6 @@ library.component = library.component || {};
 		}
 		
 		function toggleFullscreen() {
-			console.log( 'menu.togglefullscreen' );
 			View.toggleFullscreen();
 		}
 	}
@@ -1400,7 +1386,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.setIsInList = function( isInList ) {
 		const self = this;
-		console.log( 'setIsInList', isInList );
 		self.isInList = isInList;
 		self.el.classList.toggle( 'in-grid', !isInList );
 		self.el.classList.toggle( 'in-list', isInList );
@@ -1409,7 +1394,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.setVoiceListMode = function( isLarge ) {
 		const self = this;
-		console.log( 'setVoiceListMode', isLarge );
 		self.isVoiceListLarge = isLarge;
 		self.el.classList.toggle( 'list-large', self.isVoiceListLarge );
 	}
@@ -2048,7 +2032,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.bindStream = function() {
 		const self = this;
-		console.log( 'bindStream', self.stream );
 		if ( !self.stream )
 			return;
 		
@@ -2160,10 +2143,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.updateStream = function() {
 		var self = this;
-		console.log( 'peer-ui.updateStream - returning, no-op', {
-			s : self.stream,
-			ms : self.media,
-		});
 		return;
 		
 		if ( !self.stream || !self.media )
@@ -2344,7 +2323,6 @@ library.component = library.component || {};
 	ns.Peer.prototype.setAudioSink = function( deviceId ) {
 		const self = this;
 		deviceId = deviceId || self.audioSinkId;
-		console.log( 'ui.setAudioSink', deviceId );
 		if ( !deviceId ) {
 			console.log( 'no deviceId to set' );
 			return;
@@ -2371,7 +2349,6 @@ library.component = library.component || {};
 			.catch( fail );
 			
 		function ok() {
-			console.log( 'setAudioSink - success', self.stream.sinkId );
 			self.audioSinkId = deviceId;
 		}
 		
@@ -2751,12 +2728,6 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.togglePopped = function( force ) {
 		const self = this;
-		console.log( 'togglePopped', {
-			curr   : self.isPopped,
-			force  : force,
-			inList : self.isInList,
-		});
-		
 		if ( null == force ) {
 			self.isPopped = !self.isPopped;
 			self.wasPopped = self.isPopped;
@@ -4615,7 +4586,6 @@ library.component = library.component || {};
 		if ( !self.outputTestEl.setSinkId )
 			return;
 		
-		console.log( 'checkOutputSelectSupport - supported', self.outputTestEl.setSinkId );
 		self.supportsSinkId = true;
 	}
 	
@@ -4634,7 +4604,6 @@ library.component = library.component || {};
 			.catch( showErr );
 		
 		function show( devices ) {
-			console.log( 'devices', devices );
 			self.allDevices = devices;
 			self.populate();
 		}
@@ -4816,7 +4785,6 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.checkAudioInput = function( stream ) {
 		var self = this;
-		console.log( 'checkAudioInput', stream );
 		var checkEl = document.getElementById( 'audioinput-checking' );
 		checkEl.classList.toggle( 'hidden', false );
 		new library.rtc.AudioInputDetect( stream, doneBack );

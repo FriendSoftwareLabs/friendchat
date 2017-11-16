@@ -241,7 +241,6 @@ library.view = library.view || {};
 		self.view.on( 'messagewaiting', messageWaiting );
 		
 		function presence( state ) {
-			console.log( 'presence', state );
 			self.presence.set( state );
 		}
 		
@@ -1039,7 +1038,6 @@ library.view = library.view || {};
 		self.view.on( 'highlight', handleHighlight );
 		
 		function messageWaiting( isWaiting ) {
-			console.log( 'messageWaiting', isWaiting );
 			self.messageWaiting.set( isWaiting );
 			let num = 'true' === isWaiting ? 1 : 0;
 			self.emit( 'msg-waiting', num );
@@ -2112,7 +2110,6 @@ library.view = library.view || {};
 (function( ns, undefined ) {
 	ns.AssistUI = function( parentId ) {
 		const self = this;
-		console.log( 'AssistUI', parentId );
 		self.parentId = parentId;
 		
 		self.mode = '';
@@ -2318,7 +2315,6 @@ library.view = library.view || {};
 	ns.AssistUI.prototype.handleSelectUser = function() {
 		const self = this;
 		const cId = self.selectUser.value;
-		console.log( 'userInput - value', cId );
 		self.resetSelectUser();
 		if ( !self.mode )
 			return;
@@ -2330,7 +2326,6 @@ library.view = library.view || {};
 	ns.AssistUI.prototype.startVideo = function( contactId ) {
 		const self = this;
 		const meta = self.contacts[ contactId ];
-		console.log( 'startVideo', meta );
 		if ( !meta )
 			return;
 		
@@ -2340,7 +2335,6 @@ library.view = library.view || {};
 	ns.AssistUI.prototype.startVoice = function( contactId ) {
 		const self = this;
 		const meta = self.contacts[ contactId ];
-		console.log( 'startVoice', meta );
 		if ( !meta )
 			return;
 		
@@ -2350,7 +2344,6 @@ library.view = library.view || {};
 	ns.AssistUI.prototype.openChat = function( contactId ) {
 		const self = this;
 		const meta = self.contacts[ contactId ];
-		console.log( 'openChat', meta );
 		if ( !meta )
 			return;
 		
@@ -2360,7 +2353,6 @@ library.view = library.view || {};
 	ns.AssistUI.prototype.handleSelectUnread = function() {
 		const self = this;
 		const cId = self.selectUnread.value;
-		console.log( 'handleSelectUnread', cId );
 		const meta = self.contacts[ cId ];
 		self.resetSelectUnread();
 		if ( !meta )
@@ -2371,7 +2363,6 @@ library.view = library.view || {};
 	
 	ns.AssistUI.prototype.resetSelectUser = function() {
 		const self = this;
-		console.log( 'resetSelectUser' );
 		self.selectUser.value = 'initial';
 	}
 	
@@ -2502,11 +2493,6 @@ library.view = library.view || {};
 	
 	ns.AssistUI.prototype.setMsgUnread = function( cId, unread ) {
 		const self = this;
-		console.log( 'setMsgUnread', {
-			cid : cId,
-			unr : unread,
-		});
-		
 		const unMeta = self.unread[ cId ];
 		if ( !unMeta && unread ) {
 			self.addToUnread( cId, unread );
@@ -2533,7 +2519,6 @@ library.view = library.view || {};
 		if ( !meta )
 			return;
 		
-		console.log( 'addToUnread', meta );
 		self.unread[ cId ] = {
 			id     : meta.unreadOptId,
 			el     : null,
@@ -2545,7 +2530,6 @@ library.view = library.view || {};
 		if ( !el )
 			return;
 		
-		console.log( 'addToUnread - el', el );
 		self.unread[ cId ].el = el;
 		self.selectUnread.appendChild( el );
 		self.updateUnread();
@@ -2554,7 +2538,6 @@ library.view = library.view || {};
 	ns.AssistUI.prototype.updateUnreadFrom = function( cId, unread ) {
 		const self = this;
 		const meta = self.unread[ cId ];
-		console.log( 'updateUnreadFrom', meta );
 		meta.el.textContent = unread + ' - ' + meta.name;
 	}
 	
@@ -2564,7 +2547,6 @@ library.view = library.view || {};
 		if ( !meta )
 			return;
 		
-		console.log( 'removeFromUnread', meta );
 		delete self.unread[ cId ];
 		meta.unread = null;
 		meta.el.parentNode.removeChild( meta.el );
@@ -2575,7 +2557,6 @@ library.view = library.view || {};
 	ns.AssistUI.prototype.buildUnreadOpt = function( cId ) {
 		const self = this;
 		const meta = self.unread[ cId ];
-		console.log( 'buildUnreadOpt', meta );
 		if ( !meta )
 			return null;
 		
@@ -2592,7 +2573,6 @@ library.view = library.view || {};
 	ns.AssistUI.prototype.updateUnread = function() {
 		const self = this;
 		const ids = Object.keys( self.unread );
-		console.log( 'updateUnread', ids );
 		const msgEl = document.getElementById( 'assist-status-new' );
 		if ( ids && ids.length ) {
 			showSelect();
@@ -2698,7 +2678,6 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.initialize = function( data ) {
 		const self = this;
-		console.log( 'view.main.initialize', data );
 		let settings = data.account.settings;
 		hello.template.addFragments( data.fragments );
 		

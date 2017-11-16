@@ -48,7 +48,7 @@ library.view = library.view || {};
 		self.baseContactInit( conf.parentView );
 		
 		function eventSink() {
-			console.log( 'BaseContact, eventSink', arguments );
+			//console.log( 'BaseContact, eventSink', arguments );
 		}
 	}
 	
@@ -243,7 +243,7 @@ library.view = library.view || {};
 		self.initBaseModule();
 		
 		function eventSink() {
-			console.log( 'BaseModule, eventSink', arguments );
+			//console.log( 'BaseModule, eventSink', arguments );
 		}
 	}
 	
@@ -642,7 +642,6 @@ library.view = library.view || {};
 			function resetClick( e ) {
 				e.stopPropagation();
 				e.preventDefault();
-				console.log( 'queryPassword - resetClick', e );
 				var passReset = {
 					type : 'pass-reset',
 				}

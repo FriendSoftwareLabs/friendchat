@@ -89,7 +89,7 @@ library.view = library.view || {};
 			width  : 700,
 			height : 450,
 		};
-		console.log( 'CONF', hello.config );
+		
 		const initData = {
 			state     : self.state,
 			fragments : hello.commonFragments,
@@ -468,10 +468,6 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.storePrefered = function( devices ) {
 		const self = this;
-		console.log( 'view.live.storePrefered', {
-			d : devices,
-			a : api,
-		});
 		api.ApplicationStorage.set( 'prefered-devices', devices, setBack );
 		function setBack( e ) {
 			console.log( 'storePrefered - setback', e );
@@ -488,11 +484,10 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.closed = function() {
 		const self = this;
-		console.log( 'app.Live.closed' );
-			let onclose = self.onclose;
-			self.close();
-			if ( onclose )
-				onclose();
+		let onclose = self.onclose;
+		self.close();
+		if ( onclose )
+			onclose();
 	}
 	
 	ns.Live.prototype.close = function() {
@@ -502,7 +497,6 @@ library.view = library.view || {};
 		delete self.onclose;
 		delete self.view;
 		if ( view ) {
-			console.log( 'app.Live.close' );
 			view.close();
 		}
 	}

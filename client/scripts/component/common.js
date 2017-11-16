@@ -220,7 +220,6 @@ inherits from EventEmitter
 		self.onsend = onsend;
 		
 		ns.EventEmitter.call( self, eventSink );
-		console.log( 'eventNode', self.type );
 		self.initEventNode();
 	}
 	

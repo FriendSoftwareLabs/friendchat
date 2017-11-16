@@ -675,7 +675,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleAudioSink = function( deviceId ) {
 		const self = this;
-		console.log( 'handleAudioSink', deviceId );
 		self.view.setAudioSink( deviceId );
 	}
 	
@@ -1174,7 +1173,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
 		const self = this;
-		console.log( 'setMediaSources', devices );
 		let send = self.permissions.send;
 		if ( typeof( devices.audioinput ) === 'boolean' )
 			send.audio = false;
@@ -1388,7 +1386,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function init( availableDevices ) {
-			console.log( 'setupStream - init', availableDevices );
 			var conf = {
 				audio : false,
 				video : false,
@@ -2039,7 +2036,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.setupAlphaSession = function() {
 		const self = this;
-		console.log( 'setupAlphaChannel', self );
 		self.alphaSession = new library.rtc.Session({
 			type      : 'alpha',
 			doInit    : self.doInit,

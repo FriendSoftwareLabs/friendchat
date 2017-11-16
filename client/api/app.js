@@ -1744,7 +1744,6 @@ api.DoorFun.prototype.init = function() {
 	// tinyfy a url, returns a promise
 	ns.TinyURL.prototype.compress = function( url ) {
 		const self = this;
-		console.log( 'compress', url );
 		return new window.Promise( tinyfy );
 		function tinyfy( resolve, reject ) {
 			new api.Module({
@@ -1757,7 +1756,6 @@ api.DoorFun.prototype.init = function() {
 			});
 			
 			function onSuccess( res ) {
-				console.log( 'tiny.onSuccess', res );
 				let data = friendUP.tool.objectify( res );
 				if ( !data ) {
 					reject( 'ERR_INVALID_JSON' );
@@ -1785,7 +1783,7 @@ api.DoorFun.prototype.init = function() {
 	
 	ns.TinyURL.prototype.init = function() {
 		const self = this;
-		console.log( 'tinyURL init' );
+		
 	}
 	
 })( fupLocal );

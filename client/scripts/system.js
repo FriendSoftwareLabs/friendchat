@@ -864,7 +864,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.init = function() {
 		var self = this;
-		console.log( 'RtcControl init' );
+		
 	}
 	
 	ns.RtcControl.prototype.askHost = function( contacts, selfie ) {
@@ -887,7 +887,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.createSession = function( conf, eventSink, onclose ) {
 		var self = this;
-		console.log( 'createSession', conf );
 		if ( self.session ) {
 			const session = self.session;
 			self.session = null;
@@ -1929,7 +1928,6 @@ library.rtc = library.rtc || {};
 		if ( !( this instanceof ns.RtcSession ))
 			return new ns.RtcSession( conf, eventSink, onclose );
 		
-		console.log( 'RtcSession', conf );
 		var self = this;
 		library.component.EventEmitter.call( self, eventSink );
 		
@@ -1967,7 +1965,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcSession.prototype.close = function() {
 		const self = this;
-		console.log( 'RtcSession.close' );
 		let sessionclose = self.sessionclose;
 		let onclose = self.onclose;
 		delete self.sessionclose;
@@ -1975,7 +1972,6 @@ library.rtc = library.rtc || {};
 		self.closeEventEmitter();
 		
 		if ( self.view ) {
-			console.log( 'RtcSession - close view', self.view );
 			self.view.close();
 			self.view = null;
 		}
@@ -2028,7 +2024,6 @@ library.rtc = library.rtc || {};
 		}
 		
 		function onClose( e ) {
-			console.log( 'rtcsession.onclose' );
 			let onclose = self.onclose;
 			delete self.onclose;
 			self.close();
@@ -2076,7 +2071,7 @@ library.rtc = library.rtc || {};
 		self.door = new api.Door( conf );
 		self.dormant.add( self.door );
 		self.setBase();
-		console.log( 'Dormant.init', self.dormant );
+		
 	}
 	
 	ns.Dormant.prototype.setBase = function() {
