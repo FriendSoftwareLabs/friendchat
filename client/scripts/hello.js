@@ -530,7 +530,7 @@ var hello = null;
 		self.inAppMenu = !!( self.account.settings && self.account.settings.inAppMenu );
 		
 		const winConf = {
-			title: hello.config.appName + ' - main window',
+			title: hello.config.appName + ' - Main Window',
 			width : 440,
 			height : 500,
 		};
