@@ -5429,12 +5429,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		'ie'      : 'error',
 		'edge'    : 'error',
 		'opera'   : 'warning',
-		'safari'  : 'error',
+		'safari'  : 'warning',
 		'firefox' : 'warning',
 		'chrome'  : 'success',
 		'blink'   : 'success',
 		'samsung' : 'success',
 		'android' : 'warning',
+		'iphone'  : 'warning',
 	}
 	
 	ns.BrowserCheck.prototype.supportString = {
@@ -5466,16 +5467,28 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.BrowserCheck.prototype.identifyDesktopBrowser = function() {
-		var self = this;
-		var is = self.is || {};
+		const self = this;
+		let is = self.is || {};
+		// IE
 		is[ 'ie' ] = !!document.documentMode; // old ie
 		is[ 'edge' ] = !is[ 'ie ' ] && !!window.StyleMedia; // new ie. They both fail, lol
+		
+		// OPERA
 		is[ 'opera' ] = ( !!window.opr && !!window.opr.addons )
 			|| window.opera
 			|| navigator.userAgent.indexOf( ' OPR/' ) >= 0;
-		is[ 'safari' ] = Object.prototype.toString.call( window.HTMLElement )
-			.indexOf( 'Constructor' ) > 0;
+		
+		// SAFARI
+		is[ 'safari' ] = /constructor/i.test(window.HTMLElement) 
+			|| (function (p)
+				{ return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] 
+				|| (typeof safari !== 'undefined' && safari.pushNotification)) 
+			|| /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+		
+		// FIREFOX
 		is[ 'firefox' ] = !!window.InstallTrigger;
+		
+		// CHROME
 		is[ 'chrome' ] = !!window.chrome && !!window.chrome.webstore;
 		is[ 'blink' ] = ( is[ 'chrome' ] || is[ 'opera' ] ) && !!window.CSS;
 		if ( is[ 'blink' ]) {
@@ -5501,8 +5514,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.BrowserCheck.prototype.checkMobile = function() {
-		var self = this;
-		var tokens = [
+		const self = this;
+		const tokens = [
 			'Android',
 			'webOS',
 			'iPhone',
@@ -5515,11 +5528,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			'mobile',
 			'CriOS',
 		];
-		var rxStr = tokens.join( '|' );
-		var rx = new RegExp( rxStr, '' );
-		var match = navigator.userAgent.match( rx );
+		const rxStr = tokens.join( '|' );
+		const rx = new RegExp( rxStr, '' );
+		const match = navigator.userAgent.match( rx );
 		if ( match )
 			self.isMobile = match[ 0 ];
+		
+		return self.isMobile;
 	}
 	
 	ns.BrowserCheck.prototype.getApprovedUAId = function() {
@@ -5527,6 +5542,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var tokens = [
 			'Chrome',
 			'Samsung',
+			'iPhone',
 		];
 		var rxStr = tokens.join( '|' );
 		var rx = new RegExp( rxStr, 'i' );
@@ -5545,11 +5561,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.BrowserCheck.prototype.done = function() {
-		var self = this;
-		var browser = getBrowser();
-		var supType = 'unknown' === browser
-			? 'error'
-			: ( self.supportMap[ browser.toLowerCase() ] || 'error' );
+		const self = this;
+		let browser = getBrowser();
+		let supType = 'error';
+		if ( 'unknown' !== browser ) {
+			let sT = self.supportMap[ browser.toLowerCase() ];
+			if ( sT )
+				supType = sT;
+		}
+		
 		if ( self.isMobile ) {
 			browser += ' ' + self.isMobile;
 		}
