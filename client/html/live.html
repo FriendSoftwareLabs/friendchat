@@ -222,13 +222,30 @@ avatar,
 					</div>
 				</div>
 				<div class="main-rtc-status">
-					<div class="main-rtc-state group row">
-						<div class="state-label fortify">
-							webRTC:
+					<div class="main-rtc-state">
+						<div class="state-primary group row">
+							<div class="state-label fortify">
+								webRTC:
+							</div>
+							<div class="state-value expand">
+							</div>
 						</div>
-						<div class="state-value expand">
-						</div>
-						<div class="state-indicator fortify">
+						<div class="state-additional">
+							<div class="state-routing group row">
+								<div class="state-label fortify">
+									{i18n_routing}:
+								</div>
+								<div class="state-value expand">
+									
+								</div>
+							</div>
+							<div class="state-latency group row">
+								<div class="state-label fortify">
+									{i18n_latency}:
+								</div>
+								<div class="state-value expand">
+								</div>
+							</div>
 						</div>
 					</div>
 					<div class="main-stream-state">
@@ -241,9 +258,6 @@ avatar,
 						</div>
 						<div class="state-additional">
 							<div class="state-audio group row">
-								<div class="state-additional-icon center-child">
-									<i class="fa fa-fw fa-level-up fa-rotate-90"></i>
-								</div>
 								<div class="state-label fortify">
 									{i18n_audio}:
 								</div>
@@ -252,9 +266,6 @@ avatar,
 								</div>
 							</div>
 							<div class="state-video group row">
-								<div class="state-additional-icon center-child">
-									<i class="fa fa-fw fa-level-up fa-rotate-90"></i>
-								</div>
 								<div class="state-label fortify">
 									{i18n_video}:
 								</div>

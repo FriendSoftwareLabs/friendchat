@@ -2066,7 +2066,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.unbindStream = function() {
 		const self = this;
-		console.log( 'unbindStream', self.stream );
 		if ( !self.stream )
 			return;
 		
@@ -3291,8 +3290,8 @@ library.component = library.component || {};
 	// PUBLIC
 	
 	ns.RTCState.prototype.set = function( state ) {
-		var self = this;
-		var handler = self.typeMap[ state.type ];
+		const self = this;
+		const handler = self.typeMap[ state.type ];
 		if ( !handler ) {
 			console.log( 'unknown state type', state );
 			return;
@@ -3337,8 +3336,14 @@ library.component = library.component || {};
 		
 		self.bind();
 		
-		var rtcIndicator = self.rtcState.parentNode.querySelector( '.state-indicator' );
-		self.rtcPing = new library.component.PingBar( rtcIndicator );
+		var rtcPingBar = self.mainState
+			.querySelector( '\
+				.main-rtc-state \
+				.state-latency \
+				.state-value' );
+		
+		console.log( 'rtcPingBar', rtcPingBar );
+		self.rtcPing = new library.component.PingBar( rtcPingBar );
 	}
 	
 	ns.RTCState.prototype.build = function() {
@@ -3355,6 +3360,8 @@ library.component = library.component || {};
 		//self.miniState = self.mini.querySelector( '.mini-rtc-state' );
 		self.rtcState = self.mainState
 			.querySelector( '.main-rtc-state .state-value' );
+		self.rtcRouting = self.mainState
+			.querySelector( '.main-rtc-state .state-routing .state-value' );
 		self.streamState = self.mainState
 			.querySelector( '.main-stream-state .state-value' );
 		self.streamAudio = self.mainState
@@ -3379,7 +3386,7 @@ library.component = library.component || {};
 			self[ mapName ] = {
 				'nominal' : green,
 				'waiting' : spin,
-				'error' : err,
+				'error'   : err,
 			};
 		}
 		
@@ -3443,6 +3450,12 @@ library.component = library.component || {};
 			return;
 		}
 		
+		console.log( 'handleRTCState', event );
+		if ( 'routing' === event.type ) {
+			self.rtcRouting.textContent = event.data.data;
+			return;
+		}
+		
 		self.rtcState.textContent = event.data.state;
 		self.setSpinner( 'rtc', event.type );
 		
@@ -3450,6 +3463,7 @@ library.component = library.component || {};
 	
 	ns.RTCState.prototype.handleStreamState = function( data ) {
 		var self = this;
+		console.log( 'handleStreamState', data );
 		if ( data.tracks )
 			setAudioVideo( data.tracks );
 		

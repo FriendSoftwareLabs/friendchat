@@ -1784,7 +1784,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.alphaSession = null;
 		self.alpha = null;
-		self.sessions = {};
+		self.session = null;
+		//self.sessions = {};
 		self.tracks = {};
 		self.stream = null;
 		
@@ -1813,14 +1814,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	// Public
 	
 	// send an event to the other peer
-	// primary transport is the alpha data channel
-	// secondary transport is through the signaling server ( slower )
 	ns.Peer.prototype.send = function( event ) {
 		const self = this;
-		if ( self.alpha )
-			self.alpha.send( event );
-		else
-			self.signal.send( event );
+		self.signal.send( event );
 	}
 	
 	ns.Peer.prototype.updateIdentity = function( identity ) {
@@ -1829,21 +1825,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.checkFailed = function() {
-		var self = this;
-		if ( hasFailed( self.alphaSession )) {
+		const self = this;
+		if ( hasFailed( self.session ))
 			self.restart();
-			return;
-		}
-		
-		const sids = Object.keys( self.sessions );
-		const needsRestart = sids.some( checkFail );
-		if ( needsRestart )
-			self.restart();
-		
-		function checkFail( sid ) {
-			let session = self.session[ sid ];
-			return hasFailed( session );
-		}
 		
 		function hasFailed( session ) {
 			var rtcState = session.conn.iceConnectionState;
@@ -1903,21 +1887,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			});
 		}
 		
-		self.signal.on( 'sync'        , sync );
-		self.signal.on( 'sync-accept' , syncAccept );
-		self.signal.on( 'restart'     , restart );
-		self.signal.on( 'stop'        , stop );
-		self.signal.on( 'alpha-ready' , alphaReady );
-		self.signal.on( 'open'        , open );
-		
-		function sync( e ) { self.handleSync( e ); }
-		function syncAccept( e ) { self.handleSyncAccept( e ); }
-		function restart( e ) { self.doRestart(); }
-		function stop( e ) { self.doStop(); }
-		function alphaReady( e ) { self.handleAlphaReady( e ); }
-		function open( e ) { self.handleOpen( e ); }
-		
-		self.bindSignalChannel( self.signal );
+		self.bindSignalChannel();
 		
 		// selfie
 		self.streamHandlerId = self.selfie.on( 'selfie', handleStream );
@@ -2028,102 +1998,35 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.stopSync();
 		if ( !self.doInit )
 			self.sendOpen();
-		
-		//self.setupAlphaSession();
 	}
 	
-	// data, "alpha", channel setup
-	
-	ns.Peer.prototype.setupAlphaSession = function() {
+	ns.Peer.prototype.bindSignalChannel = function() {
 		const self = this;
-		self.alphaSession = new library.rtc.Session({
-			type      : 'alpha',
-			doInit    : self.doInit,
-			rtc       : self.rtcConf,
-			signal    : self.signal,
-		});
+		self.signal.on( 'sync'            , sync );
+		self.signal.on( 'sync-accept'     , syncAccept );
+		self.signal.on( 'restart'         , restart );
+		self.signal.on( 'stop'            , stop );
+		self.signal.on( 'alpha-ready'     , alphaReady );
+		self.signal.on( 'open'            , open );
+		self.signal.on( 'blind'           , blind );
+		self.signal.on( 'mute'            , mute );
+		self.signal.on( 'screenmode'      , screenMode );
+		self.signal.on( 'tracks-available', tracksAvailable );
+		self.signal.on( 'meta'            , meta );
+		self.signal.on( 'constraints'     , handleConstraints );
+		self.signal.on( 'nostream'        , peerNoStream );
+		self.signal.on( 'nestedapp'       , nestedApp );
+		self.signal.on( 'recycle'         , recycle );
+		self.signal.on( 'reconnect'       , reconnect );
+		self.signal.on( 'leave'           , leave );
+		self.signal.on( 'close'           , closed );
 		
-		self.alphaSession.on( 'state', stateChange );
-		self.alphaSession.on( 'error', error );
-		self.alphaSession.once( 'datachannel', alphaChannel );
-		
-		function stateChange( e ) { console.log( 'alphaSession state change', e ); }
-		function error( e ) { console.log( 'alphaError', e ); }
-		function alphaChannel( e ) { self.bindAlphaChannel( e ); }
-		
-		if ( self.doInit ) {
-			if ( self.remoteAlphaReady )
-				self.startAlpha();
-		} else
-			self.signal.send({
-				type : 'alpha-ready',
-				data : true,
-			});
-	}
-	
-	ns.Peer.prototype.handleAlphaReady = function( isReady ) {
-		const self = this;
-		console.log( 'handleAlphaReady', isReady );
-		if ( self.alphaSession )
-			self.startAlpha();
-		else
-			self.remoteAlphaReady = isReady;
-	}
-	
-	ns.Peer.prototype.startAlpha = function() {
-		const self = this;
-		console.log( 'startAlpha', self );
-		if ( !self.doInit )
-			return;
-		
-		const conn = self.alphaSession.createDataChannel( 'alpha' );
-		self.alpha = new library.rtc.DataChannel(
-			'alpha',
-			conn,
-			onOpen,
-			onClose,
-			alphaSink
-		);
-		
-		function onOpen( time ) {
-			console.log( 'dataOpen', time );
-			self.stopped = false;
-			self.startPing();
-			self.sendMeta();
-		}
-		
-		function onClose( time ) {
-			console.log( 'dataClosed', time );
-			self.resetAlpha();
-		}
-		
-		function alphaSink( type, data ) {
-			console.log( 'alphaSink', {
-				t : type,
-				d : data,
-			});
-		}
-		
-		self.bindSignalChannel( self.alpha );
-	}
-	
-	ns.Peer.prototype.bindSignalChannel = function( conn ) {
-		const self = this;
-		conn.on( 'blind'           , blind );
-		conn.on( 'mute'            , mute );
-		conn.on( 'screenmode'      , screenMode );
-		conn.on( 'tracks-available', tracksAvailable );
-		conn.on( 'meta'            , meta );
-		conn.on( 'constraints'     , handleConstraints );
-		conn.on( 'nostream'        , peerNoStream );
-		conn.on( 'nestedapp'       , nestedApp );
-		conn.on( 'recycle'         , recycle );
-		conn.on( 'reconnect'       , reconnect );
-		conn.on( 'leave'           , leave );
-		conn.on( 'close'           , closed );
-		conn.on( 'ping'            , ping );
-		conn.on( 'pong'            , pong );
-		
+		function sync( e ) { self.handleSync( e ); }
+		function syncAccept( e ) { self.handleSyncAccept( e ); }
+		function restart( e ) { self.doRestart(); }
+		function stop( e ) { self.doStop(); }
+		function alphaReady( e ) { self.handleAlphaReady( e ); }
+		function open( e ) { self.handleOpen( e ); }
 		function blind( e ) { self.setRemoteBlind( e ); }
 		function mute( e ) { self.setRemoteMute( e ); }
 		function screenMode( e ) { self.setScreenMode( e ); }
@@ -2136,56 +2039,31 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function reconnect( e ) { self.handleReconnect( e ); }
 		function leave( e ) { console.log( 'peer left?' ); }
 		function closed( e ) { self.closeCmd(); }
-		function ping( e ) { self.handlePing( e ); }
-		function pong( e ) { self.handlePong( e ); }
-	}
-	
-	ns.Peer.prototype.resetAlpha = function() {
-		const self = this;
-		console.log( 'resetAlpha', self );
-		self.closeAlpha();
-		self.setupAlphaSession();
-	}
-	
-	ns.Peer.prototype.closeAlpha = function() {
-		const self = this;
-		console.log( 'closeAlpha' );
-		self.stopPing();
-		if ( self.alpha )
-			self.alpha.close();
-		
-		if ( self.alphaSession )
-			self.alphaSession.close();
-		
-		delete self.alpha;
-		delete self.alphaSession;
 	}
 	
 	// stream setup
 	
-	ns.Peer.prototype.createSession = function( type ) {
+	ns.Peer.prototype.createSession = function() {
 		const self = this;
-		if ( !type )
-			type = 'stream';
+		const type = 'stream';
+		if ( self.session )
+			self.closeSession();
 		
-		if ( self.sessions[ type ])
-			self.closeSession( type );
-		
-		var session = new library.rtc.Session({
+		self.session = new library.rtc.Session({
 			type      : type,
 			doInit    : self.doInit,
 			rtc       : self.rtcConf,
 			signal    : self.signal,
 			modifySDP : modSDP,
 		});
-		self.sessions[ type ] = session;
 		
-		session.on( 'stream'   , streamAdded );
-		session.on( 'track'    , trackAdded );
-		session.on( 'nostream' , sendNoStream );
-		session.on( 'state'    , stateChange );
-		session.on( 'stats'    , statsUpdate );
-		session.on( 'error'    , sessionError );
+		self.session.on( 'stream'     , streamAdded );
+		self.session.on( 'track'      , trackAdded );
+		self.session.on( 'nostream'   , sendNoStream );
+		self.session.on( 'state'      , stateChange );
+		self.session.on( 'stats'      , statsUpdate );
+		self.session.on( 'error'      , sessionError );
+		self.session.on( 'datachannel', dataChannel );
 		
 		function streamAdded( e ) { self.streamAdded( e, type ); }
 		function trackAdded( e ) { self.trackAdded( e, type ); }
@@ -2195,6 +2073,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
 		function sessionError( e ) { self.handleSessionError( e, type ); }
 		function modSDP( e ) { return self.modifySDP( e, type ); }
+		function dataChannel( e ) { self.bindDataChannel( e ); }
+		
+		if ( !self.doInit )
+			return;
+		
+		const alpha = self.session.createDataChannel( 'alpha' );
+		self.bindDataChannel( alpha );
+	}
+	
+	ns.Peer.prototype.bindDataChannel = function( channel ) {
+		const self = this;
+		if ( self.alpha )
+			delete self.alpha;
+		
+		self.alpha = channel;
+		self.alpha.on( 'ping', ping );
+		self.alpha.on( 'pong', pong );
+		
+		self.startPing();
+		
+		function ping( e ) { self.handlePing( e ); }
+		function pong( e ) { self.handlePong( e ); }
+		
 	}
 	
 	//
@@ -2209,7 +2110,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleOpen = function( e ) {
 		const self = this;
-		self.startPing();
 		self.sendMeta();
 	}
 	
@@ -2235,7 +2135,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			data : stamp,
 		};
 		
-		self.send( ping );
+		self.alpha.send( ping );
 		self.pingTimeouts[ stamp ] = setTimeout( timeout, self.pingTimeout );
 		function timeout() {
 			const timer = self.pingTimeouts[ stamp ];
@@ -2253,7 +2153,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			type : 'pong',
 			data : stamp,
 		};
-		self.send( pong );
+		self.alpha.send( pong );
 	}
 	
 	ns.Peer.prototype.handlePong = function( stamp ) {
@@ -2273,7 +2173,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.stopPing = function( ) {
 		const self = this;
-		console.log( 'alpha.stopPing' );
 		if ( self.pingInterval )
 			clearInterval( self.pingInterval );
 		
@@ -2348,34 +2247,40 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'release-stream' );
 		self.releaseStream();
 		self.closeAllSessions();
-		self.closeAlpha();
 	}
 	
 	ns.Peer.prototype.closeAllSessions = function() {
 		var self = this;
+		self.closeSession();
+		return;
+		
+		/*
 		self.metaSyncDone = false;
 		for ( var sid in self.sessions )
 			self.closeSession( sid );
+		*/
 	}
 	
 	ns.Peer.prototype.closeSession = function( sid ) {
-		var self = this;
-		var sess = self.sessions[ sid ];
-		delete self.sessions[ sid ];
-		sess.close();
+		const self = this;
+		const sess = self.session;
+		delete self.session;
+		if ( !sess )
+			return;
+		
+		try {
+			sess.close();
+		} catch( e ) {
+			console.log( 'Peer.closeSession - session already closed', e );
+		}
 	}
 	
 	ns.Peer.prototype.handleQualityUpdate = function( e ) {
 		var self = this;
-		if ( !self.sessions ) {
-			console.log( 'peer.handleQualityUpdate - theres no sessions', {
-				sessions : self.sessions,
-			});
+		if ( !self.session )
 			return;
-		}
 		
-		for ( var id in self.sessions )
-			self.sessions[ id ].renegotiate();
+		self.session.renegotiate();
 	}
 	
 	ns.Peer.prototype.modifySDP = function( SDPObj, type ) {
@@ -2560,6 +2465,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
+		if ( !self.receive ) {
+			console.log( 'showSelfie - no receive, meta has not been received yet' );
+			return;
+		}
+		
 		let media = getReceiveMedia( stream );
 		self.addStream( media );
 		
@@ -2579,9 +2489,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.addStream  =function( stream ) {
 		var self = this;
-		var sess = self.sessions[ 'stream' ];
+		var sess = self.session;
 		if ( !sess ) {
-			console.log( 'Peer.addStream - no session', self.sessions );
+			console.log( 'Peer.addStream - no session', self.session );
 			return;
 		}
 		
@@ -2594,15 +2504,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		console.log( 'Peer.addTracks', { s : stream, t : tracks });
 		tracks.forEach( addToSession );
 		function addToSession( track ) {
-			var type = track.kind;
-			// if session type is defined, thats the only track thats to be refreshed
-			if ( sessionType && ( sessionType !== type ))
-				return;
-			
-			var session = self.sessions[ type ];
+			let session = self.session;
 			if ( !session ) {
-				console.log( 'peer.addTracks - no session for type',
-					{ t : type, s : self.sessions });
+				console.log( 'peer.addTracks - no session found', self.session );
 				return;
 			}
 			
@@ -2683,14 +2587,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		console.log( 'Peer.trackAdded', { ms : self.stream, tr : track });
-		self.emitStreamState( 'nominal' );
 		var type = track.kind;
 		if ( 'video' === type )
 			addVideo( track );
 		if ( 'audio' === type )
 			addAudio( track );
 		
+		self.emitStreamState( 'nominal' );
+		
 		function addVideo( track ) {
+			console.log( 'addVideo', track );
 			self.emit( 'track', 'video', track );
 			self.toggleBlind( self.isBlind );
 			self.isVideo = true;
@@ -2698,6 +2604,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function addAudio( track ) {
+			console.log( 'addAudio', track );
 			self.emit( 'track', 'audio', track );
 			self.toggleMute( self.isMute );
 			self.isAudio = true;
@@ -2816,18 +2723,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.initializeSessions = function() {
 		var self = this;
 		console.log( 'initializeSessions', self.isChromePair );
-		
-		self.createSession( 'stream' );
-		
-		/* let try simple for now
-		if ( self.isChromePair )
-			self.createSession( 'stream' );
-		else {
-			self.createSession( 'audio' );
-			self.createSession( 'video' );
-		}
-		*/
-		
+		self.createSession();
 		self.showSelfie();
 	}
 	
@@ -3000,12 +2896,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.getVideoTrack = function() {
 		var self = this;
 		//var stream = self.session.conn.getRemoteStreams()[ 0 ];
+		console.log( 'getVideoTrack - s', self.stream );
 		if ( !self.stream ) {
 			console.log( 'getVideoTrack - no stream???', self.stream );
 			return null;
 		}
 		
 		var tracks = self.stream.getVideoTracks();
+		console.log( 'getVideoTrack - tees', tracks );
 		if ( !tracks.length )
 			return null;
 		return tracks[ 0 ];
@@ -3034,7 +2932,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function getTracks() {
 			const at = self.getAudioTrack();
 			const vt = self.getVideoTrack();
-			
+			console.log( 'emitStreamState.getTracks', {
+				a : at,
+				v : vt,
+			});
 			var atState = at ? at.readyState : 'unknown';
 			var vtState = vt ? vt.readyState : 'unknown';
 			
@@ -3207,14 +3108,74 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Session.prototype.recycle = function() {
-		var self = this;
-		console.log( 'Session.recycle - NYI' );
+	ns.Session.prototype.createDataChannel = function( label, opts ) {
+		const self = this;
+		if ( !label )
+			throw new Error( 'rtc.createDataChannel - no label' );
+		
+		const conn = self.conn.createDataChannel( label, opts );
+		const channel = self.setDataChannel( conn );
+		return channel;
+		
+	}
+	
+	ns.Session.prototype.closeDataChannel = function( label ) {
+		const self = this;
+		const channel = self.channels[ label ];
+		delete self.channels[ label ];
+		if ( !channel )
+			return;
+		
+		channel.close();
+	}
+	
+	ns.Session.prototype.close = function() {
+		const self = this;
+		self.log( 'session.close' );
+		
+		self.removeTracks();
+		self.setState( 'closed' );
+		self.release(); // event listeners
+		closeDataChannels();
+		closeRTC();
+		closeSignal();
+		
+		delete self.modifySDP;
+		delete self.rtc;
+		delete self.type;
+		delete self.doInit;
+		
+		function closeDataChannels() {
+			for ( let label in self.channels )
+				self.closeDataChannel( label );
+		}
+		
+		function closeRTC() {
+			if ( !self.conn )
+				return;
+			
+			if ( 'closed' !== self.conn.signalingState )
+				self.conn.close();
+			
+			self.clearConn();
+			delete self.conn;
+		}
+		
+		function closeSignal() {
+			if ( !self.signal )
+				return;
+			
+			self.signal.release();
+			self.signal.close();
+			
+			delete self.signal;
+		}
 	}
 	
 	// Private
 	
 	ns.Session.prototype.stateTypeMap = {
+		'routing'             : 'routing',
 		'nominal'             : 'nominal',
 		'host-negotiation'    : 'waiting',
 		'client-negotiation'  : 'waiting',
@@ -3589,7 +3550,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				window.clearTimeout( self.negotiationTimeout );
 				self.negotiationTimeout = null;
 			}
-				
+			
+			self.emitRouting();
 			self.createAnswer();
 		}
 		
@@ -3623,6 +3585,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 		function yep( res ) {
 			self.log( 'handleRemoteAnswer - remote answer set', res );
+			self.emitRouting();
 			if ( self.doInit )
 				self.denyNegotiation = false;
 		}
@@ -3827,6 +3790,141 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'stream', stream );
 	}
 	
+	ns.Session.prototype.emitRouting = function() {
+		const self = this;
+		console.log( 'SDP', self.conn.localDescription.sdp );
+		const routing = self.getRouting( self.conn.localDescription.sdp );
+		self.setState( 'routing', routing );
+	}
+	
+	ns.Session.prototype.getRouting = function() {
+		const self = this;
+		console.log( 'getROuting' );
+		if ( !self.conn || !self.conn.localDescription )
+			return 'no conn';
+		
+		const sdp = self.conn.localDescription.sdp;
+		if ( !sdp || !sdp.length ) {
+			self.log( 'sdp not set?', self.conn.localDescription );
+			return 'no sdp';
+		}
+		
+		const parts = sdp.split( '\n' );
+		const cLine = parts.find( isCLine );
+		const conns = getConns( parts );
+		const connType = getConnectionType( cLine, conns );
+		return connType;
+		
+		function isCLine( part ) {
+			return 0 === part.indexOf( 'c=' );
+		}
+		
+		function getConns( parts ) {
+			const connMap = {};
+			parts.some( isNewConnOpt );
+			return connMap;
+			
+			function isNewConnOpt( line ) {
+				if( 0 !== line.indexOf( 'a=candidate' ))
+					return false;
+				
+				let parts = line.split( ' ' );
+				let ip = parts.find( IP );
+				if ( connMap[ ip ])
+					return true;
+				
+				let proto = parts.find( TCPOrUDP );
+				let type = getType( parts );
+				connMap[ ip ] = {
+					protocol : proto,
+					ip       : ip,
+					type     : type,
+				};
+				
+				return false;
+				
+				function TCPOrUDP( part ) {
+					return (( 'udp' === part ) || ( 'tcp' === part ));
+				}
+				
+				function IP( part ) {
+					let rx = [
+						'(([\\da-f]{1,4}:){7}[\\da-f]{1,4})', //           1:2:3:4:5:6:7:8  
+						'(([\\da-f]{1,4}:){1,7}:)', //                     1::                              1:2:3:4:5:6:7::
+						'(([\\da-f]{1,4}:){1,6}:[\\da-f]{1,4})', //        1::8                             1:2:3:4:5:6::8
+						'(([\\da-f]{1,4}:){1,5}(:[\\da-f]{1,4}){1,2})', // 1::7:8           1:2:3:4:5::7:8  1:2:3:4:5::8
+						'(([\\da-f]{1,4}:){1,4}(:[\\da-f]{1,4}){1,3})', // 1::6:7:8         1:2:3:4::6:7:8  1:2:3:4::8
+						'(([\\da-f]{1,4}:){1,3}(:[\\da-f]{1,4}){1,4})', // 1::5:6:7:8       1:2:3::5:6:7:8  1:2:3::8
+						'(([\\da-f]{1,4}:){1,2}(:[\\da-f]{1,4}){1,5})', // 1::4:5:6:7:8     1:2::4:5:6:7:8  1:2::8
+						'([\\da-f]{1,4}:(:[\\da-f]{1,4}){1,6})', //        1::3:4:5:6:7:8                   1::8
+						'(:(:[\\da-f]{1,4}){1,7})', //                     ::2:3:4:5:6:7:8                  ::8
+					];
+					rx = '^' + rx.join( '|' ) + '$';
+					const ipv6rx = RegExp( rx, 'i' );
+					let ip = IPv4( part ) || IPv6( part ) || false;
+					if ( !ip )
+						return ip;
+					
+					return String( ip.trim());
+					
+					function IPv4( part ) {
+						const match = part.match( /^(\d{1,3}\.){3}\d{1,3}$/ );
+						if ( match )
+							return match.input;
+						
+						return false;
+					}
+					
+					function IPv6( part ) {
+						const match = part.match( ipv6rx );
+						if ( match )
+							return match[ 0 ];
+						
+						return false;
+					}
+				}
+				
+				function getType( parts ) {
+					let typIdx = parts.indexOf( 'typ' );
+					if ( -1 === typIdx )
+						return null;
+					
+					let type = parts[ typIdx + 1 ];
+					if ( 'host' === type )
+						return 'peer-to-peer';
+					if ( 'relay' === type )
+						return 'TURN relay';
+					
+					return type || null;
+				}
+			}
+		}
+		
+		function getConnectionType( cLine, conns ) {
+			const ip = findIP( cLine );
+			const conn = conns[ ip ];
+			console.log( 'getConnectionType', {
+				ip : ip,
+				conn : conn,
+				conns : conns,
+				cLine : cLine,
+			});
+			
+			if ( '0.0.0.0' === ip )
+				return 'passive';
+			
+			if ( !conn )
+				return 'local peer-to-peer';
+			
+			return conn.type + ' / ' + conn.protocol;
+			
+			function findIP( cLine ) {
+				let parts = cLine.split( ' ' );
+				return String( parts[ 2 ].trim());
+			}
+		}
+	}
+	
 	ns.Session.prototype.streamRemoved = function( stream ) {
 		var self = this;
 		var local = self.conn.getLocalStreams();
@@ -3844,32 +3942,30 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'nostream' );
 	}
 	
-	ns.Session.prototype.createDataChannel = function( label, opts ) {
+	ns.Session.prototype.dataChannelAdded = function( e ) {
 		const self = this;
-		if ( !label )
-			throw new Error( 'rtc.createDataChannel - no label' );
-		
-		self.log( 'createDataChannel', label );
-		const channel = self.conn.createDataChannel( label, opts );
+		self.log( 'datachannelAdded', e );
+		const conn = e.channel;
+		const channel = self.setDataChannel( conn );
+		self.emit( 'datachannel', channel );
+	}
+	
+	ns.Session.prototype.setDataChannel = function( conn ) {
+		const self = this;
+		self.log( 'setDataChannel', conn );
+		const label = conn.label;
+		const channel = new library.rtc.DataChannel( conn, onClose, eventSink );
 		self.channels[ label ] = channel;
 		return channel;
-	}
-	
-	ns.Session.prototype.closeDataChannel = function( label ) {
-		const self = this;
-		self.log( 'closeDataChannel', label );
-		const channel = self.channels[ label ];
-		if ( !channel )
-			return;
 		
-		delete self.channels[ label ];
-		channel.close();
-	}
-	
-	ns.Session.prototype.dataChannelAdded = function( e ) {
-		var self = this;
-		self.log( 'datachannelAdded', e );
-		self.emit( 'datachannel', e.channel );
+		function onClose( e ) {
+			self.log( 'datachannel closed', label );
+			delete self.channels[ label ];
+		}
+		
+		function eventSink() {
+			self.log( 'datachannel eventsink', arguments );
+		}
 	}
 	
 	ns.Session.prototype.signalStateChange = function( e ) {
@@ -3953,46 +4049,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Session.prototype.close = function() {
-		var self = this;
-		self.log( '(rtc)session.close' );
-		
-		self.removeTracks();
-		self.setState( 'closed' );
-		self.release(); // event listeners
-		closeDataChannels();
-		closeRTC();
-		closeSignal();
-		
-		delete self.modifySDP;
-		delete self.rtc;
-		delete self.type;
-		delete self.doInit;
-		
-		function closeDataChannels() {
-			for ( let label in self.channels )
-				self.closeDataChannel( label );
-		}
-		
-		function closeRTC() {
-			if ( !self.conn )
-				return;
-			
-			if ( 'closed' !== self.conn.signalingState )
-				self.conn.close();
-			
-			self.clearConn();
-			delete self.conn;
-		}
-		
-		function closeSignal() {
-			if ( self.signal )
-				self.signal.close();
-			
-			delete self.signal;
-		}
-	}
-	
 	ns.Session.prototype.clearConn = function() {
 		var self = this;
 		if ( !self.conn )
@@ -4057,16 +4113,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 (function( ns, undefined ) {
 	ns.DataChannel = function(
-		id,
 		conn,
-		onOpen,
 		onClose,
 		eventSink
 	) {
 		const self = this;
-		self.id = id;
+		self.id = conn.label;
 		self.conn = conn;
-		self.onopen = onOpen;
 		self.onclose = onClose;
 		
 		library.component.EventEmitter.call( self, eventSink );
@@ -4092,14 +4145,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.DataChannel.prototype.close = function() {
 		const self = this;
-		try {
-			self.conn.close();
-		} catch( e ) { console.log( 'dataChannel.close exep', e ); }
-		
 		self.unbind();
 		self.closeEventEmitter();
+		if ( self.conn ) {
+			try {
+				self.conn.close();
+			} catch( e ) {
+				console.log( 'dataChannel.close exep', e );
+			}
+		}
+		
 		delete self.conn;
-		delete self.onopen;
 		delete self.onclose;
 	}
 	
@@ -4115,25 +4171,31 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function onOpen( e ) {
 			self.isOpen = true;
 			self.eventQueue.forEach( send )
-			if ( self.onopen )
-				self.onopen( Date.now() );
-			
 			function send( event ) {
 				self.sendOnChannel( event );
 			}
 		}
-		function onError( e ) { console.log( 'datachannel.onError', e ); }
+		
+		function onError( e ) { console.log( 'DataChannel.onError', e ); }
 		function onMessage( e ) { self.handleMessage( e ); }
 		function onClose( e ) {
 			self.isOpen = false;
-			self.emit( 'closed', self.conn );
-			if ( self.onclose )
-				self.onclose( Date.now() );
+			
+			let onclose = self.onclose;
+			delete self.onclose;
+			self.close();
+			
+			if ( !onclose )
+				return;
+			onclose( Date.now( ));
 		}
 	}
 	
 	ns.DataChannel.prototype.unbind = function() {
 		const self = this;
+		if ( !self.conn )
+			return;
+		
 		self.conn.onopen = null;
 		self.conn.onerror = null;
 		self.conn.onmessage = null;
@@ -4142,7 +4204,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.DataChannel.prototype.handleMessage = function( e ) {
 		const self = this;
-		//console.log( 'DataChannel.handleMessage', e );
 		const event = friendUP.tool.objectify( e.data );
 		if ( !event )
 			return;
@@ -4158,14 +4219,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.DataChannel.prototype.sendOnChannel = function( event ) {
 		const self = this;
 		if ( !self.isOpen ){
+			console.log( 'DataChannel.send - not open' );
 			self.eventQueue.push( event );
 			return;
 		}
 		
-		if ( !self.conn )
+		if ( !self.conn ) {
+			console.log( 'DataChannel.send - no conn' );
 			return; // closed
+		}
 		
 		if ( 'open' !== self.conn.readyState ) {
+			console.log( 'DataChannel.send - invalid readystate', self.conn.readyState );
 			self.eventQueue.push( event );
 			return;
 		}

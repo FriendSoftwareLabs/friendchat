@@ -273,3 +273,5 @@ i18n_new_messages : Unread messages
 i18n_no_new_messages : No unread messages
 i18n_available_video_sources : Available video sources
 i18n_available_speakers : Available speakers
+i18n_routing : Routing
+i18n_latency : Latency
