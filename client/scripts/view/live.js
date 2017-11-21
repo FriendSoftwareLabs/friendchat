@@ -218,6 +218,7 @@ library.component = library.component || {};
 			ontoggle    : audioListToggled,
 		};
 		self.audioList = new library.view.List( audioConf );
+		self.audioListEl = document.getElementById( 'audio-list' );
 		function audioListToggled( state ) {
 			if ( self.peerOrder.length )
 				self.reflowPeers();
@@ -685,20 +686,16 @@ library.component = library.component || {};
 		if ( !ids.length )
 			return;
 		
-		if ( self.isVoiceOnly && hasMaxTwoPeers( ids ) && !self.peerOrder.length )
-			setToLarge( ids );
+		if ( self.isVoiceOnly && hasMaxTwoPeers( ids ) && hasNoVideoPeers() )
+			setToItems( ids );
 		else
 			setToRows( ids );
 		
+		self.audioListEl.classList.toggle( 'large-items', self.isVoiceListLarge );
 		updatePeers( ids );
 		
-		function setToLarge( ids ) {
-			self.isVoiceListLarge = true;
-		}
-		
-		function setToRows( ids ) {
-			self.isVoiceListLarge = false;
-		}
+		function setToItems( ids ) { self.isVoiceListLarge = true; }
+		function setToRows( ids ) { self.isVoiceListLarge = false; }
 		
 		function updatePeers( ids ) {
 			ids.forEach( toggleLarge );
@@ -713,6 +710,10 @@ library.component = library.component || {};
 				return true;
 			else
 				return false;
+		}
+		
+		function hasNoVideoPeers() {
+			return !self.peerOrder.length;
 		}
 	}
 	

@@ -405,13 +405,16 @@ library.view = library.view || {};
 		
 		function initLive( preferedDevices ) {
 			let width = 850;
-			if ( isVoiceOnly() )
-				width = 400;
-				
+			let height = 500;
+			if ( isVoiceOnly() ) {
+				width = 450;
+				height = 350;
+			}
+			
 			const windowConf = {
 				title              : Application.i18n('i18n_live_session'),
 				width              : width,
-				height             : 450,
+				height             : height,
 				fullscreenenabled  : true,
 			};
 			

@@ -32,8 +32,8 @@
 }
 
 .live-list {
-	color : #eee;
-	height: 100%;
+	color  : #eee;
+	height : 100%;
 }
 
 .list-head {
@@ -60,8 +60,13 @@
 	width  : 100%;
 }
 
-.list-items {
+
+#audio-list.large-items .list-items {
+	flex-flow     : wrap;
+	align-content : space-around;
 }
+
+.list-items {}
 
 .live-list-item:nth-child(2n-1) {
 	background-color : rgb( 30, 30, 30 );
@@ -245,7 +250,9 @@
 }
 
 .peer.in-list.list-large {
-	flex : 1 1 auto;
+	flex    : 1 1 auto;
+	padding : 1em;
+	max-width: 20em;
 }
 
 .peer.in-list .list-ui {
@@ -1169,12 +1176,9 @@
 	
 	.grid2 > div { height : 50%; }
 	.grid3 > div { height : 33.33%; }
-	.grid4 > div {
-		width  : 50%;
-		height : 50%;
-	}
+	.grid4 > div { height : 25%; }
+	.grid5 > div { height : 20%; }
 	
-	.grid5 > div,
 	.grid6 > div {
 		width  : 50%;
 		height : 33.33%;
