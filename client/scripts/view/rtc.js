@@ -1538,8 +1538,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.toggleBlind( true );
 		}
 		
-		const vTrack = self.getVideoTrack();
 		const aTrack = self.getAudioTrack();
+		const vTrack = self.getVideoTrack();
 		
 		if ( aTrack )
 			self.bindVolume( stream );
@@ -1580,17 +1580,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Selfie.prototype.bindVolume = function() {
+	ns.Selfie.prototype.bindVolume = function( stream ) {
 		const self = this;
 		if ( self.volume )
 			self.releaseVolume();
 		
 		self.volume = new library.rtc.Volume(
-			self.stream,
+			stream,
 			onVolume,
 			onBuffer
 		);
 		self.speaking.setSource( self.volume );
+		self.emit( 'volume-source', self.volume );
 		
 		function onVolume( e ) {}
 		function onBuffer( e ) {}
@@ -3792,14 +3793,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.emitRouting = function() {
 		const self = this;
-		console.log( 'SDP', self.conn.localDescription.sdp );
 		const routing = self.getRouting( self.conn.localDescription.sdp );
 		self.setState( 'routing', routing );
 	}
 	
 	ns.Session.prototype.getRouting = function() {
 		const self = this;
-		console.log( 'getROuting' );
 		if ( !self.conn || !self.conn.localDescription )
 			return 'no conn';
 		
@@ -3903,13 +3902,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function getConnectionType( cLine, conns ) {
 			const ip = findIP( cLine );
 			const conn = conns[ ip ];
-			console.log( 'getConnectionType', {
-				ip : ip,
-				conn : conn,
-				conns : conns,
-				cLine : cLine,
-			});
-			
 			if ( '0.0.0.0' === ip )
 				return 'passive';
 			

@@ -2913,10 +2913,12 @@ library.component = library.component || {};
 		self.peer.on( 'selfie', handleSelfie );
 		self.peer.on( 'queue', handleQueue );
 		self.peer.on( 'error', showError );
+		self.peer.on( 'volume-source', volumeSrc );
 		
 		function handleSelfie( e ) { self.handleSelfie( e ); }
 		function handleQueue( e ) { self.handleQueue( e ); }
 		function showError( e ) { self.showError( e ); }
+		function volumeSrc( e ) { self.handleVolumeSrc( e ); }
 	}
 	
 	ns.Selfie.prototype.handleSelfie = function( media ) {
@@ -2939,16 +2941,21 @@ library.component = library.component || {};
 		const self = this;
 		setTimeout( hepp, 100 );
 		function hepp() {
-			self.AVGraph = new library.view.AudioVisualizer(
-				self.peer.volume,
-				hello.template,
-				'selfie-volume'
-			);
+			console.log( 'show AVGraph', self.AVGraph );
+			if ( self.AVGraph )
+				self.AVGraph.start();
+			else
+				self.AVGraph = new library.view.AudioVisualizer(
+					self.peer.volume,
+					hello.template,
+					'selfie-volume'
+				);
 		}
 	}
 	
 	ns.Selfie.prototype.hideAVGraph = function() {
 		const self = this;
+		console.log( 'hide AVGraph', self.AVGraph );
 		if ( !self.AVGraph )
 			return;
 		
@@ -3007,6 +3014,14 @@ library.component = library.component || {};
 	ns.Selfie.prototype.hideQueue = function() {
 		var self = this;
 		self.hideTheThing( 'queue' );
+	}
+	
+	ns.Selfie.prototype.handleVolumeSrc = function( volumeSrc ) {
+		const self = this;
+		if ( !self.AVGraph )
+			return;
+		
+		self.AVGraph.setSource( volumeSrc );
 	}
 	
 	ns.Selfie.prototype.handleSelfMute = function( isMuted ) {
@@ -3451,7 +3466,6 @@ library.component = library.component || {};
 			return;
 		}
 		
-		console.log( 'handleRTCState', event );
 		if ( 'routing' === event.type ) {
 			self.rtcRouting.textContent = event.data.data;
 			return;
@@ -3464,7 +3478,6 @@ library.component = library.component || {};
 	
 	ns.RTCState.prototype.handleStreamState = function( data ) {
 		var self = this;
-		console.log( 'handleStreamState', data );
 		if ( data.tracks )
 			setAudioVideo( data.tracks );
 		
@@ -5437,12 +5450,12 @@ library.component = library.component || {};
 
 (function( ns, undefined ) {
 	ns.AudioVisualizer = function(
-		source,
+		volumeSrc,
 		templateManager,
 		containerId
 	) {
 		const self = this;
-		self.source = source;
+		self.source = volumeSrc;
 		self.template = templateManager;
 		self.containerId = containerId;
 		
@@ -5460,14 +5473,18 @@ library.component = library.component || {};
 	ns.AudioVisualizer.prototype.start = function() {
 		const self = this;
 		self.setupCanvas();
-		if ( !self.el )
+		if ( !self.el ) {
+			console.log( 'AudioVisualizer.start - no el', self );
 			return;
-		
-		if ( self.draw )
-			return;
+		}
 		
 		self.draw = true;
 		self.drawAV();
+	}
+	
+	ns.AudioVisualizer.prototype.setSource = function( volumeSrc ) {
+		const self = this;
+		self.source = volumeSrc;
 	}
 	
 	ns.AudioVisualizer.prototype.stop = function() {
@@ -5505,9 +5522,12 @@ library.component = library.component || {};
 	
 	ns.AudioVisualizer.prototype.setupCanvas = function() {
 		const self = this;
+		if ( self.canvasId )
+			return;
+		
 		const container = document.getElementById( self.containerId );
-		self.id = self.id || friendUP.tool.uid( 'AV' );
-		self.canvasId = self.canvasId || friendUP.tool.uid( 'canvas' );
+		self.id = friendUP.tool.uid( 'AV' );
+		self.canvasId = friendUP.tool.uid( 'canvas' );
 		const conf = {
 			id       : self.id,
 			canvasId : self.canvasId,
@@ -5559,6 +5579,8 @@ library.component = library.component || {};
 		if ( self.el )
 			self.el.parentNode.removeChild( self.el );
 		
+		delete self.canvasId;
+		delete self.id;
 		delete self.canvas;
 		delete self.el;
 	}
