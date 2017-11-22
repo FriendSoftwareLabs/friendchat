@@ -123,12 +123,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.initChecks = new library.rtc.InitChecks( initConf );
 		self.initChecks.checkICE( self.rtcConf.ICE );
 		self.initChecks.checkBrowser( browserBack );
-		function browserBack( canContinue ) {
-			if ( !canContinue ) {
+		function browserBack( err, browser ) {
+			if ( err ) {
 				self.goLive( false );
 				return;
 			}
 			
+			console.log( 'browserBack', browser );
+			self.browser = browser;
 			self.initChecks.checkDeviceAccess( self.permissions.send, deviceBack );
 		}
 		
@@ -157,6 +159,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			var selfStream = self.selfie.getStream();
 			self.initChecks.checkAudioDevices( selfStream, self.preferedDevices );
 			self.initChecks.checkVideoDevices( selfStream, self.preferedDevices );
+			
 		}
 		
 		function allChecksDone( close ) {
@@ -189,6 +192,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.goLive = function( ready ) {
 		const self = this;
+		if ( !ready )
+			return;
+		
 		self.bindConn();
 		self.connectPeers();
 		const onready = self.onready;
@@ -484,27 +490,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.RTC.prototype.createPeer = function( data ) {
-		var self = this;
+		const self = this;
 		const pid = data.peerId;
-		var peer = self.peers[ pid ];
+		let peer = self.peers[ pid ];
 		if ( peer ) {
 			console.log( 'createPeer - already exists', self.peers );
 			peer.close();
 			delete self.peers[ pid ];
 			self.view.removePeer( pid );
+			peer = null;
 		}
 		
 		if ( null == data.doInit )
 			data.doInit = false;
 		
-		var identity = self.identities[ data.peerId ];
+		let identity = self.identities[ data.peerId ];
 		if ( !identity )
 			identity = {
 				name   : '---',
 				avatar : ''
 			};
 		
-		var peer = new library.rtc.Peer({
+		const Peer = getPeerConstructor( self.browser );
+		peer = new Peer({
 			id          : data.peerId,
 			identity    : identity,
 			permissions : self.permissions,
@@ -525,6 +533,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function signalRemovePeer() { self.signalRemovePeer( data.peerId ); }
 		function closeCmd() { self.closePeer( data.peerId ); }
+		
+		function getPeerConstructor( browser ) {
+			if ( 'safari' === browser )
+				return library.rtc.PeerSafari;
+			
+			if ( 'firefox' === browser )
+				return library.rtc.PeerFirefox;
+			
+			return library.rtc.Peer;
+		}
 	}
 	
 	ns.RTC.prototype.updatePeerIdentity = function( peerId, identity ) {
@@ -596,6 +614,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.createSelfie = function( createBack ) {
 		var self = this;
+		console.log( 'createSelfie' );
 		var identity = self.identities[ self.userId ];
 		if ( !identity )
 			identity = {
@@ -608,6 +627,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			view            : self.view,
 			menu            : self.menu,
 			identity        : identity,
+			browser         : self.browser,
 			permissions     : self.permissions,
 			quality         : self.quality,
 			preferedDevices : self.preferedDevices,
@@ -731,6 +751,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.conn = conf.conn;
 		self.view = conf.view;
 		self.menu = conf.menu;
+		self.browser = conf.browser;
 		self.identity = conf.identity;
 		self.permissions = conf.permissions;
 		self.preferedDevices = conf.preferedDevices;
@@ -1465,7 +1486,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function mediaFailed( err, constraints ) {
 			self.clearStream();
-			console.log( 'mediaFailed', err.stack || err );
+			console.log( 'mediaFailed', {
+				stack : err.stack,
+				err   : err,
+			});
+			
 			const errData = {
 				err : err,
 				constraints : constraints,
@@ -1479,11 +1504,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				retrySimple();
 		}
 		
+		/*
 		function retryLastGood() {
 			const conf = self.lastGoodConstraints;
 			self.lastGoodConstraints = null;
 			getMedia( conf );
 		}
+		*/
 		
 		function retrySimple() {
 			// try audio + video, but no special conf
@@ -2643,8 +2670,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		var meta = {
-			isChrome  : self.selfie.isChrome,
-			isFirefox : self.selfie.isFirefox,
+			browser   : self.selfie.browser,
 			state     : {
 				isMuted    : self.selfie.isMute,
 				isBlinded  : self.selfie.isBlind,
@@ -2682,6 +2708,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.updateMeta = function( meta ) {
 		var self = this;
+		console.log( 'updateMeta', meta );
+		
 		if ( meta.state )
 			updateState( meta.state );
 		
@@ -2696,11 +2724,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		};
 		
 		// if one peer is chrome and another is firefox, chrome will always be 'it'
-		if ( self.selfie.isFirefox && meta.isChrome )
-			self.doInit = false;
-		
-		if ( self.selfie.isChrom && meta.isFirefox )
-			self.doInit = true;
+		self.browser = meta.browser;
+		self.updateDoInit( meta.browser );
+		console.log( 'peer - doInit is now:', self.doInit );
 		
 		self.emit( 'meta', meta );
 		if ( !self.permissions.receive.audio || !self.sending.audio )
@@ -2719,6 +2745,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( null != state.screenMode )
 				self.setScreenMode( state.screenMode );
 		}
+	}
+	
+	ns.Peer.prototype.updateDoInit = function( browser ) {
+		const self = this;
+		console.log( 'chrome.updateDoInit', browser );
+		/*
+		if ( self.selfie.isFirefox && meta.isChrome )
+			self.doInit = false;
+		
+		if ( self.selfie.isChrom && meta.isFirefox )
+			self.doInit = true;
+		*/
+		if ( 'firefox' === browser )
+			self.doInit = false;
+		
+		if ( 'safari' === browser )
+			self.doInit = false;
 	}
 	
 	ns.Peer.prototype.initializeSessions = function() {
@@ -3000,6 +3043,54 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 })( library.rtc );
 
+/*
+
+	These are used based on local browser, NOT remote( peer ).
+
+*/
+
+(function( ns, undefined ) {
+	ns.PeerSafari = function( conf ) {
+		console.log( 'PeerSafari', conf );
+		const self = this;
+		library.rtc.Peer.call( self, conf );
+	}
+	
+	ns.PeerSafari.prototype = Object.create( library.rtc.Peer.prototype );
+	
+	ns.PeerSafari.prototype.updateDoInit = function( browser ) {
+		const self = this;
+		console.log( 'PeerSafari.updateDoInit', browser );
+		if ( 'chrome' === browser )
+			self.doInit = true;
+		
+		if ( 'firefox' === browser )
+			self.doInit = false;
+	}
+	
+})( library.rtc );
+
+(function( ns, undefined ) {
+	ns.PeerFirefox = function( conf ) {
+		console.log( 'PeerFirefox', conf );
+		const self = this;
+		library.rtc.Peer.call( self, conf );
+	}
+	
+	ns.PeerFirefox.prototype = Object.create( library.rtc.Peer.prototype );
+	
+	ns.PeerFirefox.prototype.updateDoInit = function( browser ) {
+		const self = this;
+		console.log( 'PeerFirefox.updateDoInit', browser );
+		if ( 'chrome' === browser )
+			self.doInit = true;
+		
+		if ( 'safari' === browser )
+			self.doInit = true;
+	}
+	
+})( library.rtc );
+
 
 // SESSION
 (function( ns, undefined ) {
@@ -3033,7 +3124,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false;
+		self.spam = true;
 		
 		self.init();
 	}
@@ -4634,6 +4725,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		new library.rtc.BrowserCheck( checkBack );
 		function checkBack( res ) {
+			console.log( 'BrowserCheck checkback', res );
 			self.ui.updateBrowserCheck( res );
 			checkErrors( res );
 			self.setCheckDone( 'browser' );
@@ -4659,10 +4751,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				}
 				
 				// report back
-				if ( !success )
+				if ( !success ) {
 					self.setHasError( isCrit );
-				
-				callback( !isCrit );
+					callback( isCrit, res.browser );
+				}
+				else {
+					callback( !isCrit, res.browser );
+					callback( null, res.browser );
+				}
 			}
 		}
 	}
@@ -5548,10 +5644,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		// CHROME
 		is[ 'chrome' ] = !!window.chrome && !!window.chrome.webstore;
 		is[ 'blink' ] = ( is[ 'chrome' ] || is[ 'opera' ] ) && !!window.CSS;
+		/*
 		if ( is[ 'blink' ]) {
 			is[ 'chrome' ] = false;
 			is[ 'opera' ] = false;
 		}
+		*/
 		
 		self.is = is;
 	}

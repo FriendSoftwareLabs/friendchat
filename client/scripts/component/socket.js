@@ -133,6 +133,7 @@ library.component = library.component || {};
 		}
 		
 		self.setState( 'connecting' );
+		console.log( 'Socket: connecting to', self.url );
 		var protocol = self.protocol.length ? self.protocol : null;
 		try {
 			self.ws = new window.WebSocket( self.url );
@@ -258,11 +259,13 @@ library.component = library.component || {};
 	ns.Socket.prototype.handleOpen = function( e ) {
 		var self = this;
 		self.reconnectAttempt = 0;
+		console.log( 'Socket: connection open', self.url );
 		// we're waiting for authenticate challenge
 	}
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		var self = this;
+		console.log( 'Socket: connection closed', self.url );
 		self.cleanup();
 		self.setState( 'close' );
 		self.doReconnect();
@@ -270,6 +273,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		var self = this;
+		console.log( 'Socket: connection error for', self.url );
 		self.cleanup();
 		self.setState( 'error' );
 		self.doReconnect();
