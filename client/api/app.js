@@ -755,8 +755,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.setViewFlag = function( msg ) {
 		var self = this;
-		console.log( 'setViewFlag', msg );
-		
 		if ( 'minimized' !== msg.flag )
 			return;
 		
@@ -1549,7 +1547,6 @@ api.DoorFun.prototype.init = function() {
 	
 	ns.File.prototype.expose = function( callback ) {
 		var self = this;
-		console.log( 'File.expose', self.path );
 		var libConf = {
 			functionName : 'file/expose',
 			args : {
@@ -1560,7 +1557,6 @@ api.DoorFun.prototype.init = function() {
 		};
 		var lib = new api.Library( libConf );
 		function success( res ) {
-			console.log( 'File.expose.success', res );
 			self.exposeHash = res.hash;
 			self.name = res.name;
 			var link = self.getPublicLink();

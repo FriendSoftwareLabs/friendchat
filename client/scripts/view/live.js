@@ -1406,6 +1406,12 @@ library.component = library.component || {};
 		self.reflow();
 	}
 	
+	ns.Peer.prototype.setAudioSink = function( deviceId ) {
+		const self = this;
+		self.audioSinkId = deviceId || '';
+		self.updateAudioSink();
+	}
+	
 	// Private
 	
 	ns.Peer.prototype.init = function() {
@@ -2243,8 +2249,7 @@ library.component = library.component || {};
 		
 		self.stream = hello.template.getElement( 'stream-video-tmpl', conf );
 		self.stream.onloadedmetadata = play;
-		if ( self.audioSinkId )
-			self.setAudioSink();
+		self.updateAudioSink();
 		
 		container.insertBefore( self.stream, RTCInfo );
 		self.toggleSpinner( false );
@@ -2320,13 +2325,9 @@ library.component = library.component || {};
 		self.toggleRemoteBlind( isBlinded );
 	}
 	
-	ns.Peer.prototype.setAudioSink = function( deviceId ) {
+	ns.Peer.prototype.updateAudioSink = function() {
 		const self = this;
-		deviceId = deviceId || self.audioSinkId;
-		if ( !deviceId ) {
-			console.log( 'no deviceId to set' );
-			return;
-		}
+		const deviceId = self.audioSinkId || '';
 		
 		if ( !self.stream ) {
 			self.audioSinkId = deviceId;
@@ -2941,7 +2942,6 @@ library.component = library.component || {};
 		const self = this;
 		setTimeout( hepp, 100 );
 		function hepp() {
-			console.log( 'show AVGraph', self.AVGraph );
 			if ( self.AVGraph )
 				self.AVGraph.start();
 			else
@@ -2955,7 +2955,6 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.hideAVGraph = function() {
 		const self = this;
-		console.log( 'hide AVGraph', self.AVGraph );
 		if ( !self.AVGraph )
 			return;
 		

@@ -1083,7 +1083,7 @@ library.component = library.component || {};
 			req.send();
 			
 			function reqProgress( e ) {
-				console.log( 'reqProgress', e );
+				//console.log( 'reqProgress', e );
 			}
 			
 			function reqReadyState( e ) {
@@ -1092,7 +1092,6 @@ library.component = library.component || {};
 				if ( !headers.length )
 					return;
 				
-				console.log( 'headers', headers );
 				var mime = getContentType( headers );
 				if ( !mime )
 					return;
@@ -1220,11 +1219,6 @@ library.component = library.component || {};
 	
 	ns.LinkExpand.prototype.expandFile = function( a, mime ) {
 		var self = this;
-		console.log( 'expandFile', {
-			a : a,
-			m : mime,
-		});
-		
 		return '';
 		
 		typeClass = 'File';
@@ -1240,16 +1234,12 @@ library.component = library.component || {};
 	
 	ns.LinkExpand.prototype.expandText = function( a, mime ) {
 		var self = this;
-		console.log( 'expandText', a );
 		return null;
 		//return a.href;
 	}
 	
 	ns.LinkExpand.prototype.expandOther = function( a, mime ) {
 		var self = this;
-		console.log( 'expandOther', {
-			a : a,
-			m : mime });
 		return null;
 		//return a.href;
 	}

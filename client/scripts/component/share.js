@@ -111,7 +111,6 @@ library.component = library.component || {};
 		
 		function createPublicEmail( e ) {
 			e.stopPropagation();
-			console.log( 'createPublicEmail', e );
 			self.createEmail( self.publicToken );
 		}
 		
@@ -122,7 +121,6 @@ library.component = library.component || {};
 	
 	ns.ShareView.prototype.handleRevoke = function( token ) {
 		var self = this;
-		console.log( 'handleRevoke', token );
 		if ( 'public' === token || self.publicToken === token )
 			revokePublic();
 		else
@@ -158,7 +156,6 @@ library.component = library.component || {};
 	
 	ns.ShareView.prototype.handlePrivate = function( invite ) {
 		var self = this;
-		console.log( 'handlePrivate', invite );
 		self.invites[ invite.token ] = invite;
 		build( invite );
 		bind( invite );
@@ -213,7 +210,6 @@ library.component = library.component || {};
 	
 	ns.ShareView.prototype.handlePublic = function( data ) {
 		var self = this;
-		console.log( 'handlePublic', data );
 		// clear styles
 		if ( self.publicToken === self.copyId )
 			self.clearCopy();
@@ -230,7 +226,6 @@ library.component = library.component || {};
 	
 	ns.ShareView.prototype.handleState = function( data ) {
 		var self = this;
-		console.log( 'handleState', data );
 		self.host = data.host;
 		data.privateTokens
 			.forEach( add );
@@ -257,7 +252,6 @@ library.component = library.component || {};
 	ns.ShareView.prototype.getEmailLink = function() {
 		var self = this;
 		var email = self.emailInput.value;
-		console.log( 'getEmailLink', email );
 		if ( !email )
 			return;
 		
@@ -271,7 +265,6 @@ library.component = library.component || {};
 		self.requestInvite( inviteBack );
 		
 		function inviteBack( e ) {
-			console.log( 'inviteBack', e );
 			self.sendEmailLink( email, e.str );
 		}
 	}
@@ -320,7 +313,6 @@ library.component = library.component || {};
 	
 	ns.ShareView.prototype.remove = function( token ) {
 		const self = this;
-		console.log( 'remove', token );
 		var element = document.getElementById( token );
 		if ( element )
 			element.parentNode.removeChild( element );
@@ -334,7 +326,6 @@ library.component = library.component || {};
 	
 	ns.ShareView.prototype.copyToClipboard = function( id ) {
 		var self = this;
-		console.log( 'copyToClipboard', id );
 		self.selectAll( id );
 		try {
 			var success = document.execCommand( 'copy' );
@@ -353,7 +344,6 @@ library.component = library.component || {};
 	
 	ns.ShareView.prototype.createEmail = function( id ) {
 		var self = this;
-		console.log( 'createEmail', id );
 		var input = self.getInputById( id );
 		if ( !input || !input.value || !input.value.length ) {
 			console.log( 'createEmail - input has no content', { id : id, input : input });
@@ -361,19 +351,15 @@ library.component = library.component || {};
 		}
 		
 		var match = input.value.match( /http.*/ );
-		console.log( 'match', match );
 		if ( !match )
 			return;
 		
 		var link = match[ 0 ];
-		console.log( 'link', link );
 		var enSubject =  window.encodeURIComponent( 'Friend Chat - join me live' );
 		var enLink = window.encodeURIComponent( link );
-		console.log( 'enLink', enLink );
 		var href = 'mailto:'
 			+ '?subject=' + enSubject
 			+ '&body=' + enLink;
-		console.log( 'href', href );
 		var iframe = document.createElement( 'iframe' );
 		iframe.classList.add( 'hidden' );
 		document.body.appendChild( iframe );

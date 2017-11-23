@@ -42,7 +42,7 @@ to listeners registered through this interface
 		
 		self._eventEmitterInit();
 	}
-
+	
 	
 	// Added to objects public interface
 	
@@ -370,7 +370,7 @@ inherits from EventEmitter
 			return;
 		}
 		
-		console.log( 'subview.' + self.type + '.handleMessage - no handler for', msg );
+		//console.log( 'subview.' + self.type + '.handleMessage - no handler for', msg );
 	}
 	
 	ns.SubView.prototype.sendMessage = function( msg ) {

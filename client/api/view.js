@@ -177,7 +177,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.toggleFullscreen = function( targetElement ) {
 		const self = this;
-		console.log( 'toggleFullscreen' );
 		if ( !canHasFullscreen()) {
 			return;
 		}
@@ -205,12 +204,10 @@ var friend = window.friend || {};
 				|| document.msFullscreenElement
 				|| null;
 				
-			console.log( 'getFullscreenElement', el );
 			return el;
 		}
 		
 		function exitFullscreen() {
-			console.log( 'exitFullscreen')
 			if ( document.exitFullscreen )
 				document.exitFullscreen();
 			
@@ -225,27 +222,22 @@ var friend = window.friend || {};
 		}
 		
 		function setFullscreen( el ) {
-			console.log( 'setFullscreen', el );
 			if ( el.requestFullscreen ) {
-				console.log( 'reqFull')
 				el.requestFullscreen();
 				return;
 			}
 			
 			if ( el.webkitRequestFullscreen ) {
-				console.log( 'webkitReqFullscreen' );
 				el.webkitRequestFullscreen();
 				return;
 			}
 			
 			if ( el.webkitRequestFullScreen ) {
-				console.log( 'webkitRequestFullScreen' );
 				el.webkitRequestFullScreen();
 				return;
 			}
 			
 			if ( el.mozRequestFullScreen ) {
-				console.log( 'mozRequestFullScreen' );
 				el.mozRequestFullScreen();
 				return;
 			}

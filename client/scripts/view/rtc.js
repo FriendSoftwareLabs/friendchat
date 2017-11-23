@@ -129,7 +129,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return;
 			}
 			
-			console.log( 'browserBack', browser );
 			self.browser = browser;
 			self.initChecks.checkDeviceAccess( self.permissions.send, deviceBack );
 		}
@@ -614,7 +613,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.createSelfie = function( createBack ) {
 		var self = this;
-		console.log( 'createSelfie' );
 		var identity = self.identities[ self.userId ];
 		if ( !identity )
 			identity = {
@@ -3051,7 +3049,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 (function( ns, undefined ) {
 	ns.PeerSafari = function( conf ) {
-		console.log( 'PeerSafari', conf );
 		const self = this;
 		library.rtc.Peer.call( self, conf );
 	}
@@ -3060,7 +3057,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.PeerSafari.prototype.updateDoInit = function( browser ) {
 		const self = this;
-		console.log( 'PeerSafari.updateDoInit', browser );
 		if ( 'chrome' === browser )
 			self.doInit = true;
 		
@@ -3072,7 +3068,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 (function( ns, undefined ) {
 	ns.PeerFirefox = function( conf ) {
-		console.log( 'PeerFirefox', conf );
 		const self = this;
 		library.rtc.Peer.call( self, conf );
 	}
@@ -3081,7 +3076,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.PeerFirefox.prototype.updateDoInit = function( browser ) {
 		const self = this;
-		console.log( 'PeerFirefox.updateDoInit', browser );
 		if ( 'chrome' === browser )
 			self.doInit = true;
 		
@@ -3124,7 +3118,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = true;
+		self.spam = false;
 		
 		self.init();
 	}
@@ -3135,7 +3129,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.addStream = function( stream ) {
 		var self = this;
-		console.log( 'Session.addStream', {
+		self.log( 'Session.addStream', {
 			stream : stream,
 			conn : self.conn, 
 		});
@@ -3648,7 +3642,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function err( e ) {
-			console.log( 'remoteOffer err', e );
 			self.log( 'remoteOffer err', e );
 			self.emit( 'error', e );
 		}
@@ -3688,7 +3681,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			+ ' Failed to push down transport description:'
 			+ ' Failed to set ssl role for the channel.';
 			
-			console.log( 'remoteAnswer error', err );
 			if ( errTest === err ) {
 				sdp = self.toggleSDPActivePassive( sdp );
 				self.handleRemoteAnswer( sdp );
@@ -4725,7 +4717,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		new library.rtc.BrowserCheck( checkBack );
 		function checkBack( res ) {
-			console.log( 'BrowserCheck checkback', res );
 			self.ui.updateBrowserCheck( res );
 			checkErrors( res );
 			self.setCheckDone( 'browser' );
@@ -4929,7 +4920,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.InitChecks.prototype.checkVideoDevices = function( mediaStream, preferedDevices ) {
 		const self = this;
-		console.log( 'checkVideoDevices', mediaStream );
 		self.setCheckDone( 'video-input' );
 	}
 	
