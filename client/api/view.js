@@ -400,12 +400,72 @@ var friend = window.friend || {};
 		if ( self.config )
 			self.handleConf();
 		
+		// mousedown listeing
 		document.body.addEventListener( 'mousedown', activate, false );
 		function activate( e ) { self.activate( e ); }
 		
+		// key down listening
+		self.keyDownQualifiers = [
+			'shiftKey',
+			'ctrlKey',
+			'metaKey',
+			'altKey',
+		];
+		document.body.addEventListener( 'keydown', onKeyDown, false );
+		function onKeyDown( e ) {
+			if ( !self.isActive )
+				return;
+			
+			self.handleKeyDown( e );
+		}
+		
+		//
 		function baseCssLoaded() {
 			self.cssLoaded = true;
 			self.checkAllLoaded();
+		}
+	}
+	
+	ns.View.prototype.handleKeyDown = function( e ) {
+		const self = this;
+		const keyCode = e.keyCode || e.which;
+		if ( hasNoModifier( e ) || isModifier( keyCode ))
+			return;
+		
+		const keyEvent = {};
+		self.keyDownQualifiers.forEach( add );
+		function add( prop ) {
+			if ( !e[ prop ])
+				return;
+			
+			keyEvent[ prop ] = e[ prop ];
+		}
+		
+		keyEvent.keyCode = keyCode;
+		const event = {
+			type    : 'system',
+			command : 'keydown',
+			data    : keyEvent,
+		};
+		console.log( 'send key down event', event );
+		self.send( event );
+		
+		function hasNoModifier( keyDown ) {
+			return !self.keyDownQualifiers.some( isSet );
+			function isSet( modKey ) {
+				return !!keyDown[ modKey ];
+			}
+		}
+		
+		function isModifier( keyCode ) {
+			if (   16 === keyCode // shift
+				|| 17 === keyCode // ctrl
+				|| 18 === keyCode // alt
+				|| 91 === keyCode // meta
+			) {
+				return true;
+			} else
+				return false;
 		}
 	}
 	
@@ -554,24 +614,31 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.activated = function() {
 		var self = this;
+		if ( self.isActive )
+			return;
+		
 		self.viewEvent({
 			type : 'focus',
 			data : true,
 		});
 		
 		self.isActive = true;
-		document.body.classList.add( 'activated' );
+		document.body.focus();
+		document.body.classList.toggle( 'activated', true );
 	}
 	
 	ns.View.prototype.deactivated = function() {
 		var self = this;
+		if ( !self.isActive )
+			return;
+		
 		self.viewEvent({
 			type : 'focus',
 			data : false,
 		});
 		
 		self.isActive = false;
-		document.body.classList.remove( 'activated' );
+		document.body.classList.toggle( 'activated', false );
 	}
 	
 	ns.View.prototype.handleViewTheme = function( msg ) {
