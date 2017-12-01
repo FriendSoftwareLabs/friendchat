@@ -59,8 +59,11 @@ library.view = library.view || {};
 		setMessage( data.message );
 		if ( data.guestLink ) {
 			self.guestLink = data.guestLink;
-			showGuestBtn();
+			showGuest();
 		}
+		
+		if ( data.name )
+			self.showNameOption( data.name );
 		
 		self.startTimeSince();
 		
@@ -85,11 +88,12 @@ library.view = library.view || {};
 			element.classList.remove( 'hidden' );
 		}
 		
-		function showGuestBtn() {
-			const guestBtn = document.getElementById( 'open-guest' );
-			const submitBtn = document.getElementById( 'confirm' );
-			submitBtn.classList.toggle( 'hidden', true );
-			guestBtn.classList.toggle( 'hidden', false );
+		function showGuest() {
+			self.showGuest = true;
+			self.simple.classList.toggle( 'hidden', true );
+			self.confirm.classList.toggle( 'hidden', true );
+			self.toggleAdvBtn.classList.toggle( 'hidden', true );
+			self.guest.classList.toggle( 'hidden', false );
 		}
 	}
 	
@@ -133,13 +137,27 @@ library.view = library.view || {};
 	ns.RtcAsk.prototype.bindEvents = function() {
 		const self = this;
 		const form = document.getElementById( 'form' );
+		self.name = document.getElementById( 'set-name' );
+		self.nameInput = document.getElementById( 'set-name-input' );
+		self.simple = document.getElementById( 'simple' );
+		self.guest = document.getElementById( 'guest' );
+		self.advOpts = document.getElementById( 'advanced-options' );
+		self.confirm = document.getElementById( 'confirm' );
+		self.toggleAdvBtn = document.getElementById( 'toggle-advanced' );
+		const simpleAudio = document.getElementById( 'allow-audio' );
+		const simpleVideo = document.getElementById( 'allow-video' );
 		const guestBtn = document.getElementById( 'open-guest' );
 		const cancelBtn = document.getElementById( 'deny' );
-		console.log( 'form?', form );
 		form.addEventListener( 'submit', submit, false );
+		self.toggleAdvBtn.addEventListener( 'click', toggleAdvanced, false );
+		simpleAudio.addEventListener( 'click', allowAudio, false );
+		simpleVideo.addEventListener( 'click', allowVideo, false );
 		guestBtn.addEventListener( 'click', guest, false );
 		cancelBtn.addEventListener( 'click', cancel, false );
 		
+		function toggleAdvanced( e ) { self.toggleAdvanced(); }
+		function allowAudio( e ) { self.allowAudio(); }
+		function allowVideo( e ) { self.allowVideo(); }
 		function submit( e ) { self.submit( e ); }
 		function guest( e ) { self.openGuest( e ); }
 		function cancel( e ) { self.cancel( e ); }
@@ -149,29 +167,68 @@ library.view = library.view || {};
 		var self = this;
 		e.preventDefault();
 		e.stopPropagation();
-		var inputs = e.target.elements;
-		var allowA = inputs.allowAudio.checked;
-		var allowV = inputs.allowVideo.checked;
-		let receiveA = inputs.receiveAudio.checked;
-		let receiveV = inputs.receiveVideo.checked;
-		console.log( 'rtcAsk.submit', { a : allowA, v : allowV } );
-		
-		self.send({
-			type : 'response',
-			data : {
-				accept : true,
-				permissions : {
-					send : {
-						audio : allowA,
-						video : allowV,
-					},
-					receive : {
-						audio : receiveA,
-						video : receiveV,
-					},
-				},
+		const perms = self.getAdvPermissions( e );
+		const response = {
+			accept       : true,
+			permissions  : perms,
+		}
+		self.respond( response );
+	}
+	
+	ns.RtcAsk.prototype.showNameOption = function( name ) {
+		const self = this;
+		self.useName = name;
+		self.nameInput.value = name;
+		self.name.classList.toggle( 'hidden', false );
+	}
+	
+	ns.RtcAsk.prototype.toggleAdvanced = function() {
+		const self = this;
+		console.log( 'toggleAdvanced', self.showAdvanced );
+		self.showAdvanced = !self.showAdvanced;
+		self.advOpts.classList.toggle( 'hidden', !self.showAdvanced );
+		self.confirm.classList.toggle( 'hidden', !self.showAdvanced );
+		self.simple.classList.toggle( 'hidden', self.showAdvanced );
+	}
+	
+	ns.RtcAsk.prototype.allowAudio = function() {
+		const self = this;
+		console.log( 'allowAudio' );
+		const perms = {
+			send : {
+				audio : true,
+				video : false,
 			},
-		});
+			receive : {
+				audio : true,
+				video : false,
+			},
+		};
+		const res = {
+			accept      : true,
+			permissions : perms,
+		};
+		self.respond( res );
+	}
+	
+	ns.RtcAsk.prototype.allowVideo = function() {
+		const self = this;
+		console.log( 'allowVideo' );
+		const perms = {
+			send : {
+				audio : true,
+				video : true,
+			},
+			receive : {
+				audio : true,
+				video : true,
+			},
+		};
+		const res = {
+			accept      : true,
+			permissions : perms,
+		};
+		self.respond( res );
 	}
 	
 	ns.RtcAsk.prototype.openGuest = function( e ) {
@@ -182,17 +239,54 @@ library.view = library.view || {};
 	
 	ns.RtcAsk.prototype.cancel = function( e ) {
 		var self = this;
-		self.send({
+		self.respond({ accept : false });
+	}
+	
+	ns.RtcAsk.prototype.respond = function( data ) {
+		const self = this;
+		if ( self.useName )
+			data.name = getName();
+		
+		console.log( 'respond', data );
+		const response = {
 			type : 'response',
-			data : {
-				accept : false,
-			},
-		});
+			data : data,
+		};
+		self.send( response );
+		
+		function getName() {
+			let name = self.nameInput.value;
+			name = name.trim();
+			if ( !name || !name.length )
+				return self.useName;
+			
+			return name;
+		}
 	}
 	
 	ns.RtcAsk.prototype.send = function( msg ) {
 		var self = this;
 		self.view.sendMessage( msg );
+	}
+	
+	ns.RtcAsk.prototype.getAdvPermissions = function( e ) {
+		const self = this;
+		const inputs = e.target.elements;
+		const sendA = inputs.sendAudio.checked;
+		const sendV = inputs.sendVideo.checked;
+		const receiveA = inputs.receiveAudio.checked;
+		const receiveV = inputs.receiveVideo.checked;
+		const permissions = {
+			send : {
+				audio : sendA,
+				video : sendV,
+			},
+			receive : {
+				audio : receiveA,
+				video : receiveV,
+			},
+		};
+		return permissions;
 	}
 	
 })( library.view );

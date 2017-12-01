@@ -37,11 +37,13 @@ i.fa {
 	display : inherit;
 }
 
+/*
 .button.accept,
 .button.danger,
 .button.disabled {
 	background: none;
 }
+*/
 
 /*
 .button.accept { background-color : rgb( 81, 144, 57 ); }

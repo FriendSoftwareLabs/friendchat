@@ -244,29 +244,51 @@ var hello = null;
 		}
 		
 		const conf = self.config.run;
+		console.log( 'doGuestThings - conf', conf );
 		if ( 'live-invite' === conf.type ) {
-			self.loggedIn = true;
-			let identity = conf.data.identity || {
-				name   : library.tool.getName(),
-				avatar : library.component.Identity.prototype.avatar,
+			const randomName = library.tool.getName();
+			const askConf = {
+				name          : randomName,
+				message       : 'You are joining a Live room as a guest.',
+				activeSession : false,
+				inviteHost    : 'leeloo',
 			};
+			new library.view.RtcAsk( askConf, askBack );
+			return; // prevents unknown data thingie, down there *points*
 			
-			const inviteBundle = {
-				type : 'anon-invite',
-				data : {
-					tokens : {
-						token  : conf.data.token,
-						roomId : conf.data.roomId,
+			function askBack( res ) {
+				console.log( 'doGuiestThings - askBack', res );
+				if ( !res.accept ) {
+					self.quit();
+					return;
+				}
+				
+				setupUser( res );
+			}
+			
+			function setupUser( options ) {
+				self.loggedIn = true;
+				let identity = conf.data.identity || {
+					name   : options.name,
+					avatar : library.component.Identity.prototype.avatar,
+				};
+				
+				const inviteBundle = {
+					type : 'anon-invite',
+					data : {
+						tokens : {
+							token  : conf.data.token,
+							roomId : conf.data.roomId,
+						},
+						identity : identity,
 					},
-					identity : identity,
-				},
-			};
-			self.setAuthBundle( inviteBundle );
-			initPresenceConnection( connBack );
-			return;
-			
-			function connBack() {
-				self.setupLiveRoom( conf );
+				};
+				self.setAuthBundle( inviteBundle );
+				initPresenceConnection( connBack );
+				
+				function connBack() {
+					self.setupLiveRoom( options.permissions );
+				}
 			}
 		}
 		
@@ -329,10 +351,10 @@ var hello = null;
 		}
 	}
 	
-	ns.Hello.prototype.setupLiveRoom = function( data ) {
+	ns.Hello.prototype.setupLiveRoom = function( permissions ) {
 		const self = this;
-		console.log( 'setupLiveRoom', data );
-		new library.component.GuestRoom( self.conn, onclose );
+		console.log( 'setupLiveRoom', permissions );
+		new library.component.GuestRoom( self.conn, permissions, onclose );
 		function onclose() { self.quit(); }
 		
 		//self.rtc.createClient( self.config.run.data );

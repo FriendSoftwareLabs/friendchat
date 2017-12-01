@@ -15,7 +15,6 @@
 		" type="text/css">
 	</head>
 	<body id="hello" class="">
-		
 		<div id="fragments">
 		
 <!-- body
@@ -33,17 +32,41 @@
 			</div>
 		</div>
 	</div>
-	<div class="main expand">
+	<div id="set-name" class="main fortify">
+		<p>
+			This will be your displayed name, you may change it:
+		</p>
+		<div class="input-wrap">
+			<input id="set-name-input" type="text">
+		</div>
+	</div>
+	<div id="simple" class="main group column tighten expand">
+		<button id="allow-audio" class="button ask-btn" type="button">
+			<i class="fa fa-fw fa-microphone"></i>
+			Join with audio only
+		</button>
+		<button id="allow-video" class="button ask-btn" type="button">
+			<i class="fa fa-fw fa-video-camera"></i>
+			Join with video and audio
+		</button>
+	</div>
+	<div id="guest" class="main group column center expand hidden">
+		<button id="open-guest" type="button" class="button ask-btn">
+			<i class="fa fa-fw fa-user-secret"></i>
+			{i18n_join_as_guest}
+		</button>
+	</div>
+	<div id="advanced-options" class="main expand hidden">
 		<fieldset class="type-select">
 			<legend>{i18n_sending_types}</legend>
 			<table>
 				<tr>
-					<td><input name="allowAudio" id="allowAudio" type="checkbox" checked="true"></td>
-					<td><label for="allowAudio">{i18n_audio}</label></td>
+					<td><input name="sendAudio" id="sendAudio" type="checkbox" checked="true"></td>
+					<td><label for="sendAudio">{i18n_audio}</label></td>
 				</tr>
 				<tr>
-					<td><input name="allowVideo" id="allowVideo" type="checkbox" checked="true"></td>
-					<td><label for="allowVideo">{i18n_video}</label></td>
+					<td><input name="sendVideo" id="sendVideo" type="checkbox" checked="true"></td>
+					<td><label for="sendVideo">{i18n_video}</label></td>
 				</tr>
 			</table>
 		</fieldset>
@@ -61,18 +84,17 @@
 			</table>
 		</fieldset>
 	</div>
-	<div class="fortify group row tighten Box">
-		<button id="confirm" type="submit" class="button accept">
+	<div id="advanced-buttons" class="fortify group row tighten Box">
+		<button id="confirm" type="submit" class="button accept hidden">
 			<i class="fa fa-fw fa-check"></i>
 			{i18n_accept}
-		</button>
-		<button id="open-guest" type="button" class="button hidden">
-			<i class="fa fa-fw fa-user-secret"></i>
-			{i18n_join_as_guest}
 		</button>
 		<button id="deny" type="button" class="button danger">
 			<i class="fa fa-fw fa-times"></i>
 			{i18n_cancel}
+		</button>
+		<button id="toggle-advanced" type="button" class="button">
+			<i class="fa fa-fw fa-cog"></i>
 		</button>
 	</div>
 </form>

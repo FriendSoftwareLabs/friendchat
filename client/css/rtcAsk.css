@@ -23,10 +23,46 @@
 	padding : 0.5em 0;
 	font-size: 130%;
 }
+
+#guest {
+	
+}
+
+.button.ask-btn {
+	display: flex;
+	align-items : center;
+	padding : 1.5em 0.5em;
+	margin : 0;
+	text-align: left;
+}
+
+.button.ask-btn:first-child {
+	margin-right : 0.5em;
+}
+
+.button.ask-btn > i {
+	font-size: 200%;
+	margin-right : 0.3em;
+}
+
 .main {
     padding : 0 1em;
 }
 
 .type-select {
     margin : 1em;
+}
+
+@media ( min-width : 30em ) {
+	#form {
+		flex : 1 1 auto;
+		max-width: 30em;
+		max-height: 27em;
+	}
+	
+	body {
+		display : flex;
+		align-items: center;
+		justify-content: center;
+	}
 }

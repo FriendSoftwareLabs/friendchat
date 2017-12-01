@@ -23,9 +23,10 @@ var library = window.library || {};
 library.component = library.component || {};
 
 (function( ns, undefined ) {
-	ns.GuestRoom = function( conn, onclose ) {
+	ns.GuestRoom = function( conn, permissions, onclose ) {
 		const self = this;
 		self.conn = conn;
+		self.permissions = permissions;
 		self.onclose = onclose;
 		
 		self.roomId = null;
@@ -101,19 +102,22 @@ library.component = library.component || {};
 		const self = this;
 		self.users = state.users;
 		self.identities = state.identities;
+		console.log( 'Guest.handleRoomInit', self.permissions );
+		const perms = self.permissions || {
+			send : {
+				audio : true,
+				video : true,
+			},
+			receive : {
+				audio : true,
+				video : true,
+			},
+		};
+		
 		const conf = {
 			roomId      : self.roomId,
 			isGuest     : true,
-			permissions : {
-				send : {
-					audio : true,
-					video : true,
-				},
-				receive : {
-					audio : true,
-					video : true,
-				},
-			},
+			permissions : perms,
 		};
 		self.live = new library.rtc.RtcSession( conf, liveEvent, onclose );
 		self.live.on( 'chat', chat );
