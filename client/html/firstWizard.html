@@ -1,0 +1,70 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			../scripts/component/tool.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/view/firstWizard.js
+		" type="text/javascript"></script>
+		
+		<link rel="stylesheet" href="
+			../css/common.css;
+			/webclient/apps/FriendChat/css/firstWizard.css
+		" type="text/css">
+	</head>
+	<body>
+		
+		<div id="fragments">
+		
+<!-- body
+
+-->
+<script id="body-tmpl" type="text/html">
+<div id="hello" class="group column BackgroundDefault">
+	<div id="intro" class="fortify">
+		{i18n_FiWiz_choose_ui}
+	</div>
+	<div id="choose" class="expand cover">
+		<div id="simplified" class="option group column start Border">
+			<div class="title fortify">
+				{i18n_FiWiz_title_simplified}
+			</div>
+			<div class="features fortify">
+				<ul>
+					<li>{i18n_FiWiz_smpl_contact}</li>
+					<li>{i18n_FiWiz_smpl_treeroot}</li>
+					<li>{i18n_FiWiz_smpl_clean_ui}</li>
+				</ul>
+			</div>
+			<button id="smpl_btn" class="button fortify" type="button">
+				<i class="fa fa-fw fa-circle"></i>
+				{i18n_FiWiz_btn_simplified}
+			</button>
+			<div class="bg smpl expand">
+			</div>
+		</div>
+		<div id="advanced" class="option group column start Border">
+			<div class="title fortify">
+				{i18n_FiWiz_title_advanced}
+			</div>
+			<div class="features fortify">
+				<ul>
+					<li>{i18n_FiWiz_adv_add_remove}</li>
+					<li>{i18n_FiWiz_adv_irc}</li>
+					<li>{i18n_FiWiz_adv_options}</li>
+				</ul>
+			</div>
+			<button id="adv_btn" class="button fortify" type="button">
+				<i class="fa fa-fw fa-cube"></i>
+				{i18n_FiWiz_btn_advanced}
+			</button>
+			<div class="bg adv expand">
+			</div>
+		</div>
+	</div>
+</div>
+</script>
+
+		</div>
+	</body>
+<html>

@@ -1,5 +1,3 @@
-'user strict';
-
 /*©agpl*************************************************************************
 *                                                                              *
 * This file is part of FRIEND UNIFYING PLATFORM.                               *
@@ -18,6 +16,8 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.        *
 *                                                                              *
 *****************************************************************************©*/
+
+'user strict';
 
 // available modules TODO : define in config or read from filessytem
 const Presence = require( './Presence' );
@@ -38,6 +38,7 @@ ns.ModCtrl = function( conf ) {
 	var self = this;
 	self.db = conf.db;
 	self.accountId = conf.accountId;
+	self.allowAdvanced = conf.allowAdvanced;
 	self.onsend = conf.onsend;
 	
 	self.modules = {};
@@ -51,7 +52,7 @@ ns.ModCtrl.prototype.initializeModules = function() {
 	var self = this;
 	self.load( modsBack );
 	function modsBack( modules ) {
-		self.sortModules( modules );
+		modules = self.sortModules( modules );
 		var hasPresenceModule = modules.some( isPresence );
 		if ( !hasPresenceModule ) {
 			var pres = {
@@ -73,7 +74,7 @@ ns.ModCtrl.prototype.initializeClient = function( sessionId ) {
 	var self = this;
 	self.load( modsBack );
 	function modsBack( modules ) {
-		self.sortModules( modules );
+		modules = self.sortModules( modules );
 		if ( !modules.length ) {
 			sendToClient( null );
 			return;
@@ -91,23 +92,28 @@ ns.ModCtrl.prototype.initializeClient = function( sessionId ) {
 	}
 }
 
-ns.ModCtrl.prototype.addDefaultModules = function( defaultUsername ) {
-	var self = this;
-	var live = {
-		type     : 'presence',
-		settings : {
-		},
-	};
-	var irc = {
-		type     : 'irc',
-		settings : {
-			nick : defaultUsername,
-		},
-	};
+ns.ModCtrl.prototype.addDefaultModules = function( modules, defaultUsername ) {
+	const self = this;
+	let modConfs = modules.map( buildConf );
+	modConfs = modConfs.filter( mod => null != mod );
+	modConfs.forEach( create );
 	
-	self.create( live, null, liveBack );
-	function liveBack() {
-		self.create( irc );
+	function buildConf( mod ) {
+		let MOD = self.available[ mod ];
+		if ( !MOD )
+			return null;
+		
+		let conf = MOD.prototype.getSetup( defaultUsername );
+		conf.type = mod;
+		return conf;
+	}
+	
+	function create( modConf ) {
+		self.create( modConf )
+	}
+	
+	function createBack( res ) {
+		log( 'mod created', res );
 	}
 }
 
@@ -215,6 +221,11 @@ ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
 ns.ModCtrl.prototype.sortModules = function( modList ) {
 	const self = this;
 	modList.sort( presenceFirst );
+	if ( !self.allowAdvanced )
+		modList = getSimpleList( modList );
+	
+	return modList;
+	
 	function presenceFirst( a, b ) {
 		if ( 'presence' === a.type )
 			return -1;
@@ -223,6 +234,33 @@ ns.ModCtrl.prototype.sortModules = function( modList ) {
 			return 1;
 		
 		return 0;
+	}
+	
+	function getSimpleList( mods ) {
+		let simpleList = [];
+		let hasTreeroot = false;
+		let treerootConf = self.getModuleDefaultConf( 'treeroot' );
+		mods.forEach( isAllowed );
+		return simpleList;
+		
+		function isAllowed( mod ) {
+			if ( 'presence' === mod.type ) {
+				simpleList.push( mod );
+				return;
+			}
+			
+			if ( 'treeroot' !== mod.type )
+				return;
+			
+			if ( hasTreeroot )
+				return;
+			
+			if ( mod.host !== treerootConf.host )
+				return;
+			
+			hasTreeroot = true;
+			simpleList.push( mod );
+		}
 	}
 }
 
@@ -301,6 +339,7 @@ ns.ModCtrl.prototype.load = function( callback ) {
 
 ns.ModCtrl.prototype.start = function( mod ) {
 	var self = this;
+	log( 'starting module', mod );
 	var clientId = mod.clientId;
 	var conn = self.modules[ clientId ];
 	if ( conn ) {
@@ -309,10 +348,10 @@ ns.ModCtrl.prototype.start = function( mod ) {
 	}
 	
 	conn = new ns.ModuleProxy({
-		moduleId : clientId,
-		send : toClient,
+		moduleId       : clientId,
+		send           : toClient,
 		persistSetting : persistSetting,
-		getSettings : getSettings,
+		getSettings    : getSettings,
 	});
 	
 	var Module = self.available[ mod.type ];
@@ -323,7 +362,10 @@ ns.ModCtrl.prototype.start = function( mod ) {
 	
 	new Module( conn, clientId );
 	self.modules[ clientId ] = conn;
-	const conf = global.config.server.defaults.module[ mod.type ];
+	const conf = self.getModuleDefaultConf( mod.type );
+	if ( !conf )
+		throw new Error( 'start - module does not have default conf:' + mod.type );
+	
 	const init = {
 		mod  : mod,
 		conf : conf,
@@ -351,6 +393,11 @@ ns.ModCtrl.prototype.stop = function( moduleId ) {
 	
 	self.modules[ moduleId ].kill();
 	delete self.modules[ moduleId ];
+}
+
+ns.ModCtrl.prototype.getModuleDefaultConf = function( modType ) {
+	const self = this;
+	return global.config.server.defaults.module[ modType ] || null;
 }
 
 

@@ -691,7 +691,7 @@ library.view = library.view || {};
 		var windowConf = self.windowConf || {
 			title : Application.i18n('i18n_settings') + ' - ' + ( self.title || self.type ),
 			width : 420,
-			height : 300,
+			height : 400,
 		};
 		
 		const initData = {
@@ -1420,4 +1420,49 @@ library.view = library.view || {};
 		view.close();
 	}
 	
-})( library.view )
+})( library.view );
+
+(function( ns, undefined ) {
+	ns.FirstWizard = function( callback ) {
+		const self = this;
+		self.callback = callback;
+		self.init();
+	}
+	
+	ns.FirstWizard.prototype.init = function() {
+		const self = this;
+		const filePath = 'html/firstWizard.html';
+		const windowConf = {
+			title : Application.i18n( 'i18n_first_run_wizard' ),
+			width : 700,
+			height : 950,
+		};
+		self.view = hello.app.createView( 
+			filePath,
+			windowConf,
+			{},
+			null,
+			closed
+		);
+		
+		self.view.on( 'done', done );
+		
+		function done( res ) {
+			console.log( 'appview.FirstWizard.on done', res );
+			self.callback( res );
+		}
+		function closed() { console.log( 'firstWiz - closed' ); }
+	}
+	
+	ns.FirstWizard.prototype.close = function() {
+		const self = this;
+		delete self.callback;
+		if ( !self.view )
+			return;
+		
+		var view = self.view;
+		delete self.view;
+		view.close();
+	}
+	
+})( library.view );

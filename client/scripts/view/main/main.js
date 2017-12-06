@@ -1254,11 +1254,6 @@ library.view = library.view || {};
 		container.appendChild( el );
 	}
 	
-	ns.Presence.prototype.getTitleString = function() {
-		const self = this;
-		return 'Conference rooms';
-	}
-	
 	ns.Presence.prototype.bindUI = function() {
 		const self = this;
 		const createBtn = document.getElementById( self.createRoomId );
@@ -1810,6 +1805,11 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.add = function( data ) {
+		const self = this;
+		self.addModule( data );
+	}
+	
+	ns.ModuleControl.prototype.addModule = function( data ) {
 		const self = this;
 		if ( data.module.type == self.askAddType || !self.askAddType )
 			self.guide.hide();

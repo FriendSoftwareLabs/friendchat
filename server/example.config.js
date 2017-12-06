@@ -42,9 +42,10 @@ var server = {
 		account : {
 			skipPass : true,
 			settings : {
-				popupChat : true,
-				inAppMenu : false,
-				msgAlert  : true,
+				popupChat  : true,
+				inAppMenu  : false,
+				msgAlert   : true,
+				advancedUI : true,
 			},
 		},
 		module : {

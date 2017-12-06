@@ -49,6 +49,17 @@ ns.Presence = function( clientConn, clientId ) {
 	self.init();
 }
 
+// Public
+
+// static
+ns.Presence.prototype.getSetup = function() {
+	return {
+		settings : {},
+	}
+}
+
+// Private
+
 ns.Presence.prototype.init = function() {
 	var self = this;
 	self.client.on( 'connect', connect );

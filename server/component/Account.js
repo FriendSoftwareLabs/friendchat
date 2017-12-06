@@ -31,12 +31,14 @@ ns.Account = function( conf, dbPool ) {
 		return new ns.Account( state, conf );
 	
 	var self = this;
+	log( 'conf', conf );
 	self.db = dbPool;
 	self.onclose = conf.onclose;
 	self.clientId = conf.clientId;
 	self.userId = conf.userId;
 	self.name = conf.name;
 	self.isFirstLogin = !conf.lastLogin;
+	self.advancedUI = conf.settings.advancedUI;
 	self.sessions = {};
 	self.sessionKeys = [];
 	self.mods = null;
@@ -47,22 +49,19 @@ ns.Account = function( conf, dbPool ) {
 
 ns.Account.prototype.init = function() {
 	var self = this;
-	var modConf = {
-		db        : self.db,
-		accountId : self.clientId,
-		onsend    : onModSend,
-	};
-	self.mods = new ModCtrl( modConf );
-	function onModSend( e, sid ) { self.toClient( e, sid ); }
+	if ( !self.isFirstLogin && null == self.advancedUI )
+		self.advancedUI = true;
+	
+	self.setupModCtrl( self.advancedUI );
 	
 	self.msgMap = {
 		'ping'    : keepAlive,
 		'module'  : moduleEvent,
 		'account' : accountMsg,
 	};
-	function keepAlive( msg, sessionId ) { self.keepAlive( msg, sessionId ); }
-	function moduleEvent( msg, sessionId ) { self.mods.receiveMsg( msg, sessionId ); }
-	function accountMsg( msg, sessionId ) { self.accountMsg( msg, sessionId ); }
+	function keepAlive( e, sessionId ) { self.keepAlive( e, sessionId ); }
+	function moduleEvent( e, sessionId ) { self.mods.receiveMsg( e, sessionId ); }
+	function accountMsg( e, sessionId ) { self.accountMsg( e, sessionId ); }
 	
 	self.accountMsgMap = {
 		'ready'    : clientReady,
@@ -70,14 +69,14 @@ ns.Account.prototype.init = function() {
 		'setting'  : saveSetting,
 	};
 	
-	function clientReady( msg, sessionId ) { self.clientReady( sessionId ); }
-	function getSettings( msg, sessionId ) { self.getSettings( sessionId ); }
-	function saveSetting( msg, sessionId ) { self.saveSetting( msg, sessionId ); }
+	function clientReady( e, sessionId ) { self.clientReady( e, sessionId ); }
+	function getSettings( e, sessionId ) { self.getSettings( sessionId ); }
+	function saveSetting( e, sessionId ) { self.saveSetting( e, sessionId ); }
 	
 	if ( self.isFirstLogin )
-		self.doFirstLoginSetup();
-	else
-		self.mods.initializeModules();
+		return;
+	
+	self.mods.initializeModules();
 }
 
 ns.Account.prototype.attachSession = function( session ) {
@@ -150,9 +149,13 @@ ns.Account.prototype.accountMsg = function( msg, sessionId ) {
 	handler( msg.data, sessionId );
 }
 
-ns.Account.prototype.clientReady = function( sessionId ) {
+ns.Account.prototype.clientReady = function( data, sessionId ) {
 	var self = this;
-	self.mods.initializeClient( sessionId );
+	log( 'clientReady', data );
+	if ( null != data )
+		self.doFirstLoginSetup( data );
+	else
+		self.mods.initializeClient( sessionId );
 }
 
 ns.Account.prototype.getSettings = function( sessionId ) {
@@ -174,6 +177,7 @@ ns.Account.prototype.getSettings = function( sessionId ) {
 
 ns.Account.prototype.saveSetting = function( data, sessionId ) {
 	var self = this;
+	log( 'saveSetting', data );
 	var dbAccount = new DbAccount( self.db, self.userId );
 	dbAccount.once( 'ready', dbReady );
 	function dbReady( err ) {
@@ -201,13 +205,42 @@ ns.Account.prototype.updateClientSetting = function( update ) {
 	var self = this;
 }
 
-ns.Account.prototype.doFirstLoginSetup = function() {
-	var self = this;
-	self.mods.addDefaultModules( self.name );
+ns.Account.prototype.doFirstLoginSetup = function( conf ) {
+	const self = this;
+	log( 'doFirstLoginSetup', conf );
+	// save ui choice
+	self.saveSetting({
+		setting : 'advancedUI',
+		value   : conf.advancedUI,
+	});
+	
+	// setup modCtrl
+	self.setupModCtrl( conf.advancedUI );
+	
+	// add default modules for choice
+	let mods = null;
+	if ( conf.advancedUI )
+		mods = [ 'presence', 'irc' ];
+	else
+		mods = [ 'presence', 'treeroot' ];
+		
+	self.mods.addDefaultModules( mods, self.name );
+}
+
+ns.Account.prototype.setupModCtrl = function( allowAdvanced ) {
+	const self = this;
+	const modConf = {
+		db            : self.db,
+		accountId     : self.clientId,
+		allowAdvanced : allowAdvanced,
+		onsend        : onModSend,
+	};
+	self.mods = new ModCtrl( modConf );
+	function onModSend( e, sid ) { self.toClient( e, sid ); }
 }
 
 ns.Account.prototype.logout = function() {
-	var self = this;
+	const self = this;
 	log( 'logout', self.name );
 	self.mods.close();
 	var onclose = self.onclose;
@@ -219,14 +252,14 @@ ns.Account.prototype.logout = function() {
 ns.Account.prototype.close = function() {
 	var self = this;
 	if ( self.sessionKeys && self.sessionKeys.length )
-		allSocketsMustDie();
+		allSessionsMustDie();
 	
 	self.sessions = {};
 	self.sessionKeys = [];
 	delete self.onclose;
 	delete self.db;
 	
-	function allSocketsMustDie() {
+	function allSessionsMustDie() {
 		self.sessionKeys.forEach( remove );
 		function remove( sessionKey ) {
 			self.sessions[ sessionKey ].close();

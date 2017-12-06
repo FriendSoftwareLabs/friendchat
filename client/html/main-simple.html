@@ -4,14 +4,15 @@
 		webclient/apps/FriendChat/api/view.js;
 		webclient/apps/FriendChat/scripts/component/viewComponent.js;
 		webclient/apps/FriendChat/scripts/component/menu.js;
-		webclient/apps/FriendChat/scripts/view/base.js;
+		webclient/apps/FriendChat/scripts/view/main/base.js;
 		webclient/apps/FriendChat/scripts/system.js;
-		webclient/apps/FriendChat/scripts/view/main.js
+		webclient/apps/FriendChat/scripts/view/main/main.js;
+		webclient/apps/FriendChat/scripts/view/main/simple.js
 	" type="text/javascript"></script>
 	
 	<link rel="stylesheet" href="
 		../css/common.css;
-		webclient/apps/FriendChat/css/main.css;
+		webclient/apps/FriendChat/css/main-simple.css;
 		webclient/apps/FriendChat/css/menu.css
 	" type="text/css">
 </head>
@@ -215,74 +216,6 @@ name,
 </option>
 </script>
 
-<!-- ASK-ADD-MODULE
-id,
-name,
--->
-<script id="ask-add-module-tmpl" type="text/html">
-<div id="<%= id %>" class="Box">
-	<div class="message">
-		<p>
-			Would you like to add a <%= name %> account now?
-		</p>
-		<p>
-			You can also add more later with "Add chat account" in the app menu.
-		</p>
-	</div>
-	<div class="choice-buttons group row tighten">
-		<button type="button" class="button accept">
-			<i class="fa fa-fw fa-plus-circle"></i>
-			{i18n_add} <%= name %> {i18n_account}
-		</button>
-		<button type="button" class="button choice">
-			<i class="fa fa-fw fa-share-alt"></i>
-			{i18n_other}
-		</button>
-		<button type="button" class="button danger cancel">
-			<i class="fa fa-fw fa-close"></i>
-			{i18n_cancel}
-		</button>
-	</div>
-</div>
-</script>
-
-
-<!-- BASEMODULE
-clientId,
-folditId.
-moduleTitle,
-connectionStateId,
-optionId,
-contactsId,
--->
-<script id="base-module-tmpl" type="text/html">
-<div id="<%= clientId %>" class="module bar column BorderBottom">
-	<div id="<%= folditId %>" class="module-head group row fortify MousePointer">
-		<div class="module-logo fortify">
-			<div class="logo center-child">
-				<i class="fa fa-fw fa-user-circle-o"></i>
-			</div>
-		</div>
-		<div class="title-container expand flex-reset">
-			<div class="module-title">
-				<%= moduleTitle %>
-			</div>
-		</div>
-		<div class="actions group row">
-			<div class="foldit-status">
-			</div>
-			<div id="<%= connectionStateId %>">
-			</div>
-			<button id="<%= optionId %>" class="button" type="button">
-				<i class="fa fa-fw fa-bars"></i>
-			</button>
-		</div>
-	</div>
-	<div id="<%= contactsId %>" class="contacts ZebraList Interactive">
-	</div>
-</div>
-</script>
-
 <!-- MODULE INITIALIZING
 id
 -->
@@ -312,45 +245,17 @@ message,
 </div>
 </script>
 
-<!-- FA ICON LOGO CSS
-moduleId,
--->
-<script id="fa-icon-logo-css-tmpl" type="text/html">
-<style id="<%= moduleId %>-module-css">
-	#<%= moduleId %>.module .logo
-	{
-		color : #eee;
-		font-size : 130%;
-		text-align: center;
-	}
-</style>
-</script>
-
-<!-- IMAGE LOGO CSS
-moduleId,
-logoPath,
--->
-<script id="image-logo-css-tmpl" type="text/html">
-<style id="<%= moduleId %>-module-css">
-	#<%= moduleId %>.module .logo { background-image : url( <%= logoPath %> ); }
-</style>
-</script>
-
-
 <!-- TREEROOT MODULE
 clientId,
-folditId,
 moduleTitle,
 connectionStateId,
 optionId,
 contactsId,
 -->
-<script id="treeroot-module-tmpl" type="text/html">
+<script id="simple-treeroot-module-tmpl" type="text/html">
 	<div id="<%= clientId %>" class="module bar column BorderBottom">
-		<div id="<%= folditId %>" class="module-head group row fortify MousePointer">
-			<div class="module-logo fortify">
-				<div class="logo">
-				</div>
+		<div class="module-head group row fortify MousePointer">
+			<div id="<%= connectionStateId %>" class="fortify">
 			</div>
 			<div class="title-container expand flex-reset">
 				<div class="module-title">
@@ -358,25 +263,19 @@ contactsId,
 				</div>
 			</div>
 			<div class="actions group row fortify">
-				<div class="foldit-status">
-				</div>
-				<div id="<%= connectionStateId %>">
-				</div>
 				<button class="button subscribe" title="Show available contacts">
 					<i class="fa fa-fw fa-user-plus"></i>
 				</button>
 				<button id="<%= optionId %>" class="button" type="button">
-					<i class="fa fa-fw fa-bars"></i>
+					<i class="fa fa-fw fa-cog"></i>
 				</button>
 			</div>
 		</div>
 		<div id="<%= contactsId %>" class="contacts bar column">
 			<div id="<%= activeId %>" class="active ZebraList Interactive">
 			</div>
-			<div class="inactive-container hidden">
-				<div id="<%= inactiveFolditId %>" class="inactive-header group row">
-					<div class="foldit-status fortify">
-					</div>
+			<div class="inactive-container BorderTop">
+				<div class="inactive-header group row">
 					<div class="inactive-title fortify">
 						{i18n_offline}:
 					</div>
@@ -754,132 +653,18 @@ id,
 </div>
 </script>
 
-<!-- IRC MODULE
-clientId,
-folditId,
-moduleTitle,
-connectionStateId,
-optionId,
-contactsId,
--->
-<script id="irc-module-tmpl" type="text/html">
-<div id="<%= clientId %>" class="module bar column BorderBottom">
-	<div id="<%= folditId %>" class="module-head group row fortify MousePointer">
-		<div class="module-logo fortify">
-			<div class="logo center-child">
-				<i class="fa fa-fw fa-at"></i>
-			</div>
-		</div>
-		<div class="title-container expand flex-reset">
-			<div class="module-title">
-				<%= moduleTitle %>
-			</div>
-		</div>
-		<div class="actions group row">
-			<div class="foldit-status">
-			</div>
-			<div id="<%= connectionStateId %>">
-			</div>
-			<button class="button console" title="Open console">
-				<i class="fa fa-fw fa-television"></i>
-			</button>
-			<button id="<%= optionId %>" class="button" type="button">
-				<i class="fa fa-fw fa-bars"></i>
-			</button>
-		</div>
-	</div>
-	<div id="<%= contactsId %>" class="contacts ZebraList Interactive">
-	</div>
-</div>
-</script>
-
-<!-- IRC CHANNEL
-clientId,
-channelName,
-highlightId,
-messageWaitingId,
--->
-<script id="irc-channel-tmpl" type="text/html">
-<div id="<%= clientId %>" class="contact group row MousePointer">
-	<div class="contact-height-dummy fortify">
-	</div>
-	<div class="contact-name">
-		<%= channelName %>
-	</div>
-	<div class="contact-status item-row bar row fortify">
-		<div id="<%= messageWaitingId %>">
-		</div>
-	</div>
-	<div class="actions-container">
-		<div class="actions bar row end">
-			<div class="hide-actions" title="Hide actions">
-				<i class="fa fa-fw fa-eye-slash"></i>
-			</div>
-			<button class="chat button" title="Show / hide channel window">
-				<i class="fa fa-fw fa-comments"></i>
-			</button>
-			<button class="leave button danger" title="Leave channel">
-				<i class="fa fa-fw fa-sign-out"></i>
-			</button>
-		</div>
-	</div>
-</div>
-</script>
-
-<!-- IRC PRIVATE
-clientId,
-contactName,
-messageWaitingId,
--->
-<script id="irc-private-tmpl" type="text/html">
-<div id="<%= clientId %>" class="contact group row MousePointer">
-	<div class="contact-height-dummy fortify">
-	</div>
-	<div class="contact-name">
-		<%= contactName %>
-	</div>
-	<div class="contact-status item-row bar row fortify">
-		<div id="<%= messageWaitingId %>">
-		</div>
-	</div>
-	<div class="actions-container">
-		<div class="actions bar row end">
-			<div class="hide-actions" title="Hide actions">
-				<i class="fa fa-fw fa-eye-slash"></i>
-			</div>
-			<button class="video button" title="Start video chat with..">
-				<i class="fa fa-fw fa-video-camera"></i>
-			</button>
-			<button class="audio button" title="Call / start voice chat with..">
-				<i class="fa fa-fw fa-microphone"></i>
-			</button>
-			<button class="chat button" title="Open chat window">
-				<i class="fa fa-fw fa-comments"></i>
-			</button>
-			<button class="remove button" title="Remove chat">
-				<i class="fa fa-fw fa-times"></i>
-			</button>
-		</div>
-	</div>
-</div>
-</script>
-
 <!-- PRESENCE 
 clientId,
-folditId.
-moduleTitle,
+title,
 connStateId,
 createRoomId,
 optionId,
 contactsId,
 -->
-<script id="presence-module-tmpl" type="text/html">
+<script id="simple-presence-module-tmpl" type="text/html">
 <div id="<%= clientId %>" class="module bar column BorderBottom">
-	<div id="<%= folditId %>" class="module-head group row fortify MousePointer">
-		<div class="module-logo fortify">
-			<div class="logo center-child">
-				<i class="fa fa-fw fa-user-circle-o"></i>
-			</div>
+	<div class="module-head group row fortify MousePointer">
+		<div id="<%= connStateId %>" class="fortify">
 		</div>
 		<div class="title-container expand flex-reset">
 			<div class="module-title">
@@ -887,15 +672,11 @@ contactsId,
 			</div>
 		</div>
 		<div class="actions group row">
-			<div class="foldit-status">
-			</div>
-			<div id="<%= connStateId %>">
-			</div>
 			<button id="<%= createRoomId %>" class="button" type="button" title="Create room">
-				<i class="fa fa-fw fa-cube"></i>
+				<i class="fa fa-fw fa-plus-square"></i>
 			</button>
 			<button id="<%= optionId %>" class="button" type="button">
-				<i class="fa fa-fw fa-bars"></i>
+				<i class="fa fa-fw fa-cog"></i>
 			</button>
 		</div>
 	</div>

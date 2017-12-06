@@ -19,60 +19,61 @@
 *                                                                              *
 *****************************************************************************©*/
 
-var friendUP = window.friendUP || {};
 var library = window.library || {};
+var friendUP = window.friendUP || {};
 var hello = window.hello || {};
 
 library.view = library.view || {};
 
 (function( ns, undefined ) {
-	ns.Account = function( fupConf ) {
-		if ( !( this instanceof ns.Account ))
-			return new ns.Account( fupConf );
+	ns.FirstWizard = function( fupConf ) {
+		console.log( 'firstWizard', fupConf );
+		const self = this;
+		self.connecting = null;
+		self.error = null;
+		self.errorMsg = null;
+		self.conn = window.View;
 		
-		library.view.Settings.call( this );
+		self.init();
 	}
 	
-	ns.Account.prototype = Object.create( library.view.Settings.prototype );
+	ns.FirstWizard.prototype.init = function() {
+		const self = this;
+		View.setBody();
+		self.bind();
+	}
 	
-	ns.Account.prototype.setup = function() {
-		var self = this;
-		self.validKeys = [
-			'skipPass',
-			'popupChat',
-			'msgAlert',
-			'inAppMenu',
-			'onNewScreen',
-			'minimalUI',
-			'advancedUI',
-		];
-		self.displayOrder = self.validKeys;
-		self.labelMap = {
-			'skipPass'    : View.i18n( 'i18n_autologin' ),
-			'popupChat'   : View.i18n( 'i18n_pop_up_new_chat' ),
-			'msgAlert'    : View.i18n( 'i18n_message_beep' ),
-			'inAppMenu'   : View.i18n( 'i18n_in_app_menu' ),
-			'onNewScreen' : View.i18n( 'i18n_open_on_new_screen' ),
-			'minimalUI'   : View.i18n( 'i18n_minimal_ui' ),
-			'advancedUI'  : View.i18n( 'i18n_advanced_ui' ),
-		};
-		self.defaultMap = {};
-		self.buildMap = {
-			'skipPass'    : singleCheck,
-			'popupChat'   : singleCheck,
-			'msgAlert'    : singleCheck,
-			'inAppMenu'   : singleCheck,
-			'onNewScreen' : singleCheck,
-			'minimalUI'   : singleCheck,
-			'advancedUI'  : singleCheck,
-		};
+	ns.FirstWizard.prototype.bind = function() {
+		const self = this;
+		console.log( 'firstWizard.bind', self );
+		const smplBtn = document.getElementById( 'smpl_btn' );
+		const advBtn = document.getElementById( 'adv_btn' );
 		
-		function singleCheck( setting ) { self.singleCheck( setting ); }
+		smplBtn.addEventListener( 'click', smplClick, false );
+		advBtn.addEventListener( 'click', advClick, false );
+		
+		function smplClick( e ) { self.choose( false ); }
+		function advClick( e ) { self.choose( true ); }
+	}
+	
+	ns.FirstWizard.prototype.choose = function( useAdvancedUI ) {
+		const self = this;
+		self.send({
+			type : 'done',
+			data : {
+				advancedUI : useAdvancedUI,
+			},
+		});
+	}
+	
+	ns.FirstWizard.prototype.send = function( msg ) {
+		const self = this;
+		self.conn.sendMessage( msg );
 	}
 	
 })( library.view );
 
 window.View.run = run;
 function run( fupConf ) {
-	window.account = new library.view.Account( fupConf );
+	new library.view.FirstWizard( fupConf );
 }

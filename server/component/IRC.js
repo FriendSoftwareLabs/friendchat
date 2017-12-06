@@ -45,6 +45,48 @@ ns.IRC = function( conn ) {
 	self.init();
 }
 
+// Public
+
+// static
+ns.IRC.prototype.getSetup = function( username ) {
+	const setup = {
+		settings : {
+			nick : username,
+		},
+	};
+	return setup;
+}
+
+ns.IRC.prototype.connect = function( conf ) {
+	var self = this;
+	if ( conf && conf.mod )
+		conf = conf.mod;
+	
+	self.ircConf = conf || self.ircConf;
+	
+	if ( self.ircClient  ) {
+		self.reconnect();
+		return;
+	}
+	
+	self.ircClient = new ns.IrcClient( self.conn, self.ircConf );
+}
+
+ns.IRC.prototype.kill = function( doneBack ) {
+	var self = this;
+	if ( self.ircClient )
+		self.ircClient.close();
+	
+	self.conn.release();
+	delete self.conn;
+	delete self.ircClient;
+	
+	if ( doneBack )
+		doneBack( true );
+}
+
+// Pirvate
+
 ns.IRC.prototype.init = function() {
 	var self = this;
 	
@@ -63,20 +105,7 @@ ns.IRC.prototype.init = function() {
 	function kill(       e, cid ) {             self.kill( e, cid ); }
 }
 
-ns.IRC.prototype.connect = function( conf ) {
-	var self = this;
-	if ( conf && conf.mod )
-		conf = conf.mod;
-	
-	self.ircConf = conf || self.ircConf;
-	
-	if ( self.ircClient  ) {
-		self.reconnect();
-		return;
-	}
-	
-	self.ircClient = new ns.IrcClient( self.conn, self.ircConf );
-}
+
 
 ns.IRC.prototype.reconnect = function( msg ) {
 	var self = this;
@@ -120,19 +149,6 @@ ns.IRC.prototype.initializeClient = function( e, socketId ) {
 ns.IRC.prototype.ircMessage = function( msg ) {
 	var self = this;
 	self.ircClient.message( msg );
-}
-
-ns.IRC.prototype.kill = function( doneBack ) {
-	var self = this;
-	if ( self.ircClient )
-		self.ircClient.close();
-	
-	self.conn.release();
-	delete self.conn;
-	delete self.ircClient;
-	
-	if ( doneBack )
-		doneBack( true );
 }
 
 // IRCCLIENT

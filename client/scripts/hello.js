@@ -153,13 +153,15 @@ var hello = null;
 		
 		function success( response ) {
 			if ( !response ) {
-				self.showLoadingError( Application.i18n('i18n_host_config_failed') + ' ' + url );
+				self.showLoadingError(
+					Application.i18n( 'i18n_host_config_failed' ) + ' ' + url );
 				return;
 			}
 			
 			var hostConf = library.tool.objectify( response );
 			if ( !hostConf ) {
-				self.showLoadingError( Application.i18n('i18n_host_config_failed_invalid') + ' ' + url );
+				self.showLoadingError(
+					Application.i18n( 'i18n_host_config_failed_invalid' ) + ' ' + url );
 				return;
 			}
 			library.tool.mergeObjects( self.config, hostConf );
@@ -167,7 +169,8 @@ var hello = null;
 		}
 		
 		function whelpsHandleIt( err ) {
-			self.showLoadingError( Application.i18n('i18n_host_config_failed_error') + ' ' + url );
+			self.showLoadingError( 
+				Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url );
 		}
 	}
 	
@@ -379,12 +382,13 @@ var hello = null;
 			self.login.close();
 			self.login = null;
 			if ( !account ) {
-				hello.log.alert( Application.i18n('i18n_no_account_to_login') );
+				hello.log.alert( Application.i18n( 'i18n_no_account_to_login' ) );
 				hello.log.show();
 				return;
 			}
 			
-			hello.log.positive( Application.i18n('i18n_logged_in_as') + ': ' + account.name );
+			hello.log.positive( 
+				Application.i18n( 'i18n_logged_in_as' ) + ': ' + account.name );
 			self.doMain( account );
 		}
 		
@@ -533,66 +537,114 @@ var hello = null;
 		if ( !( this instanceof ns.Main ))
 			return new ns.Main( conf );
 		
-		var self = this;
+		const self = this;
 		self.account = conf.account;
 		self.parentView = conf.parentView || window.View;
 		self.viewReady = false;
-		self.inAppMenu = false;
+		self.advancedUI = false;
 		self.isLogout = false;
 		
 		self.init();
 	}
 	
 	ns.Main.prototype.init = function() {
-		var self = this;
-		//self.account.firstLogin = ( !self.account.lastLogin ) ? true : false;
-		if ( !!self.account.settings.onNewScreen )
-			Application.screen = new api.Screen( 'Friend Chat' );
+		const self = this;
+		console.log( 'Main.init - account', self.account );
+		const firstLogin = !self.account.lastLogin;
+		if ( firstLogin )
+			self.showWizard( doSetup );
+		else
+			doSetup();
 		
-		self.inAppMenu = !!( self.account.settings && self.account.settings.inAppMenu );
-		
+		function doSetup( wizRes ) {
+			if ( wizRes )
+				self.advancedUI = wizRes.advancedUI;
+			else
+				self.advancedUI = self.account.settings.advancedUI;
+				
+			if ( !!self.account.settings.onNewScreen )
+				Application.screen = new api.Screen( 'Friend Chat' );
+			
+			const initConf = {
+				fragments : hello.commonFragments,
+				account   : self.account,
+			};
+			
+			if ( self.advancedUI )
+				self.openAdvView( initConf, viewClose );
+			else
+				self.openSimpleView( initConf, viewClose );
+			
+			self.view.onready = ready;
+			
+			self.bindView();
+			self.setMenuItems();
+			
+			function ready( msg ) {
+				hello.conn.state.subscribe( 'main', connState );
+				self.initSubViews();
+				hello.account.sendReady( wizRes || null );
+			}
+			
+			function connState( state ) {
+				
+			}
+			
+			function viewClose( msg ) {
+				hello.conn.state.unsubscribe( 'main' );
+				self.view = null;
+				if ( self.isLogout )
+					return;
+				
+				self.quit();
+			}
+		}
+	}
+	
+	ns.Main.prototype.showWizard = function( callback ) {
+		const self = this;
+		let wiz = new library.view.FirstWizard( wizBack );
+		function wizBack( res ) {
+			console.log( 'wizBack', res );
+			wiz.close();
+			callback( res );
+		}
+	}
+	
+	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
+		const self = this;
+		console.log( 'openSimpleView' );
 		const winConf = {
 			title: hello.config.appName + ' - Main Window',
 			width : 440,
-			height : 500,
+			height : 600,
 		};
 		
-		const initData = {
-			fragments : hello.commonFragments,
-			account   : self.account,
+		self.view = hello.app.createView(
+			'html/main-simple.html',
+			winConf,
+			initConf,
+			null,
+			onClose
+		);
+	}
+	
+	ns.Main.prototype.openAdvView = function( initConf, onClose ) {
+		const self = this;
+		console.log( 'openAdvView' );
+		const winConf = {
+			title: hello.config.appName + ' - Main Window',
+			width : 440,
+			height : 600,
 		};
 		
 		self.view = hello.app.createView(
 			'html/main.html',
 			winConf,
-			initData,
+			initConf,
 			null,
-			viewClose
+			onClose
 		);
-		
-		self.view.onready = ready;
-		
-		self.bindView();
-		self.setMenuItems();
-		
-		function ready( msg ) {
-			hello.conn.state.subscribe( 'main', connState );
-			self.initSubViews();
-			hello.account.sendReady();
-		}
-		
-		function connState( state ) {
-			
-		}
-		
-		function viewClose( msg ) {
-			hello.conn.state.unsubscribe( 'main' );
-			self.view = null;
-			if ( self.isLogout )
-				return;
-			
-			self.quit();
-		}
 	}
 	
 	ns.Main.prototype.bindView = function() {
@@ -612,47 +664,89 @@ var hello = null;
 	
 	ns.Main.prototype.setMenuItems = function() {
 		var self = this;
-		self.view.setMenuItems([
-			{
-				name : Application.i18n('i18n_file'),
-				items : [
-					{
-						name    : Application.i18n('i18n_about'),
-						command : 'file_about',
-					},
-					{
-						name    : Application.i18n('i18n_quit'),
-						command : 'file_quit',
-					},
-				]
-			},
-			{
-				name : Application.i18n('i18n_account_menu'),
-				items : [
-					{
-						name    : Application.i18n('i18n_account_settings'),
-						command : 'account_account',
-					},
-					{
-						name    : Application.i18n('i18n_log_out'),
-						command : 'account_logout',
-					},
-				],
-			},
-			{
-				name : Application.i18n('i18n_tools'),
-				items : [
-					{
-						name    : Application.i18n('i18n_add_chat_account'),
-						command : 'tools_add_module',
-					},
-					{
-						name    : Application.i18n('i18n_start_live'),
-						command : 'tools_start_live',
-					},
-				]
-			},
-		]);
+		// FILE
+		const startLive = {
+			name    : Application.i18n('i18n_start_live'),
+			command : 'tools_start_live',
+		};
+		const addChat = {
+			name    : Application.i18n('i18n_add_chat_account'),
+			command : 'tools_add_module',
+		};
+		const about = {
+			name    : Application.i18n('i18n_about'),
+			command : 'file_about',
+		};
+		const quit = {
+			name    : Application.i18n('i18n_quit'),
+			command : 'file_quit',
+		};
+		
+		let fileItems = null;
+		if ( self.advancedUI )
+			fileItems = [
+				startLive,
+				addChat,
+				about,
+				quit,
+			];
+		else
+			fileItems = [
+				startLive,
+				about,
+				quit,
+			];
+		
+		const file = {
+			name : Application.i18n('i18n_file'),
+			items : fileItems,
+		};
+		
+		// ACCOUNT
+		const settings = {
+			name    : Application.i18n('i18n_account_settings'),
+			command : 'account_account',
+		};
+		const logout = {
+			name    : Application.i18n('i18n_log_out'),
+			command : 'account_logout',
+		};
+		const accItems = [
+			settings,
+			logout,
+		];
+		const account = {
+			name : Application.i18n('i18n_account_menu'),
+			items : accItems,
+		};
+		
+		/*
+		// TOOL
+		const addChat = {
+			name    : Application.i18n('i18n_add_chat_account'),
+			command : 'tools_add_module',
+		};
+		const startLive = {
+			name    : Application.i18n('i18n_start_live'),
+			command : 'tools_start_live',
+		};
+		const toolItems = [
+			addChat,
+			startLive,
+		];
+		const tool = {
+			name : Application.i18n('i18n_tools'),
+			items : toolItems,
+		};
+		*/
+		
+		//
+		const menuItems = [
+			file,
+			account,
+		];
+		
+		self.view.setMenuItems( menuItems );
 		
 		hello.app.on( 'file_about' , fileAbout );
 		hello.app.on( 'file_quit'  , fileQuit );

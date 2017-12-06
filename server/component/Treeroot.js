@@ -68,6 +68,17 @@ ns.Treeroot = function( clientConnection, clientId ) {
 	self.init();
 }
 
+// Public
+
+//static
+ns.Treeroot.prototype.getSetup = function() {
+	return {
+		settings : {},
+	}
+}
+
+// Private
+
 ns.Treeroot.prototype.apiPath = '/api-json/v1';
 ns.Treeroot.prototype.registerPath = '/components/register/';
 ns.Treeroot.prototype.passResetPath = '/components/register/recover/';

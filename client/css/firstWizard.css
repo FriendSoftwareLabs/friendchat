@@ -1,0 +1,83 @@
+#hello {
+	box-sizing : border-box;
+	overflow   : hidden;
+	padding    : 1em;
+}
+
+#intro {
+	padding : 1em 0.5em;
+}
+
+#choose {
+	width          : 100%;
+	display        : flex;
+	flex-direction : row;
+}
+
+.option {
+	position      : relative;
+	border-radius : 3px;
+	padding       : 0.5em;
+	flex          : 1 1 50%;
+}
+
+.title {
+	font-size : 120%;
+}
+
+.features {
+	padding    : 1em 0.5em;
+	align-self : left;
+}
+
+li {
+	padding : 0.5em 0;
+}
+
+.button {
+	margin-bottom : 0.5em;
+}
+
+
+#simplified {
+	
+}
+
+#advanced {
+	
+}
+
+.bg {
+	margin              : 2em 0;
+	background-position : center center;
+	background-repeat   : no-repeat;
+	background-size     : contain;
+	width               : 100%;
+}
+
+.bg.adv {
+	background-image: url( /webclient/apps/FriendChat/gfx/advUI.png );
+}
+.bg.smpl {
+	background-image: url( /webclient/apps/FriendChat/gfx/smplUI.png );
+}
+
+@media not all and ( min-width : 699px ) and ( min-height: 800px ) {
+	#hello {
+		overflow : auto;
+	}
+	
+	#choose {
+		display        : block;
+		flex-direction : unset;
+	}
+	
+	#simplified {
+		margin-bottom : 1em;
+	}
+	
+	.bg {
+		display : none;
+	}
+	
+}

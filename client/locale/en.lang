@@ -275,3 +275,16 @@ i18n_available_video_sources : Available video sources
 i18n_available_speakers : Available speakers
 i18n_routing : Routing
 i18n_latency : Latency
+i18n_advanced_ui : Advanced UI
+i18n_first_run_wizard : FriendChat - first run wizard
+i18n_FiWiz_choose_ui : Welcome to FriendChat first login. Please choose a UI type. You can change later in account settings.
+i18n_FiWiz_title_simplified : Friendly
+i18n_FiWiz_title_advanced : Advanced
+i18n_FiWiz_smpl_clean_ui : Cleaner UI
+i18n_FiWiz_smpl_contact : Default contact list
+i18n_FiWiz_smpl_treeroot : Must create/have Treeroot account
+i18n_FiWiz_adv_add_remove : Can add/remove modules
+i18n_FiWiz_adv_irc : IRC added as default
+i18n_FiWiz_adv_options : More options in UI
+i18n_FiWiz_btn_simplified : Use friendly UI
+i18n_FiWiz_btn_advanced : Use advanced UI

@@ -948,6 +948,19 @@ library.rtc = library.rtc || {};
 		self.init( conf.parentView );
 	}
 	
+	// Public
+	
+	ns.Account.prototype.sendReady = function( msg ) {
+		var self = this;
+		var ready = {
+			type : 'ready',
+			data : msg,
+		};
+		self.send( ready );
+	}
+	
+	// Private
+	
 	ns.Account.prototype.init = function( parentView ) {
 		var self = this;
 		self.conn = new library.system.Message({
@@ -1023,7 +1036,7 @@ library.rtc = library.rtc || {};
 			windowConf : {
 				title : Application.i18n('i18n_account_settings'),
 				width : 350,
-				height : 300,
+				height : 400,
 			},
 			onsave : saveHandler,
 			onclose : closeHandler,
@@ -1078,14 +1091,6 @@ library.rtc = library.rtc || {};
 	ns.Account.prototype.getName = function() {
 		var self = this;
 		return self.displayName || self.clientId || 'nope, no name';
-	}
-	
-	ns.Account.prototype.sendReady = function( msg ) {
-		var self = this;
-		var ready = {
-			type : 'ready',
-		};
-		self.send( ready );
 	}
 	
 	ns.Account.prototype.send = function( msg ) {
