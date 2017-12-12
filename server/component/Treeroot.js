@@ -1011,29 +1011,22 @@ ns.Treeroot.prototype.startMessageUpdates = function( contactId ) {
 		return;
 	}
 	
-	var contactState = self.contactState[ contactId ];
-	
-	if ( contactState.msgUpdater ) {
-		clearInterval( contactState.msgUpdater );
-		contactState.msgUpdater = null;
-	}
-	
-	//contactState.msgUpdater = setInterval( contactUpdate, self.msgUpdateStep );
-	self.startMessageLongPoll( contactId );
-	
-	function contactUpdate() {
-		self.log( 'contactUpdate - Hey, what are yoDONT TOUCH THAT!' );
+	var cState = self.contactState[ contactId ];
+	if ( !cState )
 		return;
-		self.doMessageUpdate( contactId );
+	
+	if ( cState.msgUpdater ) {
+		clearInterval( cState.msgUpdater );
+		cState.msgUpdater = null;
 	}
 	
-	// stop after 5min of inactivity
-	if ( contactState.idleTimeout ) {
-		clearTimeout( contactState.idleTimeout );
-		contactState.idleTimeout = null;
+	self.startMessageLongPoll( contactId );
+	if ( cState.idleTimeout ) {
+		clearTimeout( cState.idleTimeout );
+		cState.idleTimeout = null;
 	}
 	
-	contactState.idleTimeout = setTimeout( stopUpdates, 300000 );
+	cState.idleTimeout = setTimeout( stopUpdates, 300000 );
 	function stopUpdates() {
 		self.stopMessageUpdate( contactId );
 	}
@@ -1068,8 +1061,8 @@ ns.Treeroot.prototype.startMessageLongPoll = function( contactId ) {
 }
 
 ns.Treeroot.prototype.doMessageUpdate = function( contactId ) {
-	var self = this;
-	var cState = self.contactState[ contactId ];
+	const self = this;
+	let cState = self.contactState[ contactId ];
 	if ( !cState ) {
 		self.log( 'no contact state for', { cid : contactId, state : self.contactState });
 		return;
@@ -1084,7 +1077,7 @@ ns.Treeroot.prototype.doMessageUpdate = function( contactId ) {
 		if ( !messages )
 			return;
 		
-		var cState = self.contactState[ contactId ];
+		let cState = self.contactState[ contactId ];
 		if ( !cState )
 			return;
 		
@@ -1103,8 +1096,11 @@ ns.Treeroot.prototype.stopMessageUpdate = function( serviceId ) {
 	}
 	
 	function stopChatUpdate( serviceId ) {
-		var cState = self.contactState[ serviceId ];
 		self.stopMessageLongpoll( serviceId );
+		var cState = self.contactState[ serviceId ];
+		if ( !cState )
+			return;
+		
 		if ( cState.msgUpdater ) 
 			clearInterval( cState.msgUpdater );
 		
@@ -1342,7 +1338,6 @@ ns.Treeroot.prototype.getLog = function( clientId, socketId ) {
 	}
 	
 	var cId = contact.serviceId;
-	//self.contactState[ cId ].lastMessageId = 0;
 	self.startMessageUpdates( cId );
 	self.getMessages( cId, null, messagesBack );
 	function messagesBack( messages ) {
@@ -1441,9 +1436,6 @@ ns.Treeroot.prototype.postResponse = function( serviceId, data, req ) {
 	var self = this;
 	var cId = serviceId;
 	const lmId = parseInt( data.data, 10 );
-	//const cState = self.contactState[ cId ];
-	//cState.lastMessageId = lmId;
-	//self.startMessageUpdates( cId );
 	self.getMessage( cId, lmId, messageBack );
 	function messageBack( messages ) {
 		if ( !messages )
@@ -1556,6 +1548,9 @@ ns.Treeroot.prototype.longpollMessages = function(
 ) {
 	const self = this;
 	const cState = self.contactState[ contactId ];
+	if ( !cState )
+		return;
+	
 	if ( cState.isPollingMessages ) {
 		self.log( 'longpollMessages - already longing', contactId );
 		return;
@@ -1614,6 +1609,9 @@ ns.Treeroot.prototype.setupChatEncrypt = function( encId, encKey, contactId ) {
 		return;
 	
 	var cState = self.contactState[ contactId ];
+	if ( !cState )
+		return;
+	
 	if ( cState.encKey
 		&& cState.encId
 		&& ( cState.encKey === encKey )
@@ -1826,6 +1824,9 @@ ns.Treeroot.prototype.startLongpollContacts = function() {
 		self.longpollContacts( self.lastActivity, longBack );
 		function longBack( res ) {
 			self.lastActivity = null;
+			if ( !self.isPollingContacts )
+				return;
+			
 			if ( res && res.timestamp )
 				self.lastActivity = res.timestamp;
 			
@@ -2394,19 +2395,11 @@ ns.Treeroot.prototype.checkContacts = function( relations, requests ) {
 
 ns.Treeroot.prototype.checkHasMessage = function( relation, serviceId, done ) {
 	const self = this;
-	self.log( 'checkHasMessage' );
 	const contactState = self.contactState[ serviceId ];
 	let rlm = relation.LastMessage;
 	let clmid = contactState.lastMessageId;
 	if ( rlm )
 		rlm = parseInt( rlm, 10 );
-	
-	/*
-	self.log( 'hasMessage', {
-		rlm : rlm,
-		clmid : clmid,
-	});
-	*/
 	
 	if ( !rlm && clmid ) {
 		done();

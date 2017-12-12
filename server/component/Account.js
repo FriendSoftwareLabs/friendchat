@@ -31,7 +31,6 @@ ns.Account = function( conf, dbPool ) {
 		return new ns.Account( state, conf );
 	
 	var self = this;
-	log( 'conf', conf );
 	self.db = dbPool;
 	self.onclose = conf.onclose;
 	self.clientId = conf.clientId;
@@ -151,7 +150,6 @@ ns.Account.prototype.accountMsg = function( msg, sessionId ) {
 
 ns.Account.prototype.clientReady = function( data, sessionId ) {
 	var self = this;
-	log( 'clientReady', data );
 	if ( null != data )
 		self.doFirstLoginSetup( data );
 	else
@@ -177,7 +175,6 @@ ns.Account.prototype.getSettings = function( sessionId ) {
 
 ns.Account.prototype.saveSetting = function( data, sessionId ) {
 	var self = this;
-	log( 'saveSetting', data );
 	var dbAccount = new DbAccount( self.db, self.userId );
 	dbAccount.once( 'ready', dbReady );
 	function dbReady( err ) {
@@ -207,7 +204,6 @@ ns.Account.prototype.updateClientSetting = function( update ) {
 
 ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	const self = this;
-	log( 'doFirstLoginSetup', conf );
 	// save ui choice
 	self.saveSetting({
 		setting : 'advancedUI',

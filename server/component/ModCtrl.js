@@ -339,7 +339,6 @@ ns.ModCtrl.prototype.load = function( callback ) {
 
 ns.ModCtrl.prototype.start = function( mod ) {
 	var self = this;
-	log( 'starting module', mod );
 	var clientId = mod.clientId;
 	var conn = self.modules[ clientId ];
 	if ( conn ) {
