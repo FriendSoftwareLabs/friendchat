@@ -75,15 +75,18 @@ var hello = null;
 		function loadingClosed() { self.loadingClosed(); }
 		
 		if ( !self.config ) {
-			self.showLoadingError( Application.i18n('i18n_local_config_not_found') );
+			self.showLoadingError( Application.i18n( 'i18n_local_config_not_found' ));
 			return;
 		}
 		
-		self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/served.ogg' );
+		//self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/served.ogg' );
+		self.msgAlert = new api.SoundAlert( 
+			'webclient/apps/FriendChat/res/glass_pop_v3-epic_sound.wav' );
+		
 		self.getUserInfo( userInfoBack )
 		function userInfoBack( data ) {
 			if ( !data ) {
-				self.showLoadingError( Application.i18n('i18n_no_user_data_returned') );
+				self.showLoadingError( Application.i18n( 'i18n_no_user_data_returned' ));
 				return;
 			}
 			
