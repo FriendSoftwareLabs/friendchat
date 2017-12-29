@@ -50,6 +50,15 @@ library.module = library.module || {};
 		self.initBaseModule();
 	}
 	
+	// Public
+	
+	ns.BaseModule.prototype.reconnect = function() {
+		console.log( 'BaseModule.reconnect() - implement in module', self );
+		throw new Error( '^^^ BaseModule.reconnect() - implement in module' );
+	}
+	
+	// Private
+	
 	ns.BaseModule.prototype.initBaseModule = function() {
 		var self = this;
 		// server stuff
@@ -175,7 +184,6 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.handleOffline =  function( e ) {
 		var self = this;
-		console.log( 'offline', e );
 		self.viewInfo( 'offline', e );
 	}
 	
@@ -474,6 +482,12 @@ library.module = library.module || {};
 	
 	// 'public'
 	
+	// BaseModule.reconnect
+	ns.Presence.prototype.reconnect = function() {
+		const self = this;
+		console.log( 'Presence.reconnect' );
+	}
+	
 	ns.Presence.prototype.create = function( identity ) {
 		var self = this;
 		console.log( 'Presence.create', identity );
@@ -500,6 +514,7 @@ library.module = library.module || {};
 			self.module.settings.identity
 		
 		// server
+		self.messageMap[ 'initialize' ] = initialize;
 		self.messageMap[ 'login' ] = loginChallenge;
 		self.messageMap[ 'password' ] = passChallenge;
 		self.messageMap[ 'account' ] = handleAccount;
@@ -510,6 +525,7 @@ library.module = library.module || {};
 		self.messageMap[ 'close' ] = roomClosed;
 		self.messageMap[ 'clear' ] = clear;
 		
+		function initialize( e ) { self.handleInitialize( e ); }
 		function loginChallenge( e ) { self.loginChallenge( e ); }
 		function passChallenge( e ) { self.passChallenge( e ); }
 		function handleAccount( e ) { self.handleAccount( e ); }
@@ -550,6 +566,21 @@ library.module = library.module || {};
 		function onInvite( e ) { self.handleServiceOnInvite( e ); }
 		function onIdentity() { return self.identity; }
 		
+		self.sendInit();
+	}
+	
+	ns.Presence.prototype.initialize = function( state ) {
+		const self = this;
+		console.log( 'Presence.initialize', state );
+	}
+	
+	ns.Presence.prototype.handleInitialize = function() {
+		const self = this;
+		self.sendInit();
+	}
+	
+	ns.Presence.prototype.sendInit = function() {
+		const self = this;
 		const authBundle = hello.getAuthBundle();
 		const init = {
 			type : 'initialize',
@@ -559,11 +590,6 @@ library.module = library.module || {};
 			},
 		};
 		self.send( init );
-	}
-	
-	ns.Presence.prototype.initialize = function( state ) {
-		const self = this;
-		console.log( 'Presence.initialize', state );
 	}
 	
 	ns.Presence.prototype.clear = function() {
@@ -578,7 +604,6 @@ library.module = library.module || {};
 	ns.Presence.prototype.handleServiceOnRoom = function( event ) {
 		var self = this;
 		var reqId = friendUP.tool.uid( 'req' );
-		console.log( 'handleServiceOnRoom', event );
 		var session = event.data;
 		self.roomRequests[ reqId ] = {
 			action  : event.type,
@@ -718,7 +743,6 @@ library.module = library.module || {};
 		if ( !req )
 			return;
 		
-		console.log( 'handleRequest', req );
 		delete self.roomRequests[ reqId ];
 		
 		if ( 'create' == req.action ) {
@@ -767,7 +791,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.joinRoom = function( conf ) {
 		var self = this;
-		console.log( 'module.joinRoom', conf );
 		const roomId = conf.invite.roomId;
 		if ( isInRoom( roomId )) {
 			const req = self.roomRequests[ conf.req ];
@@ -793,7 +816,6 @@ library.module = library.module || {};
 		}
 		
 		function rejoinLive( roomId, conf ) {
-			console.log( 'rejoinLive', conf );
 			const room = self.contacts[ roomId ];
 			room.joinLive( conf );
 		}
@@ -808,8 +830,12 @@ library.module = library.module || {};
 			return;
 		}
 		
-		if ( self.contacts[ conf.clientId ])
+		let room = self.contacts[ conf.clientId ];
+		if ( room ) {
+			console.log( 'already initalized', conf );
+			room.reconnect();
 			return;
+		}
 		
 		const host = library.tool.buildDestination(
 			null,
@@ -826,7 +852,7 @@ library.module = library.module || {};
 			user       : self.identity,
 			userId     : self.accountId,
 		};
-		const room = new library.contact.PresenceRoom( roomConf );
+		room = new library.contact.PresenceRoom( roomConf );
 		self.contacts[ room.clientId ] = room;
 		conf.identity = room.identity;
 		conf.userId = room.userId;
@@ -841,7 +867,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.joinLiveSession = function( roomId, sessConf ) {
 		const self = this;
-		console.log( 'joinLiveSession', sessConf );
 		const room = self.getRoom( roomId );
 		if ( !room )
 			return;
@@ -878,8 +903,6 @@ library.module = library.module || {};
 				
 			room.getInviteToken( null, getBack );
 			function getBack( inv ) {
-				console.log( 'sendInvites - getBack', inv );
-				//const invite = self.buildInvite( type, roomId, inv.token );
 				contact.invite( inv.data );
 			}
 		}
@@ -984,6 +1007,16 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype = Object.create( library.module.BaseModule.prototype );
 	
+	// Public
+	
+	// BaseModule.reconnect
+	ns.Treeroot.prototype.reconnect = function() {
+		const self = this;
+	}
+	
+	// Private
+	
+	
 	ns.Treeroot.prototype.init = function() {
 		var self = this;
 		self.messageMap[ 'account' ] = updateAccount;
@@ -1086,7 +1119,6 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.keyExchangeHandler = function( msg ) {
 		var self = this;
-		//console.log( 'keyExEv', msg );
 		var handler = self.keyExEventMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'keyExchangeHandler - no handler for', msg );
@@ -1098,7 +1130,9 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.handleUniqueId = function( data ) {
 		var self = this;
-		self.showModuleInitializing();
+		if ( !self.initialized )
+			self.showModuleInitializing();
+		
 		var uniqueId = data.uniqueId;
 		var storedPass = data.hashedPass || null;
 		self.setupCrypto( uniqueId, storedPass, setupDone );
@@ -1300,8 +1334,10 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.initializeState = function( data ) {
 		var self = this;
-		if ( self.initialized )
+		if ( self.initialized ) {
+			console.log( 'Treeroot.initializeState, already initialized', data );
 			return;
+		}
 		
 		self.initialized = true;
 		
@@ -1501,7 +1537,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.addContact = function( contact ) {
-		var self = this;
+		const self = this;
 		if ( !contact ) {
 			var cIds = Object.keys( self.contacts );
 			if ( !cIds.length && !self.nullContact ) {
@@ -1513,8 +1549,7 @@ library.module = library.module || {};
 		}
 		
 		self.nullContact = false;
-		
-		if( self.contacts[ contact.clientId ])
+		if ( self.contacts[ contact.clientId ])
 			return;
 		
 		var conf = {
@@ -1612,6 +1647,11 @@ library.module = library.module || {};
 		if ( self.subscribeView ) {
 			var sub = { id : subscription.ID };
 			self.subscribeView.remove( sub );
+		}
+		
+		if ( self.contacts[ subscription.clientId ]) {
+			console.log( 'Treeroot.addSubscription - aready exists', subscription );
+			return;
 		}
 		
 		var conf = {
@@ -1911,6 +1951,16 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype = Object.create( library.module.BaseModule.prototype );
 	
+	// Public
+	
+	// BaseModule.reconnect
+	ns.IRC.prototype.reconnect = function() {
+		const self = this;
+		console.log( 'IRC.reconnect' );
+	}
+	
+	// Private
+	
 	ns.IRC.prototype.init = function() {
 		var self = this;
 		self.messageMap[ 'message' ] = consoleMsg;
@@ -1930,7 +1980,10 @@ library.module = library.module || {};
 		function privateChat( e ) { self.handlePrivateChat( e ); }
 		function nickChange( e ) { self.nickChange( e ); }
 		function quit( e ) { self.userQuit( e ); }
-		function clearTargets( e ) { self.cleanContacts(); }
+		function clearTargets( e ) {
+			console.log( 'clearTargets', e );
+			self.cleanContacts();
+		}
 		function clientDisconnect( e ) { self.clientDisconnect( e ); }
 		
 		self.connectionErrorMap = {
@@ -1963,7 +2016,8 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype.handleConnecting = function() {
 		var self = this;
-		self.showModuleInitializing();
+		if ( !self.initialized )
+			self.showModuleInitializing();
 	}
 	
 	ns.IRC.prototype.handleOnline = function() {
@@ -1984,6 +2038,7 @@ library.module = library.module || {};
 		if ( self.initialized )
 			return;
 		
+		self.initialized = true;
 		if ( data.identity ) {
 			self.identity.name = data.identity.name;
 		}
@@ -2145,8 +2200,10 @@ library.module = library.module || {};
 		var self = this;
 		var chanObj = self.contacts[ channel.clientId ];
 		if ( chanObj ) {
-			self.removeContact( channel.clientId );
-			chanObj = null;
+			console.log( 'joinChannel - arealy in channel', channel );
+			return;
+			//self.removeContact( channel.clientId );
+			//chanObj = null;
 		}
 		
 		var conf = {
@@ -2175,6 +2232,7 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype.leftChannel = function( data ) {
 		var self = this;
+		console.log( 'IRC.leftChannel', data );
 		var channel = self.contacts[ data.clientId ];
 		if ( !channel )
 			return;
@@ -2352,6 +2410,7 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype.clientDisconnect = function( msg ) {
 		var self = this;
+		console.log( 'clientDisconnect', msg );
 		self.cleanContacts();
 	}
 	
@@ -2404,6 +2463,7 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype.clearState = function( msg ) {
 		var self = this;
+		console.log( 'clearState', msg );
 		self.cleanContacts();
 	}
 	

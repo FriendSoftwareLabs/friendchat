@@ -521,6 +521,13 @@ library.contact = library.contact || {};
 	
 	// Public
 	
+	ns.PresenceRoom.prototype.reconnect = function() {
+		const self = this;
+		self.send({
+			type : 'initialize',
+		});
+	}
+	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		var self = this;
 		conf = conf || {};
@@ -801,6 +808,12 @@ library.contact = library.contact || {};
 			data : state.peers,
 		};
 		self.liveToView( uptdPeers );
+		
+		if ( self.chatView )
+			self.chatView.send({
+				type : 'state',
+				data : state,
+			});
 	}
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
@@ -909,6 +922,9 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleOnline = function( userId ) {
 		const self = this;
+		if ( userId === self.userId )
+			return;
+		
 		self.onlineList.push( userId );
 		const online = {
 			type : 'online',

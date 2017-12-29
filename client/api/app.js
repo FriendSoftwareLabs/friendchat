@@ -616,8 +616,6 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		//console.log( 'fileload res', msg );
-		
 		handler( msg.data );
 		return;
 		// file loads dont get returnCode...
@@ -649,7 +647,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.dormantMaster = function( msg ) {
 		var self = this;
-		//console.log( 'app.js - dormantmaster event', msg );
 		if ( !friend.Dormant ) {
 			console.log( 'app.dormantmaster - window.Dormant not defined' );
 			return;
@@ -814,6 +811,16 @@ var friend = window.friend || {}; // already instanced stuff
 			onclose
 		);
 		return view;
+	}
+	
+	ns.Application.prototype.toAllViews = function( event ) {
+		const self = this;
+		vids = Object.keys( self.views );
+		vids.forEach( sendTo );
+		function sendTo( vId ) {
+			let view = self.views[ vId ];
+			view.sendMessage( event );
+		}
 	}
 	
 	ns.Application.prototype.loadFile = function( path, loadCallback, vars ) {

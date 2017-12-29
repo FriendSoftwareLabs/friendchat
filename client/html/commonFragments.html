@@ -1,3 +1,42 @@
+<!-- APP OFFLINE
+	
+-->
+<script id="app-offline-tmpl" type="text/html">
+<div id="app-offline" class="">
+	<div id="app-offline-title" class="Danger group row start">
+		<i class="fa fa-fw fa-close"></i>
+		<div>
+			{i18n_network_lost}
+		</div>
+	</div>
+	<div class="paddddd">
+		<div id="app-offline-connecting" class="group row start hidden">
+			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<div>
+				{i18n_connecting}
+			</div>
+		</div>
+		<div id="app-offline-reconnect" class="group row hidden">
+			<button id="app-offline-reconnect-btn" class="button" type="button">
+				<i class="fa fa-fw fa-bolt"></i>
+				{i18n_reconnect}
+			</button>
+			<div id="app-offline-rc-bar-container" class="expand LED">
+				<div id="app-offline-rc-bar" class="On">
+				</div>
+			</div>
+		</div>
+		<div id="app-offline-denied" class="group row hidden">
+			{i18n_access_denied}
+			<button id="app-offline-quit-btn" class="button" type="button">
+				<i class="fa fa-fw fa-close"></i>
+				{i18n_quit}
+			</button>
+		</div>
+	</div>
+</div>
+</script>
+
 <!--
 headString
 -->

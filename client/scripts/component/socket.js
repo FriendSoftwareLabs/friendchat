@@ -55,7 +55,7 @@ library.component = library.component || {};
 		self.reconnectDelay = 200; // ms
 		self.reconnectAttempt = 1; // delay is multiplied with attempts
 		                           //to find how long the next delay is
-		self.reconnectMaxAttempts = 8; // 0 to keep hammering
+		self.reconnectMaxAttempts = 7; // 0 to keep hammering
 		self.reconnectScale = {
 			min : 5,
 			max : 8,
@@ -78,8 +78,9 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.reconnect = function() {
 		var self = this;
+		console.log( 'Socket.reconnect', self );
 		self.allowReconnect = true;
-		self.doReconnect();
+		self.doReconnect( true );
 	}
 	
 	// code and reason can be whatever, the socket is closed anyway,
@@ -170,24 +171,36 @@ library.component = library.component || {};
 		self.ws.onmessage = null;
 	}
 	
-	ns.Socket.prototype.doReconnect = function() {
+	ns.Socket.prototype.doReconnect = function( noDelay ) {
 		var self = this;
 		if ( self.ws ) {
 			self.cleanup();
 		}
 		
-		if ( !reconnectAllowed() ){
+		if ( !self.session || !self.allowReconnect ){
 			self.ended();
 			return false;
 		}
 		
-		if ( self.reconnectTimer )
-			return true;
+		if ( noDelay ) {
+			self.reconnectAttempt = 0;
+			clearTimer();
+			reconnect();
+			return;
+		}
+		
+		if ( tooManyTries()) {
+			self.setState( 'reconnect', null );
+			return;
+		}
 		
 		var delay = calcDelay();
 		var showReconnectLogTimeLimit = 1000 * 5; // 5 seconds
-		if ( delay > showReconnectLogTimeLimit )
-			self.setState( 'reconnect', delay );
+		if ( delay > showReconnectLogTimeLimit ) {
+			let now = Date.now();
+			let reconnectTime = now + Math.floor( delay );
+			self.setState( 'reconnect', reconnectTime );
+		}
 		
 		self.reconnectTimer = window.setTimeout( reconnect, delay );
 		
@@ -197,34 +210,22 @@ library.component = library.component || {};
 			self.connect();
 		}
 		
-		function reconnectAllowed() {
-			var checks = {
-				allow : self.allowReconnect,
-				hasTriesLeft : !tooManyTries(),
-				hasSession : !!self.session,
-			};
+		function clearTimer() {
+			if ( !self.reconnectTimer )
+				return;
 			
-			var allow = !!( true
-				&& checks.allow
-				&& checks.hasTriesLeft
-				&& checks.hasSession
-			);
-			
-			if ( !allow ) {
-				console.log( 'not allowed to reconnect', checks )
+			window.clearTimeout( self.reconnectTimer );
+			self.reconnectTimer = null;
+		}
+		
+		function tooManyTries() {
+			if ( !self.reconnectMaxAttempts )
 				return false;
-			}
-			return true;
 			
-			function tooManyTries() {
-				if ( !self.reconnectMaxAttempts )
-					return false;
-				
-				if ( self.reconnectAttempt >= self.reconnectMaxAttempts )
-					return true;
-				
-				return false;
-			}
+			if ( self.reconnectAttempt >= self.reconnectMaxAttempts )
+				return true;
+			
+			return false;
 		}
 		
 		function calcDelay() {
@@ -247,13 +248,14 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.setState = function( type, data ) {
 		var self = this;
+		if ( !self.onstate )
+			return;
+		
 		var state = {
 			type : type,
 			data : data,
 		};
-		self.state = state;
-		if ( self.onstate )
-			self.onstate( state );
+		self.onstate( state );
 	}
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
@@ -261,13 +263,14 @@ library.component = library.component || {};
 		self.reconnectAttempt = 0;
 		console.log( 'Socket: connection open', self.url );
 		// we're waiting for authenticate challenge
+		self.setState( 'open', e );
 	}
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		var self = this;
 		console.log( 'Socket: connection closed', self.url );
 		self.cleanup();
-		self.setState( 'close' );
+		self.setState( 'close', e );
 		self.doReconnect();
 	}
 	
@@ -275,7 +278,7 @@ library.component = library.component || {};
 		var self = this;
 		console.log( 'Socket: connection error for', self.url );
 		self.cleanup();
-		self.setState( 'error' );
+		self.setState( 'error', e );
 		self.doReconnect();
 	}
 	
@@ -317,6 +320,7 @@ library.component = library.component || {};
 		if ( !self.session ) {
 			self.allowReconnect = false;
 			self.ended();
+			return;
 		}
 		
 		self.setReady();
@@ -359,7 +363,7 @@ library.component = library.component || {};
 	ns.Socket.prototype.setReady = function() {
 		var self = this;
 		self.ready = true;
-		self.setState( 'open' );
+		self.setState( 'session', self.session );
 		self.startPing();
 		self.executeSendQueue();
 	}

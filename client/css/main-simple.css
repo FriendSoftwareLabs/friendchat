@@ -188,6 +188,51 @@ body {
 
 /* MAIN */
 
+#online-status {
+	position: absolute;
+	top : 0;
+	left : 0;
+	right : 0;
+	bottom : 0;
+}
+
+.paddddd {
+	padding : 0.2em;
+}
+
+#app-offline {
+	padding : 0.5em;
+}
+
+#app-offline-title {
+	padding       : 0.5em;
+	margin-bottom : 1em;
+	border-radius : 3px;
+	font-size     : 130%;
+}
+
+#app-offline-title > div {
+	margin : 0 0.3em;
+}
+
+#app-offline-connecting > div {
+	margin-left : 0.3em;
+}
+
+#app-offline-rc-bar-container {
+	position     : relative;
+	margin-left : 0.2em;
+	height       : 0.7em;
+}
+
+#app-offline-rc-bar {
+	position      : absolute;
+	left          : 0;
+	height        : 100%;
+	border        : 2px solid rgba( 30, 30, 30, 0.5 );
+	border-radius : 2px;
+}
+
 .info-icon {
 	margin : 0 0.5em;
 }

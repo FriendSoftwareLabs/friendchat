@@ -34,6 +34,8 @@ library.component = library.component || {};
 		self.view = window.View;
 		self.rtc = null;
 		self.ui = null;
+		self.appOnline = null;
+		
 		self.init();
 	}
 	
@@ -42,6 +44,7 @@ library.component = library.component || {};
 	// Private
 	ns.LiveInit.prototype.init = function() {
 		var self = this;
+		self.appOnline = new library.component.AppOnline( window.View );
 		self.conn = new library.component.EventNode(
 			null,
 			null,

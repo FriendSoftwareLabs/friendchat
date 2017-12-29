@@ -1706,3 +1706,28 @@ library.component = library.component || {};
 	
 })( library.component );
 
+// 
+(function( ns, undefined ) {
+	ns.AppOnline = function( View ) {
+		const self = this;
+		self.View = View;
+		self.init();
+	}
+	
+	ns.AppOnline.prototype.close = function() {
+		const self = this;
+		if ( !self.View )
+			return;
+		
+		self.View.release( 'app-online' );
+	}
+	
+	ns.AppOnline.prototype.init = function() {
+		const self = this;
+		self.View.on( 'app-online', appOnline );
+		function appOnline( isOnline ) {
+			console.log( 'AppOnline', isOnline );
+			document.body.classList.toggle( 'app-offline', !isOnline );
+		}
+	}
+})( library.component );

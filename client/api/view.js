@@ -379,7 +379,7 @@ var friend = window.friend || {};
 		
 		self.setIsLoading( false );
 		self.activate();
-		self.send({
+		self.sendBase({
 			type: 'notify',
 		});
 	}
@@ -447,8 +447,8 @@ var friend = window.friend || {};
 			command : 'keydown',
 			data    : keyEvent,
 		};
-		console.log( 'send key down event', event );
-		self.send( event );
+		
+		self.sendBase( event );
 		
 		function hasNoModifier( keyDown ) {
 			return !self.keyDownQualifiers.some( isSet );
@@ -672,16 +672,18 @@ var friend = window.friend || {};
 			self.on( callbackId, callback );
 		}
 		
-		self.send( msg );
+		self.sendBase( msg );
 	}
+	
+	ns.View.prototype.send = ns.View.prototype.sendMessage;
 	
 	ns.View.prototype.sendViewEvent = function( msg ) {
 		var self = this;
 		msg.type = 'view';
-		self.send( msg );
+		self.sendBase( msg );
 	}
 	
-	ns.View.prototype.send = function( msg ) {
+	ns.View.prototype.sendBase = function( msg ) {
 		const self = this;
 		msg.viewId = self.id;
 		msg.applicationId = self.applicationId;

@@ -35,7 +35,6 @@ library.view = library.view || {};
 			console.log( 'view.Conference - fup conf apparently?', fupConf );
 		
 		var self = this;
-		self.view = null;
 		
 		self.topic = '';
 		self.mode = '';
@@ -52,12 +51,16 @@ library.view = library.view || {};
 		
 		self.doFlourish = false;
 		
+		self.view = null;
+		self.appOnline = null;
+		
 		self.init();
 	}
 	
 	ns.Conference.prototype.init = function() {
 		var self = this;
 		View.setBody();
+		self.appOnline = new library.component.AppOnline( window.View );
 		self.view = window.View;
 		self.modes = [
 			'm',

@@ -46,6 +46,7 @@ var hello = null;
 		self.msgAlert = null;
 		
 		self.forceShowLogin = false;
+		self.isOnline = false;
 		
 		self.init();
 	}
@@ -124,7 +125,6 @@ var hello = null;
 		}
 		
 		function modErr( err ) {
-			console.log( 'modErr', err );
 			callback( false );
 		}
 	}
@@ -191,7 +191,7 @@ var hello = null;
 	
 	ns.Hello.prototype.initSystemModules = function( callback ) {
 		var self = this;
-		self.conn = new library.system.Connection();
+		self.conn = new library.system.Connection( null, onWSState );
 		self.request = new library.system.Request({ conn : self.conn });
 		self.intercept = new library.system.Interceptor();
 		self.rtc = new library.system.RtcControl();
@@ -209,6 +209,8 @@ var hello = null;
 			self.closeLoading();
 			callback();
 		}
+		
+		function onWSState( e ) { self.updateConnState( e ); }
 	}
 	
 	ns.Hello.prototype.showLoadingError = function( errMsg ) {
@@ -250,7 +252,6 @@ var hello = null;
 		}
 		
 		const conf = self.config.run;
-		console.log( 'doGuestThings - conf', conf );
 		if ( 'live-invite' === conf.type ) {
 			const randomName = library.tool.getName();
 			const askConf = {
@@ -263,7 +264,6 @@ var hello = null;
 			return; // prevents unknown data thingie, down there *points*
 			
 			function askBack( res ) {
-				console.log( 'doGuiestThings - askBack', res );
 				if ( !res.accept ) {
 					self.quit();
 					return;
@@ -331,15 +331,13 @@ var hello = null;
 		
 		function initPresenceConnection( callback ) {
 			const conf = self.config.run;
-			console.log( 'doGuestTHings', conf );
 			if ( !conf.data && !conf.data.host ) {
 				console.log( 'missing host', conf );
 				return;
 			}
 			
 			var host = library.tool.buildDestination( 'wss://', conf.data.host );
-			console.log( 'host', host );
-			self.conn = new library.system.Connection( host );
+			self.conn = new library.system.Connection( host, onWSState );
 			self.intercept = new library.system.Interceptor();
 			self.rtc = new library.system.RtcControl();
 			self.conn.connect( connBack );
@@ -354,12 +352,13 @@ var hello = null;
 				self.closeLoading();
 				callback();
 			}
+			
+			function onWSState( e ) { self.updateConnState( e ); }
 		}
 	}
 	
 	ns.Hello.prototype.setupLiveRoom = function( permissions ) {
 		const self = this;
-		console.log( 'setupLiveRoom', permissions );
 		new library.component.GuestRoom( self.conn, permissions, onclose );
 		function onclose() { self.quit(); }
 		
@@ -377,7 +376,7 @@ var hello = null;
 			self.main.logout();
 			self.main = null;
 		
-		self.login = new library.system.Login( onlogin, onclose );
+		self.login = new library.system.Login( null, onlogin, onclose );
 		function onlogin( account ) {
 			self.closeLoading();
 			
@@ -401,6 +400,29 @@ var hello = null;
 		}
 	}
 	
+	ns.Hello.prototype.doRelogin = function() {
+		const self = this;
+		self.triedRelogin = true;
+		self.conn.reconnect( connected );
+		function connected() {
+			const acc = {
+				clientId : self.account.clientId,
+				name     : self.account.displayName,
+			};
+			self.login = new library.system.Login( acc, success, fail );
+		}
+		
+		function success( account ) {
+			self.triedRelogin = false;
+			self.module.reconnect();
+		}
+		
+		function fail( ) {
+			console.log( 'relogin fail' );
+			self.quit();
+		}
+	}
+	
 	ns.Hello.prototype.doMain = function( account ) {
 		var self = this;
 		self.main = new library.system.Main({
@@ -414,17 +436,72 @@ var hello = null;
 		self.conn.reconnect();
 	}
 	
-	ns.Hello.prototype.connectionLost = function() {
+	ns.Hello.prototype.updateConnState = function( state ) {
+		const self = this;
+		const isOnline = checkIsOnline( state );
+		self.updateIsOnline( isOnline );
+		
+		if ( 'access-denied' === state.type && !self.triedRelogin ) {
+			self.doRelogin();
+			return;
+		}
+		
+		if ( self.main )
+			self.main.setConnState( state );
+		
+		function checkIsOnline( state ) {
+			if ( 'session' !== state.type )
+				return false;
+			
+			if ( !state.data )
+				return false;
+			
+			return true;
+		}
+	}
+	
+	ns.Hello.prototype.updateIsOnline = function( isOnline ) {
+		const self = this;
+		if ( isOnline === self.isOnline )
+			return;
+		
+		self.app.toAllViews({
+			type : 'app-online',
+			data : isOnline,
+		});
+		
+		self.isOnline = isOnline;
+		if ( self.main )
+			self.main.setIsOnline( self.isOnline );
+		
+		if ( self.module )
+			self.module.setIsOnline( self.isOnline );
+	}
+	
+	// From main view
+	ns.Hello.prototype.handleConnState = function( e ) {
+		const self = this;
+		if ( 'reconnect' === e.type )
+			self.conn.reconnect();
+		
+		if ( 'quit' === e.type )
+			self.quit();
+	}
+	
+	ns.Hello.prototype.preLoginDisconnect = function() {
 		var self = this;
-		hello.log.show();
+		if ( hello.login || hello.loading ) {
+			hello.log.show();
+		}
+		
+		if ( hello.loading ) {
+			hello.loading.close();
+			hello.loading = null;
+		}
+		
 		if ( hello.login ) {
 			hello.login.close();
 			hello.login = null;
-		}
-		
-		if ( hello.main ) {
-			hello.logout();
-			hello.main = null;
 		}
 	}
 	
@@ -550,9 +627,30 @@ var hello = null;
 		self.init();
 	}
 	
+	// Public
+	
+	ns.Main.prototype.setConnState = function( state ) {
+		const self = this;
+		self.view.sendMessage({
+			type : 'conn-state',
+			data : state,
+		});
+	}
+	
+	ns.Main.prototype.setIsOnline = function( isOnline ) {
+		const self = this;
+		/*
+		self.view.sendMessage({
+			type : 'app-online',
+			data : isOnline,
+		});
+		*/
+	}
+	
+	// Private
+	
 	ns.Main.prototype.init = function() {
 		const self = this;
-		console.log( 'Main.init - account', self.account );
 		const firstLogin = !self.account.lastLogin;
 		if ( firstLogin )
 			self.showWizard( doSetup );
@@ -584,17 +682,11 @@ var hello = null;
 			self.setMenuItems();
 			
 			function ready( msg ) {
-				hello.conn.state.subscribe( 'main', connState );
 				self.initSubViews();
 				hello.account.sendReady( wizRes || null );
 			}
 			
-			function connState( state ) {
-				
-			}
-			
 			function viewClose( msg ) {
-				hello.conn.state.unsubscribe( 'main' );
 				self.view = null;
 				if ( self.isLogout )
 					return;
@@ -608,7 +700,6 @@ var hello = null;
 		const self = this;
 		let wiz = new library.view.FirstWizard( wizBack );
 		function wizBack( res ) {
-			console.log( 'wizBack', res );
 			wiz.close();
 			callback( res );
 		}
@@ -616,7 +707,6 @@ var hello = null;
 	
 	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
 		const self = this;
-		console.log( 'openSimpleView' );
 		const winConf = {
 			title: hello.config.appName + ' - Main Window',
 			width : 440,
@@ -634,7 +724,6 @@ var hello = null;
 	
 	ns.Main.prototype.openAdvView = function( initConf, onClose ) {
 		const self = this;
-		console.log( 'openAdvView' );
 		const winConf = {
 			title: hello.config.appName + ' - Main Window',
 			width : 440,
@@ -657,12 +746,14 @@ var hello = null;
 		self.view.on( 'live', startLive );
 		self.view.on( 'quit', doQuit );
 		self.view.on( 'logout', logout );
+		self.view.on( 'conn-state', connState );
 		
 		function receiveMessage( msg ) { self.receiveMessage( msg ); }
 		function startLive( msg ) { self.startLive(); }
 		function showAbout( e ) { hello.about(); }
 		function doQuit( e ) { hello.quit(); }
 		function logout( msg ) { hello.logout( msg ); }
+		function connState( e ) { hello.handleConnState( e ); }
 	}
 	
 	ns.Main.prototype.setMenuItems = function() {

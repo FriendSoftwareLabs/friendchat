@@ -24,6 +24,18 @@ form {
 	margin : 0;
 }
 
+body.app-offline {
+	opacity          : 0.3;
+	background-color : #964e4e;
+}
+
+body.app-offline textarea,
+body.app-offline button,
+body.app-offline input {
+	opacity        : 0.5;
+	pointer-events : none;
+}
+
 i.fa {
 	font-size: 125%;
 }

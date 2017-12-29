@@ -287,3 +287,5 @@ i18n_FiWiz_adv_irc : IRC added as default
 i18n_FiWiz_adv_options : More options in UI
 i18n_FiWiz_btn_simplified : Use friendly UI
 i18n_FiWiz_btn_advanced : Use advanced UI
+i18n_network_lost : Application is offline
+i18n_access_denied : Access denied

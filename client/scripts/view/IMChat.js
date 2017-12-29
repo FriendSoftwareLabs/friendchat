@@ -43,12 +43,15 @@ library.component = library.component || {};
 		self.voiceSynthActive = false;
 		self.multilineActive = false;
 		
+		self.appOnline = null;
+		
 		self.init();
 	}
 	
 	ns.IMChat.prototype.init = function() {
 		var self = this;
-		View.setBody(); // sets friend.template
+		window.View.setBody(); // sets friend.template
+		self.appOnline = new library.component.AppOnline( window.View );
 		
 		self.view = window.View;
 		self.messages = document.getElementById( 'messages' );

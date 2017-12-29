@@ -18,7 +18,7 @@
 <body id="hello" class="no-select BackgroundDefault MouseDefault">
 	<div id="content" class="bar column">
 		<div id="head" class="group row BorderBottom hidden">
-			<div id="availability-status fortify">
+			<div id="availability-status" class="fortify">
 			</div>
 			<div id="notifications-head" class="expand">
 			</div>
@@ -38,6 +38,8 @@
 		</div>
 	</div>
 	<div id="main-menu" class="hidden">
+	</div>
+	<div id="online-status" class="hidden BackgroundDefault center-child">
 	</div>
 	<div id="fragments" class="Hidden hidden" style="display : none;">
 
@@ -523,8 +525,8 @@ host,
 			Remote host error: <%= error %>. Retrying..
 		</p>
 	</div>
-	<div class="query-retry-countdown LED">
-		<div class="query-retry-bar On">
+	<div class="retry-countdown LED">
+		<div class="retry-bar On">
 		</div>
 	</div>
 	<div class="inputs fortify group row">

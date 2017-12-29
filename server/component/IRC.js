@@ -158,6 +158,8 @@ ns.IrcClient = function( client, conf ) {
 		return new ns.IrcClient( client, conf );
 	
 	var self = this;
+	console.log( 'irc conf', conf );
+	self.clientId = conf.clientId;
 	self.client = client;
 	self.conf = conf;
 	
@@ -356,7 +358,7 @@ ns.IrcClient.prototype.connectionState = function( state, data ) {
 		return self.client.getState();
 	
 	self.client.setState( state, data );
-	if ( 'online' === state )
+	if ( 'offline' !== state && 'error' !== state )
 		return;
 	
 	self.clearTargets();
@@ -1623,7 +1625,9 @@ ns.IrcClient.prototype.createPrivate = function( nick, forceOpen ) {
 		return self.targets[ nick ];
 	}
 	
+	const cid = 'priv-' + self.clientId.split( '-' )[ 1 ] + '-' + nick;
 	var conf = {
+		clientId : clientId,
 		name : nick,
 		conn : self.client,
 		toServer : sendToServer,
@@ -1877,8 +1881,14 @@ ns.IrcClient.prototype.msgQuit = function( quitMsg ) {
 
 ns.IrcClient.prototype.addChannel = function( name ) {
 	var self = this;
+	if ( !self.clientId )
+		return;
+	
+	const modPart = self.clientId.split( '-' )[ 1 ];
+	const clientId = 'channel-' + modPart + '-' + name;
 	var conf = {
-		name : name,
+		clientId : clientId,
+		name     : name,
 		toServer : sendToServer,
 	};
 	
@@ -2157,8 +2167,7 @@ ns.Channel = function( conn, conf ) {
 	
 	var self = this;
 	self.conn = conn;
-	self.clientId = uuid.get( 'channel' );
-	//self.clientId = 'channel-' + conf.name;
+	self.clientId = conf.clientId;
 	self.name = conf.name;
 	self.server = conf.toServer;
 	self.logMax = conf.logMax || 50;
@@ -2627,8 +2636,7 @@ ns.Private = function( conf ) {
 	
 	var self = this;
 	self.type = 'private';
-	self.clientId = uuid.get( 'private' );
-	//self.clientId = 'private-' + conf.name;
+	self.clientId = conf.clientId;
 	self.name = conf.name;
 	self.server = conf.toServer;
 	self.clientConn = conf.conn;

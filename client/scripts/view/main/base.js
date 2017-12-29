@@ -486,6 +486,9 @@ library.view = library.view || {};
 	
 	ns.BaseModule.prototype.showInitializing = function() {
 		var self = this;
+		if ( self.initalized )
+			return;
+		
 		var id = friendUP.tool.uid( 'init' );
 		var conf = {
 			id : id,

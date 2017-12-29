@@ -473,7 +473,7 @@ library.view = library.view || {};
 		
 		function setRetryBar( startTime, retryTime, el ) {
 			startTime = Date.now();
-			const retryBar = el.querySelector( '.query-retry-bar' );
+			const retryBar = el.querySelector( '.retry-bar' );
 			if ( !retryBar )
 				return;
 			
@@ -517,10 +517,6 @@ library.view = library.view || {};
 	
 	ns.Treeroot.prototype.translateError = function( errCode ) {
 		const self = this;
-		console.log( 'translateError', {
-			code : errCode,
-			trans : self.errorStrings,
-		});
 		return self.errorStrings[ errCode ] || errCode;
 	}
 	
@@ -2618,6 +2614,186 @@ library.view = library.view || {};
 	
 })( library.view );
 
+(function( ns, undefined ) {
+	ns.SocketState = function( elementId, conn ) {
+		const self = this;
+		self.id = elementId;
+		self.init( conn );
+	}
+	
+	// Public
+	
+	ns.SocketState.prototype.close = function() {
+		const self = this;
+		delete self.id;
+		delete self.connecting;
+		delete self.reconnect;
+		delete self.denied;
+		
+		if ( !self.conn )
+			return;
+		
+		self.conn.close();
+		delete self.conn;
+	}
+	
+	// Priv
+	
+	ns.SocketState.prototype.init = function( parentConn ) {
+		const self = this;
+		self.build();
+		self.conn = new library.component.EventNode( 'conn-state', parentConn, eventSink );
+		self.conn.on( 'connect', connect );
+		self.conn.on( 'session', session );
+		self.conn.on( 'close', close );
+		self.conn.on( 'error', error );
+		self.conn.on( 'wait-reconnect', reconnect );
+		self.conn.on( 'access-denied', denied );
+		
+		function connect( e ) { self.handleConnect( e ); }
+		function session( e ) { self.handleSession( e ); }
+		function close( e ) { self.handleClose( e ); }
+		function error( e ) { self.handleError( e ); }
+		function reconnect( e ) { self.handleReconnect( e ); }
+		function denied( e ) { self.handleDenied( e ); }
+		
+		function eventSink( ) {
+			console.log( 'SocketState - unknown event', arguments );
+		}
+	}
+	
+	ns.SocketState.prototype.handleConnect = function( e ) {
+		const self = this;
+		self.showUI( true );
+		self.hideStates();
+		self.connecting.classList.toggle( 'hidden', false );
+	}
+	
+	ns.SocketState.prototype.handleSession = function( sid ) {
+		const self = this;
+		self.isOnline = true;
+		self.showUI( false );
+	}
+	
+	ns.SocketState.prototype.handleClose = function( e ) {
+		const self = this;
+		self.showUI( true );
+	}
+	
+	ns.SocketState.prototype.handleError = function( err ) {
+		const self = this;
+		self.showUI( true );
+	}
+	
+	ns.SocketState.prototype.handleReconnect = function( event ) {
+		const self = this;
+		self.showUI( true );
+		self.hideStates();
+		self.reconnect.classList.toggle( 'hidden', false );
+		const cont = document.getElementById( 'app-offline-rc-bar-container' );
+		const bar = document.getElementById( 'app-offline-rc-bar' );
+		if ( !event.time ) {
+			hideBar();
+			return;
+		}
+		
+		bar.style.width = '100%';
+		let start = Date.now();
+		let end = event.time;
+		let total = end - start;
+		
+		step();
+		showBar();
+		
+		function step() {
+			window.requestAnimationFrame( update );
+		}
+		
+		function update() {
+			let now = Date.now();
+			if ( now > end ) {
+				hideBar();
+				return;
+			}
+			
+			let left = end - now;
+			let p = ( left / total );
+			let percent = Math.floor( p * 100 );
+			bar.style.width = percent + '%';
+			
+			step();
+		}
+		
+		function showBar() {
+			bar.classList.toggle( 'hidden', false );
+		}
+		
+		function hideBar() {
+			bar.classList.toggle( 'hidden', true );
+		}
+	}
+	
+	ns.SocketState.prototype.handleDenied = function( host ) {
+		const self = this;
+		self.showUI( true );
+		self.hideStates();
+		self.denied.classList.toggle( 'hidden', false );
+	}
+	
+	ns.SocketState.prototype.showUI = function( show ) {
+		const self = this;
+		self.el.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.SocketState.prototype.hideStates = function() {
+		const self = this;
+		if ( !self.connecting || !self.reconnect || !self.denied )
+			return;
+		
+		self.connecting.classList.toggle( 'hidden', true );
+		self.reconnect.classList.toggle( 'hidden', true );
+		self.denied.classList.toggle( 'hidden', true );
+	}
+	
+	ns.SocketState.prototype.build = function() {
+		const self = this;
+		const ui = hello.template.getElement( 'app-offline-tmpl', {} );
+		self.el = document.getElementById( self.id );
+		self.el.appendChild( ui );
+		
+		// bind ui
+		let rcBtn = document.getElementById( 'app-offline-reconnect-btn' );
+		let qBtn = document.getElementById( 'app-offline-quit-btn' );
+		self.connecting = document.getElementById( 'app-offline-connecting' );
+		self.reconnect = document.getElementById( 'app-offline-reconnect' );
+		self.denied = document.getElementById( 'app-offline-denied' );
+		
+		rcBtn.addEventListener( 'click', reconnect, false );
+		qBtn.addEventListener( 'click', quit, false );
+		
+		function reconnect( e ) {
+			self.send({
+				type : 'reconnect',
+			});
+		}
+		
+		function quit( e ) {
+			self.send({
+				type : 'quit',
+			});
+		}
+	}
+	
+	ns.SocketState.prototype.send = function( event ) {
+		const self = this;
+		if ( !self.conn )
+			return;
+		
+		self.conn.send( event );
+	}
+	
+})( library.view );
+
 
 // MAIN
 (function( ns, undefined ) {
@@ -2632,7 +2808,14 @@ library.view = library.view || {};
 		self.account = null;
 		self.module = null;
 		
+		self.connState = null;
+		
 		self.init();
+	}
+	
+	ns.Main.prototype.close = function() {
+		const self = this;
+		self.connState.close();
 	}
 	
 	ns.Main.prototype.init = function()
@@ -2672,8 +2855,9 @@ library.view = library.view || {};
 		self.view.receiveMessage = receiveMessage;
 		self.view.on( 'initialize', initialize );
 		
-		function receiveMessage( msg ) { self.receiveMessage( msg ); }
-		function initialize( msg ) { self.initialize( msg ); }
+		function receiveMessage( e ) { self.receiveMessage( e ); }
+		function initialize( e ) { self.initialize( e ); }
+		function isOnline( e ) { self.updateIsOnline( e ); }
 	}
 	
 	ns.Main.prototype.initialize = function( data ) {
@@ -2694,6 +2878,7 @@ library.view = library.view || {};
 		else
 			self.assist = new library.view.AssistUI( 'assist-ui-container' );
 		
+		self.connState = new library.view.SocketState( 'online-status', self.view );
 		self.notification = new library.view.Notification( notificationRootId );
 		self.account = new library.view.Account();
 		self.module = new library.view.ModuleControl( self.assist || null );
@@ -2706,9 +2891,9 @@ library.view = library.view || {};
 	ns.Main.prototype.addMenu = function() {
 		var self = this;
 		var modules = {
-			type : 'folder',
-			id : 'modules',
-			name : View.i18n('i18n_modules'),
+			type   : 'folder',
+			id     : 'modules',
+			name   : View.i18n('i18n_modules'),
 			faIcon : 'fa-folder-o',
 		};
 		
