@@ -95,8 +95,7 @@ body {
 /* Assist UI */
 
 #assist-ui {
-	padding : 0.5em 0.7em;
-	line-height: 1.8em;
+	padding : 0.6em 0.5em;
 }
 
 #assist-ui .button > i {
@@ -105,7 +104,7 @@ body {
 }
 
 #assist-ui .button {
-	display : flex !important;
+	display     : flex !important;
 	font-weight : bold;
 	padding     : 0.6em 0.4em;
 	line-height : 1.6em;
