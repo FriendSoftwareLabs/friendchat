@@ -104,7 +104,7 @@ body {
 }
 
 #assist-ui .button {
-	display : flex !important;
+	display     : flex !important;
 	font-weight : bold;
 	padding     : 0.6em 0.4em;
 	line-height : 1.6em;
@@ -282,8 +282,8 @@ body {
 }
 
 .module-actions {
-	height:100%;
-	justify-content: flex-end;
+	height          :100%;
+	justify-content : flex-end;
 }
 
 .module-actions > div {
@@ -305,8 +305,8 @@ body {
 }
 
 .inactive-header {
-	height: 2em;
-	line-height: 2em;
+	height      : 2em;
+	line-height : 2em;
 }
 
 .inactive-header .inactive-title {
