@@ -1625,11 +1625,11 @@ ns.IrcClient.prototype.createPrivate = function( nick, forceOpen ) {
 		return self.targets[ nick ];
 	}
 	
-	const cid = 'priv-' + self.clientId.split( '-' )[ 1 ] + '-' + nick;
+	const clientId = 'priv-' + self.clientId.split( '-' )[ 1 ] + '-' + nick;
 	var conf = {
 		clientId : clientId,
-		name : nick,
-		conn : self.client,
+		name     : nick,
+		conn     : self.client,
 		toServer : sendToServer,
 	};
 	var privObj = new ns.Private( conf );
