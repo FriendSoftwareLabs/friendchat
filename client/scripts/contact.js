@@ -555,9 +555,11 @@ library.contact = library.contact || {};
 		// events from live view we care about, everything else is passed on
 		self.live.on( 'chat', chat );
 		self.live.on( 'invite', invite );
+		self.live.on( 'live-name', liveName );
 		
 		function chat( e ) { self.sendChatEvent( e ); }
 		function invite( e ) { self.handleLiveInvite( e ); }
+		function liveName( e ) { self.handleLiveName( e ); }
 		function onClose( e ) {
 			self.closeLive();
 			const leave = {
@@ -1235,6 +1237,25 @@ library.contact = library.contact || {};
 			data : event,
 		};
 		self.send( invite );
+	}
+	
+	ns.PresenceRoom.prototype.handleLiveName = function( name ) {
+		const self = this;
+		const id = self.identities[ self.userId ];
+		if ( !name || !name.length || !id ) {
+			console.log( 'handleLiveName - invalid', {
+				name : name,
+				id   : id,
+			});
+			return;
+		}
+		
+		id.liveName = name;
+		const idUpdate = {
+			type : 'identity',
+			data : id,
+		};
+		self.send( idUpdate );
 	}
 	
 	ns.PresenceRoom.prototype.liveToServer = function( event ) {

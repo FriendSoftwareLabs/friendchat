@@ -415,6 +415,32 @@ from,
 </div>
 </script>
 
+<!--
+current,
+-->
+<script id="viewpane-change-username-tmpl" type="text/html">
+<div id="change-username" class="center-child">
+	<div id="change-username-content" class="std-bg">
+		{i18n_change_username}
+		<form id="change-username-form">
+			<div class="input-wrap">
+				<input id="change-username-input" type="text" value="<%= current %>">
+			</div>
+			<div class="group row btn-row">
+				<div id="change-username-accept" class="btn text Accept">
+					<i class="fa fa-fw fa-check"></i>
+					{i18n_set_name}
+				</div>
+				<div id="change-username-cancel" class="btn text Danger">
+					<i class="fa fa-fw fa-close"></i>
+					{i18n_cancel}
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+</script>
+
 <!-- source-select
 
 -->

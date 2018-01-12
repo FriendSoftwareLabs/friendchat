@@ -1514,3 +1514,26 @@
 .mode-speaker > .peer.speaker {
 	display: inherit;
 }
+
+/* Change username */
+
+#change-username {
+	height : 100%;
+	width  : 100%;
+	
+}
+
+#change-username-content {
+	min-width     : 12em;
+	border-radius : 0.1em;
+	padding       : 1em 0.5em;
+}
+
+#change-username .input-wrap {
+	margin : 0.5em 0;
+}
+
+.input-wrap input {
+	line-height : 1.8em;
+	font-size   : 110%;
+}

@@ -246,15 +246,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.bindMenu = function() {
 		var self = this;
 		self.menu = self.view.addMenu();
-		self.menu.on( 'source-select' , sourceSelect );
-		self.menu.on( 'restart'       , restart );
+		self.menu.on( 'change-username', username );
+		self.menu.on( 'source-select'  , sourceSelect );
+		self.menu.on( 'restart'        , restart );
 		
 		if ( self.isGuest ) {
 			self.menu.disable( 'share' );
 		}
 		
-		function sourceSelect( s ) { self.showSourceSelect(); }
-		function restart( s ) { self.restartStream(); }
+		function username( e ) { self.changeUsername(); }
+		function sourceSelect( e ) { self.showSourceSelect(); }
+		function restart( e ) { self.restartStream(); }
 	}
 	
 	ns.RTC.prototype.updateMenuSendReceive = function( permissions, devices ) {
@@ -386,6 +388,40 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			type : 'nestedapp',
 			data : app,
 		});
+	}
+	
+	ns.RTC.prototype.changeUsername = function() {
+		const self = this;
+		const id = self.identities[ self.userId ];
+		let current = '';
+		if ( id )
+			current = id.liveName || id.name;
+		
+		const conf = {
+			current : current,
+			onname : onName,
+		};
+		self.changeUsername = self.view.addUIPane( 'change-username', conf );
+		self.changeUsername.show();
+		
+		function onName( name ) {
+			if ( self.changeUsername ) {
+				self.changeUsername.close();
+				delete self.changeUsername;
+			}
+			
+			if ( !name || !name.length )
+				return;
+			
+			if ( name === current )
+				return;
+			
+			const update = {
+				type : 'live-name',
+				data : name,
+			};
+			self.conn.send( update );
+		}
 	}
 	
 	ns.RTC.prototype.showSourceSelect = function() {
@@ -547,6 +583,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.updatePeerIdentity = function( peerId, identity ) {
 		const self = this;
+		console.log( 'updatePeerIdentity', {
+			pid : peerId,
+			id : identity,
+		});
 		if ( peerId === self.userId && self.selfie ) {
 			self.selfie.updateIdentity( identity );
 			return;
@@ -1856,6 +1896,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.updateIdentity = function( identity ) {
 		const self = this;
+		self.identity = identity;
 		self.emit( 'identity', identity );
 	}
 	
@@ -2037,24 +2078,25 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.bindSignalChannel = function() {
 		const self = this;
-		self.signal.on( 'sync'            , sync );
-		self.signal.on( 'sync-accept'     , syncAccept );
-		self.signal.on( 'restart'         , restart );
-		self.signal.on( 'stop'            , stop );
-		self.signal.on( 'alpha-ready'     , alphaReady );
-		self.signal.on( 'open'            , open );
-		self.signal.on( 'blind'           , blind );
-		self.signal.on( 'mute'            , mute );
-		self.signal.on( 'screenmode'      , screenMode );
-		self.signal.on( 'tracks-available', tracksAvailable );
-		self.signal.on( 'meta'            , meta );
-		self.signal.on( 'constraints'     , handleConstraints );
-		self.signal.on( 'nostream'        , peerNoStream );
-		self.signal.on( 'nestedapp'       , nestedApp );
-		self.signal.on( 'recycle'         , recycle );
-		self.signal.on( 'reconnect'       , reconnect );
-		self.signal.on( 'leave'           , leave );
-		self.signal.on( 'close'           , closed );
+		self.signal.on( 'sync'             , sync );
+		self.signal.on( 'sync-accept'      , syncAccept );
+		self.signal.on( 'restart'          , restart );
+		self.signal.on( 'stop'             , stop );
+		self.signal.on( 'alpha-ready'      , alphaReady );
+		self.signal.on( 'open'             , open );
+		self.signal.on( 'blind'            , blind );
+		self.signal.on( 'mute'             , mute );
+		self.signal.on( 'screenmode'       , screenMode );
+		self.signal.on( 'tracks-available' , tracksAvailable );
+		self.signal.on( 'meta'             , meta );
+		self.signal.on( 'constraints'      , handleConstraints );
+		self.signal.on( 'nostream'         , peerNoStream );
+		self.signal.on( 'nestedapp'        , nestedApp );
+		self.signal.on( 'update-name'      , updateName )
+		self.signal.on( 'recycle'          , recycle );
+		self.signal.on( 'reconnect'        , reconnect );
+		self.signal.on( 'leave'            , leave );
+		self.signal.on( 'close'            , closed );
 		
 		function sync( e ) { self.handleSync( e ); }
 		function syncAccept( e ) { self.handleSyncAccept( e ); }
@@ -2070,6 +2112,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function handleConstraints( e ) { self.handleRemoteConstraints( e ); }
 		function peerNoStream( e ) { self.handleNoStream(); }
 		function nestedApp( e ) { self.emit( 'nestedapp', e ); }
+		function updateName( e ) { self.emit( 'update-name', e ); }
 		function recycle( e ) { self.handleRecycle( e ); }
 		function reconnect( e ) { self.handleReconnect( e ); }
 		function leave( e ) { console.log( 'peer left?' ); }

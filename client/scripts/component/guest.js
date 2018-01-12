@@ -66,14 +66,14 @@ library.component = library.component || {};
 		self.send( init );
 	}
 	
-	ns.GuestRoom.prototype.handleInit = function( e ) {
+	ns.GuestRoom.prototype.handleInit = function( data ) {
 		const self = this;
-		console.log( 'handleInitialize', e );
+		const acc = data.account;
+		self.userId = acc.clientId;
 	}
 	
 	ns.GuestRoom.prototype.handleJoinedRoom = function( room ) {
 		const self = this;
-		console.log( 'GuestRoom - handleJoinedRoom', room );
 		self.roomId = room.clientId;
 		self.room = new library.component.EventNode( self.roomId, self.conn, extraRoomEvent );
 		self.room.on( 'initialize', init );
@@ -102,7 +102,6 @@ library.component = library.component || {};
 		const self = this;
 		self.users = state.users;
 		self.identities = state.identities;
-		console.log( 'Guest.handleRoomInit', self.permissions );
 		const perms = self.permissions || {
 			send : {
 				audio : true,
@@ -121,6 +120,7 @@ library.component = library.component || {};
 		};
 		self.live = new library.rtc.RtcSession( conf, liveEvent, onclose );
 		self.live.on( 'chat', chat );
+		self.live.on( 'live-name', liveName );
 		const joinLive = {
 			type : 'live-join',
 			data : null,
@@ -134,6 +134,7 @@ library.component = library.component || {};
 			});
 		}
 		function chat( e ) { self.handleLiveChat( e ); }
+		function liveName( e ) { self.handleLiveName( e ); }
 		function onclose( e ) {
 			const leave = {
 				type : 'leave',
@@ -213,6 +214,26 @@ library.component = library.component || {};
 			data : event,
 		};
 		self.sendToRoom( chat );
+	}
+	
+	ns.GuestRoom.prototype.handleLiveName = function( name ) {
+		const self = this;
+		const id = self.identities[ self.userId ];
+		if ( !name || !name.length || !id ) {
+			console.log( 'handleLiveName - invalid', {
+				uid  : self.userId,
+				name : name,
+				id   : id,
+			});
+			return;
+		}
+		
+		id.name = name;
+		const idUpdate = {
+			type : 'identity',
+			data : id,
+		};
+		self.sendToRoom( idUpdate );
 	}
 	
 	ns.GuestRoom.prototype.sendToRoom = function( event ) {

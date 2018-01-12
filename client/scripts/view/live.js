@@ -194,13 +194,14 @@ library.component = library.component || {};
 	ns.Live.prototype.init = function() {
 		var self = this;
 		self.uiPaneMap = {
-			'init-checks'   : library.view.InitChecksPane,
-			'source-select' : library.view.SourceSelectPane,
-			'ext-connect'   : library.view.ExtConnectPane,
-			'settings'      : library.view.SettingsPane,
-			'share'         : library.view.SharePane,
-			'menu'          : library.view.MenuPane,
-			'chat'          : library.view.ChatPane,
+			'init-checks'     : library.view.InitChecksPane,
+			'source-select'   : library.view.SourceSelectPane,
+			'change-username' : library.view.ChangeUsernamePane,
+			'ext-connect'     : library.view.ExtConnectPane,
+			'settings'        : library.view.SettingsPane,
+			'share'           : library.view.SharePane,
+			'menu'            : library.view.MenuPane,
+			'chat'            : library.view.ChatPane,
 		};
 		
 		/*
@@ -1101,6 +1102,12 @@ library.component = library.component || {};
 			name   : View.i18n( 'i18n_change_participant_order' ),
 			faIcon : 'fa-hand-stop-o',
 		};
+		const username = {
+			type : 'item',
+			id : 'change-username',
+			name : View.i18n( 'i18n_change_username' ),
+			faIcon : 'fa-id-card-o',
+		};
 		const cleanUI = {
 			type   : 'item',
 			id     : 'clean-ui',
@@ -1131,6 +1138,7 @@ library.component = library.component || {};
 			screenMode,
 			settings,
 			dragger,
+			username,
 			cleanUI,
 			peers,
 			leave,
@@ -1451,7 +1459,7 @@ library.component = library.component || {};
 		const mute = {
 			type   : 'item',
 			id     : self.menuMuteId,
-			name   : View.i18n('i18n_mute'),
+			name   : View.i18n( 'i18n_mute' ),
 			faIcon : 'fa-microphone-slash',
 			toggle : false,
 			close  : false,
@@ -1459,7 +1467,7 @@ library.component = library.component || {};
 		const blind = {
 			type   : 'item',
 			id     : self.menuBlindId,
-			name   : View.i18n('i18n_pause'),
+			name   : View.i18n( 'i18n_pause' ),
 			faIcon : 'fa-eye-slash',
 			toggle : false,
 			close  : false,
@@ -1467,14 +1475,14 @@ library.component = library.component || {};
 		const remove = {
 			type   : 'item',
 			id     : self.menuRemoveId,
-			name   : View.i18n('i18n_remove'),
+			name   : View.i18n( 'i18n_remove' ),
 			faIcon : 'fa-close',
 		};
 		
 		const mConf = {
 			type : 'folder',
 			id : self.menuId,
-			name : View.i18n('i18n_updating'),
+			name : View.i18n( 'i18n_updating' ),
 			faIcon : 'fa-user',
 			items : [
 				mute,
@@ -1992,7 +2000,7 @@ library.component = library.component || {};
 		self.peer.on( 'mute'          , isMuted );
 		self.peer.on( 'blind'         , isBlinded );
 		self.peer.on( 'screenmode'    , screenMode );
-		self.peer.on( 'local-quality' , handleLocalQuality );
+		self.peer.on( 'local-quality' , localQuality );
 		
 		function handleMedia( e ) { self.handleMedia( e ); }
 		function handleTrack( e, f ) { self.handleTrack( e, f ); }
@@ -2005,9 +2013,7 @@ library.component = library.component || {};
 		function isMuted( e ) { self.handleSelfMute( e ); }
 		function isBlinded( e ) { self.handleSelfBlind( e ); }
 		function screenMode( e ) { self.updateScreenMode( e ); }
-		function handleLocalQuality( e ) {
-			self.applyQualityLevel( e );
-		}
+		function localQuality( e ) { self.applyQualityLevel( e ); }
 	}
 	
 	ns.Peer.prototype.bindPeer = function() {
@@ -2472,9 +2478,11 @@ library.component = library.component || {};
 			return;
 		}
 		
-		if ( id.name && id.name.length ) {
-			self.name.innerText = id.name;
-			self.listName.innerText = id.name;
+		const name = id.liveName || id.name;
+		if ( name && name.length ) {
+			self.name.innerText = name;
+			self.listName.innerText = name;
+			self.menu.update( self.menuId, name );
 		}
 		
 		if ( id.avatar && id.avatar.length ) {
@@ -2483,8 +2491,13 @@ library.component = library.component || {};
 			self.avatar.style.backgroundImage = avatarStyle;
 			self.listAvatar.style.backgroundImage = avatarStyle;
 		}
-		
-		self.menu.update( self.menuId, id.name );
+	}
+	
+	ns.Peer.prototype.updateName = function( name ) {
+		const self = this;
+		console.log( 'view.peer.updateName', name );
+		self.name.innerText = name;
+		self.listName.innerText = name;
 	}
 	
 	ns.Peer.prototype.handleNoStream = function() {
@@ -3872,6 +3885,62 @@ library.component = library.component || {};
 	
 })( library.component );
 
+// ChangeUsernamePane
+( function( ns, undefined ) {
+	ns.ChangeUsernamePane = function( paneConf ) {
+		const self = this;
+		let conf = paneConf.conf;
+		self.current = conf.current;
+		self.onname = conf.onname;
+		library.component.UIPane.call( self, paneConf );
+		
+	}
+	
+	ns.ChangeUsernamePane.prototype = Object.create( library.component.UIPane.prototype );
+	
+	ns.ChangeUsernamePane.prototype.close = function() {
+		const self = this;
+		delete self.ui;
+		delete self.current;
+		delete self.onname;
+		self.paneClose();
+	}
+	
+	// Private
+	
+	ns.ChangeUsernamePane.prototype.build = function() {
+		const self = this;
+		const conf = {
+			current : self.current,
+		};
+		const html = hello.template.get( 'viewpane-change-username-tmpl', conf );
+		self.insertPane( html );
+		
+		self.ui = document.getElementById( 'change-username' );
+		const form = document.getElementById( 'change-username-form' );
+		const input = document.getElementById( 'change-username-input' );
+		const acceptBtn = document.getElementById( 'change-username-accept' );
+		const cancelBtn = document.getElementById( 'change-username-cancel' );
+		
+		form.addEventListener( 'submit', acceptName, false );
+		acceptBtn.addEventListener( 'click', acceptName, false );
+		cancelBtn.addEventListener( 'click', cancelName, false );
+		
+		function acceptName( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			if ( self.onname )
+				self.onname( input.value );
+		}
+		
+		function cancelName( e ) {
+			if ( self.onname )
+				self.onname( false );
+		}
+	}
+	
+})( library.view );
+
 // ExtConnectPane
 (function( ns, undefined ) {
 	ns.ExtConnectPane = function( paneConf ) {
@@ -5171,7 +5240,7 @@ library.component = library.component || {};
 		var self = this;
 		var id = msg.from + '-is-typing';
 		var tmplConf = {
-			id : id,
+			id   : id,
 			from : msg.from,
 		};
 		var element = hello.template.getElement( 'is-typing-tmpl', tmplConf );
@@ -5199,7 +5268,7 @@ library.component = library.component || {};
 		const identity = self.identities[ data.fromId ];
 		let from = '';
 		if ( identity )
-			from = identity.name;
+			from = identity.liveName || identity.name;
 		else
 			from = 'Guest > ' + data.name;
 		

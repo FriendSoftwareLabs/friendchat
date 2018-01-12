@@ -548,9 +548,16 @@ library.view = library.view || {};
 		delete self.users[ userId ];
 	}
 	
-	ns.Presence.prototype.updateIdentity = function( id ) {
+	ns.Presence.prototype.updateIdentity = function( event ) {
 		const self = this;
-		console.log( 'updateIdentity', id );
+		const user = self.users[ event.userId ];
+		if ( !user ) {
+			console.log( 'no user for id', {
+				id : event,
+			});
+		}
+		
+		user.updateName( event.identity.name );
 	}
 	
 	ns.Presence.prototype.addUserCss = function( clientId, avatar ) {
@@ -873,7 +880,9 @@ library.view = library.view || {};
 	
 	ns.GroupItem.prototype.updateName = function( name ) {
 		const self = this;
-		console.log( 'updateName', name );
+		self.name = name;
+		const nameEl = self.el.querySelector( '.name' );
+		nameEl.textContent = name;
 	}
 	
 	ns.GroupItem.prototype.setState = function( type ) {
@@ -898,7 +907,7 @@ library.view = library.view || {};
 		'live'   : 'fa-video-camera',
 	}
 	
-	ns.GroupItem.prototype.init = function( conf, tmplId ) {
+	ns.GroupItem.prototype.init = function() {
 		const self = this;
 		self.el = buildElement();
 		self.stateEl = self.el.querySelector( '.state > i' );
