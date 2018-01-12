@@ -109,7 +109,8 @@ library.component = library.component || {};
 		delete data.emojii;
 		
 		// prepare ui state
-		//if ( 'desktop' !== View.deviceType )
+		let liveConf = data.liveConf;
+		let localSettings = liveConf.localSettings;
 		
 		// init ui
 		self.ui = new library.view.Live();

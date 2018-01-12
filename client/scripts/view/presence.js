@@ -107,6 +107,9 @@ library.view = library.view || {};
 		self.bindUI();
 		self.bindConn();
 		
+		if ( 'MOBILE' === window.View.deviceType )
+			self.toggleUserList( false );
+		
 		//
 		self.conn.loaded();
 	}
@@ -171,10 +174,15 @@ library.view = library.view || {};
 		self.send( goLive );
 	}
 	
-	ns.Presence.prototype.toggleUserList = function() {
+	ns.Presence.prototype.toggleUserList = function( force ) {
 		const self = this;
-		self.usersEl.classList.toggle( 'users-hide' );
-		self.toggleUsersBtn.classList.toggle( 'danger' );
+		if ( null == force ) {
+			self.usersEl.classList.toggle( 'users-hide' );
+			self.toggleUsersBtn.classList.toggle( 'danger' );
+		} else {
+			self.usersEl.classList.toggle( 'users-hide', !force );
+			self.toggleUsersBtn.classList.toggle( 'danger', !force );
+		}
 	}
 	
 	// conn
