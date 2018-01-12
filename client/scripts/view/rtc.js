@@ -75,7 +75,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.identities = conf.identities || {};
 		self.quality = conf.rtcConf.quality || null;
 		self.permissions = conf.rtcConf.permissions;
-		self.preferedDevices = conf.preferedDevices;
+		self.localSettings = conf.localSettings;
 		self.onclose = onclose;
 		self.onready = onready;
 		
@@ -156,8 +156,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return;
 			
 			var selfStream = self.selfie.getStream();
-			self.initChecks.checkAudioDevices( selfStream, self.preferedDevices );
-			self.initChecks.checkVideoDevices( selfStream, self.preferedDevices );
+			let devicePref = self.localSettings.preferedDevices;
+			self.initChecks.checkAudioDevices( selfStream, devicePref );
+			self.initChecks.checkVideoDevices( selfStream, devicePref );
 			
 		}
 		
@@ -628,7 +629,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			browser         : self.browser,
 			permissions     : self.permissions,
 			quality         : self.quality,
-			preferedDevices : self.preferedDevices,
+			localSettings   : self.localSettings,
 			isAdmin         : self.isAdmin,
 			onleave         : onLeave,
 		}, done );
@@ -752,7 +753,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.browser = conf.browser;
 		self.identity = conf.identity;
 		self.permissions = conf.permissions;
-		self.preferedDevices = conf.preferedDevices;
+		self.localSettings = conf.localSettings;
 		self.streamQuality = conf.quality || {
 			level : 'medium',
 			scale : 1,
@@ -799,6 +800,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.volume )
 			self.volume.close();
 		
+		delete self.localSettings;
 		delete self.speaking;
 		delete self.volume;
 		delete self.stream;
@@ -912,10 +914,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.tryPreferedDevices = function( available ) {
 		const self = this;
-		if ( !self.preferedDevices )
+		if ( !self.localSettings || !self.localSettings.preferedDevices )
 			return;
 		
-		let pref = self.preferedDevices;
+		let pref = self.localSettings.preferedDevices;
 		let prefAudio = available.audioinput[ pref.audioinput ];
 		let prefVideo = available.videoinput[ pref.videoinput ];
 		let prefOut = available.audiooutput[ pref.audiooutput ];
@@ -930,7 +932,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.setAudioSink( pref );
 		}
 		
-		delete self.preferedDevices;
 	}
 	
 	ns.Selfie.prototype.setupSelfie = function( callback ) {
@@ -1237,11 +1238,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.savePreferedDevices = function() {
 		const self = this;
-		const pref = {
-			type : 'prefered-devices',
-			data : self.currentDevices,
+		self.saveLocalSetting( 'preferedDevices', self.currentDevices );
+	}
+	
+	ns.Selfie.prototype.saveLocalSetting = function( setting, value ) {
+		const self = this;
+		const sett = {
+			type : 'local-setting',
+			data : {
+				setting : setting,
+				value   : value,
+			},
 		};
-		self.conn.send( pref );
+		self.conn.send( sett );
 	}
 	
 	ns.Selfie.prototype.buildVideoQualityConf = function( level ) {

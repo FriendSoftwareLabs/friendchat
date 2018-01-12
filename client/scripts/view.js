@@ -401,13 +401,28 @@ library.view = library.view || {};
 			self.onevent( 'chat', chat );
 		}
 		
-		api.ApplicationStorage.get( 'prefered-devices', loadBack );
-		function loadBack( event ) {
-			const devices = event.data;
-			initLive( devices );
+		api.ApplicationStorage.get( 'live-settings', loadBack );
+		function loadBack( res ) {
+			console.log( 'live-settings back', res );
+			const localSettings = res.data || {};
+			if ( !localSettings.preferedDevices )
+				loadOldDevices( localSettings );
+			else
+				initLive( localSettings );
 		}
 		
-		function initLive( preferedDevices ) {
+		function loadOldDevices( localSettings ) {
+			api.ApplicationStorage.get( 'prefered-devices', devBack );
+			function devBack( res ) {
+				console.log( 'loadOldDevices - res', res );
+				let devs = res.data;
+				localSettings.preferedDevices = devs;
+				initLive( localSettings );
+			}
+		}
+		
+		function initLive( localSettings ) {
+			console.log( 'initLive - localSettings', localSettings );
 			let width = 850;
 			let height = 500;
 			if ( isVoiceOnly() ) {
@@ -416,13 +431,13 @@ library.view = library.view || {};
 			}
 			
 			const windowConf = {
-				title              : Application.i18n('i18n_live_session'),
+				title              : Application.i18n( 'i18n_live_session' ),
 				width              : width,
 				height             : height,
 				fullscreenenabled  : true,
 			};
 			
-			self.liveConf.preferedDevices = preferedDevices;
+			self.liveConf.localSettings = localSettings;
 			const viewConf = {
 				fragments : hello.commonFragments,
 				emojii    : hello.config.emojii,
@@ -464,20 +479,52 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.bindView = function() {
 		var self = this;
-		self.view.on( 'prefered-devices', storePrefered );
+		self.view.on( 'local-setting', localSetting );
 		self.view.on( 'drag-n-drop', heyYouDroppedThis );
 		self.view.on( 'close'      , ohOkayThen );
 		
 		function storePrefered( e ) { self.storePrefered( e ); }
+		function localSetting( e ) { self.storeLocalSetting( e ); }
 		function heyYouDroppedThis( e ) { self.drop.handle( e ); }
 		function ohOkayThen( e ) { self.closed(); }
 	}
 	
-	ns.Live.prototype.storePrefered = function( devices ) {
+	ns.Live.prototype.storeLocalSetting = function( data ) {
 		const self = this;
-		api.ApplicationStorage.set( 'prefered-devices', devices, setBack );
-		function setBack( e ) {
-			console.log( 'storePrefered - setback', e );
+		console.log( 'storeLocalSetting', {
+			data : data,
+			sQueue : self.settingsQueue,
+		});
+		
+		if ( self.settingsQueue ) {
+			self.settingsQueue.push( data );
+			return;
+		}
+		
+		self.settingsQueue = [];
+		self.settingsQueue.push( data );
+		api.ApplicationStorage.get( 'live-settings', getBack );
+		function getBack( res ) {
+			console.log( 'storeLocalSetting.getBack', res );
+			settings = res.data || {};
+			updateFromQueue( settings );
+		}
+		
+		function updateFromQueue( settings ) {
+			self.settingsQueue.forEach( update );
+			save( settings );
+			function update( data ) {
+				console.log( 'update', data );
+				settings[ data.setting ] = data.value;
+			}
+		}
+		
+		function save( settings ) {
+			api.ApplicationStorage.set( 'live-settings', settings, saveBack );
+			self.settingsQueue = null;
+			function saveBack( res ) {
+				console.log( 'storeLocalSetting.saveBack', res );
+			}
 		}
 	}
 	

@@ -514,11 +514,12 @@ from,
 
 <!-- list
 id,
+show,
 faIcon,
 label,
 -->
 <script id="live-list-tmpl" type="text/html">
-<div id="<%= id %>" class="live-list-container fortify peek hide">
+<div id="<%= id %>" class="live-list-container fortify peek <%= show %> hide">
 	<div class="live-list group column cover">
 		<div class="list-head fortify group row">
 			<div class="list-head-icon center-child fortify">

@@ -113,13 +113,13 @@ library.component = library.component || {};
 		let localSettings = liveConf.localSettings;
 		
 		// init ui
-		self.ui = new library.view.Live();
+		self.ui = new library.view.Live( self.conn, localSettings );
 		
 		// init RTC
 		self.rtc = new library.rtc.RTC(
 			self.conn,
 			self.ui,
-			data.liveConf,
+			liveConf,
 			onclose,
 			onready
 		);
@@ -146,11 +146,10 @@ library.component = library.component || {};
 // LIVE
 // ui logic for live session
 (function( ns, undefined ) {
-	ns.Live = function() {
-		if ( !( this instanceof ns.Live ))
-			return new ns.Live();
-		
-		var self = this;
+	ns.Live = function( conn, localSettings ) {
+		const self = this;
+		self.conn = conn;
+		self.localSettings = localSettings;
 		self.rtc = null;
 		self.peerContainerId = 'peers';
 		self.peers = [];
@@ -220,12 +219,22 @@ library.component = library.component || {};
 			label       : View.i18n( 'i18n_list_voice' ),
 			faIcon      : 'fa-microphone',
 			ontoggle    : audioListToggled,
+			state       : self.localSettings.voiceListState,
 		};
 		self.audioList = new library.view.List( audioConf );
 		self.audioListEl = document.getElementById( 'audio-list' );
 		function audioListToggled( state ) {
+			console.log( 'audioListToggled', state );
 			if ( self.peerOrder.length )
 				self.reflowPeers();
+			
+			self.conn.send({
+				type : 'local-setting',
+				data : {
+					setting : 'voiceListState',
+					value   : state,
+				},
+			});
 		}
 		
 		self.bindEvents();
@@ -1340,6 +1349,7 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.close = function() {
 		var self = this;
+		delete self.conn;
 		self.menu.close();
 		delete self.menu;
 	}
@@ -3109,8 +3119,9 @@ library.component = library.component || {};
 		// private
 		self.items = {};
 		self.itemOrder = [];
+		self.isShow = false;
 		
-		self.init();
+		self.init( conf.state );
 	}
 	
 	// PUBLIC
@@ -3171,19 +3182,26 @@ library.component = library.component || {};
 	
 	// PRIVATE
 	
-	ns.List.prototype.init = function() {
+	ns.List.prototype.init = function( state ) {
 		const self = this;
 		self.id = self.id || self.label + '-list-thingie';
-		self.build();
+		self.build( state );
 		self.bind();
 	}
 	
-	ns.List.prototype.build = function() {
+	ns.List.prototype.build = function( state ) {
 		const self = this;
+		let show = '';
+		if ( !state || 'show' === state ) {
+			self.isShow = true;
+			show = 'show';
+		}
+		
 		const tmplConf = {
 			id     : self.id,
 			faIcon : self.faIcon,
 			label  : self.label,
+			show   : show,
 		};
 		const element = hello.template.getElement( 'live-list-tmpl', tmplConf );
 		const container = document.getElementById( self.containerId );
@@ -3203,10 +3221,15 @@ library.component = library.component || {};
 			if ( !self.ontoggle )
 				return;
 			
-			if ( 'width' !== e.propertyName )
+			if ( 'width' !== e.propertyName || !self.isShowUpdated )
 				return;
 			
-			self.ontoggle( true );
+			self.isShowUpdated = false;
+			let state = 'peek';
+			if ( self.isShow )
+				state = 'show';
+			
+			self.ontoggle( state );
 		}
 		
 		function toggleShow( e ) {
@@ -3280,6 +3303,7 @@ library.component = library.component || {};
 		else
 			self.isShow = !!force;
 		
+		self.isShowUpdated = true;
 		self.element.classList.toggle( 'show', self.isShow );
 	}
 	
