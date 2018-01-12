@@ -217,7 +217,7 @@ i18n_local_config_not_found : Local config not found, aborting.
 i18n_no_user_data_returned : No user data returned from FriendCore
 i18n_host_config_failed : Host config failed - empty response from
 i18n_host_config_failed_invalid : Host config failed - invalid data from
-i18n_host_config_failed_error : Host config failed, error on:
+i18n_host_config_failed_error : Could not connect to:
 i18n_start_live : Start live
 i18n_please_provide_email : Please provide an email address
 i18n_please_set_passphrase : Please set a passphrase
@@ -287,5 +287,6 @@ i18n_FiWiz_adv_irc : IRC added as default
 i18n_FiWiz_adv_options : More options in UI
 i18n_FiWiz_btn_simplified : Use friendly UI
 i18n_FiWiz_btn_advanced : Use advanced UI
-i18n_network_lost : Application is offline
+i18n_network_error : Network error
+i18n_network_connecting : Connecting to server
 i18n_access_denied : Access denied

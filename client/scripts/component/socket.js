@@ -78,7 +78,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.reconnect = function() {
 		var self = this;
-		console.log( 'Socket.reconnect', self );
 		self.allowReconnect = true;
 		self.doReconnect( true );
 	}
@@ -133,13 +132,12 @@ library.component = library.component || {};
 			throw new Error( 'no url provided for socket' );
 		}
 		
-		self.setState( 'connecting' );
-		console.log( 'Socket: connecting to', self.url );
+		self.setState( 'connect', self.url );
 		var protocol = self.protocol.length ? self.protocol : null;
 		try {
 			self.ws = new window.WebSocket( self.url );
 		} catch( e ) {
-			self.logEx( e, 'connect' );
+			console.log( 'connect ws ex', e );
 		}
 		
 		self.attachHandlers();
@@ -261,14 +259,12 @@ library.component = library.component || {};
 	ns.Socket.prototype.handleOpen = function( e ) {
 		var self = this;
 		self.reconnectAttempt = 0;
-		console.log( 'Socket: connection open', self.url );
 		// we're waiting for authenticate challenge
 		self.setState( 'open', e );
 	}
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		var self = this;
-		console.log( 'Socket: connection closed', self.url );
 		self.cleanup();
 		self.setState( 'close', e );
 		self.doReconnect();
@@ -276,7 +272,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		var self = this;
-		console.log( 'Socket: connection error for', self.url );
 		self.cleanup();
 		self.setState( 'error', e );
 		self.doReconnect();
@@ -384,7 +379,7 @@ library.component = library.component || {};
 		try {
 			self.ws.send( msgStr );
 		} catch (e) {
-			self.logEx( e, 'sendOnSocket' );
+			console.log( 'send on ws ex', e );
 		}
 		
 		function queue( msg ) {
@@ -536,14 +531,8 @@ library.component = library.component || {};
 		try {
 			self.ws.close( code, reason );
 		} catch (e) {
-			self.logEx( e, 'close' );
+			console.log( 'close ws ex', e );
 		}
-	}
-	
-	ns.Socket.prototype.logEx = function( e, fnName ) {
-		var self = this;
-		console.log( 'socket.' + fnName + '() exception: ' );
-		console.log( e );
 	}
 	
 })( library.component );

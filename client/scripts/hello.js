@@ -51,6 +51,22 @@ var hello = null;
 		self.init();
 	}
 	
+	// 'Public'
+	
+	ns.Hello.prototype.timeNow = function( str ) {
+		const self = this;
+		let now = Date.now();
+		let sinceBeginning = now - self.startTiming;
+		let sinceLast = now - self.lastTiming;
+		console.log( 'Timing: ' + str, {
+			total : sinceBeginning,
+			last  : sinceLast,
+		});
+		self.lastTiming = now;
+	}
+	
+	// Priv
+	
 	ns.Hello.prototype.init = function() {
 		var self = this;
 		self.app.run = fun;
@@ -65,41 +81,63 @@ var hello = null;
 	
 	ns.Hello.prototype.run = function( fupConf ) {
 		const self = this;
+		self.startTiming = Date.now();
+		self.lastTiming = self.startTiming;
+		
 		if ( fupConf )
 			self.config.run = fupConf;
 		
-		self.config.emojii = window.emojii_conf;
-		self.config.protocol = document.location.protocol + '//';
-		self.config.appName = 'Friend Chat';
-		
-		self.loading = new library.view.Loading( loadingClosed );
-		function loadingClosed() { self.loadingClosed(); }
-		
-		if ( !self.config ) {
-			self.showLoadingError( Application.i18n( 'i18n_local_config_not_found' ));
-			return;
+		self.loadCommonFragments( fragmentsLoaded );
+		function fragmentsLoaded() {
+			self.timeNow( 'fragmentsLoaded' );
+			init();
 		}
 		
-		//self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/served.ogg' );
-		self.msgAlert = new api.SoundAlert( 
-			'webclient/apps/FriendChat/res/glass_pop_v3-epic_sound.wav' );
+		function init() {
+			self.config.emojii = window.emojii_conf;
+			self.config.protocol = document.location.protocol + '//';
+			self.config.appName = 'Friend Chat';
+			
+			self.timeNow( 'init start, set showloading timeout' );
+			self.showLoadingTimeout = window.setTimeout( showLoading, 1000 );
+			function showLoading() {
+				self.timeNow( 'show loading' );
+				console.log( 'showLoading' );
+				self.showLoadingTimeout = null;
+				self.showLoading();
+			}
+			
+			if ( !self.config ) {
+				self.showLoadingStatus({
+					type : 'error',
+					data : Application.i18n( 'i18n_local_config_not_found' ),
+				});
+				return;
+			}
+			
+			//self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/served.ogg' );
+			self.msgAlert = new api.SoundAlert( 
+				'webclient/apps/FriendChat/res/glass_pop_v3-epic_sound.wav' );
+			
+			self.getUserInfo( userInfoBack )
+		}
 		
-		self.getUserInfo( userInfoBack )
 		function userInfoBack( data ) {
+			self.timeNow( 'user info loaded' );
 			if ( !data ) {
-				self.showLoadingError( Application.i18n( 'i18n_no_user_data_returned' ));
+				self.showLoadingStatus({
+					type : 'error',
+					data : Application.i18n( 'i18n_no_user_data_returned' ),
+				});
 				return;
 			}
 			
 			hello.identity = new library.component.Identity( data );
-			self.loadCommonFragments( fragmentsLoaded );
-		}
-		
-		function fragmentsLoaded() {
 			self.loadHostConfig( confLoaded );
 		}
 		
 		function confLoaded() {
+			self.timeNow( 'honst config loaded' );
 			self.preInit();
 		}
 	}
@@ -141,39 +179,55 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.loadHostConfig = function( doneBack ) {
-		var self = this;
-		var url = library.tool.buildDestination(
+		const self = this;
+		const url = library.tool.buildDestination(
 			self.config.protocol,
 			self.config.host,
-			self.config.port );
-		library.tool.asyncRequest({
-			verb : 'get',
-			url : url,
-			data : null,
+			self.config.port
+		);
+		
+		if ( self.loading )
+			self.showLoadingStatus({
+				type : 'load',
+				data : Date.now(),
+			});
+		
+		const conf = {
+			verb    : 'get',
+			url     : url,
+			data    : null,
 			success : success,
-			error : whelpsHandleIt,
-		});
+			error   : loadErr,
+		};
+		library.tool.asyncRequest( conf );
 		
 		function success( response ) {
 			if ( !response ) {
-				self.showLoadingError(
-					Application.i18n( 'i18n_host_config_failed' ) + ' ' + url );
+				self.showLoadingStatus({
+					type : 'error',
+					data : Application.i18n( 'i18n_host_config_failed' ) + ' ' + url,
+				});
 				return;
 			}
 			
 			var hostConf = library.tool.objectify( response );
 			if ( !hostConf ) {
-				self.showLoadingError(
-					Application.i18n( 'i18n_host_config_failed_invalid' ) + ' ' + url );
+				self.showLoadingStatus({
+					type : 'error',
+					data : Application.i18n( 'i18n_host_config_failed_invalid' ) + ' ' + url,
+				});
 				return;
 			}
+			
 			library.tool.mergeObjects( self.config, hostConf );
 			doneBack();
 		}
 		
-		function whelpsHandleIt( err ) {
-			self.showLoadingError( 
-				Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url );
+		function loadErr( err ) {
+			self.showLoadingStatus({
+				type : 'error',
+				data : Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url,
+			});
 		}
 	}
 	
@@ -191,6 +245,7 @@ var hello = null;
 	
 	ns.Hello.prototype.initSystemModules = function( callback ) {
 		var self = this;
+		self.timeNow( 'initSystemModules' );
 		self.conn = new library.system.Connection( null, onWSState );
 		self.request = new library.system.Request({ conn : self.conn });
 		self.intercept = new library.system.Interceptor();
@@ -199,43 +254,132 @@ var hello = null;
 		
 		self.conn.connect( connBack );
 		function connBack( err ) {
+			self.timeNow( 'ws connected' );
 			if( err ) {
 				console.log( 'connBack - conn err', err );
-				self.showLoadingError( err );
+				self.showLoadingStatus( err );
 				return;
 			}
 			
+			console.log( 'conn connected' );
 			self.connected = true;
-			self.closeLoading();
+			self.closeLoading( loadingClosed );
+		}
+		
+		function loadingClosed() {
 			callback();
 		}
 		
 		function onWSState( e ) { self.updateConnState( e ); }
 	}
 	
-	ns.Hello.prototype.showLoadingError = function( errMsg ) {
-		var self = this;
-		if ( !self.loading ) {
-			self.quit();
-			return;
+	ns.Hello.prototype.showLoading = function() {
+		const self = this;
+		console.log( 'hello.showLoading' );
+		if ( self.showLoadingTimeout ) {
+			window.clearTimeout( self.showLoadingTimeout );
+			self.showLoadingTimeout = null;
 		}
 		
-		self.loading.setError( errMsg );
+		self.closeLoadingTimeout = window.setTimeout( canCloseNow, 2000 );
+		self.loading = new library.view.Loading( loadingClosed );
+		function canCloseNow() {
+			console.log( 'canCloseNow', self.closeLoadingPlease );
+			self.closeLoadingTimeout = null;
+			if ( self.closeLoadingPlease )
+				self.closeLoading();
+		}
+		
+		function loadingClosed() {
+			console.log( 'loadingClosed' );
+			self.loadingClosed();
+		}
 	}
 	
-	ns.Hello.prototype.closeLoading = function() {
-		var self = this;
+	ns.Hello.prototype.showLoadingStatus = function( status ) {
+		const self = this;
+		if ( 'session' === status.type )
+			return;
+		
+		if ( self.showLoadingTimeout 
+			 && 'error' === status.type
+		) {
+			self.showLoading();
+		}
+		
 		if ( !self.loading )
 			return;
 		
+		if ( self.closeLoadingPlease && 'error' === status.type ) {
+			self.closeLoadingPlease = false;
+			self.closeLoadingCallback = null;
+		}
+		
+		console.log( 'showLoadingStatus', status );
+		self.loading.setState( status );
+	}
+	
+	ns.Hello.prototype.closeLoading = function( callback ) {
+		const self = this;
+		self.timeNow( 'closeLoading' );
+		console.log( 'closeLoading', {
+			showLoading : self.showLoadingTimeout,
+			closeLoading : self.closeLoadingTimeout,
+			callback : callback,
+			'self.callback' : self.closeLoadingCallback,
+		});
+		
+		if ( self.showLoadingTimeout ) {
+			window.clearTimeout( self.showLoadingTimeout );
+			self.showLoadingTimeout = null;
+			done();
+			return;
+		}
+		
+		if ( self.closeLoadingTimeout ) {
+			console.log( 'closeLoadingTimeout in effect', callback );
+			self.closeLoadingPlease = true;
+			self.closeLoadingCallback = callback;
+			return;
+		}
+		
+		if ( !self.loading ) {
+			done();
+			return;
+		}
+		
 		self.loading.close();
 		self.loading = null;
+		done();
+		
+		function done() {
+			callback = callback || self.closeLoadingCallback;
+			delete self.closeLoadingCallback;
+			
+			if ( callback )
+				callback( true );
+		}
 	}
 	
 	ns.Hello.prototype.loadingClosed = function() {
 		var self = this;
+		if ( self.loading )
+			self.loading.close();
+		
+		if ( self.closeLoadingTimeout ) {
+			window.clearTimeout( self.closeLoadingTimeout );
+			self.closeLoadingTimeout = null;
+		}
+		
 		self.loading = null;
 		
+		if ( self.closeLoadingCallback ) {
+			let callback = self.closeLoadingCallback;
+			delete self.closeLoadingCallback;
+			callback( true );
+		}
+		
+		console.log( 'loadingClosed', self.connected );
 		if ( !self.connected )
 			self.checkQuit();
 	}
@@ -251,6 +395,7 @@ var hello = null;
 			throw new Error( 'see log ^^^' );
 		}
 		
+		self.closeLoading();
 		const conf = self.config.run;
 		if ( 'live-invite' === conf.type ) {
 			const randomName = library.tool.getName();
@@ -342,14 +487,17 @@ var hello = null;
 			self.rtc = new library.system.RtcControl();
 			self.conn.connect( connBack );
 			
-			function connBack( err ) {
+			function connBack( err, res ) {
 				if ( err ) {
-					self.showLoadingError( err );
+					self.showLoadingStatus( err );
 					return;
 				}
 				
 				self.connected = true;
-				self.closeLoading();
+				self.closeLoading( loadClosed );
+			}
+			
+			function loadClosed() {
 				callback();
 			}
 			
@@ -378,8 +526,6 @@ var hello = null;
 		
 		self.login = new library.system.Login( null, onlogin, onclose );
 		function onlogin( account ) {
-			self.closeLoading();
-			
 			self.loggedIn = true;
 			self.login.close();
 			self.login = null;
@@ -391,6 +537,8 @@ var hello = null;
 			
 			hello.log.positive( 
 				Application.i18n( 'i18n_logged_in_as' ) + ': ' + account.name );
+			
+			self.timeNow( 'logged in, open main' );
 			self.doMain( account );
 		}
 		
@@ -404,7 +552,13 @@ var hello = null;
 		const self = this;
 		self.triedRelogin = true;
 		self.conn.reconnect( connected );
-		function connected() {
+		function connected( err, res ) {
+			if ( err ) {
+				console.log( 'doRelogin connect failed', err );
+				
+				return;
+			}
+			
 			const acc = {
 				clientId : self.account.clientId,
 				name     : self.account.displayName,
@@ -438,10 +592,22 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
+		console.log( 'updateConnState', state );
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
+		if (   'error' === state.type
+			|| 'close' === state.type
+			|| 'end' === state.type
+		) {
+			self.connected = false;
+		}
 		
-		if ( 'access-denied' === state.type && !self.triedRelogin ) {
+		if ( self.loading ) {
+			self.showLoadingStatus( state );
+			return;
+		}
+		
+		if ( 'end' === state.type && !self.triedRelogin ) {
 			self.doRelogin();
 			return;
 		}
@@ -465,6 +631,7 @@ var hello = null;
 		if ( isOnline === self.isOnline )
 			return;
 		
+		console.log( 'isOnline', isOnline );
 		self.app.toAllViews({
 			type : 'app-online',
 			data : isOnline,
@@ -481,6 +648,7 @@ var hello = null;
 	// From main view
 	ns.Hello.prototype.handleConnState = function( e ) {
 		const self = this;
+		console.log( 'handleConnState', e );
 		if ( 'reconnect' === e.type )
 			self.conn.reconnect();
 		
@@ -684,6 +852,7 @@ var hello = null;
 			function ready( msg ) {
 				self.initSubViews();
 				hello.account.sendReady( wizRes || null );
+				hello.timeNow( 'main open' );
 			}
 			
 			function viewClose( msg ) {

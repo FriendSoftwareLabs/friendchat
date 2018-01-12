@@ -95,10 +95,10 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		self.app.on( self.id, viewMessage );
 		self.app.sendMessage({
-			type : 'view',
+			type   : 'view',
 			viewId : self.id,
-			id : callbackId,
-			data : windowConf,
+			id     : callbackId,
+			data   : windowConf,
 		});
 		
 		self.on( 'loaded', loaded );
@@ -308,7 +308,7 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.View.prototype.queueEvent = function( event ) {
 		const self = this;
 		if ( !self.eventQueue )
-			return;
+			self.eventQueue = [];
 		
 		self.eventQueue.push( event );
 	}

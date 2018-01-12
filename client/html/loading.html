@@ -4,6 +4,8 @@
 		<script src="
 			../scripts/component/tool.js;
 			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/component/common.js;
+			webclient/apps/FriendChat/scripts/component/viewComponent.js;
 			webclient/apps/FriendChat/scripts/view/loading.js
 		" type="text/javascript"></script>
 		
@@ -21,35 +23,7 @@
 -->
 <script id="body-tmpl" type="text/html">
 <div id="hello" class="hepp BackgroundDefault">
-	<div id="connecting" class="group row">
-		<div class="icon center-child">
-			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-		</div>
-		<div class="content">
-			<div class="state">
-				{i18n_connecting}
-			</div>
-		</div>
-	</div>
-	<div id="error" class="hidden">
-		<div class="err-title group row start">
-			<div class="icon center-child">
-				<i class="fa fa-fw fa-exclamation-triangle"></i>
-			</div>
-			<div class="state">
-				{i18n_could_not_connect}
-			</div>
-		</div>
-		<div class="content">
-			<div id="error-content">
-				<div id="error-label">
-					{i18n_if_the_problem_persist}
-				</div>
-				<div id="error-message">
-					
-				</div>
-			</div>
-		</div>
+	<div id="conn-status" class="BackgroundDefault center-child">
 	</div>
 </div>
 </script>

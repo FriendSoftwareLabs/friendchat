@@ -1515,7 +1515,7 @@ library.rtc = library.rtc || {};
 	ns.Connection.prototype.init = function() {
 		var self = this;
 		self.socketEventMap = {
-			'connecting' : socketConnecting,
+			'connect'    : socketConnecting,
 			'open'       : socketOpen,
 			'session'    : socketSession,
 			'close'      : socketClosed,
@@ -1543,7 +1543,7 @@ library.rtc = library.rtc || {};
 		handler( event.data );
 	}
 	
-	ns.Connection.prototype.socketConnecting = function( data ) {
+	ns.Connection.prototype.socketConnecting = function( host ) {
 		const self = this;
 		self.onstate({
 			type : 'connect',
@@ -1566,7 +1566,7 @@ library.rtc = library.rtc || {};
 		if ( self.readyCallback ) {
 			let callback = self.readyCallback;
 			delete self.readyCallback;
-			callback();
+			callback( null, sid );
 		}
 		
 		self.onstate({
@@ -1579,8 +1579,8 @@ library.rtc = library.rtc || {};
 		const self = this;
 		hello.log.notify( 'Socket closed' );
 		self.onstate({
-			type : 'close',
-			data : e,
+			type : 'error',
+			data : 'Connection to ' + self.host + ' closed',
 		});
 	}
 	
@@ -1589,7 +1589,7 @@ library.rtc = library.rtc || {};
 		hello.log.notify( 'Socket error' );
 		self.onstate({
 			type : 'error',
-			data : err,
+			data : 'WebSocket error for ' + self.host,
 		});
 	}
 	
@@ -1611,12 +1611,20 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleEnd = function( data ) {
 		const self = this;
-		hello.log.alert( 'Access denied to: ' + self.host );
 		self.clear();
-		self.onstate({
-			type : 'access-denied',
-			data : self.host,
-		});
+		let err = {
+			type : 'end',
+			data : 'Connection to ' + self.host + ' cannot be re-established',
+		};
+		
+		if ( self.readyCallback ) {
+			let callback = self.readyCallback;
+			delete self.readyCallback;
+			callback( err, null );
+			return;
+		}
+		
+		self.onstate( err );
 	}
 	
 	ns.Connection.prototype.clear = function() {

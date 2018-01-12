@@ -183,10 +183,14 @@ library.view = library.view || {};
 			width : 400,
 			height : 200,
 		};
+		const viewConf = {
+			fragments : hello.commonFragments,
+		};
+		
 		self.view = hello.app.createView(
 			'html/loading.html',
 			winConf,
-			null,
+			viewConf,
 			null,
 			closed
 		);
@@ -197,16 +201,16 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.Loading.prototype.setError = function( message ) {
+	ns.Loading.prototype.setState = function( state ) {
 		var self = this;
 		if ( !self.view )
 			return;
 		
-		var err = {
-			type : 'error',
-			data : message,
+		var event = {
+			type : 'conn-state',
+			data : state,
 		}
-		self.view.sendMessage( err );
+		self.view.sendMessage( event );
 	}
 	
 	ns.Loading.prototype.close = function() {
