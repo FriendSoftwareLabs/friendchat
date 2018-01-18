@@ -189,17 +189,22 @@ contactsId,
 
 <!-- TREEROOT CONTACT
 clientId,
-contactName,
+avatar,
+name,
 messageWaitingId,
 presenceId,
 optionMenuId,
 -->
 <script id="treeroot-contact-tmpl" type="text/html">
-	<div id="<%= clientId %>" class="contact group row MousePointer">
+	<div id="<%= clientId %>" class="treeroot contact group row MousePointer">
 		<div class="contact-height-dummy fortify">
 		</div>
+		<div class="contact-avatar fortify"
+			style="background-image:url(&#39;<%= avatar %>&#39;)"
+		>
+		</div>
 		<div class="contact-name">
-			<%= contactName %>
+			<%= name %>
 		</div>
 		<div class="contact-status item-row bar row fortify">
 			<div id="<%= messageWaitingId %>">

@@ -298,8 +298,22 @@ body {
 	line-height: 1.8em;
 }
 
+.treeroot.contact {
+	padding-left : 0.3em;
+}
+
 .contact .contact-height-dummy {
 	height: 2.2em;
+}
+
+.contact .contact-avatar {
+	height: 2.4em;
+	width : 2.4em;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: cover;
+	margin-right : 0.5em;
+	border-radius: 0.3em;
 }
 
 .contacts .contact-name,

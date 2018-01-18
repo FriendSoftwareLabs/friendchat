@@ -1240,7 +1240,12 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		contact.clientId = 'treeroot-' + self.clientId.split( '-')[ 1 ] + '-' + contact.serviceId ;
 		contact.displayName = relation.Name || relation.Username;
 		contact.online = !!relation.IsOnline;
-		contact.imagePath = relation.ProfileImage;
+		let imgObj = relation.ProfileImage;
+		let imgPath = '';
+		if ( imgObj && imgObj.DiskPath && imgObj.Filename )
+			imgPath = 'https://' + self.conf.host + '/' + imgObj.DiskPath + imgObj.Filename;
+		
+		contact.imagePath = imgPath;
 		contact.unreadMessages = relation.UnSeenMessages;
 		return contact;
 	}

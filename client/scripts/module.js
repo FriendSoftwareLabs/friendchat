@@ -1548,6 +1548,7 @@ library.module = library.module || {};
 			return;
 		}
 		
+		checkAvatar( contact );
 		self.nullContact = false;
 		if ( self.contacts[ contact.clientId ])
 			return;
@@ -1586,6 +1587,16 @@ library.module = library.module || {};
 				data : contact,
 			},
 		});
+		
+		function checkAvatar( contact ) {
+			if ( contact.imagePath )
+				return;
+				
+			let host = self.module.host;
+			let imgPath = 'https://' + host
+			+ '/admin/gfx/arenaicons/user_johndoe_32.png';
+			contact.imagePath = imgPath;
+		}
 	}
 	
 	ns.Treeroot.prototype.updateAccount = function( data ) {

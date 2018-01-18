@@ -1505,18 +1505,7 @@ library.contact = library.contact || {};
 	
 	ns.TreerootContact.prototype.setAvatar = function() {
 		var self = this;
-		var module = hello.module.get( self.moduleId );
-		var host = module.module.host;
-		// TODO - domain based
-		if ( !self.data.imagePath || !self.data.imagePath.Filename ) {
-			self.identity.avatar =
-				'https://' + host
-				+ '/admin/gfx/arenaicons/user_johndoe_32.png';
-			return;
-		}
-		
-		var pathObj = self.data.imagePath;
-		self.identity.avatar = 'https://' + host + '/' + pathObj.DiskPath + pathObj.Filename;
+		self.identity.avatar = self.data.imagePath;
 	}
 	
 	ns.TreerootContact.prototype.updatePublicKey = function( pKey ) {

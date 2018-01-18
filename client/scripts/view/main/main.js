@@ -199,11 +199,12 @@ library.view = library.view || {};
 	ns.TreerootContact.prototype.buildElement = function() {
 		var self = this;
 		var conf = {
-			clientId : self.clientId,
-			contactName : self.identity.name,
+			clientId         : self.clientId,
+			avatar           : self.identity.avatar,
+			name             : self.identity.name,
 			messageWaitingId : self.messageWaiting,
-			presenceId : self.presence,
-			optionId : self.optionMenu,
+			presenceId       : self.presence,
+			optionId         : self.optionMenu,
 		};
 		
 		var element = hello.template.getElement( 'treeroot-contact-tmpl', conf );
