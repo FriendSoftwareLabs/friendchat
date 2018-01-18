@@ -4647,6 +4647,7 @@ library.component = library.component || {};
 	ns.SourceSelectPane.prototype.bind = function() {
 		const self = this;
 		self.previewEl = document.getElementById( 'source-select-preview' );
+		self.previewEl.muted = true;
 		self.previewEl.preload = 'metadata';
 		
 		const element = document.getElementById( 'source-select' );
@@ -4661,6 +4662,7 @@ library.component = library.component || {};
 		const errIgnoreBtn = errElement.querySelector( '.error-buttons .ignore' );
 		
 		self.outputTestEl = document.getElementById( 'audiooutput-test' );
+		self.avEl = document.getElementById( 'source-select-av-container' );
 		
 		self.previewEl.onloadedmetadata = letsPlay;
 		
@@ -4859,12 +4861,10 @@ library.component = library.component || {};
 			.catch( mediaErr );
 		
 		function setMedia( stream ) {
-			
-			/*
-			if ( mediaConf.audio )
+			if ( mediaConf.audio ) {
+				self.showAV( stream );
 				self.checkAudioInput( stream );
-			
-			*/
+			}
 			
 			const tracks = stream.getTracks();
 			const srcObject = self.previewEl.srcObject;
@@ -4888,6 +4888,7 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.clearPreview = function() {
 		var self = this;
+		self.closeAV();
 		self.previewEl.pause();
 		let srcObj = self.previewEl.srcObject;
 		
@@ -4895,10 +4896,8 @@ library.component = library.component || {};
 			return;
 		
 		var tracks = srcObj.getTracks();
-		
 		tracks.forEach( stop );
 		self.previewEl.load();
-		
 		
 		function stop( track ) {
 			track.stop();
@@ -4907,12 +4906,41 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.SourceSelectPane.prototype.showAV = function( stream ) {
+		const self = this;
+		self.volume = new library.rtc.Volume(
+			stream,
+			null,
+			null
+		);
+		
+		self.AV = new library.view.AudioVisualizer(
+			self.volume,
+			hello.template,
+			'source-select-av-container'
+		);
+	}
+	
+	ns.SourceSelectPane.prototype.closeAV = function() {
+		const self = this;
+		if ( self.AV )
+			self.AV.close();
+		
+		if ( self.volume )
+			self.volume.close();
+		
+		delete self.AV;
+		delete self.volume;
+	}
+	
 	ns.SourceSelectPane.prototype.checkAudioInput = function( stream ) {
 		var self = this;
+		console.log( 'checkAudioInput', stream );
 		var checkEl = document.getElementById( 'audioinput-checking' );
 		checkEl.classList.toggle( 'hidden', false );
-		new library.rtc.AudioInputDetect( stream, doneBack );
-		function doneBack( err ) {
+		new library.rtc.AudioInputDetect( stream, checkBack );
+		function checkBack( err ) {
+			console.log( 'checkAudioInput - checkBack', err );
 			checkEl.classList.toggle( 'hidden', true );
 			if ( !err )
 				err = null;
@@ -5589,16 +5617,13 @@ library.component = library.component || {};
 		if ( self.animFReq )
 			window.cancelAnimationFrame( self.animFReq );
 		
+		delete self.animFReq;
 		self.removeCanvas();
 	}
 	
 	ns.AudioVisualizer.prototype.close = function() {
 		const self = this;
 		self.stop();
-		
-		let el = document.getElementById( self.id );
-		if ( self.el )
-			self.el.parentNode.removeChild( self.el );
 		
 		//self.releaseSource();
 		delete self.id;
@@ -5607,6 +5632,8 @@ library.component = library.component || {};
 		delete self.ctx;
 		delete self.source;
 		delete self.template;
+		delete self.drawVolume;
+		delete self.draw;
 	}
 	
 	// Private
@@ -5632,10 +5659,10 @@ library.component = library.component || {};
 		};
 		self.el = self.template.getElement( 'peer-av-tmpl', conf );
 		container.appendChild( self.el );
-		self.el.addEventListener( 'click', click, true );
-		function click( e ) {
-			self.drawVolume = !self.drawVolume;
-			self.drawAV();
+		self.el.onclick = clickIt;
+		//self.el.addEventListener( 'click', clickIt, true );
+		function clickIt( e ) {
+			self.clicked();
 		}
 		
 		var cw = self.el.clientWidth;
@@ -5664,6 +5691,12 @@ library.component = library.component || {};
 		self.ctx.lineCap = 'round';
 	}
 	
+	ns.AudioVisualizer.prototype.clicked = function() {
+		const self = this;
+		self.drawVolume = !self.drawVolume;
+		self.drawAV();
+	}
+	
 	ns.AudioVisualizer.prototype.removeCanvas = function() {
 		const self = this;
 		delete self.cW;
@@ -5672,8 +5705,10 @@ library.component = library.component || {};
 		if ( self.canvas )
 			self.canvas.parentNode.removeChild( self.canvas );
 		
-		if ( self.el )
+		if ( self.el ) {
+			self.el.onclick = null;
 			self.el.parentNode.removeChild( self.el );
+		}
 		
 		delete self.canvasId;
 		delete self.id;

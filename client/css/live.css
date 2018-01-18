@@ -991,6 +991,13 @@
 	margin-top : 0.5em;
 	padding    : 0.5em;
 }
+#source-select-av-container {
+	align-self   : flex-end;
+	position     : relative;
+	height       : 2.5em;
+	width        : 3em;
+	margin-left : 0.3em;
+}
 
 #source-select #audioinput-select,
 #source-select #videoinput-select,

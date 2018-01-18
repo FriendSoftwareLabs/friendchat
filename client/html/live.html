@@ -475,21 +475,25 @@ current,
 			</div>
 		</div>
 		<div id="source-input">
-			<div id="audioinput-container">
-				<div class="select-message">
-					{i18n_available_audio_sources}
-				</div>
-				<div id="audioinput-checking" class="group row start hidden">
-					<div class="std-icon">
-						<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<div id="audioinput-container" class="group row">
+				<div class="expand">
+					<div class="select-message">
+						{i18n_available_audio_sources}
 					</div>
-					<div class="checking-message">
-						{i18n_checking_input_source}
+					<div id="audioinput-checking" class="group row hidden">
+						<div class="std-icon fortify">
+							<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+						</div>
+						<div class="checking-message expand">
+							{i18n_checking_input_source}
+						</div>
+					</div>
+					<div id="audioinput-error" class="error-message hidden">
+					</div>
+					<div id="audioinput-select">
 					</div>
 				</div>
-				<div id="audioinput-error" class="error-message hidden">
-				</div>
-				<div id="audioinput-select">
+				<div id="source-select-av-container" class="fortify">
 				</div>
 			</div>
 			<div id="videoinput-container">
