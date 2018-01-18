@@ -238,17 +238,17 @@ library.view = library.view || {};
 			}
 			
 			function getValue() {
-				var raw = input.value;
+				let raw = input.value;
 				if ( !raw || !raw.toString ) {
 					console.log( 'getValue - ' + raw + ' does not have .toString' );
 					return 0;
 				}
 				
-				str = raw.toString();
+				let str = raw.toString();
 				if ( !str )
 					return 0;
 				
-				var num = Number( str );
+				let num = Number( str );
 				if ( !num )
 					return 0;
 				
