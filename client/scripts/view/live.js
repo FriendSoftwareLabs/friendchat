@@ -3398,7 +3398,6 @@ library.component = library.component || {};
 				.state-latency \
 				.state-value' );
 		
-		console.log( 'rtcPingBar', rtcPingBar );
 		self.rtcPing = new library.component.PingBar( rtcPingBar );
 	}
 	

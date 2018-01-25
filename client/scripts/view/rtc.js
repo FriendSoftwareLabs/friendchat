@@ -237,7 +237,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			var conf = {
 				peerId : peerId,
-				doInit : true,
+				isHost : true,
 			};
 			self.createPeer( conf );
 		}
@@ -361,7 +361,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handlePeerJoin = function( peer ) {
 		const self = this;
-		peer.doInit = false;
+		peer.isHost = false;
 		self.createPeer( peer );
 	}
 	
@@ -537,8 +537,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			peer = null;
 		}
 		
-		if ( null == data.doInit )
-			data.doInit = false;
+		if ( null == data.isHost )
+			data.isHost = false;
 		
 		let identity = self.identities[ data.peerId ];
 		if ( !identity )
@@ -552,7 +552,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			id          : data.peerId,
 			identity    : identity,
 			permissions : self.permissions,
-			doInit      : data.doInit,
+			isHost      : data.isHost,
 			signal      : self.conn,
 			rtcConf     : self.rtcConf,
 			selfie      : self.selfie,
@@ -1599,6 +1599,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setStream = function( stream, constraints ) {
 		var self = this;
+		console.log( 'selfie.setStream', {
+			stream      : stream,
+			constraints : constraints,
+		});
 		if ( self.stream )
 			self.clearStream();
 		
@@ -1857,7 +1861,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.selfie = conf.selfie;
 		self.signal = null;
 		
-		self.alphaSession = null;
 		self.alpha = null;
 		self.session = null;
 		//self.sessions = {};
@@ -1873,7 +1876,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.metaInterval = null;
 		self.syncInterval = null;
 		self.syncStamp = null;
-		self.doInit = null;
+		self.isHost = null;
 		
 		self.pingInterval = null;
 		self.pingStep = 1000 * 3;
@@ -1917,6 +1920,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.restart = function() {
 		const self = this;
 		sendRestart();
+		self.state = '';
 		self.doRestart();
 		
 		function sendRestart() {
@@ -1948,7 +1952,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.init = function( parentSignal ) {
 		const self = this;
-		
 		// websocket / signal server path
 		self.signal = new library.component.EventNode(
 			self.id,
@@ -1989,19 +1992,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( !self.syncInterval )
 				return;
 			
-			console.log( 'sending sync', sync.data );
+			console.log( 'sendSync', now );
 			self.signal.send( sync );
 		}
 	}
 	
 	ns.Peer.prototype.handleSync = function( remoteStamp ) {
 		const self = this;
-		console.log( 'handleSync', {
-			remote : remoteStamp,
-			doInit : self.doInit,
-		});
 		// sync has already been set, ignore
-		if ( null != self.doInit )
+		if ( null != self.isHost )
 			return;
 		
 		// invalid remote stamp, drop
@@ -2041,7 +2040,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.signal.send( accept );
 		
 		// comapre, lowest stamp will be it
-		if ( null == self.doInit )
+		if ( null == self.isHost )
 			self.setDoInit( self.syncStamp, remoteStamp );
 	}
 	
@@ -2067,12 +2066,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.setDoInit = function( localStamp, remoteStamp ) {
 		const self = this;
 		if ( localStamp < remoteStamp )
-			self.doInit = true;
+			self.isHost = true;
 		else
-			self.doInit = false;
+			self.isHost = false;
 		
 		self.stopSync();
-		if ( !self.doInit )
+		if ( !self.isHost )
 			self.sendOpen();
 	}
 	
@@ -2080,9 +2079,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		self.signal.on( 'sync'             , sync );
 		self.signal.on( 'sync-accept'      , syncAccept );
+		self.signal.on( 'connect-data'     , connectData );
 		self.signal.on( 'restart'          , restart );
 		self.signal.on( 'stop'             , stop );
-		self.signal.on( 'alpha-ready'      , alphaReady );
 		self.signal.on( 'open'             , open );
 		self.signal.on( 'blind'            , blind );
 		self.signal.on( 'mute'             , mute );
@@ -2100,9 +2099,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function sync( e ) { self.handleSync( e ); }
 		function syncAccept( e ) { self.handleSyncAccept( e ); }
+		function connectData( e ) { self.handleConnectData( e ); }
 		function restart( e ) { self.doRestart(); }
 		function stop( e ) { self.doStop(); }
-		function alphaReady( e ) { self.handleAlphaReady( e ); }
 		function open( e ) { self.handleOpen( e ); }
 		function blind( e ) { self.setRemoteBlind( e ); }
 		function mute( e ) { self.setRemoteMute( e ); }
@@ -2124,12 +2123,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.createSession = function() {
 		const self = this;
 		const type = 'stream';
+		if ( self.alpha )
+			self.closeData();
+		
 		if ( self.session )
 			self.closeSession();
 		
 		self.session = new library.rtc.Session({
 			type      : type,
-			doInit    : self.doInit,
+			isHost    : self.isHost,
 			rtc       : self.rtcConf,
 			signal    : self.signal,
 			modifySDP : modSDP,
@@ -2143,6 +2145,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.session.on( 'error'      , sessionError );
 		self.session.on( 'datachannel', dataChannel );
 		
+		self.showSelfie();
+		
+		function modSDP( e ) { return self.modifySDP( e, type ); }
+		
 		function streamAdded( e ) { self.streamAdded( e, type ); }
 		function trackAdded( e ) { self.trackAdded( e, type ); }
 		function trackRemoved( e ) { self.trackRemoved( e, type ); }
@@ -2150,20 +2156,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
 		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
 		function sessionError( e ) { self.handleSessionError( e, type ); }
-		function modSDP( e ) { return self.modifySDP( e, type ); }
 		function dataChannel( e ) { self.bindDataChannel( e ); }
-		
-		if ( !self.doInit )
-			return;
-		
-		const alpha = self.session.createDataChannel( 'alpha' );
-		self.bindDataChannel( alpha );
 	}
 	
 	ns.Peer.prototype.bindDataChannel = function( channel ) {
 		const self = this;
 		if ( self.alpha )
-			delete self.alpha;
+			self.closeData();
 		
 		self.alpha = channel;
 		self.alpha.on( 'ping', ping );
@@ -2173,7 +2172,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function ping( e ) { self.handlePing( e ); }
 		function pong( e ) { self.handlePong( e ); }
-		
 	}
 	
 	//
@@ -2189,6 +2187,24 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.handleOpen = function( e ) {
 		const self = this;
 		self.sendMeta();
+	}
+	
+	ns.Peer.prototype.sendConnectData = function() {
+		const self = this;
+		const connectEvent = {
+			type : 'connect-data',
+			data : Date.now(),
+		};
+		self.signal.send( connectEvent );
+	}
+	
+	ns.Peer.prototype.handleConnectData = function( stamp ) {
+		const self = this;
+		if ( self.alpha )
+			return;
+		
+		const alpha = self.session.createDataChannel( 'alpha' );
+		self.bindDataChannel( alpha );
 	}
 	
 	ns.Peer.prototype.startPing = function() {
@@ -2214,13 +2230,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		};
 		
 		self.alpha.send( ping );
-		self.pingTimeouts[ stamp ] = setTimeout( timeout, self.pingTimeout );
+		let strStamp = stamp.toString();
+		self.pingTimeouts[ strStamp ] = setTimeout( timeout, self.pingTimeout );
 		function timeout() {
-			const timer = self.pingTimeouts[ stamp ];
+			const timer = self.pingTimeouts[ strStamp ];
 			if ( null == timer )
 				return;
 			
-			delete self.pingTimeouts[ stamp ];
+			delete self.pingTimeouts[ strStamp ];
 			self.setConnectionTimeout();
 		}
 	}
@@ -2237,12 +2254,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.handlePong = function( stamp ) {
 		const self = this;
 		const now = Date.now();
-		const timer = self.pingTimeouts[ stamp ];
+		let strStamp = stamp.toString();
+		const timer = self.pingTimeouts[ strStamp ];
 		if ( null == timer )
 			return; // it has already timed out
 		
 		clearTimeout( timer );
-		delete self.pingTimeouts[ stamp ];
+		delete self.pingTimeouts[ strStamp ];
 		
 		stamp = parseInt( stamp, 10 );
 		const pingTime = now - stamp;
@@ -2274,6 +2292,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.setConnectionTimeout = function() {
 		const self = this;
+		self.stopPing();
 		self.emitRTCPing( null );
 		self.restart();
 	}
@@ -2299,7 +2318,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		self.closeSession( sid );
 		self.createSession( sid );
-		if ( self.doInit )
+		if ( self.isHost )
 			self.showSelfie( null, sid );
 		else
 			sendReconnect( sid );
@@ -2315,13 +2334,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.doRestart = function() {
 		var self = this;
+		if ( 'sync-meta' === self.state ) {
+			console.log( 'doRestart - syncing meta, aborting' );
+			return;
+		}
+		
 		self.doStop();
-		if ( self.doInit )
+		if ( self.isHost )
 			self.sendMeta();
 	}
 	
 	ns.Peer.prototype.doStop = function( sid ) {
 		var self = this;
+		self.stopPing();
 		self.emit( 'release-stream' );
 		self.releaseStream();
 		self.closeAllSessions();
@@ -2341,6 +2366,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.closeSession = function( sid ) {
 		const self = this;
+		self.closeData();
+		
 		const sess = self.session;
 		delete self.session;
 		if ( !sess )
@@ -2351,6 +2378,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		} catch( e ) {
 			console.log( 'Peer.closeSession - session already closed', e );
 		}
+	}
+	
+	ns.Peer.prototype.closeData = function( e ) {
+		const self = this;
+		if ( !self.alpha )
+			return;
+		
+		self.alpha.close();
+		delete self.alpha;
 	}
 	
 	ns.Peer.prototype.handleQualityUpdate = function( e ) {
@@ -2573,21 +2609,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
+		if ( stream.id === self.currentStreamId ) {
+			console.log( 'stream already added, aborting', {
+				stream :stream,
+				currentId : self.currentStreamId,
+			});
+			return;
+		}
+		
 		sess.addStream( stream );
+		self.currentStreamId = stream.id;
 	}
 	
 	ns.Peer.prototype.addTracks = function( stream, sessionType ) {
-		var self = this;
+		const self = this;
+		const session = self.session;
+		if ( !session ) {
+			console.log( 'peer.addTracks - no session found', self.session );
+			return;
+		}
+		
 		var tracks = stream.getTracks();
-		console.log( 'Peer.addTracks', { s : stream, t : tracks });
 		tracks.forEach( addToSession );
 		function addToSession( track ) {
-			let session = self.session;
-			if ( !session ) {
-				console.log( 'peer.addTracks - no session found', self.session );
-				return;
-			}
-			
 			if ( self.selfie.isFirefox ) {
 				console.log( 'firefoxaddtracks', track );
 				session.addStream( stream ); // .addStream will extract the correct track
@@ -2615,7 +2659,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleNoStream = function() {
 		var self = this;
-		if ( !self.doInit )
+		if ( !self.isHost )
 			self.showSelfie();
 		
 		self.emit( 'nostream' );
@@ -2664,7 +2708,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.emit( 'media', self.stream );
 		}
 		
-		console.log( 'Peer.trackAdded', { ms : self.stream, tr : track });
+		//self.bindTrack( track );
 		var type = track.kind;
 		if ( 'video' === type )
 			addVideo( track );
@@ -2674,7 +2718,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emitStreamState( 'nominal' );
 		
 		function addVideo( track ) {
-			console.log( 'addVideo', track );
 			self.emit( 'track', 'video', track );
 			self.toggleBlind( self.isBlind );
 			self.isVideo = true;
@@ -2682,7 +2725,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function addAudio( track ) {
-			console.log( 'addAudio', track );
 			self.emit( 'track', 'audio', track );
 			self.toggleMute( self.isMute );
 			self.isAudio = true;
@@ -2691,20 +2733,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.trackRemoved = function( track, sessionId ) {
-		var self = this;
-		console.log( 'Peer.trackRemoved', {
-			track : track,
-			sid   : sessionId,
-		});
-		
+		const self = this;
 		const type = track.kind;
 		self.emit( 'track', type, null );
 	}
 	
 	ns.Peer.prototype.updateTracksAvailable = function( tracks ) {
 		const self = this;
-		console.log( 'updateTracksAvailable', tracks );
-		
 		if ( self.permissions.receive.audio )
 			self.emit( 'audio', tracks.audio );
 		
@@ -2719,6 +2754,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
+		self.state = 'sync-meta';
 		var meta = {
 			browser   : self.selfie.browser,
 			state     : {
@@ -2729,7 +2765,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			receive : self.permissions.receive,
 			sending : self.permissions.send,
 		};
-		console.log( 'sendMeta', meta );
 		self.send({
 			type : 'meta',
 			data : meta,
@@ -2739,11 +2774,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.handleMeta = function( meta ) {
 		var self = this;
 		console.log( 'handleMeta', {
-			meta : meta,
-			doInit : self.doInit,
+			meta   : meta,
+			isHost : self.isHost,
+			state  : self.state,
 		});
-		if ( !self.doInit )
+		
+		if ( !self.isHost )
 			self.sendMeta();
+		
+		if ( 'sync-meta' !== self.state ) {
+			try {
+				throw new Error( 'handleMeta - not in sync-meta state, is in: ' + self.state );
+			} catch( e ) {
+				console.log( 'handleMeta - invalid state', e );
+				return;
+			}
+		}
 		
 		self.updateMeta( meta );
 		var signalState = {
@@ -2753,13 +2799,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			},
 		};
 		self.emit( 'state', signalState );
+		self.state = '';
 		self.initializeSessions();
 	}
 	
 	ns.Peer.prototype.updateMeta = function( meta ) {
 		var self = this;
-		console.log( 'updateMeta', meta );
-		
 		if ( meta.state )
 			updateState( meta.state );
 		
@@ -2776,8 +2821,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		// if one peer is chrome and another is firefox, chrome will always be 'it'
 		self.browser = meta.browser;
 		self.updateDoInit( meta.browser );
-		console.log( 'peer - doInit is now:', self.doInit );
-		
 		self.emit( 'meta', meta );
 		if ( !self.permissions.receive.audio || !self.sending.audio )
 			self.emit( 'audio', false );
@@ -2799,26 +2842,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.updateDoInit = function( browser ) {
 		const self = this;
-		console.log( 'chrome.updateDoInit', browser );
-		/*
-		if ( self.selfie.isFirefox && meta.isChrome )
-			self.doInit = false;
-		
-		if ( self.selfie.isChrom && meta.isFirefox )
-			self.doInit = true;
-		*/
 		if ( 'firefox' === browser )
-			self.doInit = false;
+			self.isHost = false;
 		
 		if ( 'safari' === browser )
-			self.doInit = false;
+			self.isHost = false;
 	}
 	
 	ns.Peer.prototype.initializeSessions = function() {
 		var self = this;
-		console.log( 'initializeSessions', self.isChromePair );
 		self.createSession();
-		self.showSelfie();
+		//self.showSelfie();
 	}
 	
 	ns.Peer.prototype.bindStream = function( stream ) {
@@ -2826,6 +2860,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.stream )
 			self.releaseStream();
 		
+		console.log( 'Peer.bindStream', stream );
 		var time = Date.now();
 		stream.times = time;
 		var readyState = stream.readyState ? stream.readyState.toString() : 'no u';
@@ -2888,7 +2923,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !track )
 			return;
 		
-		var readyState = track.readyState ? track.readyState.toString() : 'no u, track edition';
+		console.log( 'Peer.bindStrack', track );
 		var kind = track.kind;
 		track.onmute = onMute;
 		track.onunmute = onUnMute;
@@ -2902,6 +2937,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function onEnded( e ) {
 			console.log( kind + '-track, onEnded', e );
 			self.emitStreamState();
+			self.releaseTrack( track );
 		}
 	}
 	
@@ -2910,18 +2946,26 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !track )
 			return;
 		
+		console.log( 'Peer.releaseTrack', track );
 		track.onmute = null;
 		track.onunmute = null;
 		track.onended = null;
-		if ( track.stop )
-			track.stop();
+		if ( track.stop ) {
+			try {
+				track.stop();
+			} catch ( e ) {}
+		}
 	}
 	
 	ns.Peer.prototype.handleSessionStateChange = function( event ) {
 		var self = this;
-		//console.log( 'rtc.handlseSessionStateChange', event );
 		if ( 'error' === event.type )
 			self.handleSessionError( event );
+		
+		if ( 'nominal' === event.type ) {
+			if ( !self.alpha && !self.isHost )
+				self.sendConnectData();
+		}
 		
 		var rtcState = {
 			type : 'rtc',
@@ -2933,7 +2977,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleSessionError = function( event ) {
 		var self = this;
-		console.log( 'handleSessionError', event );
 		self.restart();
 	}
 	
@@ -2977,29 +3020,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		//var streams = self.session.conn.getRemoteStreams()[ 0 ];
 		if ( !self.stream ) {
-			console.log( 'getAudioTrack - no stream???', self.stream );
+			console.log( 'getAudioTrack', self.stream );
 			return null;
 		}
 		
 		var tracks = self.stream.getAudioTracks();
 		if ( !tracks.length )
 			return null;
+		
 		return tracks[ 0 ];
 	}
 	
 	ns.Peer.prototype.getVideoTrack = function() {
 		var self = this;
 		//var stream = self.session.conn.getRemoteStreams()[ 0 ];
-		console.log( 'getVideoTrack - s', self.stream );
 		if ( !self.stream ) {
-			console.log( 'getVideoTrack - no stream???', self.stream );
+			console.log( 'getVideoTrack', self.stream );
 			return null;
 		}
 		
 		var tracks = self.stream.getVideoTracks();
-		console.log( 'getVideoTrack - tees', tracks );
 		if ( !tracks.length )
 			return null;
+		
 		return tracks[ 0 ];
 	}
 	
@@ -3026,12 +3069,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function getTracks() {
 			const at = self.getAudioTrack();
 			const vt = self.getVideoTrack();
-			console.log( 'emitStreamState.getTracks', {
-				a : at,
-				v : vt,
-			});
-			var atState = at ? at.readyState : 'unknown';
-			var vtState = vt ? vt.readyState : 'unknown';
+			let atState = at ? at.readyState : 'unknown';
+			let vtState = vt ? vt.readyState : 'unknown';
 			
 			if (( 'live' === atState ) && ( self.remoteMute ))
 				atState = 'paused';
@@ -3077,16 +3116,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		if ( self.signal )
 			self.signal.close();
-		if ( self.alpha )
-			self.alpha.close();
 		
 		delete self.signal;
-		delete self.alpha;
-		
-		if ( self.alphaSession )
-			self.alphaSession.close();
-		
-		delete self.alphaSession;
 		
 		self.closeAllSessions();
 	}
@@ -3110,10 +3141,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.PeerSafari.prototype.updateDoInit = function( browser ) {
 		const self = this;
 		if ( 'chrome' === browser )
-			self.doInit = true;
+			self.isHost = true;
 		
 		if ( 'firefox' === browser )
-			self.doInit = false;
+			self.isHost = false;
 	}
 	
 })( library.rtc );
@@ -3129,10 +3160,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.PeerFirefox.prototype.updateDoInit = function( browser ) {
 		const self = this;
 		if ( 'chrome' === browser )
-			self.doInit = true;
+			self.isHost = true;
 		
 		if ( 'safari' === browser )
-			self.doInit = true;
+			self.isHost = true;
 	}
 	
 })( library.rtc );
@@ -3149,7 +3180,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		self.type = conf.type;
 		self.id = 'session-' + self.type;
-		self.doInit = conf.doInit || false;
+		self.isHost = conf.isHost || false;
 		self.rtc = conf.rtc;
 		self.signal = conf.signal;
 		self.modifySDP = conf.modifySDP || null;
@@ -3251,6 +3282,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !label )
 			throw new Error( 'rtc.createDataChannel - no label' );
 		
+		self.log( 'createDataChannel', label );
 		const conn = self.conn.createDataChannel( label, opts );
 		const channel = self.setDataChannel( conn );
 		return channel;
@@ -3260,6 +3292,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Session.prototype.closeDataChannel = function( label ) {
 		const self = this;
 		const channel = self.channels[ label ];
+		self.log( 'closeDataChannel', label );
 		delete self.channels[ label ];
 		if ( !channel )
 			return;
@@ -3270,6 +3303,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Session.prototype.close = function() {
 		const self = this;
 		self.log( 'session.close' );
+		if ( self.negotiationNeededWaiting )
+			window.clearTimeout( self.negotiationNeededWaiting );
+		
+		delete self.negotiationNeededWaiting;
 		
 		self.removeTracks();
 		self.setState( 'closed' );
@@ -3281,7 +3318,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		delete self.modifySDP;
 		delete self.rtc;
 		delete self.type;
-		delete self.doInit;
+		delete self.isHost;
 		
 		function closeDataChannels() {
 			for ( let label in self.channels )
@@ -3328,6 +3365,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.init = function() {
 		var self = this;
+		self.log( 'init', self.isHost );
 		self.signal = new library.component.EventNode(
 			self.id,
 			self.signal,
@@ -3402,7 +3440,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Session.prototype.renegotiate = function() {
 		var self = this;
 		//return;
-		console.log( 'Session.renegotiate - doInit', self.doInit );
+		self.log( 'Session.renegotiate - isHost', self.isHost );
 		self.tryNegotiation();
 	}
 	
@@ -3447,6 +3485,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Session.prototype.connectionStateChange = function( e ) {
 		var self = this;
 		self.log( 'connectionStateChange', e );
+		self.setState();
 	}
 	
 	ns.Session.prototype.iceCandidate = function( e ) {
@@ -3461,28 +3500,43 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.iceConnectionStateChange = function( e ) {
 		var self = this;
-		self.log( 'iceConnectionChange', e );
-		self.log( 'iceConnectionState', self.conn.iceConnectionState );
-		self.log( 'iceGatheringState', self.conn.iceGatheringState );
+		self.log( 'iceConnectionStateChange', {
+			iceConnState   : self.conn.iceConnectionState,
+			iceGatherState : self.conn.iceGatheringState,
+		});
 		self.setState();
 	}
 	
 	ns.Session.prototype.iceGatheringStateChange = function( e ) {
 		var self = this;
-		self.log( 'iceGatheringStateChange', e );
 		self.log( 'iceGatheringState', self.conn.iceGatheringState );
+		self.setState();
 	}
 	
 	ns.Session.prototype.negotiationNeeded = function( e ) {
 		var self = this;
-		self.log( 'negotiation needed', self.conn.signalingState );
-		self.tryNegotiation();
+		self.log( 'negotiationNeeded', self.conn.signalingState );
+		self.negotiationIsNeeded = true;
+		if ( self.negotiationNeededWaiting )
+			return;
+		
+		self.negotiationNeededWaiting = window.setTimeout( tryNegotiation, 250 );
+		function tryNegotiation() {
+			self.negotiationNeededWaiting = null;
+			if ( !self.conn ) {
+				self.log( 'negotiationNeeded - no conn, abort' );
+				return;
+			}
+			
+			self.tryNegotiation();
+		}
 	}
 	
 	ns.Session.prototype.tryNegotiation = function() {
 		var self = this;
-		self.log( 'tryNegotiation - switching?', self.switchingTracks );
+		self.log( 'tryNegotiation' );
 		if ( self.switchingTracks ) {
+			self.log( 'tryNegotiation - switcingTracks' );
 			self.negotiationIsNeeded = true;
 			return;
 		}
@@ -3490,17 +3544,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.negotiationIsNeeded = false;
 		self.setState( 'negotiation-waiting' );
 		if ( self.conn.signalingState !== 'stable' ) {
+			self.log( 'tryNego - not stable', self.connSignalingState );
 			self.negotiationWaiting = true;
 			return;
 		}
 		
-		if ( !self.doInit ) {
+		if ( !self.isHost ) {
+			self.log( 'tryNego - not host' );
 			self.requestNegotiation();
 			return;
 		}
 		
 		if ( self.negotiationTimeout ) {
-			self.log( 'waiting for negotiation timeout' );
+			self.log( 'tryNego - negotiationTimeout' );
 			return;
 		}
 		
@@ -3509,11 +3565,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.requestNegotiation = function() {
 		var self = this;
+		if ( self.negotiationDeniedTimeout ) {
+			self.log( 'requestNegotiation - cancel, on denied timeout' );
+			return;
+		}
+		
 		var req = {
 			type : 'negotiate',
 			data : 'request',
 		};
-		self.log( '.requestNegotiation', req );
+		self.log( 'requestNegotiation' );
 		if ( !self.signal )
 			return;
 		
@@ -3529,8 +3590,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Session.prototype.negotiationDenied = function() {
 		var self = this;
 		self.log( 'negotiation denied - retrying in a bit' );
-		window.setTimeout( retryNeg, 3000 );
+		if ( self.negotiationDeniedTimeout ) {
+			self.log( 'negotiationDenied - on timeout, abort' );
+			return;
+		}
+		
+		self.negotiationDeniedTimeout = window.setTimeout( retryNeg, 3000 );
 		function retryNeg() {
+			self.negotiationDeniedTimeout = null;
 			self.requestNegotiation();
 		}
 	}
@@ -3540,7 +3607,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.log( 'createOffer', self.conn.signalingState );
 		self.negotiationWaiting = false;
 		
-		if ( self.doInit ) {
+		if ( self.isHost ) {
 			self.denyNegotiation = true;
 			self.setState( 'host-negotiation' );
 		} else
@@ -3566,7 +3633,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.setLocalDescription = function( desc ) {
 		var self = this;
-		self.log( 'local SDP' );
+		self.log( 'setLocalDescription' );
 		self.logSDP( desc, 'local' );
 		self.conn.setLocalDescription( desc )
 			.then( sendDesc )
@@ -3629,6 +3696,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.sendDescription = function() {
 		var self = this;
+		self.log( 'sendDescription', self.conn.signalingState );
 		if ( self.inOfferProcess ) {
 			self.log( 'inOfferProcess.true - not sending SDP', self.conn.signalingState );
 			return;
@@ -3641,7 +3709,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			type : 'sdp',
 			data : self.conn.localDescription,
 		};
-		self.log( 'sendDescription', desc );
+		self.log( 'sendDescription - sending', desc );
 		self.signal.send( desc );
 	}
 	
@@ -3723,7 +3791,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function yep( res ) {
 			self.log( 'handleRemoteAnswer - remote answer set', res );
 			self.emitRouting();
-			if ( self.doInit )
+			if ( self.isHost )
 				self.denyNegotiation = false;
 		}
 		
@@ -3940,7 +4008,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const sdp = self.conn.localDescription.sdp;
 		if ( !sdp || !sdp.length ) {
 			self.log( 'sdp not set?', self.conn.localDescription );
-			return 'no sdp';
+			return 'no SDP';
 		}
 		
 		const parts = sdp.split( '\n' );
@@ -4097,13 +4165,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.signalStateChange = function( e ) {
 		var self = this;
-		if ( 'stable' !== self.conn.signalingState )
+		self.setState();
+		self.log( 'signalStateChange', self.conn.signalingState );
+		if ( 'stable' !== self.conn.signalingState ) {
 			return;
+		}
 		
 		if ( self.negotiationWaiting )
 			self.tryNegotiation();
-		else
-			self.setState();
 	}
 	
 	ns.Session.prototype.getState = function() {
@@ -4141,16 +4210,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Session.prototype.setState = function( state, data ) {
-		var self = this;
+		const self = this;
 		if ( !self.conn )
 			state = 'closed';
 		
 		if ( !state )
 			state = self.getState();
 		
-		var type = self.stateTypeMap[ state ];
+		let type = self.stateTypeMap[ state ];
 		if ( !type ) {
 			self.log( 'setState - no type found for', { s : state, valid : self.stateTypeMap });
+			type = 'waiting';
+		}
+		
+		if (   self.negotiationWaiting 
+			|| self.negotiationIsNeeded
+			|| self.negotiationTimeout
+			|| self.negotiationDeniedTimeout ) {
 			type = 'waiting';
 		}
 		
@@ -4168,6 +4244,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Session.prototype.removeTracks = function() {
 		var self = this;
+		self.log( 'removeTracks', self.senders );
 		self.senders.forEach( remove );
 		self.senders = [];
 		function remove( sender ) {
@@ -4202,7 +4279,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !self.spam )
 			return;
 		
-		if ( self.doInit )
+		if ( self.isHost )
 			string = 'rtc.host : ' + string;
 		else
 			string = 'rtc.client : ' + string;
@@ -4232,7 +4309,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		console.log( source, {
 			error : e,
-			host : self.doInit.toString(),
+			host : self.isHost.toString(),
 		});
 	}
 	
