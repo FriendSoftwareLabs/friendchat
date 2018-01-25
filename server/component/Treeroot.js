@@ -947,9 +947,10 @@ ns.Treeroot.prototype.logout = function( callback ) {
 
 ns.Treeroot.prototype.unloadContacts = function() {
 	var self = this;
-	self.contactState = {};
+	self.log( 'unloadContacts', self.contactState );
 	removeContacts();
 	removeSubscriptions();
+	self.contactState = {};
 	
 	function removeContacts() {
 		var clientIds = self.contacts.getClientIdList();
@@ -1172,6 +1173,14 @@ ns.Treeroot.prototype.getUserList = function( data, socketId ) {
 
 ns.Treeroot.prototype.addContact = function( relation ) {
 	var self = this;
+	/*
+	self.log( 'addContact', {
+		relation : relation,
+		sids     : self.contacts.sids,
+		cids     : self.contacts.cids,
+		cState   : Object.keys( self.contactState ),
+	}, 3 );
+	*/
 	var contactState = self.contactState[ relation.ID ];
 	var contact = self.contacts.get( relation.ID );
 	if ( contactState || contact ) {
@@ -1199,7 +1208,7 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		self.client.on( contact.clientId, contactMsg );
 	
 	function switchMsgHandler() {
-		self.client.off( contact.clientId );
+		self.client.release( contact.clientId );
 		self.client.on( contact.clientId, contactMsg );
 		if ( !cState.msgQueue || !cState.msgQueue.length )
 			return;
@@ -1259,12 +1268,12 @@ ns.Treeroot.prototype.addSubscription = function( request ) {
 	
 	sub = setSubData( request );
 	self.subscriptions.set( sub );
-	var action = {
+	var add = {
 		type : 'add',
 		data : sub,
 	};
 	
-	self.subscriptionEvent( action );
+	self.subscriptionEvent( add );
 	return sub.serviceId;
 	
 	function setSubData( request ) {
@@ -1283,13 +1292,15 @@ ns.Treeroot.prototype.removeContact = function( serviceId ) {
 	if ( !contact )
 		return;
 	
-	var action = {
+	self.client.release( contact.clientId );
+	
+	var remove = {
 		type : 'remove',
 		data : {
-			clientId : contact.clientId
+			clientId : contact.clientId,
 		}
 	};
-	self.contactEvent( action );
+	self.contactEvent( remove );
 	
 	if ( self.contactState[ serviceId ] ) {
 		self.stopMessageUpdate( serviceId );
@@ -1440,6 +1451,7 @@ ns.Treeroot.prototype.postCryptoMessage = function( clientId, data ) {
 
 ns.Treeroot.prototype.postResponse = function( serviceId, data, req ) {
 	var self = this;
+	return;
 	var cId = serviceId;
 	const lmId = parseInt( data.data, 10 );
 	self.getMessage( cId, lmId, messageBack );
@@ -2963,8 +2975,11 @@ ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
 	self.delouse( xml, dataBack );
 	function dataBack( data ) {
 		if ( !data ) {
-			self.log( 'failed to parse data for',
-				{ r : request, d : data, u : self.conf.login }, 4 );
+			self.log( 'failed to parse data for',{
+				req  : request,
+				data : data,
+				raw  : xml,
+				user : self.conf.login }, 4 );
 			done( false );
 			return;
 		}

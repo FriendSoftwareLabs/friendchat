@@ -126,9 +126,10 @@ ns.Emitter.prototype.off = function( removeListenerId ) {
 	const self = this;
 	var events = Object.keys( self._emitterEvent2ListenerId );
 	events.forEach( search );
+	
 	function search( event ) {
-		var listenerIdArr = self._emitterEvent2ListenerId[ event ];
-		var listenerIdIndex = listenerIdArr.indexOf( removeListenerId );
+		let listenerIdArr = self._emitterEvent2ListenerId[ event ];
+		let listenerIdIndex = listenerIdArr.indexOf( removeListenerId );
 		if ( listenerIdIndex === -1 )
 			return false;
 		
