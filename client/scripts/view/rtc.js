@@ -540,18 +540,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( null == data.isHost )
 			data.isHost = false;
 		
-		let identity = self.identities[ data.peerId ];
+		let identity = self.identities[ pid ];
 		if ( !identity )
 			identity = {
 				name   : '---',
 				avatar : ''
 			};
+			
+		let isFocus = undefined;
+		if ( self.currentPeerFocus )
+			isFocus = false;
 		
 		const Peer = getPeerConstructor( self.browser );
 		peer = new Peer({
-			id          : data.peerId,
+			id          : pid,
 			identity    : identity,
 			permissions : self.permissions,
+			isFocus     : isFocus,
 			isHost      : data.isHost,
 			signal      : self.conn,
 			rtcConf     : self.rtcConf,
@@ -561,8 +566,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		});
 		
 		peer.on( 'nestedapp' , nestedApp );
+		peer.on( 'set-focus', setFocus );
 		
 		function nestedApp( e ) { self.view.addNestedApp( e ); }
+		function setFocus( e ) { self.setPeerFocus( e, pid ); }
 		
 		self.peers[ peer.id ] = peer;
 		self.view.addPeer( peer );
@@ -603,6 +610,77 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		peer.updateIdentity( identity );
+	}
+	
+	ns.RTC.prototype.setPeerFocus = function( isFocus, peerId ) {
+		const self = this;
+		console.log( 'setPeerFocus', {
+			isFocus : isFocus,
+			pid     : peerId,
+			current : self.currentPeerFocus,
+		});
+		let focusPeer = null;
+		const pids = Object.keys( self.peers )
+			.filter( notSelf )
+			.filter( notFocusPeer );
+		
+		// no peer to focus, always unfocus
+		if ( !peerId ) {
+			unFocus();
+			return;
+		}
+		
+		// no change
+		if ( self.currentPeerFocus === peerId && isFocus )
+			return;
+		
+		focusPeer = self.peers[ peerId ];
+		
+		// still no peer to focus.. might have left?
+		if ( !focusPeer ) {
+			unFocus();
+			return;
+		}
+		
+		if ( isFocus )
+			focus( peerId );
+		else
+			unFocus();
+		
+		function focus( peerId ) {
+			pids.forEach( setNotInFocus );
+			self.currentPeerFocus = peerId;
+			focusPeer.setFocus( true );
+			
+			function setNotInFocus( pid ) {
+				let peer = self.peers[ pid ];
+				peer.setFocus( false );
+			}
+		}
+		
+		function unFocus() {
+			if ( focusPeer )
+				focusPeer.setFocus( null );
+			
+			self.currentPeerFocus = null;
+			pids.forEach( setNoFocus );
+			
+			function setNoFocus( pid ) {
+				let peer = self.peers[ pid ];
+				peer.setFocus( null );
+			}
+		}
+		
+		function notSelf( pid ) {
+			return pid !== self.userId;
+		}
+		
+		function notFocusPeer( pid ) {
+			if ( !peerId )
+				return true;
+			
+			return pid  !== peerId;
+		}
 	}
 	
 	ns.RTC.prototype.signalRemovePeer = function( peerId ) {
@@ -650,6 +728,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		delete self.peers[ peerId ];
 		self.view.removePeer( peerId );
 		peer.close();
+		if ( self.currentPeerFocus === peerId )
+			self.setPeerFocus( false );
 	}
 	
 	ns.RTC.prototype.createSelfie = function( createBack ) {
@@ -1851,10 +1931,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		library.component.EventEmitter.call( this );
 		
 		var self = this;
+		console.log( 'Peer.conf.isFocus', conf.isFocus );
 		self.conf = conf;
 		self.id = conf.id;
 		self.identity = conf.identity;
 		self.permissions = conf.permissions;
+		self.isFocus = conf.isFocus;
 		self.rtcConf = conf.rtcConf;
 		self.onremove = conf.onremove; // when the remote peer initiates a close, call this
 		self.closeCmd = conf.closeCmd; // closing from this end ( ui click f.ex. )
@@ -1901,6 +1983,27 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		self.identity = identity;
 		self.emit( 'identity', identity );
+	}
+	
+	ns.Peer.prototype.setFocus = function( isFocus ) {
+		const self = this;
+		self.isFocus = isFocus;
+		self.emit( 'is-focus', !!isFocus );
+		if ( null == isFocus )
+			unFocus();
+		else
+			setFocus( isFocus );
+		
+		self.restart();
+		
+		
+		function unFocus() {
+			console.log( 'peer.unfocus' );
+		}
+		
+		function setFocus( isFocus ) {
+			console.log( 'peer.setFocus', isFocus );
+		}
 	}
 	
 	ns.Peer.prototype.checkFailed = function() {
@@ -2740,6 +2843,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.updateTracksAvailable = function( tracks ) {
 		const self = this;
+		console.log( 'updateTracksAvailable', tracks );
+		self.sending = tracks;
+		if ( !self.sending.video && self.isFocus )
+			self.toggleFocus();
+			
+		self.emit( 'meta', {
+			sending : self.sending,
+		});
+		
 		if ( self.permissions.receive.audio )
 			self.emit( 'audio', tracks.audio );
 		
@@ -2754,6 +2866,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
+		let send = self.permissions.send;
+		let rec = null;
+		if ( null != self.isFocus ) {
+			rec = {
+				audio : self.permissions.receive.audio,
+				video : self.isFocus,
+			};
+		} else
+			rec = self.permissions.receive;
+		
+		console.log( 'sendMeta - isFocus', {
+			pid     : self.id,
+			isFocus : self.isFocus,
+			rec     : rec,
+		});
+		
 		self.state = 'sync-meta';
 		var meta = {
 			browser   : self.selfie.browser,
@@ -2762,8 +2890,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				isBlinded  : self.selfie.isBlind,
 				screenMode : self.selfie.screenMode,
 			},
-			receive : self.permissions.receive,
-			sending : self.permissions.send,
+			sending : send,
+			receive : rec,
 		};
 		self.send({
 			type : 'meta',
@@ -2825,7 +2953,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !self.permissions.receive.audio || !self.sending.audio )
 			self.emit( 'audio', false );
 		
-		if ( !self.permissions.receive.video || !self.sending.video )
+		if ( !self.permissions.receive.video || !self.sending.video || ( false === self.isFocus ))
 			self.emit( 'video', false );
 		
 		function updateState( state ) {
@@ -3014,6 +3142,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.isBlind = !video.enabled;
 		self.emit( 'blind', self.isBlind );
+	}
+	
+	ns.Peer.prototype.toggleFocus = function() {
+		const self = this;
+		console.log( 'peer.toggleFocus' );
+		self.isFocus = !self.isFocus;
+		self.emit( 'set-focus', self.isFocus );
 	}
 	
 	ns.Peer.prototype.getAudioTrack = function() {

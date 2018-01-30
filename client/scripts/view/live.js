@@ -1455,6 +1455,7 @@ library.component = library.component || {};
 		self.menuId = friendUP.tool.uid( self.peerId );
 		self.menuMuteId = self.menuId + '-mute';
 		self.menuBlindId = self.menuId + '-blind';
+		self.menuFocusId = self.menuId + '-focus';
 		self.menuRemoveId = self.menuId + '-remove';
 		const mute = {
 			type   : 'item',
@@ -1472,6 +1473,14 @@ library.component = library.component || {};
 			toggle : false,
 			close  : false,
 		};
+		const focus = {
+			type   : 'item',
+			id     : self.menuFocusId,
+			name   : View.i18n( 'i18n_focus_participant' ),
+			faIcon : 'fa-bullseye',
+			toggle : false,
+			close  : true,
+		};
 		const remove = {
 			type   : 'item',
 			id     : self.menuRemoveId,
@@ -1480,13 +1489,14 @@ library.component = library.component || {};
 		};
 		
 		const mConf = {
-			type : 'folder',
-			id : self.menuId,
-			name : View.i18n( 'i18n_updating' ),
+			type   : 'folder',
+			id     : self.menuId,
+			name   : View.i18n( 'i18n_updating' ),
 			faIcon : 'fa-user',
 			items : [
 				mute,
 				blind,
+				focus,
 			],
 		};
 		
@@ -1494,8 +1504,10 @@ library.component = library.component || {};
 			mConf.items.push( remove );
 		
 		self.menu.add( mConf, 'peers' );
+		// LId - listener id
 		self.muteLId = self.menu.on( self.menuMuteId, toggleMute );
 		self.blindLId = self.menu.on( self.menuBlindId, toggleBlind );
+		self.focusLId = self.menu.on( self.menuFocusId, toggleFocus );
 		
 		if ( self.isHost ) {
 			self.removeLId = self.menu.on( self.menuRemoveId, doRemove );
@@ -1507,6 +1519,11 @@ library.component = library.component || {};
 		
 		function toggleBlind() {
 			self.peer.toggleBlind();
+		}
+		
+		function toggleFocus() {
+			console.log( 'menu.toggleFocus' );
+			self.peer.toggleFocus();
 		}
 		
 		function doRemove() {
@@ -1999,6 +2016,7 @@ library.component = library.component || {};
 		self.peer.on( 'stop'          , handleStop)
 		self.peer.on( 'mute'          , isMuted );
 		self.peer.on( 'blind'         , isBlinded );
+		self.peer.on( 'is-focus'      , isFocus );
 		self.peer.on( 'screenmode'    , screenMode );
 		self.peer.on( 'local-quality' , localQuality );
 		
@@ -2012,19 +2030,39 @@ library.component = library.component || {};
 		function handleStop( e ) { self.handleStop( e ); }
 		function isMuted( e ) { self.handleSelfMute( e ); }
 		function isBlinded( e ) { self.handleSelfBlind( e ); }
+		function isFocus( e ) { self.handleIsFocus( e ); }
 		function screenMode( e ) { self.updateScreenMode( e ); }
 		function localQuality( e ) { self.applyQualityLevel( e ); }
 	}
 	
 	ns.Peer.prototype.bindPeer = function() {
 		var self = this;
+		self.peer.on( 'meta'   , handleMeta );
 		self.peer.on( 'muted'  , remoteMute );
 		self.peer.on( 'blinded', remoteBlind );
 		self.peer.on( 'state'  , updateState );
 		
+		function handleMeta( e ) { self.handleMeta( e ); }
 		function remoteMute( e ) { self.toggleRemoteMute( e ); }
 		function remoteBlind( e ) { self.toggleRemoteBlind( e ); }
 		function updateState( e ) { self.updateState( e ); }
+	}
+	
+	ns.Peer.prototype.handleMeta = function( meta ) {
+		const self = this;
+		console.log( 'ui.peer.handleMeta', meta );
+		if ( meta.sending )
+			updateMenuFocus( !!meta.sending.video );
+		
+		function updateMenuFocus( videoAvailable ) {
+			if ( !self.menu )
+				return;
+			
+			if ( videoAvailable )
+				self.menu.enable( self.menuFocusId );
+			else
+				self.menu.disable( self.menuFocusId );
+		}
 	}
 	
 	ns.Peer.prototype.handleMedia = function( media ) {
@@ -2433,6 +2471,12 @@ library.component = library.component || {};
 		self.toggleUIIndicator( '.remote-blind', isBlinded );
 	}
 	
+	ns.Peer.prototype.handleIsFocus = function( isFocus ) {
+		const self = this;
+		console.log( 'handleIsFocus', isFocus );
+		self.menu.setState( self.menuFocusId, isFocus );
+	}
+	
 	ns.Peer.prototype.toggleStream = function( force ) {
 		var self = this;
 		if ( force !== undefined ) {
@@ -2586,6 +2630,7 @@ library.component = library.component || {};
 		
 		self.menu.off( self.muteLId );
 		self.menu.off( self.blindLId );
+		self.menu.off( self.focusLId );
 		self.menu.off( self.removeLId );
 		self.menu.remove( self.menuId );
 		delete self.menu;
