@@ -1892,35 +1892,44 @@ ns.Treeroot.prototype.stopLongpollContacts = function() {
 ns.Treeroot.prototype.handleContactsUpdate = function( items ) {
 	const self = this;
 	let meta = items.TypeActivity;
-	let rel = self.getArr( items.Relations );
-	let sub = self.getArr( items.Requests );
-	
+	let rels = self.getArr( items.Relations );
+	let subs = self.getArr( items.Requests );
 	if ( meta )
 		meta = parse( meta );
 	
 	if ( meta && meta.type ) {
-		if (   'Relation' === meta.type
-			&& 'remove' === meta.action
-		) {
-			self.handleRelationRemoved( rel, meta.id );
-			return;
+		if ( 'Relation' === meta.type ) {
+			rels = checkRelationRemoved( rels, meta.id );
 		}
 		
 		if ( 'Message' === meta.type ) {
-			if ( !rel[ 0 ] ) {
-				self.log( 'handleContactsUpdate, type Message - missing rel', {
-					rel   : rel,
+			if ( !rels[ 0 ] ) {
+				self.log( 'handleContactsUpdate, type Message - missing rels', {
+					rels   : rels,
 					meta  : meta,
 					items : items,
 				});
 			} else
-				self.handleHasNewMessage( rel[ 0 ], meta );
+				self.handleHasNewMessage( rels[ 0 ], meta );
 				
 			return;
 		}
 	}
 	
-	self.checkContacts( rel, sub );
+	self.checkContacts( rels, subs );
+	
+	function checkRelationRemoved( rels, id ) {
+		rels = rels.filter( notRemoved );
+		return rels;
+		function notRemoved( rel ) {
+			if ( 'Removed' === rel.Status ) {
+				self.handleRelationRemoved( rel, id );
+				return false;
+			}
+			
+			return true;
+		}
+	}
 	
 	function parse( type ) {
 		let res = null;
@@ -2197,13 +2206,6 @@ ns.Treeroot.prototype.updateContacts = function() {
 
 ns.Treeroot.prototype.checkContacts = function( relations, requests ) {
 	const self = this;
-	/*
-	self.log( 'checkContacts', {
-		rel : relations,
-		req : requests,
-	});
-	*/
-	
 	relations = relations || [];
 	requests = requests || [];
 	const newRelations = [];
@@ -3027,8 +3029,11 @@ ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
 	}
 	
 	function done( res ) {
-		if ( request.callback )
-			request.callback( res, reqData, xml );
+		if ( !request.callback )
+			return;
+		
+		//self.log( 'requestResponse', res );
+		request.callback( res, reqData, xml );
 	}
 }
 
