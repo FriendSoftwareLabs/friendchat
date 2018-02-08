@@ -1120,8 +1120,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.openScreenExtInstall = function() {
 		const self = this;
-		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/\
-			ipakdgondpoahmhclacfgekboimhgpap' );
+		
+		// PRODUCTION ( Friend screen share )
+		//const extFrag = 'friend-screen-share/ipakdgondpoahmhclacfgekboimhgpap';
+		
+		// DEV ( Friend Screenshare Dev )
+		const extFrag = 'friend-screenshare-dev/kokjfgafccdocobcllhpmpbcajbpbleb';
+		
+		const url = 'https://chrome.google.com/webstore/detail/' + extFrag;
+		console.log( 'ext url', url );
+		window.open( url );
 		
 		self.extConn.show();
 		self.screenShare.connect( connBack );
@@ -6159,17 +6167,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		const init = {
 			type : 'init',
-			data : {
-				origin        : View.parentOrigin,
-				type          : 'view',
-				method        : 'sendmessage',
-				applicationId : View.applicationId,
-				viewId        : View.id,
-				data          : {
-					type : 'screen-share-extension',
-					data : {},
-				},
-			},
+			data : 'hepp',
 		};
 		self.sendToExt( init, initBack );
 		function initBack( res ) {
@@ -6205,15 +6203,36 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		const reqId = friendUP.tool.uid( 'ext-req' );
 		self.requests[ reqId ] = callback;
+		const request = self.buildReturnEvent( reqId );
 		const req = {
-			type : reqId,
-			data : event,
+			request  : request,
+			event    : event,
 		};
 		const extMsg = {
 			type : 'robotunicorns',
 			data : req,
 		};
 		window.parent.postMessage( extMsg, '*' );
+	}
+	
+	ns.ScreenShare.prototype.buildReturnEvent = function( reqId ) {
+		const self = this;
+		const ret = {
+			origin        : View.parentOrigin,
+			type          : 'view',
+			method        : 'sendmessage',
+			applicationId : View.applicationId,
+			viewId        : View.id,
+			data          : {
+				type : 'screen-share-extension',
+				data : {
+					type : reqId,
+					data : null,
+				},
+			},
+		};
+		console.log( 'buildReturnEvent', ret );
+		return ret;
 	}
 	
 })( library.rtc );

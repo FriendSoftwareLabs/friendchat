@@ -4031,11 +4031,19 @@ library.component = library.component || {};
 		self.ui = document.getElementById( 'ext-conn-ui' );
 		self.waiting = document.getElementById( 'ext-conn-waiting' );
 		self.connected = document.getElementById( 'ext-conn-connected' );
+		self.abortBtn = document.getElementById( 'ext-conn-abort' );
 		self.shareBtn = document.getElementById( 'ext-conn-share' );
 		self.closeBtn = document.getElementById( 'ext-conn-close' );
 		
+		self.abortBtn.addEventListener( 'click', abortClick, false );
 		self.shareBtn.addEventListener( 'click', shareClick, false );
 		self.closeBtn.addEventListener( 'click', closeClick, false );
+		
+		function abortClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.close();
+		}
 		
 		function shareClick( e ) {
 			e.preventDefault();

@@ -46,6 +46,18 @@ function connection( port ) {
 chrome.runtime.onInstalled.addListener( installed );
 function installed( e ) {
 	console.log( 'background.js - on installed', e );
+	insertContentScripts();
+}
+
+chrome.runtime.onUpdateAvailable.addListener( hasUpdate );
+function hasUpdate( e ) {
+	console.log( 'background.js - hasUpdate', e );
+	chrome.runtime.reload();
+	insertContentScripts();
+}
+
+function insertContentScripts() {
+	console.log( 'insertContentScript' );
 	chrome.tabs.query( {}, tabsBack );
 	function tabsBack( tabs ) {
 		console.log( 'tabs', tabs );
@@ -57,10 +69,4 @@ function installed( e ) {
 			file : 'content.js',
 		});
 	}
-}
-
-chrome.runtime.onUpdateAvailable.addListener( hasUpdate );
-function hasUpdate( e ) {
-	console.log( 'hasUpdate', e );
-	chrome.runtime.reload();
 }
