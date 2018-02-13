@@ -12,6 +12,7 @@
 	
 	<link rel="stylesheet" href="
 		../css/common.css;
+		webclient/apps/FriendChat/css/main.css;
 		webclient/apps/FriendChat/css/main-simple.css;
 		webclient/apps/FriendChat/css/menu.css
 	" type="text/css">
@@ -39,6 +40,8 @@
 		</div>
 	</div>
 	<div id="main-menu" class="hidden">
+	</div>
+	<div id="online-status" class="hidden BackgroundDefault center-child">
 	</div>
 	<div id="fragments" class="Hidden hidden" style="display : none;">
 
@@ -109,6 +112,7 @@ message,
 </div>
 </script>
 
+<<<<<<< HEAD
 <!-- Assist UI
 
 -->
@@ -213,6 +217,8 @@ name,
 </option>
 </script>
 
+=======
+>>>>>>> c540aec27059550133fa68ac256177f51d8bbce2
 <!-- MODULE INITIALIZING
 id
 -->
@@ -272,7 +278,8 @@ contactsId,
 			<div id="<%= activeId %>" class="active ZebraList Interactive">
 			</div>
 			<div class="inactive-container BorderTop">
-				<div class="inactive-header group row">
+				<div class="inactive-header group row LED">
+					<i class="fa fa-fw fa-circle Alert"></i>
 					<div class="inactive-title fortify">
 						{i18n_offline}:
 					</div>
@@ -289,17 +296,22 @@ contactsId,
 
 <!-- TREEROOT CONTACT
 clientId,
-contactName,
+avatar,
+name,
 messageWaitingId,
 presenceId,
 optionMenuId,
 -->
 <script id="treeroot-contact-tmpl" type="text/html">
-	<div id="<%= clientId %>" class="contact group row MousePointer">
+	<div id="<%= clientId %>" class="treeroot contact group row MousePointer">
 		<div class="contact-height-dummy fortify">
 		</div>
+		<div class="contact-avatar fortify"
+			style="background-image:url(&#39;<%= avatar %>&#39;)"
+		>
+		</div>
 		<div class="contact-name">
-			<%= contactName %>
+			<%= name %>
 		</div>
 		<div class="contact-status item-row bar row fortify">
 			<div id="<%= messageWaitingId %>">

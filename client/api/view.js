@@ -379,7 +379,7 @@ var friend = window.friend || {};
 		
 		self.setIsLoading( false );
 		self.activate();
-		self.send({
+		self.sendBase({
 			type: 'notify',
 		});
 	}
@@ -447,8 +447,8 @@ var friend = window.friend || {};
 			command : 'keydown',
 			data    : keyEvent,
 		};
-		console.log( 'send key down event', event );
-		self.send( event );
+		
+		self.sendBase( event );
 		
 		function hasNoModifier( keyDown ) {
 			return !self.keyDownQualifiers.some( isSet );
@@ -567,30 +567,41 @@ var friend = window.friend || {};
 		console.log( 'register?', arguments );
 	}
 	
+	// DESKTOP
+	// MOBILE
+	// VR
 	ns.View.prototype.setDeviceType = function( type ) {
 		var self = this;
 		self.deviceType = type;
-		//console.log( 'deviceType set to', type );
+		if ( !type || 'string' === typeof( type ))
+			return;
+		
+		self.deviceType = type.toUpperCase();
+		console.log( 'deviceType set to', type );
 	}
 	
+	// DESKTOP
+	// MOBILE
+	// VR
 	ns.View.prototype.detectDeviceType = function() {
-		var self = this;
-		var type = 'desktop'; // default
-		var test = [
+		const self = this;
+		let type = 'DESKTOP'; // default
+		const test = [
 			'VR',
 			'Mobile',
 		]; // priority list
-		var rxBody = test.join( '|' );
-		var rx = new RegExp( '(' + rxBody + ')', 'g' );
-		var ua = window.navigator.userAgent;
-		var match = ua.match( rx );
+		const rxBody = test.join( '|' );
+		const rx = new RegExp( '(' + rxBody + ')', 'g' );
+		const ua = window.navigator.userAgent;
+		const match = ua.match( rx );
 		if ( match )
 			type = get( test, match );
 		
+		type = type.toUpperCase();
 		self.setDeviceType( type );
 		
 		function get( test, match ) {
-			var type = '';
+			let type = '';
 			test.some( is );
 			return type;
 			
@@ -672,16 +683,18 @@ var friend = window.friend || {};
 			self.on( callbackId, callback );
 		}
 		
-		self.send( msg );
+		self.sendBase( msg );
 	}
+	
+	ns.View.prototype.send = ns.View.prototype.sendMessage;
 	
 	ns.View.prototype.sendViewEvent = function( msg ) {
 		var self = this;
 		msg.type = 'view';
-		self.send( msg );
+		self.sendBase( msg );
 	}
 	
-	ns.View.prototype.send = function( msg ) {
+	ns.View.prototype.sendBase = function( msg ) {
 		const self = this;
 		msg.viewId = self.id;
 		msg.applicationId = self.applicationId;

@@ -199,11 +199,12 @@ library.view = library.view || {};
 	ns.TreerootContact.prototype.buildElement = function() {
 		var self = this;
 		var conf = {
-			clientId : self.clientId,
-			contactName : self.identity.name,
+			clientId         : self.clientId,
+			avatar           : self.identity.avatar,
+			name             : self.identity.name,
 			messageWaitingId : self.messageWaiting,
-			presenceId : self.presence,
-			optionId : self.optionMenu,
+			presenceId       : self.presence,
+			optionId         : self.optionMenu,
 		};
 		
 		var element = hello.template.getElement( 'treeroot-contact-tmpl', conf );
@@ -473,7 +474,7 @@ library.view = library.view || {};
 		
 		function setRetryBar( startTime, retryTime, el ) {
 			startTime = Date.now();
-			const retryBar = el.querySelector( '.query-retry-bar' );
+			const retryBar = el.querySelector( '.retry-bar' );
 			if ( !retryBar )
 				return;
 			
@@ -517,10 +518,6 @@ library.view = library.view || {};
 	
 	ns.Treeroot.prototype.translateError = function( errCode ) {
 		const self = this;
-		console.log( 'translateError', {
-			code : errCode,
-			trans : self.errorStrings,
-		});
 		return self.errorStrings[ errCode ] || errCode;
 	}
 	
@@ -2632,7 +2629,14 @@ library.view = library.view || {};
 		self.account = null;
 		self.module = null;
 		
+		self.connState = null;
+		
 		self.init();
+	}
+	
+	ns.Main.prototype.close = function() {
+		const self = this;
+		self.connState.close();
 	}
 	
 	ns.Main.prototype.init = function()
@@ -2672,8 +2676,9 @@ library.view = library.view || {};
 		self.view.receiveMessage = receiveMessage;
 		self.view.on( 'initialize', initialize );
 		
-		function receiveMessage( msg ) { self.receiveMessage( msg ); }
-		function initialize( msg ) { self.initialize( msg ); }
+		function receiveMessage( e ) { self.receiveMessage( e ); }
+		function initialize( e ) { self.initialize( e ); }
+		function isOnline( e ) { self.updateIsOnline( e ); }
 	}
 	
 	ns.Main.prototype.initialize = function( data ) {
@@ -2694,6 +2699,7 @@ library.view = library.view || {};
 		else
 			self.assist = new library.view.AssistUI( 'assist-ui-container' );
 		
+		self.connState = new library.component.ConnState( 'online-status', self.view, hello.template );
 		self.notification = new library.view.Notification( notificationRootId );
 		self.account = new library.view.Account();
 		self.module = new library.view.ModuleControl( self.assist || null );
@@ -2706,9 +2712,9 @@ library.view = library.view || {};
 	ns.Main.prototype.addMenu = function() {
 		var self = this;
 		var modules = {
-			type : 'folder',
-			id : 'modules',
-			name : View.i18n('i18n_modules'),
+			type   : 'folder',
+			id     : 'modules',
+			name   : View.i18n('i18n_modules'),
 			faIcon : 'fa-folder-o',
 		};
 		

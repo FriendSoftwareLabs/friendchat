@@ -35,7 +35,6 @@ library.view = library.view || {};
 			console.log( 'view.Conference - fup conf apparently?', fupConf );
 		
 		var self = this;
-		self.view = null;
 		
 		self.topic = '';
 		self.mode = '';
@@ -52,12 +51,16 @@ library.view = library.view || {};
 		
 		self.doFlourish = false;
 		
+		self.view = null;
+		self.appOnline = null;
+		
 		self.init();
 	}
 	
 	ns.Conference.prototype.init = function() {
 		var self = this;
 		View.setBody();
+		self.appOnline = new library.component.AppOnline( window.View );
 		self.view = window.View;
 		self.modes = [
 			'm',
@@ -123,6 +126,9 @@ library.view = library.view || {};
 		
 		self.bindView();
 		self.bindEvents();
+		
+		if ( 'MOBILE' === window.View.deviceType )
+			self.showhideToggle( false );
 		
 		self.send({
 			type : 'loaded',
@@ -523,7 +529,6 @@ library.view = library.view || {};
 	
 	ns.Conference.prototype.bindEvents = function() {
 		var self = this;
-		
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.showHideBtn = document.getElementById( 'showhide-btn' );
 		self.inputForm = document.getElementById( 'input-form' );
@@ -587,11 +592,16 @@ library.view = library.view || {};
 		self.send( msg );
 	}
 	
-	ns.Conference.prototype.showhideToggle = function() {
+	ns.Conference.prototype.showhideToggle = function( force ) {
 		var self = this;
-		var container = document.getElementById( 'participants-container' );
-		container.classList.toggle( 'hide' );
-		self.showHideBtn.classList.toggle( 'danger' );
+		var container = document.getElementById( 'participants-container', force );
+		if ( null == force ) {
+			container.classList.toggle( 'hide' );
+			self.showHideBtn.classList.toggle( 'danger' );
+		} else {
+			container.classList.toggle( 'hide', !force );
+			self.showHideBtn.classList.toggle( 'danger', !force );
+		}
 	}
 	
 	ns.Conference.prototype.sendMessage = function( str ) {

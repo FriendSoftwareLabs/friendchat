@@ -991,6 +991,13 @@
 	margin-top : 0.5em;
 	padding    : 0.5em;
 }
+#source-select-av-container {
+	align-self   : flex-end;
+	position     : relative;
+	height       : 2.5em;
+	width        : 3em;
+	margin-left : 0.3em;
+}
 
 #source-select #audioinput-select,
 #source-select #videoinput-select,
@@ -1513,4 +1520,27 @@
 
 .mode-speaker > .peer.speaker {
 	display: inherit;
+}
+
+/* Change username */
+
+#change-username {
+	height : 100%;
+	width  : 100%;
+	
+}
+
+#change-username-content {
+	min-width     : 12em;
+	border-radius : 0.1em;
+	padding       : 1em 0.5em;
+}
+
+#change-username .input-wrap {
+	margin : 0.5em 0;
+}
+
+.input-wrap input {
+	line-height : 1.8em;
+	font-size   : 110%;
 }

@@ -18,7 +18,7 @@
 <body id="hello" class="no-select BackgroundDefault MouseDefault">
 	<div id="content" class="bar column">
 		<div id="head" class="group row BorderBottom hidden">
-			<div id="availability-status fortify">
+			<div id="availability-status" class="fortify">
 			</div>
 			<div id="notifications-head" class="expand">
 			</div>
@@ -38,6 +38,8 @@
 		</div>
 	</div>
 	<div id="main-menu" class="hidden">
+	</div>
+	<div id="online-status" class="hidden BackgroundDefault center-child">
 	</div>
 	<div id="fragments" class="Hidden hidden" style="display : none;">
 
@@ -108,6 +110,7 @@ message,
 </div>
 </script>
 
+<<<<<<< HEAD
 <!-- Assist UI
 
 -->
@@ -211,6 +214,8 @@ name,
 	<%= unread %> - <%= name %>
 </option>
 </script>
+=======
+>>>>>>> c540aec27059550133fa68ac256177f51d8bbce2
 
 <!-- ASK-ADD-MODULE
 id,
@@ -390,17 +395,22 @@ contactsId,
 
 <!-- TREEROOT CONTACT
 clientId,
-contactName,
+avatar,
+name,
 messageWaitingId,
 presenceId,
 optionMenuId,
 -->
 <script id="treeroot-contact-tmpl" type="text/html">
-	<div id="<%= clientId %>" class="contact group row MousePointer">
+	<div id="<%= clientId %>" class="treeroot contact group row MousePointer">
 		<div class="contact-height-dummy fortify">
 		</div>
+		<div class="contact-avatar fortify"
+			style="background-image:url(&#39;<%= avatar %>&#39;)"
+		>
+		</div>
 		<div class="contact-name">
-			<%= contactName %>
+			<%= name %>
 		</div>
 		<div class="contact-status item-row bar row fortify">
 			<div id="<%= messageWaitingId %>">
@@ -626,8 +636,8 @@ host,
 			Remote host error: <%= error %>. Retrying..
 		</p>
 	</div>
-	<div class="query-retry-countdown LED">
-		<div class="query-retry-bar On">
+	<div class="retry-countdown LED">
+		<div class="retry-bar On">
 		</div>
 	</div>
 	<div class="inputs fortify group row">

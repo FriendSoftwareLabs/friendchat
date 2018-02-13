@@ -34,6 +34,8 @@ library.component = library.component || {};
 		self.view = window.View;
 		self.rtc = null;
 		self.ui = null;
+		self.appOnline = null;
+		
 		self.init();
 	}
 	
@@ -42,6 +44,7 @@ library.component = library.component || {};
 	// Private
 	ns.LiveInit.prototype.init = function() {
 		var self = this;
+		self.appOnline = new library.component.AppOnline( window.View );
 		self.conn = new library.component.EventNode(
 			null,
 			null,
@@ -106,16 +109,17 @@ library.component = library.component || {};
 		delete data.emojii;
 		
 		// prepare ui state
-		//if ( 'desktop' !== View.deviceType )
+		let liveConf = data.liveConf;
+		let localSettings = liveConf.localSettings;
 		
 		// init ui
-		self.ui = new library.view.Live();
+		self.ui = new library.view.Live( self.conn, localSettings );
 		
 		// init RTC
 		self.rtc = new library.rtc.RTC(
 			self.conn,
 			self.ui,
-			data.liveConf,
+			liveConf,
 			onclose,
 			onready
 		);
@@ -142,11 +146,10 @@ library.component = library.component || {};
 // LIVE
 // ui logic for live session
 (function( ns, undefined ) {
-	ns.Live = function() {
-		if ( !( this instanceof ns.Live ))
-			return new ns.Live();
-		
-		var self = this;
+	ns.Live = function( conn, localSettings ) {
+		const self = this;
+		self.conn = conn;
+		self.localSettings = localSettings;
 		self.rtc = null;
 		self.peerContainerId = 'peers';
 		self.peers = [];
@@ -191,13 +194,14 @@ library.component = library.component || {};
 	ns.Live.prototype.init = function() {
 		var self = this;
 		self.uiPaneMap = {
-			'init-checks'   : library.view.InitChecksPane,
-			'source-select' : library.view.SourceSelectPane,
-			'ext-connect'   : library.view.ExtConnectPane,
-			'settings'      : library.view.SettingsPane,
-			'share'         : library.view.SharePane,
-			'menu'          : library.view.MenuPane,
-			'chat'          : library.view.ChatPane,
+			'init-checks'     : library.view.InitChecksPane,
+			'source-select'   : library.view.SourceSelectPane,
+			'change-username' : library.view.ChangeUsernamePane,
+			'ext-connect'     : library.view.ExtConnectPane,
+			'settings'        : library.view.SettingsPane,
+			'share'           : library.view.SharePane,
+			'menu'            : library.view.MenuPane,
+			'chat'            : library.view.ChatPane,
 		};
 		
 		/*
@@ -216,12 +220,22 @@ library.component = library.component || {};
 			label       : View.i18n( 'i18n_list_voice' ),
 			faIcon      : 'fa-microphone',
 			ontoggle    : audioListToggled,
+			state       : self.localSettings.voiceListState,
 		};
 		self.audioList = new library.view.List( audioConf );
 		self.audioListEl = document.getElementById( 'audio-list' );
 		function audioListToggled( state ) {
+			console.log( 'audioListToggled', state );
 			if ( self.peerOrder.length )
 				self.reflowPeers();
+			
+			self.conn.send({
+				type : 'local-setting',
+				data : {
+					setting : 'voiceListState',
+					value   : state,
+				},
+			});
 		}
 		
 		self.bindEvents();
@@ -1088,6 +1102,12 @@ library.component = library.component || {};
 			name   : View.i18n( 'i18n_change_participant_order' ),
 			faIcon : 'fa-hand-stop-o',
 		};
+		const username = {
+			type : 'item',
+			id : 'change-username',
+			name : View.i18n( 'i18n_change_username' ),
+			faIcon : 'fa-id-card-o',
+		};
 		const cleanUI = {
 			type   : 'item',
 			id     : 'clean-ui',
@@ -1118,6 +1138,7 @@ library.component = library.component || {};
 			screenMode,
 			settings,
 			dragger,
+			username,
 			cleanUI,
 			peers,
 			leave,
@@ -1336,6 +1357,7 @@ library.component = library.component || {};
 	
 	ns.Live.prototype.close = function() {
 		var self = this;
+		delete self.conn;
 		self.menu.close();
 		delete self.menu;
 	}
@@ -1433,11 +1455,12 @@ library.component = library.component || {};
 		self.menuId = friendUP.tool.uid( self.peerId );
 		self.menuMuteId = self.menuId + '-mute';
 		self.menuBlindId = self.menuId + '-blind';
+		self.menuFocusId = self.menuId + '-focus';
 		self.menuRemoveId = self.menuId + '-remove';
 		const mute = {
 			type   : 'item',
 			id     : self.menuMuteId,
-			name   : View.i18n('i18n_mute'),
+			name   : View.i18n( 'i18n_mute' ),
 			faIcon : 'fa-microphone-slash',
 			toggle : false,
 			close  : false,
@@ -1445,26 +1468,35 @@ library.component = library.component || {};
 		const blind = {
 			type   : 'item',
 			id     : self.menuBlindId,
-			name   : View.i18n('i18n_pause'),
+			name   : View.i18n( 'i18n_pause' ),
 			faIcon : 'fa-eye-slash',
 			toggle : false,
 			close  : false,
 		};
+		const focus = {
+			type   : 'item',
+			id     : self.menuFocusId,
+			name   : View.i18n( 'i18n_focus_participant' ),
+			faIcon : 'fa-bullseye',
+			toggle : false,
+			close  : true,
+		};
 		const remove = {
 			type   : 'item',
 			id     : self.menuRemoveId,
-			name   : View.i18n('i18n_remove'),
+			name   : View.i18n( 'i18n_remove' ),
 			faIcon : 'fa-close',
 		};
 		
 		const mConf = {
-			type : 'folder',
-			id : self.menuId,
-			name : View.i18n('i18n_updating'),
+			type   : 'folder',
+			id     : self.menuId,
+			name   : View.i18n( 'i18n_updating' ),
 			faIcon : 'fa-user',
 			items : [
 				mute,
 				blind,
+				focus,
 			],
 		};
 		
@@ -1472,8 +1504,10 @@ library.component = library.component || {};
 			mConf.items.push( remove );
 		
 		self.menu.add( mConf, 'peers' );
+		// LId - listener id
 		self.muteLId = self.menu.on( self.menuMuteId, toggleMute );
 		self.blindLId = self.menu.on( self.menuBlindId, toggleBlind );
+		self.focusLId = self.menu.on( self.menuFocusId, toggleFocus );
 		
 		if ( self.isHost ) {
 			self.removeLId = self.menu.on( self.menuRemoveId, doRemove );
@@ -1485,6 +1519,11 @@ library.component = library.component || {};
 		
 		function toggleBlind() {
 			self.peer.toggleBlind();
+		}
+		
+		function toggleFocus() {
+			console.log( 'menu.toggleFocus' );
+			self.peer.toggleFocus();
 		}
 		
 		function doRemove() {
@@ -1977,8 +2016,9 @@ library.component = library.component || {};
 		self.peer.on( 'stop'          , handleStop)
 		self.peer.on( 'mute'          , isMuted );
 		self.peer.on( 'blind'         , isBlinded );
+		self.peer.on( 'is-focus'      , isFocus );
 		self.peer.on( 'screenmode'    , screenMode );
-		self.peer.on( 'local-quality' , handleLocalQuality );
+		self.peer.on( 'local-quality' , localQuality );
 		
 		function handleMedia( e ) { self.handleMedia( e ); }
 		function handleTrack( e, f ) { self.handleTrack( e, f ); }
@@ -1990,21 +2030,39 @@ library.component = library.component || {};
 		function handleStop( e ) { self.handleStop( e ); }
 		function isMuted( e ) { self.handleSelfMute( e ); }
 		function isBlinded( e ) { self.handleSelfBlind( e ); }
+		function isFocus( e ) { self.handleIsFocus( e ); }
 		function screenMode( e ) { self.updateScreenMode( e ); }
-		function handleLocalQuality( e ) {
-			self.applyQualityLevel( e );
-		}
+		function localQuality( e ) { self.applyQualityLevel( e ); }
 	}
 	
 	ns.Peer.prototype.bindPeer = function() {
 		var self = this;
+		self.peer.on( 'meta'   , handleMeta );
 		self.peer.on( 'muted'  , remoteMute );
 		self.peer.on( 'blinded', remoteBlind );
 		self.peer.on( 'state'  , updateState );
 		
+		function handleMeta( e ) { self.handleMeta( e ); }
 		function remoteMute( e ) { self.toggleRemoteMute( e ); }
 		function remoteBlind( e ) { self.toggleRemoteBlind( e ); }
 		function updateState( e ) { self.updateState( e ); }
+	}
+	
+	ns.Peer.prototype.handleMeta = function( meta ) {
+		const self = this;
+		console.log( 'ui.peer.handleMeta', meta );
+		if ( meta.sending )
+			updateMenuFocus( !!meta.sending.video );
+		
+		function updateMenuFocus( videoAvailable ) {
+			if ( !self.menu )
+				return;
+			
+			if ( videoAvailable )
+				self.menu.enable( self.menuFocusId );
+			else
+				self.menu.disable( self.menuFocusId );
+		}
 	}
 	
 	ns.Peer.prototype.handleMedia = function( media ) {
@@ -2413,6 +2471,12 @@ library.component = library.component || {};
 		self.toggleUIIndicator( '.remote-blind', isBlinded );
 	}
 	
+	ns.Peer.prototype.handleIsFocus = function( isFocus ) {
+		const self = this;
+		console.log( 'handleIsFocus', isFocus );
+		self.menu.setState( self.menuFocusId, isFocus );
+	}
+	
 	ns.Peer.prototype.toggleStream = function( force ) {
 		var self = this;
 		if ( force !== undefined ) {
@@ -2458,9 +2522,11 @@ library.component = library.component || {};
 			return;
 		}
 		
-		if ( id.name && id.name.length ) {
-			self.name.innerText = id.name;
-			self.listName.innerText = id.name;
+		const name = id.liveName || id.name;
+		if ( name && name.length ) {
+			self.name.innerText = name;
+			self.listName.innerText = name;
+			self.menu.update( self.menuId, name );
 		}
 		
 		if ( id.avatar && id.avatar.length ) {
@@ -2469,8 +2535,13 @@ library.component = library.component || {};
 			self.avatar.style.backgroundImage = avatarStyle;
 			self.listAvatar.style.backgroundImage = avatarStyle;
 		}
-		
-		self.menu.update( self.menuId, id.name );
+	}
+	
+	ns.Peer.prototype.updateName = function( name ) {
+		const self = this;
+		console.log( 'view.peer.updateName', name );
+		self.name.innerText = name;
+		self.listName.innerText = name;
 	}
 	
 	ns.Peer.prototype.handleNoStream = function() {
@@ -2559,6 +2630,7 @@ library.component = library.component || {};
 		
 		self.menu.off( self.muteLId );
 		self.menu.off( self.blindLId );
+		self.menu.off( self.focusLId );
 		self.menu.off( self.removeLId );
 		self.menu.remove( self.menuId );
 		delete self.menu;
@@ -3105,8 +3177,9 @@ library.component = library.component || {};
 		// private
 		self.items = {};
 		self.itemOrder = [];
+		self.isShow = false;
 		
-		self.init();
+		self.init( conf.state );
 	}
 	
 	// PUBLIC
@@ -3167,19 +3240,26 @@ library.component = library.component || {};
 	
 	// PRIVATE
 	
-	ns.List.prototype.init = function() {
+	ns.List.prototype.init = function( state ) {
 		const self = this;
 		self.id = self.id || self.label + '-list-thingie';
-		self.build();
+		self.build( state );
 		self.bind();
 	}
 	
-	ns.List.prototype.build = function() {
+	ns.List.prototype.build = function( state ) {
 		const self = this;
+		let show = '';
+		if ( !state || 'show' === state ) {
+			self.isShow = true;
+			show = 'show';
+		}
+		
 		const tmplConf = {
 			id     : self.id,
 			faIcon : self.faIcon,
 			label  : self.label,
+			show   : show,
 		};
 		const element = hello.template.getElement( 'live-list-tmpl', tmplConf );
 		const container = document.getElementById( self.containerId );
@@ -3199,10 +3279,15 @@ library.component = library.component || {};
 			if ( !self.ontoggle )
 				return;
 			
-			if ( 'width' !== e.propertyName )
+			if ( 'width' !== e.propertyName || !self.isShowUpdated )
 				return;
 			
-			self.ontoggle( true );
+			self.isShowUpdated = false;
+			let state = 'peek';
+			if ( self.isShow )
+				state = 'show';
+			
+			self.ontoggle( state );
 		}
 		
 		function toggleShow( e ) {
@@ -3276,6 +3361,7 @@ library.component = library.component || {};
 		else
 			self.isShow = !!force;
 		
+		self.isShowUpdated = true;
 		self.element.classList.toggle( 'show', self.isShow );
 	}
 	
@@ -3357,7 +3443,6 @@ library.component = library.component || {};
 				.state-latency \
 				.state-value' );
 		
-		console.log( 'rtcPingBar', rtcPingBar );
 		self.rtcPing = new library.component.PingBar( rtcPingBar );
 	}
 	
@@ -3843,6 +3928,62 @@ library.component = library.component || {};
 	}
 	
 })( library.component );
+
+// ChangeUsernamePane
+( function( ns, undefined ) {
+	ns.ChangeUsernamePane = function( paneConf ) {
+		const self = this;
+		let conf = paneConf.conf;
+		self.current = conf.current;
+		self.onname = conf.onname;
+		library.component.UIPane.call( self, paneConf );
+		
+	}
+	
+	ns.ChangeUsernamePane.prototype = Object.create( library.component.UIPane.prototype );
+	
+	ns.ChangeUsernamePane.prototype.close = function() {
+		const self = this;
+		delete self.ui;
+		delete self.current;
+		delete self.onname;
+		self.paneClose();
+	}
+	
+	// Private
+	
+	ns.ChangeUsernamePane.prototype.build = function() {
+		const self = this;
+		const conf = {
+			current : self.current,
+		};
+		const html = hello.template.get( 'viewpane-change-username-tmpl', conf );
+		self.insertPane( html );
+		
+		self.ui = document.getElementById( 'change-username' );
+		const form = document.getElementById( 'change-username-form' );
+		const input = document.getElementById( 'change-username-input' );
+		const acceptBtn = document.getElementById( 'change-username-accept' );
+		const cancelBtn = document.getElementById( 'change-username-cancel' );
+		
+		form.addEventListener( 'submit', acceptName, false );
+		acceptBtn.addEventListener( 'click', acceptName, false );
+		cancelBtn.addEventListener( 'click', cancelName, false );
+		
+		function acceptName( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			if ( self.onname )
+				self.onname( input.value );
+		}
+		
+		function cancelName( e ) {
+			if ( self.onname )
+				self.onname( false );
+		}
+	}
+	
+})( library.view );
 
 // ExtConnectPane
 (function( ns, undefined ) {
@@ -4550,6 +4691,7 @@ library.component = library.component || {};
 	ns.SourceSelectPane.prototype.bind = function() {
 		const self = this;
 		self.previewEl = document.getElementById( 'source-select-preview' );
+		self.previewEl.muted = true;
 		self.previewEl.preload = 'metadata';
 		
 		const element = document.getElementById( 'source-select' );
@@ -4564,6 +4706,7 @@ library.component = library.component || {};
 		const errIgnoreBtn = errElement.querySelector( '.error-buttons .ignore' );
 		
 		self.outputTestEl = document.getElementById( 'audiooutput-test' );
+		self.avEl = document.getElementById( 'source-select-av-container' );
 		
 		self.previewEl.onloadedmetadata = letsPlay;
 		
@@ -4762,12 +4905,10 @@ library.component = library.component || {};
 			.catch( mediaErr );
 		
 		function setMedia( stream ) {
-			
-			/*
-			if ( mediaConf.audio )
+			if ( mediaConf.audio ) {
+				self.showAV( stream );
 				self.checkAudioInput( stream );
-			
-			*/
+			}
 			
 			const tracks = stream.getTracks();
 			const srcObject = self.previewEl.srcObject;
@@ -4791,6 +4932,7 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.clearPreview = function() {
 		var self = this;
+		self.closeAV();
 		self.previewEl.pause();
 		let srcObj = self.previewEl.srcObject;
 		
@@ -4798,10 +4940,8 @@ library.component = library.component || {};
 			return;
 		
 		var tracks = srcObj.getTracks();
-		
 		tracks.forEach( stop );
 		self.previewEl.load();
-		
 		
 		function stop( track ) {
 			track.stop();
@@ -4810,12 +4950,41 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.SourceSelectPane.prototype.showAV = function( stream ) {
+		const self = this;
+		self.volume = new library.rtc.Volume(
+			stream,
+			null,
+			null
+		);
+		
+		self.AV = new library.view.AudioVisualizer(
+			self.volume,
+			hello.template,
+			'source-select-av-container'
+		);
+	}
+	
+	ns.SourceSelectPane.prototype.closeAV = function() {
+		const self = this;
+		if ( self.AV )
+			self.AV.close();
+		
+		if ( self.volume )
+			self.volume.close();
+		
+		delete self.AV;
+		delete self.volume;
+	}
+	
 	ns.SourceSelectPane.prototype.checkAudioInput = function( stream ) {
 		var self = this;
+		console.log( 'checkAudioInput', stream );
 		var checkEl = document.getElementById( 'audioinput-checking' );
 		checkEl.classList.toggle( 'hidden', false );
-		new library.rtc.AudioInputDetect( stream, doneBack );
-		function doneBack( err ) {
+		new library.rtc.AudioInputDetect( stream, checkBack );
+		function checkBack( err ) {
+			console.log( 'checkAudioInput - checkBack', err );
 			checkEl.classList.toggle( 'hidden', true );
 			if ( !err )
 				err = null;
@@ -5143,7 +5312,7 @@ library.component = library.component || {};
 		var self = this;
 		var id = msg.from + '-is-typing';
 		var tmplConf = {
-			id : id,
+			id   : id,
 			from : msg.from,
 		};
 		var element = hello.template.getElement( 'is-typing-tmpl', tmplConf );
@@ -5171,7 +5340,7 @@ library.component = library.component || {};
 		const identity = self.identities[ data.fromId ];
 		let from = '';
 		if ( identity )
-			from = identity.name;
+			from = identity.liveName || identity.name;
 		else
 			from = 'Guest > ' + data.name;
 		
@@ -5492,16 +5661,13 @@ library.component = library.component || {};
 		if ( self.animFReq )
 			window.cancelAnimationFrame( self.animFReq );
 		
+		delete self.animFReq;
 		self.removeCanvas();
 	}
 	
 	ns.AudioVisualizer.prototype.close = function() {
 		const self = this;
 		self.stop();
-		
-		let el = document.getElementById( self.id );
-		if ( self.el )
-			self.el.parentNode.removeChild( self.el );
 		
 		//self.releaseSource();
 		delete self.id;
@@ -5510,6 +5676,8 @@ library.component = library.component || {};
 		delete self.ctx;
 		delete self.source;
 		delete self.template;
+		delete self.drawVolume;
+		delete self.draw;
 	}
 	
 	// Private
@@ -5535,10 +5703,10 @@ library.component = library.component || {};
 		};
 		self.el = self.template.getElement( 'peer-av-tmpl', conf );
 		container.appendChild( self.el );
-		self.el.addEventListener( 'click', click, true );
-		function click( e ) {
-			self.drawVolume = !self.drawVolume;
-			self.drawAV();
+		self.el.onclick = clickIt;
+		//self.el.addEventListener( 'click', clickIt, true );
+		function clickIt( e ) {
+			self.clicked();
 		}
 		
 		var cw = self.el.clientWidth;
@@ -5567,6 +5735,12 @@ library.component = library.component || {};
 		self.ctx.lineCap = 'round';
 	}
 	
+	ns.AudioVisualizer.prototype.clicked = function() {
+		const self = this;
+		self.drawVolume = !self.drawVolume;
+		self.drawAV();
+	}
+	
 	ns.AudioVisualizer.prototype.removeCanvas = function() {
 		const self = this;
 		delete self.cW;
@@ -5575,8 +5749,10 @@ library.component = library.component || {};
 		if ( self.canvas )
 			self.canvas.parentNode.removeChild( self.canvas );
 		
-		if ( self.el )
+		if ( self.el ) {
+			self.el.onclick = null;
 			self.el.parentNode.removeChild( self.el );
+		}
 		
 		delete self.canvasId;
 		delete self.id;

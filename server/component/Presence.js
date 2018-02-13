@@ -81,6 +81,10 @@ ns.Presence.prototype.init = function() {
 	
 	function connUpdated( e ) { self.handleConnUpdate( e ); }
 	function loginUpdated( e ) { self.handleLoginUpdate( e ); }
+	
+	self.client.send({
+		type : 'initialize',
+	});
 }
 
 ns.Presence.prototype.initialize = function( initConf, socketId ) {
@@ -183,7 +187,9 @@ ns.Presence.prototype.clear = function() {
 	
 	self.account = null;
 	
-	const clearEv = { type : 'clear' };
+	const clearEv = {
+		type : 'clear'
+	};
 	self.client.send( clearEv );
 	
 	function releaseRoom( id ) {

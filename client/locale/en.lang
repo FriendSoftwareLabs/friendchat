@@ -217,7 +217,7 @@ i18n_local_config_not_found : Local config not found, aborting.
 i18n_no_user_data_returned : No user data returned from FriendCore
 i18n_host_config_failed : Host config failed - empty response from
 i18n_host_config_failed_invalid : Host config failed - invalid data from
-i18n_host_config_failed_error : Host config failed, error on:
+i18n_host_config_failed_error : Could not connect to:
 i18n_start_live : Start live
 i18n_please_provide_email : Please provide an email address
 i18n_please_set_passphrase : Please set a passphrase
@@ -263,7 +263,6 @@ i18n_menu_receive_video : Receive Video
 i18n_list_voice : Voice
 i18n_toggle_fullscreen : Fullscreen
 i18n_minimal_ui : Minimal UI
-i18n_start_conversation : Start conversation
 i18n_video_call : Video call
 i18n_voice_call : Voice call
 i18n_text_chat : Text chat
@@ -288,3 +287,13 @@ i18n_FiWiz_adv_irc : IRC added as default
 i18n_FiWiz_adv_options : More options in UI
 i18n_FiWiz_btn_simplified : Use friendly UI
 i18n_FiWiz_btn_advanced : Use advanced UI
+i18n_network_error : Network error
+i18n_network_connecting : Connecting to server
+i18n_access_denied : Access denied
+i18n_focus_participant : Only show this participant
+i18n_change_username : Change name
+i18b_set_a_new_name : Set a new name
+i18n_set_name : Set
+i18n_displayed_name_may_change_or_later : This will be your displayed name, you may change it here or during the session
+i18n_join_video_audio : Join with video and audio
+i18n_join_audio_only : Join with audio only

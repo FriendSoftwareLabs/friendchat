@@ -521,6 +521,13 @@ library.contact = library.contact || {};
 	
 	// Public
 	
+	ns.PresenceRoom.prototype.reconnect = function() {
+		const self = this;
+		self.send({
+			type : 'initialize',
+		});
+	}
+	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		var self = this;
 		conf = conf || {};
@@ -548,9 +555,11 @@ library.contact = library.contact || {};
 		// events from live view we care about, everything else is passed on
 		self.live.on( 'chat', chat );
 		self.live.on( 'invite', invite );
+		self.live.on( 'live-name', liveName );
 		
 		function chat( e ) { self.sendChatEvent( e ); }
 		function invite( e ) { self.handleLiveInvite( e ); }
+		function liveName( e ) { self.handleLiveName( e ); }
 		function onClose( e ) {
 			self.closeLive();
 			const leave = {
@@ -801,6 +810,12 @@ library.contact = library.contact || {};
 			data : state.peers,
 		};
 		self.liveToView( uptdPeers );
+		
+		if ( self.chatView )
+			self.chatView.send({
+				type : 'state',
+				data : state,
+			});
 	}
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
@@ -909,6 +924,9 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleOnline = function( userId ) {
 		const self = this;
+		if ( userId === self.userId )
+			return;
+		
 		self.onlineList.push( userId );
 		const online = {
 			type : 'online',
@@ -1221,6 +1239,25 @@ library.contact = library.contact || {};
 		self.send( invite );
 	}
 	
+	ns.PresenceRoom.prototype.handleLiveName = function( name ) {
+		const self = this;
+		const id = self.identities[ self.userId ];
+		if ( !name || !name.length || !id ) {
+			console.log( 'handleLiveName - invalid', {
+				name : name,
+				id   : id,
+			});
+			return;
+		}
+		
+		id.liveName = name;
+		const idUpdate = {
+			type : 'identity',
+			data : id,
+		};
+		self.send( idUpdate );
+	}
+	
 	ns.PresenceRoom.prototype.liveToServer = function( event ) {
 		var self = this;
 		var wrap = {
@@ -1468,18 +1505,7 @@ library.contact = library.contact || {};
 	
 	ns.TreerootContact.prototype.setAvatar = function() {
 		var self = this;
-		var module = hello.module.get( self.moduleId );
-		var host = module.module.host;
-		// TODO - domain based
-		if ( !self.data.imagePath || !self.data.imagePath.Filename ) {
-			self.identity.avatar =
-				'https://' + host
-				+ '/admin/gfx/arenaicons/user_johndoe_32.png';
-			return;
-		}
-		
-		var pathObj = self.data.imagePath;
-		self.identity.avatar = 'https://' + host + '/' + pathObj.DiskPath + pathObj.Filename;
+		self.identity.avatar = self.data.imagePath;
 	}
 	
 	ns.TreerootContact.prototype.updatePublicKey = function( pKey ) {

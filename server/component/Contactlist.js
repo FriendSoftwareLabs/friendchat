@@ -23,38 +23,45 @@ var log = require('./Log')('contactlist');
 var DbContact = require('./DbContact');
 
 this.Contactlist = function() {
-	var self = this;
+	const self = this;
 	self.serviceId = {};
 	self.clientId = {};
 }
 
 this.Contactlist.prototype.set = function( contact ) {
+	const self = this;
 	if ( !contact.serviceId || !contact.clientId ) {
 		log( 'missing .serviceId or .clientId: ', contact );
 		return;
 	}
 	
-	this.serviceId[ contact.serviceId ] = contact;
-	this.clientId[ contact.clientId ] = contact;
+	self.serviceId[ contact.serviceId ] = contact;
+	self.clientId[ contact.clientId ] = contact;
+	
+	self.updateProps();
 }
 
 this.Contactlist.prototype.update = function( contact ) {
-	this.set( contact );
+	const self = this;
+	self.set( contact );
 }
 
 this.Contactlist.prototype.remove = function( id ) {
-	var contact = this.get( id );
+	const self = this;
+	var contact = self.get( id );
 	if ( !contact ) {
 		log( 'no contact for id: ', id );
 		return;
 	}
 	
-	delete this.serviceId[ contact.serviceId ];
-	delete this.clientId[ contact.clientId ];
+	delete self.serviceId[ contact.serviceId ];
+	delete self.clientId[ contact.clientId ];
+	
+	self.updateProps();
 }
 
 this.Contactlist.prototype.get = function( id ) {
-	var self = this;
+	const self = this;
 	if( self.serviceId[ id ] )
 		return self.serviceId[ id ];
 	else
@@ -62,11 +69,22 @@ this.Contactlist.prototype.get = function( id ) {
 }
 
 this.Contactlist.prototype.getServiceIdList = function() {
-	return Object.keys( this.serviceId );
+	const self = this;
+	return self.sids || [];
 }
 
 this.Contactlist.prototype.getClientIdList = function() {
-	return Object.keys( this.clientId );
+	const self = this;
+	return self.cids || [];
+}
+
+this.Contactlist.prototype.updateProps = function() {
+	const self = this;
+	let sids = Object.keys( self.serviceId );
+	let cids = Object.keys( self.clientId );
+	self.length = sids.length;
+	self.sids = sids;
+	self.cids = cids;
 }
 
 module.exports = this.Contactlist;

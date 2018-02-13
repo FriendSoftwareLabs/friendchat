@@ -30,11 +30,12 @@ library.rtc = library.rtc || {};
 
 // LOGIN
 (function( ns, undefined ) {
-	ns.Login = function( onlogin, onclose ) {
+	ns.Login = function( defaultAccount, onlogin, onclose ) {
 		if ( !( this instanceof ns.Login ))
 			return new ns.Login( onlogin, onclose );
 		
 		var self = this;
+		self.defaultAccount = defaultAccount;
 		self.onlogin = onlogin;
 		self.onclose = onclose;
 		self.accounts = {};
@@ -80,7 +81,6 @@ library.rtc = library.rtc || {};
 		self.bindView();
 		
 		function ready( msg ) {
-			hello.conn.state.subscribe( 'login', connectionState );
 			var accountKeys = Object.keys( self.accounts );
 			if ( !accountKeys.length ) {
 				self.toView({
@@ -101,10 +101,6 @@ library.rtc = library.rtc || {};
 					data : self.lastLoginResponse,
 				});
 		};
-		
-		function connectionState( state ) {
-			console.log( 'login.connectionState - NYI: ', state );
-		}
 		
 		function unhandled( e ) { console.log( 'unhandled login view event', e ); }
 		function viewClosed( msg ) {
@@ -177,6 +173,11 @@ library.rtc = library.rtc || {};
 			self.show();
 			
 			function doAutoLogin( accounts ) {
+				if ( self.defaultAccount ) {
+					self.login( self.defaultAccount );
+					return true;
+				}
+				
 				if ( hello.forceShowLogin )
 					return false;
 				
@@ -416,6 +417,25 @@ library.rtc = library.rtc || {};
 		self.init();
 	}
 	
+	// Public
+	
+	ns.ModuleControl.prototype.reconnect = function() {
+		const self = this;
+		mids = Object.keys( self.active );
+		mids.forEach( callReconnect );
+		function callReconnect( mId ) {
+			let mod = self.active[ mId ];
+			mod.reconnect();
+		}
+	}
+	
+	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
+		const self = this;
+		console.log( 'moduleCtrl.setIsOnline', isOnline );
+	}
+	
+	// Private
+	
 	ns.ModuleControl.prototype.init = function() {
 		var self = this;
 		self.availableModules = setAvailable( hello.config.modules );
@@ -499,6 +519,11 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
+		if ( self.active[ modConf.clientId ]) {
+			console.log( 'module already added', modConf );
+			return;
+		}
+		
 		var conf = {
 			module     : modConf,
 			parentView : self.parentView,
@@ -554,7 +579,6 @@ library.rtc = library.rtc || {};
 		// get user info
 		hello.getUserInfo( userBack );
 		function userBack( fupUser ) {
-			console.log( 'userBack', fupUser );
 			addLive( fupUser );
 			addIrc( fupUser );
 		}
@@ -789,7 +813,6 @@ library.rtc = library.rtc || {};
 				return;
 			}
 			
-			console.log( 'rtcAskBack', result );
 			self.joinRoom( invite, inviteFrom, selfie, result.permissions );
 		}
 		
@@ -1400,14 +1423,16 @@ library.rtc = library.rtc || {};
 
 // CONNECTION
 (function( ns, undefined ) {
-	ns.Connection = function( altHost ) {
+	ns.Connection = function( altHost, onState ) {
 		if ( !( this instanceof ns.Connection ))
-			return new ns.Connection( altHost );
+			return new ns.Connection( altHost, onState );
 		
-		var self = this;
+		const self = this;
 		self.altHost = altHost;
+		self.onstate = onState;
 		self.readyCallback = null;
 		
+		self.host = null;
 		self.state = null;
 		self.socket = null;
 		self.subscriber = {};
@@ -1415,24 +1440,15 @@ library.rtc = library.rtc || {};
 		self.init();
 	}
 	
-	ns.Connection.prototype.init = function() {
+	// Public
+	
+	ns.Connection.prototype.send = function( msg ) {
 		var self = this;
-		self.socketEventMap = {
-			'connecting' : socketConnecting,
-			'open' : socketOpen,
-			'close' : socketClosed,
-			'error' : socketError,
-			'ping' : socketPing,
-			'reconnect' : socketReconnect,
-		};
-		function socketConnecting( msg ) { self.socketConnecting( msg ); }
-		function socketOpen( msg ) { self.socketOpen( msg ); }
-		function socketClosed ( msg ) { self.socketClosed( msg ); }
-		function socketError ( msg ) { self.socketError( msg ); }
-		function socketPing ( msg ) { self.socketPing( msg ); }
-		function socketReconnect( msg ) { self.socketReconnecting( msg ); }
+		if ( !msg || !self.socket )
+			return false;
 		
-		self.state = new library.component.Status();
+		self.socket.send( msg );
+		return true;
 	}
 	
 	ns.Connection.prototype.connect = function( callback ) {
@@ -1457,6 +1473,8 @@ library.rtc = library.rtc || {};
 			var protocol = hello.config.tls ? 'wss' : 'ws';
 			url = library.tool.buildDestination( protocol, host, port );
 		}
+		
+		self.host = url;
 		self.socket = new library.component.Socket({
 			url : url,
 			protocol   : 'text',
@@ -1471,80 +1489,8 @@ library.rtc = library.rtc || {};
 		function onEnd( msg ) { self.handleEnd( msg ); }
 	}
 	
-	ns.Connection.prototype.handleState = function( event ) {
-		var self = this;
-		var handler = self.socketEventMap[ event.type ];
-		if ( !handler ) {
-			console.log( 'unknown socket state', event );
-			return;
-		}
-		
-		handler( event.data );
-	}
-	
-	ns.Connection.prototype.socketConnecting = function( data ) {
-		var self = this;
-		
-	}
-	
-	ns.Connection.prototype.socketOpen = function( data ) {
-		var self = this;
-		self.state.set( 'online', data );
-		hello.log.add( 'Connection open' );
-		
-		if ( self.readyCallback ) {
-			self.readyCallback();
-			self.readyCallback = null;
-		}
-	}
-	
-	ns.Connection.prototype.socketClosed = function( data ) {
-		var self = this;
-		self.state.set( 'offline', data );
-		hello.log.notify( 'Socket closed' );
-	}
-	
-	ns.Connection.prototype.socketError = function( data ) {
-		var self = this;
-		self.state.set( 'error', data );
-		hello.log.notify( 'Socket error' );
-	}
-	
-	ns.Connection.prototype.socketPing = function( data ) {
-		var self = this;
-		// console.log( 'socketPing', data );
-	}
-	
-	ns.Connection.prototype.socketReconnecting = function( data ) {
-		var self = this;
-		var str = 'reconnecting to ' + hello.config.host;
-		var start = Date.now();
-		var end = data;
-		hello.log.waiting( str, start, end );
-	}
-	
-	ns.Connection.prototype.handleEnd = function( data ) {
-		var self = this;
-		hello.log.alert( 'Connection to ' + hello.config.host + ' was lost.' );
-		hello.connectionLost();
-	}
-	
-	ns.Connection.prototype.clear = function() {
-		var self = this;
-		self.socket.close();
-		self.socket = null;
-	}
-	
-	ns.Connection.prototype.close = function() {
-		var self = this;
-		if ( !self.socket )
-			return;
-		
-		self.clear();
-	}
-	
 	ns.Connection.prototype.reconnect = function( callback ) {
-		var self = this;
+		const self = this;
 		if ( callback )
 			self.readyCallback = callback;
 		
@@ -1556,17 +1502,142 @@ library.rtc = library.rtc || {};
 		self.socket.reconnect();
 	}
 	
-	ns.Connection.prototype.send = function( msg ) {
-		var self = this;
-		if ( !msg )
-			return false;
+	ns.Connection.prototype.close = function() {
+		const self = this;
+		if ( !self.socket )
+			return;
 		
-		self.socket.send( msg );
-		return true;
+		self.clear();
+	}
+	
+	// Private
+	
+	ns.Connection.prototype.init = function() {
+		var self = this;
+		self.socketEventMap = {
+			'connect'    : socketConnecting,
+			'open'       : socketOpen,
+			'session'    : socketSession,
+			'close'      : socketClosed,
+			'error'      : socketError,
+			'ping'       : socketPing,
+			'reconnect'  : socketReconnect,
+		};
+		function socketConnecting( e ) { self.socketConnecting( e ); }
+		function socketOpen( e ) { self.socketOpen( e ); }
+		function socketSession( e ) { self.socketSession( e ); }
+		function socketClosed ( e ) { self.socketClosed( e ); }
+		function socketError ( e ) { self.socketError( e ); }
+		function socketPing ( e ) { self.socketPing( e ); }
+		function socketReconnect( e ) { self.socketReconnecting( e ); }
+	}
+	
+	ns.Connection.prototype.handleState = function( event ) {
+		const self = this;
+		var handler = self.socketEventMap[ event.type ];
+		if ( !handler ) {
+			console.log( 'unknown socket state', event );
+			return;
+		}
+		
+		handler( event.data );
+	}
+	
+	ns.Connection.prototype.socketConnecting = function( host ) {
+		const self = this;
+		self.onstate({
+			type : 'connect',
+			data : {
+				host     : self.host,
+			},
+		});
+	}
+	
+	ns.Connection.prototype.socketOpen = function( data ) {
+		const self = this;
+		hello.log.add( 'Connection open' );
+		self.onstate({
+			type : 'open',
+		});
+	}
+	
+	ns.Connection.prototype.socketSession = function( sid ) {
+		const self = this;
+		if ( self.readyCallback ) {
+			let callback = self.readyCallback;
+			delete self.readyCallback;
+			callback( null, sid );
+		}
+		
+		self.onstate({
+			type : 'session',
+			data : sid,
+		});
+	}
+	
+	ns.Connection.prototype.socketClosed = function( e ) {
+		const self = this;
+		hello.log.notify( 'Socket closed' );
+		self.onstate({
+			type : 'error',
+			data : 'Connection to ' + self.host + ' closed',
+		});
+	}
+	
+	ns.Connection.prototype.socketError = function( err ) {
+		const self = this;
+		hello.log.notify( 'Socket error' );
+		self.onstate({
+			type : 'error',
+			data : 'WebSocket error for ' + self.host,
+		});
+	}
+	
+	ns.Connection.prototype.socketPing = function( data ) {
+		const self = this;
+		// console.log( 'socketPing', data );
+	}
+	
+	ns.Connection.prototype.socketReconnecting = function( reTime ) {
+		const self = this;
+		self.onstate({
+			type : 'wait-reconnect',
+			data : {
+				time : reTime,
+				host : self.host,
+			},
+		});
+	}
+	
+	ns.Connection.prototype.handleEnd = function( data ) {
+		const self = this;
+		self.clear();
+		let err = {
+			type : 'end',
+			data : 'Connection to ' + self.host + ' cannot be re-established',
+		};
+		
+		if ( self.readyCallback ) {
+			let callback = self.readyCallback;
+			delete self.readyCallback;
+			callback( err, null );
+			return;
+		}
+		
+		self.onstate( err );
+	}
+	
+	ns.Connection.prototype.clear = function() {
+		const self = this;
+		if ( !self.socket )
+			return;
+		
+		self.socket.close();
+		self.socket = null;
 	}
 	
 	ns.Connection.prototype.message = function( event ) {
-		var self = this;
+		const self = this;
 		var handler = self.subscriber[ event.type ];
 		if ( !handler ) {
 			console.log( 'hello.conn - no handler for event', event );

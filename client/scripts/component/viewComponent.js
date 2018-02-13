@@ -1706,3 +1706,255 @@ library.component = library.component || {};
 	
 })( library.component );
 
+// 
+(function( ns, undefined ) {
+	ns.AppOnline = function( View ) {
+		const self = this;
+		self.View = View;
+		self.init();
+	}
+	
+	ns.AppOnline.prototype.close = function() {
+		const self = this;
+		if ( !self.View )
+			return;
+		
+		self.View.release( 'app-online' );
+	}
+	
+	ns.AppOnline.prototype.init = function() {
+		const self = this;
+		self.View.on( 'app-online', appOnline );
+		function appOnline( isOnline ) {
+			console.log( 'AppOnline', isOnline );
+			document.body.classList.toggle( 'app-offline', !isOnline );
+		}
+	}
+})( library.component );
+
+
+// ConnState
+(function( ns, undefined ) {
+	ns.ConnState = function( elementId, conn ) {
+		const self = this;
+		self.id = elementId;
+		self.init( conn );
+	}
+	
+	// Public
+	
+	ns.ConnState.prototype.close = function() {
+		const self = this;
+		delete self.id;
+		delete self.loading;
+		delete self.connecting;
+		delete self.reconnect;
+		delete self.denied;
+		
+		if ( !self.conn )
+			return;
+		
+		self.conn.close();
+		delete self.conn;
+	}
+	
+	// Priv
+	
+	ns.ConnState.prototype.init = function( parentConn ) {
+		const self = this;
+		self.build();
+		self.conn = new library.component.EventNode( 'conn-state', parentConn, eventSink );
+		self.conn.on( 'load', load );
+		self.conn.on( 'connect', connect );
+		self.conn.on( 'session', session );
+		self.conn.on( 'close', close );
+		self.conn.on( 'error', error );
+		self.conn.on( 'wait-reconnect', reconnect );
+		self.conn.on( 'access-denied', denied );
+		
+		function load( e ) { self.handleLoad( e ); }
+		function connect( e ) { self.handleConnect( e ); }
+		function session( e ) { self.handleSession( e ); }
+		function close( e ) { self.handleClose( e ); }
+		function error( e ) { self.handleError( e ); }
+		function reconnect( e ) { self.handleReconnect( e ); }
+		function denied( e ) { self.handleDenied( e ); }
+		
+		function eventSink( ) {
+			console.log( 'ConnState - unknown event', arguments );
+		}
+	}
+	
+	ns.ConnState.prototype.handleLoad = function( data ) {
+		const self = this;
+		console.log( 'handleLoad', data );
+		self.showUI( true );
+		self.showProgess();
+		self.hideStates();
+		self.loading.classList.toggle( 'hidden', false );
+	}
+	
+	ns.ConnState.prototype.handleConnect = function( e ) {
+		const self = this;
+		self.showUI( true );
+		self.showProgess();
+		self.hideStates();
+		self.connecting.classList.toggle( 'hidden', false );
+	}
+	
+	ns.ConnState.prototype.handleSession = function( sid ) {
+		const self = this;
+		self.isOnline = true;
+		self.showUI( false );
+	}
+	
+	ns.ConnState.prototype.handleClose = function( e ) {
+		const self = this;
+		self.showUI( true );
+	}
+	
+	ns.ConnState.prototype.handleError = function( err ) {
+		const self = this;
+		console.log( 'handleError', err );
+		self.showUI( true );
+		self.showOops();
+		self.hideStates();
+		self.errorMessage.textContent = err;
+		self.error.classList.toggle( 'hidden', false );
+	}
+	
+	ns.ConnState.prototype.handleReconnect = function( event ) {
+		const self = this;
+		self.showUI( true );
+		self.showOops();
+		self.hideStates();
+		self.reconnect.classList.toggle( 'hidden', false );
+		const cont = document.getElementById( 'conn-state-rc-bar-container' );
+		const bar = document.getElementById( 'conn-state-rc-bar' );
+		if ( !event.time ) {
+			hideBar();
+			return;
+		}
+		
+		bar.style.width = '100%';
+		let start = Date.now();
+		let end = event.time;
+		let total = end - start;
+		
+		step();
+		showBar();
+		
+		function step() {
+			window.requestAnimationFrame( update );
+		}
+		
+		function update() {
+			let now = Date.now();
+			if ( now > end ) {
+				hideBar();
+				return;
+			}
+			
+			let left = end - now;
+			let p = ( left / total );
+			let percent = Math.floor( p * 100 );
+			bar.style.width = percent + '%';
+			
+			step();
+		}
+		
+		function showBar() {
+			bar.classList.toggle( 'hidden', false );
+		}
+		
+		function hideBar() {
+			bar.classList.toggle( 'hidden', true );
+		}
+	}
+	
+	ns.ConnState.prototype.handleDenied = function( host ) {
+		const self = this;
+		self.showUI( true );
+		self.showOops();
+		self.hideStates();
+		self.denied.classList.toggle( 'hidden', false );
+	}
+	
+	ns.ConnState.prototype.showUI = function( show ) {
+		const self = this;
+		self.el.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.ConnState.prototype.hideStates = function() {
+		const self = this;
+		if ( !self.connecting || !self.reconnect || !self.denied || !self.error )
+			return;
+		
+		self.loading.classList.toggle( 'hidden', true );
+		self.connecting.classList.toggle( 'hidden', true );
+		self.reconnect.classList.toggle( 'hidden', true );
+		self.denied.classList.toggle( 'hidden', true );
+		self.error.classList.toggle( 'hidden', true );
+	}
+	
+	ns.ConnState.prototype.showProgess = function() {
+		const self = this;
+		self.toggleStatus( true );
+	}
+	
+	ns.ConnState.prototype.showOops = function() {
+		const self = this;
+		self.toggleStatus( false );
+	}
+	
+	ns.ConnState.prototype.toggleStatus = function( isProgress ) {
+		const self = this;
+		self.oops.classList.toggle( 'hidden', isProgress );
+		self.progress.classList.toggle( 'hidden', !isProgress );
+	}
+	
+	ns.ConnState.prototype.build = function() {
+		const self = this;
+		const ui = hello.template.getElement( 'conn-state-tmpl', {} );
+		self.el = document.getElementById( self.id );
+		self.el.appendChild( ui );
+		
+		// bind ui
+		let rcBtn = document.getElementById( 'conn-state-reconnect-btn' );
+		let qBtn = document.getElementById( 'conn-state-quit-btn' );
+		self.progress = document.getElementById( 'conn-state-progress' );
+		self.oops = document.getElementById( 'conn-state-oops' );
+		self.loading = document.getElementById( 'conn-state-loading' );
+		self.connecting = document.getElementById( 'conn-state-connecting' );
+		self.reconnect = document.getElementById( 'conn-state-reconnect' );
+		self.denied = document.getElementById( 'conn-state-denied' );
+		self.error = document.getElementById( 'conn-state-error' );
+		self.errorMessage = document.getElementById( 'conn-state-error-msg' );
+		
+		rcBtn.addEventListener( 'click', reconnect, false );
+		qBtn.addEventListener( 'click', quit, false );
+		
+		function reconnect( e ) {
+			self.send({
+				type : 'reconnect',
+			});
+		}
+		
+		function quit( e ) {
+			self.send({
+				type : 'quit',
+			});
+		}
+	}
+	
+	ns.ConnState.prototype.send = function( event ) {
+		const self = this;
+		if ( !self.conn )
+			return;
+		
+		self.conn.send( event );
+	}
+	
+})( library.component );
+
+

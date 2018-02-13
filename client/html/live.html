@@ -415,6 +415,32 @@ from,
 </div>
 </script>
 
+<!--
+current,
+-->
+<script id="viewpane-change-username-tmpl" type="text/html">
+<div id="change-username" class="center-child">
+	<div id="change-username-content" class="std-bg">
+		{i18n_change_username}
+		<form id="change-username-form">
+			<div class="input-wrap">
+				<input id="change-username-input" type="text" value="<%= current %>">
+			</div>
+			<div class="group row btn-row">
+				<div id="change-username-accept" class="btn text Accept">
+					<i class="fa fa-fw fa-check"></i>
+					{i18n_set_name}
+				</div>
+				<div id="change-username-cancel" class="btn text Danger">
+					<i class="fa fa-fw fa-close"></i>
+					{i18n_cancel}
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+</script>
+
 <!-- source-select
 
 -->
@@ -449,21 +475,25 @@ from,
 			</div>
 		</div>
 		<div id="source-input">
-			<div id="audioinput-container">
-				<div class="select-message">
-					{i18n_available_audio_sources}
-				</div>
-				<div id="audioinput-checking" class="group row start hidden">
-					<div class="std-icon">
-						<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<div id="audioinput-container" class="group row">
+				<div class="expand">
+					<div class="select-message">
+						{i18n_available_audio_sources}
 					</div>
-					<div class="checking-message">
-						{i18n_checking_input_source}
+					<div id="audioinput-checking" class="group row hidden">
+						<div class="std-icon fortify">
+							<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+						</div>
+						<div class="checking-message expand">
+							{i18n_checking_input_source}
+						</div>
+					</div>
+					<div id="audioinput-error" class="error-message hidden">
+					</div>
+					<div id="audioinput-select">
 					</div>
 				</div>
-				<div id="audioinput-error" class="error-message hidden">
-				</div>
-				<div id="audioinput-select">
+				<div id="source-select-av-container" class="fortify">
 				</div>
 			</div>
 			<div id="videoinput-container">
@@ -514,11 +544,12 @@ from,
 
 <!-- list
 id,
+show,
 faIcon,
 label,
 -->
 <script id="live-list-tmpl" type="text/html">
-<div id="<%= id %>" class="live-list-container fortify peek hide">
+<div id="<%= id %>" class="live-list-container fortify peek <%= show %> hide">
 	<div class="live-list group column cover">
 		<div class="list-head fortify group row">
 			<div class="list-head-icon center-child fortify">

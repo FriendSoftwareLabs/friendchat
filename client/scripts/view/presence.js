@@ -39,12 +39,15 @@ library.view = library.view || {};
 		self.users = {};
 		self.onlineList = [];
 		
+		self.appOnline = null;
+		
 		self.init();
 	}
 	
 	ns.Presence.prototype.init = function() {
 		const self = this;
 		View.setBody();
+		self.appOnline = new library.component.AppOnline( View );
 		
 		// user groups
 		self.online = new library.component.ItemGroup(
@@ -103,6 +106,9 @@ library.view = library.view || {};
 		//
 		self.bindUI();
 		self.bindConn();
+		
+		if ( 'MOBILE' === window.View.deviceType )
+			self.toggleUserList( false );
 		
 		//
 		self.conn.loaded();
@@ -168,10 +174,15 @@ library.view = library.view || {};
 		self.send( goLive );
 	}
 	
-	ns.Presence.prototype.toggleUserList = function() {
+	ns.Presence.prototype.toggleUserList = function( force ) {
 		const self = this;
-		self.usersEl.classList.toggle( 'users-hide' );
-		self.toggleUsersBtn.classList.toggle( 'danger' );
+		if ( null == force ) {
+			self.usersEl.classList.toggle( 'users-hide' );
+			self.toggleUsersBtn.classList.toggle( 'danger' );
+		} else {
+			self.usersEl.classList.toggle( 'users-hide', !force );
+			self.toggleUsersBtn.classList.toggle( 'danger', !force );
+		}
 	}
 	
 	// conn
@@ -179,6 +190,7 @@ library.view = library.view || {};
 	ns.Presence.prototype.bindConn = function() {
 		const self = this;
 		self.conn.on( 'initialize', initialize );
+		self.conn.on( 'state', state );
 		self.conn.on( 'online', online );
 		self.conn.on( 'offline', offline );
 		self.conn.on( 'chat', chat );
@@ -188,6 +200,7 @@ library.view = library.view || {};
 		self.conn.on( 'identity', identity );
 		
 		function initialize( e ) { self.handleInitialize( e ); }
+		function state( e ) { self.handleState( e ); }
 		function chat( e ) { self.handleChat( e ); }
 		function online( e ) { self.handleOnline( e, true ); }
 		function offline( e ) { self.handleOnline( e, false ); }
@@ -236,7 +249,7 @@ library.view = library.view || {};
 			const logFrom = {
 				type : 'log',
 				data : {
-					startId : firstMsgId,
+					firstId : firstMsgId,
 				},
 			};
 			self.sendChatEvent( logFrom );
@@ -334,6 +347,82 @@ library.view = library.view || {};
 		});
 	}
 	
+	ns.Presence.prototype.handleState = function( state ) {
+		const self = this;
+		removeOld( state.users );
+		addNew( state.users );
+		setOnline( state.online );
+		setLive( state.peers );
+		reloadLog();
+		
+		function removeOld( currentUsers ) {
+			let currentUIDs = currentUsers.map( u => u.clientId );
+			let oldUIDs = Object.keys( self.users );
+			let staleUIDs = oldUIDs.filter( notInCurrent );
+			staleUIDs.forEach( remove );
+			
+			function notInCurrent( oldUID ) {
+				if ( -1 === currentUIDs.indexOf( oldUID ))
+					return true;
+				return false;
+			}
+			
+			function remove( uid ) {
+				self.removeUser( uid );
+			}
+		}
+		
+		function addNew( users ) {
+			users.forEach( user => self.addUser( user ));
+		}
+		
+		function setOnline( online ) {
+			let uids = Object.keys( self.users );
+			uids.forEach( setOffline );
+			online.forEach( setOnline );
+			
+			function setOffline( uid ) {
+				let user = self.users[ uid ];
+				if ( 'online' !== user.group )
+					return;
+				
+				self.handleOnline( uid, false );
+			}
+			
+			function setOnline( uid ) {
+				self.handleOnline( uid, true );
+			}
+		}
+		
+		function setLive( peers ) {
+			let uids = Object.keys( self.users );
+			uids.forEach( setOff );
+			peers.forEach( setOn );
+			
+			function setOff( uid ) {
+				let user = self.users[ uid ];
+				if ( 'live' === user.state )
+					user.setState( '' );
+			}
+			
+			function setOn( uid ) {
+				let user = self.users[ uid ];
+				user.setState( 'live' );
+			}
+		}
+		
+		function reloadLog() {
+			let lastMsgId = self.msgBuilder.getLastMsgId();
+			const logFrom = {
+				type : 'log',
+				data : {
+					lastId : lastMsgId,
+				},
+			};
+			self.sendChatEvent( logFrom );
+		}
+	}
+	
 	ns.Presence.prototype.handleOnline = function( userId, isOnline ) {
 		const self = this;
 		const user = self.users[ userId ];
@@ -359,9 +448,9 @@ library.view = library.view || {};
 			self.handleLog( event.data );
 	}
 	
-	ns.Presence.prototype.handleLog = function( items ) {
+	ns.Presence.prototype.handleLog = function( event ) {
 		const self = this;
-		if ( null == items ) {
+		if ( 'before' === event.type && null == event.data ) {
 			self.logFetcher.unlock();
 			self.logFetcher.setNoLogs( true );
 			return;
@@ -369,7 +458,7 @@ library.view = library.view || {};
 		
 		self.msgBuilder.handle({
 			type : 'log',
-			data : items
+			data : event,
 		});
 		self.logFetcher.unlock();
 	}
@@ -408,13 +497,8 @@ library.view = library.view || {};
 	ns.Presence.prototype.addUser = function( user ) {
 		const self = this;
 		const uid = user.clientId;
-		if ( null != self.users[ uid ] ) {
-			console.log( 'view.presence.addUser - user already present ( hueuhueh )', {
-				user  : user,
-				users : self.users,
-			});
+		if ( null != self.users[ uid ] )
 			return;
-		}
 		
 		//self.users[ uid ] = user;
 		const name = user.name;
@@ -464,9 +548,16 @@ library.view = library.view || {};
 		delete self.users[ userId ];
 	}
 	
-	ns.Presence.prototype.updateIdentity = function( id ) {
+	ns.Presence.prototype.updateIdentity = function( event ) {
 		const self = this;
-		console.log( 'updateIdentity', id );
+		const user = self.users[ event.userId ];
+		if ( !user ) {
+			console.log( 'no user for id', {
+				id : event,
+			});
+		}
+		
+		user.updateName( event.identity.name );
 	}
 	
 	ns.Presence.prototype.addUserCss = function( clientId, avatar ) {
@@ -580,6 +671,7 @@ library.view = library.view || {};
 	ns.Presence.prototype.close = function() {
 		const self = this;
 		console.log( 'view.presence.close', self );
+		self.appOnline.close();
 	}
 	
 })( library.view );
@@ -788,7 +880,9 @@ library.view = library.view || {};
 	
 	ns.GroupItem.prototype.updateName = function( name ) {
 		const self = this;
-		console.log( 'updateName', name );
+		self.name = name;
+		const nameEl = self.el.querySelector( '.name' );
+		nameEl.textContent = name;
 	}
 	
 	ns.GroupItem.prototype.setState = function( type ) {
@@ -813,7 +907,7 @@ library.view = library.view || {};
 		'live'   : 'fa-video-camera',
 	}
 	
-	ns.GroupItem.prototype.init = function( conf, tmplId ) {
+	ns.GroupItem.prototype.init = function() {
 		const self = this;
 		self.el = buildElement();
 		self.stateEl = self.el.querySelector( '.state > i' );
@@ -884,6 +978,17 @@ library.view = library.view || {};
 		const firstEnvelopeId = self.envelopeOrder[ 0 ];
 		const firstEnvelope = self.envelopes[ firstEnvelopeId ];
 		return firstEnvelope.firstMsgId || null;
+	}
+	
+	ns.MsgBuilder.prototype.getLastMsgId = function() {
+		const self = this;
+		if ( !self.envelopeOrder.length )
+			return null;
+		
+		const eo = self.envelopeOrder;
+		const lastEnvId = eo[ eo.length - 1 ];
+		const lastEnvelope = self.envelopes[ lastEnvId ];
+		return lastEnvelope.lastMsgId || null;
 	}
 	
 	ns.MsgBuilder.prototype.close = function() {
@@ -977,7 +1082,15 @@ library.view = library.view || {};
 		return el;
 	}
 	
-	ns.MsgBuilder.prototype.handleLog = function( items ) {
+	ns.MsgBuilder.prototype.handleLog = function( event ) {
+		const self = this;
+		if ( 'before' === event.type )
+			self.handleLogBefore( event.data );
+		else
+			self.handleLogAfter( event .data );
+	}
+	
+	ns.MsgBuilder.prototype.handleLogBefore = function( items ) {
 		const self = this;
 		var lastSpeakerId = null;
 		var lastIndex = ( items.length - 1 );
@@ -1029,6 +1142,17 @@ library.view = library.view || {};
 		//return el;
 	}
 	
+	ns.MsgBuilder.prototype.handleLogAfter = function( items ) {
+		const self = this;
+		if ( !items )
+			return;
+		
+		items.forEach( handle );
+		function handle( item ) {
+			self.handle( item );
+		}
+	}
+	
 	ns.MsgBuilder.prototype.isLastSpeaker = function( event, envelope ) {
 		const self = this;
 		if ( null == envelope.lastSpeakerId )
@@ -1040,13 +1164,17 @@ library.view = library.view || {};
 	ns.MsgBuilder.prototype.addItem = function( el, envelope ) {
 		const self = this;
 		if ( null == envelope.firstMsgId )
-			envelope.firstId = el.id;
+			envelope.firstMsgId = el.id;
 		
+		envelope.lastMsgId = el.id;
 		envelope.el.appendChild( el );
 	}
 	
 	ns.MsgBuilder.prototype.addLogItem = function( el, envelope ) {
 		const self = this;
+		if ( !envelope.firstMsgId )
+			envelope.lastMsgId = el.id;
+		
 		const before = document.getElementById( envelope.firstMsgId );
 		envelope.el.insertBefore( el, before );
 	}

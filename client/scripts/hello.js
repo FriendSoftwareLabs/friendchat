@@ -46,9 +46,26 @@ var hello = null;
 		self.msgAlert = null;
 		
 		self.forceShowLogin = false;
+		self.isOnline = false;
 		
 		self.init();
 	}
+	
+	// 'Public'
+	
+	ns.Hello.prototype.timeNow = function( str ) {
+		const self = this;
+		let now = Date.now();
+		let sinceBeginning = now - self.startTiming;
+		let sinceLast = now - self.lastTiming;
+		console.log( 'Timing: ' + str, {
+			total : sinceBeginning,
+			last  : sinceLast,
+		});
+		self.lastTiming = now;
+	}
+	
+	// Priv
 	
 	ns.Hello.prototype.init = function() {
 		var self = this;
@@ -64,38 +81,63 @@ var hello = null;
 	
 	ns.Hello.prototype.run = function( fupConf ) {
 		const self = this;
+		self.startTiming = Date.now();
+		self.lastTiming = self.startTiming;
+		
 		if ( fupConf )
 			self.config.run = fupConf;
 		
-		self.config.emojii = window.emojii_conf;
-		self.config.protocol = document.location.protocol + '//';
-		self.config.appName = 'Friend Chat';
-		
-		self.loading = new library.view.Loading( loadingClosed );
-		function loadingClosed() { self.loadingClosed(); }
-		
-		if ( !self.config ) {
-			self.showLoadingError( Application.i18n('i18n_local_config_not_found') );
-			return;
+		self.loadCommonFragments( fragmentsLoaded );
+		function fragmentsLoaded() {
+			self.timeNow( 'fragmentsLoaded' );
+			init();
 		}
 		
-		self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/served.ogg' );
-		self.getUserInfo( userInfoBack )
+		function init() {
+			self.config.emojii = window.emojii_conf;
+			self.config.protocol = document.location.protocol + '//';
+			self.config.appName = 'Friend Chat';
+			
+			self.timeNow( 'init start, set showloading timeout' );
+			self.showLoadingTimeout = window.setTimeout( showLoading, 1000 );
+			function showLoading() {
+				self.timeNow( 'show loading' );
+				console.log( 'showLoading' );
+				self.showLoadingTimeout = null;
+				self.showLoading();
+			}
+			
+			if ( !self.config ) {
+				self.showLoadingStatus({
+					type : 'error',
+					data : Application.i18n( 'i18n_local_config_not_found' ),
+				});
+				return;
+			}
+			
+			//self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/served.ogg' );
+			self.msgAlert = new api.SoundAlert( 
+				'webclient/apps/FriendChat/res/glass_pop_v3-epic_sound.wav' );
+			
+			self.getUserInfo( userInfoBack )
+		}
+		
 		function userInfoBack( data ) {
+			self.timeNow( 'user info loaded' );
 			if ( !data ) {
-				self.showLoadingError( Application.i18n('i18n_no_user_data_returned') );
+				self.showLoadingStatus({
+					type : 'error',
+					data : Application.i18n( 'i18n_no_user_data_returned' ),
+				});
 				return;
 			}
 			
 			hello.identity = new library.component.Identity( data );
-			self.loadCommonFragments( fragmentsLoaded );
-		}
-		
-		function fragmentsLoaded() {
 			self.loadHostConfig( confLoaded );
 		}
 		
 		function confLoaded() {
+			self.timeNow( 'honst config loaded' );
 			self.preInit();
 		}
 	}
@@ -121,7 +163,6 @@ var hello = null;
 		}
 		
 		function modErr( err ) {
-			console.log( 'modErr', err );
 			callback( false );
 		}
 	}
@@ -138,39 +179,55 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.loadHostConfig = function( doneBack ) {
-		var self = this;
-		var url = library.tool.buildDestination(
+		const self = this;
+		const url = library.tool.buildDestination(
 			self.config.protocol,
 			self.config.host,
-			self.config.port );
-		library.tool.asyncRequest({
-			verb : 'get',
-			url : url,
-			data : null,
+			self.config.port
+		);
+		
+		if ( self.loading )
+			self.showLoadingStatus({
+				type : 'load',
+				data : Date.now(),
+			});
+		
+		const conf = {
+			verb    : 'get',
+			url     : url,
+			data    : null,
 			success : success,
-			error : whelpsHandleIt,
-		});
+			error   : loadErr,
+		};
+		library.tool.asyncRequest( conf );
 		
 		function success( response ) {
 			if ( !response ) {
-				self.showLoadingError(
-					Application.i18n( 'i18n_host_config_failed' ) + ' ' + url );
+				self.showLoadingStatus({
+					type : 'error',
+					data : Application.i18n( 'i18n_host_config_failed' ) + ' ' + url,
+				});
 				return;
 			}
 			
 			var hostConf = library.tool.objectify( response );
 			if ( !hostConf ) {
-				self.showLoadingError(
-					Application.i18n( 'i18n_host_config_failed_invalid' ) + ' ' + url );
+				self.showLoadingStatus({
+					type : 'error',
+					data : Application.i18n( 'i18n_host_config_failed_invalid' ) + ' ' + url,
+				});
 				return;
 			}
+			
 			library.tool.mergeObjects( self.config, hostConf );
 			doneBack();
 		}
 		
-		function whelpsHandleIt( err ) {
-			self.showLoadingError( 
-				Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url );
+		function loadErr( err ) {
+			self.showLoadingStatus({
+				type : 'error',
+				data : Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url,
+			});
 		}
 	}
 	
@@ -188,7 +245,8 @@ var hello = null;
 	
 	ns.Hello.prototype.initSystemModules = function( callback ) {
 		var self = this;
-		self.conn = new library.system.Connection();
+		self.timeNow( 'initSystemModules' );
+		self.conn = new library.system.Connection( null, onWSState );
 		self.request = new library.system.Request({ conn : self.conn });
 		self.intercept = new library.system.Interceptor();
 		self.rtc = new library.system.RtcControl();
@@ -196,41 +254,132 @@ var hello = null;
 		
 		self.conn.connect( connBack );
 		function connBack( err ) {
+			self.timeNow( 'ws connected' );
 			if( err ) {
 				console.log( 'connBack - conn err', err );
-				self.showLoadingError( err );
+				self.showLoadingStatus( err );
 				return;
 			}
 			
+			console.log( 'conn connected' );
 			self.connected = true;
-			self.closeLoading();
-			callback();
-		}
-	}
-	
-	ns.Hello.prototype.showLoadingError = function( errMsg ) {
-		var self = this;
-		if ( !self.loading ) {
-			self.quit();
-			return;
+			self.closeLoading( loadingClosed );
 		}
 		
-		self.loading.setError( errMsg );
+		function loadingClosed() {
+			callback();
+		}
+		
+		function onWSState( e ) { self.updateConnState( e ); }
 	}
 	
-	ns.Hello.prototype.closeLoading = function() {
-		var self = this;
+	ns.Hello.prototype.showLoading = function() {
+		const self = this;
+		console.log( 'hello.showLoading' );
+		if ( self.showLoadingTimeout ) {
+			window.clearTimeout( self.showLoadingTimeout );
+			self.showLoadingTimeout = null;
+		}
+		
+		self.closeLoadingTimeout = window.setTimeout( canCloseNow, 2000 );
+		self.loading = new library.view.Loading( loadingClosed );
+		function canCloseNow() {
+			console.log( 'canCloseNow', self.closeLoadingPlease );
+			self.closeLoadingTimeout = null;
+			if ( self.closeLoadingPlease )
+				self.closeLoading();
+		}
+		
+		function loadingClosed() {
+			console.log( 'loadingClosed' );
+			self.loadingClosed();
+		}
+	}
+	
+	ns.Hello.prototype.showLoadingStatus = function( status ) {
+		const self = this;
+		if ( 'session' === status.type )
+			return;
+		
+		if ( self.showLoadingTimeout 
+			 && 'error' === status.type
+		) {
+			self.showLoading();
+		}
+		
 		if ( !self.loading )
 			return;
 		
+		if ( self.closeLoadingPlease && 'error' === status.type ) {
+			self.closeLoadingPlease = false;
+			self.closeLoadingCallback = null;
+		}
+		
+		console.log( 'showLoadingStatus', status );
+		self.loading.setState( status );
+	}
+	
+	ns.Hello.prototype.closeLoading = function( callback ) {
+		const self = this;
+		self.timeNow( 'closeLoading' );
+		console.log( 'closeLoading', {
+			showLoading : self.showLoadingTimeout,
+			closeLoading : self.closeLoadingTimeout,
+			callback : callback,
+			'self.callback' : self.closeLoadingCallback,
+		});
+		
+		if ( self.showLoadingTimeout ) {
+			window.clearTimeout( self.showLoadingTimeout );
+			self.showLoadingTimeout = null;
+			done();
+			return;
+		}
+		
+		if ( self.closeLoadingTimeout ) {
+			console.log( 'closeLoadingTimeout in effect', callback );
+			self.closeLoadingPlease = true;
+			self.closeLoadingCallback = callback;
+			return;
+		}
+		
+		if ( !self.loading ) {
+			done();
+			return;
+		}
+		
 		self.loading.close();
 		self.loading = null;
+		done();
+		
+		function done() {
+			callback = callback || self.closeLoadingCallback;
+			delete self.closeLoadingCallback;
+			
+			if ( callback )
+				callback( true );
+		}
 	}
 	
 	ns.Hello.prototype.loadingClosed = function() {
 		var self = this;
+		if ( self.loading )
+			self.loading.close();
+		
+		if ( self.closeLoadingTimeout ) {
+			window.clearTimeout( self.closeLoadingTimeout );
+			self.closeLoadingTimeout = null;
+		}
+		
 		self.loading = null;
 		
+		if ( self.closeLoadingCallback ) {
+			let callback = self.closeLoadingCallback;
+			delete self.closeLoadingCallback;
+			callback( true );
+		}
+		
+		console.log( 'loadingClosed', self.connected );
 		if ( !self.connected )
 			self.checkQuit();
 	}
@@ -246,8 +395,8 @@ var hello = null;
 			throw new Error( 'see log ^^^' );
 		}
 		
+		self.closeLoading();
 		const conf = self.config.run;
-		console.log( 'doGuestThings - conf', conf );
 		if ( 'live-invite' === conf.type ) {
 			const randomName = library.tool.getName();
 			const askConf = {
@@ -260,7 +409,6 @@ var hello = null;
 			return; // prevents unknown data thingie, down there *points*
 			
 			function askBack( res ) {
-				console.log( 'doGuiestThings - askBack', res );
 				if ( !res.accept ) {
 					self.quit();
 					return;
@@ -328,35 +476,37 @@ var hello = null;
 		
 		function initPresenceConnection( callback ) {
 			const conf = self.config.run;
-			console.log( 'doGuestTHings', conf );
 			if ( !conf.data && !conf.data.host ) {
 				console.log( 'missing host', conf );
 				return;
 			}
 			
 			var host = library.tool.buildDestination( 'wss://', conf.data.host );
-			console.log( 'host', host );
-			self.conn = new library.system.Connection( host );
+			self.conn = new library.system.Connection( host, onWSState );
 			self.intercept = new library.system.Interceptor();
 			self.rtc = new library.system.RtcControl();
 			self.conn.connect( connBack );
 			
-			function connBack( err ) {
+			function connBack( err, res ) {
 				if ( err ) {
-					self.showLoadingError( err );
+					self.showLoadingStatus( err );
 					return;
 				}
 				
 				self.connected = true;
-				self.closeLoading();
+				self.closeLoading( loadClosed );
+			}
+			
+			function loadClosed() {
 				callback();
 			}
+			
+			function onWSState( e ) { self.updateConnState( e ); }
 		}
 	}
 	
 	ns.Hello.prototype.setupLiveRoom = function( permissions ) {
 		const self = this;
-		console.log( 'setupLiveRoom', permissions );
 		new library.component.GuestRoom( self.conn, permissions, onclose );
 		function onclose() { self.quit(); }
 		
@@ -374,10 +524,8 @@ var hello = null;
 			self.main.logout();
 			self.main = null;
 		
-		self.login = new library.system.Login( onlogin, onclose );
+		self.login = new library.system.Login( null, onlogin, onclose );
 		function onlogin( account ) {
-			self.closeLoading();
-			
 			self.loggedIn = true;
 			self.login.close();
 			self.login = null;
@@ -389,12 +537,43 @@ var hello = null;
 			
 			hello.log.positive( 
 				Application.i18n( 'i18n_logged_in_as' ) + ': ' + account.name );
+			
+			self.timeNow( 'logged in, open main' );
 			self.doMain( account );
 		}
 		
 		function onclose() {
 			self.login = null;
 			self.checkQuit();
+		}
+	}
+	
+	ns.Hello.prototype.doRelogin = function() {
+		const self = this;
+		self.triedRelogin = true;
+		self.conn.reconnect( connected );
+		function connected( err, res ) {
+			if ( err ) {
+				console.log( 'doRelogin connect failed', err );
+				
+				return;
+			}
+			
+			const acc = {
+				clientId : self.account.clientId,
+				name     : self.account.displayName,
+			};
+			self.login = new library.system.Login( acc, success, fail );
+		}
+		
+		function success( account ) {
+			self.triedRelogin = false;
+			self.module.reconnect();
+		}
+		
+		function fail( ) {
+			console.log( 'relogin fail' );
+			self.quit();
 		}
 	}
 	
@@ -411,17 +590,86 @@ var hello = null;
 		self.conn.reconnect();
 	}
 	
-	ns.Hello.prototype.connectionLost = function() {
+	ns.Hello.prototype.updateConnState = function( state ) {
+		const self = this;
+		console.log( 'updateConnState', state );
+		const isOnline = checkIsOnline( state );
+		self.updateIsOnline( isOnline );
+		if (   'error' === state.type
+			|| 'close' === state.type
+			|| 'end' === state.type
+		) {
+			self.connected = false;
+		}
+		
+		if ( self.loading ) {
+			self.showLoadingStatus( state );
+			return;
+		}
+		
+		if ( 'end' === state.type && !self.triedRelogin ) {
+			self.doRelogin();
+			return;
+		}
+		
+		if ( self.main )
+			self.main.setConnState( state );
+		
+		function checkIsOnline( state ) {
+			if ( 'session' !== state.type )
+				return false;
+			
+			if ( !state.data )
+				return false;
+			
+			return true;
+		}
+	}
+	
+	ns.Hello.prototype.updateIsOnline = function( isOnline ) {
+		const self = this;
+		if ( isOnline === self.isOnline )
+			return;
+		
+		console.log( 'isOnline', isOnline );
+		self.app.toAllViews({
+			type : 'app-online',
+			data : isOnline,
+		});
+		
+		self.isOnline = isOnline;
+		if ( self.main )
+			self.main.setIsOnline( self.isOnline );
+		
+		if ( self.module )
+			self.module.setIsOnline( self.isOnline );
+	}
+	
+	// From main view
+	ns.Hello.prototype.handleConnState = function( e ) {
+		const self = this;
+		console.log( 'handleConnState', e );
+		if ( 'reconnect' === e.type )
+			self.conn.reconnect();
+		
+		if ( 'quit' === e.type )
+			self.quit();
+	}
+	
+	ns.Hello.prototype.preLoginDisconnect = function() {
 		var self = this;
-		hello.log.show();
+		if ( hello.login || hello.loading ) {
+			hello.log.show();
+		}
+		
+		if ( hello.loading ) {
+			hello.loading.close();
+			hello.loading = null;
+		}
+		
 		if ( hello.login ) {
 			hello.login.close();
 			hello.login = null;
-		}
-		
-		if ( hello.main ) {
-			hello.logout();
-			hello.main = null;
 		}
 	}
 	
@@ -547,9 +795,30 @@ var hello = null;
 		self.init();
 	}
 	
+	// Public
+	
+	ns.Main.prototype.setConnState = function( state ) {
+		const self = this;
+		self.view.sendMessage({
+			type : 'conn-state',
+			data : state,
+		});
+	}
+	
+	ns.Main.prototype.setIsOnline = function( isOnline ) {
+		const self = this;
+		/*
+		self.view.sendMessage({
+			type : 'app-online',
+			data : isOnline,
+		});
+		*/
+	}
+	
+	// Private
+	
 	ns.Main.prototype.init = function() {
 		const self = this;
-		console.log( 'Main.init - account', self.account );
 		const firstLogin = !self.account.lastLogin;
 		if ( firstLogin )
 			self.showWizard( doSetup );
@@ -581,17 +850,12 @@ var hello = null;
 			self.setMenuItems();
 			
 			function ready( msg ) {
-				hello.conn.state.subscribe( 'main', connState );
 				self.initSubViews();
 				hello.account.sendReady( wizRes || null );
-			}
-			
-			function connState( state ) {
-				
+				hello.timeNow( 'main open' );
 			}
 			
 			function viewClose( msg ) {
-				hello.conn.state.unsubscribe( 'main' );
 				self.view = null;
 				if ( self.isLogout )
 					return;
@@ -605,7 +869,6 @@ var hello = null;
 		const self = this;
 		let wiz = new library.view.FirstWizard( wizBack );
 		function wizBack( res ) {
-			console.log( 'wizBack', res );
 			wiz.close();
 			callback( res );
 		}
@@ -613,7 +876,6 @@ var hello = null;
 	
 	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
 		const self = this;
-		console.log( 'openSimpleView' );
 		const winConf = {
 			title: hello.config.appName + ' - Main Window',
 			width : 440,
@@ -631,7 +893,6 @@ var hello = null;
 	
 	ns.Main.prototype.openAdvView = function( initConf, onClose ) {
 		const self = this;
-		console.log( 'openAdvView' );
 		const winConf = {
 			title: hello.config.appName + ' - Main Window',
 			width : 440,
@@ -654,12 +915,14 @@ var hello = null;
 		self.view.on( 'live', startLive );
 		self.view.on( 'quit', doQuit );
 		self.view.on( 'logout', logout );
+		self.view.on( 'conn-state', connState );
 		
 		function receiveMessage( msg ) { self.receiveMessage( msg ); }
 		function startLive( msg ) { self.startLive(); }
 		function showAbout( e ) { hello.about(); }
 		function doQuit( e ) { hello.quit(); }
 		function logout( msg ) { hello.logout( msg ); }
+		function connState( e ) { hello.handleConnState( e ); }
 	}
 	
 	ns.Main.prototype.setMenuItems = function() {
