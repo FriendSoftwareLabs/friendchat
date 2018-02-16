@@ -1519,6 +1519,7 @@ library.rtc = library.rtc || {};
 			'open'       : socketOpen,
 			'session'    : socketSession,
 			'close'      : socketClosed,
+			'timeout'    : socketTimeout,
 			'error'      : socketError,
 			'ping'       : socketPing,
 			'reconnect'  : socketReconnect,
@@ -1527,6 +1528,7 @@ library.rtc = library.rtc || {};
 		function socketOpen( e ) { self.socketOpen( e ); }
 		function socketSession( e ) { self.socketSession( e ); }
 		function socketClosed ( e ) { self.socketClosed( e ); }
+		function socketTimeout( e ) { self.socketTimeout( e ); }
 		function socketError ( e ) { self.socketError( e ); }
 		function socketPing ( e ) { self.socketPing( e ); }
 		function socketReconnect( e ) { self.socketReconnecting( e ); }
@@ -1584,12 +1586,21 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
+	ns.Connection.prototype.socketTimeout = function( e ) {
+		const self = this;
+		console.log( 'socketTimeout', e );
+		self.onstate({
+			type : 'error',
+			data : 'Connect attempt timed out: ' + self.host,
+		});
+	}
+	
 	ns.Connection.prototype.socketError = function( err ) {
 		const self = this;
 		hello.log.notify( 'Socket error' );
 		self.onstate({
 			type : 'error',
-			data : 'WebSocket error for ' + self.host,
+			data : 'Connection error to: ' + self.host,
 		});
 	}
 	

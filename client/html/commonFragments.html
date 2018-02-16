@@ -3,52 +3,50 @@
 -->
 <script id="conn-state-tmpl" type="text/html">
 <div id="conn-state" class="">
-	<div id="conn-state-oops" class="hidden">
-		<div class="conn-state-title group row start Danger">
+	<div id="conn-state-head" class="">
+		<div id="conn-state-error-head" class="conn-state-head group row start Danger hidden">
 			<i class="fa fa-fw fa-exclamation-triangle"></i>
 			{i18n_network_error}
 		</div>
-		<div class="paddddd">
-			<div id="conn-state-reconnect" class="group row hidden">
-				<button id="conn-state-reconnect-btn" class="button" type="button">
-					<i class="fa fa-fw fa-bolt"></i>
-					{i18n_reconnect}
-				</button>
-				<div id="conn-state-rc-bar-container" class="expand LED">
-					<div id="conn-state-rc-bar" class="On">
-					</div>
-				</div>
-			</div>
-			<div id="conn-state-denied" class="group row hidden">
-				{i18n_access_denied}
-				<button id="conn-state-quit-btn" class="button" type="button">
-					<i class="fa fa-fw fa-close"></i>
-					{i18n_quit}
-				</button>
-			</div>
-			<div id="conn-state-error" class="hidden">
-				<div id="conn-state-error-msg">
-					
-				</div>
-			</div>
-		</div>
-	</div>
-	<div id="conn-state-progress">
-		<div class="conn-state-title group row start">
+		<div id="conn-state-progress-head" class="conn-state-head group row start">
 			<i class="fa fa-fw fa-plug"></i>
 			{i18n_network_connecting}
 		</div>
-		<div class="paddddd">
-			<div id="conn-state-loading" class="group row start hidden">
-				<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-				<div>
-					{i18n_loading}
-				</div>
+	</div>
+	<div id="conn-state-oops" class="paddddd hidden">
+		<div id="conn-state-denied" class="group row hidden">
+			{i18n_access_denied}
+			<button id="conn-state-quit-btn" class="button" type="button">
+				<i class="fa fa-fw fa-close"></i>
+				{i18n_quit}
+			</button>
+		</div>
+		<div id="conn-state-error" class="hidden">
+			<div id="conn-state-error-msg">
+				
 			</div>
-			<div id="conn-state-connecting" class="group row start hidden">
-				<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-				<div>
-					{i18n_connecting}
+		</div>
+	</div>
+	<div id="conn-state-yay" class="paddddd">
+		<div id="conn-state-loading" class="group row start hidden">
+			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<div>
+				{i18n_loading}
+			</div>
+		</div>
+		<div id="conn-state-connecting" class="group row start hidden">
+			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<div>
+				{i18n_connecting}
+			</div>
+		</div>
+		<div id="conn-state-reconnect" class="group row hidden">
+			<button id="conn-state-reconnect-btn" class="button" type="button">
+				<i class="fa fa-fw fa-bolt"></i>
+				{i18n_reconnect}
+			</button>
+			<div id="conn-state-rc-bar-container" class="expand LED">
+				<div id="conn-state-rc-bar" class="On">
 				</div>
 			</div>
 		</div>

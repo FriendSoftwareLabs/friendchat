@@ -166,11 +166,12 @@ library.view = library.view || {};
 
 // Loading
 (function( ns, undefined ) {
-	ns.Loading = function( onclose ) {
+	ns.Loading = function( onreconnect, onclose ) {
 		if ( !( this instanceof ns.Loading ))
-			return new ns.Loading( onclose );
+			return new ns.Loading( onreconnect, onclose );
 		
 		var self = this;
+		self.onreconnect = onreconnect;
 		self.onclose = onclose;
 		
 		self.init();
@@ -195,9 +196,23 @@ library.view = library.view || {};
 			closed
 		);
 		
+		self.view.on( 'conn-state', reconnect );
+		
 		function closed( e ) {
 			self.view = null;
 			self.onclose();
+		}
+		
+		function reconnect( e ) {
+			if ( 'reconnect' !== e.type ) {
+				console.log( 'app.view.Loading.reconnect - invalid event', e );
+				return;
+			}
+			
+			if ( !self.onreconnect )
+				return;
+			
+			self.onreconnect( e );
 		}
 	}
 	
@@ -214,7 +229,9 @@ library.view = library.view || {};
 	}
 	
 	ns.Loading.prototype.close = function() {
-		var self = this;
+		const self = this;
+		delete self.onreconnect;
+		delete self.onclose;
 		if ( !self.view )
 			return;
 		

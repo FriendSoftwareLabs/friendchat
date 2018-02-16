@@ -25,8 +25,8 @@ form {
 }
 
 body.app-offline {
-	opacity          : 0.3;
-	background-color : #964e4e;
+	opacity          : 0.2;
+	background-color : #000;
 }
 
 body.app-offline textarea,
@@ -646,13 +646,13 @@ div.foldit-status {
 }
 
 .ping-bar-content {
-	height: 100%;
-	width : 4em;
+	height : 100%;
+	width  : 4em;
 }
 
 .ping-bumps,
 .ping-bar-info {
-	height: 100%;
+	height  : 100%;
 	padding : 3px 0;
 }
 
@@ -661,11 +661,11 @@ div.foldit-status {
 }
 
 .ping-bumps .ping-bump {
-	width : 0.5em;
-	height: 100%;
+	width        : 0.5em;
+	height       : 100%;
 	margin-right : 1px;
-	opacity: 1;
-	transition : opacity 0.5s;
+	opacity      : 1;
+	transition   : opacity 0.5s;
 }
 
 .ping-bumps .ping-bump.hide-bump {
@@ -680,18 +680,18 @@ div.foldit-status {
 
 .nested-app iframe {
 	border : none;
-	width : 100%;
+	width  : 100%;
 	height : 100%;
 }
 
 .nested-app .nested-close {
 	position: absolute;
-	top : 0;
-	right : 0;
-	width : 1.5em;
-	height : 1.5em;
+	top              : 0;
+	right            : 0;
+	width            : 1.5em;
+	height           : 1.5em;
 	background-color : rgba( 0, 0, 0, 0.7 );
-	color : white;
+	color            : white;
 }
 
 .nested-app .nested-close:hover {
@@ -702,31 +702,38 @@ div.foldit-status {
 	Conn state
 */
 #conn-state {
-	padding : 0.5em;
+	padding : 1em;
 }
 
-.conn-state-title {
-	padding       : 0.5em;
-	margin-bottom : 1em;
-	border-radius : 3px;
+#conn-state-head {
 	font-size     : 130%;
+	margin-bottom : 0.3em;
 }
 
 .paddddd {
 	padding : 0.5em;
 }
 
-#conn-state-title > div {
+.conn-state-head {
+	padding : 0.5em;
+}
+
+.conn-state-head > div {
 	margin : 0 0.3em;
 }
 
+#conn-state-error-head {
+	border-radius : 3px;
+}
+
+#conn-state-loading > div,
 #conn-state-connecting > div {
 	margin-left : 0.3em;
 }
 
 #conn-state-rc-bar-container {
 	position     : relative;
-	margin-left : 0.2em;
+	margin-left  : 0.2em;
 	height       : 0.7em;
 }
 

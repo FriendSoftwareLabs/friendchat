@@ -1738,6 +1738,7 @@ library.component = library.component || {};
 	ns.ConnState = function( elementId, conn ) {
 		const self = this;
 		self.id = elementId;
+		
 		self.init( conn );
 	}
 	
@@ -1768,6 +1769,7 @@ library.component = library.component || {};
 		self.conn.on( 'connect', connect );
 		self.conn.on( 'session', session );
 		self.conn.on( 'close', close );
+		self.conn.on( 'timeout', timeout );
 		self.conn.on( 'error', error );
 		self.conn.on( 'wait-reconnect', reconnect );
 		self.conn.on( 'access-denied', denied );
@@ -1776,6 +1778,7 @@ library.component = library.component || {};
 		function connect( e ) { self.handleConnect( e ); }
 		function session( e ) { self.handleSession( e ); }
 		function close( e ) { self.handleClose( e ); }
+		function timeout( e ) { console.log( 'ConnState.timeout', e ); }
 		function error( e ) { self.handleError( e ); }
 		function reconnect( e ) { self.handleReconnect( e ); }
 		function denied( e ) { self.handleDenied( e ); }
@@ -1789,27 +1792,29 @@ library.component = library.component || {};
 		const self = this;
 		console.log( 'handleLoad', data );
 		self.showUI( true );
-		self.showProgess();
-		self.hideStates();
+		self.hideProgressStates();
 		self.loading.classList.toggle( 'hidden', false );
 	}
 	
 	ns.ConnState.prototype.handleConnect = function( e ) {
 		const self = this;
+		console.log( 'handleConnect' );
 		self.showUI( true );
-		self.showProgess();
-		self.hideStates();
+		self.hideProgressStates();
 		self.connecting.classList.toggle( 'hidden', false );
 	}
 	
 	ns.ConnState.prototype.handleSession = function( sid ) {
 		const self = this;
+		console.log( 'handleSession' );
+		self.showError( false );
 		self.isOnline = true;
 		self.showUI( false );
 	}
 	
 	ns.ConnState.prototype.handleClose = function( e ) {
 		const self = this;
+		console.log( 'handleClose' );
 		self.showUI( true );
 	}
 	
@@ -1817,23 +1822,28 @@ library.component = library.component || {};
 		const self = this;
 		console.log( 'handleError', err );
 		self.showUI( true );
-		self.showOops();
-		self.hideStates();
+		self.hideErrorStates();
+		self.showError( true );
 		self.errorMessage.textContent = err;
 		self.error.classList.toggle( 'hidden', false );
 	}
 	
 	ns.ConnState.prototype.handleReconnect = function( event ) {
 		const self = this;
+		console.log( 'handleReconnect', event );
 		self.showUI( true );
-		self.showOops();
-		self.hideStates();
+		self.hideProgressStates();
 		self.reconnect.classList.toggle( 'hidden', false );
 		const cont = document.getElementById( 'conn-state-rc-bar-container' );
 		const bar = document.getElementById( 'conn-state-rc-bar' );
 		if ( !event.time ) {
 			hideBar();
 			return;
+		}
+		
+		if ( self.reconnectFrame ) {
+			window.cancelAnimationFrame( self.reconnectFrame );
+			self.reconnectFrame = null;
 		}
 		
 		bar.style.width = '100%';
@@ -1845,7 +1855,7 @@ library.component = library.component || {};
 		showBar();
 		
 		function step() {
-			window.requestAnimationFrame( update );
+			self.reconnectFrame = window.requestAnimationFrame( update );
 		}
 		
 		function update() {
@@ -1875,8 +1885,8 @@ library.component = library.component || {};
 	ns.ConnState.prototype.handleDenied = function( host ) {
 		const self = this;
 		self.showUI( true );
-		self.showOops();
-		self.hideStates();
+		self.hideErrorStates();
+		self.showError( true );
 		self.denied.classList.toggle( 'hidden', false );
 	}
 	
@@ -1885,32 +1895,29 @@ library.component = library.component || {};
 		self.el.classList.toggle( 'hidden', !show );
 	}
 	
-	ns.ConnState.prototype.hideStates = function() {
+	ns.ConnState.prototype.hideProgressStates = function() {
 		const self = this;
-		if ( !self.connecting || !self.reconnect || !self.denied || !self.error )
-			return;
-		
 		self.loading.classList.toggle( 'hidden', true );
 		self.connecting.classList.toggle( 'hidden', true );
 		self.reconnect.classList.toggle( 'hidden', true );
+	}
+	
+	ns.ConnState.prototype.hideErrorStates = function() {
+		const self = this;
 		self.denied.classList.toggle( 'hidden', true );
 		self.error.classList.toggle( 'hidden', true );
 	}
 	
-	ns.ConnState.prototype.showProgess = function() {
+	ns.ConnState.prototype.showProgress = function( show ) {
 		const self = this;
-		self.toggleStatus( true );
+		self.progress.classList.toggle( 'hidden', !show );
 	}
 	
-	ns.ConnState.prototype.showOops = function() {
+	ns.ConnState.prototype.showError = function( show ) {
 		const self = this;
-		self.toggleStatus( false );
-	}
-	
-	ns.ConnState.prototype.toggleStatus = function( isProgress ) {
-		const self = this;
-		self.oops.classList.toggle( 'hidden', isProgress );
-		self.progress.classList.toggle( 'hidden', !isProgress );
+		self.errorHead.classList.toggle( 'hidden', !show );
+		self.progressHead.classList.toggle( 'hidden', show );
+		self.oops.classList.toggle( 'hidden', !show );
 	}
 	
 	ns.ConnState.prototype.build = function() {
@@ -1922,8 +1929,10 @@ library.component = library.component || {};
 		// bind ui
 		let rcBtn = document.getElementById( 'conn-state-reconnect-btn' );
 		let qBtn = document.getElementById( 'conn-state-quit-btn' );
-		self.progress = document.getElementById( 'conn-state-progress' );
+		self.errorHead = document.getElementById( 'conn-state-error-head' );
+		self.progressHead = document.getElementById( 'conn-state-progress-head' );
 		self.oops = document.getElementById( 'conn-state-oops' );
+		self.yay = document.getElementById( 'conn-state-yay' );
 		self.loading = document.getElementById( 'conn-state-loading' );
 		self.connecting = document.getElementById( 'conn-state-connecting' );
 		self.reconnect = document.getElementById( 'conn-state-reconnect' );

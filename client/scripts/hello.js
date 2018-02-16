@@ -133,13 +133,28 @@ var hello = null;
 			}
 			
 			hello.identity = new library.component.Identity( data );
-			self.loadHostConfig( confLoaded );
+			self.loadHostConfig( confBack );
 		}
 		
-		function confLoaded() {
-			self.timeNow( 'honst config loaded' );
-			self.preInit();
+		function confBack( err, hostConf ) {
+			self.hostConfigLoaded( err, hostConf );
 		}
+	}
+	
+	ns.Hello.prototype.hostConfigLoaded = function( err, hostConf ) {
+		const self = this;
+		console.log( 'hostConfigLoaded', {
+			err : err,
+			hostConf : hostConf,
+		});
+		if ( err ) {
+			console.log( 'hostConfigLoaded - err', err );
+			return;
+		}
+		
+		self.timeNow( 'honst config loaded' );
+		library.tool.mergeObjects( self.config, hostConf );
+		self.preInit();
 	}
 	
 	ns.Hello.prototype.getUserInfo = function( callback ) {
@@ -180,28 +195,82 @@ var hello = null;
 	
 	ns.Hello.prototype.loadHostConfig = function( doneBack ) {
 		const self = this;
+		console.log( 'loadHostConfig' );
 		const url = library.tool.buildDestination(
 			self.config.protocol,
 			self.config.host,
 			self.config.port
 		);
 		
-		if ( self.loading )
-			self.showLoadingStatus({
-				type : 'load',
-				data : Date.now(),
-			});
+		if ( self.loadTimeout ) {
+			window.clearTimeout( self.loadTimeout );
+			self.loadTimeout = null;
+		}
 		
-		const conf = {
-			verb    : 'get',
-			url     : url,
-			data    : null,
-			success : success,
-			error   : loadErr,
-		};
-		library.tool.asyncRequest( conf );
+		if ( self.hostConfRequest ) {
+			self.hostConfRequest.abort(); // XMLHTTPRequest
+			self.hostConfRequest = null;
+		}
+		
+		if ( self.loadRequestDelay ) {
+			window.clearTimeout( self.loadRequestDelay );
+			self.loadRequestDelay = null;
+		}
+		
+		load( success, loadErr );
+		self.loadTimeout = window.setTimeout( loadingTimeout, 1000 * 15 );
+		
+		function load( success, loadErr ) {
+			console.log( 'load' );
+			if ( self.loading )
+				self.showLoadingStatus({
+					type : 'load',
+					data : Date.now(),
+				});
+			
+			const conf = {
+				verb    : 'get',
+				url     : url,
+				data    : null,
+				success : success,
+				error   : loadErr,
+			};
+			self.hostConfRequest = library.tool.asyncRequest( conf );
+		}
+		
+		function loadingTimeout() {
+			console.log( 'loading host config timed out', self.hostConfRequest );
+			try {
+				self.hostConfRequest.abort();
+			} catch( e ) {
+				console.log( 'loadingTimeout - exp while aborting request', e );
+			}
+			
+			self.hostConfRequest = null;
+			
+			self.showLoadingStatus({
+				type : 'error',
+				data : 'Loading host config timed out: ' + url,
+			});
+			
+			let delay = 1000 * 15;
+			let reconnectTime = Date.now() + delay;
+			self.showLoadingStatus({
+				type : 'wait-reconnect',
+				data : {
+					time : reconnectTime,
+				},
+			});
+			
+			self.loadRequestDelay = window.setTimeout( retryLoad, delay );
+			function retryLoad() {
+				console.log( 'retryLoad' );
+				self.loadHostConfig( doneBack );
+			}
+		}
 		
 		function success( response ) {
+			hasLoadRes();
 			if ( !response ) {
 				self.showLoadingStatus({
 					type : 'error',
@@ -219,15 +288,26 @@ var hello = null;
 				return;
 			}
 			
-			library.tool.mergeObjects( self.config, hostConf );
-			doneBack();
+			doneBack( null, hostConf );
 		}
 		
 		function loadErr( err ) {
+			hasLoadRes();
+			err = err || 'ERR_LOAD_HOST_CONF';
+			console.log( 'loadErr', err );
 			self.showLoadingStatus({
 				type : 'error',
 				data : Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url,
 			});
+			doneBack( err, null );
+		}
+		
+		function hasLoadRes() {
+			if ( !self.loadTimeout )
+				return;
+			
+			window.clearTimeout( self.loadTimeout );
+			self.loadTimeout = null;
 		}
 	}
 	
@@ -281,13 +361,21 @@ var hello = null;
 			self.showLoadingTimeout = null;
 		}
 		
-		self.closeLoadingTimeout = window.setTimeout( canCloseNow, 2000 );
-		self.loading = new library.view.Loading( loadingClosed );
+		self.closeLoadingTimeout = window.setTimeout( canCloseNow, 3000 );
+		self.loading = new library.view.Loading( reconnect, loadingClosed );
 		function canCloseNow() {
 			console.log( 'canCloseNow', self.closeLoadingPlease );
 			self.closeLoadingTimeout = null;
 			if ( self.closeLoadingPlease )
 				self.closeLoading();
+		}
+		
+		function reconnect( e ) {
+			console.log( 'app.Loading.reconnect', e );
+			self.loadHostConfig( loadBack );
+			function loadBack( err , res ) {
+				self.hostConfigLoaded( err , res );
+			}
 		}
 		
 		function loadingClosed() {
@@ -301,8 +389,9 @@ var hello = null;
 		if ( 'session' === status.type )
 			return;
 		
-		if ( self.showLoadingTimeout 
-			 && 'error' === status.type
+		if ( self.showLoadingTimeout &&
+			(      'error' === status.type
+				|| 'timeout' === status.type )
 		) {
 			self.showLoading();
 		}
@@ -598,6 +687,7 @@ var hello = null;
 		if (   'error' === state.type
 			|| 'close' === state.type
 			|| 'end' === state.type
+			|| 'timeout' === state.type
 		) {
 			self.connected = false;
 		}
