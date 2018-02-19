@@ -19,6 +19,8 @@ i18n_channel_settings : Channel settings
 i18n_irc_settings : IRC settings
 i18n_join : join
 i18n_treeroot_settings : Treeroot settings
+i18n_workgroups : Workgroups
+i18n_user_limit : User limit
 i18n_a : A
 i18n_friendup : FriendUP
 i18n_communication_tool : communication tool

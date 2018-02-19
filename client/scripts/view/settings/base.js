@@ -852,7 +852,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.saved = function( data ) {
 		var self = this;
-		
 		var setting = data.setting;
 		unlockSetting( setting );
 		self.updateSetting( data );
@@ -871,6 +870,7 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.updateSetting = function( data ) {
 		var self = this;
+		console.log( 'updateSetting', data );
 		var setting = data.setting;
 		var current = self.settings[ setting ];
 		var update = data.value;

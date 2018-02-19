@@ -1460,8 +1460,8 @@ library.view = library.view || {};
 		var videoBtn = aEl.querySelector( '.live-video' );
 		var audioBtn = aEl.querySelector( '.live-audio' );
 		var chatBtn = aEl.querySelector( '.chat' );
-		self.renameBtn = aEl.querySelector( '.rename' );
-		var leaveBtn = aEl.querySelector( '.leave' );
+		self.settingsBtn = aEl.querySelector( '.settings' );
+		self.leaveBtn = aEl.querySelector( '.leave' );
 		
 		self.showSetNameBtn = el.querySelector( '.show-set-name' );
 		self.setNameForm = el.querySelector( '.room-name-form' );
@@ -1472,8 +1472,8 @@ library.view = library.view || {};
 		videoBtn.addEventListener( 'click', videoClick, false );
 		audioBtn.addEventListener( 'click', audioClick, false );
 		chatBtn.addEventListener( 'click', chatClick, false );
-		self.renameBtn.addEventListener( 'click', renameClick, false );
-		leaveBtn.addEventListener( 'click', leaveClick, false );
+		self.settingsBtn.addEventListener( 'click', settingsClick, false );
+		self.leaveBtn.addEventListener( 'click', leaveClick, false );
 		
 		self.showSetNameBtn.addEventListener( 'click', showSetName, false );
 		hideSetNameBtn.addEventListener( 'click', hideSetName, false );
@@ -1494,11 +1494,20 @@ library.view = library.view || {};
 			self.openChat();
 		}
 		
-		function renameClick( e ) {
-			self.showRename();
+		function settingsClick( e ) {
+			const openSettings = {
+				type : 'settings',
+				data : {
+					tab : 'chat',
+				},
+			};
+			self.send( openSettings );
 		}
 		
 		function leaveClick( e ) {
+			if ( !self.isAuthed && self.isPersistent )
+				return;
+			
 			self.send({ type : 'leave' });
 		}
 		
@@ -1520,6 +1529,7 @@ library.view = library.view || {};
 			e.preventDefault();
 			e.stopPropagation();
 			let name = self.setNameInput.value;
+			console.log( 'setNameSubmit', name );
 			if ( !name || !name.length )
 				return;
 			
@@ -1537,14 +1547,13 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.PresenceRoom.prototype.showRename = function() {
-		const self = this;
-		self.setNameInput.value = self.identity.name;
-		self.toggleShowSetName( true );
-	}
-	
 	ns.PresenceRoom.prototype.toggleShowSetName = function( show ) {
 		const self = this;
+		if ( !self.setNameForm ) {
+			console.log( 'toggleShowSetName - no setNAmeForm', self );
+			return;
+		}
+		
 		if ( self.showSetNameBtn )
 			self.showSetNameBtn.classList.toggle( 'hidden', show );
 		
@@ -1554,40 +1563,70 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.bindView = function() {
 		var self = this;
+		self.view.on( 'init', init );
+		self.view.on( 'auth', auth );
 		self.view.on( 'persistent', persistent );
 		self.view.on( 'messagewaiting', msgWaiting );
-		self.view.on( 'owner', owner );
 		self.view.on( 'users', users );
 		
 		self.bindLive();
 		
 		function persistent( e ) { self.handlePersistent( e ); }
+		function init( e ) { self.handleInit( e ); }
+		function auth( e ) { self.handleIsAuthed( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
-		function owner( e ) { self.handleOwner( e ); }
 		function users( e ) { self.updateRoomStatus( e ); }
+	}
+	
+	ns.PresenceRoom.prototype.handleInit = function( event ) {
+		const self = this;
+		console.log( 'handleInit', event );
+		self.isOwner = event.isOwner;
+		self.isAdmin = event.isAdmin;
+		self.handlePersistent( event );
+		self.handleIsAuthed( event.isAuthed );
+		self.toggleSettings(( self.isOwner || self.isAdmin ) && self.isPersistent );
 	}
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
 		const self = this;
+		console.log( 'handlePersistent', event );
 		self.isPersistent = event.persistent;
-		if ( event.persistent ) {
-			updateUIElements();
-			self.identity.name = event.name;
-			self.updateName();
-		} else {
-			self.showSetNameBtn.classList.toggle( 'hidden', false );
+		if ( !self.isPersistent ) {
+			console.log( 'room was set not persistent?!', event );
+			if (( self.isOwner || self.isAdmin ) && self.showSetNameBtn )
+				self.showSetNameBtn.classList.toggle( 'hidden', false );
+			return;
 		}
 		
-		function updateUIElements() {
-			self.toggleShowSetName( false );
-			if ( self.isOwner )
-				self.renameBtn.classList.toggle( 'hidden', false );
-			
-			if ( self.showSetNameBtn ) {
-				self.showSetNameBtn.parentNode.removeChild( self.showSetNameBtn );
-				self.showSetNameBtn = null;
-			}
-		}
+		self.removeNameThings();
+		self.identity.name = event.name;
+		self.updateName();
+		if ( self.isAdmin )
+			self.toggleSettings( true );
+	}
+	
+	ns.PresenceRoom.prototype.handleIsAuthed = function( isAuthed ) {
+		const self = this;
+		console.log( 'handleIsAuthed', isAuthed );
+		self.isAuthed = isAuthed || false;
+		if ( !self.isPersistent )
+			return;
+		
+		self.leaveBtn.classList.toggle( 'hide-btn-inline', !isAuthed );
+	}
+	
+	ns.PresenceRoom.prototype.removeNameThings = function() {
+		const self = this;
+		self.toggleShowSetName( false );
+		if ( self.showSetNameBtn )
+			self.showSetNameBtn.parentNode.removeChild( self.showSetNameBtn );
+		
+		if ( self.setNameForm )
+			self.setNameForm.parentNode.removeChild( self.setNameForm );
+		
+		delete self.showSetNameBtn;
+		delete self.setNameForm;
 	}
 	
 	ns.PresenceRoom.prototype.handleMsgWaiting = function( state ) {
@@ -1595,11 +1634,9 @@ library.view = library.view || {};
 		self.msgWaiting.set( state );
 	}
 	
-	ns.PresenceRoom.prototype.handleOwner = function( isOwner ) {
+	ns.PresenceRoom.prototype.toggleSettings = function( show ) {
 		const self = this;
-		self.isOwner = isOwner;
-		const show = !( self.isOwner && self.isPersistent );
-		self.renameBtn.classList.toggle( 'hidden', show );
+		self.settingsBtn.classList.toggle( 'hidden', !show );
 	}
 	
 	ns.PresenceRoom.prototype.updateRoomStatus = function( data ) {

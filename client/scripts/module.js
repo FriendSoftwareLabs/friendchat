@@ -297,12 +297,6 @@ library.module = library.module || {};
 		function saveHandler( data ) { self.saveSetting( data ); }
 	}
 	
-	/*
-	data = {
-		setting : <label>,
-		value : <value>,
-	}
-	*/
 	ns.BaseModule.prototype.saveSetting = function( data ) {
 		var self = this;
 		data.clientId = self.clientId; // treeroot legacy
@@ -903,11 +897,14 @@ library.module = library.module || {};
 				
 			room.getInviteToken( null, getBack );
 			function getBack( inv ) {
+				console.log( 'room.getInviteToken - back', inv );
+				//const invite = self.buildInvite( type, roomId, inv.token );
 				contact.invite( inv.data );
 			}
 		}
 	}
 	
+	/*
 	ns.Presence.prototype.buildInvite = function( type, roomId, inviteToken ) {
 		var self = this;
 		const host = self.module.host + ':' + self.module.port;
@@ -925,6 +922,7 @@ library.module = library.module || {};
 		var invStr = hello.intercept.buildURL( bundle, true, 'live @ myplcae xoxoxo' );
 		return invStr;
 	}
+	*/
 	
 	ns.Presence.prototype.setLogin = function() {
 		var self = this;

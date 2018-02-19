@@ -18,6 +18,7 @@
 		<div id="fragments">
 
 <!-- HOST
+label,
 host,
 port,
 hostStatus,
@@ -26,7 +27,7 @@ portStatus,
 <script id="host-tmpl" type="text/html">
 <form id="hostform" class="setting group row">
 	<div class="label fortify">
-		host:
+		<%= label %>:
 	</div>
 	<div class="input expand group row">
 		<div class="host expand group row">
@@ -64,12 +65,13 @@ name,
 </script>
 
 <!-- JOIN container
+label
 status
 -->
 <script id="join-tmpl" type="text/html">
 <div id="join" class="setting group row left">
 	<div class="label fortify">
-		{i18n_join}:
+		<%= label %>:
 	</div>
 	<div class="input expand group row">
 		<div class="join-wrap group column left">

@@ -59,26 +59,27 @@ library.view = library.view || {};
 		];
 		self.displayOrder = self.validKeys;
 		self.labelMap = {
-			displayName : View.i18n('i18n_server_name'),
-			login       : View.i18n('i18n_server_login'),
-			password    : View.i18n('i18n_server_pass'),
-			nick        : View.i18n('i18n_nick'),
-			awayNick    : View.i18n('i18n_away_nick'),
-			autoAway    : View.i18n('i18n_auto_away'),
-			autoBack    : View.i18n('i18n_auto_back'),
-			perform     : View.i18n('i18n_perform'),
-			connect     : View.i18n('i18n_on_startup'),
-			autoconnect : View.i18n('i18n_auto_connect'),
-			tls         : View.i18n('i18n_require_encryption'),
-			sasl        : View.i18n('i18n_use_sasl'),
-			doPerform   : View.i18n('i18n_send_perform_on'),
-			rainbow     : View.i18n('i18n_use_rainbow'),
-			kitties     : View.i18n('i18n_use_script_kitties'),
-			autojoin    : View.i18n('i18n_autojoin_channels'),
-			autoshow    : View.i18n('i18n_show_channel_on_join'),
-			join        : View.i18n('i18n_channels'),
-			ircTheme    : View.i18n('i18n_irc_theme_file'),
-			msgAlert    : View.i18n('i18n_message_alert'),
+			host        : View.i18n( 'i18n_host' ),
+			displayName : View.i18n( 'i18n_server_name' ),
+			login       : View.i18n( 'i18n_server_login' ),
+			password    : View.i18n( 'i18n_server_pass' ),
+			nick        : View.i18n( 'i18n_nick' ),
+			awayNick    : View.i18n( 'i18n_away_nick' ),
+			autoAway    : View.i18n( 'i18n_auto_away' ),
+			autoBack    : View.i18n( 'i18n_auto_back' ),
+			perform     : View.i18n( 'i18n_perform' ),
+			connect     : View.i18n( 'i18n_on_startup' ),
+			autoconnect : View.i18n( 'i18n_auto_connect' ),
+			tls         : View.i18n( 'i18n_require_encryption' ),
+			sasl        : View.i18n( 'i18n_use_sasl' ),
+			doPerform   : View.i18n( 'i18n_send_perform_on' ),
+			rainbow     : View.i18n( 'i18n_use_rainbow' ),
+			kitties     : View.i18n( 'i18n_use_script_kitties' ),
+			autojoin    : View.i18n( 'i18n_autojoin_channels' ),
+			autoshow    : View.i18n( 'i18n_show_channel_on_join' ),
+			join        : View.i18n( 'i18n_channels' ),
+			ircTheme    : View.i18n( 'i18n_irc_theme_file' ),
+			msgAlert    : View.i18n( 'i18n_message_alert' ),
 		};
 		
 		self.buildMap = {
@@ -113,8 +114,9 @@ library.view = library.view || {};
 		var hostStatus = hello.template.get( 'settings-status-tmpl', { setting : 'host' });
 		var portStatus = hello.template.get( 'settings-status-tmpl', { setting : 'port' });
 		var conf = {
-			host : self.settings.host,
-			port : self.settings.port,
+			label      : self.labelMap[ 'host' ],
+			host       : self.settings.host,
+			port       : self.settings.port,
 			hostStatus : hostStatus,
 			portStatus : portStatus,
 		};
@@ -252,7 +254,10 @@ library.view = library.view || {};
 		
 		function buildContainer() {
 			var status = hello.template.get( 'settings-status-tmpl', { setting : 'join' });
-			join.element = hello.template.getElement( 'join-tmpl', { status : status });
+			join.element = hello.template.getElement( 'join-tmpl', {
+				label : self.labelMap[ 'join' ],
+				status : status,
+			});
 			self.container.appendChild( join.element );
 			join.container = join.element.querySelector( '.join-channels' );
 		}

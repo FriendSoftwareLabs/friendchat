@@ -394,3 +394,7 @@ causes clicks to go through twice:
 	display : flex;
 	outline: none;
 }
+
+.hide-btn-inline {
+	opacity: 0;
+}

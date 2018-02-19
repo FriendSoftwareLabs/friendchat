@@ -1,4 +1,4 @@
-#!bin/bash
+#!/bin/bash
 
 # Autostart script for Friend Chat's Presence server
 # --------------------------------------------------
