@@ -1052,37 +1052,12 @@ library.component = library.component || {};
 			name   : View.i18n( 'i18n_share' ),
 			faIcon : 'fa-share-alt',
 		};
-		const sendAudio = {
-			type : 'item',
-			id : 'send-audio',
-			name : View.i18n( 'i18n_menu_send_audio' ),
-			faIcon : 'fa-microphone',
-			toggle : true,
-			close : false,
-		};
-		const sendVideo = {
-			type : 'item',
-			id : 'send-video',
-			name : View.i18n( 'i18n_menu_send_video' ),
-			faIcon : 'fa-video-camera',
-			toggle : true,
-			close : false,
-		};
-		const receiveAudio = {
+		const presentation = {
 			type   : 'item',
-			id     : 'receive-audio',
-			name   : View.i18n( 'i18n_menu_receive_audio' ),
-			faIcon : 'fa-volume-up',
-			toggle : true,
-			close  : false,
-		};
-		const receiveVideo = {
-			type   : 'item',
-			id     : 'receive-video',
-			name   : View.i18n( 'i18n_menu_receive_video' ),
-			faIcon : 'fa-film',
-			toggle : true,
-			close  : false,
+			id     : 'mode-presentation',
+			name   : View.i18n( 'i18n_presentation_mode' ),
+			faIcon : 'fa-eye',
+			toggle : false,
 		};
 		const sendReceive = {
 			type : 'folder',
@@ -1090,10 +1065,38 @@ library.component = library.component || {};
 			name : View.i18n( 'Send / Receive media' ),
 			faIcon : 'fa-exchange',
 			items : [
-				sendAudio,
-				sendVideo,
-				receiveAudio,
-				receiveVideo,
+				{
+					type : 'item',
+					id : 'send-audio',
+					name : View.i18n( 'i18n_menu_send_audio' ),
+					faIcon : 'fa-microphone',
+					toggle : true,
+					close : false,
+				},
+				{
+					type : 'item',
+					id : 'send-video',
+					name : View.i18n( 'i18n_menu_send_video' ),
+					faIcon : 'fa-video-camera',
+					toggle : true,
+					close : false,
+				},
+				{
+					type   : 'item',
+					id     : 'receive-audio',
+					name   : View.i18n( 'i18n_menu_receive_audio' ),
+					faIcon : 'fa-volume-up',
+					toggle : true,
+					close  : false,
+				},
+				{
+					type   : 'item',
+					id     : 'receive-video',
+					name   : View.i18n( 'i18n_menu_receive_video' ),
+					faIcon : 'fa-film',
+					toggle : true,
+					close  : false,
+				},
 			],
 		};
 		const dragger = {
@@ -1131,6 +1134,7 @@ library.component = library.component || {};
 			fullscreen,
 			screenShare,
 			screenShareExt,
+			presentation,
 			source,
 			popped,
 			speaker,
@@ -1307,9 +1311,33 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.Live.prototype.togglePresentation = function( presenterId ) {
+		const self = this;
+		console.log( 'view.togglePresentation', presenterId );
+		if ( !presenterId )
+			disable();
+		else
+			enable( presenterId );
+		
+		function disable() {
+			self.togglePopped( true );
+		}
+		
+		function enable( presenterId ) {
+			let peer = self.peers[ presenterId ];
+			if ( !peer )
+				return;
+			
+			console.log( 'enable' );
+			if ( 'selfie' === presenterId )
+				self.togglePopped( false );
+			
+		}
+	}
+	
 	ns.Live.prototype.addChat = function( userId, identities, conn ) {
-		var self = this;
-		var conf = {
+		const self = this;
+		const conf = {
 			identities : identities,
 			userId     : userId,
 			conn       : conn,
@@ -2067,6 +2095,10 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleMedia = function( media ) {
 		const self = this;
+		if ( !media ) {
+			return;
+		}
+		
 		if ( !self.stream ) {
 			self.setStream( media.id );
 		}
@@ -2998,6 +3030,9 @@ library.component = library.component || {};
 		var self = this;
 		self.toggleAVGraph();
 		self.handleMedia( media );
+		if ( !self.stream )
+			return;
+		
 		self.stream.muted = true;
 	}
 	

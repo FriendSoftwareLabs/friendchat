@@ -299,3 +299,4 @@ i18n_set_name : Set
 i18n_displayed_name_may_change_or_later : This will be your displayed name, you may change it here or during the session
 i18n_join_video_audio : Join with video and audio
 i18n_join_audio_only : Join with audio only
+i18n_presentation_mode : Presentation mode

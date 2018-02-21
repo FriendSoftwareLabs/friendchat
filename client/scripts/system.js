@@ -2086,6 +2086,7 @@ library.rtc = library.rtc || {};
 		const self = this;
 		self.id = init.liveId;
 		const liveConf = init.liveConf;
+		console.log( 'liveConf', liveConf );
 		const conf = self.conf;
 		const viewConf = {
 			userId     : liveConf.userId,
@@ -2096,6 +2097,7 @@ library.rtc = library.rtc || {};
 				ICE         : liveConf.ICE,
 				permissions : conf.permissions,
 				quality     : liveConf.quality,
+				mode        : liveConf.mode,
 			},
 		};
 		self.view = new library.view.Live(
