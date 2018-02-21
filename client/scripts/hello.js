@@ -911,13 +911,15 @@ var hello = null;
 		const self = this;
 		const firstLogin = !self.account.lastLogin;
 		if ( firstLogin )
-			self.showWizard( doSetup );
+			doSetup({
+				advancedUI : false,
+			});
 		else
 			doSetup();
 		
-		function doSetup( wizRes ) {
-			if ( wizRes )
-				self.advancedUI = wizRes.advancedUI;
+		function doSetup( firstLoginConf ) {
+			if ( firstLoginConf )
+				self.advancedUI = firstLoginConf.advancedUI;
 			else
 				self.advancedUI = self.account.settings.advancedUI;
 				
@@ -941,7 +943,7 @@ var hello = null;
 			
 			function ready( msg ) {
 				self.initSubViews();
-				hello.account.sendReady( wizRes || null );
+				hello.account.sendReady( firstLoginConf || null );
 				hello.timeNow( 'main open' );
 			}
 			
