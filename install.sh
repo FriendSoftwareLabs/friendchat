@@ -29,8 +29,12 @@ then
 	exit 1
 fi
 
-# Installs Dialog
-sudo apt-get install dialog
+# Installs Dialog if needed
+PATH_TO_DIALOG=$(which dialog)
+if [ ! -x "${PATH_TO_DIALOG}" ]; then
+	echo "dialog not found, it will be installed"
+	sudo apt-get install dialog
+fi
 
 # Welcome
     dialog --backtitle "Friend Chat installer" --yesno "\
