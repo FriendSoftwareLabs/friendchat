@@ -756,4 +756,13 @@ clear
 
 # Clean exit
 echo "Friend Chat installation successful."
+echo ""
+echo "To start the servers use:"
+echo "sudo systemctl start friendchat-server"
+echo "sudo systemctl start presence-server"
+echo ""
+echo "To start automatically at boot:"
+echo "sudo systemctl enable friendchat-server"
+echo "sudo systemctl enable presence-server"
+echo ""
 exit 0
