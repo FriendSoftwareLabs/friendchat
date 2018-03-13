@@ -7,6 +7,9 @@
 # Edit this line if your Friend directory is not the same as this one
 FRIEND="/home/$USER/friendup"
 
+echo "Stopping friendchat-server system service"
+sudo systemctl stop friendchat-server
+
 # Eventually asks for the good directory
 if [ ! -f "$FRIEND/build/cfg/cfg.ini" ]; then
     while true; do
@@ -58,4 +61,7 @@ cd "$TEMP"
 # End
 echo ""
 echo "Update successfully completed."
+echo "Starting friendchat-server system service"
+sudo systemctl start friendchat-server
+
 echo ""
