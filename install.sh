@@ -23,6 +23,12 @@
 QUIT="Installation aborted. Please restart script to complete it."
 P_GIT="https://github.com/FriendSoftwareLabs/presence.git"
 
+if [ ! -e /usr/bin/node ]
+then
+	echo "/usr/bin/node not found. Install node.js and/or symlink to /usr/bin/node"
+	exit 1
+fi
+
 # Installs Dialog
 sudo apt-get install dialog
 
