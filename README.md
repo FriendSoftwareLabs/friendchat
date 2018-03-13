@@ -148,7 +148,7 @@ problems.
 
 ## Developers
 
-If you intent to work on the source code of the Friend Chat client application,
+If you intend to work on the source code of the Friend Chat client application,
 the Friend Chat server or the Presence server, please read the following.
 
 #### Friend Chat client
@@ -178,7 +178,7 @@ The server will be automatically stopped and restarted by the script.
 #### Presence server
 
 The Friend Chat installation script clones the Presence server directly into
-the Friend build/services/Presence directory. If you intent to work on it,
+the Friend build/services/Presence directory. If you intend to work on it,
 we suggest that you clone the server in another more accessible directory.
 The Presence server [can be found on Github](https://github.com/FriendSoftwareLabs/presence).
 You can update the files by using its own `update.sh` script,
