@@ -51,6 +51,9 @@ rsync -ravl \
 	--exclude '/readme.txt' \
 	. "$FRIENDCHAT_SERVER"
 
+# Remove old startup script (if still exists)
+rm -f ${FRIEND}/build/autostart/startfriendchat.sh
+
 # Run npm
 echo "Calling 'npm install'."
 TEMP=$(pwd)
