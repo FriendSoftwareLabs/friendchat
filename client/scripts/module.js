@@ -1286,7 +1286,6 @@ library.module = library.module || {};
 		}
 		
 		function retryRequest() {
-			console.log( 'retryRequest' );
 			self.reconnectNow();
 		}
 	}
@@ -1470,11 +1469,6 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.updateMessageCrypto = function( data ) {
 		var self = this;
-		console.log( 'updateMessageCrypto', {
-			s : self.module.settings.msgCrypto,
-			d : data,
-		});
-		
 		self.module.settings.msgCrypto = data.value;
 		
 		var contactIds = Object.keys( self.contacts );
@@ -1493,7 +1487,6 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.updateCryptoAccepted = function( update ) {
 		var self = this;
-		console.log( 'cryptoAccepted', update );
 		self.module.settings.cryptoAccepted = update.value;
 	}
 	
@@ -1756,7 +1749,6 @@ library.module = library.module || {};
 		}
 		
 		function setUsername() {
-			console.log( 'sci-reg, user', user );
 			data.Username = user.name || user.alias;
 			setEmail( emailDone );
 		}
@@ -1772,9 +1764,6 @@ library.module = library.module || {};
 		}
 		
 		function avatarDone() {
-			console.log( 'avatarDone', data );
-			//return;
-			
 			self.register( data );
 		}
 		
@@ -1832,11 +1821,6 @@ library.module = library.module || {};
 		}
 		
 		function setAvatar( callback ) {
-			console.log( 'setAvatar' );
-			var conf = {
-				onimage : onimage,
-				onclose : onclose,
-			};
 			var camView = new library.view.AddImage( conf );
 			
 			function onimage( data ) {
@@ -1989,10 +1973,7 @@ library.module = library.module || {};
 		function privateChat( e ) { self.handlePrivateChat( e ); }
 		function nickChange( e ) { self.nickChange( e ); }
 		function quit( e ) { self.userQuit( e ); }
-		function clearTargets( e ) {
-			console.log( 'clearTargets', e );
-			self.cleanContacts();
-		}
+		function clearTargets( e ) { self.cleanContacts(); }
 		function clientDisconnect( e ) { self.clientDisconnect( e ); }
 		
 		self.connectionErrorMap = {
@@ -2241,7 +2222,6 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype.leftChannel = function( data ) {
 		var self = this;
-		console.log( 'IRC.leftChannel', data );
 		var channel = self.contacts[ data.clientId ];
 		if ( !channel )
 			return;
@@ -2419,7 +2399,6 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype.clientDisconnect = function( msg ) {
 		var self = this;
-		console.log( 'clientDisconnect', msg );
 		self.cleanContacts();
 	}
 	
@@ -2472,7 +2451,6 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype.clearState = function( msg ) {
 		var self = this;
-		console.log( 'clearState', msg );
 		self.cleanContacts();
 	}
 	

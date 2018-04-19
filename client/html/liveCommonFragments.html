@@ -1,0 +1,32 @@
+<!-- live-stream-switch
+fromType
+toType
+-->
+<script id="viewpane-live-stream-switch-tmpl" type="text/html">
+<div id="live-stream-switch" class="abs-cover center-child std-bg">
+	<div id="live-stream-switch-content">
+		<div id="live-stream-switch-explanation"><!--
+			-->This room has been switched from "<%= fromType %>" to "<%= toType %>"<!--
+			-->, would you like to:
+		</div>
+		<div id="live-stream-switch-options" class="group row btn-row allow-wrap">
+			<div id="live-switch-join-stream" class="btn hidden">
+				<i class="fa fa-fw fa-eye"></i>
+				Join stream
+			</div>
+			<div id="live-switch-join-video" class="btn hidden">
+				<i class="fa fa-fw fa-video-camera"></i>
+				Join with video
+			</div>
+			<div id="live-switch-join-audio" class="btn hidden">
+				<i class="fa fa-fw fa-microphone"></i>
+				Join with audio
+			</div>
+			<div id="live-switch-close" class="btn">
+				<i class="fa fa-fw fa-close"></i>
+				Close
+			</div>
+		</div>
+	</div>
+</div>
+</script>

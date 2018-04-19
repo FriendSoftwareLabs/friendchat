@@ -179,6 +179,7 @@ library.component = library.component || {};
 	ns.Menu.prototype.close = function() {
 		const self = this;
 		console.log( 'menu.close', self );
+		self.release();
 	}
 	
 	// private

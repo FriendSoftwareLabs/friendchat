@@ -8,7 +8,6 @@
 			webclient/apps/FriendChat/api/compatability.js;
 			webclient/apps/FriendChat/scripts/component/tool.js;
 			webclient/apps/FriendChat/scripts/component/parser.js;
-			webclient/apps/FriendChat/scripts/component/socket.js;
 			webclient/apps/FriendChat/scripts/component/voice.js;
 			webclient/apps/FriendChat/scripts/component/drop.js;
 			webclient/apps/FriendChat/scripts/component/share.js;
@@ -19,8 +18,8 @@
 			webclient/apps/FriendChat/scripts/view/live/components-rtc.js;
 			webclient/apps/FriendChat/scripts/view/live/init-checks.js;
 			webclient/apps/FriendChat/scripts/view/live/ui-panes.js;
-			webclient/apps/FriendChat/scripts/view/live/live-rtc.js;
-			webclient/apps/FriendChat/scripts/view/live/live-ui.js;
+			webclient/apps/FriendChat/scripts/view/live/stream-rtc.js;
+			webclient/apps/FriendChat/scripts/view/live/stream-ui.js;
 			webclient/apps/FriendChat/scripts/view/live/live.js
 		" type="text/javascript"></script>
 		
@@ -31,54 +30,76 @@
 			webclient/apps/FriendChat/css/linkExpand.css;
 			webclient/apps/FriendChat/css/share.css;
 			webclient/apps/FriendChat/css/liveCommon.css;
-			webclient/apps/FriendChat/css/live.css
+			webclient/apps/FriendChat/css/stream.css
 		" type="text/css">
 	</head>
 	<body id="hello">
-		<div id="live" class="group row cover MouseDefault">
-			<div id="live-content" class="flex-reset expand">
-				<div>
-					<div id="peer-container" class="">
-						<div id="waiting-for-container" class="abs-cover center-child">
-							<div id="waiting-for-peers-fritz">
-								<!--
-								<div id="waiting-for-peers-spinner">
-								</div>
-								-->
-							</div>
-							<div id="waiting-for-peers-dots" class="hidden">
-								<div class="waiting-dot center-child">
-									<i class="fa fa-fw fa-user"></i>
-								</div>
-								<div class="waiting-dot center-child">
-									<i class="fa fa-fw fa-user"></i>
-								</div>
-								<div class="waiting-dot center-child">
-									<i class="fa fa-fw fa-user"></i>
-								</div>
-							</div>
+		<div id="live" class="std-bg group row cover MouseDefault">
+			<div id="main-content" class="expand bar column">
+				<div id="stream-container" class="expand">
+					<div id="waiting-for-container" class="abs-cover center-child">
+						<div id="waiting-for-stream-fritz">
 						</div>
-						<div id="peers" class="group row allow-wrap grid1">
-							<!-- selfie and peer fragments go here -->
+						<div id="waiting-for-stream-dots" class="hidden">
+							<div class="waiting-dot center-child">
+								<i class="fa fa-fw fa-user"></i>
+							</div>
+							<div class="waiting-dot center-child">
+								<i class="fa fa-fw fa-user"></i>
+							</div>
+							<div class="waiting-dot center-child">
+								<i class="fa fa-fw fa-user"></i>
+							</div>
 						</div>
 					</div>
-					<div id="live-ui" class="item-row group row std-bg">
+					<div id="stream-element-container" class="abs-cover">
+						<!-- stream element goes here -->
+					</div>
+				</div>
+				<div id="stream-ui" class="fortify item-row group row">
+					<div id="bar-buttons-left" class="group row btn-row fortify">
 						<div id="show-menu-btn" class="btn fortify">
 							<i class="fa fa-fw fa-bars"></i>
 						</div>
-						<div id="toggle-peer-grid-btn" class="btn fortify hidden">
-							<i class="fa fa-fw fa-users"></i>
+						<div id="mute-stream" class="btn fortify" title="Mute">
+							<i class="fa fa-fw fa-microphone-slash"></i>
 						</div>
-						<div id="tease-chat-container" class="fortify">
-							<!-- tease chat -->
+						<div id="toggle-fullscreen" class="btn fortify" title="Fullscreen">
+							<i class="fa fa-fw fa-tv"></i>
+						</div>
+					</div>
+					<div id="source-name" class="expand hidden">
+					</div>
+					<div id="tease-chat-container" class="fortify">
+						<div id="tease-chat" class="group row btn-row hidden">
+							<div id="tease-chat-content" class="expand">
+							</div>
+							<div id="tease-chat-num" class="std-icon fortify">
+							</div>
+							<div id="tease-chat-goto-chat" class="btn fortify">
+								<i class="fa fa-fw fa-keyboard-o"></i>
+							</div>
+							<div id="tease-chat-clear" class="btn danger fortify">
+								<i class="fa fa-fw fa-close"></i>
+							</div>
+						</div>
+					</div>
+					<div id="bar-buttons-right" class="btn-row fortify" title="Toggle chat and user list">
+						<div id="toggle-user-stuff" class="btn fortify">
+							<i class="fa fa-fw fa-comments-o"></i>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div id="lists-container" class="group row cover fortify">
-				<!-- lists go here -->
+			<div id="user-stuff" class="group row cover fortify hidden">
+				<div id="chat-container" class="expand">
+					<!-- chat goes here -->
+				</div>
+				<div id="user-container" class="fortify">
+					<!-- user list goes here -->
+				</div>
 			</div>
-			<div id="live-ui-panes" class="abs-cover hidden">
+			<div id="stream-ui-panes" class="abs-cover hidden">
 				<!-- UI panes go here -->
 			</div>
 			<div id="connecting-peers" class="hidden">
@@ -86,314 +107,102 @@
 		</div>
 		<div id="fragments" class="hidden">
 
-<!-- Selfie
+
+<!-- User
+userId,
 name,
 avatar,
 -->
-<script id="selfie-tmpl" type="text/html">
-<div id="selfie" class="peer selfie popped bar column">
-	<div class="stream-container expand">
-		<div class="avatar" style="background-image: url(<%= avatar %>)">
+<script id="live-stream-user-tmpl" type="text/html">
+<div id="<%= userId %>" class="peer group row">
+	<div class="avatar fortify" style="background-image: url(<%= avatar %>)">
+	</div>
+	<div class="name expand">
+		<%= name %>
+	</div>
+	<div class="click-catch abs-cover">
+	</div>
+	<div class="user-ui abs-cover group row item-row">
+		<div class="user-state std-bg group row center">
+		</div>
+	</div>
+</div>
+</script>
+
+
+<!-- Source
+avatar,
+-->
+<script id="live-stream-source-tmpl" type="text/html">
+<div id="source" class="popped bar column">
+	<div id="source-media-container" class="expand">
+		<div id="source-avatar" class="avatar" style="background-image: url(<%= avatar %>)">
 		</div>
 		<!--
-		// Selfie video element is inserted here
+		// Source media element is inserted here
 		-->
 	</div>
 	<div class="click-catch abs-cover">
 	</div>
-	<div class="list-ui expand">
-		<div class="list-peer-state fortify">
-			<div class="list-avatar" style="background-image: url(<%= avatar %>)">
-			</div>
-			<div class="state list-is-speaking">
-				<i class="fa fa-fw fa-volume-up"></i>
-			</div>
-			<div class="state list-mute-remote hidden">
+	<div id="source-ui" class="stream-ui abs-cover bar column">
+		<div class="stream-state std-bg group row center">
+			<div class="state muted blink-red hidden" title="You have muted your audio">
 				<i class="fa fa-fw fa-microphone-slash"></i>
 			</div>
-			<div class="state list-mute-local blink-red hidden">
-				<i class="fa fa-fw fa-microphone-slash"></i>
-			</div>
-			<div class="state list-rtc-state hidden">
-			</div>
-		</div>
-		<div class="name fortify">
-			<%= name %>
-		</div>
-	</div>
-	<div id="popped-ui" class="fortify std-bg">
-		<div class="btn-row group row">
-			<div id="popped-mute-self" class="btn" title="Mute yourself">
-				<i class="fa fa-fw fa-microphone-slash"></i>
-			</div>
-			<div id="popped-unpop" class="btn" title="Show yourself in grid">
-				<i class="fa fa-fw fa-search-plus"></i>
-			</div>
-		</div>
-	</div>
-	<div class="grid-ui abs-cover bar column">
-		<div class="ui-view expand">
-			<div class="stream-state std-bg group row center">
-				<div class="state muted blink-red hidden" title="You have muted your audio">
-					<i class="fa fa-fw fa-microphone-slash"></i>
-				</div>
-				<div class="state blinded blink-red hidden" title="You have paused your video">
-					<i class="fa fa-fw fa-eye-slash"></i>
-				</div>
-			</div>
-			<div class="dragger center-child std-bg dropzone Accelerated hidden" draggable="true" title="Drag to reposition">
-				<div class="drag-hint center-child">
-					<i class="fa fa-fw fa-hand-rock-o draggable"></i>
-					<i class="fa fa-fw fa-arrows dragee hidden"></i>
-					<i class="fa fa-fw fa-dot-circle-o dropzone hidden"></i>
-					<i class="fa fa-fw fa-check drop-target hidden"></i>
-				</div>
-				<div class="drag-close btn danger center-child">
-					<i class="fa fa-fw fa-close"></i>
-				</div>
-			</div>
-			<div id="queue-container" class="abs-cover std-bg center-child hidden">
-				<div class="queue-info">
-					<div class="description">
-						The room is full, you have been queued. Your position is:
-					</div>
-					<div class="queue-position">
-						<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="ui-peer-info std-bg fortify group row cover">
-			<div class="fortify">
-				<div id="mute-self" class="btn" title="Mute yourself">
-					<i class="fa fa-fw fa-microphone-slash"></i>
-				</div>
-			</div>
-			<div class="name-bar expand">
-				<div class="name">
-					<%= name %>
-				</div>
-			</div>
-			<div id="selfie-volume" class="volume-indicator-container fortify">
-			</div>
-			<div id="session-duration" class="fortify group row">
-				<div class="time expand">
-					--:--:--
-				</div>
-				<i class="fa fa-fw fa-clock-o fortify"></i>
+			<div class="state blinded blink-red hidden" title="You have paused your video">
+				<i class="fa fa-fw fa-eye-slash"></i>
 			</div>
 		</div>
 	</div>
 </div>
 </script>
 
-<!-- Peer
-peerId,
-name,
+<!-- Sink
 avatar,
 -->
-<script id="peer-tmpl" type="text/html">
-<div id="<%= peerId %>" class="peer bar column">
-	<div class="stream-container expand">
-		<div class="avatar" style="background-image: url(<%= avatar %>)">
+<script id="live-stream-sink-tmpl" type="text/html">
+<div id="sink" class="popped bar column">
+	<div id="source-media-container" class="expand">
+		<div id="source-avatar" class="avatar" style="background-image: url(<%= avatar %>)">
 		</div>
 		<!--
-			// Peer video element is inserted here when a remote stream is received
+		// Source media element is inserted here
 		-->
-		<div class="main-rtc">
-			<div class="main-rtc-content bar column">
-				<div class="main-rtc-spinner">
-					<div class="super-green hidden">
-						<i class="fa fa-fw fa-circle-o"></i>
-					</div>
-					<div class="spinning">
-						<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-					</div>
-					<div class="error blink-red hidden">
-						<i class="fa fa-fw fa-warning"></i>
-					</div>
-					<div class="closed hidden">
-						<i class="fa fa-fw fa-power-off"></i>
-					</div>
-				</div>
-				<div class="main-rtc-status">
-					<div class="main-rtc-state">
-						<div class="state-primary group row">
-							<div class="state-label fortify">
-								webRTC:
-							</div>
-							<div class="state-value expand">
-							</div>
-						</div>
-						<div class="state-additional">
-							<div class="state-routing group row">
-								<div class="state-label fortify">
-									{i18n_routing}:
-								</div>
-								<div class="state-value expand">
-									
-								</div>
-							</div>
-							<div class="state-latency group row">
-								<div class="state-label fortify">
-									{i18n_latency}:
-								</div>
-								<div class="state-value expand">
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="main-stream-state">
-						<div class="state-primary group row">
-							<div class="state-label fortify">
-								{i18n_stream}:
-							</div>
-							<div class="state-value expand">
-							</div>
-						</div>
-						<div class="state-additional">
-							<div class="state-audio group row">
-								<div class="state-label fortify">
-									{i18n_audio}:
-								</div>
-								<div class="state-value expand">
-									
-								</div>
-							</div>
-							<div class="state-video group row">
-								<div class="state-label fortify">
-									{i18n_video}:
-								</div>
-								<div class="state-value expand">
-									
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="main-state-error group row hidden">
-						<div class="state-label">
-							{i18n_error}:
-						</div>
-						<div class="state-value">
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="list-ui expand">
-		<div class="list-peer-state fortify">
-			<div class="list-avatar" style="background-image: url(<%= avatar %>)">
-			</div>
-			<div class="state list-is-speaking">
-				<i class="fa fa-fw fa-volume-up"></i>
-			</div>
-			<div class="state list-mute-remote hidden">
-				<i class="fa fa-fw fa-microphone-slash"></i>
-			</div>
-			<div class="state list-mute-local blink-red hidden">
-				<i class="fa fa-fw fa-microphone-slash"></i>
-			</div>
-			<div class="state list-rtc-state hidden">
-			</div>
-		</div>
-		<div class="name fortify">
-			<%= name %>
-		</div>
 	</div>
 	<div class="click-catch abs-cover">
 	</div>
-	<div class="grid-ui abs-cover bar column">
-		<div class="ui-view expand">
-			<div class="stream-state std-bg group row center">
-				<div class="state say-state hidden" title="Read out chat messages from this participant">
-					<i class="fa fa-fw fa-volume-up"></i>
-				</div>
-				<div class="state muted blink-red hidden" title="You have muted this participant">
-					<i class="fa fa-fw fa-microphone-slash"></i>
-				</div>
-				<div class="state remote-mute  hidden" title="This participant has muted their audio">
-					<i class="fa fa-fw fa-microphone-slash"></i>
-				</div>
-				<div class="state blinded blink-red  hidden" title="You have blocked video from this participant">
-					<i class="fa fa-fw fa-eye-slash"></i>
-				</div>
-				<div class="state remote-blind  hidden" title="This participant has paused their video">
-					<i class="fa fa-fw fa-eye-slash"></i>
-				</div>
+	<div id="sink-ui" class="stream-ui abs-cover bar column">
+		<div id="sink-media-state" class="stream-state std-bg group row center hidden">
+			<div class="state muted blink-red hidden" title="You have muted your audio">
+				<i class="fa fa-fw fa-microphone-slash"></i>
 			</div>
-			<div class="dragger center-child std-bg dropzone Accelerated hidden" draggable="true" title="Drag to reposition">
-				<div class="drag-hint center-child">
-					<i class="fa fa-fw fa-hand-rock-o draggable"></i>
-					<i class="fa fa-fw fa-arrows dragee hidden"></i>
-					<i class="fa fa-fw fa-dot-circle-o dropzone hidden"></i>
-					<i class="fa fa-fw fa-check drop-target hidden"></i>
-				</div>
-				<div class="drag-close btn danger center-child">
-					<i class="fa fa-fw fa-close"></i>
-				</div>
-			</div>
-			<div class="closing abs-cover center-child hidden">
-				<div class="closing-content bar column">
-					<div class="closing-countdown">
-						<!--
-							// showClose inserted here
-						-->
-					</div>
-					<div class="closing-label">
-						{i18n_closed}
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="ui-peer-info std-bg group row start fortify">
-			<div class="fortify">
-				<div class="btn show-peer-menu" title="Actions for this participant">
-					<i class="fa fa-fw fa-user"></i>
-				</div>
-			</div>
-			<div class="name-bar expand">
-				<div class="name">
-					<%= name %>
-				</div>
-			</div>
-			<div class="mini-rtc fortify group row">
-				<div class="mini-rtc-state hidden">
-				</div>
-				<div class="mini-rtc-spinner">
-					<div class="super-green hidden">
-						<i class="fa fa-fw fa-circle-o"></i>
-					</div>
-					<div class="spinning">
-						<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-					</div>
-					<div class="error btn blink-red hidden">
-						<i class="fa fa-fw fa-warning"></i>
-					</div>
-				</div>
+			<div class="state blinded blink-red hidden" title="You have paused your video">
+				<i class="fa fa-fw fa-eye-slash"></i>
 			</div>
 		</div>
 	</div>
 </div>
 </script>
+
 
 <!-- video
 id,
-src,
 -->
-<script id="stream-video-tmpl" type="text/html">
-<video id="<%= id %>" src="<%= src %>" class="video stream Accelerated" autoplay="autoplay">
+<script id="live-video-tmpl" type="text/html">
+<video id="<%= id %>" class="video stream Accelerated" autoplay="autoplay">
 </video>
 </script>
+
 
 <!-- audio
 id,
 src,
 -->
-<script id="stream-audio-tmpl" type="text/html">
+<script id="live-audio-tmpl" type="text/html">
 <audio id="<%= id %>" src="<%= src %>" class="audio" autoplay="autoplay">
 </audio>
 </script>
+
 
 <!-- istyping
 id,
@@ -410,7 +219,7 @@ from,
 </div>
 </script>
 
-<!--
+<!-- change name
 current,
 -->
 <script id="viewpane-change-username-tmpl" type="text/html">
@@ -547,14 +356,16 @@ label,
 <div id="<%= id %>" class="live-list-container fortify peek <%= show %> hide">
 	<div class="live-list group column cover">
 		<div class="list-head fortify group row">
-			<div class="list-head-icon center-child fortify">
+			<div class="list-head-icon center-child fortify std-icon">
 				<i class="fa fa-fw <%= faIcon %>"></i>
 			</div>
 			<div class="list-label expand">
 				<%= label %>
 			</div>
 		</div>
-		<div class="list-items expand group column start left cover">
+		<div class="list-items-container expand group column start left cover">
+			<div class="list-items abs-cover">
+			</div>
 		</div>
 	</div>
 </div>
@@ -599,20 +410,6 @@ label,
 <option value="<%= value %>" <%= selected %>>
 	<%= label %>
 </option>
-</script>
-
-<!-- countdown
-id,
-sq,
--->
-<script id="countdown-tmpl" type="text/html">
-<div id="<%= id %>" class="countdown-container">
-	<canvas class="countdown-canvas" width="<%= sq %>" height="<%= sq %>">
-	</canvas>
-	<div class="countdown-close-now abs-cover center-child">
-		<i class="fa fa-fw fa-close"></i>
-	</div>
-</div>
 </script>
 
 <!-- base ui pane
@@ -981,29 +778,36 @@ faIcon,
 <script id="chat-pane-tmpl" type="text/html">
 <div id="chat-pane" class="std-bg abs-cover">
 	<!-- chat thingie goes here -->
-	<div id="chat-pane-close" class="btn danger center-child">
+	<div id="chat-pane-close" class="btn center-child">
 		<i class="fa fa-fw fa-close"></i>
 	</div>
 </div>
 </script>
 
 <!-- live-chat-tmpl
-
+welcomeRoomName
 -->
 <script id="live-chat-tmpl" type="text/html">
-<div id="live-chat" class="bar column">
+<div id="live-chat" class="abs-cover bar column">
 	<div id="live-chat-message-container" class="expand">
 		<div id="live-chat-messages" class="SelectableText">
+			<div class="chat-message">
+				<div class="msg-meta group row">
+				</div>
+				<div class="message expand"><!--
+					-->{i18n_now_chatting_in} <%= welcomeRoomName %>..
+				</div>
+			</div>
 		</div>
 	</div>
 	<div id="live-chat-is-typing" class="fortify">
 	</div>
 	<form id="live-chat-form" class="group row fortify">
-		<div id="live-chat-say-state" class="btn" title="Read out chat messages">
+		<div id="live-chat-say-state" class="btn hidden" title="Read out chat messages">
 			<i class="fa fa-fw fa-tty"></i>
 		</div>
 		<div id="live-chat-input-hint" class="blink-text fortify center-child">
-			<i class="fa fa-fw fa-chevron-right"></i>
+			<i class="fa fa-fw fa-keyboard-o"></i>
 		</div>
 		<div class="input-input expand">
 			<div id="input-container" class="abs-cover">
@@ -1014,24 +818,6 @@ faIcon,
 			<i class="fa fa-fw fa-paper-plane"></i>
 		</div>
 	</form>
-</div>
-</script>
-
-<!-- tease chat
-	
--->
-<script id="tease-chat-tmpl" type="text/html">
-<div id="tease-chat" class="group row btn-row hidden">
-	<div id="tease-chat-content" class="expand">
-	</div>
-	<div id="tease-chat-num" class="std-icon fortify">
-	</div>
-	<div id="tease-chat-goto-chat" class="btn fortify">
-		<i class="fa fa-fw fa-keyboard-o"></i>
-	</div>
-	<div id="tease-chat-clear" class="btn danger fortify">
-		<i class="fa fa-fw fa-close"></i>
-	</div>
 </div>
 </script>
 
@@ -1140,7 +926,26 @@ message,
 </div>
 </script>
 
+<!-- stream-state
+	
+-->
+<script id="stream-state-tmpl" type="text/html">
+<div id="stream-state-ui" class="center-child">
+	<div id="stream-state-content" class="std-bg">
+		<div id="source-state" class="stream-state-item group row start">
+			<i class="state-waiting fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<i class="state-ready fa fa-fw fa-check hidden"></i>
+			<div class="stream-state-desc">
+				{i18n_stream_state_source_connecting}
+			</div>
 		</div>
-	</body>
-</html>
-
+		<div id="stream-state" class="stream-state-item group row start hidden">
+			<i class="state-waiting fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<i class="state-ready fa fa-fw fa-check hidden"></i>
+			<div class="stream-state-desc">
+				{i18n_stream_state_stream_connecting}
+			</div>
+		</div>
+	</div>
+</div>
+</script>

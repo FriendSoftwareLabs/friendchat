@@ -315,48 +315,8 @@ library.contact = library.contact || {};
 		
 		return false;
 	}
-
-/*
-<<<<<<< HEAD
-	ns.Contact.prototype.startLive = function( invite, from ) {
-		var self = this;
-		console.log( 'startLive', invite );
-		var invite = invite || null;
-		var module = hello.module.get( self.moduleId );
-		var user = module.identity;
-		
-		if ( invite )
-			joinSession( user, invite );
-		else
-			setupSession( user );
-		
-		function joinSession( user, invite ) {
-			var host = self.identity || { name : from }; // this contact is inviting you
-			hello.rtc.askClient( invite, host, user );
-		}
-		
-		function setupSession( user ) {
-			var contact = self.identity; // create a session and invite this contact
-			contact.invite = sendInvite;
-			var rtcSession = hello.rtc.getSession();
-			/*
-			if ( rtcSession && !rtcSession.isHost ) {
-				hello.log.show();
-				hello.log.notify( 'You are not the host of the Live session, '
-					+ 'so you may not send invites.' );
-				return;
-			}
-			***
-			
-			console.log( 'startLive.rtcSession', rtcSession );
-			if ( rtcSession )
-				hello.rtc.invite( contact );
-			else
-				hello.rtc.createRoom( [ contact ], user );
-		}
-======= */
+	
 	ns.Contact.prototype.handleStartLive = function( event ) {
-		console.log( 'handleStartLive', event );
 		const self = this;
 		const mode = event.mode || 'video';
 		const perms = event.permissions || buildPermsFor( mode );
@@ -368,7 +328,6 @@ library.contact = library.contact || {};
 			hello.rtc.invite( contact, perms );
 		else
 			hello.rtc.createRoom( [ contact ], user, perms );
-//>>>>>>> master
 		
 		function sendInvite( invite ) {
 			self.sendMessage( invite );
@@ -393,7 +352,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.startLive = function( invite, from ) {
 		const self = this;
-		console.log( 'startLive', invite );
 		if ( !invite )
 			throw new Error( 'Contact.startLive - no invite' );
 		
@@ -411,11 +369,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.addCalendarEvent = function( event, from ) {
 		var self = this;
-		console.log( 'addCalendarEvent', {
-			e : event,
-			f : from,
-		});
-		
 		if ( self.identity )
 			from = self.identity.name;
 		
@@ -551,6 +504,7 @@ library.contact = library.contact || {};
 		
 		ns.Contact.call( self, conf );
 		
+		self.settings = null;
 		self.identities = {};
 		self.onlineList = [];
 		self.users = [];
@@ -572,11 +526,22 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		var self = this;
-		conf = conf || {};
+		// check if room has been initialized
+		if ( !self.settings ) {
+			self.goLivePending = conf || {};
+			return;
+		}
+		
 		if ( self.live )
 			return; // we already are in a live _in this room_
 		
+		conf = conf || {};
 		conf.roomId = self.clientId;
+		conf.roomName = self.identity.name;
+		conf.guestAvatar = self.guestAvatar;
+		if ( self.settings.isStream )
+			conf.isStream = true;
+		
 		self.live = hello.rtc.createSession( conf, liveToServer, onClose );
 		if ( !self.live )
 			return; // session wasnt created, because :reasons:
@@ -591,17 +556,19 @@ library.contact = library.contact || {};
 		// tell main view
 		const userJoin = {
 			type : 'user-join',
-		}
+		};
 		self.liveToView( userJoin );
 		
 		// events from live view we care about, everything else is passed on
 		self.live.on( 'chat', chat );
 		self.live.on( 'invite', invite );
 		self.live.on( 'live-name', liveName );
+		self.live.on( 'view-switch', viewSwitch );
 		
 		function chat( e ) { self.sendChatEvent( e ); }
 		function invite( e ) { self.inviteToServer( e ); }
 		function liveName( e ) { self.handleLiveName( e ); }
+		function viewSwitch( e ) { self.handleViewSwitch( e ); }
 		function onClose( e ) {
 			self.closeLive();
 			const leave = {
@@ -645,13 +612,14 @@ library.contact = library.contact || {};
 		self.contactClose();
 		if ( self.settingsView )
 			self.settingsView.close();
+		
+		delete self.settings;
 	}
 	
 	// Private
 	
 	ns.PresenceRoom.prototype.init = function() {
 		var self = this;
-		console.log( 'init', self );
 		self.messageMap[ 'initialize' ] = init;
 		self.messageMap[ 'persistent' ] = persistent;
 		self.messageMap[ 'settings' ] = settings;
@@ -846,6 +814,7 @@ library.contact = library.contact || {};
 		const self = this;
 		self.ownerId = state.ownerId;
 		self.identities = state.identities;
+		self.settings = state.settings;
 		self.workgroups = state.workgroups;
 		self.onlineList = state.online;
 		self.persistent = state.persistent;
@@ -883,6 +852,12 @@ library.contact = library.contact || {};
 				data : state,
 			});
 		
+		if ( self.goLivePending ) {
+			let liveConf = self.goLivePending;
+			delete self.goLivePending;
+			self.joinLive( liveConf );
+		}
+		
 		function getSelf() {
 			return self.users.find( user => user.clientId === self.userId );
 		}
@@ -901,7 +876,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleSettings = function( event ) {
 		const self = this;
-		console.log( 'handleSettings', event );
 		if ( 'update' === event.type ) {
 			self.updateSetting( event.data );
 			return;
@@ -925,7 +899,6 @@ library.contact = library.contact || {};
 		};
 		self.settingsView = new library.view.Settings( conf );
 		function onSave( keyValue ) {
-			console.log( 'settings - onSave', keyValue );
 			const setting = {
 				type : 'setting',
 				data : keyValue,
@@ -935,16 +908,47 @@ library.contact = library.contact || {};
 		}
 		
 		function onClose( e ) {
-			console.log( 'settings onClose', e );
 			self.settingsView = null;
 		}
 	}
 	
 	ns.PresenceRoom.prototype.updateSetting = function( event ) {
 		const self = this;
-		console.log( 'updateSetting', event );
+		if ( !self.settings )
+			return;
+		
 		if ( self.settingsView )
 			self.settingsView.saved( event );
+		
+		if ( !event.success )
+			return;
+		
+		if ( 'isStream' === event.setting )
+			self.settings.isStream = event.value;
+		
+		const update = {
+			type : 'settings',
+			data : event,
+		};
+		if ( self.chatView )
+			self.chatView.send( update );
+		
+		if ( self.live )
+			self.live.send( update );
+	}
+	
+	ns.PresenceRoom.prototype.changeLiveType = function() {
+		const self = this;
+		if ( !self.live )
+			return;
+		
+		const viewSwitch = {
+			type : 'view-switch',
+			data : {
+				isStream : self.isStream,
+			},
+		};
+		self.live.send( viewSwitch );
 	}
 	
 	ns.PresenceRoom.prototype.handleIdentity = function( event ) {
@@ -982,7 +986,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleAuthed = function( event ) {
 		const self = this;
-		console.log( 'handleAuthed', event );
 		if ( event.userId === self.userId ) {
 			const isAuthed = {
 				type : 'auth',
@@ -1007,7 +1010,6 @@ library.contact = library.contact || {};
 		if ( 'list' !== event.type && 'assigned' !== event.type )
 			return;
 		
-		console.log( 'handleWorkgroup', event );
 		self.workgroups = event.data;
 		if ( self.chatView )
 			self.chatView.send({
@@ -1078,7 +1080,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleOnline = function( user ) {
 		const self = this;
-		console.log( 'handleOnline', user );
 		const userId = user.clientId;
 		if ( userId === self.userId )
 			return;
@@ -1211,7 +1212,6 @@ library.contact = library.contact || {};
 		
 		self.requests = self.requests || {};
 		const reqId = friendUP.tool.uid( 'req' );
-		console.log( 'setRequest', reqId );
 		self.requests[ reqId ] = callback;
 		return reqId;
 	}
@@ -1221,7 +1221,6 @@ library.contact = library.contact || {};
 		if ( !reqId || !self.requests )
 			return;
 		
-		console.log( 'handleRequest', reqId );
 		const callback = self.requests[ reqId ];
 		if ( !callback )
 			return;
@@ -1414,6 +1413,27 @@ library.contact = library.contact || {};
 			data : id,
 		};
 		self.send( idUpdate );
+	}
+	
+	ns.PresenceRoom.prototype.handleViewSwitch = function( event ) {
+		const self = this;
+		self.live.close();
+		self.live = null;
+		
+		let choice = event.choice;
+		if ( 'close' === choice )
+			return;
+		
+		if ( 'stream' === choice ) {
+			self.joinLive();
+			return;
+		}
+		
+		if ( 'video' === choice )
+			self.startVideo();
+		else
+			self.startAudio();
+		
 	}
 	
 	ns.PresenceRoom.prototype.liveToServer = function( event ) {

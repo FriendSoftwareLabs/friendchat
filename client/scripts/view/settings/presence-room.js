@@ -35,27 +35,34 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype = Object.create( library.view.Settings.prototype );
 	
-	ns.PresenceRoom.prototype.setup = function() {
+	ns.PresenceRoom.prototype.setup = function( validKeys ) {
 		var self = this;
-		self.validKeys = [
+		console.log( 'settings.PresenceRoom.setup', validKeys );
+		self.validKeys = validKeys;
+		
+		self.displayOrder = [
 			'userLimit',
+			'isStream',
+			'isClassroom',
 			'workgroups',
 		];
 		
-		self.displayOrder = self.validKeys;
 		self.labelMap = {
-			userLimit  : View.i18n( 'i18n_user_limit' ),
-			workgroups : View.i18n( 'i18n_workgroups' ),
+			userLimit   : View.i18n( 'i18n_user_limit' ),
+			isStream    : View.i18n( 'i18n_is_stream' ),
+			isClassroom : View.i18n( 'i18n_is_classroom' ),
+			workgroups  : View.i18n( 'i18n_workgroups' ),
 		};
 		
 		self.buildMap = {
-			userLimit  : numberInput,
-			workgroups : assignWorkgroup,
-			
+			userLimit   : numberInput,
+			isStream    : singleCheck,
+			isClassroom : singleCheck,
+			workgroups  : assignWorkgroup,
 		};
 		
-		//function singleCheck( setting ) { self.singleCheck( setting ); }
 		function numberInput( setting ) { self.setNumberInput( setting ); }
+		function singleCheck( setting ) { self.singleCheck( setting ); }
 		function assignWorkgroup( setting ) { self.assignWorkgroup( setting ); }
 	}
 	

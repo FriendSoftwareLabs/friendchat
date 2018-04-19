@@ -174,7 +174,6 @@ library.view = library.view || {};
 		const self = this;
 		friend.template.addFragments( conf.fragments );
 		const state = conf.state;
-		console.log( 'handleInitialize', state );
 		// things
 		self.name = state.roomName;
 		self.ownerId = state.ownerId;
@@ -311,7 +310,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleState = function( state ) {
 		const self = this;
-		console.log( 'handleState', state );
 		removeOld( state.users );
 		addNew( state.users );
 		setOnline( state.online );
@@ -430,7 +428,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleLive = function( event ) {
 		const self = this;
-		console.log( 'handleLive', event );
 		if ( !event.data || !event.data.peerId )
 			return;
 		
@@ -483,7 +480,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.close = function() {
 		const self = this;
-		console.log( 'view.presence.close', self );
 		self.appOnline.close();
 	}
 	
@@ -507,7 +503,6 @@ library.view = library.view || {};
 		self.containerId = containerId;
 		self.userSource = userSource;
 		self.template = templateManager;
-		console.log( 'UserGroup', self );
 		
 		self.items = {};
 		self.itemList = [];
@@ -526,7 +521,6 @@ library.view = library.view || {};
 	
 	ns.UserGroup.prototype.attach = function( id ) {
 		const self = this;
-		console.log( 'UserGroup.attach', id );
 		const item = self.userSource[ id ];
 		if ( !item ) {
 			console.log( 'UserGroup.attach - no item for id', {
@@ -605,7 +599,6 @@ library.view = library.view || {};
 			sectionKlass : self.sectionKlass,
 			usersId      : self.usersId,
 		};
-		console.log( 'UserGroup.init', elConf );
 		self.el = self.template.getElement( 'user-group-tmpl', elConf );
 		const container = document.getElementById( self.containerId );
 		if ( !container )
@@ -660,7 +653,6 @@ library.view = library.view || {};
 		
 		function reorderItem( id ){
 			const item = self.items[ id ];
-			console.log( 'reorderItem', item );
 			if ( !item || !item.el )
 				return;
 			
@@ -844,11 +836,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.setState = function( userId, state, add ) {
 		const self = this;
-		console.log( 'UserCtrl.setState', {
-			uid : userId,
-			state : state,
-			add : add,
-		});
 		const user = self.users[ userId ];
 		if ( !user ) {
 			console.log( 'UserCtrl.setState - no user for uid', {
@@ -885,7 +872,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.init = function( workgroups, users, guestAvatar ) {
 		const self = this;
-		console.log( 'UserCtrl.init', self );
 		self.build();
 		self.initBaseGroups();
 		
@@ -905,7 +891,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.build = function() {
 		const self = this;
-		console.log( 'UserCtrl.build', self.containerId );
 		const container = document.getElementById( self.containerId );
 		const conf = {};
 		self.el = self.template.getElement( 'user-ctrl-tmpl', conf );
@@ -946,7 +931,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.addWorkgroup = function( worg ) {
 		const self = this;
-		console.log( 'addWorkGroup', worg );
 		if ( !worg || !worg.clientId )
 			return;
 		
@@ -978,7 +962,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.bindConn = function() {
 		const self = this;
-		console.log( 'UserCtrl.bindConn', self.conn );
 		if ( !self.conn ) {
 			throw new Error( 'UserCtrl.bindConn - no conn' );
 			return;
@@ -1003,7 +986,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.releaseConn = function() {
 		const self = this;
-		console.log( 'UserCtrl.releaseConn', self.conn );
 		if ( !self.conn )
 			return;
 		
@@ -1027,11 +1009,6 @@ library.view = library.view || {};
 	ns.UserCtrl.prototype.handleOnline = function( data ) {
 		const self = this;
 		const uid = data.clientId;
-		console.log( 'UserCtrl.handleOnline', {
-			data  : data,
-			users : self.users,
-		});
-		
 		const user = self.users[ uid ];
 		if ( !user )
 			return;
@@ -1045,14 +1022,12 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleOffline = function( userId ) {
 		const self = this;
-		console.log( 'handleOffline', userId );
 		self.onlines = self.onlines.filter( uid => userId !== uid );
 		self.setUserToGroup( userId, 'offline' );
 	}
 	
 	ns.UserCtrl.prototype.handleJoin = function( user ) {
 		const self = this;
-		console.log( 'UserCtrl.handleJoin', user );
 		const uid = user.clientId;
 		if ( null != self.users[ uid ] ) {
 			console.log( 'UserCtrl.addUser - user already present ( hueuhueh )', {
@@ -1076,7 +1051,6 @@ library.view = library.view || {};
 	ns.UserCtrl.prototype.setUserToGroup = function( userId, worgId ) {
 		const self = this;
 		const user = self.users[ userId ];
-		console.log( 'setUserToGroup', user );
 		if ( !user ) {
 			console.log( 'setUSertoGroup - no user for', {
 				uid : userId,
@@ -1091,7 +1065,6 @@ library.view = library.view || {};
 		
 		if ( !groupId && user.workgroups ) {
 			let available = user.workgroups.filter( wgId => !!self.groups[ wgId ]);
-			console.log( 'available', available );
 			groupId = available[ 0 ];
 			if ( !self.groups[ groupId ]) {
 				console.log( 'UserCtrl.handleJoin - no group for workgroup', {
@@ -1128,7 +1101,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleLeave = function( userId ) {
 		const self = this;
-		console.log( 'UserCtrl.handleLeave', userId );
 		const user = self.users[ userId ];
 		if ( !user )
 			return;
@@ -1145,7 +1117,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleAuth = function( event ) {
 		const self = this;
-		console.log( 'view.handleAuth', event );
 		let uId = ug.userId;
 		let wgId = ug.worgId;
 		let authed = ug.authed;
@@ -1158,7 +1129,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleWorgs = function( wgs ) {
 		const self = this;
-		console.log( 'handleWorgs', wgs );
 		if ( !wgs || !wgs.forEach )
 			return;
 		
@@ -1168,11 +1138,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.moveToGroup = function( groupId, userId ) {
 		const self = this;
-		console.log( 'UserCtrl.moveToGroup', {
-			uid : userId,
-			gid : groupId,
-		});
-		
 		const user = self.users[ userId ];
 		if ( !user ) {
 			console.log( 'UserCtrl.moveToGroup - no user for id', {
@@ -1495,13 +1460,11 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.buildMsg = function( conf ) {
 		const self = this;
-		console.log( 'buildMsg', conf );
 		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
 		const msg = conf.event;
 		const uid = msg.fromId;
 		const user = self.users.get( uid );
 		const group = self.users.getGroup( uid );
-		console.log( 'buildMsg - group', group );
 		
 		const mId = msg.msgId || '';
 		const time = msg.time;

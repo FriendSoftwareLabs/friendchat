@@ -386,7 +386,7 @@ library.view = library.view || {};
 
 // LIVE
 (function( ns, undefined ) {
-	ns.Live = function( liveConf, onEvent, onClose ) {
+	ns.Live = function( liveConf, viewConf, onEvent, onClose ) {
 		if ( !( this instanceof ns.Live ))
 			return new ns.Live( liveConf, onEvent, onClose );
 		
@@ -395,10 +395,10 @@ library.view = library.view || {};
 		self.onevent = onEvent,
 		self.onclose = onClose;
 		
-		self.init();
+		self.init( viewConf );
 	}
 	
-	ns.Live.prototype.init = function() {
+	ns.Live.prototype.init = function( conf ) {
 		var self = this;
 		var dropConf = {
 			toView : toView,
@@ -420,7 +420,6 @@ library.view = library.view || {};
 		
 		api.ApplicationStorage.get( 'live-settings', loadBack );
 		function loadBack( res ) {
-			console.log( 'live-settings back', res );
 			const localSettings = res.data || {};
 			if ( !localSettings.preferedDevices )
 				loadOldDevices( localSettings );
@@ -431,7 +430,6 @@ library.view = library.view || {};
 		function loadOldDevices( localSettings ) {
 			api.ApplicationStorage.get( 'prefered-devices', devBack );
 			function devBack( res ) {
-				console.log( 'loadOldDevices - res', res );
 				let devs = res.data;
 				localSettings.preferedDevices = devs;
 				initLive( localSettings );
@@ -439,16 +437,20 @@ library.view = library.view || {};
 		}
 		
 		function initLive( localSettings ) {
-			console.log( 'initLive - localSettings', localSettings );
 			let width = 850;
 			let height = 500;
-			if ( isVoiceOnly() ) {
+			if ( !conf.isStream && isVoiceOnly() ) {
 				width = 450;
 				height = 350;
 			}
 			
+			let title = conf.isStream
+				? Application.i18n( 'i18n_stream_session' )
+				: Application.i18n( 'i18n_live_session' );
+			title = conf.roomName + ' - ' + title;
+			
 			const windowConf = {
-				title              : Application.i18n( 'i18n_live_session' ),
+				title              : title,
 				width              : width,
 				height             : height,
 				fullscreenenabled  : true,
@@ -456,13 +458,18 @@ library.view = library.view || {};
 			
 			self.liveConf.localSettings = localSettings;
 			const viewConf = {
-				fragments : hello.commonFragments,
-				emojii    : hello.config.emojii,
-				liveConf  : self.liveConf,
+				liveFragments : hello.liveCommonFragments,
+				fragments     : hello.commonFragments,
+				emojii        : hello.config.emojii,
+				liveConf      : self.liveConf,
 			};
 			
+			let template = conf.isStream
+				? 'html/stream.html'
+				: 'html/live.html';
+			
 			self.view = hello.app.createView(
-				'html/live.html',
+				template,
 				windowConf,
 				viewConf,
 				self.onevent,
@@ -508,11 +515,6 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.storeLocalSetting = function( data ) {
 		const self = this;
-		console.log( 'storeLocalSetting', {
-			data : data,
-			sQueue : self.settingsQueue,
-		});
-		
 		if ( self.settingsQueue ) {
 			self.settingsQueue.push( data );
 			return;
@@ -522,7 +524,6 @@ library.view = library.view || {};
 		self.settingsQueue.push( data );
 		api.ApplicationStorage.get( 'live-settings', getBack );
 		function getBack( res ) {
-			console.log( 'storeLocalSetting.getBack', res );
 			settings = res.data || {};
 			updateFromQueue( settings );
 		}
@@ -531,7 +532,6 @@ library.view = library.view || {};
 			self.settingsQueue.forEach( update );
 			save( settings );
 			function update( data ) {
-				console.log( 'update', data );
 				settings[ data.setting ] = data.value;
 			}
 		}
@@ -796,7 +796,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.selectFile = function( data ) {
 		var self = this;
-		console.log( 'selectFile', data );
 		self.view.showFiledialog( data, selected );
 		function selected( res ) {
 			console.log( 'selectFile - selected', res );
@@ -1198,13 +1197,11 @@ library.view = library.view || {};
 	
 	ns.TreerootUsers.prototype.subscribe = function( data ) {
 		var self = this;
-		console.log( 'subscribe', data );
 		self.onsubscribe( data );
 	}
 	
 	ns.TreerootUsers.prototype.done = function() {
 		var self = this;
-		console.log( 'done' );
 		const onclose = self.onclose;
 		delete self.onclose;
 		if ( onclose )
@@ -1213,7 +1210,6 @@ library.view = library.view || {};
 	
 	ns.TreerootUsers.prototype.setUserList = function( userlist ) {
 		var self = this;
-		console.log( 'setUserList', { ul : userlist, sul : self.userlist });
 		var msg = {
 			type : 'userlist',
 			data : userlist,
@@ -1353,7 +1349,6 @@ library.view = library.view || {};
 	
 	ns.ShareInvite.prototype.sendEmail = function( msg ) {
 		var self = this;
-		console.log( 'shareInvite.sendEmail', msg );
 		var modConf = {
 			module : 'system',
 			method : 'systemmail',
@@ -1365,12 +1360,9 @@ library.view = library.view || {};
 			success : success,
 			error : error,
 		};
-		console.log( "sendEmail, conf", modConf );
 		var mod = new api.Module( modConf );
 		
 		function success( data ) {
-			console.log( 'sendEmail.success', data );
-			
 			if ( data === 'end of the line' )
 				data = false;
 			
@@ -1414,10 +1406,6 @@ library.view = library.view || {};
 // Treeroot crypto warning
 (function( ns, undefined ) {
 	ns.CryptoWarning = function( conf ) {
-		if ( !( this instanceof ns.CryptoWarning ))
-			return new ns.CryptoWarning( conf );
-		
-		console.log( 'CryptoWarning', conf );
 		var self = this;
 		self.initBundle = conf.initBundle;
 		self.onaccept = conf.onaccept;
@@ -1454,7 +1442,6 @@ library.view = library.view || {};
 	
 	ns.CryptoWarning.prototype.closed = function() {
 		var self = this;
-		console.log( 'CryptoWarning view closed' );
 		self.view = null;
 		var onclose = self.onclose;
 		delete self.onclose;
@@ -1516,7 +1503,6 @@ library.view = library.view || {};
 		self.view.on( 'done', done );
 		
 		function done( res ) {
-			console.log( 'appview.FirstWizard.on done', res );
 			self.callback( res );
 		}
 		function closed() { console.log( 'firstWiz - closed' ); }

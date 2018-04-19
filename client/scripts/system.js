@@ -1588,7 +1588,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketTimeout = function( e ) {
 		const self = this;
-		console.log( 'socketTimeout', e );
 		self.onstate({
 			type : 'error',
 			data : 'Connect attempt timed out: ' + self.host,
@@ -2085,22 +2084,26 @@ library.rtc = library.rtc || {};
 	ns.RtcSession.prototype.initialize = function( init ) {
 		const self = this;
 		self.id = init.liveId;
-		const liveConf = init.liveConf;
-		console.log( 'liveConf', liveConf );
-		const conf = self.conf;
-		const viewConf = {
-			userId     : liveConf.userId,
-			peerList   : liveConf.peerList,
-			isGuest    : conf.isGuest || false,
-			identities : init.identities,
-			rtcConf    : {
-				ICE         : liveConf.ICE,
-				permissions : conf.permissions,
-				quality     : liveConf.quality,
-				mode        : liveConf.mode,
+		const roomConf = init.liveConf;
+		const viewConf = self.conf;
+		const liveConf = {
+			userId      : roomConf.userId,
+			peerList    : roomConf.peerList,
+			isGuest     : viewConf.isGuest || false,
+			guestAvatar : viewConf.guestAvatar,
+			identities  : init.identities,
+			roomName    : viewConf.roomName,
+			logTail     : roomConf.logTail,
+			rtcConf     : {
+				ICE         : roomConf.ICE,
+				permissions : viewConf.permissions,
+				quality     : roomConf.quality,
+				mode        : roomConf.mode,
+				sourceId    : roomConf.sourceId,
 			},
 		};
 		self.view = new library.view.Live(
+			liveConf,
 			viewConf,
 			eventSink,
 			onClose

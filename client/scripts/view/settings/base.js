@@ -27,10 +27,7 @@ library.view = library.view || {};
 
 (function( ns, undefined ) {
 	ns.Settings = function( conf ) {
-		if ( !( this instanceof ns.Settings ))
-			return new ns.Settings( conf );
-		
-		var self = this;
+		const self = this;
 		self.view = null;
 		self.settings = null;
 		self.container = null;
@@ -41,7 +38,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.settingsInit = function() {
-		var self = this;
+		const self = this;
 		self.view = window.View;
 		var fragments = document.getElementById( 'fragments' );
 		let fragString = fragments.innerHTML;
@@ -64,7 +61,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		var doneBtn = document.getElementById( 'done' );
 		
 		doneBtn.addEventListener( 'click', doneClick, false );
@@ -73,14 +70,14 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.done = function( e ) {
-		var self = this;
+		const self = this;
 		e.preventDefault();
 		e.stopPropagation();
 		self.send({ type : 'done' });
 	}
 	
 	ns.Settings.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'initialize', initialize );
 		self.view.on( 'selectfile', selectFile );
 		self.view.on( 'saved', saved );
@@ -91,7 +88,8 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.initialize = function( data ) {
-		var self = this;
+		const self = this;
+		console.log( 'Settings.initalize', data );
 		if ( data.commonFragments )
 			hello.template.addFragments( data.commonFragments );
 		
@@ -99,7 +97,7 @@ library.view = library.view || {};
 		self.container = document.getElementById( 'settings' );
 		
 		self.bindEvents();
-		self.setup();
+		self.setup( Object.keys( data.settings));
 		
 		self.settings = {};
 		self.setSettings( data.settings );
@@ -109,7 +107,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.setSettings = function( data ) {
-		var self = this;
+		const self = this;
 		data.settings = data.settings || {};
 		self.validKeys.forEach( add );
 		function add( setting ) {
@@ -123,10 +121,13 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.bindSettings = function() {
-		var self = this;
-		var displayOrder = self.displayOrder || self.validKeys;
-		displayOrder.forEach( build );
+		const self = this;
+		var settings = self.displayOrder.filter( setting => {
+				return self.validKeys.some( valid => setting == valid )
+			});
 		
+		console.log( 'bindSettings', settings );
+		settings.forEach( build );
 		function build( setting ) {
 			var handler = self.buildMap[ setting ];
 			if ( !handler ) {
@@ -139,7 +140,7 @@ library.view = library.view || {};
 	
 	
 	ns.Settings.prototype.setTextInput = function( setting ) {
-		var self = this;
+		const self = this;
 		var label = self.labelMap[ setting ] || setting;
 		var value = self.settings[ setting ] || '';
 		var tmplConf = {
@@ -188,7 +189,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.setNumberInput = function( setting ) {
-		var self = this;
+		const self = this;
 		var label = self.labelMap[ setting ] || setting;
 		var value = self.settings[ setting ] || 0;
 		var tmplConf = {
@@ -258,7 +259,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.setSecureInput = function( setting ) {
-		var self = this;
+		const self = this;
 		var state = {
 			currentInput : null,
 		};
@@ -374,7 +375,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.confirmedPassword = function( setting ) {
-		var self = this;
+		const self = this;
 		var label = self.labelMap[ setting ] || setting;
 		var value = self.settings[ setting ] || '';
 		var tmplConf = {
@@ -538,7 +539,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.singleCheck = function( setting ) {
-		var self = this;
+		const self = this;
 		var isChecked = !!self.settings[ setting ];
 		var label = self.labelMap[ setting ];
 		
@@ -677,7 +678,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.setTextarea = function( setting ) {
-		var self = this;
+		const self = this;
 		var label = self.labelMap[ setting ] || setting;
 		var value = self.settings[ setting ];
 		var conf = {
@@ -723,7 +724,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.setFileSelect = function( setting ) {
-		var self = this;
+		const self = this;
 		var label = self.labelMap[ setting ];
 		var value = self.settings[ setting ] || '';
 		var conf = {
@@ -788,7 +789,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.openFiledialog = function( data, callback ) {
-		var self = this;
+		const self = this;
 		if ( self.filedialogCallback )
 			return;
 		
@@ -797,7 +798,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.handleSelectFile = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.filedialogCallback ) {
 			console.log( 'no callback found for', msg );
 			return;
@@ -809,7 +810,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.buffer = function( setting, value ) {
-		var self = this;
+		const self = this;
 		
 		if ( !self.metaCheck( setting, value )) {
 			self.setStatus( setting, 'saved' );
@@ -828,7 +829,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.save = function( setting, value ) {
-		var self = this;
+		const self = this;
 		if ( !self.metaCheck( setting, value )) {
 			self.setStatus( setting, 'saved' );
 			return;
@@ -851,7 +852,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.saved = function( data ) {
-		var self = this;
+		const self = this;
 		var setting = data.setting;
 		unlockSetting( setting );
 		self.updateSetting( data );
@@ -869,7 +870,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.updateSetting = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'updateSetting', data );
 		var setting = data.setting;
 		var current = self.settings[ setting ];
@@ -894,12 +895,12 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		self.view.sendMessage( msg );
 	}
 	
 	ns.Settings.prototype.metaCheck = function( setting, value ) {
-		var self = this;
+		const self = this;
 		if ( self.locked[ setting ])
 			return false;
 		
@@ -909,18 +910,18 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.isNewValue = function( setting, value ) {
-		var self = this;
+		const self = this;
 		var oldValue = self.settings[ setting ];
 		return !( oldValue === value );
 	}
 	
 	ns.Settings.prototype.keyIsSubmit = function( e ) {
-		var self = this;
+		const self = this;
 		return e.keyCode === 13;
 	}
 	
 	ns.Settings.prototype.isValidSetting = function( key ) {
-		var self = this;
+		const self = this;
 		if ( !self.validKeys )
 			throw new Error( 'settings.isValid - self.validKeys is not', self.validKeys );
 		
@@ -933,7 +934,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.setStatus = function( setting, status ) {
-		var self = this;
+		const self = this;
 		var id = setting + '-status';
 		var parent = document.getElementById( id );
 		if ( !parent )
@@ -966,12 +967,12 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Password ))
 			return new ns.Password( conf );
 		
-		var self = this;
+		const self = this;
 		self.init();
 	}
 	
 	ns.Password.prototype.init = function() {
-		var self = this;
+		const self = this;
 	}
 	
 })( library.view );
