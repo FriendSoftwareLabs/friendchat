@@ -301,6 +301,9 @@ i18n_displayed_name_may_change_or_later : This will be your displayed name, you 
 i18n_join_video_audio : Join with video and audio
 i18n_join_audio_only : Join with audio only
 i18n_presentation_mode : Presentation mode
+i18n_select_session : Select session
+i18n_multiple_sessions_select_invite_to : You have multiple live sessions, select one to invite to.
+i18n_create_new_session : Create a new session
 i18n_is_stream : Use for streaming
 i18n_is_classroom : Use as classroom
 i18n_stream_users_list : Users

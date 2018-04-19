@@ -1151,6 +1151,67 @@ library.view = library.view || {};
 })( library.view );
 
 
+// SPECIFY SESSION
+(function( ns, undefined ) {
+	ns.SpecifySession = function( conf ) {
+		const self = this;
+		self.onselect = conf.onselect;
+		
+		self.init( conf.sessions );
+	}
+	
+	// Public
+	
+	ns.SpecifySession.prototype.close = function() {
+		const self = this;
+		let view = self.view;
+		delete self.view;
+		if ( view ) 
+			view.close();
+		
+		delete self.onselect;
+	}
+	
+	// Private
+	
+	ns.SpecifySession.prototype.init = function( sessions ) {
+		const self = this;
+		console.log( 'view.SpecifySession.init', self );
+		const filePath = 'html/specifySession.html';
+		const windowConf = {
+			title  : Application.i18n( 'i18n_select_session' ),
+			width  : 300,
+			height : 350,
+		};
+		const initData = {
+			fragments : null,
+			sessions  : sessions,
+		};
+		self.view = hello.app.createView(
+			filePath,
+			windowConf,
+			initData,
+			null,
+			closed
+		);
+		
+		self.view.on( 'select', select );
+		self.view.on( 'close', closed );
+		function select( roomId ) {
+			console.log( 'view.SpecifySession.onselect', roomId );
+			if ( !self.onselect )
+				return;
+			
+			self.onselect( roomId );
+		}
+		
+		function closed() {
+			self.close();
+		}
+	}
+})( library.view );
+
+
 // TREEROOT USERS VIEW
 (function( ns, undefined ) {
 	ns.TreerootUsers = function( conf ) {

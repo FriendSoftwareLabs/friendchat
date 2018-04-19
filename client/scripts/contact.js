@@ -323,11 +323,7 @@ library.contact = library.contact || {};
 		const user = self.getParentIdentity();
 		const contact = self.identity; // create a session and invite this contact
 		contact.invite = sendInvite;
-		const rtcSession = hello.rtc.getSession();
-		if ( rtcSession )
-			hello.rtc.invite( contact, perms );
-		else
-			hello.rtc.createRoom( [ contact ], user, perms );
+		hello.rtc.invite( [ contact ], perms );
 		
 		function sendInvite( invite ) {
 			self.sendMessage( invite );

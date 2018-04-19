@@ -748,7 +748,8 @@ library.rtc = library.rtc || {};
 			return new ns.RtcControl();
 		
 		var self = this;
-		self.session = null;
+		self.sessions = {};
+		self.sessionIds = [];
 		self.roomRequests = {};
 		
 		self.init();
@@ -756,11 +757,18 @@ library.rtc = library.rtc || {};
 	
 	// Public
 	
+	ns.RtcControl.prototype.hasSession = function() {
+		const self = this;
+		return !!self.sessionIds.length;
+	}
+	
 	ns.RtcControl.prototype.joinLive = function( conf, eventSink, onclose ) {
 		const self = this;
+		console.log( 'RtcControl.joinLive', conf );
 		const sessionConf = {
-			invite      : null,
-			user        : conf.identity,
+			roomId      : conf.roomId     ,
+			invite      : null            ,
+			user        : conf.identity   ,
 			permissions : conf.permissions,
 			constraints : conf.constraints,
 		};
@@ -768,17 +776,66 @@ library.rtc = library.rtc || {};
 		self.createSession( sessionConf, eventSink, onclose );
 	}
 	
-	ns.RtcControl.prototype.invite = function( contact ) {
+	ns.RtcControl.prototype.invite = function( contacts, permissions ) {
 		const self = this;
-		self.service.invite( contact );
+		console.log( 'RtcControl.invite', [
+			contacts,
+			permissions,
+			self.sessionIds,
+		]);
+		const userConf = {
+			contacts    : contacts,
+			permissions : permissions,
+		};
+		
+		if ( !self.sessionIds.length ) {
+			self.createRoom( contacts, permissions );
+			return;
+		}
+		
+		let roomId = null;
+		if ( 1 === self.sessionIds.length ) {
+			roomId = self.sessionIds[ 0 ];
+			doInvite( roomId );
+		} else {
+			askSpecifyRoom();
+		}
+		
+		function askSpecifyRoom() {
+			let roomMetas = self.sessionIds.map( buildMeta );
+			let conf = {
+				sessions : roomMetas,
+				onselect : onSelect,
+			};
+			let select = new library.view.SpecifySession( conf );
+			function onSelect( roomId ) {
+				select.close();
+				
+				if ( !roomId )
+					self.createRoom( contacts, permissions );
+				else
+					doInvite( roomId );
+			}
+		}
+		
+		function doInvite( roomId ) {
+			self.service.invite( userConf, roomId );
+		}
+		
+		function buildMeta( sId ) {
+			let session = self.sessions[ sId ];
+			let meta = self.service.getRoomInfo( sId );
+			meta.created = session.created;
+			return meta;
+		}
 	}
 	
-	ns.RtcControl.prototype.createRoom = function( contacts, selfie, permissions ) {
+	ns.RtcControl.prototype.createRoom = function( contacts, permissions ) {
 		var self = this;
 		var sessionConf = {
+			roomId      : null,
 			invite      : null,
 			isHost      : true,
-			user        : selfie,
 			contacts    : contacts,
 			permissions : permissions,
 		};
@@ -905,16 +962,14 @@ library.rtc = library.rtc || {};
 			type : action,
 			data : sessionConf,
 		};
-		self.service.getRoom( roomReq );
+		self.service.createRoom( roomReq );
 	}
 	
 	ns.RtcControl.prototype.createSession = function( conf, eventSink, onclose ) {
-		var self = this;
-		if ( self.session ) {
-			const session = self.session;
-			self.session = null;
-			session.close();
-		}
+		const self = this;
+		const sId = conf.roomId;
+		if ( self.sessions[ sId ] )
+			self.closeSession( sId );
 		
 		conf.user = conf.user || self.service.getIdentity();
 		conf.permissions = conf.permissions || {
@@ -928,27 +983,34 @@ library.rtc = library.rtc || {};
 			},
 		};
 		
-		self.session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
-		return self.session;
+		let session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
+		self.sessions[ sId ] = session;
+		self.sessionIds.push( sId );
+		return session;
 		
 		function sessionClosed() {
-			self.session = null;
+			self.closeSession( sId );
 		}
 	}
 	
-	ns.RtcControl.prototype.getSession = function() {
+	ns.RtcControl.prototype.getSession = function( sId ) {
 		var self = this;
-		return self.session;
+		return self.sessions[ sId ] || null;
 	}
 	
-	ns.RtcControl.prototype.closeSession = function() {
-		var self = this;
-		if ( !self.session )
+	ns.RtcControl.prototype.closeSession = function( sId ) {
+		const self = this;
+		if ( !self.sessions[ sId ])
 			return;
 		
-		var sess = self.session;
-		self.session = null;
-		sess.close();
+		console.log( 'closeSession', [
+			sId,
+			self.sessions,
+		]);
+		let session = self.sessions[ sId ];
+		delete self.sessions[ sId ];
+		self.sessionIds = Object.keys( self.sessions );
+		session.close();
 	}
 	
 })( library.system );
@@ -2023,6 +2085,7 @@ library.rtc = library.rtc || {};
 		self.onclose = onclose;
 		self.sessionclose = sessionClose;
 		
+		self.created = Date.now();
 		self.contacts = {};
 		self.server = null;
 		self.view = null;
