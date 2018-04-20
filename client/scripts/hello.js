@@ -1113,11 +1113,13 @@ var hello = null;
 	
 	ns.Main.prototype.startLive = function() {
 		var self = this;
+		/*
 		var identity = {
 			name : hello.identity.name || library.tool.getName(),
 			avatar : library.component.Identity.prototype.avatar,
 		};
-		hello.rtc.createRoom( null, identity );
+		*/
+		hello.rtc.createRoom( null, null );
 	}
 	
 	ns.Main.prototype.initSubViews = function() {
