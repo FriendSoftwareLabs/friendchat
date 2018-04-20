@@ -23,8 +23,18 @@
 QUIT="Installation aborted. Please restart script to complete it."
 P_GIT="https://github.com/FriendSoftwareLabs/presence.git"
 
-# Installs Dialog
-sudo apt-get install dialog
+if [ ! -e /usr/bin/node ]
+then
+	echo "/usr/bin/node not found. Install node.js and/or symlink to /usr/bin/node"
+	exit 1
+fi
+
+# Installs Dialog if needed
+PATH_TO_DIALOG=$(which dialog)
+if [ ! -x "${PATH_TO_DIALOG}" ]; then
+	echo "dialog not found, it will be installed"
+	sudo apt-get install dialog
+fi
 
 # Welcome
     dialog --backtitle "Friend Chat installer" --yesno "\
@@ -655,20 +665,48 @@ then
     sed -i -- "s/friendcore_host/${friendCoreDomain//\//\\/}/g" "$FC_CLIENT_FOLDER/local.config.js"
 fi
 
-# Copy servers autostart
-if [ ! -d "$FRIEND_BUILD/autostart" ]; then
-    mkdir "$FRIEND_BUILD/autostart"
-fi
+#installs new systemd script, starts it and enables autostart, arguments:
+# $1 - path to executable
+# $2 - service file name (no spaces)
+# $3 - service description
+function install_systemd_service(){
+	USER=`whoami`
+	NAME=$2
+	TMP=/tmp/${NAME}.service
+	EXE=$1
+	WORKDIR=$(dirname "${EXE}")
+	DESCRIPTION=$3
 
-if [ ! -e "$FRIEND_BUILD/autostart/startfriendchat.sh" ]
-then
-    cp "startfriendchat.sh" "$FRIEND_BUILD/autostart/startfriendchat.sh"
-fi
+	echo "Writing systemd script to temporary file $TMP"
 
-if [ ! -e "$FRIEND_BUILD/autostart/startpresence.sh" ]
-then
-    cp "startpresence.sh" "$FRIEND_BUILD/autostart/startpresence.sh"
-fi
+	echo '[Unit]' > $TMP
+	echo 'Description=${DESCRIPTION}' >> $TMP
+	echo 'After=network.target' >> $TMP
+
+	echo '[Service]' >> $TMP
+	echo 'Type=simple' >> $TMP
+	echo "User=${USER}" >> $TMP
+	echo "WorkingDirectory=${WORKDIR}" >> $TMP
+	echo "ExecStart=/usr/bin/node ${EXE}" >> $TMP
+	echo 'Restart=always' >> $TMP
+	echo 'RestartSec=3' >> $TMP
+
+	echo '[Install]' >> $TMP
+	echo 'WantedBy=multi-user.target' >> $TMP
+
+	echo "Root password is required to copy $TMP to /etc/systemd/system and enable the service"
+	sudo cp $TMP /etc/systemd/system/
+	suco systemctl enable ${NAME}
+
+	echo 'Service is installed and enabled'
+	echo "Use standard systemd commands to control the service:"
+	echo "systemctl start ${NAME}"
+	echo "systemctl stop ${NAME}"
+	echo "systemctl restart ${NAME}"
+}
+
+install_systemd_service "${FRIEND_BUILD}/services/FriendChat/hello.js" "friendchat-server" "FriendChat server (hello)"
+install_systemd_service "${FRIEND_BUILD}/services/Presence/presence.js" "presence-server" "FriendChat server (presence)"
 
 
 # Saves setup.ini configuration file
@@ -718,4 +756,13 @@ clear
 
 # Clean exit
 echo "Friend Chat installation successful."
+echo ""
+echo "To start the servers use:"
+echo "sudo systemctl start friendchat-server"
+echo "sudo systemctl start presence-server"
+echo ""
+echo "To start automatically at boot:"
+echo "sudo systemctl enable friendchat-server"
+echo "sudo systemctl enable presence-server"
+echo ""
 exit 0

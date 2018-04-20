@@ -34,7 +34,7 @@ extension or offer to initiate screen sharing.
 
 ## Modules
 
-Modules are integrations towards 3rd party chat services. They have a server part 
+Modules allow integration with 3rd party chat services. They have a server part 
 that communicates  with the remote service/server and a client part with a custom
 UI that presents the data. Current modules are IRC, Presence and Treeroot. Presence 
 is always there and IRC is added by default.
@@ -55,7 +55,7 @@ can be found on the internet.
 
 Presence provides temporary or persistent many-to-many rooms for chatting and 
 video / audio conferencing. Invites to presence rooms can be sent through the other 
-modules. More info in the FriendSoftwareLabs/presence repository!
+modules. More info in the [FriendSoftwareLabs/presence](https://github.com/FriendSoftwareLabs/presence) repository!
 
 #### Treeroot
 
@@ -111,20 +111,27 @@ installation as it can, and will show as many pre-filled value as it can.
 You can restart this script at any time, after pulling changes from GIT
 for example.
 
-#### Launching Friend Core, Friend Chat and Presence servers
+#### Launching Friend Chat and Presence servers
 
-The installation script automatically adds an 'autostart' folder to your
-Friend Core build directory, containing two scripts that launch the Presence
-and Friend Chat server when Friend Core is started.
-So after installation, the whole system is launched with this command :
-'./FriendCore'
-If you kill Friend Core instead of exiting it, the two servers will continue
-to run and will have to be killed manually. We suggest that you use the
-killfriendcore.sh script that can be found in the friendup directory.
+The installation script automatically adds systemd service files.
+
+To start:
+
+* `sudo systemctl start friendchat-server`
+* `sudo systemctl start presence-server`
+
+To enable automatic start:
+
+* `sudo systemctl enable friendchat-server`
+* `sudo systemctl enable presence-server`
+
+To view logs in case of problems:
+* `sudo journalctl -fu friendchat-server`
+* `sudo journalctl -fu presence-server`
 
 #### Accessing Friend Chat application from the Workspace
 
-After installing Friend Chat and its servers, and restarting Friend Core,
+After installing Friend Chat and its servers, and restarting Friend Core (`sudo systemctl restart friendcore`),
 you will have to install the Friend Chat application in your Friend
 machine. In the Workspace menu, choose the 'Tools / Software' option,
 locate Friend Chat in the list and click install. You will then find the
@@ -141,14 +148,14 @@ problems.
 
 ## Developers
 
-If you intent to work on the source code of the Friend Chat client application,
+If you intend to work on the source code of the Friend Chat client application,
 the Friend Chat server or the Presence server, please read the following.
 
 #### Friend Chat client
 
 You will find the sourcecode of the Friend Chat client application in the
 'client' folder of the friendchat directory.
-To test your modifications, run the 'update.sh' script : it will copy the
+To test your modifications, run the `update.sh` script : it will copy the
 modified files in the Friend build/resources/webclient/apps/FriendChat directory.
 Please note that after updating the files, in order for the new files to be
 used by Friend Core, you will have to clear the cache by using the
@@ -160,24 +167,23 @@ Friend Core.
 
 You will find the sourcecode of the Friend Chat server in the 'server' folder
 of the friendchat directory.
-As for the client, you will need to run the 'update.sh' script to copy the
+As for the client, you will need to run the `update.sh` script to copy the
 modified files in the Friend build/services/FriendChat folder.
-Please note that the server must be killed before doing so, otherwise the
-files will not be written. 'update.sh' also calls 'npm install' automatically
+`update.sh` also calls `npm install` automatically
 to update the node.js modules used by the Friend Chat server : if you copy
-the files manually, do not forget to do a 'npm install' afterward.
+the files manually, do not forget to do a `npm install` afterward.
+The server will be automatically stopped and restarted by the script.
+
 
 #### Presence server
 
 The Friend Chat installation script clones the Presence server directly into
-the Friend build/services/Presence directory. If you intent to work on it,
+the Friend build/services/Presence directory. If you intend to work on it,
 we suggest that you clone the server in another more accessible directory.
-The Presence server can be found on GIT at :
-https://github.com/FriendSoftwareLabs/presence.git
-As for the Friend Chat server, you can update the files by using the 'update.sh'
-script, which will copy the modification at their proper location and run
-'npm install' automatically. Remember to kill the Presence server before
-running the script.
+The Presence server [can be found on Github](https://github.com/FriendSoftwareLabs/presence).
+You can update the files by using its own `update.sh` script,
+which will copy the modifications to their proper location and run
+`npm install` automatically. The server will be automatically stopped and restarted by the script.
 
 ## Branches
 
