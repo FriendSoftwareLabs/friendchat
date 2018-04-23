@@ -158,7 +158,6 @@ ns.IrcClient = function( client, conf ) {
 		return new ns.IrcClient( client, conf );
 	
 	var self = this;
-	console.log( 'irc conf', conf );
 	self.clientId = conf.clientId;
 	self.client = client;
 	self.conf = conf;
