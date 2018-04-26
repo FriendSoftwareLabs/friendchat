@@ -172,6 +172,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleInitialize = function( conf ) {
 		const self = this;
+		console.log( 'presence.handleInitialize', conf.state );
 		friend.template.addFragments( conf.fragments );
 		const state = conf.state;
 		// things
@@ -1008,6 +1009,7 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleOnline = function( data ) {
 		const self = this;
+		console.log( 'presence.handleOnline', data );
 		const uid = data.clientId;
 		const user = self.users[ uid ];
 		if ( !user )
@@ -1022,12 +1024,14 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleOffline = function( userId ) {
 		const self = this;
+		console.log( 'presence.handleOffline', userId );
 		self.onlines = self.onlines.filter( uid => userId !== uid );
 		self.setUserToGroup( userId, 'offline' );
 	}
 	
 	ns.UserCtrl.prototype.handleJoin = function( user ) {
 		const self = this;
+		console.log( 'presence.handleJoin', user );
 		const uid = user.clientId;
 		if ( null != self.users[ uid ] ) {
 			console.log( 'UserCtrl.addUser - user already present ( hueuhueh )', {
@@ -1059,6 +1063,7 @@ library.view = library.view || {};
 			return;
 		}
 		
+		let isOnline = checkOnline( userId );
 		let groupId = null;
 		if ( worgId )
 			groupId = worgId;
@@ -1075,14 +1080,14 @@ library.view = library.view || {};
 			}
 		}
 		
-		if ( user.admin )
+		if ( user.admin && isOnline )
 			groupId = 'admins';
 		
 		if ( user.guest )
 			groupId = 'guests';
 		
 		if ( !groupId ) {
-			if ( isOnline( userId ))
+			if ( isOnline )
 				groupId = 'online';
 			else
 				groupId = 'offline';
@@ -1090,7 +1095,7 @@ library.view = library.view || {};
 		
 		self.moveToGroup( groupId, user.id );
 		
-		function isOnline( userId ) {
+		function checkOnline( userId ) {
 			const index = self.onlines.indexOf( userId );
 			if ( -1 !== index )
 				return true;
@@ -1101,6 +1106,7 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleLeave = function( userId ) {
 		const self = this;
+		console.log( 'presence.handleLeave', userId );
 		const user = self.users[ userId ];
 		if ( !user )
 			return;
@@ -1117,6 +1123,7 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleAuth = function( event ) {
 		const self = this;
+		console.log( 'presence.handleAuth', event );
 		let uId = ug.userId;
 		let wgId = ug.worgId;
 		let authed = ug.authed;
@@ -1138,6 +1145,7 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.moveToGroup = function( groupId, userId ) {
 		const self = this;
+		console.log( 'moveToGroup', groupId, userId );
 		const user = self.users[ userId ];
 		if ( !user ) {
 			console.log( 'UserCtrl.moveToGroup - no user for id', {
