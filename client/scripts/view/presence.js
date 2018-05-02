@@ -397,9 +397,9 @@ library.view = library.view || {};
 			self.handleLog( event.data );
 	}
 	
-	ns.Presence.prototype.handleLog = function( event ) {
+	ns.Presence.prototype.handleLog = function( logs ) {
 		const self = this;
-		if ( 'before' === event.type && null == event.data ) {
+		if ( 'before' === logs.type && null == logs.data.events ) {
 			self.logFetcher.unlock();
 			self.logFetcher.setNoLogs( true );
 			return;
@@ -407,7 +407,7 @@ library.view = library.view || {};
 		
 		self.msgBuilder.handle({
 			type : 'log',
-			data : event,
+			data : logs,
 		});
 		self.logFetcher.unlock();
 	}
@@ -849,6 +849,17 @@ library.view = library.view || {};
 		user.setState( state, add );
 	}
 	
+	ns.UserCtrl.prototype.addIdentities = function( idMap ) {
+		const self = this;
+		console.log( 'UserCtrl.addIdentitties', idMap );
+		let ids = Object.keys( idMap );
+		ids.forEach( addCss );
+		function addCss( id ) {
+			let identity = idMap[ id ];
+			self.addUserCss( id, identity.avatar );
+		}
+	}
+	
 	ns.UserCtrl.prototype.close = function() {
 		const self = this;
 		self.releaseConn();
@@ -883,6 +894,7 @@ library.view = library.view || {};
 			users.forEach( addUser );
 		
 		self.addUserCss( 'guest-user', guestAvatar );
+		self.addUserCss( 'default-user', guestAvatar );
 		
 		self.bindConn();
 		
@@ -1369,12 +1381,18 @@ library.view = library.view || {};
 		return el;
 	}
 	
-	ns.MsgBuilder.prototype.handleLog = function( event ) {
+	ns.MsgBuilder.prototype.handleLog = function( log ) {
 		const self = this;
-		if ( 'before' === event.type )
-			self.handleLogBefore( event.data );
+		console.log( 'handleLog', log );
+		let events = log.data.events;
+		let newIds = log.data.ids;
+		if ( newIds )
+			self.users.addIdentities( newIds );
+			
+		if ( 'before' === log.type )
+			self.handleLogBefore( events );
 		else
-			self.handleLogAfter( event .data );
+			self.handleLogAfter( events );
 	}
 	
 	ns.MsgBuilder.prototype.handleLogBefore = function( items ) {
@@ -1468,31 +1486,25 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.buildMsg = function( conf ) {
 		const self = this;
+		console.log( 'buildMsg', conf );
 		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
 		const msg = conf.event;
-		const uid = msg.fromId;
-		const user = self.users.get( uid );
-		const group = self.users.getGroup( uid );
+		const uId = msg.fromId;
+		const mId = msg.msgId;
+		const isGuest = uId == null ? true : false;
 		
-		const mId = msg.msgId || '';
-		const time = msg.time;
-		
-		let bgKlass = 'sw1';
 		let name = '';
 		let userKlass = '';
-		
-		// its someone with a user account
-		if ( user ) {
-			name = user.name;
-			userKlass = uid + '-klass';
-		}
-		else { // its a guest
+		let bgKlass = 'sw1';
+		if ( isGuest ) {
 			name = 'Guest > ' + msg.name;
 			userKlass = 'guest-user-klass';
+		} else {
+			name = msg.name;
+			userKlass = uId + '-klass';
 		}
 		
-		// its you!
-		if ( uid === self.userId ) {
+		if ( uId === self.userId ) {
 			name = '<< You >>';
 			bgKlass = 'sw2';
 		}
@@ -1504,9 +1516,9 @@ library.view = library.view || {};
 		const msgConf = {
 			msgId     : mId,
 			userKlass : userKlass,
-			bgKlass : bgKlass,
+			bgKlass   : bgKlass,
 			from      : name,
-			time      : time,
+			time      : msg.time,
 			message   : message,
 		};
 		const el = self.template.getElement( tmplId, msgConf );
