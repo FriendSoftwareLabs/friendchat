@@ -756,6 +756,8 @@ library.rtc = library.rtc || {};
 		self.negotiationTimer = 1000 * 10;
 		self.denyNegotiation = false;
 		
+		self.iceTimeoutMs = 1000 * 6;
+		
 		// data channels
 		self.channels = {};
 		
@@ -1085,7 +1087,7 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		self.iceTimeout = window.setTimeout( sendNull, 1000 * 3 );
+		self.iceTimeout = window.setTimeout( sendNull, self.iceTimeoutMs );
 		function sendNull() {
 			self.log( 'iceTiemout hit, sending null' );
 			let msg = {
