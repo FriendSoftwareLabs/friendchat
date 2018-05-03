@@ -702,6 +702,7 @@ library.view = library.view || {};
 		self.name = conf.name;
 		self.avatar = conf.avatar;
 		self.admin = conf.admin || false;
+		self.authed = conf.authed || false;
 		self.guest = conf.guest || false;
 		self.workgroups = conf.workgroups;
 		self.state = conf.state || '';
@@ -934,6 +935,11 @@ library.view = library.view || {};
 				name         : View.i18n( 'i18n_guests' ),
 				sectionKlass : 'Warning',
 			},
+			{
+				clientId     : 'bug',
+				name         : View.i18n( 'i18n_bug' ),
+				sectionKlass : 'Danger',
+			},
 		];
 		
 		base.forEach( add );
@@ -1038,7 +1044,7 @@ library.view = library.view || {};
 		const self = this;
 		console.log( 'presence.handleOffline', userId );
 		self.onlines = self.onlines.filter( uid => userId !== uid );
-		self.setUserToGroup( userId, 'offline' );
+		self.moveUserToGroup( userId, 'offline' );
 	}
 	
 	ns.UserCtrl.prototype.handleJoin = function( user ) {
@@ -1064,7 +1070,7 @@ library.view = library.view || {};
 		self.setUserToGroup( uid );
 	}
 	
-	ns.UserCtrl.prototype.setUserToGroup = function( userId, worgId ) {
+	ns.UserCtrl.prototype.setUserToGroup = function( userId ) {
 		const self = this;
 		const user = self.users[ userId ];
 		if ( !user ) {
@@ -1075,10 +1081,21 @@ library.view = library.view || {};
 			return;
 		}
 		
+		console.log( 'setUSerToGroup', user );
 		let isOnline = checkOnline( userId );
 		let groupId = null;
-		if ( worgId )
-			groupId = worgId;
+		if ( user.authed ) {
+			if ( isOnline )
+				groupId = 'online';
+			else
+				groupId = 'offline';
+		}
+		
+		if ( user.admin && isOnline )
+			groupId = 'admins';
+		
+		if ( user.guest )
+			groupId = 'guests';
 		
 		if ( !groupId && user.workgroups ) {
 			let available = user.workgroups.filter( wgId => !!self.groups[ wgId ]);
@@ -1092,20 +1109,7 @@ library.view = library.view || {};
 			}
 		}
 		
-		if ( user.admin && isOnline )
-			groupId = 'admins';
-		
-		if ( user.guest )
-			groupId = 'guests';
-		
-		if ( !groupId ) {
-			if ( isOnline )
-				groupId = 'online';
-			else
-				groupId = 'offline';
-		}
-		
-		self.moveToGroup( groupId, user.id );
+		self.moveUserToGroup( user.id, groupId );
 		
 		function checkOnline( userId ) {
 			const index = self.onlines.indexOf( userId );
@@ -1135,7 +1139,8 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleAuth = function( event ) {
 		const self = this;
-		console.log( 'presence.handleAuth', event );
+		console.log( 'presence.handleAuth - NYI', event );
+		return;
 		let uId = ug.userId;
 		let wgId = ug.worgId;
 		let authed = ug.authed;
@@ -1155,12 +1160,18 @@ library.view = library.view || {};
 		function add( wg ) { self.addWorkgroup( wg ); }
 	}
 	
-	ns.UserCtrl.prototype.moveToGroup = function( groupId, userId ) {
+	ns.UserCtrl.prototype.moveUserToGroup = function( userId, groupId ) {
 		const self = this;
-		console.log( 'moveToGroup', groupId, userId );
+		console.log( 'moveUserToGroup', {
+			uid : userId,
+			gid : groupId,
+		});
+		if ( !groupId )
+			groupId = 'bug';
+		
 		const user = self.users[ userId ];
 		if ( !user ) {
-			console.log( 'UserCtrl.moveToGroup - no user for id', {
+			console.log( 'UserCtrl.moveUserToGroup - no user for id', {
 				uid   : userId,
 				users : self.users,
 			});
@@ -1172,7 +1183,7 @@ library.view = library.view || {};
 		
 		const group = self.groups[ groupId ];
 		if ( !group ) {
-			console.log( 'UserCtrl.moveToGroup - invalid groupId', {
+			console.log( 'UserCtrl.moveUserToGroup - invalid groupId', {
 				type   : groupId,
 				groups : self.groups,
 			});
@@ -1486,7 +1497,6 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.buildMsg = function( conf ) {
 		const self = this;
-		console.log( 'buildMsg', conf );
 		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
 		const msg = conf.event;
 		const uId = msg.fromId;
