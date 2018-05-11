@@ -244,11 +244,9 @@ library.view = library.view || {};
 
 // IMChat
 (function( ns, undefined ) {
-	ns.IMChat = function( conf ) {
-		if ( !( this instanceof ns.IMChat ))
-			return new ns.IMChat( conf );
-		
-		var self = this;
+	ns.IMChat = function( chatType, conf ) {
+		const self = this;
+		self.chatType = chatType,
 		self.state = conf.state;
 		self.viewConf = conf.viewConf || {};
 		self.onready = conf.onready;
@@ -270,7 +268,8 @@ library.view = library.view || {};
 	
 	ns.IMChat.prototype.init = function() {
 		var self = this;
-		
+		self.viewConf.runConf = self.viewConf.runConf || {};
+		self.viewConf.runConf.chatType = self.chatType;
 		// drag and drop handler
 		var dropConf = {
 			toView : toView,

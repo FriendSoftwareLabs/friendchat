@@ -1896,7 +1896,7 @@ library.contact = library.contact || {};
 				multilineCap     : true,
 			},
 		};
-		self.chatView = new library.view.IMChat( chatConf );
+		self.chatView = new library.view.IMChat( 'treeroot', chatConf );
 		function onMessage( e ) { self.sendChatMessage( e ); }
 		function startLive( e ) { self.handleStartLive( e ); }
 		function toggleEncrypt( e ) { self.toggleEncrypt(); }
@@ -2506,9 +2506,9 @@ library.contact = library.contact || {};
 			},
 			viewConf : {
 				viewTheme : self.viewTheme,
-			}
+			},
 		};
-		self.chatView = new library.view.IMChat( conf );
+		self.chatView = new library.view.IMChat( 'irc', conf );
 		
 		function onMessage( e ) { self.fromChat( e ); }
 		function onLive( e ) { self.handleStartLive( e ); }

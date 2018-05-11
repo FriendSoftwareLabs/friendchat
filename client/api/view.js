@@ -148,7 +148,7 @@ var friend = window.friend || {};
 (function( ns, undefined ) {
 	ns.View = function() {
 		if ( !( this instanceof ns.View ))
-			return new ns.View( conf );
+			return new ns.View();
 		
 		api.ViewEvent.call( this );
 		
@@ -373,7 +373,7 @@ var friend = window.friend || {};
 			return;
 		
 		if ( self.run ) {
-			self.run();
+			self.run( self.config.runConf );
 			self.run = null;
 		}
 		
