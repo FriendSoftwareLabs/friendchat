@@ -1084,7 +1084,6 @@ library.view = library.view || {};
 			return;
 		}
 		
-		console.log( 'setUSerToGroup', user );
 		let isOnline = checkOnline( userId );
 		let groupId = null;
 		if ( user.authed ) {
@@ -1143,15 +1142,6 @@ library.view = library.view || {};
 	ns.UserCtrl.prototype.handleAuth = function( event ) {
 		const self = this;
 		console.log( 'presence.handleAuth - NYI', event );
-		return;
-		let uId = ug.userId;
-		let wgId = ug.worgId;
-		let authed = ug.authed;
-		const user = self.users[ uId ];
-		if ( user )
-			user.authed = authed;
-		
-		self.setUserToGroup( uId, wgId );
 	}
 	
 	ns.UserCtrl.prototype.handleWorgs = function( wgs ) {
@@ -1171,6 +1161,7 @@ library.view = library.view || {};
 		});
 		if ( !groupId )
 			groupId = 'bug';
+		
 		
 		const user = self.users[ userId ];
 		if ( !user ) {
