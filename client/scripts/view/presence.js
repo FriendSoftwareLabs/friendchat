@@ -699,6 +699,7 @@ library.view = library.view || {};
 		tmplManager
 	) {
 		const self = this;
+		console.log( 'GroupUser', conf );
 		self.id = id;
 		self.name = conf.name;
 		self.avatar = conf.avatar;
@@ -892,8 +893,10 @@ library.view = library.view || {};
 		if ( workgroups && workgroups.length )
 			workgroups.forEach( addWorg );
 		
-		if ( users && users.length )
-			users.forEach( addUser );
+		if ( users ) {
+			let uids = Object.keys( users );
+			uids.forEach( uid => self.handleJoin( users[ uid ]));
+		}
 		
 		self.addUserCss( 'guest-user', guestAvatar );
 		self.addUserCss( 'default-user', guestAvatar );
@@ -901,7 +904,6 @@ library.view = library.view || {};
 		self.bindConn();
 		
 		function addWorg( wg ) { self.addWorkgroup( wg ); }
-		function addUser( user ) { self.handleJoin( user ); }
 	}
 	
 	ns.UserCtrl.prototype.build = function() {

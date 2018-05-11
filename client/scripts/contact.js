@@ -503,7 +503,7 @@ library.contact = library.contact || {};
 		self.settings = null;
 		self.identities = {};
 		self.onlineList = [];
-		self.users = [];
+		self.users = {};
 		self.peers = [];
 		
 		self.init();
@@ -760,6 +760,7 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.openChat = function() {
 		const self = this;
 		self.messageWaiting( false );
+		console.log( 'openChat', self.users );
 		const initData = {
 			roomName    : self.identity.name,
 			guestAvatar : self.guestAvatar,
@@ -808,6 +809,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
+		console.log( 'handleInitialize', state );
 		self.ownerId = state.ownerId;
 		self.identities = state.identities;
 		self.settings = state.settings;
@@ -855,7 +857,7 @@ library.contact = library.contact || {};
 		}
 		
 		function getSelf() {
-			return self.users.find( user => user.clientId === self.userId );
+			return self.users[ self.userId ];
 		}
 	}
 	
@@ -1049,8 +1051,9 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.handleJoin = function( user ) {
-		var self = this;
-		self.users.push( user );
+		const self = this;
+		console.log( 'PresenceRoom.handleJoin', user );
+		self.users[ user.clientId ] = user;
 		const join = {
 			type : 'join',
 			data : user,
@@ -1061,25 +1064,33 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLeave = function( userId ) {
 		const self = this;
-		self.users = self.users.filter( notUserId );
+		console.log( 'handleLeave', userId );
+		delete self.users[ userId ];
 		const leave = {
 			type : 'leave',
 			data : userId,
 		};
 		self.toChat( leave );
 		self.updateViewUsers();
-		
-		function notUserId( user ) {
-			return user.clientId !== userId;
-		}
 	}
 	
 	ns.PresenceRoom.prototype.handleOnline = function( user ) {
 		const self = this;
+		console.log( 'handleOnline', user );
 		const userId = user.clientId;
 		if ( userId === self.userId )
 			return;
 		
+		let current = self.users[ user.clientId ];
+		if ( !current ) {
+			console.log( 'PresenceRoom.handleOnline  - huh? no users for', [
+				user,
+				self.users,
+			]);
+			return;
+		}
+		
+		current.admin = user.admin;
 		self.onlineList.push( userId );
 		const online = {
 			type : 'online',
@@ -1109,7 +1120,7 @@ library.contact = library.contact || {};
 		const users = {
 			type : 'users',
 			data : {
-				users  : self.users.length,
+				users  : 0,
 				online : self.onlineList.length,
 			},
 		};
