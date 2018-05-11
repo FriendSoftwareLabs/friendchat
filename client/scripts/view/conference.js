@@ -532,12 +532,14 @@ library.view = library.view || {};
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.showHideBtn = document.getElementById( 'showhide-btn' );
 		self.inputForm = document.getElementById( 'input-form' );
+		const submitBtn = document.getElementById( 'chat-submit' );
 		
-		window.addEventListener( 'resize', windowResize, false );
+		//window.addEventListener( 'resize', windowResize, false );
 		
 		self.settingsBtn.addEventListener( 'click', showSettings, false );
 		self.showHideBtn.addEventListener( 'click', showhideToggle, false );
 		self.inputForm.addEventListener( 'submit', inputSubmit, false );
+		submitBtn.addEventListener( 'click', inputSubmit, false );
 		
 		function windowResize( e ) {
 			self.handleWindowResize( e );
@@ -578,6 +580,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.reflow = function() {
+		const self = this;
 		var messages = document.getElementById( 'message-container' );
 		var contacts = document.getElementById( 'participants-container' );
 		window.View.triggerReflow( messages );

@@ -344,12 +344,14 @@ library.component = library.component || {};
 	ns.IMChat.prototype.bindEvents = function() {
 		var self = this;
 		self.form = document.getElementById( 'input-form' );
+		const submitBtn = document.getElementById( 'chat-submit' );
 		self.toggleMultilineBtn = document.getElementById( 'leeloodallasmultiline' );
 		self.toggleVoiceBtn = document.getElementById( 'toggle-voice' );
 		const startVideoBtn = document.getElementById( 'start-video' );
 		const startAudioBtn = document.getElementById( 'start-audio' );
 		self.encryptBtn = document.getElementById( 'toggle-encrypt' );
 		
+		submitBtn.addEventListener( 'click', submit, false );
 		self.form.addEventListener( 'submit', submit, false );
 		self.toggleMultilineBtn.addEventListener( 'click', toggleMultiline, false );
 		self.toggleVoiceBtn.addEventListener( 'click', toggleVoice, false );

@@ -83,8 +83,6 @@ i.fa {
 }
 
 .button.flat {
-	width : 100%;
-	height : 100%;
 	border-radius: 0;
 	margin : 0;
 }
@@ -312,7 +310,6 @@ i.fa {
 }
 
 #foot {
-	height: 2.3em;
 	flex : 0 0 auto;
 }
 
@@ -380,12 +377,23 @@ html body .displayNone {
 }
 
 .textarea-wrap textarea {
-	outline : none;
-	width : 100%;
-	height: 100%;
-	padding : 0.5em;
-	border : none;
-	resize : none;
+	outline     : none;
+	width       : 100%;
+	height      : 2.4em;
+	padding     : 0.5em;
+	border      : none;
+	resize      : none;
+	line-height : 1.4em;
+	overflow-y  : hidden;
+	transition  : height 0.1s;
+}
+
+.textarea-wrap.two-lines textarea {
+	height: 3.8em;
+}
+
+.textarea-wrap.three-lines textarea {
+	height: 5.2em;
 }
 
 .item-row > * {

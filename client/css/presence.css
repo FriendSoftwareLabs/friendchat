@@ -1,4 +1,7 @@
 
+#foot {
+	height: unset;
+}
 
 .section-head {
 	font-weight: bold;
@@ -66,6 +69,7 @@
 .msg,
 .msg-group {
 	padding: 0.2em 0em;
+	line-height: 1.3em;
 }
 
 .msg-group {
@@ -74,13 +78,18 @@
 }
 
 .msg-group .name {
-	font-weight: bold;
+	padding-top : 0.2em;
+	font-weight : bold;
 }
 
 .time {
-	padding-left : 0.5em;
+	padding : 0 0.1em 0 0.5em;
 	text-align: right;
 	opacity: 0.3;
+}
+
+.msg:hover {
+	background-color : rgba( 0, 0, 0, 0.02 );
 }
 
 .msg-group:hover .time,
@@ -95,6 +104,7 @@
 .str {
 	margin-left : 0.5em;
 	word-break: break-word;
+	white-space: pre-wrap;
 }
 
 #users-container {

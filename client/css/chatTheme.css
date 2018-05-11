@@ -116,7 +116,7 @@ Prepend with .im-chat or .conference classes to specify for view type
 
 #foot {}
 
-#input-form .actions {
+#chat-submit {
 	width : 3em;
 }
 

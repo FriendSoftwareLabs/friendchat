@@ -389,8 +389,8 @@ library.component = library.component || {};
 		self.elementId = elementId; // the element being scrolled, as opposed to its viewport / container
 		self.scrollAtBottom = true;
 		self.scrollTresholdPercent = 25; // percent - used to calculate scrollTreshold.
-		                                  // For a static ( pixel ) value, set to 
-		                                  // null AND set scrollTreshold to a number
+		                                 // For a static ( pixel ) value, set to 
+		                                 // null AND set scrollTreshold to a number
 		self.scrollTreshold = null;
 		
 		self.element = null;
@@ -409,16 +409,18 @@ library.component = library.component || {};
 	// private
 	
 	ns.BottomScroller.prototype.init = function() {
-		var self = this;
-		
+		const self = this;
 		self.element = document.getElementById( self.elementId );
 		self.element.addEventListener( 'scroll', scrollEvent, false );
-		window.addEventListener( 'resize', resizeEvent, false );
+		if ( window.ResizeObserver ) {
+			self.boxResize = new window.ResizeObserver( resizeEvent );
+			self.boxResize.observe( self.element );
+		}
+		
+		//window.addEventListener( 'resize', resizeEvent, false );
 		function scrollEvent( e ) { self.checkIsAtBottom( e ); }
 		function loadedEvent( e ) { console.log( 'BottomScroller.loadedevent', e ); }
-		function resizeEvent( e ) {
-			self.handleResize();
-		}
+		function resizeEvent( e ) { self.handleResize(); }
 		
 		self.observer = new window.MutationObserver( domMutated );
 		self.observer.observe( self.element, {
@@ -434,8 +436,8 @@ library.component = library.component || {};
 		self.checkIsAtBottom();
 	}
 	
-	ns.BottomScroller.prototype.handleResize = function() {
-		var self = this;
+	ns.BottomScroller.prototype.handleResize = function( e ) {
+		const self = this;
 		self.updateScrollTreshold();
 		self.scrollToBottom();
 	}
@@ -1324,7 +1326,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.MultiInput ))
 			return new ns.MultiInput( conf );
 		
-		var self = this;
+		const self = this;
 		self.containerId = conf.containerId;
 		self.singleOnly = !!conf.singleOnly;
 		self.multiIsOn = !!conf.multiIsOn;
@@ -1333,6 +1335,7 @@ library.component = library.component || {};
 		self.onstate = conf.onstate;
 		self.onmode = conf.onmode || null;
 		
+		self.currentTAHeight = '';
 		self.isTyping = false;
 		
 		self.init();
@@ -1361,6 +1364,7 @@ library.component = library.component || {};
 	ns.MultiInput.prototype.setValue = function( string ) {
 		var self = this;
 		self.ta.value = string;
+		self.checkLineBreaks();
 	}
 	
 	ns.MultiInput.prototype.getValue = function() {
@@ -1391,6 +1395,8 @@ library.component = library.component || {};
 		delete self.onsubmit;
 		delete self.onstate;
 		delete self.onmode;
+		delete self.taWrap;
+		delete self.ta;
 	}
 	
 	// Private
@@ -1410,10 +1416,10 @@ library.component = library.component || {};
 		
 		// build
 		var cont = document.getElementById( self.containerId );
-		var inputEl = self.template.getElement( self.inputTmpl, {} );
-		cont.appendChild( inputEl );
+		self.taWrap = self.template.getElement( self.inputTmpl, {} );
+		cont.appendChild( self.taWrap );
 		self.isTypingHint = document.getElementById( 'typing-hint' );
-		self.ta = inputEl.querySelector( 'textarea' );
+		self.ta = self.taWrap.querySelector( 'textarea' );
 		
 		// bind
 		self.ta.addEventListener( 'focus', inputFocus, false );
@@ -1437,6 +1443,7 @@ library.component = library.component || {};
 	
 	ns.MultiInput.prototype.handleKeyUp = function( e ) {
 		const self = this;
+		self.checkLineBreaks();
 		self.checkIsTyping();
 	}
 	
@@ -1479,6 +1486,7 @@ library.component = library.component || {};
 	ns.MultiInput.prototype.handleSpecialEnter = function( e ) {
 		var self = this;
 		// a newline was inserted in text area
+		self.checkLineBreaks( true );
 		return true;
 	}
 	
@@ -1497,6 +1505,35 @@ library.component = library.component || {};
 		
 		self.setValue( '' );
 		self.focus();
+	}
+	
+	ns.MultiInput.prototype.checkLineBreaks = function( addOne ) {
+		const self = this;
+		let str = self.ta.value;
+		let num = str.split( '\n' ).length;
+		if ( addOne )
+			num++;
+		
+		let newHeight = '';
+		if ( 1 === num )
+			newHeight = '';
+		
+		if ( 2 === num )
+			newHeight = 'two-lines';
+		
+		if ( 3 <= num )
+			newHeight = 'three-lines';
+		
+		if ( self.currentTAHeight === newHeight )
+			return;
+		
+		if ( '' !== self.currentTAHeight )
+			self.taWrap.classList.toggle( self.currentTAHeight, false );
+		
+		if ( '' !== newHeight )
+			self.taWrap.classList.toggle( newHeight, true );
+		
+		self.currentTAHeight = newHeight;
 	}
 	
 	ns.MultiInput.prototype.checkIsTyping = function() {
@@ -1621,11 +1658,13 @@ library.component = library.component || {};
 			el.classList.add( self.logClass );
 			return el;
 		}
+		
 		function action( data ) {
 			var el = self.action( data );
 			el.classList.add( self.logClass );
 			return el;
 		}
+		
 		function notie( data ) {
 			data.level = 'log';
 			return self.notification( data );

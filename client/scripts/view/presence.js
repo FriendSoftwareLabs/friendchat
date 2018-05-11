@@ -105,6 +105,7 @@ library.view = library.view || {};
 		//self.messagesEl = document.getElementById( 'messages' );
 		const emoPanelBtn = document.getElementById( 'emojii-panel-button' );
 		const inputForm = document.getElementById( 'input-form' );
+		const submitBtn = document.getElementById( 'chat-submit' );
 		
 		self.goVideoBtn.addEventListener( 'click', goVideoClick, false );
 		self.goAudioBtn.addEventListener( 'click', goAudioClick, false );
@@ -112,9 +113,9 @@ library.view = library.view || {};
 		self.toggleUsersBtn.addEventListener( 'click', toggleUserList, false );
 		emoPanelBtn.addEventListener( 'click', toggleEmoPanel, false );
 		inputForm.addEventListener( 'submit', inputSubmit, false );
+		submitBtn.addEventListener( 'click', inputSubmit, false );
 		
-		function goVideoClick( e ) {
-			self.goLive( 'video' ); }
+		function goVideoClick( e ) { self.goLive( 'video' ); }
 		function goAudioClick( e ) { self.goLive( 'audio' ); }
 		
 		function toggleUserList( e ) {
