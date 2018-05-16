@@ -236,9 +236,9 @@ ns.SocketManager.prototype.validateAuthToken = function( bundle ) {
 ns.SocketManager.prototype.authRequest = function( token, callback ) {
 	var self = this;
 	var data = {
-		module : 'system',
+		module  : 'system',
 		command : 'userinfoget',
-		authid : token.authId,
+		authid  : token.authId,
 	};
 	
 	var req = {

@@ -78,6 +78,7 @@ library.component = library.component || {};
 		const self = this;
 		console.log( 'GuestRoom.handleJoinedRoom', room );
 		self.roomId = room.clientId;
+		self.roomName = room.name;
 		self.room = new library.component.EventNode( self.roomId, self.conn, extraRoomEvent );
 		self.room.on( 'initialize', init );
 		self.room.on( 'identity', identity );
@@ -119,6 +120,7 @@ library.component = library.component || {};
 		
 		const conf = {
 			roomId      : self.roomId,
+			roomName    : self.roomName,
 			isGuest     : true,
 			permissions : perms,
 			isStream    : state.settings.isStream,
