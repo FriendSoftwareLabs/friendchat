@@ -421,17 +421,18 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'ModuleControl.reconnect' );
 		mids = Object.keys( self.active );
-		mids.forEach( callReconnect );
-		function callReconnect( mId ) {
+		mids.forEach( mId => {
 			let mod = self.active[ mId ];
 			mod.reconnect();
-		}
+		});
 	}
 	
 	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
 		console.log( 'moduleCtrl.setIsOnline', isOnline );
+		self.reconnect();
 	}
 	
 	// Private

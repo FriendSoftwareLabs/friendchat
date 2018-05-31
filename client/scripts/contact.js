@@ -31,7 +31,6 @@ library.contact = library.contact || {};
 			return new ns.Contact( conf );
 		
 		var self = this;
-		
 		self.moduleId = conf.moduleId;
 		self.parentPath = conf.parentPath || '';
 		self.clientId = self.data.clientId;
@@ -515,6 +514,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'PresenceRoom.reconnect' );
 		self.send({
 			type : 'initialize',
 		});
@@ -809,7 +809,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
-		console.log( 'handleInitialize', state );
+		console.log( 'PresenceRoom.handleInitialize', state );
 		self.ownerId = state.ownerId;
 		self.identities = state.identities;
 		self.settings = state.settings;

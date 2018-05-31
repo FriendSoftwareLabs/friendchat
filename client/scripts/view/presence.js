@@ -312,70 +312,17 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleState = function( state ) {
 		const self = this;
-		removeOld( state.users );
-		addNew( state.users );
-		setOnline( state.online );
-		setLive( state.peers );
+		console.log( 'handleState', state );
+		self.users.updateAll( state );
+		//removeOld( state.users );
+		//addNew( state.users );
+		//setOnline( state.online );
+		//setLive( state.peers );
 		reloadLog();
-		
-		function removeOld( currentUsers ) {
-			let currentUIDs = currentUsers.map( u => u.clientId );
-			let oldUIDs = Object.keys( self.users );
-			let staleUIDs = oldUIDs.filter( notInCurrent );
-			staleUIDs.forEach( remove );
-			
-			function notInCurrent( oldUID ) {
-				if ( -1 === currentUIDs.indexOf( oldUID ))
-					return true;
-				return false;
-			}
-			
-			function remove( uid ) {
-				self.removeUser( uid );
-			}
-		}
-		
-		function addNew( users ) {
-			users.forEach( user => self.addUser( user ));
-		}
-		
-		function setOnline( online ) {
-			let uids = Object.keys( self.users );
-			uids.forEach( setOffline );
-			online.forEach( setOnline );
-			
-			function setOffline( uid ) {
-				let user = self.users[ uid ];
-				if ( 'online' !== user.group )
-					return;
-				
-				self.handleOnline( uid, false );
-			}
-			
-			function setOnline( uid ) {
-				self.handleOnline( uid, true );
-			}
-		}
-		
-		function setLive( peers ) {
-			let uids = Object.keys( self.users );
-			uids.forEach( setOff );
-			peers.forEach( setOn );
-			
-			function setOff( uid ) {
-				let user = self.users[ uid ];
-				if ( 'live' === user.state )
-					user.setState( '' );
-			}
-			
-			function setOn( uid ) {
-				let user = self.users[ uid ];
-				user.setState( 'live' );
-			}
-		}
 		
 		function reloadLog() {
 			let lastMsgId = self.msgBuilder.getLastMsgId();
+			console.log( 'reloadLog', lastMsgId );
 			const logFrom = {
 				type : 'log',
 				data : {
@@ -863,6 +810,66 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.UserCtrl.prototype.updateAll = function( state ) {
+		const self = this;
+		console.log( 'UserCtrl.updateAll', {
+			state : state,
+			users : self.users,
+		});
+		removeOld( state.users );
+		addNew( state.users );
+		updateOnline( state.online );
+		updateLive( state.peers );
+		
+		function removeOld( fresh ) {
+			let current = Object.keys( self.users );
+			let remove = current.filter( uid => {
+				if ( null == fresh[ uid ] )
+					return true;
+				else
+					return false;
+			});
+			
+			console.log( 'remove', remove );
+			remove.forEach( uid => self.handleLeave( uid ));
+		}
+		
+		function addNew( fresh ) {
+			let freshIds = Object.keys( fresh );
+			let add = freshIds.filter( fid => {
+				if ( null == self.users[ fid ])
+					return true;
+				else
+					return false;
+			});
+			console.log( 'addNew', add );
+			add.forEach( fid => self.handleJoin( fresh[ fid ]));
+		}
+		
+		function updateOnline( fresh ) {
+			console.log( 'updateOnline', fresh );
+			let uids = Object.keys( self.users );
+			uids.forEach( uid => {
+				if ( fresh.some( fid => fid === uid ))
+					self.handleOnline( uid );
+				else
+					self.handleOffline( uid );
+			});
+		}
+		
+		function updateLive( peers ) {
+			let uids = Object.keys( self.users );
+			uids.forEach( uid => {
+				let isLive = false;
+				if ( peers.some( pid => pid === uid ))
+					isLive = true;
+				
+				console.log( 'updateAll.udpateLive - isLive', isLive );
+				self.setState( uid, 'live', isLive );
+			});
+		}
+	}
+	
 	ns.UserCtrl.prototype.close = function() {
 		const self = this;
 		self.releaseConn();
@@ -1036,6 +1043,9 @@ library.view = library.view || {};
 		if ( !user )
 			return;
 		
+		if ( self.onlines.some( oid => oid === uid ))
+			return;
+		
 		self.onlines.push( uid );
 		user.admin = data.admin;
 		user.authed = data.authed;
@@ -1046,6 +1056,13 @@ library.view = library.view || {};
 	ns.UserCtrl.prototype.handleOffline = function( userId ) {
 		const self = this;
 		console.log( 'presence.handleOffline', userId );
+		let user = self.users[ userId ];
+		if ( !user || !user.authed ) {
+			console.log( 'UserCtrl.handleOffline - \
+			user not or not authed, so cannot be set offline', user );
+			return;
+		}
+		
 		self.onlines = self.onlines.filter( uid => userId !== uid );
 		self.moveUserToGroup( userId, 'offline' );
 	}

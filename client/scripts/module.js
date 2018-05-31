@@ -479,7 +479,12 @@ library.module = library.module || {};
 	// BaseModule.reconnect
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'Presence.reconnect' );
+		console.log( 'Presence.reconnect', self.contacts );
+		let ids = Object.keys( self.contacts );
+		ids.forEach( id => {
+			let room = self.contacts[ id ];
+			room.reconnect();
+		});
 	}
 	
 	ns.Presence.prototype.create = function( identity ) {
