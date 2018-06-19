@@ -2045,3 +2045,451 @@ library.rtc = library.rtc || {};
 	}
 	
 })( library.rtc );
+
+
+// media
+(function( ns, undefined ) {
+	ns.Media = function(
+			permissions,
+			preferedDevices,
+			quality,
+			deviceSource
+	) {
+		const self = this;
+		console.log( 'Media', {
+			permsss : permissions,
+			preffff : preferedDevices,
+			devices : deviceSource,
+		});
+		library.component.EventEmitter.call( self );
+		
+		self.permissions = permissions || {
+			audio : true,
+			video : true,
+		};
+		self.preferedDevices = preferedDevices || {};
+		self.quality = quality;
+		self.devices = deviceSource;
+		if ( !self.devices )
+			throw new Error( 'Media - no device source' );
+		
+		self.mediaConf = {};
+		self.currentDevices = {};
+		self.isScreenSharing = false;
+		self.setupRunning = false;
+		self.recycle = false;
+		self.giveUp = false;
+		
+		self.init();
+	}
+	
+	ns.Media.prototype = Object.create( library.component.EventEmitter.prototype );
+	
+	// Public
+	
+	ns.Media.prototype.close = function() {
+		const self = this;
+		self.clear();
+		
+		delete self.permissions;
+		delete self.preferedDevices;
+		delete self.quality;
+		delete self.deviceSource;
+	}
+	
+	// permissions and preferedDevices are optional
+	ns.Media.prototype.create = function( permissions, preferedDevices ) {
+		const self = this;
+		console.log( 'Media.create', {
+			permissions     : permissions,
+			preferedDevices : preferedDevices,
+		});
+		if ( null != permissions )
+			self.permissions = permissions;
+		
+		
+		if ( null != preferedDevices )
+			self.preferedDevices = preferedDevices;
+		
+		let send = self.permissions.send;
+		if ( !send || ( !send.audio && !send.video )) {
+			self.clear();
+			return;
+		}
+		
+		self.devices.getByType()
+		.then( devsBack )
+		.catch( deviceError );
+		
+		function devsBack( available ) {
+			setupConf( available );
+		}
+		
+		function deviceError( err ) {
+			console.log( 'Media.create - deviceError', err );
+			self.emitError( 'ERR_GET_DEVICES' );
+		}
+		
+		function setupConf( availableDevices ) {
+			let conf = {
+				audio : send.audio,
+				video : send.video,
+			};
+			
+			// add quality constraints
+			if ( conf.audio )
+				conf.audio = self.mediaConf.audio || {};
+			if ( conf.video )
+				conf.video = self.mediaConf.video || {};
+			
+			// add device preferences
+			conf = self.setDevice( 'audio', availableDevices, conf );
+			conf = self.setDevice( 'video', availableDevices, conf );
+			
+			self.getMedia( conf )
+				.then( mediaBack )
+				.catch( mediaError );
+			
+			function mediaBack( media ) {
+				console.log( 'Media.create - mediaBack', media );
+				self.setCurrentDevices( media );
+				self.setMedia( media );
+			}
+			
+			function mediaError( err ) {
+				console.log( 'Media.create - mediaError', err );
+				self.emitError( 'ERR_MEDIA_FAILED' );
+			}
+		}
+	}
+	
+	ns.Media.prototype.shareScreen = function( screenId ) {
+		const self = this;
+		let shareMedia = new window.MediaStream();
+		getScreen( screenId );
+
+		function getScreen( screenId ) {
+			let conf = {
+				audio : false,
+				video : {
+					mandatory : {
+						chromeMediaSource : 'desktop',
+						chromeMediaSourceId : screenId,
+					},
+				},
+			};
+			self.getMedia( conf, true )
+				.then( screenBack )
+				.catch( screenFail );
+				
+			function screenBack( media ) {
+				console.log( 'shareScreen screenBack', media );
+				let tracks = media.getVideoTracks();
+				shareMedia.addTrack( tracks[ 0 ]);
+				addAudio();
+			}
+			
+			function screenFail( err ) {
+				console.log()
+			}
+		}
+		
+		function addAudio() {
+			console.log( 'addAudio' );
+			self.devices.getByType()
+				.then( devsBack )
+				.catch( devsFail );
+				
+			function devsFail( err ) {
+				console.log( 'Media.shareScreen - addAudio devsFail', err );
+				self.emitError( 'ERR_GET_DEVICES' );
+			}
+			
+			function devsBack( available ) {
+				console.log( 'shareScreen audio devsBack', available );
+				let conf = {
+					audio : self.mediaConf.audio || {},
+					video : false,
+				};
+				conf = self.setDevice( 'audio', available, conf );
+				self.getMedia( conf )
+					.then( audioBack )
+					.catch( audioFail );
+				
+				function audioBack( media ) {
+					console.log( 'shareScreen audioBack', media );
+					let tracks = media.getAudioTracks();
+					shareMedia.addTrack( tracks[ 0 ]);
+					self.setMedia( shareMedia );
+				}
+				
+				function audioFail( err ) {
+					console.log( 'Media.shareScreen - addAudio media fail', err );
+					self.emitError( 'ERR_MEDIA_FAILED' );
+				}
+			}
+		}
+	}
+	
+	ns.Media.prototype.getCurrentDevices = function() {
+		const self = this;
+		console.log( 'Media.getCurrentDevices', self.currentDevices );
+		return self.currentDevices;
+	}
+	
+	ns.Media.prototype.getOpusConf = function() {
+		const self = this;
+		var args = self.opusQualityMap[ self.currentQuality ];
+		if ( !args )
+			return null;
+		
+		var conf = {};
+		self.opusQualityKeys.forEach( setInConf );
+		return conf;
+		
+		function setInConf( key, index ) {
+			var value = args[ index ];
+			if ( null == value )
+				return;
+			
+			conf[ key ] = value;
+		}
+	}
+	
+	ns.Media.prototype.setQuality = function( quality ) {
+		const self = this;
+		console.log( 'Media.setQuality', quality );
+		// defaults
+		quality = quality || {};
+		quality.level = quality.level || 'normal';
+		quality.scale = quality.scale || 1;
+		
+		// sameness check
+		self.quality = self.quality || {};
+		if (( self.quality.level === quality.level ) &&
+			( self.quality.scale === quality.scale )
+		) {
+			return null;
+		}
+		
+		self.quality.level = quality.level;
+		self.quality.scale = quality.scale;
+		self.setVideoQuality();
+		return self.quality;
+	}
+	
+	ns.Media.prototype.clear = function() {
+		const self = this;
+		console.log( 'Media.clear', self.media );
+		self.cleanup();
+		self.emit( 'media', null );
+		
+	}
+	
+	// Private
+	
+	ns.Media.prototype.init = function() {
+		const self = this;
+		// lowest quality first or things will break
+		self.videoQualityKeys = [ 'width', 'height', 'frameRate' ];
+		self.videoQualityMap = {
+			'low'     : [ 256, 144, 4 ],
+			'medium'  : [ 640, 360, 24 ],
+			'normal'  : [ 1280, 720, 24 ],
+			'default' : [],
+		};
+		
+		self.opusQualityKeys = [ 'maxcodecaudiobandwidth', 'maxaveragebitrate', 'usedtx' ];
+		self.opusQualityMap = {
+			'low'     : [ '24000', '16', null ],
+			'medium'  : [ '48000', '32', null ],
+			'normal'  : [ '48000', '32', null ],
+			'default' : [ '48000', '32', null ],
+		};
+		
+		self.mediaConf.audio = {
+			"echoCancellation" : true,
+		};
+	}
+	
+	ns.Media.prototype.emitError = function( err ) {
+		const self = this;
+		self.emit( 'error', err );
+	}
+	
+	ns.Media.prototype.setVideoQuality = function() {
+		const self = this;
+		const level = self.quality.level;
+		const scale = self.quality.scale;
+		let arr = self.videoQualityMap[ level ];
+		if ( !arr || !arr.length ) {
+			console.log( 'setVideoQuality - invalid level or missing in map', {
+				level     : level,
+				available : self.videoQualityMap,
+			});
+			self.mediaConf.video = true;
+			return;
+		}
+		
+		let video = {};
+		self.videoQualityKeys.forEach( add );
+		function add( key, index ) {
+			let value = arr[ index ];
+			if ( 'frameRate' !== key )
+				value = value * scale;
+			
+			if ( null != value )
+				video[ key ] = value;
+		}
+		
+		self.mediaConf.video = video;
+	}
+	
+	ns.Media.prototype.setDevice = function( type, available, conf ) {
+		const self = this;
+		if ( !conf[ type ])
+			return conf;
+		
+		const deviceType = type + 'input';
+		let label = self.preferedDevices[ deviceType ];
+		if ( !label ) {
+			console.log( 'Media.setDevice', {
+				type : type,
+				avai : available,
+				pref : self.preferedDevices,
+				curr : self.currentDevices,
+			});
+			label = self.currentDevices[ deviceType ];
+		}
+		
+		if ( !label )
+			return conf;
+		
+		let device = available[ deviceType ][ label ];
+		if ( !device )
+			return conf;
+		
+		if ( 'boolean' === typeof( conf[ type ]))
+			conf[ type ] = {};
+		
+		conf[ type ].deviceId = device.deviceId;
+		return conf;
+	}
+	
+	ns.Media.prototype.getMedia = function( conf, noFallback ) {
+		const self = this;
+		console.log( 'Media.getMedia', conf );
+		self.cleanup();
+		return new Promise(( resolve, reject ) => {
+			window.navigator.mediaDevices.getUserMedia( conf )
+				.then( success )
+				.catch( failure );
+			
+			function success( media ) { mediaCreated( media, conf ); }
+			function failure( err ) { mediaFailed( err, conf ); }
+			
+			function mediaFailed( err, conf ) {
+				console.log( 'mediaFailed', {
+					err  : err,
+					conf : conf,
+				});
+				
+				const errData = {
+					code : 'ERR_MEDIA_FAILED',
+					err  : err,
+					conf : conf,
+				};
+				
+				self.emit( 'mediafailed', errData );
+				if ( self.giveUp || noFallback )
+					reject( errData );
+				else
+					retrySimple();
+			}
+			
+			function mediaCreated( media, conf ) {
+				console.log( 'mediaCreated', {
+					tracks : media.getTracks(),
+					conf   : conf,
+				});
+				
+				
+				self.simpleConf = false;
+				self.giveUp = false;
+				resolve( media );
+			}
+		});
+		
+		function retrySimple() {
+			// try audio + video, but no special conf
+			if ( !self.simpleConf ) {
+				let send = self.permissions.send;
+				self.simpleConf = {
+					audio : !!conf.audio,
+					video : !!conf.video,
+				};
+				
+				self.getMedia( self.simpleConf );
+				return;
+			}
+			
+			// try only audio, set giveUp so we dont try
+			// again if it still fails.
+			if ( self.simpleConf.video ) {
+				self.simpleConf.video = false;
+				self.giveUp = true;
+				self.getMedia( self.simpleConf );
+			}
+		}
+	}
+	
+	ns.Media.prototype.setCurrentDevices = function( media ) {
+		const self = this;
+		let aT = media.getAudioTracks()[ 0 ];
+		let vT = media.getVideoTracks()[ 0 ];
+		self.currentDevices.audioinput = aT ? aT.label : false;
+		self.currentDevices.videoinput = vT ? vT.label : false;
+	}
+	
+	ns.Media.prototype.setMedia = function( media ) {
+		const self = this;
+		self.media = media;
+		self.bindTracks();
+		self.emit( 'media', media );
+	}
+	
+	ns.Media.prototype.bindTracks = function() {
+		const self = this;
+		if ( !self.media )
+			return;
+		
+		const tracks = self.media.getTracks();
+		tracks.forEach( track => {
+			track.onended = onEnded;
+			function onEnded() {
+				track.onended = null;
+				self.emit( 'track-ended', {
+					id    : track.id,
+					kind  : track.kind,
+					label : track.label,
+				});
+			}
+		});
+	}
+	
+	ns.Media.prototype.cleanup = function() {
+		const self = this;
+		if ( !self.media )
+			return;
+		
+		let tracks = self.media.getTracks();
+		tracks.forEach( track => {
+			track.onended = null;
+			self.media.removeTrack( track );
+			track.stop();
+		});
+		
+		self.media = null;
+	}
+	
+})( library.rtc );

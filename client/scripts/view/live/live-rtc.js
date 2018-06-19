@@ -90,23 +90,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		self.bindMenu();
 		
+		console.log( 'RTC.init - quality', self.quality );
 		if ( self.quality )
-			self.view.currentQuality = self.quality.level;
-		
-		var sourceConf = {
-			view     : self.view,
-			onselect : sourcesSelected,
-		};
-		self.sourceSelect = new library.rtc.SourceSelect( sourceConf );
-		function sourcesSelected( selected ) {
-			if ( !selected )
-				return;
-			
-			if ( !self.selfie )
-				return;
-			
-			self.selfie.setMediaSources( selected );
-		}
+			self.view.updateQualityLevel( self.quality.level );
 		
 		// ui
 		self.chat = self.view.addChat( self.userId, self.identities, self.conn );
@@ -165,7 +151,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				self.initChecks.passCheck( 'video-input' );
 			}
 			
-			function runSelfieChecks() {
+			function runSelfieChecks( gumErr, media ) {
 				const ready = self.initChecks.checkSourceReady( !!media, gumErr );
 				if ( !ready )
 					return;
@@ -190,7 +176,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function showSourceSelect() {
 			closeInit();
-			self.showSourceSelect();
+			if ( !self.selfie )
+				return;
+			
+			self.selfie.showSourceSelect();
 		}
 		
 		function closeInit() {
@@ -273,7 +262,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		var self = this;
 		self.menu = self.view.addMenu();
 		self.menu.on( 'change-username'  , username );
-		self.menu.on( 'source-select'    , sourceSelect );
 		self.menu.on( 'restart'          , restart );
 		self.menu.on( 'mode-presentation', presentation );
 		
@@ -282,7 +270,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function username( e ) { self.changeUsername(); }
-		function sourceSelect( e ) { self.showSourceSelect(); }
 		function restart( e ) { self.restartPeers(); }
 		function presentation( e ) { self.togglePresentationMode( e ); }
 	}
@@ -604,15 +591,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			};
 			self.conn.send( update );
 		}
-	}
-	
-	ns.RTC.prototype.showSourceSelect = function() {
-		var self = this;
-		var devices = null;
-		if ( self.selfie )
-			devices = self.selfie.currentDevices;
-		
-		self.sourceSelect.show( devices );
 	}
 	
 	ns.RTC.prototype.restartStream = function() {
@@ -1062,7 +1040,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		delete self.conf;
 		delete self.conn;
 		delete self.view;
-		delete self.sourceSelect;
 		delete self.menu;
 		
 		var onclose = self.onclose;
@@ -1087,11 +1064,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.identity = conf.identity;
 		self.permissions = conf.permissions;
 		self.localSettings = conf.localSettings;
-		self.streamQuality = conf.quality || {
-			level : 'medium',
+		self.currentQuality = conf.quality || {
+			level : 'normal',
 			scale : 1,
 		};
 		self.isAdmin = conf.isAdmin;
+		self.media = null;
 		self.stream = null;
 		self.onleave = conf.onleave;
 		self.doneBack = callback;
@@ -1102,9 +1080,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.isChrome = null;
 		self.isFirefox = null;
-		
-		self.localStreamQuality = null;
-		self.currentQuality = null;
 		
 		self.init();
 	}
@@ -1133,11 +1108,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.volume )
 			self.volume.close();
 		
+		if ( self.media )
+			self.media.close();
+		
+		if ( self.sourceSelect )
+			self.sourceSelect.close();
+		
 		delete self.localSettings;
 		delete self.speaking;
 		delete self.volume;
 		delete self.stream;
 		delete self.shareMedia;
+		delete self.sourceSelect;
+		delete self.media;
 		delete self.view;
 		delete self.extConn;
 		delete self.menu;
@@ -1198,42 +1181,36 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 		}
 		
-		//
-		//self.isSpeaking = new library.rtc.IsSpeaking();
-		self.isChrome = !!( !!window.chrome && !!window.chrome.webstore );
-		self.isFirefox = !!window.InstallTrigger;
-		
-		// lowest quality first or things will break
-		self.videoQualityKeys = [ 'width', 'height', 'frameRate' ];
-		self.videoQualityMap = {
-			'low'     : [ 256, 144, 4 ],
-			'medium'  : [ 640, 360, 24 ],
-			'normal'  : [ 1280, 720, 24 ],
-			'default' : [],
+		const sourceConf = {
+			view     : self.view,
+			onselect : sourcesSelected,
 		};
-		
-		self.opusQualityKeys = [ 'maxcodecaudiobandwidth', 'maxaveragebitrate', 'usedtx' ];
-		self.opusQualityMap = {
-			'low'     : [ '24000', '16', null ],
-			'medium'  : [ '48000', '32', null ],
-			'normal'  : [ '48000', '32', null ],
-			'default' : [ '48000', '32', null ],
-		};
+		self.sourceSelect = new library.rtc.SourceSelect( sourceConf );
+		function sourcesSelected( selected ) {
+			if ( !selected )
+				return;
+			
+			console.log( 'sourceSelected', selected );
+			self.setMediaSources( selected );
+		}
 		
 		self.bindMenu();
 		self.sources = new library.rtc.MediaDevices();
-		self.sources.getByType()
-			.then( devsBack )
-			.catch( devErr );
+		self.media = new library.rtc.Media(
+			self.permissions,
+			self.localSettings.preferedDevices,
+			self.currentQuality,
+			self.sources
+		);
 		
-		function devsBack( devices ) {
-			self.tryPreferedDevices( devices );
-			self.setupSelfie( done );
-		}
+		self.media.on( 'media', media );
+		self.media.on( 'track-ended', trackEnded );
+		self.media.on( 'error', mediaError );
+		function media( e ) { self.handleMedia( e ); }
+		function trackEnded( e ) { self.handleTrackEnded( e ); }
+		function mediaError( e ) { self.handleMediaError( e ); }
 		
-		function devErr( err ) {
-			done( err, null );
-		}
+		self.setupStream( done );
 		
 		function done( err, res ) {
 			if ( !self.doneBack )
@@ -1266,20 +1243,39 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Selfie.prototype.setupSelfie = function( callback ) {
+	ns.Selfie.prototype.handleMedia = function( media ) {
 		const self = this;
-		console.log( 'setupSelfie - permissions', self.permissions );
-		let send = self.permissions.send;
-		self.mediaConf = {
-			audio : send.audio,
-			video : send.video,
-		};
-		self.applyStreamQuality();
-		self.setupStream( streamBack );
+		console.log( 'Selfie.handleMedia', media );
+		self.setStream( media );
+		if ( !media )
+			return;
 		
-		function streamBack( err, res ) {
-			callback( err, res );
+		let callback = self.streamBack;
+		if ( callback ) {
+			delete self.streamBack;
+			callback( null, media );
 		}
+		
+		if ( self.isScreenSharing ) {
+			self.menu.setState( 'toggle-screen-share', true );
+			self.toggleScreenMode( 'contain' );
+		}
+	}
+	
+	ns.Selfie.prototype.handleTrackEnded = function( track ) {
+		const self = this;
+		console.log( 'handleTrackEnded', track );
+		if ( self.isScreenSharing ) {
+			self.toggleShareScreen();
+			return;
+		}
+		
+		self.media.create();
+	}
+	
+	ns.Selfie.prototype.handleMediaError = function( err ) {
+		const self = this;
+		console.log( 'handleMediaError', err );
 	}
 	
 	ns.Selfie.prototype.bindMenu = function() {
@@ -1298,6 +1294,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.menu.on( 'screen-mode'         , screenMode );
 		self.menu.on( 'toggle-screen-share' , screenShare );
 		self.menu.on( 'screen-share-ext'    , screenExtInstall );
+		self.menu.on( 'source-select'       , sourceSelect );
 		
 		function mute( e ) { self.toggleMute(); }
 		function blind( e ) { self.toggleBlind(); }
@@ -1313,11 +1310,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function screenMode( e ) { self.toggleScreenMode(); }
 		function screenShare( e ) { self.toggleShareScreen(); }
 		function screenExtInstall( e ) { self.openScreenExtInstall( e ); }
+		function sourceSelect( e ) { self.showSourceSelect(); }
 	}
 	
 	ns.Selfie.prototype.showError = function( errMsg ) {
-		var self = this;
+		const self = this;
 		self.emit( 'error', errMsg );
+	}
+	
+	ns.Selfie.prototype.showSourceSelect = function() {
+		const self = this;
+		const devices = self.media.getCurrentDevices() || null;
+		console.log( 'Selfie.showSourceSelect', devices );
+		self.sourceSelect.show( devices );
 	}
 	
 	ns.Selfie.prototype.toggleMenuScreenShareInstall = function( showInstall ) {
@@ -1351,22 +1356,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.toggleShareScreen = function() {
 		const self = this;
+		console.log( 'toggleShareScreen', self.chromeSourceId );
 		if ( self.chromeSourceId )
 			unshare();
 		else
 			share();
 		
 		function unshare() {
-			revert();
-			self.setupStream();
-		}
-		
-		function revert() {
 			self.chromeSourceId = null;
 			self.chromeSourceOpts = null;
 			self.menu.setState( 'toggle-screen-share', false );
 			self.isScreenSharing = false;
 			self.toggleScreenMode( 'cover' );
+			self.setupStream();
 		}
 		
 		function share() {
@@ -1377,156 +1379,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				
 				self.chromeSourceId = res.sid;
 				self.chromeSourceOpts = res.opts;
-				var screenMedia = null;
-				var audioMedia = null;
-				getScreenMedia( screenBack );
-				function screenBack( err, res ) {
-					if ( err ) {
-						failed( err );
-						return;
-					}
-					
-					screenMedia = res;
-					getAudioTrack( audioBack );
-				}
-				
-				function audioBack ( err, res ) {
-					if ( err ) {
-						failed( err );
-						return;
-					}
-					
-					audioMedia = res;
-					const media = combineMedia( screenMedia, audioMedia );
-					self.menu.setState( 'toggle-screen-share', true );
-					self.toggleScreenMode( 'contain' );
-					self.isScreenSharing = true;
-					self.setStream( media );
-					self.bindShareTracks( screenMedia );
-				}
+				self.menu.setState( 'toggle-screen-share', true );
+				self.isScreenSharing = true;
+				self.toggleScreenMode( 'contain' );
+				self.media.shareScreen( res.sid );
 			}
-			
-			function getScreenMedia( callback ) {
-				const conf = {
-					audio : false,
-				};
-				
-				conf.video = {
-					mandatory : {
-						chromeMediaSource : 'desktop',
-						//maxWidth  : screen.width,
-						//maxHeight : screen.height,
-						chromeMediaSourceId : self.chromeSourceId,
-					}
-				}
-				getMedia( conf )
-					.then( screenOk )
-					.catch( err );
-					
-				function screenOk( res ) {
-					callback( null, res );
-				}
-				
-				function err( e ) {
-					console.log( 'screen failed', e );
-					callback( e, null );
-				}
-			}
-			
-			function getAudioTrack( callback ) {
-				const conf = {
-					video : false,
-					audio : {
-						echoCancellation : true,
-					},
-				};
-				getMedia( conf )
-					.then( audioOk )
-					.catch( err );
-				
-				function audioOk( media ) {
-					callback( null, media );
-				}
-				
-				function err( e ) {
-					console.log( 'audio failed', e );
-					callback( e, null );
-				}
-			}
-			
-			function getMedia( conf ) {
-				return window.navigator.mediaDevices.getUserMedia( conf );
-			}
-			
-			function combineMedia( screen, audio ) {
-				let sT = screen.getTracks();
-				let aT = audio.getTracks();
-				const media = new MediaStream();
-				media.addTrack( sT[ 0 ] );
-				media.addTrack( aT[ 0 ] );
-				return media;
-			}
-			
-			function failed( e ) {
-				console.log( 'screen share - something failed, revert', e );
-				revert();
-			}
-		}
-	}
-	
-	ns.Selfie.prototype.bindShareTracks = function( media ) {
-		const self = this;
-		self.shareMedia = media;
-		const tracks = media.getTracks();
-		tracks.forEach( bindOnEnded );
-		
-		function bindOnEnded( track ) {
-			track.onended = onEnded;
-			function onEnded( e ) {
-				track.onended = null;
-				if ( !self.shareMedia )
-					return;
-				
-				self.shareMedia.removeTrack( track );
-				checkMediaEmpty();
-			}
-		}
-		
-		function checkMediaEmpty() {
-			if ( !self.shareMedia )
-				return;
-			
-			let tracks = self.shareMedia.getTracks();
-			if ( tracks.length )
-				return;
-			
-			self.clearShareMedia();
-			
-			// no tracks, lets close share thingie, maybe
-			if ( self.chromeSourceId )
-				self.toggleShareScreen();
-		}
-	}
-	
-	ns.Selfie.prototype.clearShareMedia = function() {
-		const self = this;
-		if ( !self.shareMedia )
-			return;
-		
-		let tracks = self.shareMedia.getTracks();
-		tracks.forEach( stop );
-		delete self.shareMedia;
-		
-		function stop( track ) {
-			self.shareMedia.removeTrack( track );
-			track.onended = null;
-			track.stop();
 		}
 	}
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
 		const self = this;
 		let send = self.permissions.send;
+		console.log( 'setMediaSources', {
+			send : send,
+			devs : devices,
+		});
+		
 		if ( typeof( devices.audioinput ) === 'boolean' )
 			send.audio = false;
 		else
@@ -1540,13 +1408,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.menu.setState( 'send-audio', send.audio );
 		self.menu.setState( 'send-video', send.video );
 		
-		self.currentDevices = devices;
-		self.setupStream( streamBack );
+		self.setupStream( streamBack, null, devices );
 		function streamBack( err, res ) {
 			if ( err )
 				return;
 			
-			self.savePreferedDevices();
+			self.savePreferedDevices( devices );
 			if ( devices.audiooutput )
 				self.setAudioSink( devices );
 		}
@@ -1557,7 +1424,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.sources.getByType()
 			.then( devBack )
 			.catch( fail );
-			
+		
 		function devBack( devices ) {
 			let label = selected.audiooutput;
 			let out = devices.audiooutput[ label ];
@@ -1569,9 +1436,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Selfie.prototype.savePreferedDevices = function() {
+	ns.Selfie.prototype.savePreferedDevices = function( devices ) {
 		const self = this;
-		self.saveLocalSetting( 'preferedDevices', self.currentDevices );
+		console.log( 'savePreferedDevices', devices );
+		self.saveLocalSetting( 'preferedDevices', devices );
 	}
 	
 	ns.Selfie.prototype.saveLocalSetting = function( setting, value ) {
@@ -1586,33 +1454,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.conn.send( sett );
 	}
 	
-	ns.Selfie.prototype.buildVideoQualityConf = function( level ) {
-		const self = this;
-		const scale = self.streamQuality.scale || 1;
-		self.currentQuality = self.currentQuality || {};
-		self.currentQuality.scale = scale;
-		var arr = self.videoQualityMap[ level ];
-		if ( !arr || !arr.length ) {
-			console.log( 'buildVideoQualityConf - invalid level or missing in map', {
-				level     : level,
-				available : self.videoQualityMap,
-			});
-			return true;
-		}
-		
-		var conf = {};
-		self.videoQualityKeys.forEach( add );
-		function add( key, index ) {
-			var value = arr[ index ];
-			if ( 'frameRate' !== key )
-				value = value * scale;
-			
-			conf[ key ] = value;
-		}
-		
-		return conf;
-	}
-	
 	ns.Selfie.prototype.handleQuality = function( level ) {
 		var self = this;
 		self.changeStreamQuality( level );
@@ -1620,11 +1461,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.changeStreamQuality = function( level ) {
 		var self = this;
-		/*
-		if ( !self.isAdmin )
-			return;
-		*/
-		
 		if ( !level )
 			level = 'medium';
 		
@@ -1632,10 +1468,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.setRoomQuality = function( quality ) {
-		var self = this;
-		self.streamQuality = quality;
-		var level = self.applyStreamQuality();
-		if ( !level )
+		const self = this;
+		console.log( 'setRoomquality', quality );
+		self.currentQuality = self.media.setQuality( quality );
+		if ( !self.currentQuality )
 			return;
 		
 		if ( self.isScreenSharing ) {
@@ -1644,33 +1480,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.setupStream();
-		self.emit( 'room-quality', level ); // updating ui
-	}
-	
-	ns.Selfie.prototype.applyStreamQuality = function() {
-		const self = this;
-		self.streamQuality.level = self.streamQuality.level || 'medium';
-		self.streamQuality.scale = self.streamQuality.scale || 1;
-		
-		self.currentQuality = self.currentQuality || {};
-		if (( self.currentQuality.level === self.streamQuality.level ) &&
-			( self.currentQuality.scale === self.streamQuality.scale )
-		) {
-			return null;
-		}
-		
-		const level = self.streamQuality.level;
-		self.currentQuality.level = level;
-		const conf = self.buildVideoQualityConf( level );
-		if ( !conf )
-			return null;
-		
-		self.applyVideoConstraints( conf );
-		return level;
+		self.emit( 'room-quality', self.currentQuality.level ); // updating ui
 	}
 	
 	ns.Selfie.prototype.applyVideoConstraints = function( conf ) {
 		var self = this;
+		return;
 		if ( !conf ) {
 			console.log( 'applyVideoConstraints - conf not defined', conf );
 			return;
@@ -1696,32 +1511,25 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Selfie.prototype.applyAudioQualityConstraints = function( bitrate ) {
-		var self = this;
-	}
-	
 	ns.Selfie.prototype.getOpusConf = function() {
-		var self = this;
-		var args = self.opusQualityMap[ self.currentQuality ];
-		if ( !args )
-			return null;
-		
-		var conf = {};
-		self.opusQualityKeys.forEach( setInConf );
-		return conf;
-		
-		function setInConf( key, index ) {
-			var value = args[ index ];
-			if ( null == value )
-				return;
-			
-			conf[ key ] = value;
-		}
+		const self = this;
+		self.media.getOpusConf();
 	}
 	
-	ns.Selfie.prototype.setupStream = function( callback ) {
+	ns.Selfie.prototype.setupStream = function( callback, permissions, preferedDevices ) {
 		var self = this;
-		console.log( 'selfie.setupStream', self );
+		console.log( 'selfie.setupStream', self.media );
+		if ( self.streamBack ) {
+			let oldBack = self.streamBack;
+			delete self.streamBack;
+			oldBack( 'CANCELED', null );
+		}
+		
+		self.streamBack = callback;
+		self.media.create( permissions, preferedDevices );
+		return;
+		
+		
 		if ( self.isScreenSharing ) {
 			if ( callback )
 				callback( null, self.stream );
@@ -1904,14 +1712,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Selfie.prototype.setStream = function( stream, constraints ) {
-		var self = this;
+	ns.Selfie.prototype.setStream = function( stream ) {
+		const self = this;
 		console.log( 'selfie.setStream', {
-			stream      : stream,
-			constraints : constraints,
+			stream : stream,
 		});
-		if ( self.stream )
-			self.clearStream();
 		
 		self.stream = stream;
 		
@@ -1950,19 +1755,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.clearStream = function() {
-		var self = this;
-		if ( !self.stream )
-			return;
-		
-		var tracks = self.stream.getTracks();
-		tracks.forEach( stop );
-		self.stream = null;
-		self.emit( 'stream', null );
-		
-		function stop( track ) {
-			self.stream.removeTrack( track );
-			track.stop();
-		}
+		const self = this;
+		delete self.stream;
 	}
 	
 	ns.Selfie.prototype.bindVolume = function( stream ) {
@@ -2729,10 +2523,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.modifySDP = function( SDPObj, type ) {
 		var self = this;
+		return SDPObj;
+		
 		if ( 'video' === type )
 			return SDPObj;
 		
-		if ( 'normal' === self.selfie.currentQuality )
+		if ( 'normal' === self.selfie.currentQuality.level )
 			return SDPObj;
 		
 		var opusConf = self.selfie.getOpusConf();

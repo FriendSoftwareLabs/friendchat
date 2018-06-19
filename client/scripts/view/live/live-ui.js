@@ -34,8 +34,9 @@ library.component = library.component || {};
 		self.guestAvatar = liveConf.guestAvatar;
 		self.rtc = null;
 		self.peerContainerId = 'peers';
-		self.peers = [];
-		self.peerOrder = [];
+		self.peers = {};
+		self.peerIds = [];
+		self.peerGridOrder = [];
 		
 		self.resizeWait = null;
 		self.reorder = {
@@ -108,7 +109,7 @@ library.component = library.component || {};
 		self.audioList = new library.component.UIList( audioConf );
 		self.audioListEl = document.getElementById( 'audio-list' );
 		function audioListToggled( state ) {
-			if ( self.peerOrder.length )
+			if ( self.peerGridOrder.length )
 				self.reflowPeers();
 			
 			self.conn.send({
@@ -294,7 +295,7 @@ library.component = library.component || {};
 		}
 		
 		self.doOneMoreResize = false;
-		self.peerOrder.forEach( callResize );
+		self.peerGridOrder.forEach( callResize );
 		self.resizeWait = setTimeout( resizeThrottle, 50 );
 		
 		function callResize( peerId ) {
@@ -341,7 +342,8 @@ library.component = library.component || {};
 			return;
 		}
 		
-		var conf = {
+		let pid = peer.id;
+		let conf = {
 			peer           : peer,
 			menu           : self.menu,
 			connecting     : document.getElementById( 'connecting-peers' ),
@@ -353,7 +355,7 @@ library.component = library.component || {};
 		};
 		
 		let viewPeer =  null;
-		if ( peer.id === 'selfie' ) {
+		if ( pid === 'selfie' ) {
 			viewPeer = new library.view.Selfie( conf );
 			peer.on( 'room-quality', handleRoomQuality );
 			peer.on( 'popped', togglePopped );
@@ -366,7 +368,8 @@ library.component = library.component || {};
 		peer.on( 'video', updateHasVideo );
 		
 		// add to ui
-		self.peers[ viewPeer.id ] = viewPeer;
+		self.peers[ pid ] = viewPeer;
+		self.peerIds.push( pid );
 		if ( self.isVoiceOnly )
 			addToVoiceList( viewPeer );
 		else
@@ -376,7 +379,7 @@ library.component = library.component || {};
 		self.updateVoiceListMode();
 		
 		// start session duration on selfie when the first peer is added
-		if ( self.peerOrder.length === 2 )
+		if ( self.peerGridOrder.length === 2 )
 			self.peers[ 'selfie' ].startDurationTimer();
 		
 		function addToVoiceList( peer ) {
@@ -387,7 +390,7 @@ library.component = library.component || {};
 		function addToGrid( peer ) {
 			self.peerContainer.appendChild( viewPeer.el );
 			viewPeer.el.classList.toggle( 'in-grid', true );
-			self.peerOrder.push( viewPeer.id );
+			self.peerGridOrder.push( viewPeer.id );
 			self.updateGridClass();
 		}
 		
@@ -441,16 +444,17 @@ library.component = library.component || {};
 		
 		peer.close();
 		delete self.peers[ peerId ];
-		let pidx = self.peerOrder.indexOf( peerId );
+		self.peerIds = Object.keys( self.peers );
+		let pidx = self.peerGridOrder.indexOf( peerId );
 		if ( -1 === pidx )
 			self.audioList.remove( peerId );
 		else
-			self.peerOrder.splice( pidx, 1 );
+			self.peerGridOrder.splice( pidx, 1 );
 		
 		if ( self.modeSpeaker && self.currentSpeaker === peerId )
 			self.setSpeaker();
 		
-		if ( self.peerOrder.length === 1 ) {
+		if ( self.peerGridOrder.length === 1 ) {
 			self.peers[ 'selfie' ].stopDurationTimer();
 		}
 		
@@ -480,7 +484,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateMenu = function() {
 		const self = this;
-		let gridNum = self.peerOrder.length;
+		let gridNum = self.peerGridOrder.length;
 		let listNum = self.audioList.length;
 		if ( 2 > gridNum )
 			self.menu.disable( 'dragger' );
@@ -520,7 +524,7 @@ library.component = library.component || {};
 		}
 		
 		function getPeerNum() {
-			var numberOfPeers = self.peerOrder.length;
+			var numberOfPeers = self.peerGridOrder.length;
 			var peerNum = numberOfPeers;
 			
 			if ( self.nestedApp )
@@ -536,7 +540,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.reflowPeers = function() {
 		var self = this;
-		self.peerOrder.forEach( callReflow );
+		self.peerGridOrder.forEach( callReflow );
 		function callReflow( peerId ) {
 			var peer = self.peers[ peerId ];
 			if ( !peer )
@@ -606,7 +610,7 @@ library.component = library.component || {};
 		}
 		
 		function hasNoVideoPeers() {
-			return !self.peerOrder.length;
+			return !self.peerGridOrder.length;
 		}
 	}
 	
@@ -629,7 +633,7 @@ library.component = library.component || {};
 				return;
 			
 			self.audioList.remove( pid );
-			self.peerOrder.push( pid );
+			self.peerGridOrder.push( pid );
 			peer.setIsInList( false );
 			self.peerContainer.appendChild( peer.el );
 			if ( 'selfie' === peer.id )
@@ -647,8 +651,8 @@ library.component = library.component || {};
 			if ( 'selfie' === peer.id )
 				self.updateSelfieState();
 			
-			let pidx = self.peerOrder.indexOf( peer.id );
-			self.peerOrder.splice( pidx, 1 );
+			let pidx = self.peerGridOrder.indexOf( peer.id );
+			self.peerGridOrder.splice( pidx, 1 );
 			self.audioList.add( peer.el );
 			self.updateGridClass();
 			
@@ -658,7 +662,7 @@ library.component = library.component || {};
 		}
 		
 		function isInVideo( pid ) {
-			return self.peerOrder.some( poId => poId === pid );
+			return self.peerGridOrder.some( poId => poId === pid );
 		}
 	}
 	
@@ -698,7 +702,7 @@ library.component = library.component || {};
 		}
 		
 		function toggleDropzone( isDragging ) {
-			self.peerOrder.forEach( toggle );
+			self.peerGridOrder.forEach( toggle );
 			function toggle( peerId ) {
 				var peer = self.peers[ peerId ];
 				peer.toggleDropzone( isDragging );
@@ -706,7 +710,7 @@ library.component = library.component || {};
 		}
 		
 		function toggleIsDragging( ayOrNay ) {
-			self.peerOrder.forEach( set );
+			self.peerGridOrder.forEach( set );
 			function set( peerId ) {
 				var peer = self.peers[ peerId ];
 				peer.setIsDragging( ayOrNay );
@@ -722,7 +726,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.reorderStart = function( sourceId ) {
 		var self = this;
-		var sourceIndex = self.peerOrder.indexOf( sourceId );
+		var sourceIndex = self.peerGridOrder.indexOf( sourceId );
 		self.isReordering = true;
 		self.reorder.sourceIndex = sourceIndex;
 		
@@ -730,7 +734,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.reorderDrop = function( targetId ) {
 		var self = this;
-		var targetIndex = self.peerOrder.indexOf( targetId );
+		var targetIndex = self.peerGridOrder.indexOf( targetId );
 		self.reorder.targetIndex = targetIndex;
 		self.doReorder();
 	}
@@ -738,11 +742,11 @@ library.component = library.component || {};
 	ns.UI.prototype.doReorder = function() {
 		var self = this;
 		var sIndex = self.reorder.sourceIndex;
-		var sId = self.peerOrder[ sIndex ];
+		var sId = self.peerGridOrder[ sIndex ];
 		var tIndex = self.reorder.targetIndex;
-		var tId = self.peerOrder[ tIndex ];
-		self.peerOrder[ sIndex ] = tId;
-		self.peerOrder[ tIndex ] = sId;
+		var tId = self.peerGridOrder[ tIndex ];
+		self.peerGridOrder[ sIndex ] = tId;
+		self.peerGridOrder[ tIndex ] = sId;
 		self.applyPeerOrder();
 	}
 	
@@ -750,9 +754,9 @@ library.component = library.component || {};
 		var self = this;
 		self.isReordering = true;
 		if ( peerOrder )
-			self.peerOrder = peerOrder;
+			self.peerGridOrder = peerOrder;
 		
-		self.peerOrder.forEach( applyPosition );
+		self.peerGridOrder.forEach( applyPosition );
 		if ( peerOrder )
 			self.isReordering = false;
 		
@@ -786,7 +790,7 @@ library.component = library.component || {};
 		self.uiVisible = !self.uiVisible;
 		self.toggleUI();
 		
-		self.peerOrder.forEach( updateUI );
+		self.peerGridOrder.forEach( updateUI );
 		function updateUI( pId ) {
 			var peer = self.peers[ pId ];
 			if ( !peer ) {
@@ -1253,8 +1257,12 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateQualityLevel = function( level ) {
 		var self = this;
+		console.log( 'UI.updateQualityLevel', {
+			level : level,
+			peers : self.peerGridOrder,
+		});
 		self.currentQuality = level;
-		self.peerOrder.forEach( setLevel );
+		self.peerIds.forEach( setLevel );
 		function setLevel( peerId ) {
 			var peer = self.peers[ peerId ];
 			peer.applyQualityLevel( level );
@@ -1911,25 +1919,27 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.bindPeerCommon = function() {
 		var self = this;
-		self.peer.on( 'media'         , handleMedia );
-		self.peer.on( 'track'         , handleTrack );
-		self.peer.on( 'legacy-stream' , handleLegacyStream );
-		self.peer.on( 'video'         , handleVideo );
-		self.peer.on( 'audio'         , handleAudio );
-		self.peer.on( 'identity'      , updateIdentity );
-		self.peer.on( 'nostream'      , handleNoStream );
-		self.peer.on( 'stop'          , handleStop)
-		self.peer.on( 'mute'          , isMuted );
-		self.peer.on( 'blind'         , isBlinded );
-		self.peer.on( 'is-focus'      , isFocus );
-		self.peer.on( 'screenmode'    , screenMode );
-		self.peer.on( 'local-quality' , localQuality );
+		self.peer.on( 'media'           , handleMedia );
+		self.peer.on( 'track'           , handleTrack );
+		self.peer.on( 'legacy-stream'   , handleLegacyStream );
+		self.peer.on( 'video'           , handleVideo );
+		self.peer.on( 'audio'           , handleAudio );
+		self.peer.on( 'tracks-available', tracksAvailable )
+		self.peer.on( 'identity'        , updateIdentity );
+		self.peer.on( 'nostream'        , handleNoStream );
+		self.peer.on( 'stop'            , handleStop)
+		self.peer.on( 'mute'            , isMuted );
+		self.peer.on( 'blind'           , isBlinded );
+		self.peer.on( 'is-focus'        , isFocus );
+		self.peer.on( 'screenmode'      , screenMode );
+		self.peer.on( 'local-quality'   , localQuality );
 		
 		function handleMedia( e ) { self.handleMedia( e ); }
 		function handleTrack( e, f ) { self.handleTrack( e, f ); }
 		function handleLegacyStream( e ) { self.handleLegacyStream( e ); }
 		function handleVideo( e ) { self.handleVideo( e ); }
 		function handleAudio( e ) { self.handleAudio( e ); }
+		function tracksAvailable( e ) { self.handleTracksAvailable( e ); }
 		function updateIdentity( e ) { self.updateIdentity( e ); }
 		function handleNoStream( e ) { self.handleNoStream( e ); }
 		function handleStop( e ) { self.handleStop( e ); }
@@ -2092,8 +2102,14 @@ library.component = library.component || {};
 		self.toggleStream();
 	}
 	
+	ns.Peer.prototype.handleTracksAvailable = function( available ) {
+		const self = this;
+		console.log( 'UI.handleTracksAvailable', available );
+	}
+	
 	ns.Peer.prototype.handleVideo = function( available ) {
 		var self = this;
+		console.log( 'UI.handleVideo', available );
 		if ( !self.stream )
 			return;
 		
@@ -2105,6 +2121,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleAudio = function( available ) {
 		var self = this;
+		console.log( 'UI.handleAudio', available );
 		if ( !self.stream )
 			return;
 		
@@ -2461,8 +2478,9 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.applyQualityLevel = function( level ) {
-		var self = this;
+		const self = this;
 		self.currentQuality = level || self.currentQuality;
+		console.log( 'applyQualityLevel', self.currentQuality );
 		self.useCoverMode = 'low' === self.currentQuality ? false : true;
 		const isLow = ( 'low' === self.currentQuality );
 		self.el.classList.toggle( 'quality-low', isLow );
