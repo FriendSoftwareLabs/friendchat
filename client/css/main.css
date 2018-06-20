@@ -215,6 +215,10 @@ body {
 	font-weight : bold;
 }
 
+.module-head .actions {
+	margin-right : 0.2em;
+}
+
 .module-logo {
 	width                      : 3em;
 	height                     : 100%;
