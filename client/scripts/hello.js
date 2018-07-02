@@ -30,7 +30,7 @@ var hello = null;
 		if ( !( this instanceof ns.Hello ))
 			return new ns.Hello( app, conf );
 		
-		var self = this;
+		const self = this;
 		self.app = app;
 		self.config = conf;
 		self.account = null;
@@ -96,7 +96,6 @@ var hello = null;
 		function init() {
 			self.config.emojii = window.emojii_conf;
 			self.config.protocol = document.location.protocol + '//';
-			self.config.appName = 'Friend Chat';
 			
 			self.timeNow( 'init start, set showloading timeout' );
 			self.showLoadingTimeout = window.setTimeout( showLoading, 1000 );
@@ -958,7 +957,7 @@ var hello = null;
 	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
 		const self = this;
 		const winConf = {
-			title: hello.config.appName + ' - Main Window',
+			title: hello.config.appName || 'Friend Chat',
 			width : 440,
 			height : 600,
 		};
@@ -975,7 +974,7 @@ var hello = null;
 	ns.Main.prototype.openAdvView = function( initConf, onClose ) {
 		const self = this;
 		const winConf = {
-			title: hello.config.appName + ' - Main Window',
+			title: hello.config.appName || 'Friend Chat',
 			width : 440,
 			height : 600,
 		};
