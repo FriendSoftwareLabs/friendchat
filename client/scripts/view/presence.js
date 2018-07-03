@@ -164,11 +164,13 @@ library.view = library.view || {};
 		self.conn.on( 'state', state );
 		self.conn.on( 'chat', chat );
 		self.conn.on( 'live', live );
+		self.conn.on( 'persistent', persistent );
 		
 		function initialize( e ) { self.handleInitialize( e ); }
 		function state( e ) { self.handleState( e ); }
 		function chat( e ) { self.handleChat( e ); }
 		function live( e ) { self.handleLive( e ); }
+		function persistent( e ) { self.handlePersistent( e ); }
 	}
 	
 	ns.Presence.prototype.handleInitialize = function( conf ) {
@@ -177,6 +179,7 @@ library.view = library.view || {};
 		friend.template.addFragments( conf.fragments );
 		const state = conf.state;
 		// things
+		self.persistent = state.persistent;
 		self.name = state.roomName;
 		self.ownerId = state.ownerId;
 		self.userId = state.userId;
@@ -388,6 +391,11 @@ library.view = library.view || {};
 			add = true;
 		
 		self.users.setState( uid, state, add );
+	}
+	
+	ns.Presence.prototype.handlePersistent = function( event ) {
+		const self = this;
+		console.log( 'handlePersistent', event );
 	}
 	
 	// things
@@ -1178,7 +1186,6 @@ library.view = library.view || {};
 		});
 		if ( !groupId )
 			groupId = 'bug';
-		
 		
 		const user = self.users[ userId ];
 		if ( !user ) {

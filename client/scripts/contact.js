@@ -762,6 +762,7 @@ library.contact = library.contact || {};
 		self.messageWaiting( false );
 		console.log( 'openChat', self.users );
 		const initData = {
+			persistent  : self.persistent,
 			roomName    : self.identity.name,
 			guestAvatar : self.guestAvatar,
 			users       : self.users,
@@ -870,6 +871,7 @@ library.contact = library.contact || {};
 			data : event,
 		};
 		self.toView( persistent );
+		self.toChat( persistent );
 	}
 	
 	ns.PresenceRoom.prototype.handleSettings = function( event ) {
