@@ -672,6 +672,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.persistRoom = function( name ) {
 		const self = this;
+		console.log( 'persistRoom', name );
 		const persist = {
 			type : 'persist',
 			data : {
@@ -693,6 +694,8 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.renameRoom = function( name ) {
 		const self = this;
+		throw new Error( 'PresenceRoom.renameRoom - should not be used, use settings' );
+		
 		const rename = {
 			type : 'rename',
 			data : name,
@@ -864,8 +867,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
 		const self = this;
-		self.identity.name = event.name;
-		
 		const persistent = {
 			type : 'persistent',
 			data : event,
@@ -874,12 +875,13 @@ library.contact = library.contact || {};
 		if ( !self.chatView )
 			return;
 		
-		self.chatView.setTitle( self.identity.name );
 		self.toChat( persistent );
+		self.handleRoomName( event.name );
 	}
 	
 	ns.PresenceRoom.prototype.handleSettings = function( event ) {
 		const self = this;
+		console.log( 'handleSettings', event );
 		if ( 'update' === event.type ) {
 			self.updateSetting( event.data );
 			return;
@@ -929,6 +931,9 @@ library.contact = library.contact || {};
 		
 		if ( 'isStream' === event.setting )
 			self.settings.isStream = event.value;
+		
+		if ( 'roomName' === event.setting )
+			self.handleRoomName( event.value );
 		
 		const update = {
 			type : 'settings',
@@ -1055,12 +1060,16 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.handleRoomName = function( name ) {
 		const self = this;
 		console.log( 'presenceRoom.handleRoomName', name );
+		self.identity.name = name;
 		self.toView({
-			type : 'rename',
-			data : name,
+			type : 'identity',
+			data : self.identity,
 		});
 		if ( self.chatView )
 			self.chatView.setTitle( name );
+		
+		if ( self.live )
+			self.live.setTitle( name );
 	}
 	
 	ns.PresenceRoom.prototype.handleJoin = function( user ) {

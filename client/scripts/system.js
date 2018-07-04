@@ -2113,6 +2113,12 @@ library.rtc = library.rtc || {};
 		self.view.sendMessage( event );
 	}
 	
+	ns.RtcSession.prototype.setTitle = function( name ) {
+		const self = this;
+		console.log( 'RTCSESSION.setTitle', name );
+		self.view.setTitle( name );
+	}
+	
 	ns.RtcSession.prototype.close = function() {
 		const self = this;
 		let sessionclose = self.sessionclose;

@@ -1573,8 +1573,8 @@ library.view = library.view || {};
 		
 		self.bindLive();
 		
-		function persistent( e ) { self.handlePersistent( e ); }
 		function init( e ) { self.handleInit( e ); }
+		function persistent( e ) { self.handlePersistent( e ); }
 		function auth( e ) { self.handleIsAuthed( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
 		function users( e ) { self.updateRoomStatus( e ); }
@@ -1602,8 +1602,6 @@ library.view = library.view || {};
 		}
 		
 		self.removeNameThings();
-		self.identity.name = event.name;
-		self.updateName();
 		if ( self.isAdmin )
 			self.toggleSettings( true );
 	}

@@ -405,6 +405,18 @@ library.view = library.view || {};
 		self.init( viewConf );
 	}
 	
+	// Public
+	
+	ns.Live.prototype.setTitle = function( name ) {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.setTitle( name );
+	}
+	
+	// Private
+	
 	ns.Live.prototype.init = function( conf ) {
 		var self = this;
 		var dropConf = {

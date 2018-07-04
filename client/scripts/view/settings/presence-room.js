@@ -41,6 +41,7 @@ library.view = library.view || {};
 		self.validKeys = validKeys;
 		
 		self.displayOrder = [
+			'roomName',
 			'userLimit',
 			'isStream',
 			'isClassroom',
@@ -48,6 +49,7 @@ library.view = library.view || {};
 		];
 		
 		self.labelMap = {
+			roomName    : View.i18n( 'i18n_room_name' ),
 			userLimit   : View.i18n( 'i18n_user_limit' ),
 			isStream    : View.i18n( 'i18n_is_stream' ),
 			isClassroom : View.i18n( 'i18n_is_classroom' ),
@@ -55,12 +57,14 @@ library.view = library.view || {};
 		};
 		
 		self.buildMap = {
+			roomName    : textInput,
 			userLimit   : numberInput,
 			isStream    : singleCheck,
 			isClassroom : singleCheck,
 			workgroups  : assignWorkgroup,
 		};
 		
+		function textInput( setting ) { self.setTextInput( setting ); }
 		function numberInput( setting ) { self.setNumberInput( setting ); }
 		function singleCheck( setting ) { self.singleCheck( setting ); }
 		function assignWorkgroup( setting ) { self.assignWorkgroup( setting ); }
