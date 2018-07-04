@@ -867,16 +867,18 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
 		const self = this;
+		console.log( 'PresenceRoom.handlePersistent', event );
 		const persistent = {
 			type : 'persistent',
 			data : event,
 		};
 		self.toView( persistent );
+		self.handleRoomName( event.name );
+		
 		if ( !self.chatView )
 			return;
 		
 		self.toChat( persistent );
-		self.handleRoomName( event.name );
 	}
 	
 	ns.PresenceRoom.prototype.handleSettings = function( event ) {
