@@ -1559,6 +1559,8 @@ library.view = library.view || {};
 		
 		self.nameEl.classList.toggle( 'hidden', show );
 		self.setNameForm.classList.toggle( 'hidden', !show );
+		if ( show )
+			self.setNameInput.focus();
 	}
 	
 	ns.PresenceRoom.prototype.bindView = function() {
