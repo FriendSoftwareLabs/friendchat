@@ -386,7 +386,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.initialize = function( conf ) {
 		var self = this;
-		console.log( 'initalize', conf );
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
 		self.authId = conf.authId;
@@ -668,7 +667,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.handleSystemTheme = function( data ) {
 		var self = this;
-		console.log( 'handleSystemTheme', data );
 		self.setIsLoading( true );
 		self.theme = data.theme;
 		self.setBaseCss( setBack );
@@ -683,11 +681,12 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.applyThemeConfig = function( themeData ) {
 		const self = this;
-		console.log( 'applyThemeConfig', themeData );
-		if( !themeData ) return;
+		if( !themeData )
+			return;
 		
 		// No need for mobile!
-		if( isMobile ) return;
+		if( 'MOBILE' === self.deviceType )
+			return;
 		
 		if( themeData && typeof( themeData ) == 'string' )
 			themeData = JSON.parse( themeData );
