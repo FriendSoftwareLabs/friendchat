@@ -52,6 +52,14 @@ library.view = library.view || {};
 		self.view.sendMessage( event );
 	}
 	
+	ns.PresenceChat.prototype.setTitle = function( title ) {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.setTitle( title );
+	}
+	
 	ns.PresenceChat.prototype.close = function() {
 		const self = this;
 		delete self.initData;

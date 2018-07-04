@@ -871,6 +871,10 @@ library.contact = library.contact || {};
 			data : event,
 		};
 		self.toView( persistent );
+		if ( !self.chatView )
+			return;
+		
+		self.chatView.setTitle( self.identity.name );
 		self.toChat( persistent );
 	}
 	
@@ -986,6 +990,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleAuthed = function( event ) {
 		const self = this;
+		console.log( 'handleAuthed', event );
 		if ( event.userId === self.userId ) {
 			const isAuthed = {
 				type : 'auth',
@@ -1001,7 +1006,7 @@ library.contact = library.contact || {};
 				type : 'authed',
 				data : event,
 			};
-			self.chatView.send( userGroup );
+			self.chatView.send( authed );
 		}
 	}
 	
@@ -1050,6 +1055,12 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.handleRoomName = function( name ) {
 		const self = this;
 		console.log( 'presenceRoom.handleRoomName', name );
+		self.toView({
+			type : 'rename',
+			data : name,
+		});
+		if ( self.chatView )
+			self.chatView.setTitle( name );
 	}
 	
 	ns.PresenceRoom.prototype.handleJoin = function( user ) {
