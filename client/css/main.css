@@ -190,10 +190,6 @@ body {
 	bottom : 0;
 }
 
-.paddddd {
-	padding : 0.2em;
-}
-
 .info-icon {
 	margin : 0 0.5em;
 }
@@ -217,6 +213,10 @@ body {
 	height      : 2.5em;
 	font-size   : 110%;
 	font-weight : bold;
+}
+
+.module-head .actions {
+	margin-right : 0.2em;
 }
 
 .module-logo {
@@ -397,4 +397,8 @@ causes clicks to go through twice:
 .subscription .actions-container {
 	display : flex;
 	outline: none;
+}
+
+.hide-btn-inline {
+	opacity: 0;
 }

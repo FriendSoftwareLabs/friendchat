@@ -206,6 +206,15 @@ library.tool = library.tool || {};
 		req.onreadystatechange = stateChange;
 		req.onerror = error;
 		req.onload = success;
+		req.open( config.verb, url, true );
+		
+		if( config.verb.toUpperCase() === 'POST' )
+			req.setRequestHeader( 'Content-Type', 'application/json' );
+		
+		req.send( ns.stringify( config.data || {} ));
+		console.log( 'asyncRequest - req', req );
+		return req;
+		
 		function stateChange( e ) {
 			let readyState = e.target.readyState;
 			if ( readyState === 1 )
@@ -217,12 +226,6 @@ library.tool = library.tool || {};
 			if ( readyState === 4 )
 				checkResponse( e );
 		}
-		req.open( config.verb, url, true );
-		
-		if( config.verb.toUpperCase() === 'POST' )
-			req.setRequestHeader( 'Content-Type', 'application/json' );
-		
-		req.send( ns.stringify( config.data || {} ));
 		
 		function checkResponse( e ) {
 			if ( 200 !== e.target.status )

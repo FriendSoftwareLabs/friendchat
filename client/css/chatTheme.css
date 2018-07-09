@@ -116,7 +116,7 @@ Prepend with .im-chat or .conference classes to specify for view type
 
 #foot {}
 
-#input-form .actions {
+#chat-submit {
 	width : 3em;
 }
 
@@ -176,7 +176,6 @@ Prepend with .im-chat or .conference classes to specify for view type
 #participants-info { height: 2.5em; }
 
 .participant {
-	margin-bottom : 0.1em;
 }
 
 .participant .mode { line-height: 2em }

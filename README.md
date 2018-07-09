@@ -11,7 +11,8 @@ logged in through Friend, no extra setup required.
 
 Friend Chat allows peer to peer video and audio calls over webRTC, supported 
 by the presence service. The limits to number of participants is 
-practical; the bandwidth and power of your device.
+practical; the bandwidth and power of your device. The live sessions have several 
+modes, available through the live view menu.
 
 #### Invites
 
@@ -24,7 +25,8 @@ presence service.
 
 Any live session can be shared through a clickable link. This is a public invite
 and can be used by any number of people until it is explicitly canceled. People 
-using this link will join as a guest with a randomly generated name.
+using this link will join as a guest with either a randomly generated name or 
+one they choose themselves.
 
 #### Share your screen or app
 
@@ -32,9 +34,18 @@ Screen-sharing is available for chrome through an extension. The option
 is found in the live view menu, and will either prompt you install the 
 extension or offer to initiate screen sharing.
 
+#### Streaming / Classrooms
+
+Enableing streaming changes a room from supporting peer to peer sessions to 
+selecting a single source and distributing this users stream to everyone else. 
+While still using webRTC, a proxy server is used to distribute the stream, so 
+the source only needs to send once. For this setting to be available Presence 
+configuration must point to a third party service, Janus conferencing bridge. 
+Janus must be set up separately.
+
 ## Modules
 
-Modules are integrations towards 3rd party chat services. They have a server part 
+Modules allow integration with 3rd party chat services. They have a server part 
 that communicates  with the remote service/server and a client part with a custom
 UI that presents the data. Current modules are IRC, Presence and Treeroot. Presence 
 is always there and IRC is added by default.
@@ -55,7 +66,9 @@ can be found on the internet.
 
 Presence provides temporary or persistent many-to-many rooms for chatting and 
 video / audio conferencing. Invites to presence rooms can be sent through the other 
-modules. More info in the FriendSoftwareLabs/presence repository!
+modules. More info in the 
+[FriendSoftwareLabs/presence](https://github.com/FriendSoftwareLabs/presence) 
+repository!
 
 #### Treeroot
 
@@ -111,20 +124,28 @@ installation as it can, and will show as many pre-filled value as it can.
 You can restart this script at any time, after pulling changes from GIT
 for example.
 
-#### Launching Friend Core, Friend Chat and Presence servers
+#### Launching Friend Chat and Presence servers
 
-The installation script automatically adds an 'autostart' folder to your
-Friend Core build directory, containing two scripts that launch the Presence
-and Friend Chat server when Friend Core is started.
-So after installation, the whole system is launched with this command :
-'./FriendCore'
-If you kill Friend Core instead of exiting it, the two servers will continue
-to run and will have to be killed manually. We suggest that you use the
-killfriendcore.sh script that can be found in the friendup directory.
+The installation script automatically adds systemd service files.
+
+To start:
+
+* `sudo systemctl start friendchat-server`
+* `sudo systemctl start presence-server`
+
+To enable automatic start:
+
+* `sudo systemctl enable friendchat-server`
+* `sudo systemctl enable presence-server`
+
+To view logs in case of problems:
+* `sudo journalctl -fu friendchat-server`
+* `sudo journalctl -fu presence-server`
 
 #### Accessing Friend Chat application from the Workspace
 
-After installing Friend Chat and its servers, and restarting Friend Core,
+After installing Friend Chat and its servers, and restarting Friend Core 
+(`sudo systemctl restart friendcore`), 
 you will have to install the Friend Chat application in your Friend
 machine. In the Workspace menu, choose the 'Tools / Software' option,
 locate Friend Chat in the list and click install. You will then find the
@@ -134,22 +155,22 @@ The Friend Chat client has been localized in English and French.
 Friend Chat depends on the user existing in Friend and calls Friend Core to
 authenticate them when they log in.
 
-Upon launch, Friend Chat automatically opens the Friend IRC chat room where
-you can meet the team behind Friend and many other developers. Feel free to ask
-any question you have in mind, or ask for advice on how to resolve eventual
-problems.
+Upon launch, Friend Chat will be in the friendly UI mode, whith presence 
+represented as 'Conference rooms', and Treeroot as 'Contacts'. You will be 
+asked to create a Treeroot account ( its a third party service ). Conference 
+rooms do not depend on Treeroot.
 
 ## Developers
 
-If you intent to work on the source code of the Friend Chat client application,
+If you intend to work on the source code of the Friend Chat client application,
 the Friend Chat server or the Presence server, please read the following.
 
 #### Friend Chat client
 
 You will find the sourcecode of the Friend Chat client application in the
 'client' folder of the friendchat directory.
-To test your modifications, run the 'update.sh' script : it will copy the
-modified files in the Friend build/resources/webclient/apps/FriendChat directory.
+To test your modifications, run the `updateAll.sh` script : it will copy the
+modified files to the Friend build/resources/webclient/apps/FriendChat directory.
 Please note that after updating the files, in order for the new files to be
 used by Friend Core, you will have to clear the cache by using the
 Workspace menu option 'System / Clear cache'.
@@ -160,32 +181,35 @@ Friend Core.
 
 You will find the sourcecode of the Friend Chat server in the 'server' folder
 of the friendchat directory.
-As for the client, you will need to run the 'update.sh' script to copy the
+As for the client, you will need to run the `updateAll.sh` script to copy the
 modified files in the Friend build/services/FriendChat folder.
-Please note that the server must be killed before doing so, otherwise the
-files will not be written. 'update.sh' also calls 'npm install' automatically
+`updateAll.sh` also calls `npm install` automatically
 to update the node.js modules used by the Friend Chat server : if you copy
-the files manually, do not forget to do a 'npm install' afterward.
+the files manually, do not forget to do a `npm install` afterward.
+The server will be automatically stopped and restarted by the script.
+
 
 #### Presence server
 
 The Friend Chat installation script clones the Presence server directly into
-the Friend build/services/Presence directory. If you intent to work on it,
+the Friend build/services/Presence directory. If you intend to work on it,
 we suggest that you clone the server in another more accessible directory.
-The Presence server can be found on GIT at :
-https://github.com/FriendSoftwareLabs/presence.git
-As for the Friend Chat server, you can update the files by using the 'update.sh'
-script, which will copy the modification at their proper location and run
-'npm install' automatically. Remember to kill the Presence server before
-running the script.
+The Presence server [can be found on Github](https://github.com/FriendSoftwareLabs/presence).
+You can update the files by using its own `update.sh` script,
+which will copy the modifications to their proper location and run
+`npm install` automatically. 
+The server will be automatically stopped and restarted by the script.
 
 ## Branches
 
 * Create a new branch for each feature or patch.
 * Only finished features or patches will be merged with master.
 * All commits to master must be reviewed by atleast one person ( Espen )
-* Squash commit log on merge to master. Make the merge commit descriptive.
-* Dev is for fooling around / testing. It will be updated from master.
+* Merges to master will be squashed. The last commit MUST update VERSION file,
+the commit message MUST start with 'feature' or 'patch'. The commit message should 
+be descriptive, but not verbose.
+* Dev is for fooling around / testing. It is deleted and force pushed 
+regularily, dont trust it.
 
 The purpose here is to keep master git log as a useful history, for things 
 like writing patch notes and checking up on what was added when by who.

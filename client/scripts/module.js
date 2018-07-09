@@ -30,7 +30,7 @@ library.module = library.module || {};
 		if ( !( this instanceof ns.BaseModule ))
 			return new ns.BaseModule( conf );
 		
-		var self = this;
+		const self = this;
 		self.module = conf.module;
 		self.parentView = conf.parentView
 		self.clientId = self.module.clientId;
@@ -60,7 +60,7 @@ library.module = library.module || {};
 	// Private
 	
 	ns.BaseModule.prototype.initBaseModule = function() {
-		var self = this;
+		const self = this;
 		// server stuff
 		self.conn = new library.system.Message({
 			id : self.clientId,
@@ -113,7 +113,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.receiveMsg = function( msg ) {
-		var self = this;
+		const self = this;
 		var handler = self.messageMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'app.BaseModule.receiveMsg - no handler for', {
@@ -127,7 +127,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.initialize = function() {
-		var self = this;
+		const self = this;
 		var clientInit = {
 			type : 'initclient',
 			data : {
@@ -139,12 +139,12 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.initializeState = function( data ) {
-		var self = this;
+		const self = this;
 		throw new Error( 'initializeState - baseModule, implement in module' );
 	}
 	
 	ns.BaseModule.prototype.connection = function( state ) {
-		var self = this;
+		const self = this;
 		self.state = state;
 		self.view.sendMessage({
 			type : 'connection',
@@ -162,17 +162,17 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.handleConnecting = function( data ) {
-		var self = this;
+		const self = this;
 		//console.log( 'connecting', data );
 	}
 	
 	ns.BaseModule.prototype.handleOnline = function( data ) {
-		var self = this;
+		const self = this;
 		//console.log( 'online', data );
 	}
 	
 	ns.BaseModule.prototype.handleConnectionError = function( error ) {
-		var self = this;
+		const self = this;
 		var handler = self.connectionErrorMap[ error.type ];
 		if ( !handler ) {
 			console.log( 'no handler for connection error', error );
@@ -183,12 +183,12 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.handleOffline =  function( e ) {
-		var self = this;
+		const self = this;
 		self.viewInfo( 'offline', e );
 	}
 	
 	ns.BaseModule.prototype.queryUser = function( type, message, value, callback ) {
-		var self = this;
+		const self = this;
 		self.queryCallbacks = self.queryCallbacks || {};
 		var id = friendUP.tool.uid( 'query' );
 		self.queryCallbacks[ id ] = callback;
@@ -209,7 +209,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.queryUserBack = function( data ) {
-		var self = this;
+		const self = this;
 		var callback = self.queryCallbacks[ data.callbackId ];
 		if ( !callback ) {
 			console.log( 'no callbak found for', data );
@@ -220,12 +220,12 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.clearViewInfo = function() {
-		var self = this;
+		const self = this;
 		self.viewInfo( 'clear' );
 	}
 	
 	ns.BaseModule.prototype.viewInfo = function( type, data ) {
-		var self = this;
+		const self = this;
 		var data = {
 			type : type,
 			data : data,
@@ -238,17 +238,17 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.showModuleInitializing = function() {
-		var self = this;
+		const self = this;
 		self.viewInfo( 'initializing' );
 	}
 	
 	ns.BaseModule.prototype.remove = function() {
-		var self = this;
+		const self = this;
 		self.onremove();
 	}
 	
 	ns.BaseModule.prototype.reconnectNow = function() {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'reconnect',
 		};
@@ -256,7 +256,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.disconnectNow = function() {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'disconnect',
 		};
@@ -264,7 +264,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.getSettings = function() {
-		var self = this;
+		const self = this;
 		if ( self.settingsView )
 			return;
 		
@@ -275,7 +275,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.showSettings = function( settings ) {
-		var self = this;
+		const self = this;
 		if ( !settings )
 			throw new Error( 'BaseModule.showSettings - '
 				+ 'no settings object. Hint : use .getSettings()' );
@@ -297,14 +297,8 @@ library.module = library.module || {};
 		function saveHandler( data ) { self.saveSetting( data ); }
 	}
 	
-	/*
-	data = {
-		setting : <label>,
-		value : <value>,
-	}
-	*/
 	ns.BaseModule.prototype.saveSetting = function( data ) {
-		var self = this;
+		const self = this;
 		data.clientId = self.clientId; // treeroot legacy
 		var msg = {
 			type : 'setting',
@@ -314,7 +308,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.updateSetting = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.settingsView )
 			self.settingsView.saved( msg.data );
 		
@@ -328,7 +322,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.updateView = function( update ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : 'update',
 			data : update,
@@ -337,18 +331,18 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.settingSaved = function( data ) {
-		var self = this;
+		const self = this;
 		self.settingsView.saved( data );
 	}
 	
 	ns.BaseModule.prototype.getAvatar = function() {
-		var self = this;
+		const self = this;
 		return self.identity.avatar
 			|| 'https://treeroot.org/admin/gfx/arenaicons/user_johndoe_32.png';
 	}
 	
 	ns.BaseModule.prototype.setName = function( name ) {
-		var self = this;
+		const self = this;
 		self.module.name = name
 			|| self.module.name
 			|| self.module.displayName
@@ -356,14 +350,14 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.identity = hello.identity;
 		if ( !self.identity.name )
 			self.identity.name = self.identity.alias;
 	}
 	
 	ns.BaseModule.prototype.toView = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -371,7 +365,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.cleanContacts = function() {
-		var self = this;
+		const self = this;
 		for ( id in self.contacts ) {
 			callClose( id );
 		}
@@ -383,7 +377,7 @@ library.module = library.module || {};
 	
 	
 	ns.BaseModule.prototype.removeContact = function( clientId ) {
-		var self = this;
+		const self = this;
 		if ( !clientId || !self.contacts[ clientId ]) {
 			console.log( 'invalid clientId', clientId);
 			return;
@@ -399,7 +393,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.setLocalData = function( data, callback ) {
-		var self = this;
+		const self = this;
 		api.ApplicationStorage.setItem( self.clientId, data, setBack );
 		function setBack( result ) {
 			if ( result.success == false ) {
@@ -413,7 +407,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.getLocalData = function( callback ) {
-		var self = this;
+		const self = this;
 		api.ApplicationStorage.getItem( self.clientId, getBack );
 		function getBack( result ) {
 			if ( !hasData( result.data )) {
@@ -435,7 +429,7 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.clearLocalData = function( callback ) {
-		var self = this;
+		const self = this;
 		api.ApplicationStorage.removeItem( self.clientId, removeBack );
 		function removeBack( result ) {
 			if ( !result.success ) {
@@ -449,12 +443,12 @@ library.module = library.module || {};
 	}
 	
 	ns.BaseModule.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		self.conn.send( msg );
 	}
 	
 	ns.BaseModule.prototype.baseClose = function() {
-		var self = this;
+		const self = this;
 		self.cleanContacts();
 		self.conn.close();
 		self.view.close();
@@ -470,7 +464,7 @@ library.module = library.module || {};
 		if ( !( this instanceof ns.Presence ))
 			return new ns.Presence( conf );
 		
-		var self = this;
+		const self = this;
 		library.module.BaseModule.call( self, conf );
 		
 		self.type = 'presence';
@@ -485,16 +479,21 @@ library.module = library.module || {};
 	// BaseModule.reconnect
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'Presence.reconnect' );
+		console.log( 'Presence.reconnect', self.contacts );
+		let ids = Object.keys( self.contacts );
+		ids.forEach( id => {
+			let room = self.contacts[ id ];
+			room.reconnect();
+		});
 	}
 	
 	ns.Presence.prototype.create = function( identity ) {
-		var self = this;
+		const self = this;
 		console.log( 'Presence.create', identity );
 	}
 	
 	ns.Presence.prototype.join = function( invite, identity ) {
-		var self = this;
+		const self = this;
 		console.log( 'Presence.join', {
 			in : invite,
 			id : identity,
@@ -502,14 +501,14 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.leave = function( roomId ) {
-		var self = this;
+		const self = this;
 		console.log( 'Presence.leave', roomId );
 	}
 	
 	// Private
 	
 	ns.Presence.prototype.init = function() {
-		var self = this;
+		const self = this;
 		if ( !self.module.settings.identity )
 			self.module.settings.identity
 		
@@ -546,10 +545,11 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.setup = function() {
-		var self = this;
+		const self = this;
 		// register as service provider with the rtc bridge
 		const serviceConf = {
-			onroom      : onRoom,
+			ongetinfo   : onGetInfo,
+			oncreate    : onCreate,
 			onhost      : onHost,
 			onevent     : onEvent,
 			onclose     : onClose,
@@ -559,11 +559,12 @@ library.module = library.module || {};
 		self.service = new library.component.RTCService( serviceConf );
 		hello.rtc.setServiceProvider( self.service );
 		
-		function onRoom( e ) { self.handleServiceOnRoom( e ); }
+		function onGetInfo( e ) { return self.handleServiceOnGetInfo( e ); }
+		function onCreate( e ) { self.handleServiceOnCreate( e ); }
 		function onHost( e ) { return self.account.host; }
 		function onEvent( e ) { self.handleServiceOnEvent( e ); }
 		function onClose( e ) { self.handleServiceOnClose( e ); }
-		function onInvite( e ) { self.handleServiceOnInvite( e ); }
+		function onInvite( e, rid ) { self.handleServiceOnInvite( e, rid ); }
 		function onIdentity() { return self.identity; }
 		
 		self.sendInit();
@@ -601,8 +602,23 @@ library.module = library.module || {};
 	
 	// from service
 	
-	ns.Presence.prototype.handleServiceOnRoom = function( event ) {
-		var self = this;
+	ns.Presence.prototype.handleServiceOnGetInfo = function( roomId ) {
+		const self = this;
+		let room = self.contacts[ roomId ];
+		console.log( 'handleServiceOnGetInfo', [
+			roomId,
+			room,
+		]);
+		
+		return {
+			id       : roomId,
+			name     : room.identity.name,
+			peers    : room.peers,
+		};
+	}
+	
+	ns.Presence.prototype.handleServiceOnCreate = function( event ) {
+		const self = this;
 		var reqId = friendUP.tool.uid( 'req' );
 		var session = event.data;
 		self.roomRequests[ reqId ] = {
@@ -626,26 +642,26 @@ library.module = library.module || {};
 			return;
 		}
 		
-		console.log( 'handleServiceOnRoom - unknown event', event );
+		console.log( 'handleServiceOnCreate - unknown event', event );
 	}
 	
 	ns.Presence.prototype.handleServiceOnEvent = function( event ) {
-		var self = this;
+		const self = this;
 		console.log( 'handleServiceOnEvent', event );
 	}
 	
 	ns.Presence.prototype.handleServiceOnClose = function( event ) {
-		var self = this;
+		const self = this;
 		console.log( 'handleServiceOnClose', event );
 	}
 	
-	ns.Presence.prototype.handleServiceOnInvite = function( contact ) {
+	ns.Presence.prototype.handleServiceOnInvite = function( conf, roomId ) {
 		const self = this;
-		const contacts = [ contact ];
-		if ( !hello.rtc.session )
+		const contacts = conf.contacts;
+		const permissions = conf.permissions;
+		if ( !hello.rtc.sessions[ roomId ])
 			return;
 		
-		const roomId = hello.rtc.session.roomId;
 		self.sendInvites( 'live', contacts, roomId );
 	}
 	
@@ -653,7 +669,7 @@ library.module = library.module || {};
 	// from server
 	
 	ns.Presence.prototype.loginChallenge = function( login ) {
-		var self = this;
+		const self = this;
 		if ( !login ) {
 			self.setLogin();
 			//self.askForAccount();
@@ -663,12 +679,12 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.passChallenge = function( event ) {
-		var self = this;
+		const self = this;
 		console.log( 'passChallenge', event );
 	}
 	
 	ns.Presence.prototype.handleAccount = function( account ) {
-		var self = this;
+		const self = this;
 		self.account = account;
 		self.accountId = account.clientId;
 		if ( account.name !== self.identity.name )
@@ -696,12 +712,12 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.handleIdentity = function( event ) {
-		var self = this;
+		const self = this;
 		console.log( 'presence.handleIdentity', event );
 	}
 	
 	ns.Presence.prototype.handleInvite = function( event ) {
-		var self = this;
+		const self = this;
 		console.log( 'presence.handleInvite', event );
 	}
 	
@@ -717,7 +733,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.handleJoin = function( conf ) {
-		var self = this;
+		const self = this;
 		//self.service.handle( conf );
 		if ( null == conf ) {
 			console.log( 'null room, end of room list', conf );
@@ -767,7 +783,7 @@ library.module = library.module || {};
 	// to server
 	
 	ns.Presence.prototype.toAccount = function( event ) {
-		var self = this;
+		const self = this;
 		if ( !self.accountId ) {
 			console.log( 'Presence.toAccount - no account set', event );
 			return;
@@ -781,7 +797,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.createRoom = function( conf ) {
-		var self = this;
+		const self = this;
 		const create = {
 			type : 'create',
 			data : conf,
@@ -790,7 +806,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.joinRoom = function( conf ) {
-		var self = this;
+		const self = this;
 		const roomId = conf.invite.roomId;
 		if ( isInRoom( roomId )) {
 			const req = self.roomRequests[ conf.req ];
@@ -891,7 +907,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.sendInvites = function( type, contacts, roomId ) {
-		var self = this;
+		const self = this;
 		if ( !contacts )
 			return;
 		
@@ -900,34 +916,18 @@ library.module = library.module || {};
 			const room = self.getRoom( roomId );
 			if ( !room )
 				return;
-				
+			
 			room.getInviteToken( null, getBack );
 			function getBack( inv ) {
+				console.log( 'room.getInviteToken - back', inv );
+				//const invite = self.buildInvite( type, roomId, inv.token );
 				contact.invite( inv.data );
 			}
 		}
 	}
 	
-	ns.Presence.prototype.buildInvite = function( type, roomId, inviteToken ) {
-		var self = this;
-		const host = self.module.host + ':' + self.module.port;
-		var invConf = {
-			type    : type || 'room',
-			roomId  : roomId,
-			invite  : inviteToken,
-			host    : host,
-			version : 2,
-		};
-		var bundle = {
-			type    : 'live-invite',
-			data    : invConf,
-		};
-		var invStr = hello.intercept.buildURL( bundle, true, 'live @ myplcae xoxoxo' );
-		return invStr;
-	}
-	
 	ns.Presence.prototype.setLogin = function() {
-		var self = this;
+		const self = this;
 		var login = {
 			setting : 'login',
 			value   : hello.identity.alias,
@@ -936,7 +936,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.askForAccount = function() {
-		var self = this;
+		const self = this;
 		self.queryUser( 'account-ask', '', null, askBack );
 		function askBack( res ) {
 			if ( 'create' === res )
@@ -947,7 +947,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.createAccount = function() {
-		var self = this;
+		const self = this;
 		var login = '';
 		if ( hello.identity.email )
 			login = hello.identity.email;
@@ -967,11 +967,11 @@ library.module = library.module || {};
 	}
 	
 	ns.Presence.prototype.loginInvalid = function( login ) {
-		var self = this;
+		const self = this;
 	}
 	
 	ns.Presence.prototype.getRoom = function( roomId ) {
-		var self = this;
+		const self = this;
 		if ( !roomId )
 			throw new Error( 'Presence.getRoom - no roomId' );
 		
@@ -996,7 +996,7 @@ library.module = library.module || {};
 		if ( !( this instanceof ns.Treeroot ))
 			return new ns.Treeroot( conf );
 		
-		var self = this;
+		const self = this;
 		library.module.BaseModule.call( self, conf );
 		
 		self.type = 'treeroot';
@@ -1018,7 +1018,7 @@ library.module = library.module || {};
 	
 	
 	ns.Treeroot.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.messageMap[ 'account' ] = updateAccount;
 		self.messageMap[ 'contact' ] = contactEvent;
 		self.messageMap[ 'subscription' ] = subscription;
@@ -1093,7 +1093,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			clientId : self.clientId,
 			name : self.module.login,
@@ -1102,14 +1102,14 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.initialize = function() {
-		var self = this;
+		const self = this;
 		self.send({
 			type : 'initialize',
 		});
 	}
 	
 	ns.Treeroot.prototype.initCrypto = function() {
-		var self = this;
+		const self = this;
 		self.crypt = null;
 		var askUniqueId = {
 			type : 'uniqueid',
@@ -1118,7 +1118,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.keyExchangeHandler = function( msg ) {
-		var self = this;
+		const self = this;
 		var handler = self.keyExEventMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'keyExchangeHandler - no handler for', msg );
@@ -1129,7 +1129,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.handleUniqueId = function( data ) {
-		var self = this;
+		const self = this;
 		if ( !self.initialized )
 			self.showModuleInitializing();
 		
@@ -1142,7 +1142,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.setupCrypto = function( uniqueId, hashedPass, doneBack ) {
-		var self = this;
+		const self = this;
 		self.crypt = null;
 		if ( hashedPass )
 			setupKeyPair( hashedPass );
@@ -1173,7 +1173,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.sendPublicKey = function( publicKey, hashedPass, recoveryKey ) {
-		var self = this;
+		const self = this;
 		var pubKeyEvent = {
 			type : 'publickey',
 			data : {
@@ -1188,7 +1188,7 @@ library.module = library.module || {};
 	
 	
 	ns.Treeroot.prototype.signTempPass = function( tmpPass ) {
-		var self = this;
+		const self = this;
 		if ( !self.crypt )
 			throw new Error( 'signTempPass - no crypto, bro' );
 		
@@ -1214,7 +1214,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.sendKeyEx = function( msg ) {
-		var self = this;
+		const self = this;
 		//console.log( 'sendKeyEx', msg );
 		var keyExEvent = {
 			type : 'keyexchange',
@@ -1225,7 +1225,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.keyExErr = function( step, data ) {
-		var self = this;
+		const self = this;
 		data = data || null;
 		var err = {
 			type : 'err',
@@ -1238,7 +1238,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.askForPassphrase = function( callback ) {
-		var self = this;
+		const self = this;
 		if ( self.passphrase ) {
 			callback( self.passphrase );
 			self.passphrase = null;
@@ -1261,12 +1261,12 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.moduleOffline = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'moduleOffline', msg );
 	}
 	
 	ns.Treeroot.prototype.hostError = function( event ) {
-		var self = this;
+		const self = this;
 		self.queryUser( 'host',
 			null,
 			event,
@@ -1288,13 +1288,12 @@ library.module = library.module || {};
 		}
 		
 		function retryRequest() {
-			console.log( 'retryRequest' );
 			self.reconnectNow();
 		}
 	}
 	
 	ns.Treeroot.prototype.invalidIdentity = function( msg ) {
-		var self = this;
+		const self = this;
 		self.queryUser( 'text', 'Identity was not found.', msg.identity, idBack );
 		function idBack( identity ) {
 			var update = {
@@ -1306,17 +1305,17 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.moduleReconnecting = function( msg ) {
-		var self = this;
+		const self = this;
 		self.viewInfo( 'reconnect' );
 	}
 	
 	ns.Treeroot.prototype.moduleInfoMissing = function( msg ) {
-		var self = this;
+		const self = this;
 		self.viewInfo( 'info-missing' );
 	}
 	
 	ns.Treeroot.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'status', status );
 		self.view.on( 'subscribe', subscribe );
 		self.view.on( 'scienceregister', scienceRegister );
@@ -1333,7 +1332,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.initializeState = function( data ) {
-		var self = this;
+		const self = this;
 		if ( self.initialized ) {
 			console.log( 'Treeroot.initializeState, already initialized', data );
 			return;
@@ -1388,7 +1387,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.contactEvent = function( msg ) {
-		var self = this;
+		const self = this;
 		var handler = self.contactEventMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'treeroot.contactEvent - no handler for', msg );
@@ -1399,7 +1398,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.contactPresence = function( data ) {
-		var self = this;
+		const self = this;
 		self.view.sendMessage({
 			type : 'contact',
 			data : {
@@ -1441,7 +1440,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.updateHost = function( data ) {
-		var self = this;
+		const self = this;
 		self.module.host = data.value;
 		self.setName();
 		var viewUpdate = {
@@ -1454,29 +1453,24 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.updateLogin = function( data ) {
-		var self = this;
+		const self = this;
 		self.module.login = data.value;
 	}
 	
 	ns.Treeroot.prototype.updateOnlyOneClient = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'updateOnlyOneClient - NYI', data )
 		return;
 		self.module.settings.onlyOneClient = data.value;
 	}
 	
 	ns.Treeroot.prototype.updateLogLimit = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'module.updateLogLimit - NYI', data );
 	}
 	
 	ns.Treeroot.prototype.updateMessageCrypto = function( data ) {
-		var self = this;
-		console.log( 'updateMessageCrypto', {
-			s : self.module.settings.msgCrypto,
-			d : data,
-		});
-		
+		const self = this;
 		self.module.settings.msgCrypto = data.value;
 		
 		var contactIds = Object.keys( self.contacts );
@@ -1494,13 +1488,12 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.updateCryptoAccepted = function( update ) {
-		var self = this;
-		console.log( 'cryptoAccepted', update );
+		const self = this;
 		self.module.settings.cryptoAccepted = update.value;
 	}
 	
 	ns.Treeroot.prototype.showCryptoWarnView = function() {
-		var self = this;
+		const self = this;
 		if ( self.cryptWarnView )
 			return;
 		
@@ -1600,7 +1593,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.updateAccount = function( data ) {
-		var self = this;
+		const self = this;
 		if ( !data.account )
 			return;
 		
@@ -1630,7 +1623,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.updateModuleView = function( data ) {
-		var self = this;
+		const self = this;
 		self.view.sendMessage({
 			type : 'module',
 			data : self.module,
@@ -1638,7 +1631,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.subscription = function( data ) {
-		var self = this;
+		const self = this;
 		if ( data.type == 'add' ) {
 			self.addSubscription( data.data );
 			return;
@@ -1653,7 +1646,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.addSubscription = function( subscription ) {
-		var self = this;
+		const self = this;
 		self.nullContact = false;
 		if ( self.subscribeView ) {
 			var sub = { id : subscription.ID };
@@ -1685,7 +1678,7 @@ library.module = library.module || {};
 	ns.Treeroot.prototype.removeSubscription = ns.Treeroot.prototype.removeContact;
 	
 	ns.Treeroot.prototype.showCreateSubscription = function() {
-		var self = this;
+		const self = this;
 		var getUsers = {
 			type : 'userlist',
 		};
@@ -1707,13 +1700,13 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.addUserList = function( userList ) {
-		var self = this;
+		const self = this;
 		if ( self.subscribeView )
 			self.subscribeView.setUserList( userList );
 	}
 	
 	ns.Treeroot.prototype.createSubscription = function( data ) {
-		var self = this;
+		const self = this;
 		self.send({
 			type : 'subscription',
 			data : {
@@ -1732,7 +1725,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.handleScienceRegister = function() {
-		var self = this;
+		const self = this;
 		var user = null;
 		var data = {
 			Email : null,
@@ -1758,7 +1751,6 @@ library.module = library.module || {};
 		}
 		
 		function setUsername() {
-			console.log( 'sci-reg, user', user );
 			data.Username = user.name || user.alias;
 			setEmail( emailDone );
 		}
@@ -1774,9 +1766,6 @@ library.module = library.module || {};
 		}
 		
 		function avatarDone() {
-			console.log( 'avatarDone', data );
-			//return;
-			
 			self.register( data );
 		}
 		
@@ -1834,11 +1823,6 @@ library.module = library.module || {};
 		}
 		
 		function setAvatar( callback ) {
-			console.log( 'setAvatar' );
-			var conf = {
-				onimage : onimage,
-				onclose : onclose,
-			};
 			var camView = new library.view.AddImage( conf );
 			
 			function onimage( data ) {
@@ -1852,7 +1836,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.showRegisterForm = function() {
-		var self = this;
+		const self = this;
 		if ( self.registerFormView )
 			return;
 		
@@ -1876,7 +1860,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.register = function( data ) {
-		var self = this;
+		const self = this;
 		self.passphrase = data.Passphrase; // hueueueuue
 		var registerEvent = {
 			type : 'register',
@@ -1886,7 +1870,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.registerResponse = function( data ) {
-		var self = this;
+		const self = this;
 		if ( !self.registerFormView && data.success )
 			return;
 		
@@ -1897,7 +1881,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.startPassReset = function() {
-		var self = this;
+		const self = this;
 		var passReset = {
 			type : 'pass-reset',
 		};
@@ -1905,7 +1889,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.passAskAuth = function( data ) {
-		var self = this;
+		const self = this;
 		var message = Application.i18n('i18n_a_recovery_key') + ' ' + self.module.login;
 		self.queryUser( 'treeroot-pass-reset', message, null, passBack );
 		function passBack( qRes ) {
@@ -1918,13 +1902,13 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.handleGlobalState = function( status ) {
-		var self = this;
+		const self = this;
 		console.log( 'handle global state - NYI' );
 		console.log( status );
 	}
 	
 	ns.Treeroot.prototype.setName = function( name ) {
-		var self = this;
+		const self = this;
 		var host = self.module.host.split( '.' )[ 0 ];
 		host = friendUP.tool.ucfirst( host );
 		self.module.name = name
@@ -1935,7 +1919,7 @@ library.module = library.module || {};
 	}
 	
 	ns.Treeroot.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.registerFormView )
 			self.registerFormView.close();
 		
@@ -1953,7 +1937,7 @@ library.module = library.module || {};
 		
 		library.module.BaseModule.call( this, conf );
 		
-		var self = this;
+		const self = this;
 		self.type = 'irc';
 		self.consoleView = null;
 		
@@ -1973,7 +1957,7 @@ library.module = library.module || {};
 	// Private
 	
 	ns.IRC.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.messageMap[ 'message' ] = consoleMsg;
 		self.messageMap[ 'identity' ] = identityChange;
 		self.messageMap[ 'join' ] = join;
@@ -1991,10 +1975,7 @@ library.module = library.module || {};
 		function privateChat( e ) { self.handlePrivateChat( e ); }
 		function nickChange( e ) { self.nickChange( e ); }
 		function quit( e ) { self.userQuit( e ); }
-		function clearTargets( e ) {
-			console.log( 'clearTargets', e );
-			self.cleanContacts();
-		}
+		function clearTargets( e ) { self.cleanContacts(); }
 		function clientDisconnect( e ) { self.clientDisconnect( e ); }
 		
 		self.connectionErrorMap = {
@@ -2026,18 +2007,18 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.handleConnecting = function() {
-		var self = this;
+		const self = this;
 		if ( !self.initialized )
 			self.showModuleInitializing();
 	}
 	
 	ns.IRC.prototype.handleOnline = function() {
-		var self = this;
+		const self = this;
 		self.clearViewInfo();
 	}
 	
 	ns.IRC.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			name : self.module.settings.nick,
 			avatar : library.component.Identity.prototype.avatar,
@@ -2045,7 +2026,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.initializeState = function( data ) {
-		var self = this;
+		const self = this;
 		if ( self.initialized )
 			return;
 		
@@ -2073,7 +2054,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'console', toggleConsole );
 		self.view.on( 'reconnect', reconnectClick );
 		self.view.on( 'disconnect', disconnectClick );
@@ -2086,7 +2067,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.toggleConsole =function( data ) {
-		var self = this;
+		const self = this;
 		if ( self.consoleView )
 			self.consoleView.close();
 		else
@@ -2110,7 +2091,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.consoleMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( msg.type === 'error' ) {
 			self.setConsoleError( msg );
 			return;
@@ -2125,7 +2106,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.toConsole = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.consoleView )
 			return;
 		
@@ -2133,22 +2114,22 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.setConsoleError = function( msg ) {
-		var self = this;
+		const self = this;
 		self.toConsole( msg )
 	}
 	
 	ns.IRC.prototype.setConsoleNotification = function( msg ) {
-		var self = this;
+		const self = this;
 		self.toConsole( msg );
 	}
 	
 	ns.IRC.prototype.connError = function( data ) {
-		var self = this;
+		const self = this;
 		self.clearState();
 	}
 	
 	ns.IRC.prototype.hostNotSet = function( msg ) {
-		var self = this;
+		const self = this;
 		self.queryUser( 'text', Application.i18n('i18n_please_set_a_host'), null, queryBack );
 		function queryBack( host ) {
 			var update = {
@@ -2160,7 +2141,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.nickNotSet = function( msg ) {
-		var self = this;
+		const self = this;
 		self.queryUser( 'text', Application.i18n('i18n_please_set_a_nick'), null, queryBack );
 		function queryBack( nick ) {
 			var update = {
@@ -2172,17 +2153,17 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.updateNick = function( data ) {
-		var self = this;
+		const self = this;
 		self.module.settings.nick = data.value;
 	}
 	
 	ns.IRC.prototype.updateAwayNick = function( data ) {
-		var self = this;
+		const self = this;
 		self.module.settings.awayNick = data.value;
 	}
 	
 	ns.IRC.prototype.updateDisplayName = function( update ) {
-		var self = this;
+		const self = this;
 		self.module.name = update.value;
 		var viewUpdate = {
 			type : 'module',
@@ -2193,7 +2174,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.updateIrcTheme = function( update ) {
-		var self = this;
+		const self = this;
 		self.module.settings.ircTheme = update.value;
 		var msg = {
 			type : 'viewtheme',
@@ -2203,12 +2184,12 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.updateConnect = function( msg ) {
-		var self = this;
+		const self = this;
 		self.module.settings.connect = msg.value;
 	}
 	
 	ns.IRC.prototype.joinChannel = function( channel ) {
-		var self = this;
+		const self = this;
 		var chanObj = self.contacts[ channel.clientId ];
 		if ( chanObj ) {
 			console.log( 'joinChannel - arealy in channel', channel );
@@ -2242,8 +2223,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.leftChannel = function( data ) {
-		var self = this;
-		console.log( 'IRC.leftChannel', data );
+		const self = this;
 		var channel = self.contacts[ data.clientId ];
 		if ( !channel )
 			return;
@@ -2257,7 +2237,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.nickChange = function( data ) {
-		var self = this;
+		const self = this;
 		self.toAll({
 			type : 'nick',
 			data : data,
@@ -2265,7 +2245,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.identityChange = function( data ) {
-		var self = this;
+		const self = this;
 		self.identity.name = data.name;
 		var idUpdate = {
 			type : 'identity',
@@ -2278,7 +2258,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.userQuit = function( data ) {
-		var self = this;
+		const self = this;
 		self.toAllChannels({
 			type : 'quit',
 			data : data,
@@ -2286,7 +2266,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.openPrivate = function( nick ) {
-		var self = this;
+		const self = this;
 		var contact = getPrivate( nick );
 		if ( contact ) {
 			contact.startChat();
@@ -2321,7 +2301,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.removePrivate = function( nick ) {
-		var self = this;
+		const self = this;
 		var remove = {
 			type : 'remove',
 			data : nick,
@@ -2330,7 +2310,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.sendPrivate = function( action ) {
-		var self = this;
+		const self = this;
 		var priv = {
 			type : 'private',
 			data : action,
@@ -2339,7 +2319,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.handlePrivateChat = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( msg.type === 'open' ) {
 			self.createPrivateChat( msg.data.target, msg.data.forceOpen );
 			return;
@@ -2354,7 +2334,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.createPrivateChat = function( contact, forceOpen ) {
-		var self = this;
+		const self = this;
 		var conf = {
 			moduleId : self.clientId,
 			parentView : self.parentView,
@@ -2377,26 +2357,26 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.toAllChannels = function( msg ) {
-		var self = this;
+		const self = this;
 		var allChan = self.getContactsByType( 'IrcChannel' );
 		self.sendToContacts( allChan, msg );
 		
 	}
 	
 	ns.IRC.prototype.toAllPrivMsg = function( msg ) {
-		var self = this;
+		const self = this;
 		var allPriv = self.getContactsByType( 'IrcPrivMsg' );
 		self.sendToContacts( allPriv, msg );
 	}
 	
 	ns.IRC.prototype.toAll = function( msg ) {
-		var self = this;
+		const self = this;
 		var ids = Object.keys( self.contacts );
 		self.sendToContacts( ids, msg );
 	}
 	
 	ns.IRC.prototype.getContactsByType = function( type ) {
-		var self = this;
+		const self = this;
 		var allIds = Object.keys( self.contacts );
 		var ofType = allIds.filter( checkType );
 		return ofType;
@@ -2408,7 +2388,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.sendToContacts = function( ids, msg ) {
-		var self = this;
+		const self = this;
 		ids.forEach( sendTo );
 		function sendTo( id ) {
 			var contact = self.contacts[ id ];
@@ -2420,13 +2400,12 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.clientDisconnect = function( msg ) {
-		var self = this;
-		console.log( 'clientDisconnect', msg );
+		const self = this;
 		self.cleanContacts();
 	}
 	
 	ns.IRC.prototype.optionReconnect = function() {
-		var self = this;
+		const self = this;
 		const msg = {
 			type : 'reconnect',
 			data : {
@@ -2437,7 +2416,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.optionDisconnect = function() {
-		var self = this;
+		const self = this;
 		const msg = {
 			type : 'disconnect',
 			data : {
@@ -2448,12 +2427,12 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.leaveChannel = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'IRC.leaveChannel', msg );
 	}
 	
 	ns.IRC.prototype.sendCommand = function( msg, source ) {
-		var self = this;
+		const self = this;
 		source = source || '';
 		var cmd = {
 			type : 'command',
@@ -2464,7 +2443,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.sendMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : 'message',
 			data : msg,
@@ -2473,13 +2452,12 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.clearState = function( msg ) {
-		var self = this;
-		console.log( 'clearState', msg );
+		const self = this;
 		self.cleanContacts();
 	}
 	
 	ns.IRC.prototype.closeViews = function() {
-		var self = this;
+		const self = this;
 		if ( self.consoleView )
 			self.consoleView.close();
 		if ( self.settingsView )
@@ -2487,7 +2465,7 @@ library.module = library.module || {};
 	}
 	
 	ns.IRC.prototype.close = function() {
-		var self = this;
+		const self = this;
 		self.closeViews();
 		self.baseClose();
 	}
@@ -2500,7 +2478,7 @@ library.module = library.module || {};
 		if ( !( this instanceof ns.Facebook ))
 			return new ns.Facebook( conf );
 		
-		var self = this;
+		const self = this;
 		
 		library.module.BaseModule.call( self, conf );
 		
@@ -2510,7 +2488,7 @@ library.module = library.module || {};
 	ns.Facebook.prototype = Object.create( library.module.BaseModule.prototype );
 	
 	ns.Facebook.prototype.init = function() {
-		var self = this;
+		const self = this;
 		console.log( 'app.module.Facebook.init' );
 	}
 	
@@ -2522,7 +2500,7 @@ library.module = library.module || {};
 		if ( !( this instanceof ns.PHModule ))
 			return new ns.PHModule( conf );
 		
-		var self = this;
+		const self = this;
 		library.module.BaseModule.call( self, conf );
 		
 		self.init();
@@ -2531,7 +2509,7 @@ library.module = library.module || {};
 	ns.PHModule.prototype = Object.create( library.module.BaseModule.prototype );
 	
 	ns.PHModule.prototype.init = function() {
-		var self = this;
+		const self = this;
 		console.log( 'app.module.PHModule.init' );
 	};
 	

@@ -148,10 +148,10 @@ ns.Account.prototype.accountMsg = function( msg, sessionId ) {
 	handler( msg.data, sessionId );
 }
 
-ns.Account.prototype.clientReady = function( data, sessionId ) {
+ns.Account.prototype.clientReady = function( firstLoginConf, sessionId ) {
 	var self = this;
-	if ( null != data )
-		self.doFirstLoginSetup( data );
+	if ( null != firstLoginConf )
+		self.doFirstLoginSetup( firstLoginConf );
 	else
 		self.mods.initializeClient( sessionId );
 }

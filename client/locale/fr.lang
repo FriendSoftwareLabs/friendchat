@@ -192,7 +192,7 @@ i18n_mute : Audio muet
 i18n_pause : Vidéo en pause
 i18n_remove : Enlever
 i18n_updating : < mise à jour >
-i18n_browser_compatibility : Compatibilité navigateur
+i18n_browser_check : Compatibilité navigateur
 i18n_checking : vérification...
 i18n_ice_servers : Serveur ICE
 i18n_video_input : Entrée vidéo

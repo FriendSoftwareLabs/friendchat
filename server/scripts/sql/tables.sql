@@ -89,6 +89,6 @@ INSERT INTO `db_history`(
 	`comment`
 ) VALUES (
 	1,
-	11,
+	12,
 	'table version'
 );

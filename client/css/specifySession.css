@@ -1,0 +1,37 @@
+#specify-session {
+	height   : 100%;
+	overflow : auto;
+}
+
+#description {
+	padding : 1em 0.5em;
+}
+
+.session-item {
+	
+}
+
+.head {
+	font-size : 110%;
+	font-weight: bold;
+}
+
+.head .icon {
+	height : 2em;
+	width  : 2em;
+}
+
+.head .name {
+	padding-left : 0.5em;
+	line-height  : 2em;
+}
+
+.infos {
+	opacity     : 0.7;
+	line-height : 1.2em;
+	padding : 0.4em 1em;
+}
+
+.info {
+	font-size : 90%;
+}

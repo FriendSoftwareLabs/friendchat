@@ -19,6 +19,8 @@ i18n_channel_settings : Channel settings
 i18n_irc_settings : IRC settings
 i18n_join : join
 i18n_treeroot_settings : Treeroot settings
+i18n_workgroups : Workgroups
+i18n_user_limit : User limit
 i18n_a : A
 i18n_friendup : FriendUP
 i18n_communication_tool : communication tool
@@ -192,7 +194,7 @@ i18n_mute : Mute Audio
 i18n_pause : Pause Video
 i18n_remove : Remove
 i18n_updating : < updating >
-i18n_browser_compatibility : Browser compatibility
+i18n_browser_check : Browser check
 i18n_checking : checking...
 i18n_ice_servers : ICE servers
 i18n_video_input : Video input
@@ -230,7 +232,7 @@ i18n_media_not_available : Media not available - check your browser settings to 
 i18n_create_new_account : Create new account
 i18n_has_invited_you_to_live : has invited you to a live session.
 i18n_friend_chat_log : Friend Chat - Log
-i18n_live_session : Live session
+i18n_live_session : Live
 i18n_console : Console
 i18n_add_image : Add image
 i18n_share_invite_link : Share invite link
@@ -254,6 +256,7 @@ i18n_err_devices_blocked : Device access denied by browser
 i18n_err_no_devices_found : No devices were found
 i18n_err_gum_not_allowed : Media access denied
 i18n_err_gum_no_media : No media available
+i18n_err_https_required : A secure (HTTPS) connection is required
 i18n_sending_types : You will send..
 i18n_receive_types : You will receive..
 i18n_menu_send_audio : Send audio
@@ -297,3 +300,14 @@ i18n_set_name : Set
 i18n_displayed_name_may_change_or_later : This will be your displayed name, you may change it here or during the session
 i18n_join_video_audio : Join with video and audio
 i18n_join_audio_only : Join with audio only
+i18n_presentation_mode : Presentation mode
+i18n_select_session : Select session
+i18n_multiple_sessions_select_invite_to : You have multiple live sessions, select one to invite to.
+i18n_create_new_session : Create a new session
+i18n_is_stream : Use for streaming
+i18n_is_classroom : Use as classroom
+i18n_stream_users_list : Users
+i18n_stream_session : Stream
+i18n_now_chatting_in : Now chatting in
+i18n_stream_state_source_connecting : Source connecting
+i18n_stream_state_stream_connecting : Connecting to stream

@@ -158,6 +158,11 @@ library.component = library.component || {};
 		if ( self.isWaiting )
 			self.removeWaiting();
 		
+		// self sent
+		console.log( 'handleMessage', data );
+		if ( !data.from )
+			self.hideMessagePlaceholder();
+		
 		if ( self.voiceSynthActive && data.from )
 			api.Say( data.message );
 		
@@ -344,12 +349,14 @@ library.component = library.component || {};
 	ns.IMChat.prototype.bindEvents = function() {
 		var self = this;
 		self.form = document.getElementById( 'input-form' );
+		const submitBtn = document.getElementById( 'chat-submit' );
 		self.toggleMultilineBtn = document.getElementById( 'leeloodallasmultiline' );
 		self.toggleVoiceBtn = document.getElementById( 'toggle-voice' );
 		const startVideoBtn = document.getElementById( 'start-video' );
 		const startAudioBtn = document.getElementById( 'start-audio' );
 		self.encryptBtn = document.getElementById( 'toggle-encrypt' );
 		
+		submitBtn.addEventListener( 'click', submit, false );
 		self.form.addEventListener( 'submit', submit, false );
 		self.toggleMultilineBtn.addEventListener( 'click', toggleMultiline, false );
 		self.toggleVoiceBtn.addEventListener( 'click', toggleVoice, false );
@@ -392,12 +399,15 @@ library.component = library.component || {};
 	
 	ns.IMChat.prototype.handleSubmit = function( message ) {
 		var self = this;
-		if ( !message.length ) {
+		if ( !message || !message.length ) {
 			done();
 			return;
 		}
 		
 		self.inputHistory.add( message );
+		if ( self.isChatMessage( message ))
+			self.toggleMessagePlaceholder( message );
+		
 		var msg = {
 			type : 'message',
 			data : message,
@@ -408,6 +418,17 @@ library.component = library.component || {};
 		function done() {
 			self.input.setValue( '' );
 		}
+	}
+	
+	// implement for each thingie, IRC, Treeroot etc
+	ns.IMChat.prototype.isChatMessage = function( msg ) {
+		const self = this;
+		return true;
+	}
+	
+	ns.IMChat.prototype.hideMessagePlaceholder = function( event ) {
+		const self = this;
+		self.toggleMessagePlaceholder();
 	}
 	
 	ns.IMChat.prototype.toggleMessagePlaceholder = function( msg ) {
@@ -502,8 +523,58 @@ library.component = library.component || {};
 	
 })( library.view );
 
+
+(function( ns, undefined ) {
+	ns.TreerootChat = function( conf ) {
+		const self = this;
+		console.log( 'TreerootChat', conf );
+		library.view.IMChat.call( self, conf );
+	}
+	
+	ns.TreerootChat.prototype = Object.create( library.view.IMChat.prototype );
+	
+	ns.TreerootChat.prototype.isChatMessage = function( msg ) {
+		const self = this;
+		console.log( 'TreerootChat.isChatMessage', msg );
+		return true;
+	}
+	
+})( library.view );
+
+
+(function( ns, undefined ) {
+	ns.IRCChat = function( conf ) {
+		const self = this;
+		console.log( 'URKChat', conf );
+		library.view.IMChat.call( self, conf );
+	}
+	
+	ns.IRCChat.prototype = Object.create( library.view.IMChat.prototype );
+	
+	ns.IRCChat.prototype.isChatMessage = function( msg ) {
+		const self = this;
+		console.log( 'IRCChat.isChatMessage', msg );
+		if ( '/' === msg[ 0 ])
+			return false;
+		
+		return true;
+	}
+})( library.view );
+
+
 // wait for view to call run
 window.View.run = run;
 function run( conf ) {
-	window.chat = new library.view.IMChat( conf );
+	console.log( 'IMChat.run', conf );
+	if ( !conf || !conf.chatType )
+		throw new Error( 'conf || conf.chatType is missing RABBLE RABBLE RABBLE' );
+	
+	let Chat = null;
+	if ( 'irc' === conf.chatType )
+		Chat = library.view.IRCChat;
+	
+	if ( 'treeroot' === conf.chatType )
+		Chat = library.view.TreerootChat;
+	
+	window.chat = new Chat( conf );
 }

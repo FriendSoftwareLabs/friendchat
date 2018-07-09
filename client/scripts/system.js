@@ -421,17 +421,18 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'ModuleControl.reconnect' );
 		mids = Object.keys( self.active );
-		mids.forEach( callReconnect );
-		function callReconnect( mId ) {
+		mids.forEach( mId => {
 			let mod = self.active[ mId ];
 			mod.reconnect();
-		}
+		});
 	}
 	
 	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
 		console.log( 'moduleCtrl.setIsOnline', isOnline );
+		self.reconnect();
 	}
 	
 	// Private
@@ -748,7 +749,8 @@ library.rtc = library.rtc || {};
 			return new ns.RtcControl();
 		
 		var self = this;
-		self.session = null;
+		self.sessions = {};
+		self.sessionIds = [];
 		self.roomRequests = {};
 		
 		self.init();
@@ -756,11 +758,18 @@ library.rtc = library.rtc || {};
 	
 	// Public
 	
+	ns.RtcControl.prototype.hasSession = function() {
+		const self = this;
+		return !!self.sessionIds.length;
+	}
+	
 	ns.RtcControl.prototype.joinLive = function( conf, eventSink, onclose ) {
 		const self = this;
+		console.log( 'RtcControl.joinLive', conf );
 		const sessionConf = {
-			invite      : null,
-			user        : conf.identity,
+			roomId      : conf.roomId     ,
+			invite      : null            ,
+			user        : conf.identity   ,
 			permissions : conf.permissions,
 			constraints : conf.constraints,
 		};
@@ -768,17 +777,66 @@ library.rtc = library.rtc || {};
 		self.createSession( sessionConf, eventSink, onclose );
 	}
 	
-	ns.RtcControl.prototype.invite = function( contact ) {
+	ns.RtcControl.prototype.invite = function( contacts, permissions ) {
 		const self = this;
-		self.service.invite( contact );
+		console.log( 'RtcControl.invite', [
+			contacts,
+			permissions,
+			self.sessionIds,
+		]);
+		const userConf = {
+			contacts    : contacts,
+			permissions : permissions,
+		};
+		
+		if ( !self.sessionIds.length ) {
+			self.createRoom( contacts, permissions );
+			return;
+		}
+		
+		let roomId = null;
+		if ( 1 === self.sessionIds.length ) {
+			roomId = self.sessionIds[ 0 ];
+			doInvite( roomId );
+		} else {
+			askSpecifyRoom();
+		}
+		
+		function askSpecifyRoom() {
+			let roomMetas = self.sessionIds.map( buildMeta );
+			let conf = {
+				sessions : roomMetas,
+				onselect : onSelect,
+			};
+			let select = new library.view.SpecifySession( conf );
+			function onSelect( roomId ) {
+				select.close();
+				
+				if ( !roomId )
+					self.createRoom( contacts, permissions );
+				else
+					doInvite( roomId );
+			}
+		}
+		
+		function doInvite( roomId ) {
+			self.service.invite( userConf, roomId );
+		}
+		
+		function buildMeta( sId ) {
+			let session = self.sessions[ sId ];
+			let meta = self.service.getRoomInfo( sId );
+			meta.created = session.created;
+			return meta;
+		}
 	}
 	
-	ns.RtcControl.prototype.createRoom = function( contacts, selfie, permissions ) {
+	ns.RtcControl.prototype.createRoom = function( contacts, permissions ) {
 		var self = this;
 		var sessionConf = {
+			roomId      : null,
 			invite      : null,
 			isHost      : true,
-			user        : selfie,
 			contacts    : contacts,
 			permissions : permissions,
 		};
@@ -905,16 +963,14 @@ library.rtc = library.rtc || {};
 			type : action,
 			data : sessionConf,
 		};
-		self.service.getRoom( roomReq );
+		self.service.createRoom( roomReq );
 	}
 	
 	ns.RtcControl.prototype.createSession = function( conf, eventSink, onclose ) {
-		var self = this;
-		if ( self.session ) {
-			const session = self.session;
-			self.session = null;
-			session.close();
-		}
+		const self = this;
+		const sId = conf.roomId;
+		if ( self.sessions[ sId ] )
+			self.closeSession( sId );
 		
 		conf.user = conf.user || self.service.getIdentity();
 		conf.permissions = conf.permissions || {
@@ -928,27 +984,34 @@ library.rtc = library.rtc || {};
 			},
 		};
 		
-		self.session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
-		return self.session;
+		let session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
+		self.sessions[ sId ] = session;
+		self.sessionIds.push( sId );
+		return session;
 		
 		function sessionClosed() {
-			self.session = null;
+			self.closeSession( sId );
 		}
 	}
 	
-	ns.RtcControl.prototype.getSession = function() {
+	ns.RtcControl.prototype.getSession = function( sId ) {
 		var self = this;
-		return self.session;
+		return self.sessions[ sId ] || null;
 	}
 	
-	ns.RtcControl.prototype.closeSession = function() {
-		var self = this;
-		if ( !self.session )
+	ns.RtcControl.prototype.closeSession = function( sId ) {
+		const self = this;
+		if ( !self.sessions[ sId ])
 			return;
 		
-		var sess = self.session;
-		self.session = null;
-		sess.close();
+		console.log( 'closeSession', [
+			sId,
+			self.sessions,
+		]);
+		let session = self.sessions[ sId ];
+		delete self.sessions[ sId ];
+		self.sessionIds = Object.keys( self.sessions );
+		session.close();
 	}
 	
 })( library.system );
@@ -1519,6 +1582,7 @@ library.rtc = library.rtc || {};
 			'open'       : socketOpen,
 			'session'    : socketSession,
 			'close'      : socketClosed,
+			'timeout'    : socketTimeout,
 			'error'      : socketError,
 			'ping'       : socketPing,
 			'reconnect'  : socketReconnect,
@@ -1527,6 +1591,7 @@ library.rtc = library.rtc || {};
 		function socketOpen( e ) { self.socketOpen( e ); }
 		function socketSession( e ) { self.socketSession( e ); }
 		function socketClosed ( e ) { self.socketClosed( e ); }
+		function socketTimeout( e ) { self.socketTimeout( e ); }
 		function socketError ( e ) { self.socketError( e ); }
 		function socketPing ( e ) { self.socketPing( e ); }
 		function socketReconnect( e ) { self.socketReconnecting( e ); }
@@ -1584,12 +1649,20 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
+	ns.Connection.prototype.socketTimeout = function( e ) {
+		const self = this;
+		self.onstate({
+			type : 'error',
+			data : 'Connect attempt timed out: ' + self.host,
+		});
+	}
+	
 	ns.Connection.prototype.socketError = function( err ) {
 		const self = this;
 		hello.log.notify( 'Socket error' );
 		self.onstate({
 			type : 'error',
-			data : 'WebSocket error for ' + self.host,
+			data : 'Connection error to: ' + self.host,
 		});
 	}
 	
@@ -2013,6 +2086,7 @@ library.rtc = library.rtc || {};
 		self.onclose = onclose;
 		self.sessionclose = sessionClose;
 		
+		self.created = Date.now();
 		self.contacts = {};
 		self.server = null;
 		self.view = null;
@@ -2037,6 +2111,12 @@ library.rtc = library.rtc || {};
 		}
 		
 		self.view.sendMessage( event );
+	}
+	
+	ns.RtcSession.prototype.setTitle = function( name ) {
+		const self = this;
+		console.log( 'RTCSESSION.setTitle', name );
+		self.view.setTitle( name );
 	}
 	
 	ns.RtcSession.prototype.close = function() {
@@ -2074,20 +2154,26 @@ library.rtc = library.rtc || {};
 	ns.RtcSession.prototype.initialize = function( init ) {
 		const self = this;
 		self.id = init.liveId;
-		const liveConf = init.liveConf;
-		const conf = self.conf;
-		const viewConf = {
-			userId     : liveConf.userId,
-			peerList   : liveConf.peerList,
-			isGuest    : conf.isGuest || false,
-			identities : init.identities,
-			rtcConf    : {
-				ICE         : liveConf.ICE,
-				permissions : conf.permissions,
-				quality     : liveConf.quality,
+		const roomConf = init.liveConf;
+		const viewConf = self.conf;
+		const liveConf = {
+			userId      : roomConf.userId,
+			peerList    : roomConf.peerList,
+			isGuest     : viewConf.isGuest || false,
+			guestAvatar : viewConf.guestAvatar,
+			identities  : init.identities,
+			roomName    : viewConf.roomName,
+			logTail     : roomConf.logTail,
+			rtcConf     : {
+				ICE         : roomConf.ICE,
+				permissions : viewConf.permissions,
+				quality     : roomConf.quality,
+				mode        : roomConf.mode,
+				sourceId    : roomConf.sourceId,
 			},
 		};
 		self.view = new library.view.Live(
+			liveConf,
 			viewConf,
 			eventSink,
 			onClose

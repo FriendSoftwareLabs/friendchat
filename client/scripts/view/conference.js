@@ -301,7 +301,7 @@ library.view = library.view || {};
 		self.addParticipant( user );
 		var conf = {
 			type : 'join',
-			message : user.name + ' ' + View.i18n('i18n_has_joined'),
+			message : user.name + ' ' + View.i18n( 'i18n_has_joined' ),
 			time : user.time,
 		};
 		self.systemMsg( conf );
@@ -317,7 +317,7 @@ library.view = library.view || {};
 		self.removeParticipant( data.who );
 		var conf = {
 			type    : 'part',
-			message : data.who + ' ' + View.i18n('i18n_left'),
+			message : data.who + ' ' + View.i18n( 'i18n_left' ),
 			time    : data.time,
 		}
 		self.systemMsg( conf );
@@ -333,7 +333,7 @@ library.view = library.view || {};
 		self.removeParticipant( data.who );
 		var conf = {
 			type    : 'quit',
-			message : data.who + ' ' + View.i18n('i18n_has_quit') + ' ' + data.message + ' ).',
+			message : data.who + ' ' + View.i18n( 'i18n_has_quit' ) + ' ' + data.message + ' ).',
 			time    : data.time,
 		};
 		self.systemMsg( conf );
@@ -344,13 +344,13 @@ library.view = library.view || {};
 		self.removeParticipant( event.victim );
 		let victim = event.victim;
 		if ( victim === self.user.name ) {
-			victim = View.i18n('i18n_you');
+			victim = View.i18n( 'i18n_you' );
 			self.clearUserList();
 		}
 		
 		const conf = {
 			type    : 'kick',
-			message : event.victim + ' ' + View.i18n('i18n_was_kicked_by') + ' ' + event.kicker,
+			message : event.victim + ' ' + View.i18n( 'i18n_was_kicked_by' ) + ' ' + event.kicker,
 			time    : event.time,
 		};
 		self.systemMsg( conf );
@@ -361,7 +361,7 @@ library.view = library.view || {};
 		self.removeParticipant( event.victim );
 		const conf = {
 			type    : 'ban',
-			message : event.banner + ' ' + View.i18n('i18n_sets_mode') + ' ' + event.mode + ' ' + event.victim,
+			message : event.banner + ' ' + View.i18n( 'i18n_sets_mode' ) + ' ' + event.mode + ' ' + event.victim,
 			time    : event.time,
 		}
 		self.systemMsg( conf );
@@ -532,12 +532,14 @@ library.view = library.view || {};
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.showHideBtn = document.getElementById( 'showhide-btn' );
 		self.inputForm = document.getElementById( 'input-form' );
+		const submitBtn = document.getElementById( 'chat-submit' );
 		
-		window.addEventListener( 'resize', windowResize, false );
+		//window.addEventListener( 'resize', windowResize, false );
 		
 		self.settingsBtn.addEventListener( 'click', showSettings, false );
 		self.showHideBtn.addEventListener( 'click', showhideToggle, false );
 		self.inputForm.addEventListener( 'submit', inputSubmit, false );
+		submitBtn.addEventListener( 'click', inputSubmit, false );
 		
 		function windowResize( e ) {
 			self.handleWindowResize( e );
@@ -578,6 +580,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.reflow = function() {
+		const self = this;
 		var messages = document.getElementById( 'message-container' );
 		var contacts = document.getElementById( 'participants-container' );
 		window.View.triggerReflow( messages );

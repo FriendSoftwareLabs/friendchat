@@ -874,7 +874,7 @@ ns.ServerConn.prototype.handleEnded = function( err ) {
 
 ns.ServerConn.prototype.handleDisconnect = function( err ) {
 	const self = this;
-	connLog( 'handleDisconnect', err );
+	self.isConnecting = false;
 	self.clearSocket();
 	const error = {
 		type : 'error',
@@ -884,9 +884,19 @@ ns.ServerConn.prototype.handleDisconnect = function( err ) {
 	self.tryReconnect();
 }
 
-ns.ServerConn.prototype.tryReconnect = function( force ) {
+ns.ServerConn.prototype.tryReconnect = function( instant ) {
 	var self = this;
-	if ( !self.session && !self.auth ) {
+	/*
+	connLog( 'tryReconnect', {
+		session   : self.session,
+		auth      : self.auth,
+		timeout   : self.connectTimeout,
+		is        : self.isConnecting,
+		connected : self.connected,
+	});
+	*/
+	
+	if ( !self.auth ) {
 		self.disconnect();
 		return;
 	}
@@ -897,26 +907,34 @@ ns.ServerConn.prototype.tryReconnect = function( force ) {
 		return;
 	}
 	
-	const reconn = {
-		type : 'connecting',
-		data : Date.now(),
-	};
-	self.emitState( reconn );
-	
 	if ( self.connectTimeout || self.isConnecting )
 		return;
 	
 	self.clearSocket();
 	self.connectAttempt++;
-	if ( force ) {
-		connect();
+	let timeout = calcTimeout( self.connectAttempt );
+	if ( instant ) {
+		timeout = 1;
 		return;
 	}
 	
-	self.connectTimeout = setTimeout( connect, 1000 * 10 );
+	self.connectTimeout = setTimeout( connect, timeout );
+	const reconn = {
+		type : 'connecting',
+		data : Date.now() + timeout,
+	};
+	self.emitState( reconn );
+	
 	function connect() {
 		self.connectTimeout = null;
 		self.connect();
+	}
+	
+	function calcTimeout( attempt ) {
+		let base = attempt * 2 * 1000;
+		let variable = Math.floor( Math.random() * ( base / 2 ));
+		let timeout = base + variable;
+		return timeout;
 	}
 }
 
@@ -990,6 +1008,7 @@ ns.ServerConn.prototype.handleAuthenticate = function( success ) {
 		return;
 	}
 	
+	// success is null, do things
 	// we have a session, try restoring
 	if ( self.session ) {
 		self.sendSession();
@@ -1013,17 +1032,12 @@ ns.ServerConn.prototype.handleAuthenticate = function( success ) {
 ns.ServerConn.prototype.handleSession = function( sessionId ) {
 	const self = this;
 	self.session = sessionId;
+	/*
 	if ( false === sessionId ) {
 		self.tryReconnect( true );
 		return;
-		/*
-		self.disconnect();
-		if ( self.onclose )
-			self.onclose( 'ERR_SESSION_INVALID' );
-		
-		return;
-		*/
 	}
+	*/
 }
 
 ns.ServerConn.prototype.handlePing = function( timestamp ) {

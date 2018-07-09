@@ -398,7 +398,8 @@ library.component = library.component || {};
 	ns.RTCService = function( conf ) {
 		var self = this;
 		self.onhost = conf.onhost;
-		self.onroom = conf.onroom;
+		self.ongetinfo = conf.ongetinfo;
+		self.oncreate = conf.oncreate;
 		self.onevent = conf.onevent;
 		self.onclose = conf.onclose;
 		self.oninvite = conf.oninvite;
@@ -419,25 +420,33 @@ library.component = library.component || {};
 		return self.onhost();
 	}
 	
-	ns.RTCService.prototype.getRoom = function( req ) {
+	ns.RTCService.prototype.getRoomInfo = function( roomId ) {
+		const self = this;
+		if ( !self.ongetinfo )
+			return null;
+		
+		return self.ongetinfo( roomId );
+	}
+	
+	ns.RTCService.prototype.createRoom = function( req ) {
 		var self = this;
-		if ( !self.onroom ) {
+		if ( !self.oncreate ) {
 			console.log( 'RTCService.getRoom - no handler', req );
 			return;
 		}
 		
-		self.onroom( req );
+		self.oncreate( req );
 	}
 	
 	ns.RTCService.prototype.getIdentity = function() {
 		const self = this;
-		return self.onidentity(); // small i
+		return self.onidentity();
 	}
 	
 	
-	ns.RTCService.prototype.invite = function( contact ) {
+	ns.RTCService.prototype.invite = function( conf, roomId ) {
 		const self = this;
-		self.oninvite( contact );
+		self.oninvite( conf, roomId );
 	}
 	
 	ns.RTCService.prototype.send = function( event ) {
@@ -452,10 +461,14 @@ library.component = library.component || {};
 	
 	ns.RTCService.prototype.close = function() {
 		var self = this;
-		delete self.onroom;
+		delete self.ongetinfo;
+		delete self.oncreate;
 		delete self.onevent;
 		delete self.onclose;
 		delete self.oninvite;
+		delete self.onhost;
+		delete self.onidentity;
+		
 	}
 	
 	// Private

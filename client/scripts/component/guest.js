@@ -48,6 +48,7 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.init = function() {
 		const self = this;
+		console.log('GuestRoom.init', self );
 		self.conn.on( 'ready', ready );
 		self.conn.on( 'initialize', init );
 		self.conn.on( 'join', joinedRoom );
@@ -68,13 +69,16 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleInit = function( data ) {
 		const self = this;
+		console.log( 'GuestRoom.handleInit', data );
 		const acc = data.account;
 		self.userId = acc.clientId;
 	}
 	
 	ns.GuestRoom.prototype.handleJoinedRoom = function( room ) {
 		const self = this;
+		console.log( 'GuestRoom.handleJoinedRoom', room );
 		self.roomId = room.clientId;
+		self.roomName = room.name;
 		self.room = new library.component.EventNode( self.roomId, self.conn, extraRoomEvent );
 		self.room.on( 'initialize', init );
 		self.room.on( 'identity', identity );
@@ -100,6 +104,7 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleRoomInit = function( state ) {
 		const self = this;
+		console.log( 'GuestRoom.handleRoomInit', state );
 		self.users = state.users;
 		self.identities = state.identities;
 		const perms = self.permissions || {
@@ -115,8 +120,11 @@ library.component = library.component || {};
 		
 		const conf = {
 			roomId      : self.roomId,
+			roomName    : self.roomName,
 			isGuest     : true,
 			permissions : perms,
+			isStream    : state.settings.isStream,
+			guestAvatar : state.guestAvatar,
 		};
 		self.live = new library.rtc.RtcSession( conf, liveEvent, onclose );
 		self.live.on( 'chat', chat );

@@ -693,8 +693,9 @@ var friend = window.friend || {}; // already instanced stuff
 		function sendTheme( vId ) {
 			var view = self.views[ vId ];
 			var cmd = {
-				command : 'refreshtheme',
-				theme : msg.theme,
+				command   : 'refreshtheme',
+				theme     : msg.theme,
+				themeData : msg.themeData,
 			};
 			view.sendMessage( cmd );
 		}

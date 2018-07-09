@@ -158,7 +158,6 @@ ns.IrcClient = function( client, conf ) {
 		return new ns.IrcClient( client, conf );
 	
 	var self = this;
-	console.log( 'irc conf', conf );
 	self.clientId = conf.clientId;
 	self.client = client;
 	self.conf = conf;
@@ -1789,10 +1788,33 @@ ns.IrcClient.prototype.handleMessage = function( msg ) {
 ns.IrcClient.prototype.parseCommand = function( msg, source ) {
 	var self = this;
 	var str = makeString( msg );
-	if ( !str )
-		discard( msg );
+	if ( !str ) {
+		clog( 'parseCommand - could not make string', msg );
+		return;
+	}
 	
 	msg = str;
+	
+	if ( !msg.length ) {
+		discard( msg );
+		return;
+	}
+	
+	let cmds = self.cmd.check( msg, source );
+	if ( !cmds ) {
+		clog( 'parseCommand - could not make command', msg );
+		return;
+	}
+	
+	clog( 'parseCommand - cmds', cmds, 4 );
+	cmds.forEach( cmd => {
+		self.send( cmd.message );
+		if ( cmd.type === 'privmsg' )
+			copyToSelf( cmd );
+	});
+	//self.send( cmd.message );
+	
+	
 	
 	function makeString( str ) {
 		try {
@@ -1801,26 +1823,6 @@ ns.IrcClient.prototype.parseCommand = function( msg, source ) {
 			clog( 'could not string', msg );
 			return null;
 		}
-	}
-	
-	if ( !msg.length ) {
-		discard( msg );
-		return;
-	}
-	
-	var cmd = self.cmd.check( msg, source );
-	if ( !cmd ) {
-		discard( msg );
-		return;
-	}
-	
-	self.send( cmd.message );
-	
-	if ( cmd.type === 'privmsg' )
-		copyToSelf( cmd );
-	
-	function discard( msg ) {
-		//clog( 'command - invalid command, in some way', msg );
 	}
 	
 	function copyToSelf( msg ) {
@@ -2970,7 +2972,8 @@ ns.CmdChecker.prototype.init = function() {
 		cmd.push( ':' + args.join( '\x20' )); // topic goes after :
 		
 		var message = cmd.join( '\x20' );
-		return self.buildMeta( 'topic', cmd[ 1 ], message );
+		let meta = self.buildMeta( 'topic', cmd[ 1 ], message );
+		return [ meta ];
 	}
 	
 	function buildJoin( args ) {
@@ -2979,33 +2982,34 @@ ns.CmdChecker.prototype.init = function() {
 		
 		var message = args.join( '\x20' );
 		var meta = self.buildMeta( 'join', null, message );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildPrivMsg( args ) {
 		var target = args[ 1 ];
 		var body = args.slice( 2 );
 		var raw = body.join( ' ' );
-		var message = 'PRIVMSG ' + target + ' :' + raw;
-		var meta = self.buildMeta( 'privmsg', target, message );
-		meta.raw = raw;
-		return meta;
+		let raws = raw.split( '\n' );
+		let metas = raws.map( raw => {
+			var message = 'PRIVMSG ' + target + ' :' + raw;
+			var meta = self.buildMeta( 'privmsg', target, message );
+			meta.raw = raw;
+			return meta;
+		});
+		return metas;
 	}
 	
 	function buildNickMsg( args ) {
 		var msg = 'NICK ' + args[ 1 ];
 		var meta = self.buildMeta( 'nick', null, msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildAwayMsg( args ) {
 		args.shift(); // discard the command
-		if ( !args.length )
-			return 'AWAY';
-		
 		var message = 'AWAY :' + args.join( ' ' );
 		var meta = self.buildMeta( 'away', null, message );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildPartMsg( args, source ) {
@@ -3014,13 +3018,13 @@ ns.CmdChecker.prototype.init = function() {
 		
 		var msg = args.join( ' ' );
 		var meta = self.buildMeta( 'part', args[ 1 ], msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildQuitMsg( args ) {
 		var msg = args.join( ' ' );
 		var meta = self.buildMeta( 'quit', null, msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildActionMsg( args, source ) {
@@ -3030,7 +3034,7 @@ ns.CmdChecker.prototype.init = function() {
 		var message = 'PRIVMSG ' + source + ' :' + raw;
 		var meta = self.buildMeta( 'privmsg', source, message );
 		meta.raw = raw
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildModeMsg( args, source ) {
@@ -3040,7 +3044,7 @@ ns.CmdChecker.prototype.init = function() {
 		var target = args[ 1 ];
 		var msg = args.join( ' ' );
 		var meta = self.buildMeta( 'mode', target, msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildModeO( args, source ) {
@@ -3053,7 +3057,8 @@ ns.CmdChecker.prototype.init = function() {
 		if ( source && !self.isChannel( args[ 1 ]) )
 			args = self.setTarget( args, source );
 		
-		return buildModeMsg( args );
+		let mode = buildModeMsg( args );
+		return mode;
 	}
 	
 	function buildModeV( args, source ) {
@@ -3066,7 +3071,7 @@ ns.CmdChecker.prototype.init = function() {
 		const target = args[ 1 ];
 		const msg = args.join( ' ' );
 		const meta = self.buildMeta( 'kick', target, msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildBanMsg( args, source ) {

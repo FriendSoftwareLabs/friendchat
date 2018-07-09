@@ -18,142 +18,25 @@
 *****************************************************************************©*/
 
 'use strict';
-var library = window.library || {};
-var friendUP = window.friendUP || {};
-var hello = window.hello || {};
+window.library = window.library || {};
+window.friendUP = window.friendUP || {};
+window.hello = window.hello || {};
 
 library.view = library.view || {};
 library.component = library.component || {};
 
-// LiveInit
-
+// UI for live session
 (function( ns, undefined ) {
-	ns.LiveInit = function( viewConf ) {
-		var self = this;
-		
-		self.view = window.View;
-		self.rtc = null;
-		self.ui = null;
-		self.appOnline = null;
-		
-		self.init();
-	}
-	
-	// Public??
-	
-	// Private
-	ns.LiveInit.prototype.init = function() {
-		var self = this;
-		self.appOnline = new library.component.AppOnline( window.View );
-		self.conn = new library.component.EventNode(
-			null,
-			null,
-			eventSink,
-			onSend
-		);
-		self.view.receiveMessage = handleFromApp;
-		
-		function onSend( e ) { self.view.sendMessage( e ); }
-		function handleFromApp( e ) {
-			self.conn.handle( e );
-		}
-		function eventSink( t, d ) { console.log( 'live event sink', {
-				t : t,
-				d : d,
-			});
-		}
-		//
-		var fragments = document.getElementById( 'fragments' );
-		var fragStr = fragments.innerHTML;
-		fragStr = View.i18nReplaceInString( fragStr );
-		hello.template = new friendUP.gui.TemplateManager( fragStr );
-		
-		//
-		var dropConf = {
-			targetId : 'hello',
-			ondrop : onDrop,
-		};
-		self.drop = new library.component.Drop( dropConf );
-		function onDrop( dropped ) {
-			self.conn.send( dropped );
-		}
-		
-		//
-		self.conn.on( 'focus', focus );
-		self.conn.on( 'initialize', initialize );
-		self.conn.on( 'closeview', closeView );
-		
-		function focus( e ) {}
-		function initialize( e ) { self.initialize( e ); }
-		function closeView( e ) { self.closeAllTheThings( e ); }
-		
-		//
-		var loaded = {
-			type : 'loaded',
-			data : 'pølse',
-		};
-		self.conn.send( loaded );
-	}
-	
-	ns.LiveInit.prototype.initialize = function( data ) {
-		const self = this;
-		hello.template.addFragments( data.fragments );
-		
-		//
-		hello.parser = new library.component.parse.Parser();
-		hello.parser.use( 'LinkStd' );
-		hello.parser.use( 'Emojii', data.emojii );
-		
-		// we dont need these any more
-		delete data.fragments;
-		delete data.emojii;
-		
-		// prepare ui state
-		let liveConf = data.liveConf;
-		let localSettings = liveConf.localSettings;
-		
-		// init ui
-		self.ui = new library.view.Live( self.conn, localSettings );
-		
-		// init RTC
-		self.rtc = new library.rtc.RTC(
-			self.conn,
-			self.ui,
-			liveConf,
-			onclose,
-			onready
-		);
-		
-		function onready( err ) {
-			self.conn.send({ type : 'ready' });
-		}
-		
-		function onclose() { self.closeAllTheThings(); }
-	}
-	
-	ns.LiveInit.prototype.closeAllTheThings = function() {
-		var self = this;
-		self.rtc.close();
-		self.ui.close();
-		
-		self.view.sendMessage({
-			type : 'close',
-		});
-	}
-	
-})( library.view );
-
-// LIVE
-// ui logic for live session
-(function( ns, undefined ) {
-	ns.Live = function( conn, localSettings ) {
+	ns.UI = function( conn, liveConf, localSettings ) {
 		const self = this;
 		self.conn = conn;
 		self.localSettings = localSettings;
+		self.guestAvatar = liveConf.guestAvatar;
 		self.rtc = null;
 		self.peerContainerId = 'peers';
-		self.peers = [];
-		self.peerOrder = [];
+		self.peers = {};
+		self.peerIds = [];
+		self.peerGridOrder = [];
 		
 		self.resizeWait = null;
 		self.reorder = {
@@ -178,7 +61,7 @@ library.component = library.component || {};
 	
 	// Public
 	
-	ns.Live.prototype.setAudioSink = function( deviceId ) {
+	ns.UI.prototype.setAudioSink = function( deviceId ) {
 		const self = this;
 		self.audioSinkId = deviceId;
 		const pids = Object.keys( self.peers );
@@ -191,17 +74,18 @@ library.component = library.component || {};
 	
 	// Private
 	
-	ns.Live.prototype.init = function() {
+	ns.UI.prototype.init = function() {
 		var self = this;
 		self.uiPaneMap = {
-			'init-checks'     : library.view.InitChecksPane,
-			'source-select'   : library.view.SourceSelectPane,
-			'change-username' : library.view.ChangeUsernamePane,
-			'ext-connect'     : library.view.ExtConnectPane,
-			'settings'        : library.view.SettingsPane,
-			'share'           : library.view.SharePane,
-			'menu'            : library.view.MenuPane,
-			'chat'            : library.view.ChatPane,
+			'init-checks'        : library.view.InitChecksPane      ,
+			'source-select'      : library.view.SourceSelectPane    ,
+			'change-username'    : library.view.ChangeUsernamePane  ,
+			'live-stream-switch' : library.view.LiveStreamSwitchPane,
+			'ext-connect'        : library.view.ExtConnectPane      ,
+			'settings'           : library.view.SettingsPane        ,
+			'share'              : library.view.SharePane           ,
+			'menu'               : library.view.MenuPane            ,
+			'chat'               : library.view.ChatPane            ,
 		};
 		
 		/*
@@ -211,7 +95,7 @@ library.component = library.component || {};
 			faIcon      : 'fa-users',
 			ontoggle    : null,
 		};
-		self.queue = new library.view.List( queueConf );
+		self.queue = new library.component.UIList( queueConf );
 		*/
 		
 		let audioConf = {
@@ -222,11 +106,10 @@ library.component = library.component || {};
 			ontoggle    : audioListToggled,
 			state       : self.localSettings.voiceListState,
 		};
-		self.audioList = new library.view.List( audioConf );
+		self.audioList = new library.component.UIList( audioConf );
 		self.audioListEl = document.getElementById( 'audio-list' );
 		function audioListToggled( state ) {
-			console.log( 'audioListToggled', state );
-			if ( self.peerOrder.length )
+			if ( self.peerGridOrder.length )
 				self.reflowPeers();
 			
 			self.conn.send({
@@ -243,7 +126,7 @@ library.component = library.component || {};
 		self.toggleUI();
 	}
 	
-	ns.Live.prototype.addUIPane = function( id, conf ) {
+	ns.UI.prototype.addUIPane = function( id, conf ) {
 		var self = this;
 		var Pane = self.uiPaneMap[ id ];
 		if ( !Pane ) {
@@ -270,7 +153,7 @@ library.component = library.component || {};
 		function onClose() { self.removeUIPane( pane.id ); }
 	}
 	
-	ns.Live.prototype.bindEvents = function() {
+	ns.UI.prototype.bindEvents = function() {
 		const self = this;
 		self.peerContainer = document.getElementById( self.peerContainerId );
 		
@@ -317,7 +200,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.uiTransitionEnd = function( e ) {
+	ns.UI.prototype.uiTransitionEnd = function( e ) {
 		var self = this;
 		if ( !( 'live-ui' === e.target.id ) || !( 'opacity' === e.propertyName ))
 			return;
@@ -326,23 +209,23 @@ library.component = library.component || {};
 			self.ui.classList.toggle( 'hidden', true );
 	}
 	
-	ns.Live.prototype.handleViewOver = function( isOver ) {
+	ns.UI.prototype.handleViewOver = function( isOver ) {
 		var self = this;
 		isOver = self.uiVisible || isOver;
 		self.toggleUI( isOver );
 	}
 	
-	ns.Live.prototype.showMenu = function() {
+	ns.UI.prototype.showMenu = function() {
 		var self = this;
 		self.menuUI.show();
 	}
 	
-	ns.Live.prototype.togglePeerGrid = function() {
+	ns.UI.prototype.togglePeerGrid = function() {
 		var self = this;
 		console.log( 'togglePeerGrid - NYI ~~justlayoutthings~~' );
 	}
 	
-	ns.Live.prototype.toggleUI = function( show, skipAnim ) {
+	ns.UI.prototype.toggleUI = function( show, skipAnim ) {
 		var self = this;
 		if ( self.panesVisible )
 			show = false;
@@ -360,7 +243,7 @@ library.component = library.component || {};
 		self.live.classList.toggle( 'show-ui', setVisible );
 	}
 	
-	ns.Live.prototype.toggleUIPanes = function( setVisible ) {
+	ns.UI.prototype.toggleUIPanes = function( setVisible ) {
 		var self = this;
 		if ( setVisible )
 			self.panesVisible++;
@@ -376,7 +259,7 @@ library.component = library.component || {};
 		self.uiPaneContainer.classList.toggle( 'hidden', !setVisible );
 	}
 	
-	ns.Live.prototype.getUIPane = function( id ) {
+	ns.UI.prototype.getUIPane = function( id ) {
 		var self = this;
 		var pane = self.uiPanes[ id ];
 		if ( !pane ) {
@@ -387,13 +270,13 @@ library.component = library.component || {};
 		return pane;
 	}
 	
-	ns.Live.prototype.hideUIPane = function( id ) {
+	ns.UI.prototype.hideUIPane = function( id ) {
 		var self = this;
 		var pane = self.getPane( id );
 		pane.hide();
 	}
 	
-	ns.Live.prototype.removeUIPane = function( id ) {
+	ns.UI.prototype.removeUIPane = function( id ) {
 		var self = this;
 		var pane = self.getUIPane( id )
 		if ( !pane )
@@ -404,7 +287,7 @@ library.component = library.component || {};
 		self.toggleUIPanes( false );
 	}
 	
-	ns.Live.prototype.handleResize = function( e ) {
+	ns.UI.prototype.handleResize = function( e ) {
 		var self = this;
 		if ( self.resizeWait ) {
 			self.doOneMoreResize = true;
@@ -412,7 +295,7 @@ library.component = library.component || {};
 		}
 		
 		self.doOneMoreResize = false;
-		self.peerOrder.forEach( callResize );
+		self.peerGridOrder.forEach( callResize );
 		self.resizeWait = setTimeout( resizeThrottle, 50 );
 		
 		function callResize( peerId ) {
@@ -427,12 +310,11 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.addNestedApp = function( appData ) {
+	ns.UI.prototype.addNestedApp = function( appData ) {
 		var self = this;
 		if ( self.nestedApp )
 			self.nestedApp.close();
 		
-		console.log( 'nestedApp', appData );
 		var appId = friendUP.tool.uid( 'nested-app' );
 		var conf = {
 			id : appId,
@@ -442,7 +324,6 @@ library.component = library.component || {};
 		};
 		self.nestedApp = new library.component.NestedApp( conf );
 		self.updateGridClass();
-		console.log( 'nestedApp', self.nestedApp );
 		
 		function onclose() {
 			self.nestedApp = null;
@@ -454,14 +335,15 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.addPeer = function( peer ) {
+	ns.UI.prototype.addPeer = function( peer ) {
 		var self = this;
 		if ( self.isReordering ) {
 			self.peerAddQueue.push( peer );
 			return;
 		}
 		
-		var conf = {
+		let pid = peer.id;
+		let conf = {
 			peer           : peer,
 			menu           : self.menu,
 			connecting     : document.getElementById( 'connecting-peers' ),
@@ -473,7 +355,7 @@ library.component = library.component || {};
 		};
 		
 		let viewPeer =  null;
-		if ( peer.id === 'selfie' ) {
+		if ( pid === 'selfie' ) {
 			viewPeer = new library.view.Selfie( conf );
 			peer.on( 'room-quality', handleRoomQuality );
 			peer.on( 'popped', togglePopped );
@@ -486,7 +368,8 @@ library.component = library.component || {};
 		peer.on( 'video', updateHasVideo );
 		
 		// add to ui
-		self.peers[ viewPeer.id ] = viewPeer;
+		self.peers[ pid ] = viewPeer;
+		self.peerIds.push( pid );
 		if ( self.isVoiceOnly )
 			addToVoiceList( viewPeer );
 		else
@@ -496,7 +379,7 @@ library.component = library.component || {};
 		self.updateVoiceListMode();
 		
 		// start session duration on selfie when the first peer is added
-		if ( self.peerOrder.length === 2 )
+		if ( self.peerGridOrder.length === 2 )
 			self.peers[ 'selfie' ].startDurationTimer();
 		
 		function addToVoiceList( peer ) {
@@ -507,7 +390,7 @@ library.component = library.component || {};
 		function addToGrid( peer ) {
 			self.peerContainer.appendChild( viewPeer.el );
 			viewPeer.el.classList.toggle( 'in-grid', true );
-			self.peerOrder.push( viewPeer.id );
+			self.peerGridOrder.push( viewPeer.id );
 			self.updateGridClass();
 		}
 		
@@ -544,7 +427,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.removePeer = function( peerId ) {
+	ns.UI.prototype.removePeer = function( peerId ) {
 		var self = this;
 		var peer = self.peers[ peerId ];
 		if ( !peer ) {
@@ -561,16 +444,17 @@ library.component = library.component || {};
 		
 		peer.close();
 		delete self.peers[ peerId ];
-		let pidx = self.peerOrder.indexOf( peerId );
+		self.peerIds = Object.keys( self.peers );
+		let pidx = self.peerGridOrder.indexOf( peerId );
 		if ( -1 === pidx )
 			self.audioList.remove( peerId );
 		else
-			self.peerOrder.splice( pidx, 1 );
+			self.peerGridOrder.splice( pidx, 1 );
 		
 		if ( self.modeSpeaker && self.currentSpeaker === peerId )
 			self.setSpeaker();
 		
-		if ( self.peerOrder.length === 1 ) {
+		if ( self.peerGridOrder.length === 1 ) {
 			self.peers[ 'selfie' ].stopDurationTimer();
 		}
 		
@@ -580,7 +464,7 @@ library.component = library.component || {};
 		self.updateMenu();
 	}
 	
-	ns.Live.prototype.executePeerAddQueue = function() {
+	ns.UI.prototype.executePeerAddQueue = function() {
 		var self = this;
 		if ( !self.peerAddQueue.length || self.isReordering )
 			return;
@@ -591,16 +475,16 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.updateWaiting = function() {
+	ns.UI.prototype.updateWaiting = function() {
 		const self = this;
 		let pids = Object.keys( self.peers );
 		let hideWaiting = pids.length > 1;
 		self.waiting.classList.toggle( 'hidden', hideWaiting );
 	}
 	
-	ns.Live.prototype.updateMenu = function() {
+	ns.UI.prototype.updateMenu = function() {
 		const self = this;
-		let gridNum = self.peerOrder.length;
+		let gridNum = self.peerGridOrder.length;
 		let listNum = self.audioList.length;
 		if ( 2 > gridNum )
 			self.menu.disable( 'dragger' );
@@ -608,7 +492,7 @@ library.component = library.component || {};
 			self.menu.enable( 'dragger' );
 	}
 	
-	ns.Live.prototype.updateGridClass = function() {
+	ns.UI.prototype.updateGridClass = function() {
 		const self = this;
 		const container = document.getElementById( self.peerContainerId );
 		const selfie = self.peers[ 'selfie' ];
@@ -640,7 +524,7 @@ library.component = library.component || {};
 		}
 		
 		function getPeerNum() {
-			var numberOfPeers = self.peerOrder.length;
+			var numberOfPeers = self.peerGridOrder.length;
 			var peerNum = numberOfPeers;
 			
 			if ( self.nestedApp )
@@ -654,9 +538,9 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.reflowPeers = function() {
+	ns.UI.prototype.reflowPeers = function() {
 		var self = this;
-		self.peerOrder.forEach( callReflow );
+		self.peerGridOrder.forEach( callReflow );
 		function callReflow( peerId ) {
 			var peer = self.peers[ peerId ];
 			if ( !peer )
@@ -666,16 +550,15 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.handleQueue = function( msg ) {
+	ns.UI.prototype.handleQueue = function( msg ) {
 		const self = this;
-		console.log( 'handleQueue', msg );
 		if ( !self.queue )
 			return;
 		
 		self.queue.handle( msg );
 	}
 	
-	ns.Live.prototype.handleVoiceOnly = function( isVoiceOnly ) {
+	ns.UI.prototype.handleVoiceOnly = function( isVoiceOnly ) {
 		const self = this;
 		self.isVoiceOnly = isVoiceOnly;
 		updateWaiting();
@@ -694,7 +577,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.updateVoiceListMode = function() {
+	ns.UI.prototype.updateVoiceListMode = function() {
 		const self = this;
 		const ids = Object.keys( self.peers );
 		if ( !ids.length )
@@ -727,11 +610,11 @@ library.component = library.component || {};
 		}
 		
 		function hasNoVideoPeers() {
-			return !self.peerOrder.length;
+			return !self.peerGridOrder.length;
 		}
 	}
 	
-	ns.Live.prototype.updateHasVideo = function( peerId, hasVideo ) {
+	ns.UI.prototype.updateHasVideo = function( peerId, hasVideo ) {
 		const self = this;
 		const peer = self.peers[ peerId ];
 		if ( !peer ) {
@@ -750,7 +633,7 @@ library.component = library.component || {};
 				return;
 			
 			self.audioList.remove( pid );
-			self.peerOrder.push( pid );
+			self.peerGridOrder.push( pid );
 			peer.setIsInList( false );
 			self.peerContainer.appendChild( peer.el );
 			if ( 'selfie' === peer.id )
@@ -768,8 +651,8 @@ library.component = library.component || {};
 			if ( 'selfie' === peer.id )
 				self.updateSelfieState();
 			
-			let pidx = self.peerOrder.indexOf( peer.id );
-			self.peerOrder.splice( pidx, 1 );
+			let pidx = self.peerGridOrder.indexOf( peer.id );
+			self.peerGridOrder.splice( pidx, 1 );
 			self.audioList.add( peer.el );
 			self.updateGridClass();
 			
@@ -779,11 +662,11 @@ library.component = library.component || {};
 		}
 		
 		function isInVideo( pid ) {
-			return self.peerOrder.some( poId => poId === pid );
+			return self.peerGridOrder.some( poId => poId === pid );
 		}
 	}
 	
-	ns.Live.prototype.onDrag = function( type, peerId ) {
+	ns.UI.prototype.onDrag = function( type, peerId ) {
 		var self = this;
 		if ( type === 'enable' )
 			dragEnable();
@@ -819,7 +702,7 @@ library.component = library.component || {};
 		}
 		
 		function toggleDropzone( isDragging ) {
-			self.peerOrder.forEach( toggle );
+			self.peerGridOrder.forEach( toggle );
 			function toggle( peerId ) {
 				var peer = self.peers[ peerId ];
 				peer.toggleDropzone( isDragging );
@@ -827,7 +710,7 @@ library.component = library.component || {};
 		}
 		
 		function toggleIsDragging( ayOrNay ) {
-			self.peerOrder.forEach( set );
+			self.peerGridOrder.forEach( set );
 			function set( peerId ) {
 				var peer = self.peers[ peerId ];
 				peer.setIsDragging( ayOrNay );
@@ -835,45 +718,45 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.clearDragger = function() {
+	ns.UI.prototype.clearDragger = function() {
 		const self = this;
 		self.onDrag( 'end' );
 		self.onDrag( 'disable' );
 	}
 	
-	ns.Live.prototype.reorderStart = function( sourceId ) {
+	ns.UI.prototype.reorderStart = function( sourceId ) {
 		var self = this;
-		var sourceIndex = self.peerOrder.indexOf( sourceId );
+		var sourceIndex = self.peerGridOrder.indexOf( sourceId );
 		self.isReordering = true;
 		self.reorder.sourceIndex = sourceIndex;
 		
 	}
 	
-	ns.Live.prototype.reorderDrop = function( targetId ) {
+	ns.UI.prototype.reorderDrop = function( targetId ) {
 		var self = this;
-		var targetIndex = self.peerOrder.indexOf( targetId );
+		var targetIndex = self.peerGridOrder.indexOf( targetId );
 		self.reorder.targetIndex = targetIndex;
 		self.doReorder();
 	}
 	
-	ns.Live.prototype.doReorder = function() {
+	ns.UI.prototype.doReorder = function() {
 		var self = this;
 		var sIndex = self.reorder.sourceIndex;
-		var sId = self.peerOrder[ sIndex ];
+		var sId = self.peerGridOrder[ sIndex ];
 		var tIndex = self.reorder.targetIndex;
-		var tId = self.peerOrder[ tIndex ];
-		self.peerOrder[ sIndex ] = tId;
-		self.peerOrder[ tIndex ] = sId;
+		var tId = self.peerGridOrder[ tIndex ];
+		self.peerGridOrder[ sIndex ] = tId;
+		self.peerGridOrder[ tIndex ] = sId;
 		self.applyPeerOrder();
 	}
 	
-	ns.Live.prototype.applyPeerOrder = function( peerOrder ) {
+	ns.UI.prototype.applyPeerOrder = function( peerOrder ) {
 		var self = this;
 		self.isReordering = true;
 		if ( peerOrder )
-			self.peerOrder = peerOrder;
+			self.peerGridOrder = peerOrder;
 		
-		self.peerOrder.forEach( applyPosition );
+		self.peerGridOrder.forEach( applyPosition );
 		if ( peerOrder )
 			self.isReordering = false;
 		
@@ -887,7 +770,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.reorderEnd = function() {
+	ns.UI.prototype.reorderEnd = function() {
 		var self = this;
 		self.reorder = {
 			sourceIndex : null,
@@ -897,17 +780,17 @@ library.component = library.component || {};
 		self.executePeerAddQueue();
 	}
 	
-	ns.Live.prototype.onPeerClickCatch = function( peerId ) {
+	ns.UI.prototype.onPeerClickCatch = function( peerId ) {
 		var self = this;
 		self.toggleUIMode();
 	}
 	
-	ns.Live.prototype.toggleUIMode = function() {
+	ns.UI.prototype.toggleUIMode = function() {
 		var self = this;
 		self.uiVisible = !self.uiVisible;
 		self.toggleUI();
 		
-		self.peerOrder.forEach( updateUI );
+		self.peerGridOrder.forEach( updateUI );
 		function updateUI( pId ) {
 			var peer = self.peers[ pId ];
 			if ( !peer ) {
@@ -919,7 +802,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.addMenu = function() {
+	ns.UI.prototype.addMenu = function() {
 		const self = this;
 		const peers = {
 			type : 'folder',
@@ -1052,37 +935,12 @@ library.component = library.component || {};
 			name   : View.i18n( 'i18n_share' ),
 			faIcon : 'fa-share-alt',
 		};
-		const sendAudio = {
-			type : 'item',
-			id : 'send-audio',
-			name : View.i18n( 'i18n_menu_send_audio' ),
-			faIcon : 'fa-microphone',
-			toggle : true,
-			close : false,
-		};
-		const sendVideo = {
-			type : 'item',
-			id : 'send-video',
-			name : View.i18n( 'i18n_menu_send_video' ),
-			faIcon : 'fa-video-camera',
-			toggle : true,
-			close : false,
-		};
-		const receiveAudio = {
+		const presentation = {
 			type   : 'item',
-			id     : 'receive-audio',
-			name   : View.i18n( 'i18n_menu_receive_audio' ),
-			faIcon : 'fa-volume-up',
-			toggle : true,
-			close  : false,
-		};
-		const receiveVideo = {
-			type   : 'item',
-			id     : 'receive-video',
-			name   : View.i18n( 'i18n_menu_receive_video' ),
-			faIcon : 'fa-film',
-			toggle : true,
-			close  : false,
+			id     : 'mode-presentation',
+			name   : View.i18n( 'i18n_presentation_mode' ),
+			faIcon : 'fa-eye',
+			toggle : false,
 		};
 		const sendReceive = {
 			type : 'folder',
@@ -1090,10 +948,38 @@ library.component = library.component || {};
 			name : View.i18n( 'Send / Receive media' ),
 			faIcon : 'fa-exchange',
 			items : [
-				sendAudio,
-				sendVideo,
-				receiveAudio,
-				receiveVideo,
+				{
+					type : 'item',
+					id : 'send-audio',
+					name : View.i18n( 'i18n_menu_send_audio' ),
+					faIcon : 'fa-microphone',
+					toggle : true,
+					close : false,
+				},
+				{
+					type : 'item',
+					id : 'send-video',
+					name : View.i18n( 'i18n_menu_send_video' ),
+					faIcon : 'fa-video-camera',
+					toggle : true,
+					close : false,
+				},
+				{
+					type   : 'item',
+					id     : 'receive-audio',
+					name   : View.i18n( 'i18n_menu_receive_audio' ),
+					faIcon : 'fa-volume-up',
+					toggle : true,
+					close  : false,
+				},
+				{
+					type   : 'item',
+					id     : 'receive-video',
+					name   : View.i18n( 'i18n_menu_receive_video' ),
+					faIcon : 'fa-film',
+					toggle : true,
+					close  : false,
+				},
 			],
 		};
 		const dragger = {
@@ -1131,6 +1017,7 @@ library.component = library.component || {};
 			fullscreen,
 			screenShare,
 			screenShareExt,
+			presentation,
 			source,
 			popped,
 			speaker,
@@ -1201,7 +1088,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.togglePopped = function( force ) {
+	ns.UI.prototype.togglePopped = function( force ) {
 		const self = this;
 		const selfie = self.peers[ 'selfie' ];
 		if ( !selfie )
@@ -1211,7 +1098,7 @@ library.component = library.component || {};
 		self.updateSelfieState();
 	}
 	
-	ns.Live.prototype.updateSelfieState = function() {
+	ns.UI.prototype.updateSelfieState = function() {
 		const self = this;
 		const selfie = self.peers[ 'selfie' ];
 		if ( !selfie )
@@ -1225,7 +1112,7 @@ library.component = library.component || {};
 		self.updateGridClass();
 	}
 	
-	ns.Live.prototype.toggleModeSpeaker = function() {
+	ns.UI.prototype.toggleModeSpeaker = function() {
 		const self = this;
 		self.modeSpeaker = !self.modeSpeaker;
 		if ( self.modeSpeaker )
@@ -1246,7 +1133,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.updateModeSpeaker = function() {
+	ns.UI.prototype.updateModeSpeaker = function() {
 		const self = this;
 		const container = document.getElementById( self.peerContainerId );
 		const modeSpeaker = ( !!self.modeSpeaker && !!self.currentSpeaker );
@@ -1275,7 +1162,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.setSpeaker = function( speaker ) {
+	ns.UI.prototype.setSpeaker = function( speaker ) {
 		const self = this;
 		if ( !speaker || !speaker.isSpeaking )
 			unset();
@@ -1307,18 +1194,41 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Live.prototype.addChat = function( userId, identities, conn ) {
-		var self = this;
-		var conf = {
-			identities : identities,
-			userId     : userId,
-			conn       : conn,
+	ns.UI.prototype.togglePresentation = function( presenterId ) {
+		const self = this;
+		if ( !presenterId )
+			disable();
+		else
+			enable( presenterId );
+		
+		function disable() {
+			self.togglePopped( true );
+		}
+		
+		function enable( presenterId ) {
+			let peer = self.peers[ presenterId ];
+			if ( !peer )
+				return;
+			
+			if ( 'selfie' === presenterId )
+				self.togglePopped( false );
+			
+		}
+	}
+	
+	ns.UI.prototype.addChat = function( userId, identities, conn ) {
+		const self = this;
+		const conf = {
+			conn        : conn,
+			userId      : userId,
+			identities  : identities,
+			guestAvatar : self.guestAvatar,
 		};
 		self.chatUI = self.addUIPane( 'chat', conf );
 		return self.chatUI;
 	}
 	
-	ns.Live.prototype.addShare = function( conn ) {
+	ns.UI.prototype.addShare = function( conn ) {
 		const self = this;
 		const conf = {
 			conn : conn,
@@ -1327,7 +1237,7 @@ library.component = library.component || {};
 		return self.shareUI;
 	}
 	
-	ns.Live.prototype.addSettings = function( onsave ) {
+	ns.UI.prototype.addSettings = function( onsave ) {
 		const self = this;
 		const conf = {
 			onsave : onsave,
@@ -1336,7 +1246,7 @@ library.component = library.component || {};
 		return self.settingsUI;
 	}
 	
-	ns.Live.prototype.addExtConnPane = function( onshare ) {
+	ns.UI.prototype.addExtConnPane = function( onshare ) {
 		const self = this;
 		const conf = {
 			onshare : onshare,
@@ -1345,17 +1255,21 @@ library.component = library.component || {};
 		return self.extConnUI;
 	}
 	
-	ns.Live.prototype.updateQualityLevel = function( level ) {
+	ns.UI.prototype.updateQualityLevel = function( level ) {
 		var self = this;
+		console.log( 'UI.updateQualityLevel', {
+			level : level,
+			peers : self.peerGridOrder,
+		});
 		self.currentQuality = level;
-		self.peerOrder.forEach( setLevel );
+		self.peerIds.forEach( setLevel );
 		function setLevel( peerId ) {
 			var peer = self.peers[ peerId ];
 			peer.applyQualityLevel( level );
 		}
 	}
 	
-	ns.Live.prototype.close = function() {
+	ns.UI.prototype.close = function() {
 		var self = this;
 		delete self.conn;
 		self.menu.close();
@@ -1522,7 +1436,6 @@ library.component = library.component || {};
 		}
 		
 		function toggleFocus() {
-			console.log( 'menu.toggleFocus' );
 			self.peer.toggleFocus();
 		}
 		
@@ -2006,25 +1919,27 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.bindPeerCommon = function() {
 		var self = this;
-		self.peer.on( 'media'         , handleMedia );
-		self.peer.on( 'track'         , handleTrack );
-		self.peer.on( 'legacy-stream' , handleLegacyStream );
-		self.peer.on( 'video'         , handleVideo );
-		self.peer.on( 'audio'         , handleAudio );
-		self.peer.on( 'identity'      , updateIdentity );
-		self.peer.on( 'nostream'      , handleNoStream );
-		self.peer.on( 'stop'          , handleStop)
-		self.peer.on( 'mute'          , isMuted );
-		self.peer.on( 'blind'         , isBlinded );
-		self.peer.on( 'is-focus'      , isFocus );
-		self.peer.on( 'screenmode'    , screenMode );
-		self.peer.on( 'local-quality' , localQuality );
+		self.peer.on( 'media'           , handleMedia );
+		self.peer.on( 'track'           , handleTrack );
+		self.peer.on( 'legacy-stream'   , handleLegacyStream );
+		self.peer.on( 'video'           , handleVideo );
+		self.peer.on( 'audio'           , handleAudio );
+		self.peer.on( 'tracks-available', tracksAvailable )
+		self.peer.on( 'identity'        , updateIdentity );
+		self.peer.on( 'nostream'        , handleNoStream );
+		self.peer.on( 'stop'            , handleStop)
+		self.peer.on( 'mute'            , isMuted );
+		self.peer.on( 'blind'           , isBlinded );
+		self.peer.on( 'is-focus'        , isFocus );
+		self.peer.on( 'screenmode'      , screenMode );
+		self.peer.on( 'local-quality'   , localQuality );
 		
 		function handleMedia( e ) { self.handleMedia( e ); }
 		function handleTrack( e, f ) { self.handleTrack( e, f ); }
 		function handleLegacyStream( e ) { self.handleLegacyStream( e ); }
 		function handleVideo( e ) { self.handleVideo( e ); }
 		function handleAudio( e ) { self.handleAudio( e ); }
+		function tracksAvailable( e ) { self.handleTracksAvailable( e ); }
 		function updateIdentity( e ) { self.updateIdentity( e ); }
 		function handleNoStream( e ) { self.handleNoStream( e ); }
 		function handleStop( e ) { self.handleStop( e ); }
@@ -2050,7 +1965,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleMeta = function( meta ) {
 		const self = this;
-		console.log( 'ui.peer.handleMeta', meta );
 		if ( meta.sending )
 			updateMenuFocus( !!meta.sending.video );
 		
@@ -2067,6 +1981,10 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleMedia = function( media ) {
 		const self = this;
+		if ( !media ) {
+			return;
+		}
+		
 		if ( !self.stream ) {
 			self.setStream( media.id );
 		}
@@ -2184,8 +2102,14 @@ library.component = library.component || {};
 		self.toggleStream();
 	}
 	
+	ns.Peer.prototype.handleTracksAvailable = function( available ) {
+		const self = this;
+		console.log( 'UI.handleTracksAvailable', available );
+	}
+	
 	ns.Peer.prototype.handleVideo = function( available ) {
 		var self = this;
+		console.log( 'UI.handleVideo', available );
 		if ( !self.stream )
 			return;
 		
@@ -2197,6 +2121,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleAudio = function( available ) {
 		var self = this;
+		console.log( 'UI.handleAudio', available );
 		if ( !self.stream )
 			return;
 		
@@ -2473,7 +2398,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleIsFocus = function( isFocus ) {
 		const self = this;
-		console.log( 'handleIsFocus', isFocus );
 		self.menu.setState( self.menuFocusId, isFocus );
 	}
 	
@@ -2539,7 +2463,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.updateName = function( name ) {
 		const self = this;
-		console.log( 'view.peer.updateName', name );
 		self.name.innerText = name;
 		self.listName.innerText = name;
 	}
@@ -2555,8 +2478,9 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.applyQualityLevel = function( level ) {
-		var self = this;
+		const self = this;
 		self.currentQuality = level || self.currentQuality;
+		console.log( 'applyQualityLevel', self.currentQuality );
 		self.useCoverMode = 'low' === self.currentQuality ? false : true;
 		const isLow = ( 'low' === self.currentQuality );
 		self.el.classList.toggle( 'quality-low', isLow );
@@ -2998,6 +2922,9 @@ library.component = library.component || {};
 		var self = this;
 		self.toggleAVGraph();
 		self.handleMedia( media );
+		if ( !self.stream )
+			return;
+		
 		self.stream.muted = true;
 	}
 	
@@ -3122,8 +3049,6 @@ library.component = library.component || {};
 })( library.view );
 
 
-
-
 // Queue
 (function( ns, undefined ) {
 	ns.Queue = function( containerId, position ) {
@@ -3156,218 +3081,6 @@ library.component = library.component || {};
 		var self = this;
 		self.position = pos;
 		self.positionElement.innerText = pos;
-	}
-	
-})( library.view );
-
-
-// List
-(function( ns, undefined ) {
-	ns.List = function( conf ) {
-		if ( !( this instanceof ns.List ))
-			return new ns.List( conf );
-		
-		const self = this;
-		self.id = conf.id;
-		self.containerId = conf.containerId;
-		self.label = conf.label;
-		self.faIcon = conf.faIcon;
-		self.ontoggle = conf.ontoggle;
-		
-		// private
-		self.items = {};
-		self.itemOrder = [];
-		self.isShow = false;
-		
-		self.init( conf.state );
-	}
-	
-	// PUBLIC
-	
-	ns.List.prototype.add = function( element ) {
-		const self = this;
-		self.doAdd( element );
-	}
-	
-	ns.List.prototype.remove = function( id ) {
-		const self = this;
-		return self.doRemove( id );
-	}
-	
-	ns.List.prototype.move = function( id, index ) {
-		const self = this;
-		self.doMove( id, index );
-	}
-	
-	// event types allowed is the public api ( the functions up there ^ )
-	ns.List.prototype.handle = function( e ) {
-		const self = this;
-		if ( !self[ e.type ])
-			return;
-		
-		self[ e.type ]( e.data );
-	}
-	
-	ns.List.prototype.show = function( full ) {
-		const self = this;
-		if ( null == full)
-			self.toggleShow( true );
-		else
-			self.toggleFull( full );
-	}
-	
-	ns.List.prototype.peek = function() {
-		const self = this;
-		self.toggleShow( false );
-	}
-	
-	ns.List.prototype.length = function() {
-		const self = this;
-		return self.itemOrder.length;
-	}
-	
-	ns.List.prototype.close = function() {
-		const self = this;
-		delete self.ontoggle;
-		
-		self.itemOrder.forEach( remove );
-		self.itemOrder = [];
-		
-		function remove( iid ) {
-			self.doRemove( iid );
-		}
-	}
-	
-	// PRIVATE
-	
-	ns.List.prototype.init = function( state ) {
-		const self = this;
-		self.id = self.id || self.label + '-list-thingie';
-		self.build( state );
-		self.bind();
-	}
-	
-	ns.List.prototype.build = function( state ) {
-		const self = this;
-		let show = '';
-		if ( !state || 'show' === state ) {
-			self.isShow = true;
-			show = 'show';
-		}
-		
-		const tmplConf = {
-			id     : self.id,
-			faIcon : self.faIcon,
-			label  : self.label,
-			show   : show,
-		};
-		const element = hello.template.getElement( 'live-list-tmpl', tmplConf );
-		const container = document.getElementById( self.containerId );
-		container.appendChild( element );
-	}
-	
-	ns.List.prototype.bind = function() {
-		const self = this;
-		self.element = document.getElementById( self.id );
-		const head = self.element.querySelector( '.list-head' );
-		self.itemsContainer = self.element.querySelector( '.list-items' );
-		
-		self.element.addEventListener( 'transitionend', transend, false );
-		head.addEventListener( 'click', toggleShow, false );
-		
-		function transend( e ) {
-			if ( !self.ontoggle )
-				return;
-			
-			if ( 'width' !== e.propertyName || !self.isShowUpdated )
-				return;
-			
-			self.isShowUpdated = false;
-			let state = 'peek';
-			if ( self.isShow )
-				state = 'show';
-			
-			self.ontoggle( state );
-		}
-		
-		function toggleShow( e ) {
-			e.stopPropagation();
-			self.toggleShow();
-		}
-	}
-	
-	ns.List.prototype.doAdd = function( el ) {
-		var self = this;
-		if ( self.items[ el.id ]) {
-			console.log( 'List.add - el already added', { el : el, items : self.items });
-			return;
-		}
-		
-		self.items[ el.id ] = el;
-		self.itemOrder.push( el.id );
-		self.itemsContainer.appendChild( el );
-		
-		self.updateVisibility();
-	}
-	
-	ns.List.prototype.doRemove = function( id ) {
-		var self = this;
-		var el = self.items[ id ];
-		if ( !el ) {
-			console.log( 'List.remove - el not found', { id : id, items : self.items });
-			return;
-		}
-		
-		const element = document.getElementById( el.id );
-		if ( element )
-			element.parentNode.removeChild( element );
-		
-		delete self.items[ id ];
-		self.itemOrder = self.itemOrder.filter( notRemoved );
-		self.updateVisibility();
-		return el;
-		
-		function notRemoved( itemId ) {
-			if ( itemId === id )
-				return false;
-			return true;
-		}
-	}
-	
-	ns.List.prototype.doMove = function( id, index ) {
-		var self = this;
-		console.log( 'List.move - NYI', { id : id, i : index });
-	}
-	
-	ns.List.prototype.updateVisibility = function() {
-		var self = this;
-		var hide = !self.itemOrder.length;
-		self.toggleHide( hide );
-	}
-	
-	ns.List.prototype.toggleHide = function( hide ) {
-		const self = this;
-		if ( typeof( hide ) === 'undefined' )
-			hide = !self.hide;
-		
-		self.hide = hide;
-		self.element.classList.toggle( 'hide', self.hide );
-	}
-	
-	ns.List.prototype.toggleShow = function( force ) {
-		const self = this;
-		if ( null == force )
-			self.isShow = !self.isShow;
-		else
-			self.isShow = !!force;
-		
-		self.isShowUpdated = true;
-		self.element.classList.toggle( 'show', self.isShow );
-	}
-	
-	ns.List.prototype.toggleFull = function( setFull ) {
-		const self = this;
-		self.element.classList.toggle( 'full', setFull );
 	}
 	
 })( library.view );
@@ -3725,7 +3438,6 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.NestedApp ))
 			return new ns.NestedApp( conf );
 		
-		console.log( 'NestedApp', conf );
 		var self = this;
 		self.id = conf.id;
 		self.containerId = conf.containerId;
@@ -3815,2097 +3527,3 @@ library.component = library.component || {};
 	
 })( library.component );
 
-// UI PANE BASE
-// Extend this and implement ( minimum ):
-// .build() -- replaces .init
-(function( ns, undefined ) {
-	ns.UIPane = function( conf ) {
-		if ( !( this instanceof ns.UIPane ))
-			return new ns.UIPane( conf );
-		
-		var self = this;
-		self.id = conf.id;
-		self.parentId = conf.parentId;
-		self.onpanetoggle = conf.onpanetoggle;
-		self.onpaneclose = conf.onpaneclose;
-		
-		self.paneId = friendUP.tool.uid( self.id + '-pane' );
-		self.isVisible = false;
-		
-		self.init();
-	}
-	
-	// Public
-	
-	ns.UIPane.prototype.show = function() {
-		var self = this;
-		if ( self.isVisible ) {
-			self.toFront();
-			return;
-		}
-		
-		self.isVisible = true;
-		self.toggleVisibility();
-	}
-	
-	ns.UIPane.prototype.hide = function() {
-		var self = this;
-		if ( !self.isVisible )
-			return;
-		
-		self.isVisible = false;
-		self.toggleVisibility();
-	}
-	
-	ns.UIPane.prototype.toggle = function() {
-		var self = this;
-		if ( self.isVisible )
-			self.hide();
-		else
-			self.show();
-	}
-	
-	// call from your close
-	ns.UIPane.prototype.paneClose = function() {
-		var self = this;
-		var element = document.getElementById( self.paneId );
-		if ( !element ) {
-			console.log( 'no pane element found when closing', {
-				id : self.id,
-				paneId : self.paneId,
-			});
-		} else
-			element.parentNode.removeChild( element );
-			
-		var onpaneclose = self.onpaneclose;
-		delete self.onpanetoggle;
-		delete self.onpaneclose;
-		if ( onpaneclose )
-			onpaneclose();
-	}
-	
-	// Private
-	ns.UIPane.prototype.init = function() {
-		var self = this;
-		self.build();
-	}
-	
-	ns.UIPane.prototype.insertPane = function( contentHTML ) {
-		var self = this;
-		var conf = {
-			id      : self.paneId,
-			content : contentHTML,
-		};
-		var element = hello.template.getElement( 'base-ui-pane-tmpl', conf );
-		var container = document.getElementById( self.parentId );
-		container.appendChild( element );
-		return element.id;
-	}
-	
-	ns.UIPane.prototype.getElement = function() {
-		var self = this;
-		var element = document.getElementById( self.paneId );
-		if ( !element ) {
-			console.log( 'UIPane.getElement - no element found for paneId', self.paneId );
-			return null;
-		}
-		
-		return element;
-	}
-	
-	ns.UIPane.prototype.toggleVisibility = function() {
-		var self = this;
-		var element = self.getElement();
-		if ( !element )
-			return;
-		
-		element.classList.toggle( 'hidden', !self.isVisible );
-		self.onpanetoggle( self.isVisible );
-	}
-	
-	ns.UIPane.prototype.toFront = function() {
-		var self = this;
-	}
-	
-})( library.component );
-
-// ChangeUsernamePane
-( function( ns, undefined ) {
-	ns.ChangeUsernamePane = function( paneConf ) {
-		const self = this;
-		let conf = paneConf.conf;
-		self.current = conf.current;
-		self.onname = conf.onname;
-		library.component.UIPane.call( self, paneConf );
-		
-	}
-	
-	ns.ChangeUsernamePane.prototype = Object.create( library.component.UIPane.prototype );
-	
-	ns.ChangeUsernamePane.prototype.close = function() {
-		const self = this;
-		delete self.ui;
-		delete self.current;
-		delete self.onname;
-		self.paneClose();
-	}
-	
-	// Private
-	
-	ns.ChangeUsernamePane.prototype.build = function() {
-		const self = this;
-		const conf = {
-			current : self.current,
-		};
-		const html = hello.template.get( 'viewpane-change-username-tmpl', conf );
-		self.insertPane( html );
-		
-		self.ui = document.getElementById( 'change-username' );
-		const form = document.getElementById( 'change-username-form' );
-		const input = document.getElementById( 'change-username-input' );
-		const acceptBtn = document.getElementById( 'change-username-accept' );
-		const cancelBtn = document.getElementById( 'change-username-cancel' );
-		
-		form.addEventListener( 'submit', acceptName, false );
-		acceptBtn.addEventListener( 'click', acceptName, false );
-		cancelBtn.addEventListener( 'click', cancelName, false );
-		
-		function acceptName( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-			if ( self.onname )
-				self.onname( input.value );
-		}
-		
-		function cancelName( e ) {
-			if ( self.onname )
-				self.onname( false );
-		}
-	}
-	
-})( library.view );
-
-// ExtConnectPane
-(function( ns, undefined ) {
-	ns.ExtConnectPane = function( paneConf ) {
-		const self = this;
-		let conf = paneConf.conf;
-		self.onshare = conf.onshare;
-		library.component.UIPane.call( self, paneConf );
-		
-	}
-	
-	ns.ExtConnectPane.prototype = Object.create( library.component.UIPane.prototype );
-	
-	// Public
-	
-	ns.ExtConnectPane.prototype.setConnected = function() {
-		const self = this;
-		self.waiting.classList.toggle( 'hidden', true );
-		self.connected.classList.toggle( 'hidden', false );
-	}
-	
-	ns.ExtConnectPane.prototype.close = function() {
-		const self = this;
-		if ( self.ui )
-			self.ui.parentNode.removeChild( self.ui );
-		
-		delete self.ui;
-		delete self.onshare;
-		self.paneClose();
-	}
-	
-	// Private
-	
-	ns.ExtConnectPane.prototype.build = function() {
-		const self = this;
-		const conf = {};
-		const extLoadHTML = hello.template.get( 'viewpane-ext-connect-tmpl', conf );
-		const pid = self.insertPane( extLoadHTML );
-		
-		self.bind();
-	}
-	
-	ns.ExtConnectPane.prototype.bind = function() {
-		const self = this;
-		self.ui = document.getElementById( 'ext-conn-ui' );
-		self.waiting = document.getElementById( 'ext-conn-waiting' );
-		self.connected = document.getElementById( 'ext-conn-connected' );
-		self.shareBtn = document.getElementById( 'ext-conn-share' );
-		self.closeBtn = document.getElementById( 'ext-conn-close' );
-		
-		self.shareBtn.addEventListener( 'click', shareClick, false );
-		self.closeBtn.addEventListener( 'click', closeClick, false );
-		
-		function shareClick( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-			if ( self.onshare )
-				self.onshare();
-		}
-		
-		function closeClick( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-			self.close();
-		}
-		
-	}
-})( library.view );
-
-
-// Share pane
-
-(function( ns, undefined ) {
-	ns.SharePane = function( paneConf ) {
-		const self = this;
-		self.conf = paneConf.conf;
-		
-		library.component.UIPane.call( self, paneConf );
-	}
-	
-	ns.SharePane.prototype = Object.create( library.component.UIPane.prototype );
-	
-	// Private
-	
-	ns.SharePane.prototype.build = function() {
-		const self = this;
-		const conf = {};
-		const shareHTML = hello.template.get( 'viewpane-share-tmpl', conf );
-		const pid = self.insertPane( shareHTML );
-		
-		self.bind();
-	}
-	
-	ns.SharePane.prototype.bind = function() {
-		const self = this;
-		const conf = {
-			parentId : self.id,
-			conn     : self.conf.conn,
-		};
-		self.share = new library.component.ShareView( conf );
-		const share = document.getElementById( self.id );
-		const closeBtn = document.getElementById( 'share-close' );
-		
-		closeBtn.addEventListener( 'click', closeClick, false );
-		
-		function closeClick( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-			self.hide();
-		}
-	}
-	
-})( library.view );
-
-// Menu pane
-(function( ns, undefined ) {
-	ns.MenuPane = function( paneConf ) {
-		if ( !( this instanceof ns.MenuPane ))
-			return new ns.MenuPane( paneConf );
-		
-		var self = this;
-		self.menuConf = paneConf.conf.menuConf;
-		
-		library.component.UIPane.call( this, paneConf );
-	}
-	
-	ns.MenuPane.prototype = Object.create( library.component.UIPane.prototype );
-	
-	// Public
-	
-	// we need some extra .show functionality
-	ns.MenuPane.prototype.uiShow = ns.MenuPane.prototype.show;
-	ns.MenuPane.prototype.show = function() {
-		var self = this;
-		self.uiShow();
-		self.menu.scrollToTop();
-	}
-	
-	ns.MenuPane.prototype.getMenu = function() {
-		var self = this;
-		return self.menu;
-	}
-	
-	ns.MenuPane.prototype.close = function() {
-		var self = this;
-		self.menu.close();
-		delete self.menu;
-		self.paneClose();
-	}
-	
-	// Private
-	
-	ns.MenuPane.prototype.build = function() {
-		var self = this;
-		var pId = self.insertPane( '' );
-		var conf = {
-			id               : friendUP.tool.uid( 'menu' ),
-			parentId         : pId,
-			templateManager  : hello.template,
-			baseTmplId       : 'live-menu-container-tmpl',
-			folderTmplId     : 'live-menu-folder-tmpl',
-			itemFolderTmplId : 'live-menu-item-folder-tmpl',
-			itemTmplId       : 'live-menu-item-tmpl',
-			content          : self.menuConf.content,
-			onnolistener     : self.menuConf.onnolistener,
-			onhide           : onHide,
-			onClose          : onClose,
-		};
-		
-		self.menu = new library.component.Menu( conf );
-		delete self.menuConf;
-		self.bind();
-		
-		function onHide( e ) {
-			self.hide();
-		}
-		
-		function onClose( e ) {
-			console.log( 'Menu.onClose', e );
-		}
-	}
-	
-	ns.MenuPane.prototype.bind = function() {
-		var self = this;
-		var menuBg = document.getElementById( self.paneId );
-		menuBg.addEventListener( 'click', bgClick, false );
-		function bgClick( e ) {
-			if ( e.target.id !== self.paneId )
-				return;
-			
-			e.stopPropagation();
-			self.menu.hide();
-		}
-	}
-})( library.view );
-
-
-// Init checks pane
-(function( ns, undefined ) {
-	ns.InitChecksPane = function( paneConf ) {
-		if ( !( this instanceof ns.InitChecksPane ))
-			return new ns.InitChecksPane( conf );
-		
-		var self = this;
-		var conf = paneConf.conf;
-		self.onclose = conf.onclose;
-		self.oncontinue = conf.oncontinue;
-		self.onsourceselect = conf.onsourceselect;
-		
-		library.component.UIPane.call( this, paneConf );
-	}
-	
-	ns.InitChecksPane.prototype = Object.create( library.component.UIPane.prototype );
-	
-	// Public
-	
-	ns.InitChecksPane.prototype.updateBrowserCheck = function( state ) {
-		var self = this;
-		var contentId = 'check-browser';
-		var browserId = 'init-check-browser';
-		var browserState = {
-			type : state.support.type,
-			desc : state.browser,
-			message : state.support.message,
-		};
-		
-		self.update( browserId, browserState );
-		self.showCheck( contentId, state.support );
-		updateCaps( state.capabilities );
-		function updateCaps( caps ) {
-			var capsContainer = document.getElementById( 'init-browser-caps' );
-			for ( var cap in caps ) {
-				add( cap );
-				update( cap );
-			}
-			
-			function add( key ) {
-				var id = getCapId( key );
-				var conf = {
-					id : id,
-					desc : key,
-				};
-				var el = hello.template.getElement( 'initchecks-row-tmpl', conf );
-				capsContainer.appendChild( el );
-			}
-			
-			function update( key ) {
-				var id = getCapId( key );
-				var err = caps[ key ] ? 'success' : 'error';
-				var cState = {
-					type : err,
-					desc : key,
-				};
-				self.update( id, cState );
-				self.showCheck( contentId, cState );
-			}
-			
-			function getCapId( key ) { return 'browser-cap-' + key; }
-		}
-	}
-	
-	ns.InitChecksPane.prototype.updateHostSignal = function( state ) {
-		var self = this;
-		var id = 'host-signal';
-		self.update( id, state )
-		self.showCheck( id, state );
-	}
-	
-	ns.InitChecksPane.prototype.updateRoomSignal = function( state ) {
-		var self = this;
-		var id = 'room-signal';
-		self.update( id, state )
-		self.showCheck( id, state );
-	}
-	
-	ns.InitChecksPane.prototype.updateICEServer = function( state ) {
-		var self = this;
-		var cid = 'ice-servers';
-		if ( 'add' === state.type )
-			addServer( state.server );
-		else
-			updateServer( state );
-		
-		function addServer( info ) {
-			var url = info.urls[0];
-			var id = serverToId( url );
-			var conf = {
-				id     : id,
-				desc : url,
-			};
-			var el = hello.template.getElement( 'initchecks-row-tmpl', conf );
-			var container = document.getElementById( cid )
-				.querySelector( '.init-info' );
-			container.appendChild( el );
-		}
-		
-		function updateServer( state ) {
-			var host = state.server.urls[ 0 ];
-			var elId = serverToId( host );
-			self.update( elId, state );
-			self.showCheck( cid, state );
-		}
-		
-		function serverToId( host ) {
-			return host.replace( /\W/g, '-' );
-		}
-	}
-	
-	ns.InitChecksPane.prototype.updateAudioInput = function( state ) {
-		var self = this;
-		var id = 'audio-input';
-		var isErr = 'success' !== state.type;
-		self.chooseAudio.classList.toggle( 'hidden', !isErr );
-		self.update( id, state )
-		self.showCheck( id, state );
-	}
-	
-	ns.InitChecksPane.prototype.updateVideoInput = function( state ) {
-		var self = this;
-		console.log( 'VideoInputState - NYI', state );
-	}
-	
-	ns.InitChecksPane.prototype.updateDevicesCheck = function( state ) {
-		const self = this;
-		const id = 'check-devices';
-		if ( !state || !state.err )
-			return;
-		
-		let errMsg = self.errorCodes[ state.err ] || state.err;
-		self.update( id, {
-			type    : 'error',
-			message : errMsg,
-		});
-		
-		self.showCheck( id, {
-			type : 'error',
-		});
-	}
-	
-	ns.InitChecksPane.prototype.updateSelfieCheck = function( state ) {
-		const self = this;
-		const id = 'selfie-check';
-		self.update( id, state );
-		self.showCheck( id, state );
-		if ( state.err ) {
-			let errEl = document.getElementById( 'init-selfie-error' );
-			errEl.classList.toggle( 'hidden', false );
-			let errMsg = errEl.querySelector( '.error-desc' );
-			errMsg.textContent = state.err;
-		}
-		
-		if ( state.constraints ) {
-			let consEl = document.getElementById( 'init-selfie-cons' );
-			consEl.classList.toggle( 'hidden', false );
-			let consMsg = consEl.querySelector( '.cons-desc' );
-			consMsg.textContent = state.constraints;
-		}
-		
-	}
-	
-	ns.InitChecksPane.prototype.showHostSignal = function() {
-		var self = this;
-		var el = document.getElementById( 'host-signal' );
-		el.classList.toggle( 'hidden', false );
-	}
-	
-	ns.InitChecksPane.prototype.showVideoInput = function() {
-		var self = this;
-		var el = document.getElementById( 'video-input');
-		el.classList.toggle( 'hidden', false );
-	}
-	
-	ns.InitChecksPane.prototype.close = function() {
-		var self = this;
-		self.paneClose();
-	}
-	
-	// Private
-	
-	ns.InitChecksPane.prototype.stateMap = {
-		'error' : {
-			faIcon     : 'fa-exclamation-triangle',
-			iconClass  : 'init-error',
-			stateClass : 'init-error',
-		},
-		'warning' : {
-			faIcon     : 'fa-cubes',
-			iconClass  : 'init-warning',
-			stateClass : 'init-warning',
-		},
-		'success' : {
-			faIcon     : 'fa-check',
-			iconClass  : 'init-nominal',
-			stateClass : 'init-nominal',
-		},
-	};
-	
-	ns.InitChecksPane.prototype.build = function() {
-		var self = this;
-		self.errorCodes = {
-			'ERR_ENUMERATE_DEVICES_FAILED' : View.i18n( 'i18n_err_enumerate_devices_failed' ),
-			'ERR_NO_DEVICES_BLOCKED'       : View.i18n( 'i18n_err_devices_blocked' ),
-			'ERR_NO_DEVICES_FOUND'         : View.i18n( 'i18n_err_no_devices_found' ),
-			'ERR_GUM_NOT_ALLOWED'          : View.i18n( 'i18n_err_gum_not_allowed' ),
-			'ERR_GUM_NO_MEDIA'             : View.i18n( 'i18n_err_gum_no_media' ),
-		};
-		
-		self.checks = [
-			{
-				id     : 'check-browser',
-				type   : View.i18n('i18n_browser_compatibility'),
-				tmpl   : 'initchecks-browser',
-			},
-			{
-				id      : 'check-devices',
-				type    : View.i18n( 'i18n_device_check' ),
-				state   : View.i18n( 'i18n_checking' ),
-				//btnIcon : 'fa-cube',
-				tmpl    : 'initchecks-devices-tmpl',
-			},
-			{
-				id      : 'selfie-check',
-				type    : View.i18n('i18n_self_check'),
-				state   : View.i18n('i18n_checking'),
-				btnIcon : 'fa-user',
-				tmpl    : 'initchecks-selfie-tmpl',
-			},
-			{
-				id     : 'ice-servers',
-				type   : View.i18n('i18n_ice_servers'),
-				state  : View.i18n('i18n_connecting'),
-				tmpl   : 'initchecks-ice-tmpl',
-			},
-			{
-				id      : 'audio-input',
-				type    : View.i18n('i18n_audio_input'),
-				state   : View.i18n('i18n_checking'),
-				btnIcon : 'fa-microphone',
-				tmpl    : 'initchecks-media-tmpl',
-			},
-			{
-				id      : 'video-input',
-				hidden  : 'hidden',
-				type    : View.i18n('i18n_video_input'),
-				btnIcon : 'fa-eye',
-				state   : View.i18n('i18n_checking'),
-			},
-		];
-		
-		var checksHTML = self.buildChecks();
-		var conf = {
-			checks : checksHTML,
-		};
-		var contentHTML = hello.template.get( 'initchecks-ui-pane-tmpl', conf );
-		var id = self.insertPane( contentHTML );
-		self.bind( id );
-		self.bindToggle();
-	}
-	
-	ns.InitChecksPane.prototype.buildChecks = function() {
-		var self = this;
-		var checksHtml = self.checks.map( build );
-		return checksHtml.join( '' );
-		
-		function build( conf ) {
-			conf.desc = conf.desc || '';
-			var tmpl = conf.tmpl || 'initchecks-item-tmpl';
-			var content = hello.template.get( tmpl, conf );
-			var wrapConf = {
-				id : conf.id,
-				hidden : conf.hidden || '',
-				content : content,
-			};
-			return hello.template.get( 'initchecks-wrap-tmpl', wrapConf );
-		}
-	}
-	
-	ns.InitChecksPane.prototype.bind = function() {
-		var self = this;
-		var el = document.getElementById( 'init-checks' );
-		self.continueBtn = document.getElementById( 'init-checks-continue' );
-		self.closeBtn = document.getElementById( 'init-checks-close' );
-		self.chooseAudio = document.getElementById( 'audio-input' )
-			.querySelector( '.init-media-err' );
-		var audioBtn = self.chooseAudio.querySelector( '.btn' );
-		
-		self.continueBtn.addEventListener( 'click', continueClick, false );
-		self.closeBtn.addEventListener( 'click', closeClick, false );
-		audioBtn.addEventListener( 'click', audioClick, false );
-		
-		function continueClick( e ) {
-			self.oncontinue();
-		}
-		
-		function closeClick( e ) {
-			self.onclose();
-		}
-		
-		function audioClick( e ) {
-			self.onsourceselect();
-		}
-	}
-	
-	ns.InitChecksPane.prototype.bindToggle = function() {
-		var self = this;
-		var parent = document.getElementById( 'init-checks-tests' );
-		if ( !parent.children.length )
-			return;
-		
-		Array.prototype.forEach.call( parent.children, bind );
-		function bind( el ) {
-			var btnEl = el.querySelector( '.initchecks-toggle-item' );
-			var contentEl = el.querySelector( '.init-info' );
-			if ( !btnEl || !contentEl ) {
-				console.log( 'InitChecksPane.bindToggle',
-					{ el : el, btn : btnEl, cnt : contentEl });
-				throw new Error( 'InitChecksPane.bindToggle - no btn or content found' );
-			}
-			
-			btnEl.addEventListener( 'click', toggleClick, false );
-			function toggleClick( e ) {
-				e.stopPropagation();
-				e.preventDefault();
-				if ( !contentEl || !contentEl.classList )
-					return;
-				
-				contentEl.classList.toggle( 'hidden' );
-			}
-		}
-	}
-	
-	ns.InitChecksPane.prototype.update = function( id, state ) {
-		var self = this;
-		var conf = self.stateMap[ state.type ];
-		var element = document.getElementById( id );
-		if ( !element ) {
-			console.log( 'no element for id', { id : id, state : state });
-			return;
-		}
-		
-		var iconParent = element.querySelector( '.init-icon' );
-		var iconEl = iconParent.querySelector( '.fa' );
-		var descEl = element.querySelector( '.init-desc' );
-		var msgEl = element.querySelector( '.init-state' );
-		
-		if ( conf )
-			updateClasses( conf );
-		
-		if ( state.desc && state.desc.length )
-			descEl.textContent = state.desc;
-		
-		msgEl.innerHTML = state.message || '';
-		
-		function updateClasses( conf ) {
-			if ( conf.iconClass.length )
-				iconParent.classList.toggle( conf.iconClass, true );
-			
-			if ( conf.faIcon.length )
-				iconEl.className = 'fa fa-fw ' + conf.faIcon;
-			
-			if ( conf.stateClass.length )
-				msgEl.classList.toggle( conf.stateClass, true );
-		}
-	}
-	
-	ns.InitChecksPane.prototype.showCheck = function( id, state ) {
-		var self = this;
-		if ( !state || !state.type )
-			return;
-		
-		if (( 'warning' !== state.type ) && ( 'error' !== state.type ))
-			return;
-		
-		var el = document.getElementById( id );
-		var info = el.querySelector( '.init-info' );
-		info.classList.toggle( 'hidden', false );
-	}
-	
-	ns.InitChecksPane.prototype.showErrorHandling = function( canContinue ) {
-		var self = this;
-		var errEl = document.getElementById( 'init-check-errors' );
-		self.continueBtn.classList.toggle( 'hidden', !canContinue );
-		var mustCloseEl = document.getElementById( 'error-must-close' );
-		var canContEl = document.getElementById( 'error-can-continue' );
-		mustCloseEl.classList.toggle( 'hidden', canContinue );
-		canContEl.classList.toggle( 'hidden', !canContinue );
-		
-		// show errors
-		errEl.classList.toggle( 'hidden', false );
-		
-		// hide overlay
-		var overlay = document.getElementById( 'init-checks-overlay' );
-		overlay.classList.toggle( 'hidden', true );
-	}
-	
-})( library.view );
-
-// SourceSelectPane
-(function( ns, undefined ) {
-	ns.SourceSelectPane = function( paneConf ) {
-		if ( !( this instanceof ns.SourceSelectPane ))
-			return new ns.SourceSelectPane( paneConf );
-		
-		var self = this;
-		var conf = paneConf.conf;
-		self.permissions = conf.permissions;
-		self.onselect = conf.onselect;
-		
-		self.previewId = 'source-select-preview';
-		
-		self.audioId = 'audioinput';
-		self.videoId = 'videoinput';
-		self.outputId = 'audiooutput';
-		
-		self.sources = null;
-		self.currentDevices = null;
-		self.selectedDevices = null;
-		self.allDevices = null;
-		
-		self.audioinput = null;
-		self.videoinput = null;
-		self.audiooutput = null;
-		
-		self.supportsSinkId = false;
-		
-		library.component.UIPane.call( self, paneConf );
-	}
-	
-	ns.SourceSelectPane.prototype = Object.create( library.component.UIPane.prototype );
-	
-	// Public
-	
-	ns.SourceSelectPane.prototype.showDevices = function( currentDevices ) {
-		var self = this;
-		self.refreshDevices( currentDevices );
-	}
-	
-	ns.SourceSelectPane.prototype.showGetUserMediaError = function( data ) {
-		var self = this;
-		self.clear();
-		var error = 'Failed to attach media: ' + data.err.name;
-		var errorElement = document.getElementById( 'source-error' );
-		var errorMsg = errorElement.querySelector( '.error-message' );
-		errorMsg.innerText = error;
-		self.toggleExplain( false );
-		self.toggleSelects( false );
-	}
-	
-	ns.SourceSelectPane.prototype.getSelected = function() {
-		const self = this;
-		const audioDevice = getSelectDevice( self[ self.audioId ]);
-		const videoDevice = getSelectDevice( self[ self.videoId ]);
-		
-		let outputDevice = null;
-		if ( self.supportsSinkId )
-			outputDevice = getSelectDevice( self[ self.outputId ]);
-		
-		const selected = {
-			audioinput  : audioDevice,
-			videoinput  : videoDevice,
-			audiooutput : outputDevice || undefined,
-		};
-		
-		if ( outputDevice )
-			selected.audiooutput = outputDevice;
-		
-		return selected;
-		
-		function getSelectDevice( select ) {
-			if ( !select )
-				return null;
-			
-			var label = select.value;
-			if ( !label.length )
-				return null;
-			
-			if ( 'none' === label )
-				return false;
-			
-			return label;
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.close = function() {
-		var self = this;
-		delete self.permissions;
-		delete self.onselect;
-		self.paneClose();
-	}
-	
-	// Private
-	
-	ns.SourceSelectPane.prototype.build = function() {
-		const self = this;
-		self.sources = new library.rtc.MediaDevices();
-		
-		var tmplConf = {};
-		var html = hello.template.get( 'select-source-tmpl', tmplConf );
-		self.insertPane( html );
-		
-		self.bind();
-		self.checkOutputSelectSupport();
-	}
-	
-	ns.SourceSelectPane.prototype.bind = function() {
-		const self = this;
-		self.previewEl = document.getElementById( 'source-select-preview' );
-		self.previewEl.muted = true;
-		self.previewEl.preload = 'metadata';
-		
-		const element = document.getElementById( 'source-select' );
-		const closeBtn = document.getElementById( 'source-back' );
-		const selectButtons = document.getElementById( 'source-select-buttons' );
-		const applyBtn = selectButtons.querySelector( '.apply-select' );
-		const refreshBtn = selectButtons.querySelector( '.refresh-select' );
-		const discardBtn = selectButtons.querySelector( '.discard-select' );
-		
-		const errElement = document.getElementById( 'source-error' );
-		const errAvailableBtn = errElement.querySelector( '.error-buttons .available' );
-		const errIgnoreBtn = errElement.querySelector( '.error-buttons .ignore' );
-		
-		self.outputTestEl = document.getElementById( 'audiooutput-test' );
-		self.avEl = document.getElementById( 'source-select-av-container' );
-		
-		self.previewEl.onloadedmetadata = letsPlay;
-		
-		closeBtn.addEventListener( 'click', closeClick, false );
-		applyBtn.addEventListener( 'click', applyClick, false );
-		refreshBtn.addEventListener( 'click', refreshClick, false );
-		discardBtn.addEventListener( 'click', discardClick, false );
-		
-		errAvailableBtn.addEventListener( 'click', errShowAvailable, false );
-		errIgnoreBtn.addEventListener( 'click', errIgnore, false );
-		
-		function letsPlay( e ) {
-			self.previewEl.play();
-		}
-		
-		function closeClick( e ) {
-			self.done();
-		}
-		
-		function applyClick( e ) {
-			var selected = self.getSelected();
-			self.done( selected );
-		}
-		
-		function refreshClick( e ) {
-			self.refreshDevices();
-		}
-		
-		function discardClick( e ) {
-			self.done();
-		}
-		
-		function errShowAvailable( e ) {
-			self.refreshDevices();
-		}
-		
-		function errIgnore( e ) {
-			self.done();
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.checkOutputSelectSupport = function() {
-		const self = this;
-		if ( !self.outputTestEl )
-			return;
-		
-		if ( !self.outputTestEl.setSinkId )
-			return;
-		
-		self.supportsSinkId = true;
-	}
-	
-	ns.SourceSelectPane.prototype.refreshDevices = function( current ) {
-		var self = this;
-		self.clear();
-		self.clearErrors();
-		self.toggleExplain( true );
-		self.toggleSelects( true );
-		
-		if ( current )
-			self.currentDevices = current;
-		
-		self.sources.getByType()
-			.then( show )
-			.catch( showErr );
-		
-		function show( devices ) {
-			self.allDevices = devices;
-			self.populate();
-		}
-		
-		function showErr( err ) {
-			self.showMediaDevicesErr ( err );
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.showMediaDevicesErr = function( err ) {
-		var self = this;
-		console.log( 'SourceSelectPane.showMediaDevicesErr', err.stack || err );
-	}
-	
-	ns.SourceSelectPane.prototype.clearErrors = function() {
-		var self = this;
-		self.toggleExplain( true );
-		self.toggleSelectError( self.audioId );
-		self.toggleSelectError( self.videoId );
-		self.toggleSelectError( self.outputId );
-	}
-	
-	ns.SourceSelectPane.prototype.populate = function() {
-		var self = this;
-		setupAudio();
-		setupVideo();
-		
-		if ( self.supportsSinkId )
-			setupOutput();
-		
-		var selected = self.getSelected();
-		self.setPreview( selected );
-		
-		function setupAudio() {
-			var conf = {
-				type    : self.audioId,
-				errType : 'audio',
-			};
-			setupSelect( conf );
-		}
-		
-		function setupVideo() {
-			var conf = {
-				type    : self.videoId,
-				errType : 'video',
-			};
-			setupSelect( conf );
-		}
-		
-		function setupOutput() {
-			const conf = {
-				type    : self.outputId,
-				errType : 'output',
-			};
-			setupSelect( conf );
-		}
-		
-		function setupSelect( conf ) {
-			var devices = self.allDevices[ conf.type ];
-			var labels = Object.keys( devices );
-			
-			// no devices available
-			if ( !labels.length ) {
-				self.toggleSelectError( conf.type, View.i18n('i18n_no_devices_detected'), true );
-				return;
-			}
-			
-			// if theres one device and it has an empty label,
-			// the device type has been blocked in browser settigns
-			if ( labels.length === 1 ) {
-				if ( labels[ 0 ] === '' ) {
-					self.toggleSelectError( conf.type,
-							View.i18n('i18n_devices_detected_unavailable'),
-						true );
-					return;
-				}
-			}
-			
-			// add no select option to the list
-			devices[ 'none' ] = {
-				label : 'none',
-				displayLabel : View.i18n('i18n_no_selection'),
-				kind : conf.type,
-			}
-			
-			const select = self.buildSelect( conf.type, devices );
-			const containerId = conf.type + '-select';
-			const container = document.getElementById( containerId );
-			container.appendChild( select );
-			self.bindSelect( select );
-			self[ conf.type ] = select;
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.setPreview = function( selected ) {
-		const self = this;
-		self.clearPreview();
-		let audioDevice = false;
-		let videoDevice = false;
-		let audioDeviceId = null;
-		let videoDeviceId = null;
-		
-		if ( selected.audioinput ) {
-			let aiDev = self.allDevices.audioinput[ selected.audioinput ];
-			audioDeviceId = aiDev.deviceId;
-		}
-		
-		if ( selected.videoinput ) {
-			let viDev = self.allDevices.videoinput[ selected.videoinput ];
-			videoDeviceId = viDev.deviceId;
-		}
-		
-		if ( audioDeviceId )
-			audioDevice = { "deviceId" : audioDeviceId };
-		
-		if ( videoDeviceId )
-			videoDevice = { "deviceId" : videoDeviceId };
-		
-		var mediaConf = {
-			audio : audioDevice,
-			video : videoDevice,
-		};
-		
-		if ( !mediaConf.audio && !mediaConf.video )
-			return;
-		
-		navigator.mediaDevices.getUserMedia( mediaConf )
-			.then( setMedia )
-			.catch( mediaErr );
-		
-		function setMedia( stream ) {
-			if ( mediaConf.audio ) {
-				self.showAV( stream );
-				self.checkAudioInput( stream );
-			}
-			
-			const tracks = stream.getTracks();
-			const srcObject = self.previewEl.srcObject;
-			if ( !srcObject )
-				self.previewEl.srcObject = stream;
-			else
-				tracks.forEach( add );
-			
-			self.previewEl.load();
-			
-			function add( track ) {
-				srcObject.addTrack( track );
-			}
-		}
-		
-		function mediaErr( err ) {
-			console.log( 'preview media failed', err );
-		}
-		
-	}
-	
-	ns.SourceSelectPane.prototype.clearPreview = function() {
-		var self = this;
-		self.closeAV();
-		self.previewEl.pause();
-		let srcObj = self.previewEl.srcObject;
-		
-		if ( !srcObj )
-			return;
-		
-		var tracks = srcObj.getTracks();
-		tracks.forEach( stop );
-		self.previewEl.load();
-		
-		function stop( track ) {
-			track.stop();
-			if ( srcObj.removeTrack )
-				srcObj.removeTrack( track );
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.showAV = function( stream ) {
-		const self = this;
-		self.volume = new library.rtc.Volume(
-			stream,
-			null,
-			null
-		);
-		
-		self.AV = new library.view.AudioVisualizer(
-			self.volume,
-			hello.template,
-			'source-select-av-container'
-		);
-	}
-	
-	ns.SourceSelectPane.prototype.closeAV = function() {
-		const self = this;
-		if ( self.AV )
-			self.AV.close();
-		
-		if ( self.volume )
-			self.volume.close();
-		
-		delete self.AV;
-		delete self.volume;
-	}
-	
-	ns.SourceSelectPane.prototype.checkAudioInput = function( stream ) {
-		var self = this;
-		console.log( 'checkAudioInput', stream );
-		var checkEl = document.getElementById( 'audioinput-checking' );
-		checkEl.classList.toggle( 'hidden', false );
-		new library.rtc.AudioInputDetect( stream, checkBack );
-		function checkBack( err ) {
-			console.log( 'checkAudioInput - checkBack', err );
-			checkEl.classList.toggle( 'hidden', true );
-			if ( !err )
-				err = null;
-			
-			self.toggleSelectError( 'audioinput', err );
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.setAudioSink = function( selected ) {
-		const self = this;
-		if ( !self.previewEl )
-			return;
-		
-		let label = selected[ 'audiooutput' ];
-		let dev = self.allDevices.audiooutput[ label ];
-		
-		self.previewEl.setSinkId( dev.deviceId )
-			.then( ok )
-			.catch( fail );
-			
-		function ok() {
-			console.log( 'source select - sink id set', self.previewEl.sinkId );
-		}
-		
-		function fail( err ) {
-			console.log( 'source select - failed to set sink id', err.stack || err );
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.bindSelect = function( element ) {
-		var self = this;
-		element.addEventListener( 'change', selectChange, false );
-		function selectChange( e ) {
-			var selected = self.getSelected();
-			if ( 'source-select-audiooutput' === e.target.id )
-				self.setAudioSink( selected );
-			else
-				self.setPreview( selected );
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.buildSelect = function( type, obj ) {
-		var self = this;
-		var options = [];
-		for ( var label in obj ) {
-			const optStr = buildOption( obj[ label ]);
-			options.push( optStr );
-		}
-		
-		var selectConf = {
-			type : type,
-			name : type,
-			optionsHtml : options.join(),
-		};
-		var selectElement = hello.template.getElement( 'source-select-tmpl', selectConf );
-		return selectElement;
-		
-		function buildOption( item ) {
-			var selected = '';
-			
-			// if there is a device dfined..
-			if ( self.currentDevices && self.currentDevices[ item.kind ] ) {
-				var currDev = self.currentDevices[ item.kind ];
-				// ..check if its this one
-				if ( currDev === item.label )
-					selected = 'selected';
-			} else {
-				// ..no device defined, so check if this is the 'no select' entry
-				if ( item.label === 'none' )
-					selected = 'selected';
-			}
-			
-			var optionConf = {
-				value : item.label,
-				selected : selected,
-				label : item.displayLabel || item.label,
-			};
-			var html = hello.template.get( 'source-select-option-tmpl', optionConf );
-			return html;
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.toggleExplain = function( show ) {
-		var self = this;
-		var explainElement = document.getElementById( 'source-explain' );
-		var errorElement = document.getElementById( 'source-error' );
-		explainElement.classList.toggle( 'hidden', !show );
-		errorElement.classList.toggle( 'hidden', show );
-	}
-	
-	ns.SourceSelectPane.prototype.toggleSelects = function( show ) {
-		var self = this;
-		var selects = document.getElementById( 'source-input' );
-		selects.classList.toggle( 'hidden', !show );
-	}
-	
-	ns.SourceSelectPane.prototype.toggleSelectError = function( type, errorMessage, hideSelect ) {
-		var self = this;
-		var hideSelect = !!hideSelect;
-		var hasErr = !!errorMessage;
-		var selectId = type + '-select';
-		var errorId = type + '-error';
-		var selectElement = document.getElementById( selectId );
-		var errorElement = document.getElementById( errorId );
-		
-		selectElement.classList.toggle( 'hidden', hideSelect );
-		errorElement.innerText = errorMessage;
-		errorElement.classList.toggle( 'hidden', !hasErr );
-	}
-	
-	ns.SourceSelectPane.prototype.clear = function() {
-		var self = this;
-		var clear = [
-			self.audioId,
-			self.videoId,
-			self.outputId,
-		];
-		
-		clear.forEach( remove );
-		function remove( type ) {
-			var id = 'source-select-' + type;
-			var element = document.getElementById( id );
-			if ( !element )
-				return;
-			
-			element.parentNode.removeChild( element );
-		}
-	}
-	
-	ns.SourceSelectPane.prototype.done = function( selected ) {
-		var self = this;
-		self.clearPreview();
-		self.hide();
-		self.onselect( selected );
-	}
-	
-})( library.view );
-
-(function( ns, undefined ) {
-	ns.ChatPane = function( paneConf ) {
-		if ( !( this instanceof ns.ChatPane ))
-			return new ns.ChatPane( paneConf );
-		
-		var self = this;
-		var conf = paneConf.conf;
-		self.userId = conf.userId;
-		self.identities = conf.identities;
-		self.conn = new library.component.EventNode(
-			'chat',
-			conf.conn,
-			eventSink
-		);
-		self.teaseUnread = 0;
-		
-		library.component.UIPane.call( self, paneConf );
-		
-		function eventSink( e ) { console.log( 'unhandled chat event', e ); }
-	}
-	
-	ns.ChatPane.prototype = Object.create( library.component.UIPane.prototype );
-	
-	// Public
-	
-	ns.ChatPane.prototype.msg = function( data ) {
-		var self = this;
-		self.handleEvent( data );
-	}
-	
-	ns.ChatPane.prototype.baseShow = ns.ChatPane.prototype.show;
-	ns.ChatPane.prototype.show = function() {
-		const self = this;
-		self.baseShow();
-		self.bottomScroll.update();
-	}
-	
-	ns.ChatPane.prototype.toggleSay = function( force ) {
-		var self = this;
-		console.log( 'toggleSay', force );
-	}
-	
-	// Pirvate
-	
-	ns.ChatPane.prototype.build = function() {
-		var self = this;
-		var html = hello.template.get( 'chat-pane-tmpl', {});
-		self.insertPane( html );
-		self.bind();
-	}
-	
-	ns.ChatPane.prototype.bind = function() {
-		var self = this;
-		// bind close when clicking 'outside' chat
-		var chatBg = document.getElementById( self.paneId );
-		chatBg.addEventListener( 'click', bgClick, false );
-		function bgClick( e ) {
-			if ( e.target.id !== self.paneId )
-				return;
-			
-			e.stopPropagation();
-			self.hide();
-		}
-		
-		var leConf = {
-			templateManager : hello.template,
-		};
-		self.linkExpand = new library.component.LinkExpand( leConf );
-		
-		// multiline input
-		var inputConf = {
-			containerId     : 'input-container',
-			templateManager : hello.template,
-			singleOnly      : false,
-			multiIsOn       : false,
-			onsubmit        : onSubmit,
-			onmode          : onMode,
-		};
-		self.input = new library.component.MultiInput( inputConf );
-		function onSubmit( e ) { self.submit( e ); };
-		function onMode( e ) {};
-		
-		// input history
-		var historyConf = {
-			inputId : 'chat-input',
-		}
-		self.inputHistory = new library.component.InputHistory( historyConf );
-		
-		// scrollingstuff
-		self.bottomScroll = new library.component.BottomScroller( 'chat-messages' );
-		
-		//
-		self.conn.on( 'msg', message );
-		self.conn.on( 'state', state );
-		self.stateMap = {
-			'set-typing'   : setTyping,
-			'clear-typing' : clearTyping,
-		};
-		
-		function message( e ) { self.handleMessage( e ); }
-		function state( e ) { self.handleState( e ); }
-		function setTyping( e ) { self.handleSetTyping( e ); }
-		function clearTyping( e ) { self.handleClearTyping( e ); }
-		
-		self.container = document.getElementById( 'chat-container' );
-		self.messages = document.getElementById( 'chat-messages' );
-		self.isTypeingHint = self.container.querySelector( '.chat-is-typing' );
-		self.sayStateBtn = self.container.querySelector( '.say-state' );
-		self.inputHint = self.container.querySelector( '.input-hint' );
-		self.inputForm = document.getElementById( 'chat-form' );
-		self.inputBtn = document.getElementById( 'chat-send-btn' );
-		self.inputArea = document.getElementById( 'chat-input' );
-		self.closeBtn = document.getElementById( 'chat-close' );
-		
-		self.teaseChat = document.getElementById( 'tease-chat' );
-		self.teaseContainer = document.getElementById( 'tease-chat-content' );
-		self.teaseNum = document.getElementById( 'tease-chat-num' );
-		self.teaseGotoBtn = document.getElementById( 'tease-chat-goto-chat' );
-		self.teaseClearBtn = document.getElementById( 'tease-chat-clear' );
-		
-		self.container.addEventListener( 'click', containerClick, false );
-		self.sayStateBtn.addEventListener( 'click', toggleSay, false );
-		self.inputForm.addEventListener( 'submit', submit, false );
-		self.inputBtn.addEventListener( 'click', chatSendClick, false );
-		self.closeBtn.addEventListener( 'click', closeChat, false );
-		
-		self.inputArea.addEventListener( 'focus', inputFocus, false );
-		self.inputArea.addEventListener( 'blur', inputBlur, false );
-		self.inputArea.addEventListener( 'keydown', inputKeyDown, false );
-		self.inputArea.addEventListener( 'keyup', inputKeyUp, false );
-		
-		self.teaseGotoBtn.addEventListener( 'click', gotoChatClick, false );
-		self.teaseClearBtn.addEventListener( 'click', teaseClearClick, false );
-		
-		function containerClick( e ) { console.log( 'containerClick' ); }
-		function toggleSay( e ) { self.toggleSay(); }
-		function submit( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-			self.input.submit();
-		}
-		function chatSendClick( e ) {
-			var submit = new Event( 'submit' );
-			self.inputForm.dispatchEvent( submit );
-		}
-		
-		function closeChat( e ) { self.hide(); }
-		function inputFocus( e ) { self.handleInputFocus( true ); }
-		function inputBlur( e ) { self.handleInputFocus( false ); }
-		function inputKeyDown( e ) { self.handleInputKey( e ); }
-		function inputKeyUp( e ) { self.handleInputKey( e ); }
-		
-		function gotoChatClick( e ) {
-			self.clearTease();
-			self.show();
-		}
-		function teaseClearClick( e ) { self.clearTease(); }
-	}
-	
-	ns.ChatPane.prototype.handleEvent = function( msg ) {
-		var self = this;
-		var handler = self.chatMap[ msg.type ];
-		if ( !handler ) {
-			console.log( 'no handler for ', msg );
-			return;
-		}
-		
-		handler( msg.data );
-	}
-	
-	ns.ChatPane.prototype.handleMessage = function( msg ) {
-		var self = this;
-		self.say( msg.message );
-		self.addMessage( msg );
-	}
-	
-	ns.ChatPane.prototype.handleState = function( event ) {
-		const self = this;
-		const handler = self.stateMap[ event.type ];
-		if ( !handler ) {
-			console.log( '', event );
-			return;
-		}
-	}
-	
-	ns.ChatPane.prototype.handleSetTyping = function( msg ) {
-		var self = this;
-		var id = msg.from + '-is-typing';
-		var tmplConf = {
-			id   : id,
-			from : msg.from,
-		};
-		var element = hello.template.getElement( 'is-typing-tmpl', tmplConf );
-		self.isTypeingHint.appendChild( element );
-	}
-	
-	ns.ChatPane.prototype.handleClearTyping = function( msg ) {
-		var self = this;
-		var id = msg.from + '-is-typing';
-		var element = document.getElementById( id );
-		element.parentNode.removeChild( element );
-	}
-	
-	ns.ChatPane.prototype.say = function( message ) {
-		var self = this;
-		if ( !self.sayMessages )
-			return;
-		
-		api.Say( message );
-	}
-	
-	ns.ChatPane.prototype.addMessage = function( data ) {
-		var self = this;
-		var parsedMessage = hello.parser.work( data.message );
-		const identity = self.identities[ data.fromId ];
-		let from = '';
-		if ( identity )
-			from = identity.liveName || identity.name;
-		else
-			from = 'Guest > ' + data.name;
-		
-		if ( self.userId === data.fromId )
-			from = '<< You >>';
-		
-		var time = library.tool.getChatTime( data.time );
-		var conf = {
-			id      : data.msgId, // TODO : add to template
-			from    : from,
-			message : parsedMessage,
-			time    : time,
-		};
-		var element = hello.template.getElement( 'message-tmpl', conf );
-		self.messages.appendChild( element );
-		self.linkExpand.work( element );
-		scrollBottom();
-		if ( !self.isVisible && ( self.userId !== data.from ))
-			self.showTease( conf );
-		
-		function scrollBottom() {
-			self.messages.scrollTop = self.messages.scrollHeight;
-		}
-	}
-	
-	ns.ChatPane.prototype.showTease = function( data ) {
-		var self = this;
-		self.teaseMsg = hello.template.getElement( 'chat-tease-tmpl', data );
-		self.teaseContainer.innerHTML = '';
-		self.teaseContainer.appendChild( self.teaseMsg );
-		self.teaseUnread++;
-		self.teaseNum.textContent = '(' + self.teaseUnread + ')';
-		self.teaseChat.classList.toggle( 'hidden', false );
-	}
-	
-	ns.ChatPane.prototype.clearTease = function() {
-		var self = this;
-		self.teaseUnread = 0;
-		self.teaseNum.textContent = '';
-		self.teaseContainer.innerHTML = '';
-		self.teaseChat.classList.toggle( 'hidden', true );
-	}
-	
-	ns.ChatPane.prototype.showPane = ns.ChatPane.prototype.show;
-	ns.ChatPane.prototype.show = function() {
-		var self = this;
-		self.showPane();
-		if ( window.View.deviceType && ( 'VR' !== window.View.deviceType ))
-			self.input.focus();
-	}
-	
-	ns.ChatPane.prototype.handleInputFocus = function( hasFocus ) {
-		var self = this;
-		self.inputHasFocus = hasFocus;
-		self.inputHint.classList.toggle( 'blink-i', hasFocus );
-		
-		if ( !hasFocus )
-			self.clearIsTyping();
-	}
-	
-	ns.ChatPane.prototype.handleInputKey = function( e ) {
-		var self = this;
-		if ( self.typingIsSet )
-			return;
-		
-		var value = self.input.getValue();
-		//value = self.makeString( value );
-		if ( value.length && self.inputHasFocus )
-			self.setIsTyping();
-		
-	}
-	
-	ns.ChatPane.prototype.makeString = function( str ) {
-		var self = this;
-		try {
-			return str.toString();
-		} catch( e ) {
-			return null;
-		}
-	}
-	
-	ns.ChatPane.prototype.setIsTyping = function() {
-		var self = this;
-		if ( self.typingIsSet )
-			return;
-		
-		self.typingIsSet = true;
-		const setTyping = {
-			type : 'set-typing',
-			data : null,
-		};
-		self.sendState( setTyping );
-	}
-	
-	ns.ChatPane.prototype.clearIsTyping = function() {
-		var self = this;
-		if ( !self.typingIsSet )
-			return;
-		
-		self.typingIsSet = false;
-		const clearTyping = {
-			type : 'clear-typing',
-			data : null,
-		};
-		self.sendState( clearTyping );
-	}
-	
-	ns.ChatPane.prototype.submit = function( str ) {
-		var self = this;
-		if ( !str || !str.length )
-			return;
-		
-		str = self.makeString( str );
-		if ( !str.length )
-			return;
-		
-		self.clearIsTyping();
-		self.sendMessage( str );
-		self.inputHistory.add( str );
-	}
-	
-	ns.ChatPane.prototype.sendMessage = function( str ) {
-		var self = this;
-		var msg = {
-			type : 'msg',
-			data : {
-				message : str,
-			},
-		};
-		self.send( msg );
-	}
-	
-	ns.ChatPane.prototype.sendState = function( event ) {
-		var self = this;
-		var evnt = {
-			type : 'state',
-			data : event,
-		};
-		self.send( evnt );
-	}
-	
-	ns.ChatPane.prototype.send = function( msg ) {
-		var self = this;
-		self.conn.send( msg );
-	}
-	
-	
-})( library.view );
-
-(function( ns, undefined ) {
-	ns.SettingsPane = function( paneConf ) {
-		if ( !( this instanceof ns.SettingsPane ))
-			return new ns.SettingsPane( paneConf );
-		
-		var self = this;
-		var conf = paneConf.conf;
-		self.onsave = conf.onsave;
-		
-		self.settingUpdateMap = {};
-		
-		library.component.UIPane.call( self, paneConf );
-	}
-	
-	ns.SettingsPane.prototype = Object.create( library.component.UIPane.prototype );
-	
-	// public
-	
-	ns.SettingsPane.prototype.update = function( update ) {
-		var self = this;
-		var handler = self.settingUpdateMap[ update.setting ];
-		if ( !handler ) {
-			console.log( 'no handler for setting', update );
-			return;
-		}
-		
-		handler( update );
-	}
-	
-	ns.SettingsPane.prototype.build = function() {
-		var self = this;
-		var html = hello.template.get( 'room-settings-pane-tmpl', {});
-		self.insertPane( html );
-		self.bind();
-	}
-	
-	ns.SettingsPane.prototype.bind = function() {
-		var self = this;
-		var closeBtn = document.getElementById( 'room-settings-close' );
-		closeBtn.addEventListener( 'click', closeClick, false );
-		function closeClick( e ) {
-			self.hide();
-		}
-		
-		self.bindPeerLimit();
-		self.bindIsPublic();
-	}
-	
-	ns.SettingsPane.prototype.bindPeerLimit = function() {
-		var self = this;
-		var element = document.getElementById( 'setting-peer-limit' );
-		var unlimited = '∞';
-		var range = element.querySelector( '.range input' );
-		var value = element.querySelector( '.value input' );
-		range.addEventListener( 'input', rangeInput, false );
-		range.addEventListener( 'change', rangeChange, false );
-		value.addEventListener( 'change', valueChange, false );
-		
-		self.settingUpdateMap[ 'peerlimit' ] = onUpdate;
-		set( 0 );
-		
-		function rangeInput( e ) {
-			e.stopPropagation();
-			var num = parse( range.value );
-			value.value = num || unlimited;
-		}
-		
-		function rangeChange( e ) {
-			e.stopPropagation();
-			save( range.value );
-		}
-		
-		function valueChange( e ) {
-			e.stopPropagation( e );
-			save( value.value );
-		}
-		
-		function save( num ) {
-			num = parse( num );
-			self.onsave( 'peerlimit', num );
-			set( num );
-		}
-		
-		function onUpdate( update ) {
-			set( update.value );
-		}
-		
-		function set( num ) {
-			range.value = num || 13;
-			value.value = num || unlimited;
-		}
-		
-		function parse( num ) {
-			num = parseInt( num, 10 );
-			if ( !num )
-				num = 0;
-			
-			if ( num < 1 )
-				num = 1;
-			
-			if ( num > 12 )
-				num = 0;
-			
-			return num;
-		}
-	}
-	
-	ns.SettingsPane.prototype.bindIsPublic = function() {
-		var self = this;
-		var element = document.getElementById( 'setting-is-public' );
-		var input = element.querySelector( '.check input' );
-		input.addEventListener( 'change', onChange, false );
-		self.settingUpdateMap[ 'ispublic' ] = onUpdate;
-		
-		function onChange( e ) {
-			e.stopPropagation();
-			self.onsave( 'ispublic', input.checked );
-		}
-		
-		function onUpdate( update ) {
-			input.checked = update.value;
-		}
-	}
-	
-})( library.view );
-
-(function( ns, undefined ) {
-	ns.AudioVisualizer = function(
-		volumeSrc,
-		templateManager,
-		containerId
-	) {
-		const self = this;
-		self.source = volumeSrc;
-		self.template = templateManager;
-		self.containerId = containerId;
-		
-		self.id = null;
-		self.canvasId = null;
-		self.ctx = null;
-		self.draw = false;
-		self.drawVolume = true;
-		
-		self.init();
-	}
-	
-	// Public
-	
-	ns.AudioVisualizer.prototype.start = function() {
-		const self = this;
-		self.setupCanvas();
-		if ( !self.el ) {
-			console.log( 'AudioVisualizer.start - no el', self );
-			return;
-		}
-		
-		self.draw = true;
-		self.drawAV();
-	}
-	
-	ns.AudioVisualizer.prototype.setSource = function( volumeSrc ) {
-		const self = this;
-		self.source = volumeSrc;
-	}
-	
-	ns.AudioVisualizer.prototype.stop = function() {
-		const self = this;
-		self.draw = false;
-		if ( self.animFReq )
-			window.cancelAnimationFrame( self.animFReq );
-		
-		delete self.animFReq;
-		self.removeCanvas();
-	}
-	
-	ns.AudioVisualizer.prototype.close = function() {
-		const self = this;
-		self.stop();
-		
-		//self.releaseSource();
-		delete self.id;
-		delete self.canvasId;
-		delete self.containerId;
-		delete self.ctx;
-		delete self.source;
-		delete self.template;
-		delete self.drawVolume;
-		delete self.draw;
-	}
-	
-	// Private
-	
-	ns.AudioVisualizer.prototype.init = function() {
-		const self = this;
-		self.start();
-	}
-	
-	ns.AudioVisualizer.prototype.setupCanvas = function() {
-		const self = this;
-		if ( self.canvasId )
-			return;
-		
-		const container = document.getElementById( self.containerId );
-		self.id = friendUP.tool.uid( 'AV' );
-		self.canvasId = friendUP.tool.uid( 'canvas' );
-		const conf = {
-			id       : self.id,
-			canvasId : self.canvasId,
-			width    : container.clientWidth,
-			height   : container.clientHeight,
-		};
-		self.el = self.template.getElement( 'peer-av-tmpl', conf );
-		container.appendChild( self.el );
-		self.el.onclick = clickIt;
-		//self.el.addEventListener( 'click', clickIt, true );
-		function clickIt( e ) {
-			self.clicked();
-		}
-		
-		var cw = self.el.clientWidth;
-		var ch = self.el.clientHeight;
-		if ( !ch || !cw ) {
-			self.stop();
-			return;
-		}
-		
-		self.canvas = document.getElementById( self.canvasId );
-		if ( !self.canvas ) {
-			self.stop();
-			return;
-		}
-		
-		// anim setup
-		self.ctx = self.canvas.getContext( '2d' );
-		if ( !self.ctx ) {
-			self.stop();
-			return;
-		}
-		
-		self.cW = self.ctx.canvas.clientWidth;
-		self.cH = self.ctx.canvas.clientHeight;
-		self.ctx.lineWidth = 3;
-		self.ctx.lineCap = 'round';
-	}
-	
-	ns.AudioVisualizer.prototype.clicked = function() {
-		const self = this;
-		self.drawVolume = !self.drawVolume;
-		self.drawAV();
-	}
-	
-	ns.AudioVisualizer.prototype.removeCanvas = function() {
-		const self = this;
-		delete self.cW;
-		delete self.cH;
-		delete self.ctx;
-		if ( self.canvas )
-			self.canvas.parentNode.removeChild( self.canvas );
-		
-		if ( self.el ) {
-			self.el.onclick = null;
-			self.el.parentNode.removeChild( self.el );
-		}
-		
-		delete self.canvasId;
-		delete self.id;
-		delete self.canvas;
-		delete self.el;
-	}
-	
-	ns.AudioVisualizer.prototype.drawAV = function() {
-		const self = this;
-		if ( !self.ctx )
-			return;
-		
-		if ( self.animFReq ) {
-			cancelAnimationFrame( self.animFReq );
-			self.animFReq = null;
-		}
-		
-		if ( self.drawVolume )
-			self.updateVolume();
-		else
-			self.updateWaveform();
-	}
-	
-	ns.AudioVisualizer.prototype.updateVolume = function() {
-		const self = this;
-		self.animFReq = window.requestAnimationFrame( loop );
-		function loop() {
-			if ( !self.draw || !self.drawVolume )
-				return;
-			
-			self.animFReq = window.requestAnimationFrame( loop );
-			redraw();
-		}
-		
-		function redraw() {
-			if ( !self.source.averageOverTime )
-				return;
-			
-			let buf = self.source.averageOverTime.slice( -18 );
-			if ( !buf || !buf.length ) {
-				console.log( 'AV - invalid volumeHistory', self.source );
-				return;
-			}
-			
-			self.clearCanvas();
-			let  stepLength = ( self.cW * 1.0  ) / buf.length;
-			
-			// move line to pos
-			let len = buf.length;
-			let i = buf.length;
-			for( ; i-=3 ; ) {
-				self.ctx.beginPath();
-				let alpha = i / len;
-				if ( alpha > 1 )
-					alpha = 1;
-				self.ctx.strokeStyle = 'rgba( 255, 255, 255, ' + alpha + ')';
-				let v1 = buf[ i ];
-				let v2 = buf[ i - 3 ];
-				let y1 = self.cH - (( v1 / 128.0 ) * self.cH );
-				let y2 = self.cH - (( v2 / 128.0 ) * self.cH );
-				y1+=1;
-				y2+=1;
-				let x1 = ( i * stepLength );
-				let x2 = (( i - 3 ) * stepLength );
-				self.ctx.moveTo( x1, y1 );
-				self.ctx.lineTo( x2, y2 );
-				self.ctx.stroke();
-			}
-		}
-	}
-	
-	ns.AudioVisualizer.prototype.updateWaveform = function() {
-		const self = this;
-		self.ctx.strokeStyle = 'white';
-		self.animFReq = window.requestAnimationFrame( loop );
-		function loop() {
-			if ( !self.draw || self.drawVolume )
-				return;
-			
-			self.animFReq = window.requestAnimationFrame( loop );
-			redraw();
-		}
-		
-		function redraw() {
-			let buf = self.source.timeBuffer;
-			if ( !buf || !buf.length ) {
-				console.log( 'AV - invalid time buffer', self.source );
-				return;
-			}
-			
-			self.clearCanvas();
-			self.ctx.beginPath();
-			let stepLength = ( self.cW * 1.0 ) / buf.length;
-			
-			// move line to pos
-			let i = buf.length;
-			for ( ; i-- ; ) {
-				let value = buf[ i ];
-				let y = ( value / 128.0 ) * ( self.cH / 2.0 );
-				let x = ( self.cW - ( i * stepLength ));
-				if ( i === buf.length )
-					self.ctx.moveTo( x, y );
-				else
-					self.ctx.lineTo( x, y );
-			}
-			
-			self.ctx.stroke();
-		}
-	
-	}
-	
-	ns.AudioVisualizer.prototype.clearCanvas = function() {
-		const self = this;
-		if ( !self.ctx )
-			return;
-		
-		self.ctx.clearRect( 0, 0, self.cW, self.cH );
-	}
-	
-	/*
-	ns.AudioVisualizer.prototype.connectSource = function() {
-		const self = this;
-		console.log( 'connectSource' );
-		if ( !self.source )
-			throw new Error( 'AudioVisualizer.connectSource - \
-				no source, called after .close?' );
-		
-		self.bufferId = self.source.on( '')
-	}
-	
-	ns.AudioVisualizer.prototype.disconnectSource = function() {
-		const self = this;
-		console.log( 'releaseSource', self.source );
-		if ( !self.source )
-			return;
-		
-		if ( self.bufferId )
-			self.source.off( self.bufferId );
-		
-		if ( self.volumeId )
-			self.source.off( self.volumeId );
-		
-	}
-	*/
-	
-})( library.view );
-
-
-// INIT -------------------
-if ( !window.View )
-	throw new Error( 'window.View is not defined' );
-
-window.View.run = fun;
-function fun() {
-	window.live = new library.view.LiveInit();
-}

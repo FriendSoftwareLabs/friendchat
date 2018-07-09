@@ -31,7 +31,6 @@ library.contact = library.contact || {};
 			return new ns.Contact( conf );
 		
 		var self = this;
-		
 		self.moduleId = conf.moduleId;
 		self.parentPath = conf.parentPath || '';
 		self.clientId = self.data.clientId;
@@ -323,11 +322,7 @@ library.contact = library.contact || {};
 		const user = self.getParentIdentity();
 		const contact = self.identity; // create a session and invite this contact
 		contact.invite = sendInvite;
-		const rtcSession = hello.rtc.getSession();
-		if ( rtcSession )
-			hello.rtc.invite( contact, perms );
-		else
-			hello.rtc.createRoom( [ contact ], user, perms );
+		hello.rtc.invite( [ contact ], perms );
 		
 		function sendInvite( invite ) {
 			self.sendMessage( invite );
@@ -369,11 +364,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.addCalendarEvent = function( event, from ) {
 		var self = this;
-		console.log( 'addCalendarEvent', {
-			e : event,
-			f : from,
-		});
-		
 		if ( self.identity )
 			from = self.identity.name;
 		
@@ -509,6 +499,7 @@ library.contact = library.contact || {};
 		
 		ns.Contact.call( self, conf );
 		
+		self.settings = null;
 		self.identities = {};
 		self.onlineList = [];
 		self.users = {};
@@ -523,6 +514,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'PresenceRoom.reconnect' );
 		self.send({
 			type : 'initialize',
 		});
@@ -530,11 +522,22 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		var self = this;
-		conf = conf || {};
+		// check if room has been initialized
+		if ( !self.settings ) {
+			self.goLivePending = conf || {};
+			return;
+		}
+		
 		if ( self.live )
 			return; // we already are in a live _in this room_
 		
+		conf = conf || {};
 		conf.roomId = self.clientId;
+		conf.roomName = self.identity.name;
+		conf.guestAvatar = self.guestAvatar;
+		if ( self.settings.isStream )
+			conf.isStream = true;
+		
 		self.live = hello.rtc.createSession( conf, liveToServer, onClose );
 		if ( !self.live )
 			return; // session wasnt created, because :reasons:
@@ -549,17 +552,19 @@ library.contact = library.contact || {};
 		// tell main view
 		const userJoin = {
 			type : 'user-join',
-		}
+		};
 		self.liveToView( userJoin );
 		
 		// events from live view we care about, everything else is passed on
 		self.live.on( 'chat', chat );
 		self.live.on( 'invite', invite );
 		self.live.on( 'live-name', liveName );
+		self.live.on( 'view-switch', viewSwitch );
 		
 		function chat( e ) { self.sendChatEvent( e ); }
-		function invite( e ) { self.handleLiveInvite( e ); }
+		function invite( e ) { self.inviteToServer( e ); }
 		function liveName( e ) { self.handleLiveName( e ); }
+		function viewSwitch( e ) { self.handleViewSwitch( e ); }
 		function onClose( e ) {
 			self.closeLive();
 			const leave = {
@@ -592,7 +597,7 @@ library.contact = library.contact || {};
 				token : null,
 			},
 		};
-		self.handleLiveInvite( getInv );
+		self.inviteToServer( getInv );
 	}
 	
 	ns.PresenceRoom.prototype.close = function() {
@@ -601,6 +606,10 @@ library.contact = library.contact || {};
 			self.live.close();
 		
 		self.contactClose();
+		if ( self.settingsView )
+			self.settingsView.close();
+		
+		delete self.settings;
 	}
 	
 	// Private
@@ -609,7 +618,10 @@ library.contact = library.contact || {};
 		var self = this;
 		self.messageMap[ 'initialize' ] = init;
 		self.messageMap[ 'persistent' ] = persistent;
+		self.messageMap[ 'settings' ] = settings;
 		self.messageMap[ 'identity' ] = identity;
+		self.messageMap[ 'authed' ] = authed;
+		self.messageMap[ 'workgroup'] = workgroup;
 		self.messageMap[ 'invite' ] = invite;
 		self.messageMap[ 'name' ] = roomName;
 		self.messageMap[ 'join' ] = userJoin;
@@ -621,7 +633,10 @@ library.contact = library.contact || {};
 		
 		function init( e ) { self.handleInitialize( e ); }
 		function persistent( e ) { self.handlePersistent( e ); }
+		function settings( e ) { self.handleSettings( e ); }
 		function identity( e ) { self.handleIdentity( e ); }
+		function authed( e ) { self.handleAuthed( e ); }
+		function workgroup( e ) { self.handleWorkgroup( e ); }
 		function invite( e ) { self.handleInvite( e ); }
 		function roomName( e ) { self.handleRoomName( e ); }
 		function userJoin( e ) { self.handleJoin( e ); }
@@ -640,12 +655,14 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.bindView = function() {
 		const self = this;
 		self.view.on( 'persist', persist );
+		self.view.on( 'settings', settings );
 		self.view.on( 'rename', rename );
 		self.view.on( 'start-live', startLive );
 		self.view.on( 'chat', chat );
 		self.view.on( 'leave', leave );
 		
 		function persist( e ) { self.persistRoom( e ); }
+		function settings( e ) { self.loadSettings( e ); }
 		function rename( e ) { self.renameRoom( e ); }
 		function startLive( e ) { self.handleStartLive( e ); }
 		function chat( e ) { self.toggleChat( e ); }
@@ -655,6 +672,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.persistRoom = function( name ) {
 		const self = this;
+		console.log( 'persistRoom', name );
 		const persist = {
 			type : 'persist',
 			data : {
@@ -665,8 +683,19 @@ library.contact = library.contact || {};
 		self.send( persist );
 	}
 	
+	ns.PresenceRoom.prototype.loadSettings = function() {
+		const self = this;
+		self.expectSettings = true;
+		const settings = {
+			type : 'settings',
+		};
+		self.send( settings );
+	}
+	
 	ns.PresenceRoom.prototype.renameRoom = function( name ) {
 		const self = this;
+		throw new Error( 'PresenceRoom.renameRoom - should not be used, use settings' );
+		
 		const rename = {
 			type : 'rename',
 			data : name,
@@ -734,14 +763,18 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.openChat = function() {
 		const self = this;
 		self.messageWaiting( false );
+		console.log( 'openChat', self.users );
 		const initData = {
-			roomName   : self.identity.name,
-			users      : self.users,
-			identities : self.identities,
-			onlineList : self.onlineList,
-			peers      : self.peers,
-			ownerId    : self.ownerId,
-			userId     : self.userId,
+			persistent  : self.persistent,
+			roomName    : self.identity.name,
+			guestAvatar : self.guestAvatar,
+			users       : self.users,
+			identities  : self.identities,
+			workgroups  : self.workgroups,
+			onlineList  : self.onlineList,
+			peers       : self.peers,
+			ownerId     : self.ownerId,
+			userId      : self.userId,
 		};
 		self.chatView = new library.view.PresenceChat(
 			initData,
@@ -780,26 +813,30 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
+		console.log( 'PresenceRoom.handleInitialize', state );
 		self.ownerId = state.ownerId;
 		self.identities = state.identities;
+		self.settings = state.settings;
+		self.workgroups = state.workgroups;
 		self.onlineList = state.online;
 		self.persistent = state.persistent;
+		self.guestAvatar = state.guestAvatar;
 		self.identity.name = state.name;
 		self.users = state.users;
 		self.peers = state.peers;
 		
-		self.toView({
-			type : 'owner',
-			data : ( self.userId === self.ownerId ),
-		});
-		
-		self.toView({
-			type : 'persistent',
+		const user = getSelf();
+		const viewUpdate = {
+			type : 'init',
 			data : {
+				isOwner    : self.userId === self.ownerId,
+				isAdmin    : user.admin,
+				isAuthed   : user.authed,
 				persistent : self.persistent,
 				name       : self.identity.name,
 			},
-		});
+		};
+		self.toView( viewUpdate );
 		
 		self.updateViewUsers();
 		self.updateIdentities();
@@ -816,17 +853,113 @@ library.contact = library.contact || {};
 				type : 'state',
 				data : state,
 			});
+		
+		if ( self.goLivePending ) {
+			let liveConf = self.goLivePending;
+			delete self.goLivePending;
+			self.joinLive( liveConf );
+		}
+		
+		function getSelf() {
+			return self.users[ self.userId ];
+		}
 	}
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
 		const self = this;
-		self.identity.name = event.name;
-		
+		console.log( 'PresenceRoom.handlePersistent', event );
 		const persistent = {
 			type : 'persistent',
 			data : event,
 		};
 		self.toView( persistent );
+		self.handleRoomName( event.name );
+		
+		if ( !self.chatView )
+			return;
+		
+		self.toChat( persistent );
+	}
+	
+	ns.PresenceRoom.prototype.handleSettings = function( event ) {
+		const self = this;
+		console.log( 'handleSettings', event );
+		if ( 'update' === event.type ) {
+			self.updateSetting( event.data );
+			return;
+		}
+		
+		const settings = event;
+		if ( !self.expectSettings )
+			return;
+		
+		self.expectSettings = false;
+		
+		if ( self.settingsView )
+			return;
+		
+		conf = {
+			type     : 'presence-room',
+			title    : self.identity.name + ' - Presence',
+			settings : settings,
+			onsave   : onSave,
+			onclose  : onClose,
+		};
+		self.settingsView = new library.view.Settings( conf );
+		function onSave( keyValue ) {
+			const setting = {
+				type : 'setting',
+				data : keyValue,
+			};
+			
+			self.send( setting );
+		}
+		
+		function onClose( e ) {
+			self.settingsView = null;
+		}
+	}
+	
+	ns.PresenceRoom.prototype.updateSetting = function( event ) {
+		const self = this;
+		if ( !self.settings )
+			return;
+		
+		if ( self.settingsView )
+			self.settingsView.saved( event );
+		
+		if ( !event.success )
+			return;
+		
+		if ( 'isStream' === event.setting )
+			self.settings.isStream = event.value;
+		
+		if ( 'roomName' === event.setting )
+			self.handleRoomName( event.value );
+		
+		const update = {
+			type : 'settings',
+			data : event,
+		};
+		if ( self.chatView )
+			self.chatView.send( update );
+		
+		if ( self.live )
+			self.live.send( update );
+	}
+	
+	ns.PresenceRoom.prototype.changeLiveType = function() {
+		const self = this;
+		if ( !self.live )
+			return;
+		
+		const viewSwitch = {
+			type : 'view-switch',
+			data : {
+				isStream : self.isStream,
+			},
+		};
+		self.live.send( viewSwitch );
 	}
 	
 	ns.PresenceRoom.prototype.handleIdentity = function( event ) {
@@ -862,6 +995,41 @@ library.contact = library.contact || {};
 			self.chatView.send( uptd );
 	}
 	
+	ns.PresenceRoom.prototype.handleAuthed = function( event ) {
+		const self = this;
+		console.log( 'handleAuthed', event );
+		if ( event.userId === self.userId ) {
+			const isAuthed = {
+				type : 'auth',
+				data : {
+					isAuthed : event.authed,
+				},
+			};
+			self.toView( isAuthed );
+		}
+		
+		if ( self.chatView ) {
+			const authed = {
+				type : 'authed',
+				data : event,
+			};
+			self.chatView.send( authed );
+		}
+	}
+	
+	ns.PresenceRoom.prototype.handleWorkgroup = function( event ) {
+		const self = this;
+		if ( 'list' !== event.type && 'assigned' !== event.type )
+			return;
+		
+		self.workgroups = event.data;
+		if ( self.chatView )
+			self.chatView.send({
+				type : 'workgroup',
+				data : self.workgroups,
+			});
+	}
+	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
 		if ( 'revoke' === event.type )
@@ -871,7 +1039,7 @@ library.contact = library.contact || {};
 		
 		function invitesBack( event ) {
 			if ( event.data.reqId ) {
-				self.handleRequest( event.data );
+				self.handleRequest( event.data.reqId, event.data );
 			}
 			
 			send( event );
@@ -894,11 +1062,22 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.handleRoomName = function( name ) {
 		const self = this;
 		console.log( 'presenceRoom.handleRoomName', name );
+		self.identity.name = name;
+		self.toView({
+			type : 'identity',
+			data : self.identity,
+		});
+		if ( self.chatView )
+			self.chatView.setTitle( name );
+		
+		if ( self.live )
+			self.live.setTitle( name );
 	}
 	
 	ns.PresenceRoom.prototype.handleJoin = function( user ) {
-		var self = this;
-		self.users.push( user );
+		const self = this;
+		console.log( 'PresenceRoom.handleJoin', user );
+		self.users[ user.clientId ] = user;
 		const join = {
 			type : 'join',
 			data : user,
@@ -909,28 +1088,37 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLeave = function( userId ) {
 		const self = this;
-		self.users = self.users.filter( notUserId );
+		console.log( 'handleLeave', userId );
+		delete self.users[ userId ];
 		const leave = {
 			type : 'leave',
 			data : userId,
 		};
 		self.toChat( leave );
 		self.updateViewUsers();
-		
-		function notUserId( user ) {
-			return user.clientId !== userId;
-		}
 	}
 	
-	ns.PresenceRoom.prototype.handleOnline = function( userId ) {
+	ns.PresenceRoom.prototype.handleOnline = function( user ) {
 		const self = this;
+		console.log( 'handleOnline', user );
+		const userId = user.clientId;
 		if ( userId === self.userId )
 			return;
 		
+		let current = self.users[ user.clientId ];
+		if ( !current ) {
+			console.log( 'PresenceRoom.handleOnline  - huh? no users for', [
+				user,
+				self.users,
+			]);
+			return;
+		}
+		
+		current.admin = user.admin;
 		self.onlineList.push( userId );
 		const online = {
 			type : 'online',
-			data : userId,
+			data : user,
 		};
 		self.toChat( online );
 		self.updateViewUsers();
@@ -956,7 +1144,7 @@ library.contact = library.contact || {};
 		const users = {
 			type : 'users',
 			data : {
-				users  : self.users.length,
+				users  : 0,
 				online : self.onlineList.length,
 			},
 		};
@@ -1059,17 +1247,17 @@ library.contact = library.contact || {};
 		return reqId;
 	}
 	
-	ns.PresenceRoom.prototype.handleRequest = function( event ) {
+	ns.PresenceRoom.prototype.handleRequest = function( reqId, data ) {
 		const self = this;
-		if ( !event.reqId || !self.requests )
+		if ( !reqId || !self.requests )
 			return;
 		
-		const callback = self.requests[ event.reqId ];
+		const callback = self.requests[ reqId ];
 		if ( !callback )
 			return;
 		
-		delete self.requests[ event.reqId ];
-		callback( event );
+		delete self.requests[ reqId ];
+		callback( data );
 	}
 	
 	ns.PresenceRoom.prototype.buildInvites = function( event, callback ) {
@@ -1230,7 +1418,7 @@ library.contact = library.contact || {};
 		self.send( chat );
 	}
 	
-	ns.PresenceRoom.prototype.handleLiveInvite = function( event ) {
+	ns.PresenceRoom.prototype.inviteToServer = function( event ) {
 		const self = this;
 		const invite = {
 			type : 'invite',
@@ -1256,6 +1444,27 @@ library.contact = library.contact || {};
 			data : id,
 		};
 		self.send( idUpdate );
+	}
+	
+	ns.PresenceRoom.prototype.handleViewSwitch = function( event ) {
+		const self = this;
+		self.live.close();
+		self.live = null;
+		
+		let choice = event.choice;
+		if ( 'close' === choice )
+			return;
+		
+		if ( 'stream' === choice ) {
+			self.joinLive();
+			return;
+		}
+		
+		if ( 'video' === choice )
+			self.startVideo();
+		else
+			self.startAudio();
+		
 	}
 	
 	ns.PresenceRoom.prototype.liveToServer = function( event ) {
@@ -1722,7 +1931,7 @@ library.contact = library.contact || {};
 				multilineCap     : true,
 			},
 		};
-		self.chatView = new library.view.IMChat( chatConf );
+		self.chatView = new library.view.IMChat( 'treeroot', chatConf );
 		function onMessage( e ) { self.sendChatMessage( e ); }
 		function startLive( e ) { self.handleStartLive( e ); }
 		function toggleEncrypt( e ) { self.toggleEncrypt(); }
@@ -2332,9 +2541,9 @@ library.contact = library.contact || {};
 			},
 			viewConf : {
 				viewTheme : self.viewTheme,
-			}
+			},
 		};
-		self.chatView = new library.view.IMChat( conf );
+		self.chatView = new library.view.IMChat( 'irc', conf );
 		
 		function onMessage( e ) { self.fromChat( e ); }
 		function onLive( e ) { self.handleStartLive( e ); }

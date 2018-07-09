@@ -1,0 +1,22 @@
+#live {
+    background-color : #222;
+}
+
+#live-stream-switch {
+	
+}
+
+#live-stream-switch-content {
+	max-width: 30em;
+	padding : 2em;
+}
+
+#live-stream-switch-explanation {
+	padding : 1em 0;
+}
+
+#live-stream-switch .btn {
+	min-width       : 9em;
+	margin-bottom   : 1em;
+	justify-content : start;
+}

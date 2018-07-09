@@ -86,8 +86,8 @@ var friend = window.friend || {};
 				return;
 			}
 		} else
+			msg = e.data;
 		
-		msg = e.data;
 		//var msg = friendUP.tool.objectify( e.data );
 		if ( !msg ) {
 			console.log( 'view.receiveEvent - no msg for event', e );
@@ -148,7 +148,7 @@ var friend = window.friend || {};
 (function( ns, undefined ) {
 	ns.View = function() {
 		if ( !( this instanceof ns.View ))
-			return new ns.View( conf );
+			return new ns.View();
 		
 		api.ViewEvent.call( this );
 		
@@ -373,7 +373,7 @@ var friend = window.friend || {};
 			return;
 		
 		if ( self.run ) {
-			self.run();
+			self.run( self.config.runConf );
 			self.run = null;
 		}
 		
@@ -393,6 +393,7 @@ var friend = window.friend || {};
 		self.domain = conf.domain;
 		self.locale = conf.locale;
 		self.theme  = conf.theme;
+		self.themeData = conf.themeData;
 		self.config = conf.viewConf;
 		
 		self.detectDeviceType();
@@ -422,6 +423,9 @@ var friend = window.friend || {};
 		//
 		function baseCssLoaded() {
 			self.cssLoaded = true;
+			if ( self.themeData )
+				self.applyThemeConfig( self.themeData );
+			
 			self.checkAllLoaded();
 		}
 	}
@@ -668,7 +672,135 @@ var friend = window.friend || {};
 		self.setBaseCss( setBack );
 		function setBack() {
 			self.setIsLoading( false );
+			if ( !data.themeData )
+				return;
+			
+			self.applyThemeConfig( data.themeData );
 		}
+	}
+	
+	ns.View.prototype.applyThemeConfig = function( themeData ) {
+		const self = this;
+		if( !themeData )
+			return;
+		
+		// No need for mobile!
+		if( 'MOBILE' === self.deviceType )
+			return;
+		
+		if( themeData && typeof( themeData ) == 'string' )
+			themeData = JSON.parse( themeData );
+		
+		if( friend.themeStyleElement )
+			friend.themeStyleElement.innerHTML = '';
+		else
+		{
+			friend.themeStyleElement = document.createElement( 'style' );
+			document.getElementsByTagName( 'head' )[0].appendChild( friend.themeStyleElement );
+		}
+		
+		var shades = [ 'dark', 'charcoal' ];
+		for( var c in shades )
+		{
+			var uf = shades[c].charAt( 0 ).toUpperCase() + shades[c].substr( 1, shades[c].length - 1 );
+			if( themeData[ 'colorSchemeText' ] == shades[c] )
+				document.body.classList.add( uf );
+			else document.body.classList.remove( uf );
+		}
+		
+		if( themeData[ 'buttonSchemeText' ] == 'windows' )
+			document.body.classList.add( 'MSW' );
+		else document.body.classList.remove( 'MSW' );
+		
+		var str = '';
+		for( var a in themeData )
+		{
+			if( !themeData[a] ) continue;
+			var v = themeData[a];
+			switch( a )
+			{
+			case 'colorWindowActive':
+				str += `
+html > body .View.Active > .Title,
+html > body .View.Active > .LeftBar,
+html > body .View.Active > .RightBar,
+html > body .View.Active > .BottomBar
+{
+	background-color: ${v};
+}
+`;
+					break;
+				case 'colorButtonBackground':
+					str += `
+html > body .Button, html > body button
+{
+	background-color: ${v};
+}
+`;
+					break;
+				case 'colorWindowBackground':
+					str += `
+html > body, html body .View > .Content
+{
+	background-color: ${v};
+}
+`;
+					break;
+				case 'colorWindowText':
+					str += `
+html > body, html body .View > .Content, html > body .Tab
+{
+	color: ${v};
+}
+`;
+					break;
+				case 'colorFileToolbarBackground':
+					str += `
+html > body .View > .DirectoryToolbar
+{
+	background-color: ${v};
+}
+`;
+					break;
+				case 'colorFileToolbarText':
+					str += `
+html > body .View > .DirectoryToolbar button:before, 
+html > body .View > .DirectoryToolbar button:after
+{
+	color: ${v};
+}
+`;
+					break;
+				case 'colorFileIconText':
+					str += `
+html > body .File a
+{
+	color: ${v};
+}
+`;
+					break;
+				case 'colorScrollBackground':
+					str += `
+body .View.Active ::-webkit-scrollbar,
+body .View.Active.IconWindow ::-webkit-scrollbar-track
+{
+	background-color: ${v};
+}
+`;
+					break;
+				case 'colorScrollButton':
+					str += `
+html body .View.Active.Scrolling > .Resize,
+body .View.Active ::-webkit-scrollbar-thumb,
+body .View.Active.IconWindow ::-webkit-scrollbar-thumb
+{
+	background-color: ${v} !important;
+}
+`;
+				break;
+			}
+		}
+		friend.themeStyleElement.innerHTML = str;
 	}
 	
 	ns.View.prototype.sendMessage = function( data, callback ) {

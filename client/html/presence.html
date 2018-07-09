@@ -60,47 +60,16 @@
 	</div>
 	<div id="main" class="main expand group row cover BorderBottom">
 		<div id="message-container" class="expand BorderRight">
-			<div id="messages" class="SelectableText BackgroundLists">
+			<div id="messages" class="SelectableText">
 			</div>
 		</div>
 		<div id="users-container" class="fortify group column cover">
 			<div id="users-position" class="expand">
-				<div id="user-groups" class="">
-					<div id="admins" class="hidden">
-						<div class="section-head">
-							{i18n_admins}
-						</div>
-						<div id="admin-users" class="ZebraList">
-						</div>
-					</div>
-					<div id="online">
-						<div class="section-head">
-							{i18n_online}
-						</div>
-						<div id="online-users" class="ZebraList">
-						</div>
-					</div>
-					<div id="guests" class="">
-						<div class="section-head">
-							{i18n_guests}
-						</div>
-						<div id="guest-users" class="ZebraList">
-						</div>
-					</div>
-					<div id="offline">
-						<div class="section-head">
-							{i18n_offline}
-						</div>
-						<div id="offline-users" class="ZebraList">
-						</div>
-					</div>
-					<div id="detached" class="hidden">
-					</div>
-				</div>
+				
 			</div>
 		</div>
 	</div>
-	<div id="foot" class="group row cover">
+	<div id="foot" class="group row fortify cover">
 		<div id="emojii-panel-button" class="button flat fortify center-child">
 			<i class="fa fa-fw fa-smile-o"></i>
 		</div>
@@ -111,10 +80,8 @@
 			<div id="input-container" class="expand">
 				<!-- input component goes here -->
 			</div>
-			<div class="actions fortify">
-				<button id="chat-submit" type="submit" class="button flat">
-					<i class="fa fa-fw fa-paper-plane"></i>
-				</button>
+			<div id="chat-submit" class="button flat fortify center-child">
+				<i class="fa fa-fw fa-paper-plane"></i>
 			</div>
 		</form>
 	</div>
@@ -145,7 +112,7 @@ id,
 date,
 -->
 <script id="time-envelope-tmpl" type="text/html">
-<div id="<%= id %>" class="time-envelope BackgroundLists">
+<div id="<%= id %>" class="time-envelope">
 	<div class="envelope-head group row">
 		<div class="envelope-splitter BorderTop expand">
 		</div>
@@ -162,7 +129,7 @@ date,
 <!-- message group
 msgId,
 userKlass,
-itemKlass,
+bgKlass,
 from,
 time,
 message,
@@ -170,7 +137,7 @@ message,
 <script id="msg-group-tmpl" type="text/html">
 <div id="<%= msgId %>" class="msg-item msg-group 
                               <%= userKlass %> 
-                              <%= itemKlass %> 
+                              <%= bgKlass %> 
                               group row left">
 	<div class="avatar fortify">
 	</div>
@@ -178,10 +145,10 @@ message,
 		<div class="msg-meta">
 			<div class="name"><%= from %></div>
 		</div>
-		<div class="group row">
-			<div class="str expand">
-				<%= message %>
-			</div>
+		<div class="group row left">
+			<div class="str expand"><!--
+			 --><%= message %><!--
+		 --></div>
 			<div class="time fortify">
 				<%= time %>
 			</div>
@@ -192,14 +159,14 @@ message,
 
 <!-- message
 msgId,
-itemKlass
+bgKlass
 time,
 -->
 <script id="msg-tmpl" type="text/html">
-<div id="<%= msgId %>" class="msg-item msg <%= itemKlass %> group row">
-	<div class="str expand">
-		<%= message %>
-	</div>
+<div id="<%= msgId %>" class="msg-item msg <%= bgKlass %> group row left">
+	<div class="str expand"><!--
+	 --><%= message %><!--
+ --></div>
 	<div class="time fortify">
 		<%= time %>
 	</div>
@@ -264,9 +231,34 @@ time,
 </div>
 </script>
 
-<!--user
+<!-- UserCtrl
+
+-->
+<script id="user-ctrl-tmpl" type="text/html">
+<div id="user-groups" class="">
+	<div id="user-ctrl-detached" class="hidden">
+	</div>
+</div>
+</script>
+
+<!-- UserGroup
+clientId,
+name,
+sectionKlass,
+usersId
+-->
+<script id="user-group-tmpl" type="text/hmtl">
+<div id="<%= clientId %>" class="hidden">
+	<div class="section-head <%= sectionKlass %>">
+		<%= name %>
+	</div>
+	<div id="<%= usersId %>" class="ZebraList">
+	</div>
+</div>
+</script>
+
+<!-- GroupUser
 id,
-state,
 name,
 -->
 <script id="user-list-item-tmpl" type="text/html">
@@ -275,18 +267,19 @@ name,
 		<%= name %>
 	</div>
 	<div class="state fortify center-child">
-		<i class="fa fa-fw <%= state %>"></i>
+		<i class="fa fa-fw"></i>
 	</div>
 </div>
 </script>
 
 <!-- user css
 clientId,
+klassName,
 avatar,
 -->
 <script id="user-css-tmpl" type="text/html">
 <style id="<%= clientId %>-style">
-.<%= clientId%>-klass .avatar {
+.<%= klassName %> .avatar {
 	background-image : url("<%= avatar %>");
 }
 </style>

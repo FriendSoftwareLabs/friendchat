@@ -30,7 +30,7 @@ var hello = null;
 		if ( !( this instanceof ns.Hello ))
 			return new ns.Hello( app, conf );
 		
-		var self = this;
+		const self = this;
 		self.app = app;
 		self.config = conf;
 		self.account = null;
@@ -96,13 +96,11 @@ var hello = null;
 		function init() {
 			self.config.emojii = window.emojii_conf;
 			self.config.protocol = document.location.protocol + '//';
-			self.config.appName = 'Friend Chat';
 			
 			self.timeNow( 'init start, set showloading timeout' );
 			self.showLoadingTimeout = window.setTimeout( showLoading, 1000 );
 			function showLoading() {
 				self.timeNow( 'show loading' );
-				console.log( 'showLoading' );
 				self.showLoadingTimeout = null;
 				self.showLoading();
 			}
@@ -133,13 +131,24 @@ var hello = null;
 			}
 			
 			hello.identity = new library.component.Identity( data );
-			self.loadHostConfig( confLoaded );
+			self.loadHostConfig( confBack );
 		}
 		
-		function confLoaded() {
-			self.timeNow( 'honst config loaded' );
-			self.preInit();
+		function confBack( err, hostConf ) {
+			self.hostConfigLoaded( err, hostConf );
 		}
+	}
+	
+	ns.Hello.prototype.hostConfigLoaded = function( err, hostConf ) {
+		const self = this;
+		if ( err ) {
+			console.log( 'hostConfigLoaded - err', err );
+			return;
+		}
+		
+		self.timeNow( 'honst config loaded' );
+		library.tool.mergeObjects( self.config, hostConf );
+		self.preInit();
 	}
 	
 	ns.Hello.prototype.getUserInfo = function( callback ) {
@@ -169,12 +178,27 @@ var hello = null;
 	
 	ns.Hello.prototype.loadCommonFragments = function( doneBack ) {
 		var self = this;
-		self.app.loadFile( 'Progdir:html/commonFragments.html', fileOmNomNom );
+		let commonLoaded = false;
+		let liveLoaded = false;
+		self.app.loadFile( 'Progdir:html/commonFragments.html', commonOmNoms );
+		self.app.loadFile( 'Progdir:html/liveCommonFragments.html', liveOmNomNoms );
 		
-		function fileOmNomNom( fileContent ) {
+		function commonOmNoms( fileContent ) {
 			fileContent = Application.i18nReplaceInString( fileContent );
 			hello.commonFragments = fileContent;
-			doneBack();
+			if ( liveLoaded )
+				doneBack();
+			else 
+				commonLoaded = true;
+		}
+		
+		function liveOmNomNoms( content ) {
+			content = Application.i18nReplaceInString( content );
+			hello.liveCommonFragments = content;
+			if ( commonLoaded )
+				doneBack();
+			else
+				liveLoaded = true;
 		}
 	}
 	
@@ -186,22 +210,73 @@ var hello = null;
 			self.config.port
 		);
 		
-		if ( self.loading )
-			self.showLoadingStatus({
-				type : 'load',
-				data : Date.now(),
-			});
+		if ( self.loadTimeout ) {
+			window.clearTimeout( self.loadTimeout );
+			self.loadTimeout = null;
+		}
 		
-		const conf = {
-			verb    : 'get',
-			url     : url,
-			data    : null,
-			success : success,
-			error   : loadErr,
-		};
-		library.tool.asyncRequest( conf );
+		if ( self.hostConfRequest ) {
+			self.hostConfRequest.abort(); // XMLHTTPRequest
+			self.hostConfRequest = null;
+		}
+		
+		if ( self.loadRequestDelay ) {
+			window.clearTimeout( self.loadRequestDelay );
+			self.loadRequestDelay = null;
+		}
+		
+		load( success, loadErr );
+		self.loadTimeout = window.setTimeout( loadingTimeout, 1000 * 15 );
+		
+		function load( success, loadErr ) {
+			if ( self.loading )
+				self.showLoadingStatus({
+					type : 'load',
+					data : Date.now(),
+				});
+			
+			const conf = {
+				verb    : 'get',
+				url     : url,
+				data    : null,
+				success : success,
+				error   : loadErr,
+			};
+			self.hostConfRequest = library.tool.asyncRequest( conf );
+		}
+		
+		function loadingTimeout() {
+			console.log( 'loading host config timed out', self.hostConfRequest );
+			try {
+				self.hostConfRequest.abort();
+			} catch( e ) {
+				console.log( 'loadingTimeout - exp while aborting request', e );
+			}
+			
+			self.hostConfRequest = null;
+			
+			self.showLoadingStatus({
+				type : 'error',
+				data : 'Loading host config timed out: ' + url,
+			});
+			
+			let delay = 1000 * 15;
+			let reconnectTime = Date.now() + delay;
+			self.showLoadingStatus({
+				type : 'wait-reconnect',
+				data : {
+					time : reconnectTime,
+				},
+			});
+			
+			self.loadRequestDelay = window.setTimeout( retryLoad, delay );
+			function retryLoad() {
+				self.loadHostConfig( doneBack );
+			}
+		}
 		
 		function success( response ) {
+			hasLoadRes();
 			if ( !response ) {
 				self.showLoadingStatus({
 					type : 'error',
@@ -219,15 +294,26 @@ var hello = null;
 				return;
 			}
 			
-			library.tool.mergeObjects( self.config, hostConf );
-			doneBack();
+			doneBack( null, hostConf );
 		}
 		
 		function loadErr( err ) {
+			hasLoadRes();
+			err = err || 'ERR_LOAD_HOST_CONF';
+			console.log( 'loadErr', err );
 			self.showLoadingStatus({
 				type : 'error',
 				data : Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url,
 			});
+			doneBack( err, null );
+		}
+		
+		function hasLoadRes() {
+			if ( !self.loadTimeout )
+				return;
+			
+			window.clearTimeout( self.loadTimeout );
+			self.loadTimeout = null;
 		}
 	}
 	
@@ -261,7 +347,6 @@ var hello = null;
 				return;
 			}
 			
-			console.log( 'conn connected' );
 			self.connected = true;
 			self.closeLoading( loadingClosed );
 		}
@@ -275,23 +360,27 @@ var hello = null;
 	
 	ns.Hello.prototype.showLoading = function() {
 		const self = this;
-		console.log( 'hello.showLoading' );
 		if ( self.showLoadingTimeout ) {
 			window.clearTimeout( self.showLoadingTimeout );
 			self.showLoadingTimeout = null;
 		}
 		
-		self.closeLoadingTimeout = window.setTimeout( canCloseNow, 2000 );
-		self.loading = new library.view.Loading( loadingClosed );
+		self.closeLoadingTimeout = window.setTimeout( canCloseNow, 3000 );
+		self.loading = new library.view.Loading( reconnect, loadingClosed );
 		function canCloseNow() {
-			console.log( 'canCloseNow', self.closeLoadingPlease );
 			self.closeLoadingTimeout = null;
 			if ( self.closeLoadingPlease )
 				self.closeLoading();
 		}
 		
+		function reconnect( e ) {
+			self.loadHostConfig( loadBack );
+			function loadBack( err , res ) {
+				self.hostConfigLoaded( err , res );
+			}
+		}
+		
 		function loadingClosed() {
-			console.log( 'loadingClosed' );
 			self.loadingClosed();
 		}
 	}
@@ -301,8 +390,9 @@ var hello = null;
 		if ( 'session' === status.type )
 			return;
 		
-		if ( self.showLoadingTimeout 
-			 && 'error' === status.type
+		if ( self.showLoadingTimeout &&
+			(      'error' === status.type
+				|| 'timeout' === status.type )
 		) {
 			self.showLoading();
 		}
@@ -315,20 +405,12 @@ var hello = null;
 			self.closeLoadingCallback = null;
 		}
 		
-		console.log( 'showLoadingStatus', status );
 		self.loading.setState( status );
 	}
 	
 	ns.Hello.prototype.closeLoading = function( callback ) {
 		const self = this;
 		self.timeNow( 'closeLoading' );
-		console.log( 'closeLoading', {
-			showLoading : self.showLoadingTimeout,
-			closeLoading : self.closeLoadingTimeout,
-			callback : callback,
-			'self.callback' : self.closeLoadingCallback,
-		});
-		
 		if ( self.showLoadingTimeout ) {
 			window.clearTimeout( self.showLoadingTimeout );
 			self.showLoadingTimeout = null;
@@ -337,7 +419,6 @@ var hello = null;
 		}
 		
 		if ( self.closeLoadingTimeout ) {
-			console.log( 'closeLoadingTimeout in effect', callback );
 			self.closeLoadingPlease = true;
 			self.closeLoadingCallback = callback;
 			return;
@@ -379,7 +460,6 @@ var hello = null;
 			callback( true );
 		}
 		
-		console.log( 'loadingClosed', self.connected );
 		if ( !self.connected )
 			self.checkQuit();
 	}
@@ -421,7 +501,7 @@ var hello = null;
 				self.loggedIn = true;
 				let identity = conf.data.identity || {
 					name   : options.name,
-					avatar : library.component.Identity.prototype.avatar,
+					//avatar : library.component.Identity.prototype.avatar,
 				};
 				
 				const inviteBundle = {
@@ -592,12 +672,12 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
-		console.log( 'updateConnState', state );
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
 		if (   'error' === state.type
 			|| 'close' === state.type
 			|| 'end' === state.type
+			|| 'timeout' === state.type
 		) {
 			self.connected = false;
 		}
@@ -631,7 +711,6 @@ var hello = null;
 		if ( isOnline === self.isOnline )
 			return;
 		
-		console.log( 'isOnline', isOnline );
 		self.app.toAllViews({
 			type : 'app-online',
 			data : isOnline,
@@ -648,7 +727,6 @@ var hello = null;
 	// From main view
 	ns.Hello.prototype.handleConnState = function( e ) {
 		const self = this;
-		console.log( 'handleConnState', e );
 		if ( 'reconnect' === e.type )
 			self.conn.reconnect();
 		
@@ -821,13 +899,15 @@ var hello = null;
 		const self = this;
 		const firstLogin = !self.account.lastLogin;
 		if ( firstLogin )
-			self.showWizard( doSetup );
+			doSetup({
+				advancedUI : false,
+			});
 		else
 			doSetup();
 		
-		function doSetup( wizRes ) {
-			if ( wizRes )
-				self.advancedUI = wizRes.advancedUI;
+		function doSetup( firstLoginConf ) {
+			if ( firstLoginConf )
+				self.advancedUI = firstLoginConf.advancedUI;
 			else
 				self.advancedUI = self.account.settings.advancedUI;
 				
@@ -851,7 +931,7 @@ var hello = null;
 			
 			function ready( msg ) {
 				self.initSubViews();
-				hello.account.sendReady( wizRes || null );
+				hello.account.sendReady( firstLoginConf || null );
 				hello.timeNow( 'main open' );
 			}
 			
@@ -877,7 +957,7 @@ var hello = null;
 	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
 		const self = this;
 		const winConf = {
-			title: hello.config.appName + ' - Main Window',
+			title: hello.config.appName || 'Friend Chat',
 			width : 440,
 			height : 600,
 		};
@@ -894,7 +974,7 @@ var hello = null;
 	ns.Main.prototype.openAdvView = function( initConf, onClose ) {
 		const self = this;
 		const winConf = {
-			title: hello.config.appName + ' - Main Window',
+			title: hello.config.appName || 'Friend Chat',
 			width : 440,
 			height : 600,
 		};
@@ -1032,11 +1112,13 @@ var hello = null;
 	
 	ns.Main.prototype.startLive = function() {
 		var self = this;
+		/*
 		var identity = {
 			name : hello.identity.name || library.tool.getName(),
 			avatar : library.component.Identity.prototype.avatar,
 		};
-		hello.rtc.createRoom( null, identity );
+		*/
+		hello.rtc.createRoom( null, null );
 	}
 	
 	ns.Main.prototype.initSubViews = function() {

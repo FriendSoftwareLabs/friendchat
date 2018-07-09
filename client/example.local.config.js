@@ -22,7 +22,8 @@ window.localconfig = {
 	// and is probably be where your friendcore is running
 	host : 'friendcore_host',
 	port : '3000',
-	// main view 
+	// main view
+	appName : 'Friend Chat',
 	default : {
 		view : {
 			width : 350,
