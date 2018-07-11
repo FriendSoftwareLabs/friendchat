@@ -1,4 +1,10 @@
 
+#chatting-with {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 #message-container {
 	width: 100%;
 	position: relative;

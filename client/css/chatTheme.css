@@ -15,13 +15,14 @@ Prepend with .im-chat or .conference classes to specify for view type
 */
 
 #head {
-	padding : 0em 0.5em;
-	height : 3em;
+	padding  : 0em 0.5em;
+	height   : 3em;
+	overflow : hidden;
 }
 
 #topic,
 #chatting-with {
-	font-size: 120%;
+	font-size : 120%;
 }
 
 #main {}
@@ -31,7 +32,7 @@ Prepend with .im-chat or .conference classes to specify for view type
 }
 
 .msg,
-.action { padding:0em 0.3em 0.3em 0.3em; }
+.action { padding : 0em 0.3em 0.3em 0.3em; }
 
 /*
 .msg.self { background-color: #DBE1E7; }
@@ -40,13 +41,11 @@ Prepend with .im-chat or .conference classes to specify for view type
 
 .msg-icon {
 	min-height : 1.7em;
-	width : 2em;
+	width      : 2em;
 }
 
 .msg .name { font-weight: bold; }
-.msg .time {
-	text-align : right;
-}
+.msg .time { text-align : right; }
 
 /*
 #hello .msg.action {

@@ -140,8 +140,8 @@ library.view = library.view || {};
 	ns.About.prototype.init = function() {
 		var self = this;
 		const windowConf = {
-			title : hello.config.appName + ' - About',
-			width : 400,
+			title  : ( hello.config.appName + ' - About' ) || 'Friend Chat - About',
+			width  : 400,
 			height : 400,
 		};
 		self.view = hello.app.createView(
@@ -149,7 +149,7 @@ library.view = library.view || {};
 			windowConf,
 			null,
 			null,
-			closed
+			closed,
 		);
 		
 		function closed() {
@@ -188,7 +188,7 @@ library.view = library.view || {};
 	ns.Loading.prototype.init = function() {
 		const self = this;
 		const winConf = {
-			title : hello.config.appName,
+			title : hello.config.appName || 'Friend Chat',
 			width : 400,
 			height : 200,
 		};
