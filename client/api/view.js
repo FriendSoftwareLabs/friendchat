@@ -877,3 +877,202 @@ body .View.Active.IconWindow ::-webkit-scrollbar-thumb
 
 window.View = new api.View();
 
+// Paste handler handles pasting of files and media ----------------------------
+( function( ns, undefined )
+{
+	ns.PasteHandler = function()
+	{
+		
+	}
+	
+	// Initiate paste handler
+	ns.PasteHandler.prototype.paste = function( evt, callback )
+	{
+		var self = this;
+		
+		function DirectoryContainsFile( filename, directoryContents )
+		{
+			if( !filename ) return false;
+			if( !directoryContents || directoryContents.length == 0 ) return false;
+	
+			for(var i = 0; i < directoryContents.length; i++ )
+			{
+				if( directoryContents[i].Filename == filename ) return true;
+			}
+			return false;
+		}
+		
+		function uploadPastedFile( file )
+		{
+			//get directory listing for Home:Downloads - create folder if it does not exist...
+			var j = new cAjax ();
+		
+			var updateurl = '/system.library/file/dir?wr=1'
+			updateurl += '&path=' + encodeURIComponent( 'Home:Downloads' );
+			updateurl += '&authid=' + encodeURIComponent( View.authId );
+			
+			var wholePath = 'Home:Downloads/';
+			
+			j.open( 'get', updateurl, true, true );
+			j.onload = function ()
+			{
+				var content;
+				// New mode
+				if ( this.returnCode == 'ok' )
+				{
+					try
+					{
+						content = JSON.parse(this.returnData||"null");
+					}
+					catch ( e ){};
+				}
+				// Legacy mode..
+				// TODO: REMOVE FROM ALL PLUGINS AND MODS!
+				else
+				{
+					try
+					{
+						content = JSON.parse(this.responseText() || "null");
+					}
+					catch ( e ){}
+				}
+		
+				if( content )
+				{
+					var newfilename = file.name;
+					var i = 0;
+					while( DirectoryContainsFile( newfilename, content ) )
+					{
+						i++;
+						//find a new name
+						var tmp = file.name.split('.');
+						var newfilename = file.name;
+						if( tmp.length > 1 )
+						{
+							var suffix = tmp.pop();				
+							newfilename = tmp.join('.');
+							newfilename += '_' + i + '.' + suffix;
+						}
+						else
+						{
+							newfilename += '_' + i;
+						}
+						if( i > 100 )
+						{
+							Notify({'title':i18n('i18n_paste_error'),'text':'Really unexpected error. You have pasted too many files.'});
+							if( callback ) callback( { response: false, message: 'Too many files pasted.' } );
+							break; // no endless loop please	
+						}
+					}
+					uploadFileToDownloadsFolder( file, newfilename, wholePath + newfilename );
+				}
+				else
+				{
+					Notify({'title':i18n('i18n_paste_error'),'text':'Really unexpected error. Contact your Friendly administrator.'});
+					if( callback ) callback( { response: false, message: 'Unexpected error occured.' } );
+				}
+			}
+			j.send ();
+		}
+		
+		// end of uploadPastedFile
+		function uploadFileToDownloadsFolder( file, filename, path )
+		{
+			console.log( 'Upload to downloads folder' );
+			// Setup a file copying worker
+			var url = document.location.protocol + '//' + document.location.host + '/webclient/';
+			var uworker = new Worker( url + 'js/io/filetransfer.js' );
+			
+			// Error happened!
+			uworker.onerror = function( err )
+			{
+				console.log( 'Upload worker error #######' );
+				console.log( err );
+				console.log( '###########################' );
+			}
+			
+			uworker.onmessage = function( e )
+			{
+				if( e.data['progressinfo'] == 1 )
+				{	
+					if( e.data['uploadscomplete'] == 1 )
+					{
+						if( !this.calledBack )
+							callback( { response: true, path: path } );
+						this.calledBack = true;
+						return true;
+					}
+				}
+			}
+
+			//hardcoded pathes here!! TODO!
+			var fileMessage = {
+				'authid': View.authId,
+				'targetPath': 'Home:Downloads/',
+				'targetVolume': 'Home',
+				'files': [ file ],
+				'filenames': [ filename ]
+			};
+			
+			uworker.postMessage( fileMessage );		
+		}
+		
+		var pastedItems = ( evt.clipboardData || evt.originalEvent.clipboardData ).items;
+		for( var i in pastedItems )
+		{
+			var item = pastedItems[i];
+			if( item.kind === 'file' )
+			{
+				var blob = item.getAsFile();
+				var filetype = ( blob.type == '' ? 'application/octet-stream' : blob.type );
+				
+				self.uploadBlob = blob;
+				
+				//no downloads dir - try to make one
+				var m = new cAjax();
+				m.onload = function()
+				{
+					//we have a downloads dir in home
+					var r = this.responseText().split( '<!--separate-->' );
+					if( r[0] == 'ok' )
+					{
+						uploadPastedFile( self.uploadBlob );
+					}
+					else
+					{
+						//no downloads dir - try to make one
+						var x = new cAjax();
+						x.onload = function()
+						{
+							var r1 = this.responseText().split( '<!--separate-->' );
+							//home drive found. create directory
+							if( r1[0] == 'ok' )
+							{
+								var c = new cAjax();
+								c.onLoad = function()
+								{
+									var rt = this.responseText().split( '<!--separate-->' );
+									if( rt[0] == 'ok' )
+									{
+										uploadPastedFile( self.uploadBlob );
+									}
+								}
+								c.open( 'post', '/system.library/file/makedir/?path=' + encodeURIComponent( 'Home:Downloads/' ) + '&authid=' + View.authId, true );
+								c.send();
+							}
+						}
+						x.open( 'post', '/system.library/file/dir/?path=' + encodeURIComponent( 'Home:' ) + '&authid=' + View.authId, true );
+						x.send();
+					}
+				}
+				m.open( 'post', '/system.library/file/dir/?path=' + encodeURIComponent( 'Home:Downloads/' ) + '&authid=' + View.authId, true );
+				m.send();
+			} // if file item
+		} // each pasted iteam
+	}
+	
+} )( api );
+
+// End paste handler -----------------------------------------------------------
+
+

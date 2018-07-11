@@ -559,6 +559,32 @@ library.view = library.view || {};
 			e.preventDefault();
 			self.input.submit();
 		}
+		
+		// Handle paste if it isn't a file
+		window.addEventListener( 'paste', function( evt )
+		{
+			var pastedItems = (evt.clipboardData || evt.originalEvent.clipboardData).items;
+			for( var i in pastedItems ) {
+				var item = pastedItems[i];
+				if( item.kind === 'file' ) {
+					var p = new api.PasteHandler();
+					p.paste( evt, function( res ) {
+						if( res.response == true ) {
+							self.view.send(	{
+								type: 'drag-n-drop',
+								data: [ {
+									Type: 'File',
+									Path: res.path
+								} ]
+							} );
+						}
+					} );
+					evt.preventDefault();
+					evt.stopPropagation();
+					break;
+				}
+			}
+		} );
 	}
 	
 	ns.Conference.prototype.handleWindowResize = function( e ) {

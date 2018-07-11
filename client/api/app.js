@@ -1531,67 +1531,6 @@ api.DoorFun.prototype.init = function() {
 //
 // file in Dormant dir
 
-
-//
-// File
-(function( ns, undefined ) {
-	ns.File = function( path ) {
-		if ( !( this instanceof ns.File ))
-			return new ns.File( path );
-		
-		var self = this;
-		self.path = path;
-		self.name = null;
-		self.type = null;
-		self.exposeHash = null;
-		
-		self.init();
-	}
-	
-	ns.File.prototype.init = function() {
-		var self = this;
-		console.log( 'File.init' );
-	}
-	
-	ns.File.prototype.expose = function( callback ) {
-		var self = this;
-		var libConf = {
-			functionName : 'file/expose',
-			args : {
-				path : self.path,
-			},
-			onsuccess : success,
-			onerror : err,
-		};
-		var lib = new api.Library( libConf );
-		function success( res ) {
-			self.exposeHash = res.hash;
-			self.name = res.name;
-			var link = self.getPublicLink();
-			callback( link );
-		}
-		function err( res ) {
-			console.log( 'File.expose.err', res );
-			callback( false );
-		}
-	}
-	
-	ns.File.prototype.unshare = function( callback ) {
-		var self = this;
-		console.log( 'File.unshare - NYI', self.path );
-	}
-	
-	ns.File.prototype.getPublicLink = function() {
-		var self = this;
-		if ( !self.exposeHash || !self.name )
-			return null;
-		
-		var link = window.Application.domain + '/sharedfile/' + self.exposeHash + '/' + self.name;
-		link = window.encodeURI( link );
-		return link;
-	}
-})( api );
-
 // SoundAlert
 (function( ns, undefined ) {
 	ns.SoundAlert = function( filePath ) {
@@ -1792,4 +1731,65 @@ api.DoorFun.prototype.init = function() {
 	
 })( fupLocal );
 
+//
+// File
+(function( ns, undefined ) {
+	ns.File = function( path ) {
+		if ( !( this instanceof ns.File ))
+			return new ns.File( path );
+		
+		var self = this;
+		self.path = path;
+		self.name = null;
+		self.type = null;
+		self.exposeHash = null;
+		
+		self.init();
+	}
+	
+	ns.File.prototype.init = function() {
+		var self = this;
+		console.log( 'File.init' );
+	}
+	
+	ns.File.prototype.expose = function( callback ) {
+		var self = this;
+		var libConf = {
+			functionName : 'file/expose',
+			args : {
+				path : self.path,
+			},
+			onsuccess : success,
+			onerror : err,
+		};
+		var lib = new api.Library( libConf );
+		function success( res ) {
+			self.exposeHash = res.hash;
+			self.name = res.name;
+			var link = self.getPublicLink();
+			callback( link );
+		}
+		function err( res ) {
+			console.log( 'File.expose.err', res );
+			callback( false );
+		}
+	}
+	
+	ns.File.prototype.unshare = function( callback ) {
+		var self = this;
+		console.log( 'File.unshare - NYI', self.path );
+	}
+	
+	ns.File.prototype.getPublicLink = function() {
+		var self = this;
+		if ( !self.exposeHash || !self.name )
+			return null;
+		
+		var link = window.Application.domain + '/sharedfile/' + self.exposeHash + '/' + self.name;
+		link = window.encodeURI( link );
+		return link;
+	}
+})( api );
+
 friend.tinyURL = new fupLocal.TinyURL();
+
