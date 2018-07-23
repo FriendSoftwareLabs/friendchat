@@ -1,7 +1,7 @@
 i18n_share : Share
 i18n_share_links : Share links with someone who is not using FriendUP, so they can join your live session.
 i18n_public : Public
-i18n_a_public_link : A public link can be used an unlimited number of times, by anyone, until removed.
+i18n_a_public_link : A public link can be used an unlimited number of times, by anyone, until invalidated.
 i18n_create_email : Create email
 i18n_copy_to_clipboard : Copy to clipboard
 i18n_make_the_session_private : Make the session private and invalidates the link
@@ -311,3 +311,8 @@ i18n_stream_session : Stream
 i18n_now_chatting_in : Now chatting in
 i18n_stream_state_source_connecting : Source connecting
 i18n_stream_state_stream_connecting : Connecting to stream
+i18n_invalidate : Invalidate
+i18n_are_you_sure : Are you sure?
+i18n_confirm_invalidate_explain : Invalidating a public link makes it unusable to anyone it has already been given to or on any website it has been posted.
+i18n_invalidate_link : Invalidate link
+i18n_keep_link : Keep link

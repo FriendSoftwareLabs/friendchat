@@ -233,7 +233,7 @@ name,
 					title="{i18n_make_the_session_private}"
 				>
 					<i class="fa fa-fw fa-close"></i>
-					{i18n_remove}
+					{i18n_invalidate}
 				</button>
 			</div>
 			<button id="share-set-public"
@@ -277,6 +277,28 @@ name,
 	<button id="share-close" class="button danger center-child">
 		<i class="fa fa-fw fa-close"></i>
 	</button>
+	<div id="share-confirm-invalidate-container" class="center-child hidden">
+		<div id="share-confirm-invalidate-content" class="BackgroundDefault group column">
+			<div id="share-confirm-invalidate-drama" class="">
+			</div>
+			<div class="description">
+				{i18n_are_you_sure}
+			</div>
+			<div class="description">
+				{i18n_confirm_invalidate_explain}
+			</div>
+			<div id="share-confirm-invalidate-btns" class="group row">
+				<button id="share-confirm-cancel" class="">
+					<i class="fa fa-fw fa-chain"></i>
+					{i18n_keep_link}
+				</button>
+				<button id="share-confirm-invalidate" class="danger">
+					<i class="fa fa-fw fa-chain-broken"></i>
+					{i18n_invalidate_link}
+				</button>
+			</div>
+		</div>
+	</div>
 </div>
 </script>
 
