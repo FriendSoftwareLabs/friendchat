@@ -51,7 +51,7 @@
 }
 
 .msg-item {
-	
+	padding : 0.2em 0.3em;
 }
 
 .msg-item .avatar {
@@ -63,8 +63,12 @@
 	background-repeat: no-repeat;
 }
 
+.msg-item .msg-container {
+	padding-left : 0.5em;
+}
+
 .msg-item .avatar.blank {
-	height: 1px;
+	height: 0em;
 }
 
 .msg-item .content {
@@ -73,18 +77,30 @@
 
 .msg,
 .msg-group {
-	padding: 0.2em 0em;
 	line-height: 1.3em;
 }
 
 .msg-group {
 	margin-top: 0.5em;
-	padding: 0 10px;
 }
 
 .msg-group .name {
 	padding-top : 0.2em;
 	font-weight : bold;
+}
+
+.msg-container {
+	
+}
+
+.msg-container .edit-msg {
+	max-height: 1.7em;
+	opacity: 0;
+	transition: all 0.2s;
+}
+
+.msg-container:hover .edit-msg {
+	opacity: 1;
 }
 
 .time {
@@ -106,9 +122,31 @@
 	margin-bottom : 0.2em;
 }
 
-.str {
+.message {
+	line-height: 1.7em;
 	word-break: break-word;
 	white-space: pre-wrap;
+}
+
+.editing {
+	margin  : 0.3em;
+	padding : 0.3em;
+}
+
+.system-container {
+	
+}
+
+.edit-msg-ui {
+	margin-top : 0.8em;
+}
+
+.edit-msg-ui .actions {
+	padding : 0.5em 0;
+}
+
+.edit-msg-ui .actions > * {
+	padding-left : 0.3em;
 }
 
 #users-container {

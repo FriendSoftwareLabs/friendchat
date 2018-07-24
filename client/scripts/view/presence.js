@@ -27,9 +27,6 @@ library.view = library.view || {};
 
 (function( ns, undefined ) {
 	ns.Presence = function( fupConf ) {
-		if ( !( this instanceof ns.Presence ))
-			return new ns.Presence( fupConf );
-		
 		const self = this;
 		self.conn = window.View;
 		
@@ -272,10 +269,20 @@ library.view = library.view || {};
 			'messages',
 			self.userId,
 			self.users,
+			onMsgEdit,
 			self.parser,
 			self.linkExpand,
 			friend.template
 		);
+		
+		function onMsgEdit( event ) {
+			console.log( 'onMsgEdit', event );
+			const edit = {
+				type : 'edit',
+				data : event,
+			};
+			self.sendChatEvent( edit );
+		}
 		
 		// multiline input
 		const inputConf = {
@@ -381,6 +388,9 @@ library.view = library.view || {};
 		
 		if ( 'log' === event.type )
 			self.handleLog( event.data );
+		
+		if ( 'update' === event.type )
+			self.msgBuilder.update( event.data );
 	}
 	
 	ns.Presence.prototype.handleLog = function( logs ) {
@@ -1283,6 +1293,7 @@ library.view = library.view || {};
 		containerId,
 		userId,
 		users,
+		onEdit,
 		parser,
 		linkExpand,
 		templateManager
@@ -1291,6 +1302,7 @@ library.view = library.view || {};
 		self.containerId = containerId;
 		self.userId = userId;
 		self.users = users;
+		self.onEdit = onEdit;
 		self.parser = parser || null;
 		self.linkEx = linkExpand || null;
 		self.template = templateManager;
@@ -1315,6 +1327,117 @@ library.view = library.view || {};
 		}
 		
 		return handler( event.data );
+	}
+	
+	ns.MsgBuilder.prototype.update = function( event ) {
+		const self = this;
+		if ( !event || !event.msgId )
+			return;
+		
+		console.log( 'MsgBuilder.update', event );
+		let update = event.message;
+		let parsed = null;
+		if ( self.parser )
+			parsed = self.parser.work( update );
+		else
+			parsed = update;
+		
+		const el = document.getElementById( event.msgId );
+		const orgEl = el.querySelector( '.msg-container .str' );
+		const msgEl = el.querySelector( '.msg-container .message' );
+		orgEl.textContent = update;
+		msgEl.innerHTML = parsed;
+		if ( self.linkEx )
+			self.linkEx.work( msgEl );
+	}
+	
+	ns.MsgBuilder.prototype.editMessage = function( itemId ) {
+		const self = this;
+		console.log( 'editMessage', itemId );
+		const el = document.getElementById( itemId );
+		if ( el.isEditing )
+			return;
+		
+		el.isEditing = true;
+		el.classList.add(
+			'editing',
+			'BordersDefault',
+			'BackgroundHeavy',
+			'Rounded'
+		);
+		const editIconEl = el.querySelector( '.msg-container .edit-msg' );
+		editIconEl.classList.toggle( 'hidden', true );
+		
+		const msgEl = el.querySelector( '.msg-container .str' );
+		const sysEl = el.querySelector( '.system-container' );
+		const currMsg = msgEl.textContent;
+		console.log( 'editMessage - message', currMsg );
+		const multiId = friendUP.tool.uid( 'edit' );
+		const editConf = {
+			multiId : multiId,
+		};
+		const editEl = self.template.getElement( 'edit-msg-ui-tmpl', editConf );
+		const subBtn = editEl.querySelector( '.actions .edit-submit' );
+		const cancelBtn = editEl.querySelector( '.actions .edit-cancel' );
+		sysEl.appendChild( editEl );
+		
+		const multiConf = {
+			containerId     : multiId,
+			templateManager : self.template,
+			onsubmit        : onSubmit,
+			onstate         : () => {},
+		};
+		const edit = new library.component.MultiInput( multiConf );
+		edit.setValue( currMsg );
+		
+		function onSubmit( newMsg ) {
+			console.log( 'onSubmit', newMsg );
+			saveEdit( newMsg );
+			close();
+		}
+		
+		subBtn.addEventListener( 'click', subClick, false );
+		cancelBtn.addEventListener( 'click', cancelClick, false );
+		function subClick( e ) {
+			console.log( 'subClick', edit.getValue());
+			let newMsg = edit.getValue();
+			saveEdit( newMsg );
+			close();
+		}
+		
+		function cancelClick( e ) {
+			console.log( 'cancelClick' );
+			close();
+		}
+		
+		function saveEdit( newMsg ) {
+			console.log( 'saveEdit', {
+				newMsg  : newMsg,
+				currMsg : currMsg,
+			});
+			if ( !self.onEdit )
+				return;
+			
+			const edit = {
+				msgId   : itemId,
+				message : newMsg,
+				reson   : null,
+			};
+			self.onEdit( edit );
+		}
+		
+		function close() {
+			el.isEditing = false;
+			editIconEl.classList.toggle( 'hidden', false );
+			edit.close();
+			editEl.parentNode.removeChild( editEl );
+			el.classList.remove(
+				'editing',
+				'BordersDefault',
+				'BackgroundHeavy',
+				'Rounded'
+			);
+		}
 	}
 	
 	ns.MsgBuilder.prototype.getFirstMsgId = function() {
@@ -1342,6 +1465,7 @@ library.view = library.view || {};
 		const self = this;
 		delete self.userId;
 		delete self.users;
+		delete self.onEdit;
 		delete self.parser;
 		delete self.linkEx;
 		delete self.template;
@@ -1520,6 +1644,7 @@ library.view = library.view || {};
 		
 		envelope.lastMsgId = el.id;
 		envelope.el.appendChild( el );
+		self.bindItem( el.id );
 	}
 	
 	ns.MsgBuilder.prototype.addLogItem = function( el, envelope ) {
@@ -1529,11 +1654,13 @@ library.view = library.view || {};
 		
 		const before = document.getElementById( envelope.firstMsgId );
 		envelope.el.insertBefore( el, before );
+		self.bindItem( el.id );
 	}
 	
 	ns.MsgBuilder.prototype.buildMsg = function( conf ) {
 		const self = this;
 		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
+		//const tmplId = 'msg-tmpl';
 		const msg = conf.event;
 		const uId = msg.fromId;
 		const mId = msg.msgId;
@@ -1542,6 +1669,7 @@ library.view = library.view || {};
 		let name = '';
 		let userKlass = '';
 		let bgKlass = 'sw1';
+		let editKlass = 'hidden';
 		if ( isGuest ) {
 			name = 'Guest > ' + msg.name;
 			userKlass = 'guest-user-klass';
@@ -1551,13 +1679,16 @@ library.view = library.view || {};
 		}
 		
 		if ( uId === self.userId ) {
-			name = 'You:';
 			bgKlass = 'sw2';
+			editKlass = '';
 		}
 		
-		let message = msg.message;
+		let original = msg.message;
+		let message = null;
 		if ( self.parser )
-			message = self.parser.work( message );
+			message = self.parser.work( original );
+		else
+			message = original;
 		
 		const msgConf = {
 			msgId     : mId,
@@ -1565,7 +1696,9 @@ library.view = library.view || {};
 			bgKlass   : bgKlass,
 			from      : name,
 			time      : msg.time,
+			original  : original,
 			message   : message,
+			editKlass : editKlass,
 		};
 		const el = self.template.getElement( tmplId, msgConf );
 		if ( self.linkEx )
@@ -1580,6 +1713,16 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.buildNotie = function() {
 		const self = this;
+	}
+	
+	ns.MsgBuilder.prototype.bindItem = function( itemId ) {
+		const self = this;
+		const el = document.getElementById( itemId );
+		const editBtn = el.querySelector( '.msg-container .edit-msg' );
+		editBtn.addEventListener( 'click', editClick, false );
+		function editClick( e ) {
+			self.editMessage( itemId );
+		}
 	}
 	
 	ns.MsgBuilder.prototype.getEnvelope = function( envConf ) {

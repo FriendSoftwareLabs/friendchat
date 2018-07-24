@@ -313,6 +313,8 @@ i18n_stream_session : Stream
 i18n_now_chatting_in : Now chatting in
 i18n_stream_state_source_connecting : Source connecting
 i18n_stream_state_stream_connecting : Connecting to stream
+i18n_discard_changes : Cancel
+i18n_save_changes : Save changes
 i18n_searching : Searching..
 i18n_email : Email
 i18n_contacts : Contacts

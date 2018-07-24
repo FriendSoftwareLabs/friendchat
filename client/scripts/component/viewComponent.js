@@ -1395,23 +1395,35 @@ library.component = library.component || {};
 	
 	ns.MultiInput.prototype.add = function( str ) {
 		const self = this;
+		if ( !self.ta )
+			return;
+		
 		const current = self.ta.value;
 		self.ta.value = current + str;
 	}
 	
 	ns.MultiInput.prototype.focus = function() {
 		var self = this;
+		if ( !self.ta )
+			return;
+		
 		self.ta.focus();
 	}
 	
 	ns.MultiInput.prototype.setValue = function( string ) {
 		var self = this;
+		if ( !self.ta )
+			return;
+		
 		self.ta.value = string;
 		self.checkLineBreaks();
 	}
 	
 	ns.MultiInput.prototype.getValue = function() {
 		var self = this;
+		if ( !self.ta )
+			return;
+		
 		return self.ta.value;
 	}
 	
@@ -1542,6 +1554,8 @@ library.component = library.component || {};
 		}
 		
 		self.clearIsTyping();
+		if ( !self.ta )
+			return;
 		
 		let str = self.ta.value;
 		if ( str.length && self.onsubmit )
