@@ -293,9 +293,9 @@ library.component = library.component || {};
 	ns.Info.prototype.setup = function() {
 		var self = this;
 		var html = ns.template.get( 'hello-infoscreen-tmpl' );
-		var container = ge( self.parentId );
+		var container = document.getElementById( self.parentId );
 		container.insertAdjacentHTML( 'beforeend', html );
-		self.screen = ge( 'hello-infoscreen' );
+		self.screen = document.getElementById( 'hello-infoscreen' );
 		self.text = self.screen.querySelector( '.content' );
 		self.border = self.screen.querySelector( '.contentContainer' );
 	}
@@ -346,8 +346,8 @@ library.component = library.component || {};
 	}
 	
 	ns.Droppings.prototype.handleFile = function( item ) {
-		var self = this;
-		var file = new api.File( item.Path );
+		const self = this;
+		const file = new api.File( item.Path );
 		file.expose( back );
 		function back( res ) {
 			var success = !!res;

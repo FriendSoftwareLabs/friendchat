@@ -58,12 +58,17 @@ library.view = library.view || {};
 	
 	ns.BaseContact.prototype.getName = function() {
 		const self = this;
-		return self.identity.name;
+		return self.identity.name || '';
 	}
 	
 	ns.BaseContact.prototype.getOnline = function() {
 		const self = this;
-		return true;
+		return false;
+	}
+	
+	ns.BaseContact.prototype.getAvatar = function() {
+		const self = this;
+		return self.identity.avatar || '';
 	}
 	
 	ns.BaseContact.prototype.getUnreadMessages = function() {
@@ -71,27 +76,45 @@ library.view = library.view || {};
 		return 0;
 	}
 	
+	ns.BaseContact.prototype.getLastMessage = function() {
+		const self = this;
+		return '';
+	}
+	
 	ns.BaseContact.prototype.openChat = function() {
-		var self = this;
-		self.send({
-			type : 'chat',
-		});
+		const self = this;
+		self.handleAction( 'open-chat' );
 	}
 	
 	ns.BaseContact.prototype.startVideo = function( perms ) {
 		const self = this;
-		self.startLive( 'video', perms );
+		//self.startLive( 'video', perms );
+		self.handleAction( 'live-video', perms );
 	}
 	
 	ns.BaseContact.prototype.startVoice = function( perms ) {
 		const self = this;
-		self.startLive( 'audio', perms );
+		//self.startLive( 'audio', perms );
+		self.handleAction( 'live-audio', perms );
+	}
+	
+	ns.BaseContact.prototype.handleAction = function( action, data ) {
+		const self = this;
+		self.send({
+			type : action,
+			data : data,
+		});
 	}
 	
 	// Private
 	
+	ns.BaseContact.prototype.getMenuOptions = function() {
+		throw new Error( 'BaseContact.getMenuOptions - implement in extension' );
+	}
+	
 	ns.BaseContact.prototype.baseContactInit = function( parentView ) {
 		var self = this;
+		self.menuActions = new library.component.MiniMenuActions();
 		self.view = new library.component.SubView({
 			parent : parentView,
 			type : self.clientId,
@@ -101,12 +124,12 @@ library.view = library.view || {};
 		function updateIdentity( msg ) { self.updateIdentity( msg ); }
 		
 		self.buildElement(); // must be defined for each contact
-		self.bindActionPanel();
+		self.bindItem();
 	}
 	
-	ns.BaseContact.prototype.updateIdentity = function( data ) {
+	ns.BaseContact.prototype.updateIdentity = function( id ) {
 		var self = this;
-		self.identity = data;
+		self.identity = id;
 		self.updateName();
 	}
 	
@@ -117,64 +140,37 @@ library.view = library.view || {};
 		nameElement.textContent = self.identity.name;
 	}
 	
-	ns.BaseContact.prototype.bindActionPanel = function() {
+	ns.BaseContact.prototype.bindItem = function() {
 		var self = this;
 		var element = document.getElementById( self.clientId );
-		var actionPanel = element.querySelector( '.actions-container .actions' );
-		if ( !actionPanel ) {
-			console.log( 'no action panel found for', self );
-			return;
-		}
+		self.itemMenu = element.querySelector( '.item-menu' );
 		
-		var actionPanelHide = actionPanel.querySelector( 'div.hide-actions' );
-		// make elements focusable - el.focus()
-		actionPanel.tabIndex = 0;
-		document.body.tabIndex = 0; // this is so we can unfocus the action panel easily
-		
-		//element.addEventListener( 'mouseenter', showActions, false );
 		element.addEventListener( 'click', click, false );
-		element.addEventListener( 'dblclick', doubleClick, false  );
+		if ( self.itemMenu )
+			self.itemMenu.addEventListener( 'click', menuClick, false );
 		
-		//actionPanel.addEventListener( 'mouseleave', hideActions, false );
-		actionPanel.addEventListener( 'blur', hideActions, false );
-		
-		if ( actionPanelHide )
-			actionPanelHide.addEventListener( 'click', hideClick, false );
-		
-		function click( e ) {
-			showActions();
-			actionPanel.focus();
-		}
-		
-		function doubleClick( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-			if ( self.onDoubleClick )
-				self.onDoubleClick();
-		}
-		
-		function hideClick( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-			document.body.focus();
-		}
-		
-		function showActions( e ) {
-			element.classList.toggle( 'show-actions', true );
-		}
-		
-		function hideActions( e ) {
-			if ( e.relatedTarget && e.relatedTarget.tagName == 'BUTTON' ) {
-				e.relatedTarget.click();
-			}
-			
-			element.classList.toggle( 'show-actions', false );
-		}
+		function click( e ) { self.openChat(); }
+		function menuClick( e ) { self.showMenu( e ); }
 	}
 	
-	ns.BaseContact.prototype.onDoubleClick = function() {
-		var self = this;
-		self.openChat();
+	ns.BaseContact.prototype.showMenu = function( e ) {
+		const self = this;
+		e.stopPropagation();
+		const options = self.getMenuOptions();
+		if ( !options || !options.length )
+			return;
+		
+		new library.component.MiniMenu(
+			hello.template,
+			self.itemMenu,
+			'hello',
+			options,
+			onSelect
+		);
+		
+		function onSelect( selected ) {
+			self.handleAction( selected );
+		}
 	}
 	
 	ns.BaseContact.prototype.startLive = function( mode, perms ) {
@@ -237,7 +233,7 @@ library.view = library.view || {};
 		self.updateMap = null;
 		self.contactsFoldit = friendUP.tool.uid( 'foldit' );
 		
-		self.optionMenu = friendUP.tool.uid( 'options' );
+		//self.optionMenu = friendUP.tool.uid( 'options' );
 		self.options = {};
 		
 		self.initBaseModule();
@@ -249,8 +245,13 @@ library.view = library.view || {};
 	
 	ns.BaseModule.prototype = Object.create( library.component.EventEmitter.prototype );
 	
+	// Public
+	
+	// Private
+	
 	ns.BaseModule.prototype.initBaseModule = function() {
 		var self = this;
+		self.menuActions = new library.component.MiniMenuActions();
 		if ( !self.identity ) {
 			self.identity = {
 				name : '---',
@@ -323,7 +324,7 @@ library.view = library.view || {};
 		};
 		self.serverMessage = new library.component.InfoBox( boxConf );
 		
-		self.addMenu();
+		//self.addMenu();
 		self.bindMenuBtn();
 		self.updateTitle();
 		
@@ -392,14 +393,42 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.bindMenuBtn = function() {
-		var self = this;
-		var menuBtn = document.getElementById( self.optionMenu );
-		menuBtn.addEventListener( 'click', menuBtnClick, false );
+		const self = this;
+		const el = document.getElementById( self.clientId );
+		self.itemMenu = el.querySelector( '.actions .item-menu' );
+		self.itemMenu.addEventListener( 'click', menuBtnClick, false );
 		function menuBtnClick( e ) {
 			e.stopPropagation();
 			e.preventDefault();
-			main.showMenu( self.menuId );
+			self.showMenu();
 		}
+	}
+	
+	ns.BaseModule.prototype.showMenu = function() {
+		const self = this;
+		const opts = self.getMenuOptions();
+		if ( !opts || !opts.length )
+			return;
+		
+		new library.component.MiniMenu(
+			hello.template,
+			self.itemMenu,
+			'hello',
+			opts,
+			onSelect
+		);
+		
+		function onSelect( action ) {
+			self.handleAction( action );
+		}
+	}
+	
+	ns.BaseModule.prototype.handleAction = function( type, data ) {
+		const self = this;
+		self.send({
+			type : type,
+			data : data,
+		});
 	}
 	
 	// specific modules may want to reimplement
@@ -718,7 +747,7 @@ library.view = library.view || {};
 		var titleElement = parentElement.querySelector( '.module-title' );
 		titleElement.textContent = title;
 		
-		main.menu.update( self.menuId, title );
+		//main.menu.update( self.menuId, title );
 	}
 	
 	ns.BaseModule.prototype.getTitleString = function() {
@@ -789,11 +818,13 @@ library.view = library.view || {};
 		var self = this;
 		self.view.close();
 		self.removeCss();
-		main.menu.remove( self.menuId );
+		//main.menu.remove( self.menuId );
 		
 		var element = document.getElementById( self.clientId );
 		element.parentNode.removeChild( element );
 		self.closeEventEmitter();
+		
+		delete self.menuActions;
 	}
 	
 })( library.view );

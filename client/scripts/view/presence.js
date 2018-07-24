@@ -100,6 +100,7 @@ library.view = library.view || {};
 		self.offlineEl = document.getElementById( 'offline-users' );
 		self.detachedEl = document.getElementById( 'detached' );
 		self.toggleUsersBtn = document.getElementById( 'show-hide-btn' );
+		const attachBtn = document.getElementById( 'attachment' );
 		
 		// chat things
 		//self.messagesEl = document.getElementById( 'messages' );
@@ -114,6 +115,14 @@ library.view = library.view || {};
 		emoPanelBtn.addEventListener( 'click', toggleEmoPanel, false );
 		inputForm.addEventListener( 'submit', inputSubmit, false );
 		submitBtn.addEventListener( 'click', inputSubmit, false );
+		attachBtn.addEventListener( 'click', attach, false );
+		
+		function attach( e ) {
+			self.send( {
+				type: 'attach',
+				data: false
+			} );
+		};
 		
 		function goVideoClick( e ) { self.goLive( 'video' ); }
 		function goAudioClick( e ) { self.goLive( 'audio' ); }
@@ -202,7 +211,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleInitialize = function( conf ) {
 		const self = this;
-		console.log( 'presence.handleInitialize', conf.state );
 		friend.template.addFragments( conf.fragments );
 		const state = conf.state;
 		// things
@@ -331,7 +339,9 @@ library.view = library.view || {};
 		
 		// dont focus input if VR device / mode
 		if ( 'VR' !== window.View.deviceType )
+		{
 			self.input.focus();
+		}
 		
 		self.conn.ready();
 		self.sendChatEvent({
@@ -342,7 +352,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleState = function( state ) {
 		const self = this;
-		console.log( 'handleState', state );
 		self.users.updateAll( state );
 		//removeOld( state.users );
 		//addNew( state.users );
@@ -352,7 +361,6 @@ library.view = library.view || {};
 		
 		function reloadLog() {
 			let lastMsgId = self.msgBuilder.getLastMsgId();
-			console.log( 'reloadLog', lastMsgId );
 			const logFrom = {
 				type : 'log',
 				data : {
@@ -422,13 +430,16 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handlePersistent = function( event ) {
 		const self = this;
-		console.log( 'handlePersistent', event );
+		console.log( 'handlePersistent - NYI', event );
 	}
 	
 	// things
 	
 	ns.Presence.prototype.checkAutoComplete = function( e ) {
 		const self = this;
+		console.log( 'checkAutoComplete - NYI', e );
+		return;
+		
 		var key = e.code || e.key;
 		if ( 'Tab' !== key )
 			return;
@@ -442,7 +453,6 @@ library.view = library.view || {};
 			return;
 		}
 		
-		console.log( 'checkAutoComplete', e );
 	}
 	
 	ns.Presence.prototype.sendChatEvent = function( event ) {
@@ -500,7 +510,7 @@ library.view = library.view || {};
 	
 	ns.UserGroup.prototype.setList = function( idList ) {
 		const self = this;
-		console.log( 'UserGroup.setList', idList );
+		console.log( 'UserGroup.setList - NYI', idList );
 	}
 	
 	ns.UserGroup.prototype.attach = function( id ) {
@@ -681,7 +691,6 @@ library.view = library.view || {};
 		tmplManager
 	) {
 		const self = this;
-		console.log( 'GroupUser', conf );
 		self.id = id;
 		self.name = conf.name;
 		self.avatar = conf.avatar;
@@ -836,7 +845,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.addIdentities = function( idMap ) {
 		const self = this;
-		console.log( 'UserCtrl.addIdentitties', idMap );
 		let ids = Object.keys( idMap );
 		ids.forEach( addCss );
 		function addCss( id ) {
@@ -847,10 +855,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.updateAll = function( state ) {
 		const self = this;
-		console.log( 'UserCtrl.updateAll', {
-			state : state,
-			users : self.users,
-		});
 		removeOld( state.users );
 		addNew( state.users );
 		updateOnline( state.online );
@@ -865,7 +869,6 @@ library.view = library.view || {};
 					return false;
 			});
 			
-			console.log( 'remove', remove );
 			remove.forEach( uid => self.handleLeave( uid ));
 		}
 		
@@ -877,12 +880,10 @@ library.view = library.view || {};
 				else
 					return false;
 			});
-			console.log( 'addNew', add );
 			add.forEach( fid => self.handleJoin( fresh[ fid ]));
 		}
 		
 		function updateOnline( fresh ) {
-			console.log( 'updateOnline', fresh );
 			let uids = Object.keys( self.users );
 			uids.forEach( uid => {
 				if ( fresh.some( fid => fid === uid ))
@@ -899,7 +900,6 @@ library.view = library.view || {};
 				if ( peers.some( pid => pid === uid ))
 					isLive = true;
 				
-				console.log( 'updateAll.udpateLive - isLive', isLive );
 				self.setState( uid, 'live', isLive );
 			});
 		}
@@ -1062,17 +1062,16 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.closeUsers = function() {
 		const self = this;
-		console.log( 'closeUsers', self.users );
+		console.log( 'closeUsers - NYI', self.users );
 	}
 	
 	ns.UserCtrl.prototype.closeGroups = function() {
 		const self = this;
-		console.log( 'closeGroups', self.groups );
+		console.log( 'closeGroups - NYI', self.groups );
 	}
 	
 	ns.UserCtrl.prototype.handleOnline = function( data ) {
 		const self = this;
-		console.log( 'presence.handleOnline', data );
 		const uid = data.clientId;
 		const user = self.users[ uid ];
 		if ( !user )
@@ -1090,7 +1089,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleOffline = function( userId ) {
 		const self = this;
-		console.log( 'presence.handleOffline', userId );
 		let user = self.users[ userId ];
 		if ( !user || !user.authed ) {
 			console.log( 'UserCtrl.handleOffline - \
@@ -1104,7 +1102,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleJoin = function( user ) {
 		const self = this;
-		console.log( 'presence.handleJoin', user );
 		const uid = user.clientId;
 		if ( null != self.users[ uid ] ) {
 			console.log( 'UserCtrl.addUser - user already present ( hueuhueh )', {
@@ -1176,7 +1173,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleLeave = function( userId ) {
 		const self = this;
-		console.log( 'presence.handleLeave', userId );
 		const user = self.users[ userId ];
 		if ( !user )
 			return;
@@ -1188,7 +1184,7 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.handleIdentity = function( id ) {
 		const self = this;
-		console.log( 'UserCtrl.handleIdentity', id );
+		console.log( 'UserCtrl.handleIdentity - NYI', id );
 	}
 	
 	ns.UserCtrl.prototype.handleAuth = function( event ) {
@@ -1207,10 +1203,6 @@ library.view = library.view || {};
 	
 	ns.UserCtrl.prototype.moveUserToGroup = function( userId, groupId ) {
 		const self = this;
-		console.log( 'moveUserToGroup', {
-			uid : userId,
-			gid : groupId,
-		});
 		if ( !groupId )
 			groupId = 'bug';
 		
@@ -1439,7 +1431,6 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.handleLog = function( log ) {
 		const self = this;
-		console.log( 'handleLog', log );
 		let events = log.data.events;
 		let newIds = log.data.ids;
 		if ( newIds )
@@ -1560,7 +1551,7 @@ library.view = library.view || {};
 		}
 		
 		if ( uId === self.userId ) {
-			name = '<< You >>';
+			name = 'You:';
 			bgKlass = 'sw2';
 		}
 		

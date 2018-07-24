@@ -52,9 +52,37 @@ library.module = library.module || {};
 	
 	// Public
 	
+	// Tells the module there has been a disconnect/reconenct and that it should 
+	// reconnect / sync to its server side component
 	ns.BaseModule.prototype.reconnect = function() {
 		console.log( 'BaseModule.reconnect() - implement in module', self );
 		throw new Error( '^^^ BaseModule.reconnect() - implement in module' );
+	}
+	
+	/*
+	must return a object:
+	{
+		source : <string> - name of source,
+		pools  : <array> - list of promises that resolve into search pools
+	}
+	
+	a search pool is a list of objects
+	each item in the resolved search pool is an object:
+	{
+		id         : <id-string>
+		type       : 'contact' | 'room'
+		isRelation : <bool> - is in friend / room list
+		name       : <string>
+		email      : <string> - optional
+		alias      : <string> - nick / login name, optional
+		avatar     : <image resource> - optional
+		isOnline   : <bool> - optional
+	}
+	
+	*/
+	ns.BaseModule.prototype.getSearchPools = function() {
+		console.log( 'BaseModule.getSearchPools() - implement in module' , self );
+		throw new Error( '^^^ BaseModule.getSearchPools() - implement in module' );
 	}
 	
 	// Private
@@ -70,10 +98,10 @@ library.module = library.module || {};
 		function receiveMsg( msg ) { self.receiveMsg( msg ); }
 		
 		self.messageMap = {
-			'initstate' : initState,
+			'initstate'  : initState,
 			'connection' : connection,
-			'settings' : showSettings,
-			'setting' : updateSetting,
+			'settings'   : showSettings,
+			'setting'    : updateSetting,
 		};
 		
 		function initState( msg ) { self.initializeState( msg ); }
@@ -352,6 +380,7 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.setIdentity = function() {
 		const self = this;
 		self.identity = hello.identity;
+		self.identity.avatar = '';
 		if ( !self.identity.name )
 			self.identity.name = self.identity.alias;
 	}
@@ -474,12 +503,10 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype = Object.create( library.module.BaseModule.prototype );
 	
-	// 'public'
+	// Public
 	
-	// BaseModule.reconnect
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'Presence.reconnect', self.contacts );
 		let ids = Object.keys( self.contacts );
 		ids.forEach( id => {
 			let room = self.contacts[ id ];
@@ -487,14 +514,79 @@ library.module = library.module || {};
 		});
 	}
 	
+	ns.Presence.prototype.getSearchPools = function() {
+		const self = this;
+		let pools = [
+			new Promise( getRooms ),
+		];
+		
+		return {
+			source : 'Presence',
+			pools  : pools,
+		};
+		
+		function getRooms( resolve, reject ) {
+			let items = Object.keys( self.contacts )
+				.map( build );
+			
+			resolve({
+				type    : '',
+				actions : [
+					'open-chat',
+					'live-audio',
+					'live-video',
+				],
+				pool    : items,
+			});
+		}
+		
+		function build( cId ) {
+			let room = self.contacts[ cId ];
+			let item = {
+				id         : room.clientId,
+				type       : 'room',
+				isRelation : true,
+				name       : room.identity.name,
+			};
+			return item;
+		}
+	}
+	
+	ns.Presence.prototype.openChat = function( conf ) {
+		const self = this;
+		const room = self.contacts[ conf.id ];
+		if ( !room )
+			return;
+		
+		room.openChat();
+	}
+	
+	ns.Presence.prototype.goLiveAudio = function( conf ) {
+		const self = this;
+		const room = self.contacts[ conf.id ];
+		if ( !room )
+			return;
+		
+		room.startAudio();
+	}
+	
+	ns.Presence.prototype.goLiveVideo = function( conf ) {
+		const self = this;
+		const room = self.contacts[ conf.id ];
+		if ( !room )
+			return;
+		
+		room.startVideo();
+	}
+	
 	ns.Presence.prototype.create = function( identity ) {
 		const self = this;
-		console.log( 'Presence.create', identity );
+		console.log( 'Presence.create - NYI', identity );
 	}
 	
 	ns.Presence.prototype.join = function( invite, identity ) {
 		const self = this;
-		console.log( 'Presence.join', {
+		console.log( 'Presence.join - NYI', {
 			in : invite,
 			id : identity,
 		});
@@ -502,15 +594,17 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.leave = function( roomId ) {
 		const self = this;
-		console.log( 'Presence.leave', roomId );
+		console.log( 'Presence.leave - NYI', roomId );
 	}
 	
 	// Private
 	
 	ns.Presence.prototype.init = function() {
 		const self = this;
+		/* UHEUHEUHEE
 		if ( !self.module.settings.identity )
 			self.module.settings.identity
+		*/
 		
 		// server
 		self.messageMap[ 'initialize' ] = initialize;
@@ -536,7 +630,7 @@ library.module = library.module || {};
 		function clear( e ) { self.clear( e ); }
 		
 		// view
-		self.view.on( 'create', createRoom );
+		self.view.on( 'create-room', createRoom );
 		
 		function createRoom( e ) { self.handleCreateRoom( e ); }
 		
@@ -572,7 +666,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.initialize = function( state ) {
 		const self = this;
-		console.log( 'Presence.initialize', state );
+		console.log( 'Presence.initialize - NYI', state );
 	}
 	
 	ns.Presence.prototype.handleInitialize = function() {
@@ -583,11 +677,17 @@ library.module = library.module || {};
 	ns.Presence.prototype.sendInit = function() {
 		const self = this;
 		const authBundle = hello.getAuthBundle();
+		const id = {
+			name   : hello.identity.name,
+			alias  : hello.identity.alias,
+			avatar : '',
+		};
+		
 		const init = {
 			type : 'initialize',
 			data : {
 				authBundle : authBundle,
-				identity   : hello.identity,
+				identity   : id,
 			},
 		};
 		self.send( init );
@@ -605,11 +705,6 @@ library.module = library.module || {};
 	ns.Presence.prototype.handleServiceOnGetInfo = function( roomId ) {
 		const self = this;
 		let room = self.contacts[ roomId ];
-		console.log( 'handleServiceOnGetInfo', [
-			roomId,
-			room,
-		]);
-		
 		return {
 			id       : roomId,
 			name     : room.identity.name,
@@ -760,7 +855,6 @@ library.module = library.module || {};
 			return;
 		
 		delete self.roomRequests[ reqId ];
-		
 		if ( 'create' == req.action ) {
 			self.setupLiveSession( roomId, req.session );
 			return;
@@ -919,7 +1013,6 @@ library.module = library.module || {};
 			
 			room.getInviteToken( null, getBack );
 			function getBack( inv ) {
-				console.log( 'room.getInviteToken - back', inv );
 				//const invite = self.buildInvite( type, roomId, inv.token );
 				contact.invite( inv.data );
 			}
@@ -1002,6 +1095,8 @@ library.module = library.module || {};
 		self.type = 'treeroot';
 		self.subscribeView = null;
 		
+		self.requests = {};
+		
 		self.init();
 	}
 	
@@ -1014,8 +1109,115 @@ library.module = library.module || {};
 		const self = this;
 	}
 	
-	// Private
+	ns.Treeroot.prototype.getSearchPools = function() {
+		const self = this;
+		let pools = [
+			new Promise( getContacts ),
+			new Promise( getAvailable ),
+		];
+		
+		return {
+			source : 'Treeroot',
+			pools  : pools,
+		};
+		
+		function getContacts( resolve, reject ) {
+			let items = Object.keys( self.contacts )
+				.map( cId => {
+					let contact = self.contacts[ cId ];
+					return build( contact, true );
+				});
+			
+			resolve({
+				type    : 'current',
+				actions : [
+					'open-chat',
+					'invite-video',
+					'invite-audio',
+				],
+				pool    : items,
+			});
+		};
+		
+		function getAvailable( resolve, reject ) {
+			self.getUserList()
+				.then( usersBack )
+				.catch( usersError );
+			
+			function usersError( err ) { reject( [] ); }
+			function usersBack( userList ) {
+				let items = userList.map( user => {
+					return build( user, false );
+				});
+				
+				resolve({
+					type    : 'available',
+					actions : [
+						'add-relation',
+					],
+					pool    : items,
+				});
+			}
+		}
+		
+		function build( user, isRelation ) {
+			user.identity = user.identity || {};
+			user.data = user.data || {};
+			let item = {
+				id         : user.clientId || user.id,
+				type       : 'contact',
+				isRelation : isRelation,
+				name       : user.identity.name || user.name,
+				email      : user.identity.email || user.email,
+				avatar     : user.identity.avatar || '',
+				alias      : user.data.Username || user.username,
+				isOnline   : user.isOnline || false,
+			};
+			return item;
+		}
+	}
 	
+	ns.Treeroot.prototype.addRelation = function( sub, idType ) {
+		const self = this;
+		const id = sub.id;
+		idType = idType || 'ContactID';
+		return self.createSubscription({
+			id   : id,
+			type : idType,
+		});
+	}
+	
+	ns.Treeroot.prototype.removeRelation = function( sub ) {
+		const self = this;
+		const contact = self.contacts[ sub.id ];
+		if ( !contact )
+			return;
+		
+		contact.removeRelation();
+	}
+	
+	ns.Treeroot.prototype.openChat = function( user ) {
+		const self = this;
+		const contact = self.contacts[ user.id ];
+		if ( !contact )
+			return;
+		
+		contact.startChat();
+	}
+	
+	ns.Treeroot.prototype.inviteToLive = function( user, mode ) {
+		const self = this;
+		const contact = self.contacts[ user.id ];
+		if ( !contact )
+			return;
+		
+		if ( 'video' === mode )
+			contact.startVideo();
+		else
+			contact.startAudio();
+	}
+	
+	// Private
 	
 	ns.Treeroot.prototype.init = function() {
 		const self = this;
@@ -1023,15 +1225,15 @@ library.module = library.module || {};
 		self.messageMap[ 'contact' ] = contactEvent;
 		self.messageMap[ 'subscription' ] = subscription;
 		self.messageMap[ 'register' ] = registerResponse;
-		self.messageMap[ 'userlist' ] = addUserList;
-		self.messageMap[ 'keyexchange'] = keyExchangeHandler;
+		self.messageMap[ 'userlist' ] = userList;
+		self.messageMap[ 'keyexchange' ] = keyExchangeHandler;
 		self.messageMap[ 'pass-ask-auth' ] = passAskAuth;
 		
 		function updateAccount( e ) { self.updateAccount( e ); }
 		function contactEvent( e ) { self.contactEvent( e ); }
 		function subscription( e ) { self.subscription( e ); }
 		function registerResponse( e ) { self.registerResponse( e ); }
-		function addUserList( e ) { self.addUserList( e ); }
+		function userList( e ) { self.handleUserList( e ); }
 		function keyExchangeHandler( e ) { self.keyExchangeHandler( e ); }
 		function passAskAuth( e ) { self.passAskAuth( e ); }
 		
@@ -1215,7 +1417,6 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.sendKeyEx = function( msg ) {
 		const self = this;
-		//console.log( 'sendKeyEx', msg );
 		var keyExEvent = {
 			type : 'keyexchange',
 			data : msg,
@@ -1262,7 +1463,7 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.moduleOffline = function( msg ) {
 		const self = this;
-		console.log( 'moduleOffline', msg );
+		console.log( 'moduleOffline - NYI', msg );
 	}
 	
 	ns.Treeroot.prototype.hostError = function( event ) {
@@ -1317,12 +1518,12 @@ library.module = library.module || {};
 	ns.Treeroot.prototype.bindView = function() {
 		const self = this;
 		self.view.on( 'status', status );
-		self.view.on( 'subscribe', subscribe );
+		self.view.on( 'add-contact', subscribe );
 		self.view.on( 'scienceregister', scienceRegister );
 		self.view.on( 'register', showRegister );
 		self.view.on( 'pass-reset', passReset );
 		
-		function status( msg ) { console.log( 'app.treeroot.view.status', msg ); }
+		function status( msg ) { console.log( 'app.treeroot.view.status - NYI', msg ); }
 		function subscribe( msg ) { self.showCreateSubscription(); }
 		function scienceRegister( msg ) { self.handleScienceRegister(); }
 		function showRegister( msg ) { self.showRegisterForm(); }
@@ -1557,7 +1758,6 @@ library.module = library.module || {};
 		};
 		
 		function encrypt( e ) {
-			console.log( 'module.encrypt - sender pub key', self.crypt.keys.pub );
 			if ( self.crypt )
 				return self.crypt.en( e );
 			return e;
@@ -1632,13 +1832,18 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.subscription = function( data ) {
 		const self = this;
-		if ( data.type == 'add' ) {
+		if ( 'add' === data.type ) {
 			self.addSubscription( data.data );
 			return;
 		}
 		
-		if( data.type == 'remove' ) {
+		if( 'remove' === data.type ) {
 			self.removeSubscription( data.data.clientId );
+			return;
+		}
+		
+		if ( 'confirm' === data.type ) {
+			self.confirmSubscription( data.data );
 			return;
 		}
 		
@@ -1679,11 +1884,6 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.showCreateSubscription = function() {
 		const self = this;
-		var getUsers = {
-			type : 'userlist',
-		};
-		self.send( getUsers );
-		
 		if ( self.subscribeView )
 			return;
 		
@@ -1697,24 +1897,81 @@ library.module = library.module || {};
 			self.subscribeView.close();
 			self.subscribeView = null;
 		}
+		
+		self.getUserList()
+			.then( listBack )
+			.catch( err => {} );
+		
+		function listBack( userList ) {
+			if ( !self.subscribeView )
+				return;
+			
+			self.subscribeView.setUserList( userList );
+		}
 	}
 	
-	ns.Treeroot.prototype.addUserList = function( userList ) {
+	ns.Treeroot.prototype.handleUserList = function( event ) {
 		const self = this;
-		if ( self.subscribeView )
-			self.subscribeView.setUserList( userList );
+		let callback = self.requests[ event.reqId ];
+		if ( !callback )
+			return;
+		
+		callback( event.list );
+		delete self.requests[ event.reqId ];
+	}
+	
+	ns.Treeroot.prototype.getUserList = function() {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			if ( self.userList ) {
+				resolve( self.userList );
+				return;
+			}
+			
+			let reqId = friendUP.tool.uid( 'ulist' );
+			let getUsers = {
+				type : 'userlist',
+				data : reqId,
+			};
+			self.send( getUsers );
+			self.requests[ reqId ] = listBack;
+			function listBack( userList ) {
+				self.userList = userList;
+				self.userListCacheTimeout = window.setTimeout( clearUserListCache, 1000 * 10 );
+				resolve( userList );
+			}
+			
+			function clearUserListCache() {
+				self.userListCacheTimeout = null;
+				delete self.userList;
+			}
+		});
 	}
 	
 	ns.Treeroot.prototype.createSubscription = function( data ) {
 		const self = this;
-		self.send({
-			type : 'subscription',
-			data : {
-				type : 'subscribe',
-				idType : data.type,
-				id : data.id,
-			},
+		return new Promise(( resolve, reject ) => {
+			const reqId = friendUP.tool.uid( 'sub' );
+			self.send({
+				type : 'subscription',
+				data : {
+					type   : 'subscribe',
+					idType : data.type,
+					id     : data.id,
+					reqId  : reqId,
+				},
+			});
+			self.requests[ reqId ] = subConfirm;
+			function subConfirm( success ) {
+				if ( success )
+					resolve();
+				else
+					reject();
+			}
 		});
+		
+		if ( !self.subscribeView )
+			return;
 		
 		self.subscribeView.response({
 			type : 'success',
@@ -1722,6 +1979,20 @@ library.module = library.module || {};
 				message : 'request sent',
 			},
 		});
+	}
+	
+	ns.Treeroot.prototype.confirmSubscription = function( event ) {
+		const self = this;
+		const reqId = event.reqId;
+		if ( !reqId )
+			return;
+		
+		const callback = self.requests[ reqId ];
+		if ( !callback )
+			return;
+		
+		delete self.requests[ reqId ];
+		callback( event.response );
 	}
 	
 	ns.Treeroot.prototype.handleScienceRegister = function() {
@@ -1903,8 +2174,7 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.handleGlobalState = function( status ) {
 		const self = this;
-		console.log( 'handle global state - NYI' );
-		console.log( status );
+		console.log( 'handle global state - NYI', status );
 	}
 	
 	ns.Treeroot.prototype.setName = function( name ) {
@@ -1922,6 +2192,9 @@ library.module = library.module || {};
 		const self = this;
 		if ( self.registerFormView )
 			self.registerFormView.close();
+		
+		if ( self.userListCacheTimeout )
+			window.clearTimeout( self.userListCacheTimeout );
 		
 		self.baseClose();
 	}
@@ -1951,7 +2224,26 @@ library.module = library.module || {};
 	// BaseModule.reconnect
 	ns.IRC.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'IRC.reconnect' );
+		console.log( 'IRC.reconnect - NYI' );
+	}
+	
+	ns.IRC.prototype.getSearchPools = function() {
+		const self = this;
+		let pools = [
+			new Promise( getThingies ),
+		];
+		
+		return {
+			source : 'IRC',
+			pools  : pools,
+		};
+		
+		function getThingies( resolve, reject ) {
+			resolve({
+				type : 'current',
+				pool : [],
+			});
+		}
 	}
 	
 	// Private
@@ -2428,7 +2720,7 @@ library.module = library.module || {};
 	
 	ns.IRC.prototype.leaveChannel = function( msg ) {
 		const self = this;
-		console.log( 'IRC.leaveChannel', msg );
+		console.log( 'IRC.leaveChannel - NYI', msg );
 	}
 	
 	ns.IRC.prototype.sendCommand = function( msg, source ) {

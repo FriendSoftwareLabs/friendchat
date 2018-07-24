@@ -39,13 +39,6 @@ library.tool = library.tool || {};
 		}
 	}
 	
-	ns.phClickHandler = function( e ) {
-		e.preventDefault();
-		e.stopPropagation();
-		console.log( 'placebo click handler, replace' );
-		console.log( e );
-	}
-	
 	ns.getChatTime = function( timestamp ) {
 		var time = new Date( timestamp );
 		var timeString = '';
@@ -212,17 +205,18 @@ library.tool = library.tool || {};
 			req.setRequestHeader( 'Content-Type', 'application/json' );
 		
 		req.send( ns.stringify( config.data || {} ));
-		console.log( 'asyncRequest - req', req );
 		return req;
 		
 		function stateChange( e ) {
 			let readyState = e.target.readyState;
+			/*
 			if ( readyState === 1 )
 				console.log( 'readyState 1', e );
 			if ( readyState === 2 )
 				console.log( 'readyState 2', e );
 			if ( readyState === 3 )
 				console.log( 'readyState 3', e );
+			*/
 			if ( readyState === 4 )
 				checkResponse( e );
 		}

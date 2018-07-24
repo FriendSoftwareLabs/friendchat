@@ -802,7 +802,7 @@ library.component = library.component || {};
 			from = 'Guest > ' + data.name;
 		
 		if ( self.userId === data.fromId )
-			from = '<< You >>';
+			from = 'You';
 		
 		const time = library.tool.getChatTime( data.time );
 		const conf = {

@@ -123,15 +123,25 @@ Prepend with .im-chat or .conference classes to specify for view type
 	background-repeat   : no-repeat;
 	background-position : center;
 	background-size     : cover;
-	border-radius       : 15%;
+	border-radius       : 100%;
 }
 
 
 /* IM specific */
 
+.im-chat .ZebraList > div, .im-chat .BackgroundLists > div {
+	padding: 10px;
+}
+
+html body .im-chat .textarea-wrap > textarea {
+	margin-top: -1px;
+	border: 0;
+	border-radius: 0;
+}
+
 .im-chat .avatar {
-	height: 3em;
-	width: 3em;
+	height: 2.4em;
+	width: 2.4em;
 }
 
 .im-chat .avatar .img {

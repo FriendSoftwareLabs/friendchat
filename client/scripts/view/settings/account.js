@@ -43,7 +43,7 @@ library.view = library.view || {};
 			'msgAlert',
 			'inAppMenu',
 			'onNewScreen',
-			'minimalUI',
+			//'minimalUI',
 			'advancedUI',
 		];
 		self.displayOrder = self.validKeys;

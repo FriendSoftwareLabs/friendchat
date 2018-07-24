@@ -159,7 +159,6 @@ library.component = library.component || {};
 			self.removeWaiting();
 		
 		// self sent
-		console.log( 'handleMessage', data );
 		if ( !data.from )
 			self.hideMessagePlaceholder();
 		
@@ -247,15 +246,15 @@ library.component = library.component || {};
 		
 		// msgBuilder
 		var msgConf = {
-			user : self.user,
-			contact : self.contact,
-			parser : self.parser,
-			template : friend.template,
-			linkExpand : self.linkExpand,
-			messageTmpl : 'IM-msg-tmpl',
-			actionTmpl : 'IM-action-tmpl',
+			user             : self.user,
+			contact          : self.contact,
+			parser           : self.parser,
+			template         : friend.template,
+			linkExpand       : self.linkExpand,
+			messageTmpl      : 'IM-msg-tmpl',
+			actionTmpl       : 'IM-action-tmpl',
 			notificationTmpl : 'chat-notie-tmpl',
-			logClass : 'LogText',
+			logClass         : 'LogText',
 		}
 		self.msgBuilder = new library.component.MsgBuilder( msgConf );
 		
@@ -315,13 +314,13 @@ library.component = library.component || {};
 	
 	ns.IMChat.prototype.handleDrop = function( e ) {
 		var self = this;
-		console.log( 'handleDrop', e );
+		console.log( 'handleDrop - NYI', e );
 		
 	}
 	
 	ns.IMChat.prototype.handleFileShared = function( msg ) {
 		var self = this;
-		console.log( 'file shared', msg );
+		console.log( 'file shared - NYI', msg );
 	}
 	
 	ns.IMChat.prototype.toggleCanMultilineBtn = function( canMultiline ) {
@@ -349,6 +348,7 @@ library.component = library.component || {};
 	ns.IMChat.prototype.bindEvents = function() {
 		var self = this;
 		self.form = document.getElementById( 'input-form' );
+		const attachBtn = document.getElementById( 'attachment' );
 		const submitBtn = document.getElementById( 'chat-submit' );
 		self.toggleMultilineBtn = document.getElementById( 'leeloodallasmultiline' );
 		self.toggleVoiceBtn = document.getElementById( 'toggle-voice' );
@@ -356,6 +356,7 @@ library.component = library.component || {};
 		const startAudioBtn = document.getElementById( 'start-audio' );
 		self.encryptBtn = document.getElementById( 'toggle-encrypt' );
 		
+		attachBtn.addEventListener( 'click', attach, false );
 		submitBtn.addEventListener( 'click', submit, false );
 		self.form.addEventListener( 'submit', submit, false );
 		self.toggleMultilineBtn.addEventListener( 'click', toggleMultiline, false );
@@ -395,6 +396,14 @@ library.component = library.component || {};
 			e.stopPropagation();
 			self.input.submit();
 		}
+		
+		function attach( e ) {
+			self.send( {
+				type: 'attach',
+				data: false
+			} );
+		};
+		
 		function toggleMultiline( e ) { self.input.toggleMultiline(); }
 		function toggleVoice( e ) { self.toggleVoice( e ); }
 		function startVideo( e ) { self.startLive( 'video' ); }
@@ -553,7 +562,6 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.TreerootChat = function( conf ) {
 		const self = this;
-		console.log( 'TreerootChat', conf );
 		library.view.IMChat.call( self, conf );
 	}
 	
@@ -561,7 +569,6 @@ library.component = library.component || {};
 	
 	ns.TreerootChat.prototype.isChatMessage = function( msg ) {
 		const self = this;
-		console.log( 'TreerootChat.isChatMessage', msg );
 		return true;
 	}
 	
@@ -571,7 +578,6 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.IRCChat = function( conf ) {
 		const self = this;
-		console.log( 'URKChat', conf );
 		library.view.IMChat.call( self, conf );
 	}
 	
@@ -579,7 +585,6 @@ library.component = library.component || {};
 	
 	ns.IRCChat.prototype.isChatMessage = function( msg ) {
 		const self = this;
-		console.log( 'IRCChat.isChatMessage', msg );
 		if ( '/' === msg[ 0 ])
 			return false;
 		
@@ -591,7 +596,6 @@ library.component = library.component || {};
 // wait for view to call run
 window.View.run = run;
 function run( conf ) {
-	console.log( 'IMChat.run', conf );
 	if ( !conf || !conf.chatType )
 		throw new Error( 'conf || conf.chatType is missing RABBLE RABBLE RABBLE' );
 	

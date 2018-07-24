@@ -118,6 +118,7 @@ var hello = null;
 				'webclient/apps/FriendChat/res/glass_pop_v3-epic_sound.wav' );
 			
 			self.getUserInfo( userInfoBack )
+			
 		}
 		
 		function userInfoBack( data ) {
@@ -131,7 +132,18 @@ var hello = null;
 			}
 			
 			hello.identity = new library.component.Identity( data );
-			self.loadHostConfig( confBack );
+			self.getUserAvatar()
+				.then( avaBack )
+				.catch( avaErr );
+				
+			function avaBack( avatar ) {
+				hello.identity.avatar = avatar;
+				self.loadHostConfig( confBack );
+			}
+			
+			function avaErr( blah ) {
+				self.loadHostConfig( confBack );
+			}
 		}
 		
 		function confBack( err, hostConf ) {
@@ -176,26 +188,71 @@ var hello = null;
 		}
 	}
 	
+	ns.Hello.prototype.getUserAvatar = function() {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			const conf = {
+				module : 'system',
+				method : 'getsetting',
+				args   : {
+					setting : 'avatar',
+				},
+				success : avaBack,
+				error   : avaErr,
+			};
+			
+			new api.Module( conf );
+			function avaBack( res ) {
+				let data = null;
+				try {
+					data = JSON.parse( res );
+				} catch ( e ) {
+					console.log( 'failed to parse avatar res', res );
+				}
+				if ( !data )
+					resolve( null );
+				else
+					resolve( data.avatar || null );
+			}
+			
+			function avaErr( err ) {
+				console.log( 'avaErr', err );
+				resolve( null );
+			}
+		});
+	}
+	
 	ns.Hello.prototype.loadCommonFragments = function( doneBack ) {
 		var self = this;
 		let commonLoaded = false;
+		let mainLoaded = false;
 		let liveLoaded = false;
 		self.app.loadFile( 'Progdir:html/commonFragments.html', commonOmNoms );
+		self.app.loadFile( 'Progdir:html/mainCommonFragments.html', moinmonOmNoms );
 		self.app.loadFile( 'Progdir:html/liveCommonFragments.html', liveOmNomNoms );
 		
 		function commonOmNoms( fileContent ) {
 			fileContent = Application.i18nReplaceInString( fileContent );
 			hello.commonFragments = fileContent;
-			if ( liveLoaded )
+			if ( mainLoaded && liveLoaded )
 				doneBack();
 			else 
 				commonLoaded = true;
 		}
 		
+		function moinmonOmNoms( content ) {
+			content = Application.i18nReplaceInString( content );
+			hello.mainCommonFragments = content;
+			if ( commonLoaded && liveLoaded )
+				doneBack();
+			else
+				mainLoaded = true;
+		}
+		
 		function liveOmNomNoms( content ) {
 			content = Application.i18nReplaceInString( content );
 			hello.liveCommonFragments = content;
-			if ( commonLoaded )
+			if ( commonLoaded && mainLoaded )
 				doneBack();
 			else
 				liveLoaded = true;
@@ -333,6 +390,7 @@ var hello = null;
 		var self = this;
 		self.timeNow( 'initSystemModules' );
 		self.conn = new library.system.Connection( null, onWSState );
+		self.items = new library.system.Items();
 		self.request = new library.system.Request({ conn : self.conn });
 		self.intercept = new library.system.Interceptor();
 		self.rtc = new library.system.RtcControl();
@@ -563,6 +621,7 @@ var hello = null;
 			
 			var host = library.tool.buildDestination( 'wss://', conf.data.host );
 			self.conn = new library.system.Connection( host, onWSState );
+			self.items = new library.system.Items();
 			self.intercept = new library.system.Interceptor();
 			self.rtc = new library.system.RtcControl();
 			self.conn.connect( connBack );
@@ -661,7 +720,8 @@ var hello = null;
 		var self = this;
 		self.main = new library.system.Main({
 			parentView : window.View,
-			account : account,
+			account    : account,
+			identity   : hello.identity,
 		});
 	}
 	
@@ -898,12 +958,23 @@ var hello = null;
 	ns.Main.prototype.init = function() {
 		const self = this;
 		const firstLogin = !self.account.lastLogin;
-		if ( firstLogin )
-			doSetup({
+		if ( firstLogin ) {
+			self.recentHistory = {};
+			const firstLoginConf = {
 				advancedUI : false,
-			});
+			};
+			doSetup( firstLoginConf );
+		}
 		else
-			doSetup();
+			loadRecentHistory();
+		
+		function loadRecentHistory() {
+			api.ApplicationStorage.get( 'recent-history', recentBack );
+			function recentBack( res ) {
+				self.recentHistory = res.data || {};
+				doSetup( null );
+			}
+		}
 		
 		function doSetup( firstLoginConf ) {
 			if ( firstLoginConf )
@@ -915,8 +986,11 @@ var hello = null;
 				Application.screen = new api.Screen( 'Friend Chat' );
 			
 			const initConf = {
-				fragments : hello.commonFragments,
-				account   : self.account,
+				fragments     : hello.commonFragments,
+				mainFragments : hello.mainCommonFragments,
+				account       : self.account,
+				identity      : hello.identity,
+				recentHistory : self.recentHistory,
 			};
 			
 			if ( self.advancedUI )
@@ -963,7 +1037,7 @@ var hello = null;
 		};
 		
 		self.view = hello.app.createView(
-			'html/main-simple.html',
+			'html/mainSimple.html',
 			winConf,
 			initConf,
 			null,
@@ -989,24 +1063,30 @@ var hello = null;
 	}
 	
 	ns.Main.prototype.bindView = function() {
-		var self = this;
+		const self = this;
+		self.searchListenId = hello.items.startListen( self.view );
+		
 		self.view.receiveMessage = receiveMessage;
 		self.view.on( 'about', showAbout );
 		self.view.on( 'live', startLive );
 		self.view.on( 'quit', doQuit );
 		self.view.on( 'logout', logout );
 		self.view.on( 'conn-state', connState );
+		self.view.on( 'recent-save', recentSave );
+		self.view.on( 'recent-remove', recentRemove );
 		
-		function receiveMessage( msg ) { self.receiveMessage( msg ); }
-		function startLive( msg ) { self.startLive(); }
+		function receiveMessage( e ) { self.receiveMessage( e ); }
+		function startLive( e ) { self.startLive(); }
 		function showAbout( e ) { hello.about(); }
 		function doQuit( e ) { hello.quit(); }
-		function logout( msg ) { hello.logout( msg ); }
+		function logout( e ) { hello.logout( e ); }
 		function connState( e ) { hello.handleConnState( e ); }
+		function recentSave( e ) { self.handleRecentSave( e ); }
+		function recentRemove( e ) { self.handleRecentRemove( e );}
 	}
 	
 	ns.Main.prototype.setMenuItems = function() {
-		var self = this;
+		const self = this;
 		// FILE
 		const startLive = {
 			name    : Application.i18n('i18n_start_live'),
@@ -1121,6 +1201,34 @@ var hello = null;
 		hello.rtc.createRoom( null, null );
 	}
 	
+	ns.Main.prototype.handleRecentSave = function( item ) {
+		const self = this;
+		const mId = item.moduleId;
+		const cId = item.clientId;
+		const recent = self.recentHistory;
+		recent[ mId ] = recent[ mId ] || {};
+		recent[ mId ][ cId ] = item.lastEvent || null;
+		api.ApplicationStorage.set( 'recent-history', recent, saveBack );
+		
+		function saveBack( res ) {
+			self.recentHistory = res.data;
+		}
+	}
+	
+	ns.Main.prototype.handleRecentRemove = function( item ) {
+		const self = this;
+		const recent = self.recentHistory;
+		const mId = item.moduleId;
+		const cId = item.clientId;
+		if ( !recent[ mId ] || !recent[ mId ][ cId ] )
+			return;
+		
+		delete recent[ mId ][ cId ];
+		api.ApplicationStorage.set( 'recent-history', recent, saveBack );
+		function saveBack( res ) {
+		}
+	}
+	
 	ns.Main.prototype.initSubViews = function() {
 		var self = this;
 		self.notification = new library.system.Notification({
@@ -1155,7 +1263,13 @@ var hello = null;
 			self.view = null;
 		}
 		
+		if ( self.searchListenId ) {
+			hello.items.stopListen( self.searchListenId );
+			self.searchListenId = null;
+		}
+		
 		// this is just to clear out any rogue views
+		// wtf ??????
 		hello.app.close();
 	}
 	

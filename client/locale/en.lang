@@ -1,5 +1,6 @@
 i18n_share : Share
 i18n_share_links : Share links with someone who is not using FriendUP, so they can join your live session.
+i18n_share_file : Share a file
 i18n_public : Public
 i18n_a_public_link : A public link can be used an unlimited number of times, by anyone, until invalidated.
 i18n_create_email : Create email
@@ -96,6 +97,7 @@ i18n_no_presence_login : No Presence login found. Do you wish to create a new ac
 i18n_create_new : Create new
 i18n_use_existing : Use existing
 i18n_create_a_new_presence_account : Create a new Presence account. Login is a suggestion, you may change it.
+i18n_your_message : Your message...
 i18n_admins : Admins
 i18n_online : Online
 i18n_guests : Guests
@@ -311,8 +313,26 @@ i18n_stream_session : Stream
 i18n_now_chatting_in : Now chatting in
 i18n_stream_state_source_connecting : Source connecting
 i18n_stream_state_stream_connecting : Connecting to stream
+i18n_searching : Searching..
+i18n_email : Email
+i18n_contacts : Contacts
+i18n_conference_rooms : Conference rooms
+i18n_open_chat : Open chat
+i18n_go_live_audio : Go live, audio
+i18n_go_live_video : Go live, video
+i18n_invite_to_video : Invite to video chat
+i18n_invite_to_audio : Invite to voice chat
+i18n_invite_to_room : Invite to Room
+i18n_recent_conversations : Conversations
+i18n_remove_contact : Remove contact
+i18n_leave_room : Leave room
+i18n_remove_chat : Remove chat
+i18n_hide_from_list : Hide from list
+i18n_add_contact : Add contact
+i18n_remove_module : Remove module
 i18n_invalidate : Invalidate
 i18n_are_you_sure : Are you sure?
 i18n_confirm_invalidate_explain : Invalidating a public link makes it unusable to anyone it has already been given to or on any website it has been posted.
 i18n_invalidate_link : Invalidate link
 i18n_keep_link : Keep link
+i18n_room_name : Room name

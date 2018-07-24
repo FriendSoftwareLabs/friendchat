@@ -19,6 +19,7 @@
 	max-height : 100%;
 	width : 100%;
 	overflow : auto;
+	padding-bottom: 0.5em;
 }
 
 .log-fetch {
@@ -37,7 +38,7 @@
 }
 
 .time-envelope {
-	padding : 0 0.5em;
+	padding : 0;
 }
 
 .time-envelope .envelope-date,
@@ -54,16 +55,20 @@
 }
 
 .msg-item .avatar {
-	width  : 3em;
-	height : 3em;
-	border-radius : 3px;
+	width  : 2.4em;
+	height : 2.4em;
+	border-radius : 100%;
 	background-position: center;
 	background-size: cover;
 	background-repeat: no-repeat;
 }
 
+.msg-item .avatar.blank {
+	height: 1px;
+}
+
 .msg-item .content {
-	padding-left : 0.5em;
+	padding-left : 1em;
 }
 
 .msg,
@@ -74,7 +79,7 @@
 
 .msg-group {
 	margin-top: 0.5em;
-	padding-top : 0.4em;
+	padding: 0 10px;
 }
 
 .msg-group .name {
@@ -102,7 +107,6 @@
 }
 
 .str {
-	margin-left : 0.5em;
 	word-break: break-word;
 	white-space: pre-wrap;
 }
@@ -146,6 +150,11 @@
 
 #typing-hint {
 	padding : 0 0.2em;
+}
+
+html body div > .textarea-wrap textarea {
+	border: 0;
+	border-radius: 0;
 }
 
 .blink-icon > i {

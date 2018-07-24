@@ -233,6 +233,7 @@
 
 #selfie.popped .stream-container {
 	height: 3.5em;
+	overflow : hidden;
 }
 
 .peer .avatar {

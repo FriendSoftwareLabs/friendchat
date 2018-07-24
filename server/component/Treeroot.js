@@ -1122,23 +1122,32 @@ ns.Treeroot.prototype.stopMessageLongpoll = function( contactId ) {
 	cState.longpoll = false;
 }
 
-ns.Treeroot.prototype.getUserList = function( data, socketId ) {
+ns.Treeroot.prototype.getUserList = function( reqId, socketId ) {
 	var self = this;
 	self.fetchContact( null, usersBack );
 	function usersBack( res ) {
+		let users = [];
 		if ( res.response != 'ok' ) {
 			self.log( 'getUserList - failed', res );
+			send( reqId, users );
 			return;
 		}
 		
-		var users = res.items.Contacts;
+		users = res.items.Contacts;
 		users = users.filter( isNotContactSubOrSelf );
 		var userList = users.map( buildUserObj );
-		var msg = {
-			type : 'userlist',
-			data : userList,
-		};
-		self.toClient( msg, socketId );
+		send( reqId, userList );
+		
+		function send( reqId, list ) {
+			var msg = {
+				type : 'userlist',
+				data : {
+					reqId : reqId,
+					list  : list,
+				},
+			};
+			self.toClient( msg, socketId );
+		}
 		
 		function isNotContactSubOrSelf( user ) {
 			var contact = self.contacts.get( user.ID );
@@ -1245,9 +1254,9 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		var contact = relation;
 		contact.serviceId = relation.ID;
 		contact.publicKey = relation.PublicKey;
-		//contact.clientId = uuid.v4() + '-' + contact.serviceId ;
 		contact.clientId = 'treeroot-' + self.clientId.split( '-')[ 1 ] + '-' + contact.serviceId ;
 		contact.displayName = relation.Name || relation.Username;
+		contact.email = relation.Email;
 		contact.online = !!relation.IsOnline;
 		let imgObj = relation.ProfileImage;
 		let imgPath = '';
@@ -2017,7 +2026,7 @@ ns.Treeroot.prototype.subscription = function( sub ) {
 	}
 	
 	self.subscriptionMap[ sub.type ]( sub );
-	function subscribe( sub ) { self.subscribe( sub.id, sub.idType ); }
+	function subscribe( sub ) { self.subscribe( sub.id, sub.idType, sub.reqId ); }
 	function unsubscribe( sub ) { self.unsubscribe( sub.clientId ); }
 	function allow( sub ) { self.allowSubscription( sub.clientId ); }
 	function deny( sub ) { self.denySubscription( sub.clientId ); }
@@ -2066,7 +2075,7 @@ ns.Treeroot.prototype.unsubscribe = function( clientId ) {
 	}
 }
 
-ns.Treeroot.prototype.subscribe = function( id, idType ) {
+ns.Treeroot.prototype.subscribe = function( id, idType, requestId ) {
 	var self = this;
 	var idTypes = [
 		'ContactID',
@@ -2086,12 +2095,18 @@ ns.Treeroot.prototype.subscribe = function( id, idType ) {
 	
 	self.subscriptionRequest( postData, subBack );
 	function subBack( result ) {
-		if ( !result ) {
-			self.log( 'sub failed', result );
-			return;
-		}
+		let ok = false;
+		if ( result && result.response && 'ok' === result.response )
+			ok = true;
 		
-		//self.updateContacts();
+		const subConfirm = {
+			type : 'confirm',
+			data : {
+				reqId    : requestId,
+				response : ok,
+			},
+		};
+		self.subscriptionEvent( subConfirm );
 	}
 }
 

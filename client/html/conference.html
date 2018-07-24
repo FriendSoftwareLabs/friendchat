@@ -27,7 +27,7 @@
 -->
 <script id="body-tmpl" type="text/html">
 <div id="hello" class="conference bar column BackgroundDefault">
-	<div id="head" class="BorderBottom fortify group row">
+	<div id="head" class="PaddingSmall BorderBottom fortify group row">
 		<div id="mode" class="fortify"></div>
 		<div id="topic" class="expand"></div>
 		<div class="actions fortify group row">
@@ -50,11 +50,11 @@
 		</div>
 	</div>
 	<div id="main" class="main expand group row cover">
-		<div id="message-container" class="expand BorderRight">
+		<div id="message-container" class="expand">
 			<div id="messages" class="SelectableText BackgroundLists">
 			</div>
 		</div>
-		<div id="participants-container" class="fortify group column cover">
+		<div id="participants-container" class="BackgroundHeavy fortify group column cover">
 			<div id="participants-info" class="fortify group row">
 				<div class="info expand MouseDefault">
 					<i class="fa fa-fw fa-at"></i>
@@ -76,6 +76,9 @@
 	</div>
 	<div id="foot" class="fortify">
 		<form id="input-form" action="" class="bar row cover">
+			<div id="attachment" class="button flat fortify center-child">
+				<i class="fa fa-fw fa-paperclip"></i>
+			</div>
 			<div id="input-container" class="expand BorderTop">
 				<!-- input component goes here -->
 			</div>

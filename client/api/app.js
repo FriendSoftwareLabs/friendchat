@@ -147,7 +147,7 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( self.windowConf.viewTheme )
 			msg.opts.viewTheme = self.windowConf.viewTheme;
 		
-		self.send( msg );
+		self._send( msg );
 	}
 	
 	ns.View.prototype.setMenuItems = function( data ) {
@@ -156,7 +156,7 @@ var friend = window.friend || {}; // already instanced stuff
 			method : 'setMenuItems',
 			data : data,
 		};
-		self.send( msg );
+		self._send( msg );
 	}
 	
 	ns.View.prototype.setTitle = function( title ) {
@@ -173,7 +173,7 @@ var friend = window.friend || {}; // already instanced stuff
 				value : value,
 			},
 		};
-		self.send( msg );
+		self._send( msg );
 	}
 	
 	ns.View.prototype.getFlag = function( flag, callback ) {
@@ -186,7 +186,7 @@ var friend = window.friend || {}; // already instanced stuff
 				flag : flag,
 			},
 		};
-		self.send( msg );
+		self._send( msg );
 	}
 	
 	ns.View.prototype.setViewTheme = function( filepath ) {
@@ -220,7 +220,7 @@ var friend = window.friend || {}; // already instanced stuff
 		var activate = {
 			method : 'activate',
 		};
-		self.send( activate );
+		self._send( activate );
 	}
 	
 	ns.View.prototype.showFiledialog = function( conf, callback )
@@ -297,7 +297,7 @@ var friend = window.friend || {}; // already instanced stuff
 		var msg = {
 			method : 'close',
 		};
-		self.send( msg );
+		self._send( msg );
 		
 		self.closeEventEmitter();
 		delete self.onclose;
@@ -334,10 +334,12 @@ var friend = window.friend || {}; // already instanced stuff
 			data : event
 		};
 		
-		self.send( wrap );
+		self._send( wrap );
 	}
 	
-	ns.View.prototype.send = function( msg ) {
+	ns.View.prototype.send = ns.View.prototype.sendMessage;
+	
+	ns.View.prototype._send = function( msg ) {
 		var self = this;
 		msg.type = 'view';
 		msg.viewId = self.id;
@@ -387,6 +389,66 @@ var friend = window.friend || {}; // already instanced stuff
 		msg.type = 'screen';
 		msg.screenId = self.id;
 		self.app.sendMessage( msg );
+	}
+})( api );
+
+
+// Filedialogs
+(function( ns, undefined ) {
+	ns.Filedialog = function( object )
+	{
+		if( !object ) return;
+		var self = this;
+		self.id = friendUP.tool.uid;
+		self.app = window.Application;
+		this.init( object );
+	}
+	ns.Filedialog.prototype.init = function( object )
+	{
+		var self = this;
+		var targetview = false;
+		var triggerFunction = false;
+		var type = false;
+		var filename = '';
+		
+		// We have flags
+		for( var a in object )
+		{
+			switch( a )
+			{
+				case 'triggerFunction':
+					triggerFunction = object[a];
+					break;
+				case 'path':
+					path = object[a];
+					break;
+				case 'type':
+					type = object[a];
+					break;
+				case 'filename':
+					filename = object[a];
+					break;
+				case 'title':
+					title = object[a];
+					break;
+			}
+		}
+
+		if ( !triggerFunction ) return;
+		if ( !type ) type = 'open';
+
+		var callbackId = self.app.setCallback( triggerFunction );
+
+		self.app.sendMessage( {
+			type:        'system',
+			command:     'filedialog',
+			method:      'open',
+			callbackId:   callbackId,
+			dialogType:   type,
+			path:         path,
+			filename:     filename,
+			title:        title
+		} );
 	}
 })( api );
 
@@ -1109,6 +1171,67 @@ window.Application = new fupLocal.Application();
 })( api );
 
 
+//
+// File
+(function( ns, undefined ) {
+	ns.File = function( path ) {
+		if ( !( this instanceof ns.File ))
+			return new ns.File( path );
+		
+		var self = this;
+		self.path = path;
+		self.name = null;
+		self.type = null;
+		self.exposeHash = null;
+		
+		self.init();
+	}
+	
+	ns.File.prototype.init = function() {
+		var self = this;
+		console.log( 'File.init' );
+	}
+	
+	ns.File.prototype.expose = function( callback ) {
+		var self = this;
+		var libConf = {
+			functionName : 'file/expose',
+			args : {
+				path : self.path,
+			},
+			onsuccess : success,
+			onerror : err,
+		};
+		var lib = new api.Library( libConf );
+		function success( res ) {
+			self.exposeHash = res.hash;
+			self.name = res.name;
+			var link = self.getPublicLink();
+			callback( link );
+		}
+		function err( res ) {
+			console.log( 'File.expose.err', res );
+			callback( false );
+		}
+	}
+	
+	ns.File.prototype.unshare = function( callback ) {
+		var self = this;
+		console.log( 'File.unshare - NYI', self.path );
+	}
+	
+	ns.File.prototype.getPublicLink = function() {
+		var self = this;
+		if ( !self.exposeHash || !self.name )
+			return null;
+		
+		var link = window.Application.domain + '/sharedfile/' + self.exposeHash + '/' + self.name;
+		link = window.encodeURI( link );
+		return link;
+	}
+})( api );
+
+
 // Dormant
 (function( ns, undefined ) {
 	ns.Dormant = function() {
@@ -1731,65 +1854,4 @@ api.DoorFun.prototype.init = function() {
 	
 })( fupLocal );
 
-//
-// File
-(function( ns, undefined ) {
-	ns.File = function( path ) {
-		if ( !( this instanceof ns.File ))
-			return new ns.File( path );
-		
-		var self = this;
-		self.path = path;
-		self.name = null;
-		self.type = null;
-		self.exposeHash = null;
-		
-		self.init();
-	}
-	
-	ns.File.prototype.init = function() {
-		var self = this;
-		console.log( 'File.init' );
-	}
-	
-	ns.File.prototype.expose = function( callback ) {
-		var self = this;
-		var libConf = {
-			functionName : 'file/expose',
-			args : {
-				path : self.path,
-			},
-			onsuccess : success,
-			onerror : err,
-		};
-		var lib = new api.Library( libConf );
-		function success( res ) {
-			self.exposeHash = res.hash;
-			self.name = res.name;
-			var link = self.getPublicLink();
-			callback( link );
-		}
-		function err( res ) {
-			console.log( 'File.expose.err', res );
-			callback( false );
-		}
-	}
-	
-	ns.File.prototype.unshare = function( callback ) {
-		var self = this;
-		console.log( 'File.unshare - NYI', self.path );
-	}
-	
-	ns.File.prototype.getPublicLink = function() {
-		var self = this;
-		if ( !self.exposeHash || !self.name )
-			return null;
-		
-		var link = window.Application.domain + '/sharedfile/' + self.exposeHash + '/' + self.name;
-		link = window.encodeURI( link );
-		return link;
-	}
-})( api );
-
 friend.tinyURL = new fupLocal.TinyURL();
-

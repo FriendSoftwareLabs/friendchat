@@ -248,10 +248,7 @@ library.component = library.component || {};
 // STATUSINDICATOR
 (function( ns, undefined) {
 	ns.StatusIndicator = function( conf ) {
-		if ( !( this instanceof ns.StatusIndicator ))
-			return new ns.StatusIndicator( conf );
-		
-		var self = this;
+		const self = this;
 		self.containerId = conf.containerId;
 		self.type = conf.type;
 		self.cssClass = conf.cssClass;
@@ -267,41 +264,95 @@ library.component = library.component || {};
 		'icon' : 'status-indicator-icon-tmpl',
 	};
 	
-	ns.StatusIndicator.prototype.initIndicator = function() {
-		var self = this;
-		if ( !hello.template )
-			throw new Error( 'hello.template not defined' );
-		
-		var tmplId = self.typeTmplMap[ self.type ] || self.typeTmplMap[ 'led' ];
-		var container = document.getElementById( self.containerId );
-		var conf = {
-			indicatorClass : self.cssClass,
-		};
-		var element = hello.template.getElement( tmplId, conf );
-		container.appendChild( element );
-		self.bind();
-	}
+	// Public
 	
-	ns.StatusIndicator.prototype.bind = function() {
-		var self = this;
-		var container = document.getElementById( self.containerId );
-		self.inner = container.querySelector('.status-indicator .' + self.cssClass );
-		var stateKeys = Object.keys( self.statusMap );
-		self.state = stateKeys[ 0 ];
-		self.inner.classList.add( self.statusMap[ self.state ]);
+	ns.StatusIndicator.prototype.close = function() {
+		const self = this;
+		// do things probably
 	}
 	
 	ns.StatusIndicator.prototype.set = function( stateKey ) {
-		var self = this;
+		const self = this;
+		self.setState( stateKey );
+	}
+	
+	ns.StatusIndicator.prototype.get = function() {
+		const self = this;
+		return self.getState();
+	}
+	
+	ns.StatusIndicator.prototype.show = function() {
+		const self = this;
+		const el = document.getElementById( self.containerId );
+		el.classList.toggle( 'hidden', false );
+	}
+	
+	ns.StatusIndicator.prototype.hide = function() {
+		const self = this;
+		const el = document.getElementById( self.containerId );
+		el.classList.toggle( 'hidden', true );
+	}
+	
+	// Private
+	
+	ns.StatusIndicator.prototype.initIndicator = function() {
+		const self = this;
+		if ( !hello.template )
+			throw new Error( 'hello.template not defined' );
+		
+		const container = document.getElementById( self.containerId );
+		if ( 'icon' === self.type )
+			self.buildIconIndicator( container );
+		else
+			self.buildLEDIndicator( container );
+		
+		const stateKeys = Object.keys( self.statusMap );
+		self.state = stateKeys[ 0 ];
+		self.inner.classList.add( self.statusMap[ self.state ]);
+	}
+		
+	ns.StatusIndicator.prototype.buildIconIndicator = function( container ) {
+		const self = this;
+		const tmplId = self.typeTmplMap[ 'icon' ];
+		const conf = {
+			faClass : self.cssClass,
+		};
+		const el = hello.template.getElement( tmplId, conf );
+		container.appendChild( el );
+		self.bindIconIndicator( container );
+	}
+		
+	ns.StatusIndicator.prototype.buildLEDIndicator = function( container ) {
+		const self = this;
+		const tmplId = self.typeTmplMap[ 'led' ];
+		const conf = {
+			ledShapeClass : self.cssClass,
+		};
+		const el = hello.template.getElement( tmplId, conf );
+		container.appendChild( el );
+		self.bindLEDIndicator( container );
+	}
+	
+	ns.StatusIndicator.prototype.bindIconIndicator = function( container ) {
+		const self = this;
+		self.inner = container.querySelector( '.status-indicator > i' );
+	}
+	
+	ns.StatusIndicator.prototype.bindLEDIndicator = function( container ) {
+		const self = this;
+		self.inner = container.querySelector( '.status-indicator > div' );
+	}
+	
+	ns.StatusIndicator.prototype.setState = function( stateKey ) {
+		const self = this;
 		if ( !stateKey ) {
 			console.log( 'no statekey', stateKey );
 			return;
 		}
 		
-		var stateKey = stateKey.toString();
+		stateKey = stateKey.toString();
 		if ( !self.statusMap[ stateKey ]) {
-			console.log( 'statusIndicator.set - unknown state');
-			console.log( stateKey );
+			console.log( 'statusIndicator.set - unknown state', stateKey );
 			return;
 		}
 		
@@ -310,7 +361,7 @@ library.component = library.component || {};
 		addNewStateClass();
 		
 		function removeCurrentClass() {
-			var parts = self.inner.className.split( ' ' );
+			const parts = self.inner.className.split( ' ' );
 			parts.pop(); // remove last
 			self.inner.className = parts.join( ' ' );
 		}
@@ -320,7 +371,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.StatusIndicator.prototype.get = function() {
+	ns.StatusIndicator.prototype.getState = function() {
 		return this.state;
 	}
 	
@@ -356,20 +407,22 @@ library.component = library.component || {};
 	// private
 	
 	ns.StatusDisplay.prototype.initDisplay = function() {
-		var self = this;
+		const self = this;
+		const container = document.getElementById( self.containerId );
+		self.displayArea = container.querySelector( '.status-display .display-area' );
 		self.displayArea.textContent = self.display;
 	}
 	
-	ns.StatusDisplay.prototype.bind = function() {
-		var self = this;
-		var container = document.getElementById( self.containerId );
-		self.inner = container.querySelector('.status-display .' + self.cssClass );
-		self.displayArea = container.querySelector( '.status-display .display-area' );
-		
-		var stateKeys = Object.keys( self.statusMap );
-		self.state = stateKeys[ 0 ];
-		self.inner.classList.add( self.statusMap[ self.state ]);
+	ns.StatusDisplay.prototype.bindIconIndicator = function( container ) {
+		const self = this;
+		self.inner = container.querySelector( '.status-display .icon-status i' );
 	}
+	
+	ns.StatusDisplay.prototype.bindLEDIndicator = function( container ) {
+		const self = this;
+		self.inner = container.querySelector( '.status-display .led-status > div' );
+	}
+	
 	
 })( library.component );
 
@@ -419,7 +472,7 @@ library.component = library.component || {};
 		
 		//window.addEventListener( 'resize', resizeEvent, false );
 		function scrollEvent( e ) { self.checkIsAtBottom( e ); }
-		function loadedEvent( e ) { console.log( 'BottomScroller.loadedevent', e ); }
+		function loadedEvent( e ) { console.log( 'BottomScroller.loadedevent - noop', e ); }
 		function resizeEvent( e ) { self.handleResize(); }
 		
 		self.observer = new window.MutationObserver( domMutated );
@@ -821,7 +874,6 @@ library.component = library.component || {};
 	ns.InputHistory.prototype.maybeShowOlder = function() {
 		const self = this;
 		const value = self.input.value;
-		console.log( 'maybeShowOlder', value );
 		if ( value )
 			return true;
 		
@@ -1085,7 +1137,6 @@ library.component = library.component || {};
 			req.send();
 			
 			function reqProgress( e ) {
-				//console.log( 'reqProgress', e );
 			}
 			
 			function reqReadyState( e ) {
@@ -1104,7 +1155,6 @@ library.component = library.component || {};
 			
 			function getContentType( headerStr ) {
 				const headers = headerStr.split( /\r\n/ );
-				//console.log( 'LE - headers', headers );
 				const cType = headers
 					.map( rxCType )
 					.filter( notNull )
@@ -1278,10 +1328,7 @@ library.component = library.component || {};
 	
 	ns.TouchScroll.prototype.tStart = function( e ) {
 		var self = this;
-		//self.tHeight = self.target.scrollHeight;
-		//self.vpHeight = self.viewport.scrollHeight;
 		var touch = e.touches[ 0 ];
-		//console.log( 'tStart', touch );
 		self.prevY = touch.pageY;
 		self.prevX = touch.pageX;
 	}
@@ -1289,8 +1336,6 @@ library.component = library.component || {};
 	ns.TouchScroll.prototype.tMove = function( e ) {
 		var self = this;
 		var touch = e.touches[ 0 ];
-		//console.log( 'tMove - prev', self.prevY );
-		//console.log( 'tMove - curr', touch.pageY );
 		var deltaY = self.prevY - touch.pageY;
 		var deltaX = self.prevX - touch.pageX;
 		self.prevY = touch.pageY;
@@ -1302,14 +1347,12 @@ library.component = library.component || {};
 		
 		e.preventDefault();
 		e.stopPropagation();
-		//console.log( 'tMove - delta', delta );
 		self.target.scrollTop = self.target.scrollTop + deltaY;
 	}
 	
 	ns.TouchScroll.prototype.tEnd = function( e ) {
 		var self = this;
 		var touch = e.touches[ 0 ];
-		//console.log( 'tEnd', touch );
 	}
 	
 	ns.TouchScroll.prototype.close = function() {
@@ -1420,6 +1463,7 @@ library.component = library.component || {};
 		cont.appendChild( self.taWrap );
 		self.isTypingHint = document.getElementById( 'typing-hint' );
 		self.ta = self.taWrap.querySelector( 'textarea' );
+		self.ta.setAttribute( 'placeholder', View.i18n( 'i18n_your_message' ) );
 		
 		// bind
 		self.ta.addEventListener( 'focus', inputFocus, false );
@@ -1589,7 +1633,6 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.MsgBuilder ))
 			return new ns.MsgBuilder( conf );
 		
-		console.log( 'MsgBuilder', conf );
 		var self = this;
 		self.user = conf.user;
 		self.contact = conf.contact || {};
@@ -1623,7 +1666,6 @@ library.component = library.component || {};
 	
 	ns.MsgBuilder.prototype.log = function( msg ) {
 		var self = this;
-		//console.log( 'MsgBuilder.log', msg );
 		var handler = self.logHandlers[ msg.type ];
 		if ( !handler ) {
 			console.log( 'MsgBuilder.log - unknown log type', msg );
@@ -1646,7 +1688,6 @@ library.component = library.component || {};
 	
 	ns.MsgBuilder.prototype.init = function() {
 		var self = this;
-		console.log( 'MsgBuilder.init =^______^=' );
 		self.logHandlers = {
 			'message'      : message,
 			'action'       : action,
@@ -1708,14 +1749,6 @@ library.component = library.component || {};
 		if ( data.encrypted )
 			bindShowCrypt( element );
 		
-		/*
-		console.log( 'MsgBuilder.buildMessage', { 
-			data : data,
-			tmplId : tmplId,
-			el : element,
-			conf : conf });
-		*/
-		
 		return element;
 		
 		function bindShowCrypt( element ) {
@@ -1765,7 +1798,6 @@ library.component = library.component || {};
 		const self = this;
 		self.View.on( 'app-online', appOnline );
 		function appOnline( isOnline ) {
-			console.log( 'AppOnline', isOnline );
 			document.body.classList.toggle( 'app-offline', !isOnline );
 		}
 	}
@@ -1829,7 +1861,6 @@ library.component = library.component || {};
 	
 	ns.ConnState.prototype.handleLoad = function( data ) {
 		const self = this;
-		console.log( 'handleLoad', data );
 		self.showUI( true );
 		self.hideProgressStates();
 		self.loading.classList.toggle( 'hidden', false );
@@ -1837,7 +1868,6 @@ library.component = library.component || {};
 	
 	ns.ConnState.prototype.handleConnect = function( e ) {
 		const self = this;
-		console.log( 'handleConnect' );
 		self.showUI( true );
 		self.hideProgressStates();
 		self.connecting.classList.toggle( 'hidden', false );
@@ -1845,7 +1875,6 @@ library.component = library.component || {};
 	
 	ns.ConnState.prototype.handleSession = function( sid ) {
 		const self = this;
-		console.log( 'handleSession' );
 		self.showError( false );
 		self.isOnline = true;
 		self.showUI( false );
@@ -1853,13 +1882,11 @@ library.component = library.component || {};
 	
 	ns.ConnState.prototype.handleClose = function( e ) {
 		const self = this;
-		console.log( 'handleClose' );
 		self.showUI( true );
 	}
 	
 	ns.ConnState.prototype.handleError = function( err ) {
 		const self = this;
-		console.log( 'handleError', err );
 		self.showUI( true );
 		self.hideErrorStates();
 		self.showError( true );
@@ -1869,7 +1896,6 @@ library.component = library.component || {};
 	
 	ns.ConnState.prototype.handleReconnect = function( event ) {
 		const self = this;
-		console.log( 'handleReconnect', event );
 		self.showUI( true );
 		self.hideProgressStates();
 		self.reconnect.classList.toggle( 'hidden', false );
@@ -2005,4 +2031,810 @@ library.component = library.component || {};
 	
 })( library.component );
 
+(function( ns, undefined ) {
+	ns.Search = function(
+		conn,
+		inputContainerId,
+		resultsContainerId,
+		template,
+		onActive
+	) {
+		const self = this;
+		self.conn = null;
+		self.template = template;
+		self.onActive = onActive;
+		
+		self.input = null;
+		self.output = null;
+		self.searching = null;
+		self.results = null;
+		self.items = null;
+		self.pools = null;
+		
+		self.init( conn, inputContainerId, resultsContainerId );
+	}
+	
+	// Public
+	
+	ns.Search.prototype.close = function() {
+		const self = this;
+		if ( self.conn )
+			self.conn.release( 'search-result' );
+		
+		delete self.conn;
+		delete self.input;
+		delete self.inputIcon;
+		delete self.output;
+		delete self.searching;
+		delete self.results;
+		delete self.pools;
+		delete self.items;
+		delete self.template;
+		delete self.onActive;
+	}
+	
+	ns.Search.prototype.hide = function() {
+		const self = this;
+		self.clearSearch();
+		self.setInactive();
+	}
+	
+	// Private
+	
+	ns.Search.prototype.renameMap = {
+		'Presence' : 'i18n_conference_rooms',
+		'Treeroot' : 'i18n_contacts',
+	}
+	
+	ns.Search.prototype.init = function( parentConn, inputContainerId, resultsContainerId ) {
+		const self = this;
+		self.setActions();
+		self.filter = new library.component.Filter();
+		self.conn = new library.component.EventNode( 'search', parentConn, eventSink );
+		function eventSink( type, data ) {
+			console.log( 'Main.Search event sink - no handler for event', {
+				type : type,
+				data : data,
+			});
+		}
+		
+		self.conn.on( 'result', e => self.handleResult( e ));
+		self.conn.on( 'add_relation', e => self.handleAddRelation( e ));
+		
+		const inputContainer = document.getElementById( inputContainerId );
+		const inputHtml = self.template.get( 'search-input-tmpl', {});
+		inputContainer.innerHTML = inputHtml;
+		
+		self.input = inputContainer.querySelector( 'input' );
+		self.input.addEventListener( 'keyup', hasSearchInput, false );
+		self.input.addEventListener( 'blur', lostFocus, false );
+		self.inputIcon = inputContainer.querySelector( 'i' );
+		self.inputIcon.parentNode.addEventListener( 'click', clearClick, false );
+		function clearClick( e ) {
+			self.handleClear();
+		}
+		
+		const resContainer = document.getElementById( resultsContainerId );
+		const resultsId = friendUP.tool.uid( 'results' );
+		const tmplConf = {
+			resultsId   : resultsId,
+		};
+		
+		self.output = self.template.getElement( 'search-results-tmpl', tmplConf );
+		resContainer.appendChild( self.output );
+		self.results = document.getElementById( resultsId );
+		function hasSearchInput( e ) {
+			self.handleInput();
+		}
+		
+		function lostFocus( e ) {
+			let val = self.input.value;
+			if ( val && val.length > 0 )
+				return;
+			
+			self.clearSearch();
+			self.setInactive();
+		}
+	}
+	
+	ns.Search.prototype.handleClear = function() {
+		const self = this;
+		self.input.value = '';
+		self.handleInput();
+	}
+	
+	ns.Search.prototype.handleInput = function() {
+		const self = this;
+		let str = self.input.value;
+		if ( !str || !str.trim ) {
+			self.clearSearch();
+			self.setInactive();
+			return;
+		}
+		
+		str = str.trim();
+		if ( !str || !str.length ) {
+			self.clearSearch();
+			self.setInactive();
+			return;
+		}
+		
+		if ( self.searchStr === str )
+			return;
+		
+		if ( isSameBaseSearch( str )) {
+			self.searchStr = str;
+			self.refreshResults();
+			return;
+		}
+		
+		self.clearSearch();
+		self.setActive();
+		if ( 1 === str.length ) {
+			self.searchStr = str;
+			self.searchTimeout = window.setTimeout( searchAnyway, 2000 );
+			return;
+		}
+		
+		if ( 2 === str.length ) {
+			self.searchStr = str;
+			self.searchTimeout = window.setTimeout( searchAnyway, 500 );
+			return;
+		}
+		
+		self.searchStr = str;
+		self.sendSearch();
+		
+		function isSameBaseSearch( str ) {
+			if ( !self.sentSearchStr )
+				return false;
+			
+			if ( 0 === str.indexOf( self.sentSearchStr ))
+				return true;
+			else
+				return false;
+		}
+		
+		function searchAnyway() {
+			self.sendSearch();
+		}
+	}
+	
+	ns.Search.prototype.sendSearch = function() {
+		const self = this;
+		self.pools = [];
+		self.sources = {};
+		self.items = {};
+		self.searchId = friendUP.tool.uid( 'search' );
+		self.sentSearchStr = self.searchStr;
+		const search = {
+			type : 'search',
+			data : {
+				id  : self.searchId,
+				str : self.searchStr,
+			},
+		};
+		self.conn.send( search );
+	}
+	
+	ns.Search.prototype.setActive = function() {
+		const self = this;
+		self.searchActive = true;
+		if ( self.onActive )
+			self.onActive( true );
+		
+		self.setIsSearching( true );
+	}
+	
+	ns.Search.prototype.setInactive = function() {
+		const self = this;
+		self.searchActive = false;
+		self.input.value = '';
+		if ( self.onActive )
+			self.onActive( false );
+	}
+	
+	ns.Search.prototype.clearSearch = function() {
+		const self = this;
+		self.searchActive = false;
+		self.clearDelayedSearch();
+		self.searchId = null;
+		self.searchStr = null;
+		self.sentSearchStr = null;
+		self.pools = null;
+		self.sources = null;
+		self.items = null;
+		self.results.innerHTML = '';
+		self.setIsSearching( false );
+	}
+	
+	ns.Search.prototype.setIsSearching = function( isSearching ) {
+		const self = this;
+		if ( !self.inputIcon )
+			return;
+		
+		if ( isSearching )
+			self.inputIcon.className = 'fa fa-fw fa-spinner fa-pulse';
+		else {
+			if ( self.searchActive ) {
+				self.inputIcon.parentNode.classList.toggle( 'flat-btn', true );
+				self.inputIcon.className = 'fa fa-fw fa-close';
+			}
+			else {
+				self.inputIcon.parentNode.classList.toggle( 'flat-btn', false );
+				self.inputIcon.className = 'fa fa-fw fa-search';
+			}
+		}
+	}
+	
+	ns.Search.prototype.clearDelayedSearch = function() {
+		const self = this;
+		if ( !self.searchTimeout )
+			return;
+		
+		window.clearTimeout( self.searchTimeout );
+		self.searchTimeout = null;
+	}
+	
+	ns.Search.prototype.handleResult = function( event ) {
+		const self = this;
+		if ( self.searchId !== event.id )
+			return;
+		
+		if ( event.current === event.total )
+			self.setIsSearching( false );
+		
+		const src = event.data;
+		const sId = friendUP.tool.uid( 'src' );
+		const source = addSource( src, sId );
+		const poolEl = document.getElementById( source.uuid );
+		const poolContent = poolEl.querySelector( '.content' );
+		const items = src.result;
+		items.forEach( add );
+		refreshResults( source );
+		
+		function add( item ) {
+			let uuid = friendUP.tool.uid();
+			item.uuid = uuid;
+			item.sourceId = source.sourceId;
+			item.poolId = sId;
+			source.pool.push( item );
+			self.items[ uuid ] = item;
+			let el = null;
+			if ( 'contact' === item.type )
+				el = self.buildContact( item );
+			
+			if ( 'room' === item.type )
+				el = self.buildRoom( item );
+			
+			poolContent.appendChild( el );
+		}
+		
+		function addSource( conf, sId ) {
+			const name = self.sourceNamer2k( conf.source );
+			const type = typeNamerPro( conf.type );
+			const poolConf = {
+				uuid : sId,
+				name : name,
+				type : type,
+			};
+			let el = self.template.getElement( 'search-result-pool-tmpl', poolConf );
+			self.results.appendChild( el );
+			const source = {
+				el       : el,
+				uuid     : sId,
+				sourceId : conf.sourceId,
+				source   : conf.source,
+				actions  : conf.actions,
+				pool     : [],
+			};
+			self.pools.push( sId );
+			self.sources[ sId ] = source;
+			
+			return source;
+			
+			function typeNamerPro( type ) {
+				if ( !type || !type.length )
+					return '';
+				
+				return ' - ' + View.i18n( type );
+			}
+		}
+		
+		function refreshResults( source ) {
+			const pool = source.pool;
+			if ( !pool.length ) {
+				self.togglePool( source.uuid, false );
+				return;
+			}
+			
+			const hide = self.filter.inverseFilter( self.searchStr, pool );
+			if ( hide.length === pool.length )
+				self.togglePool( pool.uuid, false );
+			
+			self.toggleItems( hide, false );
+		}
+	}
+	
+	ns.Search.prototype.sourceNamer2k = function( name ) {
+		const self = this;
+		let rename = self.renameMap[ name ] || name;
+		return View.i18n( rename );
+	}
+	
+	ns.Search.prototype.buildContact = function( item ) {
+		const self = this;
+		const actions = self.sources[ item.poolId ].actions;
+		let hasAddRelation = false;
+		let hasMenu = true;
+		if ( actions.indexOf( 'add-relation' ) != -1 )
+			hasAddRelation = true;
+		
+		if ( !actions.length || ( hasAddRelation && ( actions.length == 1 )))
+			hasMenu = false;
+		
+		const conf = {
+			uuid       : item.uuid,
+			name       : item.name || '',
+			email      : item.email || '---',
+			alias      : item.alias || '---',
+			avatar     : item.avatar || '',
+			subHidden  : hasAddRelation ? '' : 'hidden',
+			menuHidden : hasMenu ? '' : 'hidden',
+		};
+		
+		const el = self.template.getElement( 'search-result-contact-tmpl', conf );
+		const uuid = item.uuid;
+		if ( hasMenu ) {
+			const menuBtn = el.querySelector( '.item-menu' );
+			menuBtn.addEventListener( 'click', menuClick, false );
+		}
+		
+		if ( hasAddRelation ) {
+			const subBtn = el.querySelector( '.search-result-subscribe' );
+			subBtn.addEventListener( 'click', subClick, false );
+		}
+		
+		el.addEventListener( 'click', elClick, false );
+		
+		function subClick( e ) {
+			e.stopPropagation();
+			self.handleAddRelationClick( uuid );
+		}
+		function menuClick( e ) {
+			e.stopPropagation();
+			self.handleMenuClick( uuid );
+		}
+		function elClick( e ) { self.handleItemClick( uuid ); }
+		
+		return el;
+	}
+	
+	ns.Search.prototype.buildRoom = function( item ) {
+		const self = this;
+		const conf = {
+			uuid   : item.uuid,
+			name   : item.name || '',
+			avatar : item.avatar || '',
+		};
+		const el = self.template.getElement( 'search-result-room-tmpl', conf );
+		const menuBtn = el.querySelector( '.item-menu')
+		const uuid = item.uuid;
+		
+		el.addEventListener( 'click', elClick, false );
+		menuBtn.addEventListener( 'click', menuClick, false );
+		
+		function menuClick( e ) {
+			e.stopPropagation();
+			self.handleMenuClick( uuid );
+		}
+		function elClick( e ) { self.handleItemClick( uuid ); }
+		
+		return el;
+	}
+	
+	ns.Search.prototype.handleAddRelationClick = function( uuid ) {
+		const self = this;
+		const item = self.items[ uuid ];
+		if ( item.disabled )
+			return;
+		
+		item.disabled = true;
+		const el = document.getElementById( uuid );
+		const icon = el.querySelector( '.search-result-subscribe i' );
+		icon.classList.toggle( 'fa-plus', false );
+		icon.classList.toggle( 'fa-spinner', true );
+		icon.classList.toggle( 'fa-pulse', true );
+		const sub = {
+			type : 'add-relation',
+			data : item,
+		};
+		self.sendAction( sub );
+	}
+	
+	ns.Search.prototype.handleAddRelation = function( res ) {
+		const self = this;
+		const id = res.uuid;
+		if ( !self.items || !self.items[ id ])
+			return;
+		
+		const item = self.items[ id ];
+		const el = document.getElementById( id );
+		if ( !el )
+			return;
+		
+		const subBtn = el.querySelector( '.search-result-subscribe' );
+		const icon = subBtn.querySelector( 'i' );
+		icon.classList.toggle( 'fa-plus', false );
+		icon.classList.toggle( 'fa-spinner', false );
+		icon.classList.toggle( 'fa-pulse', false );
+		if ( res.success )
+			icon.classList.toggle( 'fa-check', true );
+		else {
+			item.disabled = false;
+			icon.classList.toggle( 'fa-plus', true );
+		}
+	}
+	
+	ns.Search.prototype.handleMenuClick = function( uuid ) {
+		const self = this;
+		const item = self.items[ uuid ];
+		if ( item.disabled )
+			return;
+		
+		const el = document.getElementById( uuid );
+		const menuBtn = el.querySelector( '.item-menu' );
+		const actions = self.getItemMenuActions( item );
+		const mini = new library.component.MiniMenu(
+			hello.template,
+			menuBtn,
+			'hello',
+			actions,
+			onSelect
+		);
+		
+		function onSelect( action ) {
+			mini.close();
+			const event = {
+				type : action,
+				data : item,
+			};
+			self.sendAction( event );
+		}
+	}
+	
+	ns.Search.prototype.handleItemClick = function( uuid ) {
+		const self = this;
+		const item = self.items[ uuid ];
+		if ( item.disabled )
+			return;
+		
+		const action = {
+			type : 'open-chat',
+			data : item,
+		};
+		
+		self.sendAction( action );
+	}
+	
+	ns.Search.prototype.refreshResults = function() {
+		const self = this;
+		if ( !self.pools )
+			return;
+		
+		self.pools.forEach( sourceId => {
+			let source = self.sources[ sourceId ];
+			let pool = source.pool;
+			let show = self.filter.filter( self.searchStr, pool );
+			let hide = self.filter.inverseFilter( self.searchStr, pool );
+			self.togglePool( source.uuid, !!show.length )
+			self.toggleItems( show, true );
+			self.toggleItems( hide, false );
+		});
+	}
+	
+	ns.Search.prototype.toggleItems = function( list, show ) {
+		const self = this;
+		if ( !list.length )
+			return;
+		
+		list.forEach( item => {
+			let el = document.getElementById( item.uuid );
+			if ( !el )
+				return;
+			
+			el.classList.toggle( 'hidden', !show );
+		});
+	}
+	
+	ns.Search.prototype.togglePool = function( poolId, show ) {
+		const self = this;
+		const poolEl = document.getElementById( poolId );
+		if ( !poolEl )
+			return;
+		
+		poolEl.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.Search.prototype.getItemMenuActions = function( item ) {
+		const self = this;
+		const source = self.sources[ item.poolId ];
+		const actions = source.actions.map( build ).filter( item => !!item );
+		return actions;
+		
+		function build( type ) {
+			if ( 'add-relation' === type )
+				return null;
+			
+			return self.menuActions[ type ] || null;
+		}
+	}
+	
+	ns.Search.prototype.sendAction = function( action ) {
+		const self = this;
+		const event = {
+			type : 'action',
+			data : action,
+		};
+		self.conn.send( event );
+	}
+	
+	ns.Search.prototype.setActions = function() {
+		const self = this;
+		self.menuActions = library.component.MiniMenuActions();
+	}
+	
+})( library.component );
 
+
+// mini menu
+/*
+originElement <DOM element> - element to align the menu to
+parentId <DOM id string> - menu parent container, menu will be appended here
+options <list> - menu entries, list of objects:
+{
+	event : <string> - will be returned in onselect when item is clicked
+	name  : <string> - will be shown in the menu
+	faIcon : <fa-icon class string>  - class of fa icon to show, defaults to 'fa-cube'
+}
+
+onselect <fn> - fires when an item is clicked
+
+The menu will remove itself if it loses focus or a menu item is clicked
+*/
+(function( ns, undefined ) {
+	ns.MiniMenu = function(
+		templateManager,
+		originElement,
+		parentId,
+		options,
+		onselect
+	) {
+		const self = this;
+		self.tmpl = templateManager;
+		self.onselect = onselect;
+		
+		self.init( originElement, parentId, options );
+	}
+	
+	// Public
+	
+	ns.MiniMenu.prototype.close = function() {
+		const self = this;
+		let el = self.el;
+		if ( el ) {
+			delete self.el;
+			el.parentNode.removeChild( el );
+		}
+		
+		delete self.tmpl;
+		delete self.menu;
+		delete self.onselect;
+	}
+	
+	// Private
+	
+	ns.MiniMenu.prototype.init = function( originEl, parentId, options ) {
+		const self = this;
+		const viewWidth = document.body.clientWidth;
+		const viewHeight = document.body.clientHeight;
+		const middle = viewWidth / 2;
+		const originPos = self.getoriginPosition( originEl );
+		const align = self.getAlignment( middle, originPos );
+		let x1 = null;
+		let x2 = null;
+		if ( 'left' === align )
+			x1 = originPos.x1;
+		else
+			x2 = originPos.x2;
+		
+		const yCenter = self.getYCenter( originPos );
+		self.id = friendUP.tool.uid( 'mm' );
+		const tmplConf = {
+			id : self.id,
+		};
+		self.el = self.tmpl.getElement( 'mini-menu-tmpl', tmplConf );
+		self.menu = self.el.querySelector( '.mini-menu-content' );
+		self.addOptions( options );
+		
+		if ( x1 )
+			self.menu.style.right = viewWidth - x1;
+		else
+			self.menu.style.left = x2;
+		
+		const parent = document.getElementById( parentId );
+		parent.appendChild( self.el );
+		const ownHeight = self.menu.clientHeight;
+		let maxHeight = ( viewHeight - 10 ) + 'px';
+		let top = Math.floor( yCenter - ( ownHeight / 2 ));
+		top = self.boundVerticalPosition( viewHeight, ownHeight, top );
+		self.menu.style.maxHeight = maxHeight;
+		self.menu.style.top = top;
+		self.menu.focus();
+		self.menu.addEventListener( 'blur', menuBlur, false );
+		function menuBlur( e ) {
+			self.close();
+		}
+	}
+	
+	ns.MiniMenu.prototype.getoriginPosition = function( oEl ) {
+		let bRekt = oEl.getBoundingClientRect();
+		return {
+			x1 : bRekt.x,
+			x2 : bRekt.right,
+			y1 : bRekt.y,
+			y2 : bRekt.bottom,
+		};
+	}
+	
+	ns.MiniMenu.prototype.getAlignment = function( middle, origin ) {
+		if ( origin.x2 < middle )
+			return 'right';
+		
+		if ( origin.x1 > middle )
+			return 'left';
+		
+		return 'right';
+	}
+	
+	ns.MiniMenu.prototype.getYCenter = function( origin ) {
+		return Math.floor(( origin.y1 + origin.y2 ) / 2 );
+	}
+	
+	ns.MiniMenu.prototype.boundVerticalPosition = function( viewH, ownH, currTop ) {
+		if ( ownH > ( viewH - 10 ))
+			return 5;
+		
+		if ( currTop < 10 )
+			return 5;
+		
+		let bottomGap = viewH - ( ownH + currTop );
+		if ( bottomGap < 0 )
+			return (( currTop + bottomGap ) - 10 );
+		
+		if ( bottomGap < 10 ) // [0..10>
+			return ( currTop + ( bottomGap - 10 ));
+		
+		return currTop;
+	}
+	
+	ns.MiniMenu.prototype.addOptions = function( options ) {
+		const self = this;
+		options.forEach( opt => self.add(  opt ));
+	}
+	
+	ns.MiniMenu.prototype.add = function( opt ) {
+		const self = this;
+		const event = opt.event;
+		let conf = {
+			name   : opt.name,
+			faIcon : opt.faIcon || 'fa-cube',
+		};
+		let optEl = self.tmpl.getElement( 'mini-menu-option-tmpl', conf );
+		optEl.addEventListener( 'click', optClick, false );
+		self.menu.appendChild( optEl );
+		
+		function optClick( e ) {
+			let onselect = self.onselect;
+			if ( !onselect )
+				return;
+			
+			delete self.onselect;
+			onselect( event );
+			self.close();
+		}
+	}
+	
+})( library.component );
+
+
+/* mini menu actions */
+(function( ns, undefined ) {
+	ns.MiniMenuActions = function() {
+		let self = this;
+		self = {
+			'hide' : {
+				event  : 'hide',
+				name   : View.i18n( 'i18n_hide_from_list' ),
+				faIcon : 'fa-eye-slash',
+			},
+			'open-chat' : {
+				event  : 'open-chat',
+				name   : View.i18n( 'i18n_open_chat' ),
+				faIcon : 'fa-comments',
+			},
+			'live-audio' : {
+				event : 'live-audio',
+				name   : View.i18n( 'i18n_go_live_audio' ),
+				faIcon : 'fa-microphone',
+			},
+			'live-video' : {
+				event : 'live-video',
+				name   : View.i18n( 'i18n_go_live_video' ),
+				faIcon : 'fa-video-camera',
+			},
+			'invite-video' : {
+				event  : 'invite-video',
+				name   : View.i18n( 'i18n_invite_to_video' ),
+				faIcon : 'fa-video-camera',
+			},
+			'invite-audio' : {
+				event  : 'invite-audio',
+				name   : View.i18n( 'i18n_invite_to_audio' ),
+				faIcon : 'fa-microphone',
+			},
+			'invite-room' : {
+				event  : 'invite-room',
+				name   : View.i18n( 'i18n_invite_to_room' ),
+				faIcon : 'fa-cube',
+			},
+			'remove-contact' : {
+				event  : 'remove-relation',
+				name   : View.i18n( 'i18n_remove_contact' ),
+				faIcon : 'fa-close',
+			},
+			'remove-chat' : {
+				event  : 'remove-chat',
+				name   : View.i18n( 'i18n_remove_chat' ),
+				faIcon : 'fa-close',
+			},
+			'leave-room' : {
+				event  : 'leave-room',
+				name   : View.i18n( 'i18n_leave_room' ),
+				faIcon : 'fa-sign-out',
+			},
+			'settings' : {
+				event  : 'settings',
+				name   : View.i18n( 'i18n_settings' ),
+				faIcon : 'fa-cog',
+			},
+			'remove-module' : {
+				event  : 'remove',
+				name   : View.i18n( 'i18n_remove_module' ),
+				faIcon : 'fa-close',
+			},
+			'add-contact' : {
+				event  : 'add-contact',
+				name   : View.i18n( 'i18n_add_contact' ),
+				faIcon : 'fa-user-plus',
+			},
+			'reconnect' : {
+				event  : 'reconnect',
+				name   : View.i18n( 'i18n_reconnect' ),
+				faIcon : 'fa-refresh',
+			},
+			'create-room' : {
+				event  : 'create-room',
+				name   : View.i18n( 'i18n_create_room' ),
+				faIcon : 'fa-plus',
+			},
+			'console' : {
+				event  : 'console',
+				name   : View.i18n( 'i18n_console' ),
+				faIcon : 'fa-tv',
+			}
+		};
+		
+		return self;
+	};
+})( library.component );

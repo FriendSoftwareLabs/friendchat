@@ -247,7 +247,9 @@ library.view = library.view || {};
 		self.doFlourish = true;
 		
 		if ( 'VR' !== window.View.deviceType )
+		{
 			self.input.focus();
+		}
 	}
 	
 	ns.Conference.prototype.handleLog = function( log ) {
@@ -533,6 +535,7 @@ library.view = library.view || {};
 		self.showHideBtn = document.getElementById( 'showhide-btn' );
 		self.inputForm = document.getElementById( 'input-form' );
 		const submitBtn = document.getElementById( 'chat-submit' );
+		const attachBtn = document.getElementById( 'attachment' );
 		
 		//window.addEventListener( 'resize', windowResize, false );
 		
@@ -540,6 +543,7 @@ library.view = library.view || {};
 		self.showHideBtn.addEventListener( 'click', showhideToggle, false );
 		self.inputForm.addEventListener( 'submit', inputSubmit, false );
 		submitBtn.addEventListener( 'click', inputSubmit, false );
+		attachBtn.addEventListener( 'click', attach, false );
 		
 		function windowResize( e ) {
 			self.handleWindowResize( e );
@@ -559,6 +563,13 @@ library.view = library.view || {};
 			e.preventDefault();
 			self.input.submit();
 		}
+		
+		function attach( e ) {
+			self.send( {
+				type: 'attach',
+				data: false
+			} );
+		};
 		
 		// Handle paste if it isn't a file
 		window.addEventListener( 'paste', function( evt )

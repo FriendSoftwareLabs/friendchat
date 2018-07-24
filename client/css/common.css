@@ -5,6 +5,21 @@ friend grey: #808080;
 
 */
 
+#hello .Off {
+	color            : transparent;
+	background-color : transparent;
+}
+
+.led-status {
+	position: relative;
+	overflow: hidden;
+}
+
+.led-status > div {
+	width : 100%;
+	height : 100%;
+}
+
 .Loading > * {
 	visibility: hidden;
 	background-color : #444;
@@ -13,6 +28,20 @@ friend grey: #808080;
 .fa {
 	font-size: 120%;
 }
+
+/*
+html body .flat-btn {
+	background-color : rgba( 127, 127, 128, 0 );
+	opacity          : 0.8;
+	transition       : all 0.2s;
+}
+
+html body .flat-btn:hover {
+	background-color : rgba( 127, 128, 128, 0.15 );
+	opacity          : 1;
+	transition       : all 0.2s;
+}
+*/
 
 * { box-sizing: border-box; }
 
@@ -41,8 +70,8 @@ body.app-offline input {
 	pointer-events : none;
 }
 
-i.fa {
-	font-size: 125%;
+body i.fa {
+	font-size: 115%;
 }
 
 .rounded {
@@ -266,13 +295,6 @@ i.fa {
 	align-items : center;
 }
 
-.horizontal-center {
-	position: absolute;
-	top : 0;
-	left: 50%;
-	transform : translateX( -50% );
-}
-
 .flex-reset {
 	position: relative;
 }
@@ -287,6 +309,12 @@ i.fa {
 	text-overflow : ellipsis;
 }
 
+.horizontal-center {
+	position: absolute;
+	top : 0;
+	left: 50%;
+	transform : translateX( -50% );
+}
 
 /* common */
 
@@ -761,4 +789,128 @@ div.foldit-status {
 /* importanter than other importants */
 html body .hidden {
 	display: none !important;
+}
+
+/* search */
+
+#search-bar {
+	padding : 0.5em 0;
+	padding-left : 0.5em;
+}
+
+.search-input-content {
+	position: relative;
+}
+
+.search-input-content input,
+.search-input-content i {
+	line-height: 2.2em;
+}
+
+.search-input-content .input-action {
+	padding  : 0 0.5em;
+	opacity  : 0.7;
+	position : absolute;
+	top      : 0;
+	right    : 0;
+}
+
+.search-input-content .input-wrap {
+	
+}
+
+.search-results {
+	height : 100%;
+}
+
+.search-ongoing {
+	padding : 0.5em 0;
+}
+
+.search-ongoing i {
+	margin-right : 0.3em;
+}
+
+.search-results-content {
+	overflow: auto;
+}
+
+.search-result-pool {
+	padding-top  : 0.3em;
+}
+
+.search-result-pool > .name {
+	padding     : 0.5em;
+	font-size   : 110%;
+	font-weight : bold;
+	opacity     : 0.8;
+}
+
+.search-result-pool > .content {
+}
+
+.search-result-contact,
+.search-result-room {
+	padding : 0.5em;
+	margin-bottom : 0.1em;
+}
+
+.search-result-room .avatar,
+.search-result-contact .avatar {
+	width               : 2.5em;
+	height              : 2.5em;
+	background-color    : transparent;
+	border-radius       : 15%;
+	background-position : center center;
+	background-size     : cover;
+}
+
+.search-result-subscribe {
+	height: 100%;
+	width : 100%;
+}
+
+.search-result-room .item-info,
+.search-result-contact .item-info {
+	padding-left : 0.5em;
+	overflow     : hidden;
+}
+
+.search-result-room .name,
+.search-result-contact .name {
+	font-size   : 110%;
+	font-weight : bold;
+}
+
+.search-result-contact .hacker-name {
+}
+
+/* mini menu */
+
+.mini-menu {
+	position: absolute;
+	top     : 0;
+	right   : 0;
+	bottom  : 0;
+	left    : 0;
+	z-index : 999;
+}
+
+.mini-menu-content {
+	position      : absolute;
+	border-radius : 0.2em;
+	outline       : none;
+	overflow      : auto;
+}
+
+.mini-menu-option {
+	
+}
+
+.mini-menu-option .name {
+	padding : 0 0.5em;
+}
+
+.item-menu {
+	align-self: stretch;
 }

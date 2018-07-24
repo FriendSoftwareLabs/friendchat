@@ -31,13 +31,13 @@
 <script id="body-tmpl" type="text/html">
 <div id="hello" class="im-chat bar column fortify BackgroundDefault">
 	<div id="head" class="group row BorderBottom">
-		<div id="chatting-with" class="expand">
+		<div id="chatting-with" class="expand Ellipsis">
 		</div>
 		<div class="actions fortify">
 			<button
 				id="leeloodallasmultiline"
 				type="button"
-				class="button"
+				class="IconButton button"
 				title="{i18n_toggle_multiline_input}"
 			>
 				<i class="fa fa-fw fa-align-left"></i>
@@ -45,7 +45,7 @@
 			<button
 				id="toggle-voice"
 				type="button"
-				class="button"
+				class="IconButton button"
 				title="{i18n_messages_will_be}"
 			>
 				<i class="fa fa-fw fa-tty"></i>
@@ -53,21 +53,21 @@
 			<button
 				id="start-video"
 				type="button"
-				class="button"
+				class="IconButton button"
 			>
 				<i class="fa fa-fw fa-video-camera"></i>
 			</button>
 			<button
 				id="start-audio"
 				type="button"
-				class="button"
+				class="IconButton button"
 			>
 				<i class="fa fa-fw fa-microphone"></i>
 			</button>
 			<button
 				id="toggle-encrypt"
 				type="button"
-				class="button hidden"
+				class="IconButton button hidden"
 				title="{i18n_encrypt_the_message}"
 			>
 				<i class="fa fa-fw fa-lock"></i>
@@ -93,6 +93,9 @@
 	</div>
 	<div id="foot" class="fortify">
 		<form id="input-form" action="" class="bar row cover">
+			<div id="attachment" class="button flat fortify center-child">
+				<i class="fa fa-fw fa-paperclip"></i>
+			</div>
 			<div id="input-container" class="expand BorderTop">
 				<!-- multiline input stuff goes here -->
 			</div>

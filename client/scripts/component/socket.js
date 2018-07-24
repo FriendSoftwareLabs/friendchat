@@ -176,7 +176,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleConnectTimeout = function() {
 		const self = this;
-		console.log( 'handleConnectTimeout' );
 		self.setState( 'timeout', 'ERR_CONN_TIMEOUT' );
 		self.isConnTimeout = true;
 		self.doReconnect();
@@ -184,7 +183,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.clearConnectTimeout = function() {
 		const self = this;
-		console.log( 'clearConnectTimeout', self.connectTimeout );
 		self.isConnTimeout = false;
 		if ( !self.connectTimeout )
 			return;
@@ -195,7 +193,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.doReconnect = function( noDelay ) {
 		var self = this;
-		console.log( 'doReconnect' );
 		if ( self.ws ) {
 			self.cleanup();
 		}
@@ -227,10 +224,6 @@ library.component = library.component || {};
 		
 		var delay = calcDelay();
 		var showReconnectLogTimeLimit = 1000 * 5; // 5 seconds
-		console.log( 'doReconnect - delay', {
-			delay : delay,
-			delayLimit : showReconnectLogTimeLimit,
-		});
 		//if ( delay > showReconnectLogTimeLimit ) {
 			let now = Date.now();
 			let reconnectTime = now + delay;
@@ -297,7 +290,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
 		var self = this;
-		console.log( 'Socket.handleOpen', e );
 		self.clearConnectTimeout();
 		self.reconnectAttempt = 0;
 		// we're waiting for authenticate challenge

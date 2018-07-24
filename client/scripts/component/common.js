@@ -404,7 +404,6 @@ inherits from EventEmitter
 	
 	ns.Identity.prototype.init = function( conf ) {
 		var self = this;
-		//console.log( 'Identity.init', conf );
 		if ( conf.Name )
 			self.fromFCUser( conf );
 		else
@@ -413,8 +412,7 @@ inherits from EventEmitter
 	}
 	
 	ns.Identity.prototype.fromFCUser = function( conf ) {
-		var self = this;
-		//console.log( 'fromFCUser', conf );
+		const self = this;
 		self.fupConf = conf;
 		self.fupId = conf.ID;
 		self.name = library.tool.htmlDecode( conf.FullName );
@@ -423,12 +421,10 @@ inherits from EventEmitter
 		self.avatar = conf.Image; // || self.avatar;
 		self.level = conf.Level;
 		
-		console.log( 'identity', self );
 	}
 	
 	ns.Identity.prototype.fromIdentity = function( conf ) {
-		var self = this;
-		//console.log( 'fromIdentity', conf );
+		const self = this;
 		self.fupConf = {
 			ID       : conf.fupId,
 			FullName : conf.name,
@@ -445,5 +441,48 @@ inherits from EventEmitter
 		self.avatar = conf.avatar, // || self.avatar;
 		self.level = conf.level;
 	}
+	
+})( library.component );
+
+/* Filter */
+(function( ns, undefined ) {
+	ns.Filter = function() {
+		const self = this;
+	}
+	
+	ns.Filter.prototype.filter = function( filter, pool ) {
+		const self = this;
+		return self.baseFilter( filter, pool );
+	}
+	
+	ns.Filter.prototype.inverseFilter = function( filter, pool ) {
+		const self = this;
+		return self.baseFilter( filter, pool, true );
+	}
+	
+	// Private
+	
+	ns.Filter.prototype.baseFilter = function( filter, pool, inverse ) {
+		const filterRX = new RegExp( filter, 'i' );
+		inverse = inverse || false;
+		
+		if ( !pool || !pool.length )
+			return [];
+		
+		return pool.filter( item => {
+			if ( item.name.match( filterRX ))
+				return !inverse;
+			
+			if ( item.email && item.email.match( filterRX ))
+				return !inverse;
+			
+			if ( item.alias && item.alias.match( filterRX ))
+				return !inverse;
+			
+			return inverse;
+		});
+	}
+	
+	
 	
 })( library.component );

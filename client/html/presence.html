@@ -26,31 +26,31 @@
 -->
 <script id="body-tmpl" type="text/html">
 <div id="hello" class="conference bar column BackgroundDefault">
-	<div id="head" class="BorderBottom fortify group row end">
+	<div id="head" class="PaddingSmall BorderBottom fortify group row end">
 		<div class="actions fortify group row">
 			<button id="settings-btn"
-				class="button hidden"
+				class="IconButton button hidden"
 				title="{i18n_open_channel_settings}"
 				type="button"
 			>
 				<i class="fa fa-fw fa-cog"></i>
 			</button>
 			<button id="upgrade-to-video"
-				class="button"
+				class="IconButton button"
 				title="{i18n_go_live}"
 				type="button"
 			>
 				<i class="fa fa-fw fa-video-camera"></i>
 			</button>
 			<button id="upgrade-to-audio"
-				class="button"
+				class="IconButton button"
 				title="{i18n_go_live}"
 				type="button"
 			>
 				<i class="fa fa-fw fa-microphone"></i>
 			</button>
 			<button id="show-hide-btn"
-				class="button"
+				class="IconButton button"
 				title="{i18n_show_hide_userlist}"
 				type="button"
 			>
@@ -59,11 +59,11 @@
 		</div>
 	</div>
 	<div id="main" class="main expand group row cover BorderBottom">
-		<div id="message-container" class="expand BorderRight">
+		<div id="message-container" class="expand">
 			<div id="messages" class="SelectableText">
 			</div>
 		</div>
-		<div id="users-container" class="fortify group column cover">
+		<div id="users-container" class="fortify group column cover BackgroundHeavy">
 			<div id="users-position" class="expand">
 				
 			</div>
@@ -74,6 +74,9 @@
 			<i class="fa fa-fw fa-smile-o"></i>
 		</div>
 		<form id="input-form" action="" class="bar row cover expand">
+			<div id="attachment" class="button flat fortify center-child">
+				<i class="fa fa-fw fa-paperclip"></i>
+			</div>
 			<div id="typing-hint" class="center-child">
 				<i class="fa fa-fw fa-keyboard-o"></i>
 			</div>
@@ -145,7 +148,7 @@ message,
 		<div class="msg-meta">
 			<div class="name"><%= from %></div>
 		</div>
-		<div class="group row left">
+		<div class="group row">
 			<div class="str expand"><!--
 			 --><%= message %><!--
 		 --></div>
@@ -163,14 +166,20 @@ bgKlass
 time,
 -->
 <script id="msg-tmpl" type="text/html">
-<div id="<%= msgId %>" class="msg-item msg <%= bgKlass %> group row left">
-	<div class="str expand"><!--
-	 --><%= message %><!--
- --></div>
-	<div class="time fortify">
-		<%= time %>
+ <div id="<%= msgId %>" class="msg-item msg-group msg <%= bgKlass %> group row left">
+	<div class="avatar fortify blank">
 	</div>
-</div>
+	<div class="content expand">
+		<div class="group row left">
+			<div class="str expand"><!--
+			--><%= message %><!--
+			--></div>
+			<div class="time fortify">
+				<%= time %>
+			</div>
+		</div>
+ 	</div>
+ </div>
 </script>
 
 <!-- action

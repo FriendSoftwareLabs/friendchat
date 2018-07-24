@@ -421,7 +421,6 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'ModuleControl.reconnect' );
 		mids = Object.keys( self.active );
 		mids.forEach( mId => {
 			let mod = self.active[ mId ];
@@ -431,7 +430,6 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
-		console.log( 'moduleCtrl.setIsOnline', isOnline );
 		self.reconnect();
 	}
 	
@@ -533,6 +531,7 @@ library.rtc = library.rtc || {};
 		
 		var mod = new Module( conf );
 		self.active[ mod.clientId ] = mod;
+		hello.items.addSource( mod.clientId, mod );
 		var viewConf = {
 			identity : mod.identity,
 			module : mod.module,
@@ -555,7 +554,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.handleNoModule = function() {
 		var self = this;
-		console.log( 'handleNoModule' );
+		console.log( 'handleNoModule - NYI' );
 		
 		return;
 		
@@ -698,12 +697,12 @@ library.rtc = library.rtc || {};
 	ns.ModuleControl.prototype.handleRemove = function( moduleId ) {
 		var self = this;
 		var module = self.active[ moduleId ];
-		
 		if ( !module ) {
 			console.log( 'invalid module id ');
 			return;
 		}
 		
+		hello.items.removeSource( moduleId );
 		module.close();
 		delete self.active[ moduleId ];
 		self.removeFromView( moduleId );
@@ -765,7 +764,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.joinLive = function( conf, eventSink, onclose ) {
 		const self = this;
-		console.log( 'RtcControl.joinLive', conf );
 		const sessionConf = {
 			roomId      : conf.roomId     ,
 			invite      : null            ,
@@ -779,11 +777,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.invite = function( contacts, permissions ) {
 		const self = this;
-		console.log( 'RtcControl.invite', [
-			contacts,
-			permissions,
-			self.sessionIds,
-		]);
 		const userConf = {
 			contacts    : contacts,
 			permissions : permissions,
@@ -1004,10 +997,6 @@ library.rtc = library.rtc || {};
 		if ( !self.sessions[ sId ])
 			return;
 		
-		console.log( 'closeSession', [
-			sId,
-			self.sessions,
-		]);
 		let session = self.sessions[ sId ];
 		delete self.sessions[ sId ];
 		self.sessionIds = Object.keys( self.sessions );
@@ -1255,7 +1244,13 @@ library.rtc = library.rtc || {};
 		if ( self.handlerId && hello.log )
 			hello.log.weDidntListen( self.handlerId );
 		else
-			console.log( 'app.Notification.close - missing the things, oops?', { id : self.handlerId, log : hello.log });
+			console.log(
+				'app.Notification.close - missing the things, oops?',
+				{
+					id : self.handlerId,
+					log : hello.log
+				}
+			);
 		
 		self.view.close();
 	}
@@ -1729,10 +1724,13 @@ library.rtc = library.rtc || {};
 		}
 		
 		if ( self.subscriber[ type ] ) {
-			console.log( 'subscriber type already exists - call .off( type ) to remove the previous one ', {
-				type : type,
-				subs : self.subscriber });
-			throw new Error( 'error, see log ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
+			console.log( 'subscriber type already exists - call .off( type )\
+				to remove the previous one ',
+				{
+					type : type,
+					subs : self.subscriber }
+				);
+			throw new Error( 'error, see previous log item ^^^' );
 		}
 		
 		self.subscriber[ type ] = callback;
@@ -2115,7 +2113,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcSession.prototype.setTitle = function( name ) {
 		const self = this;
-		console.log( 'RTCSESSION.setTitle', name );
 		self.view.setTitle( name );
 	}
 	
@@ -2275,4 +2272,252 @@ library.rtc = library.rtc || {};
 	
 })( library.system );
 
-
+/*
+Searchable collection(s) of users, rooms and other odds and ends
+*/
+(function( ns, undefined ) {
+	ns.Items = function() {
+		const self = this;
+		self.sources = {};
+		self.sourceIds = [];
+		
+		self.searches = {};
+		self.filter = null;
+		self.listeners = {};
+		
+		self.init();
+	}
+	
+	// Public
+	
+	ns.Items.prototype.close = function() {
+		const self = this;
+		if ( self.filter )
+			self.filter.close();
+		
+		delete self.filter;
+	}
+	
+	// TODO : constraints - list of source ids and/or scopes
+	ns.Items.prototype.search = function(
+		listenId,
+		searchEvent,
+	) {
+		const self = this;
+		const searchId = searchEvent.id;
+		const filter = searchEvent.str;
+		const constraints = searchEvent.constraints;
+		
+		self.searches[ searchId ] = {
+			id       : searchId,
+			pools    : [],
+			listenId : listenId,
+		};
+		const search = self.searches[ searchId ];
+		self.sourceIds.forEach( sId => {
+			let source = self.sources[ sId ];
+			let res = source.getSearchPools();
+			res.pools.forEach( future => {
+				let poolMeta = {
+					sourceId : sId,
+					source   : res.source,
+					done     : false,
+					future   : future,
+				};
+				search.pools.push( poolMeta );
+				future
+					.then( poolBack )
+					.catch( poolErr );
+				
+				function poolBack( res ) {
+					let pool = res.pool;
+					poolMeta.type = res.type;
+					poolMeta.actions = res.actions || [];
+					poolMeta.done = true;
+					delete poolMeta.future;
+					let result = self.filter.filter( filter, pool );
+					self.sendResult( searchId, poolMeta, result );
+				}
+				
+				function poolErr( err ) {
+					console.log( 'Items.search - pool error', err );
+					poolMeta.type = '';
+					poolMeta.actions = [];
+					poolMeta.done = true;
+					delete poolMeta.future;
+					self.sendResult( searchId, poolMeta, [] );
+				}
+			});
+		});
+	}
+	
+	ns.Items.prototype.startListen = function( parentConn ) {
+		const self = this;
+		const listenId = friendUP.tool.uid();
+		const conn = new library.component.EventNode( 'search', parentConn, eventSink );
+		
+		self.listeners[ listenId ] = conn;
+		conn.on( 'search', e => self.search( listenId, e ));
+		conn.on( 'action', e => self.handleAction( listenId, e ));
+		
+		return listenId;
+		
+		function eventSink( type, event ) {
+			console.log( 'Items.listen - unhandled event', {
+				type  : type,
+				event : event,
+			});
+		}
+	}
+	
+	ns.Items.prototype.stopListen = function( listenId ) {
+		const self = this;
+		const conn = self.listeners[ listenId ];
+		if ( !conn )
+			return;
+		
+		delete self.listeners[ listenId ];
+		conn.release( 'search' );
+	}
+	
+	ns.Items.prototype.addSource = function( id, source ) {
+		const self = this;
+		self.sources[ id ] = source;
+		self.sourceIds = Object.keys( self.sources );
+	}
+	
+	ns.Items.prototype.removeSource = function( id ) {
+		const self = this;
+		delete self.sources[ id ];
+		self.sourceIds = Object.keys( self.sources );
+	}
+	
+	// Private
+	
+	ns.Items.prototype.init = function() {
+		const self = this;
+		self.filter = new library.component.Filter();
+		self.actionMap = {
+			'add-relation'    : addRelation,
+			'remove-relation' : removeRelation,
+			'open-chat'       : openChat,
+			'live-audio'      : liveAudio,
+			'live-video'      : liveVideo,
+			'invite-video'    : inviteVideo,
+			'invite-audio'    : inviteAudio,
+		};
+		
+		function addRelation( s, e, l ) { self.handleAddRelation( s, e, l ); }
+		function removeRelation( s, e, l ) { self.handleRemoveRelation( s, e, l ); }
+		function openChat( s, e, l ) { self.handleOpenChat( s, e, l ); }
+		function liveAudio( s, e, l ) { self.handleLiveAudio( s, e, l ); }
+		function liveVideo( s, e, l ) { self.handleLiveVideo( s, e, l ); }
+		function inviteVideo( s, e, l ) { self.handleInviteVideo( s, e, l ); }
+		function inviteAudio( s, e, l ) { self.handleInviteAudio( s, e, l ); }
+	}
+	
+	ns.Items.prototype.handleAction = function( listenId, action ) {
+		const self = this;
+		const handler = self.actionMap[ action.type ];
+		const sub = action.data;
+		const source = self.sources[ sub.sourceId ];
+		if ( !handler || !source )
+			return;
+		
+		handler( source, sub, listenId );
+	}
+	
+	ns.Items.prototype.handleAddRelation = function( source, sub, listenId ) {
+		const self = this;
+		source.addRelation( sub )
+			.then( ok )
+			.catch( failed );
+			
+		function ok() {
+			console.log( 'Items.handleAddRelation - ok' );
+			updateView( true );
+		}
+		
+		function failed() {
+			console.log( 'Items.handleAddRelation - failed' );
+			updateView( false );
+		}
+		
+		function updateView( success ) {
+			const update = {
+				type : 'add_relation',
+				data : {
+					uuid    : sub.uuid,
+					success : success,
+				},
+			};
+			
+			const conn = self.listeners[ listenId ];
+			if ( !conn )
+				return;
+			
+			conn.send( update );
+		}
+	}
+	
+	ns.Items.prototype.handleRemoveRelation = function( source, sub ) {
+		const self = this;
+		source.removeRelation( sub );
+	}
+	
+	ns.Items.prototype.handleOpenChat = function( source, sub ) {
+		const self = this;
+		source.openChat( sub );
+	}
+	
+	ns.Items.prototype.handleLiveAudio = function( source, sub ) {
+		const self = this;
+		source.goLiveAudio( sub );
+	}
+	
+	ns.Items.prototype.handleLiveVideo = function( source, sub ) {
+		const self = this;
+		source.goLiveVideo( sub );
+	}
+	
+	ns.Items.prototype.handleInviteVideo = function( source, sub ) {
+		const self = this;
+		source.inviteToLive( sub, 'video' );
+	}
+	
+	ns.Items.prototype.handleInviteAudio = function( source, sub ) {
+		const self = this;
+		source.inviteToLive( sub, 'audio' );
+	}
+	
+	ns.Items.prototype.sendResult = function( searchId, meta, resultSet ) {
+		const self = this;
+		const search = self.searches[ searchId ];
+		const conn = self.listeners[ search.listenId ];
+		if ( !conn )
+			return;
+		
+		const total = search.pools.length;
+		let resultNum = search.pools
+			.filter( pool => pool.done )
+			.length;
+		
+		let result = {
+			type : 'result',
+			data : {
+				id      : searchId,
+				current : resultNum,
+				total   : total,
+				data    : {
+					sourceId : meta.sourceId,
+					source   : meta.source,
+					type     : meta.type,
+					actions  : meta.actions,
+					result   : resultSet,
+				},
+			},
+		};
+		conn.send( result );
+	}
+	
+})( library.system );

@@ -1,3 +1,98 @@
+<!-- search input
+-->
+<script id="search-input-tmpl" type="text/html">
+<div class="search-input-content">
+	<div class="input-wrap expand">
+		<input type="text" placeholder="Find..">
+	</div>
+	<div class="input-action center-child">
+		<i class="fa fa-fw fa-search"></i>
+	</div>
+</div>
+</script>
+
+<!-- search container
+searchingId,
+resultsId,
+-->
+<script id="search-results-tmpl" type="text/html">
+<div class="search-results bar column">
+    <div id="<%= resultsId %>" class="search-results-content expand">
+    </div>
+</div>
+</script>
+
+<!-- search result pool
+uuid,
+name,
+type,
+-->
+<script id="search-result-pool-tmpl" type="text/html">
+<div id="<%= uuid %>" class="search-result-pool BorderBottom">
+    <div class=name>
+        <%= name %><%= type %>
+    </div>
+    <div class="content">
+    </div>
+</div>
+</script>
+
+<!-- search result contact
+uuid,
+avatar,
+name,
+email,
+alias,
+subHidden,
+menuHidden,
+-->
+<script id="search-result-contact-tmpl" type="text/html">
+<div id="<%= uuid %>" class="search-result-contact group row">
+    <div class="avatar fortify"
+        style="background-image:url(&#39;<%= avatar %>&#39;)"
+    >
+        <div class="search-result-subscribe button center-child <%= subHidden %>">
+            <i class="fa fa-fw fa-plus"></i>
+        </div>
+    </div>
+    <div class="item-info expand">
+        <div class="name">
+            <%= name %>
+        </div>
+        <div class="email">
+            {i18n_email}: <%= email %>
+        </div>
+        <div class="hacker-name">
+            {i18n_username}: <%= alias %>
+        </div>
+    </div>
+    <div class="item-menu flat-btn fortify center-child <%= menuHidden%>">
+        <i class="fa fa-fw fa-ellipsis-v"></i>
+    </div>
+</div>
+</script>
+
+<!-- search result room
+uuid,
+name,
+avatar,
+-->
+<script id="search-result-room-tmpl" type="text/html">
+<div id="<%= uuid %>" class="search-result-room group row">
+    <div class="avatar fortify center-child">
+        <i class="fa fa-fw fa-users"></i>
+    </div>
+    <div class="item-info expand">
+        <div class="name">
+            <%= name %>
+        </div>
+    </div>
+    <div class="item-menu flat-btn fortify center-child">
+        <i class="fa fa-fw fa-ellipsis-v"></i>
+    </div>
+</div>
+</script>
+
 <!-- peer audio visualizer
 id,
 canvasId,
@@ -334,7 +429,7 @@ contentId,
 -->
 <script id="menu-container-tmpl" type="text/html">
 <div id="<%= id %>" class="menu BackgroundDefault">
-	<div class="menu-navigation group row start">
+	<div class="PaddingSmall menu-navigation group row start">
 		<button class="button disable menu-nav-top fortify">
 			<i class="fa fa-fw fa-angle-double-left"></i>
 		</button>
@@ -962,46 +1057,46 @@ figureClass,
 
 
 <!-- STATUS INDICATOR LED
-indicatorClass
+ledShapeClass
 -->
 <script id ="status-indicator-led-tmpl" type="text/html">
-<div class="status-indicator led-status LED <%= indicatorClass %>">
-	<div class="Off">
+<div class="status-indicator led-status LED <%= ledShapeClass %>">
+	<div class="">
 	</div>
 </div>
 </script>
 
 <!-- STATUS INDICATOR ICON
-indicatorClass
+faClass
 -->
 <script id="status-indicator-icon-tmpl" type="text/html">
 <div class="status-indicator icon-status center-child LED">
-	<i class="fa fa-fw <%= indicatorClass %>">
+	<i class="fa fa-fw <%= faClass %>">
 	</i>
 </div>
 </script>
 
 <!-- STATUS DISPLAY LED
-indicatorClass
+ledShapeClass
 -->
 <script id ="status-display-led-tmpl" type="text/html">
 <div class="status-display group row">
-	<div class="led-status LED <%= indicatorClass %>">
-		<div class="Off">
+	<div class="led-status LED <%= ledShapeClass %>">
+		<div class="center-child">
+			<div class="display-area">
+			</div>
 		</div>
-	</div>
-	<div class="display-area">
 	</div>
 </div>
 </script>
 
 <!-- STATUS DISPLAY ICON
-indicatorClass
+faClass
 -->
 <script id="status-display-icon-tmpl" type="text/html">
 <div class="status-display group row">
 	<div class="icon-status center-child LED">
-		<i class="fa fa-fw <%= indicatorClass %>">
+		<i class="fa fa-fw <%= faClass %>">
 		</i>
 	</div>
 	<div class="display-area">

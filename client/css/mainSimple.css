@@ -1,0 +1,45 @@
+
+#menu-btn
+{
+	font-size   : 120%;
+	padding     : 0 0.5em;
+	margin-left : 0.3em;
+	align-self  : stretch;
+}
+
+.assist-conversation {
+	padding     : 0.3em;
+	font-weight : bold;
+}
+
+.module-head {
+	padding-left : 0.5em;
+}
+
+.inactive-header {
+	padding     : 0 0.5em;
+	line-height : 2.5em;
+	height      : unset;
+}
+
+/* New Friend gui */
+
+#head {
+	padding-top : 0.8em;
+	padding-bottom : 0.4em;
+}
+
+#head,
+#foot {
+	height: unset;
+}
+
+#main-tabs {
+	position: relative;
+}
+
+/* Misc classes */
+
+.IconSmall.icon-bigger:before {
+	font-size: 20px;
+}

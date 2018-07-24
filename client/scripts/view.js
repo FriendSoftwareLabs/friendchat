@@ -122,6 +122,29 @@ library.view = library.view || {};
 			if ( self.onclose )
 				self.onclose();
 		}
+		
+		self.view.on( 'attach', attach );
+		function attach() {
+			var o = {
+				triggerFunction( items )
+				{
+					for( var a = 0; a < items.length; a++ )
+					{
+						( function( item ){
+							var f = new api.File( item.Path );
+							f.expose( function( link )
+							{
+								toChat( link );
+							} );
+						} )( items[ a ] );
+					}
+				},
+				path: 'Mountlist:',
+				type: 'load',
+				title: Application.i18n( 'i18n_share_file' )
+			};
+			new api.Filedialog( o );
+		}
 	}
 	
 })( library.view );
@@ -322,12 +345,34 @@ library.view = library.view || {};
 		self.view.on( 'start-live', self.onlive );
 		self.view.on( 'drag-n-drop', handleDropped );
 		self.view.on( 'encrypt', self.onencrypt );
+		self.view.on( 'attach', attach );
 		
 		function exit( msg ) { self.close(); }
 		function handleDropped( e ) { self.drop.handle( e ); }
 		function handleHighlight( e ) {
 			if ( self.onhighlight )
 				self.onhighlight( e );
+		}
+		function attach() {
+			var o = {
+				triggerFunction( items )
+				{
+					for( var a = 0; a < items.length; a++ )
+					{
+						( function( item ){
+							var f = new api.File( item.Path );
+							f.expose( function( link )
+							{
+								self.onmessage( link );
+							} );
+						} )( items[ a ] );
+					}
+				},
+				path: 'Mountlist:',
+				type: 'load',
+				title: Application.i18n( 'i18n_share_file' )
+			};
+			new api.Filedialog( o );
 		}
 	}
 	
@@ -1055,6 +1100,29 @@ library.view = library.view || {};
 			onclose
 		);
 		
+		self.view.on( 'attach', attach );
+		function attach() {
+			var o = {
+				triggerFunction( items )
+				{
+					for( var a = 0; a < items.length; a++ )
+					{
+						( function( item ){
+							var f = new api.File( item.Path );
+							f.expose( function( link )
+							{
+								toChat( link );
+							} );
+						} )( items[ a ] );
+					}
+				},
+				path: 'Mountlist:',
+				type: 'load',
+				title: Application.i18n( 'i18n_share_file' )
+			};
+			new api.Filedialog( o );
+		}
+		
 		self.view.onready = self.readyBack;
 		
 		self.bindView();
@@ -1245,6 +1313,28 @@ library.view = library.view || {};
 		self.init();
 	}
 	
+	// Public
+	
+	ns.TreerootUsers.prototype.close = function() {
+		var self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.close();
+		self.view = null;
+	}
+	
+	ns.TreerootUsers.prototype.setUserList = function( userlist ) {
+		var self = this;
+		var msg = {
+			type : 'userlist',
+			data : userlist,
+		};
+		self.toView( msg );
+	}
+	
+	// Private
+	
 	ns.TreerootUsers.prototype.init = function() {
 		var self = this;
 		const filePath = 'html/treerootUsers.html';
@@ -1288,15 +1378,6 @@ library.view = library.view || {};
 			onclose();
 	}
 	
-	ns.TreerootUsers.prototype.setUserList = function( userlist ) {
-		var self = this;
-		var msg = {
-			type : 'userlist',
-			data : userlist,
-		};
-		self.toView( msg );
-	}
-	
 	ns.TreerootUsers.prototype.remove = function( sub ) {
 		var self = this;
 		var msg = {
@@ -1304,15 +1385,6 @@ library.view = library.view || {};
 			data : sub,
 		};
 		self.toView( msg );
-	}
-	
-	ns.TreerootUsers.prototype.close = function() {
-		var self = this;
-		if ( !self.view )
-			return;
-		
-		self.view.close();
-		self.view = null;
 	}
 	
 	ns.TreerootUsers.prototype.response = function( msg ) {
