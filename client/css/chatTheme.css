@@ -77,10 +77,6 @@ Prepend with .im-chat or .conference classes to specify for view type
 	color : #f36bf3;
 }
 
-#hello .light-text {
-	color : rgba( 0, 0, 0, 0.4 );
-}
-
 #hello .msg.log {
 	color : #444;
 	font-style: italic;

@@ -1475,7 +1475,6 @@ library.component = library.component || {};
 		cont.appendChild( self.taWrap );
 		self.isTypingHint = document.getElementById( 'typing-hint' );
 		self.ta = self.taWrap.querySelector( 'textarea' );
-		self.ta.setAttribute( 'placeholder', View.i18n( 'i18n_your_message' ) );
 		
 		// bind
 		self.ta.addEventListener( 'focus', inputFocus, false );

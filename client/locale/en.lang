@@ -97,7 +97,7 @@ i18n_no_presence_login : No Presence login found. Do you wish to create a new ac
 i18n_create_new : Create new
 i18n_use_existing : Use existing
 i18n_create_a_new_presence_account : Create a new Presence account. Login is a suggestion, you may change it.
-i18n_your_message : Your message...
+i18n_your_message : Your message..
 i18n_admins : Admins
 i18n_online : Online
 i18n_guests : Guests
