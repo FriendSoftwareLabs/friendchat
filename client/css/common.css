@@ -5,6 +5,11 @@ friend grey: #808080;
 
 */
 
+.Loading > * {
+	visibility: hidden;
+	background-color : #444;
+}
+
 .fa {
 	font-size: 120%;
 }

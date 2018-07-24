@@ -531,8 +531,8 @@ var friend = window.friend || {};
 			function setCss( id ) {
 				removeIfExists( id );
 				filesLeft++;
-				var path = cssMap[ id ];
-				var css = document.createElement( 'link' );
+				let path = cssMap[ id ];
+				let css = document.createElement( 'link' );
 				css.type = 'text/css';
 				css.rel = 'stylesheet';
 				css.id = id;
@@ -667,15 +667,15 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.handleSystemTheme = function( data ) {
 		var self = this;
+		console.log( 'handleSystemTheme' );
 		self.setIsLoading( true );
 		self.theme = data.theme;
 		self.setBaseCss( setBack );
 		function setBack() {
-			self.setIsLoading( false );
-			if ( !data.themeData )
-				return;
+			if ( data.themeData )
+				self.applyThemeConfig( data.themeData );
 			
-			self.applyThemeConfig( data.themeData );
+			self.setIsLoading( false );
 		}
 	}
 	
