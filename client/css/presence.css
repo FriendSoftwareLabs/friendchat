@@ -85,7 +85,6 @@
 }
 
 .msg-group .name {
-	padding-top : 0.2em;
 	font-weight : bold;
 }
 
@@ -109,7 +108,8 @@
 	opacity: 0.3;
 }
 
-.msg:hover {
+.msg:hover,
+.msg-group:hover {
 	background-color : rgba( 0, 0, 0, 0.02 );
 }
 
