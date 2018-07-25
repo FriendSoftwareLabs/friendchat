@@ -973,7 +973,7 @@ library.view = library.view || {};
 			{
 				clientId     : 'offline',
 				name         : View.i18n( 'i18n_offline' ),
-				sectionKlass : '',
+				sectionKlass : 'BackgroundHeavy',
 			},
 			{
 				clientId     : 'admins',
