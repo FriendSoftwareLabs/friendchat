@@ -2821,7 +2821,7 @@ library.view = library.view || {};
 	ns.Main.prototype.bindView = function()
 	{
 		var self = this;
-		self.view.receiveMessage = receiveMessage;
+		//self.view.receiveMessage = receiveMessage;
 		self.view.on( 'initialize', initialize );
 		
 		function receiveMessage( e ) { self.receiveMessage( e ); }
@@ -2847,6 +2847,12 @@ library.view = library.view || {};
 		else
 			self.initMain( settings );
 		
+		self.connState = new library.component.ConnState(
+			'online-status',
+			self.view,
+			hello.template
+		);
+		
 		self.account = new library.view.Account();
 		self.module = new library.view.ModuleControl(
 			self.recent || null
@@ -2866,20 +2872,6 @@ library.view = library.view || {};
 			notificationRootId = 'notifications-head';
 		}
 		
-		/*
-		if ( settings.minimalUI )
-			self.assist = null;
-		else
-			self.assist = new library.view.AssistUI( 'assist-ui-container' );
-		*/
-		
-		/*
-		self.connState = new library.component.ConnState(
-			'online-status',
-			self.view,
-			hello.template
-		);
-		*/
 		self.notification = new library.view.Notification( notificationRootId );
 	}
 	
@@ -3016,9 +3008,9 @@ library.view = library.view || {};
 		hello.template = new friendUP.gui.TemplateManager( fragStr );
 	}
 	
-	ns.Main.prototype.receiveMessage = function( msg )
-	{
+	ns.Main.prototype.receiveMessage = function( msg ) {
 		var self = this;
+		
 	}
 	
 })( library.view );
