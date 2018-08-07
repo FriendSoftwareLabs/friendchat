@@ -2190,8 +2190,11 @@ library.component = library.component || {};
 				return;
 			}
 			
-			if ( 'contain' === self.peer.screenMode )
+			if ( 'contain' === self.peer.screenMode ) {
 				useWidth = !useWidth;
+				self.hideAvatar();
+			} else
+				self.showAvatar();
 			
 			toggle( 'width', useWidth );
 			toggle( 'height', !useWidth );
@@ -2200,6 +2203,18 @@ library.component = library.component || {};
 				self.stream.classList.toggle( classStr, set );
 			}
 		}
+	}
+	
+	ns.Peer.prototype.showAvatar = function() {
+		const self = this;
+		console.log( 'showAvatar' );
+		self.el.classList.toggle( 'no-avatar', false );
+	}
+	
+	ns.Peer.prototype.hideAvatar = function() {
+		const self = this;
+		console.log( 'hideAvatar' );
+		self.el.classList.toggle( 'no-avatar', true );
 	}
 	
 	ns.Peer.prototype.reflow = function() {

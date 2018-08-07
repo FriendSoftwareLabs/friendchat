@@ -220,6 +220,14 @@
 	color : white;
 }
 
+.peer.no-avatar {
+	background-color : #111;
+}
+
+.peer.no-avatar .avatar {
+	display: none;
+}
+
 .peer.in-grid {
 	border-radius: 3px;
 	border: 2px solid transparent;
