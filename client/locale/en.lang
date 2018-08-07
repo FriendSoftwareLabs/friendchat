@@ -338,3 +338,5 @@ i18n_confirm_invalidate_explain : Invalidating a public link makes it unusable t
 i18n_invalidate_link : Invalidate link
 i18n_keep_link : Keep link
 i18n_room_name : Room name
+i18n_today : Today
+i18n_yesterday : Yesterday
