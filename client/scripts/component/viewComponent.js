@@ -1106,10 +1106,10 @@ library.component = library.component || {};
 	ns.LinkExpand.prototype.init = function() {
 		var self = this;
 		self.mimeMap = {
-			'image'  : image,
-			'audio'  : audio,
-			'video'  : video,
-			'text'   : file,
+			'image'       : image,
+			'audio'       : audio,
+			'video'       : video,
+			'text'        : file,
 			'application' : file,
 		};
 		
@@ -1241,11 +1241,13 @@ library.component = library.component || {};
 	
 	ns.LinkExpand.prototype.expandImage = function( a ) {
 		var self = this;
+		console.log( 'expandImage', a );
 		var src = a.href;
 		var conf = {
 			src : src,
 		};
 		var htmlStr = self.template.get( 'image-expand-tmpl', conf );
+		console.log( 'html', htmlStr );
 		return htmlStr;
 	}
 	

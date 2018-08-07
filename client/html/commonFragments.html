@@ -518,21 +518,18 @@ content
 -->
 <script id="link-expand-tmpl" type="text/html">
 <div class="link-expand">
-	<div class="link-expand-ui group row start">
+	<div class="link-expand-ui group row start BackgroundHeavy">
 		<div class="pre-icon center-child fortify">
 			<i class="fa fa-fw fa-link"></i>
 		</div>
 		<div class="raw-link expand">
 			&nbsp;
 			<div>
-				<a href="<%= href %>" target="_blank">
+				<a href="<%= href %>" target="_blank" title="<%= href %>">
 					<%= file %>
 				</a>
 			</div>
 		</div>
-		<a class="button fortify center-child" href="<%= href %>" download>
-			<i class="fa fa-fw fa-download"></i>
-		</a>
 	</div>
 	<div class="link-expand-content">
 		<%= content %>
@@ -544,9 +541,11 @@ content
 src
 -->
 <script id="image-expand-tmpl" type="text/html">
-<div class="link-expand-image" alt="<%= src %>"
-	style="background-image : url( <%= src %> )">
-</div>
+<a href="<%= src %>" target="_blank">
+	<div class="link-expand-image"
+		style="background-image : url(<%= src%>)"
+	></div>
+</a>
 </script>
 
 <!-- audio-expand-tmpl

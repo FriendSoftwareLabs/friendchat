@@ -5,24 +5,9 @@
 
 .link-expand-ui {
 	margin-bottom : 2px;
-	background-color: #333;
-	color : #ccc;
 }
 
 .link-expand-ui > .button {
-	background-color : #ccc;
-}
-
-.link-expand-ui a,
-.link-expand-ui a:hover,
-.link-expand-ui a:visited {
-	color : #ccc;
-}
-
-.link-expand-ui a.button,
-.link-expand-ui a.button:hover,
-.link-expand-ui a.button:visited {
-	color : #333;
 }
 
 .pre-icon {
@@ -53,8 +38,7 @@
 
 .link-expand .link-expand-video,
 .link-expand .link-expand-image {
-	width : 20em;
-	height: 13em;
+	height: 10em;
 }
 
 .link-expand .link-expand-image {
