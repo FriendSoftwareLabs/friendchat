@@ -590,3 +590,15 @@ html body .tab-bar .tab-item.Button.IconButton
 .recent-item .more-state > div {
     margin-left : 0.3em;
 }
+
+/*
+
+*/
+
+.room-name-form {
+    
+}
+
+.room-name-form .input-wrap {
+    margin-right : 0.3em;
+}
