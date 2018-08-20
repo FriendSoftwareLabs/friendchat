@@ -684,10 +684,6 @@ var friend = window.friend || {};
 		if( !themeData )
 			return;
 		
-		// No need for mobile!
-		if( 'MOBILE' === self.deviceType )
-			return;
-		
 		if( themeData && typeof( themeData ) == 'string' )
 			themeData = JSON.parse( themeData );
 		
