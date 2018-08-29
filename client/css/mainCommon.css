@@ -365,7 +365,7 @@ html body .tab-bar .tab-item.Button.IconButton
     line-height   : 2em;
     font-size     : 120%;
     font-weight   : bold;
-    padding       : 0 0.5em;
+    padding       : 0 0.3em;
     white-space   : nowrap;
     overflow      : hidden;
     text-overflow : ellipsis;
@@ -422,7 +422,6 @@ html body .tab-bar .tab-item.Button.IconButton
 }
 
 .treeroot.contact {
-    padding-left : 0.3em;
 }
 
 .contact .contact-height-dummy {
@@ -435,7 +434,6 @@ html body .tab-bar .tab-item.Button.IconButton
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
-    margin-left: 0.5em;
     margin-right: 1em;
     border-radius: 100%;
 }
@@ -490,6 +488,12 @@ html body .tab-bar .tab-item.Button.IconButton
     overflow : hidden;
 }
 
+#hello .recent-item {
+    padding-top : 0.4em;
+    padding-bottom : 0.2em;
+    padding-left : 0.7em;
+}
+
 .recent-item .avatar {
     position: relative;
     height : 2.5em;
@@ -497,6 +501,10 @@ html body .tab-bar .tab-item.Button.IconButton
     border-radius       : 100%;
     background-position : center;
     background-size     : cover;
+}
+
+.recent-item .avatar > i {
+    font-size : 160%;
 }
 
 .recent-item .recent-status {
