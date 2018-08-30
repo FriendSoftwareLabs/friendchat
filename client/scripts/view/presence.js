@@ -276,7 +276,6 @@ library.view = library.view || {};
 		);
 		
 		function onMsgEdit( event ) {
-			console.log( 'onMsgEdit', event );
 			const edit = {
 				type : 'edit',
 				data : event,
@@ -1334,7 +1333,6 @@ library.view = library.view || {};
 		if ( !event || !event.msgId )
 			return;
 		
-		console.log( 'MsgBuilder.update', event );
 		let update = event.message;
 		let parsed = null;
 		if ( self.parser )
@@ -1353,7 +1351,6 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.editMessage = function( itemId ) {
 		const self = this;
-		console.log( 'editMessage', itemId );
 		const el = document.getElementById( itemId );
 		if ( el.isEditing )
 			return;
@@ -1371,7 +1368,6 @@ library.view = library.view || {};
 		const msgEl = el.querySelector( '.msg-container .str' );
 		const sysEl = el.querySelector( '.system-container' );
 		const currMsg = msgEl.textContent;
-		console.log( 'editMessage - message', currMsg );
 		const multiId = friendUP.tool.uid( 'edit' );
 		const editConf = {
 			multiId : multiId,
@@ -1391,7 +1387,6 @@ library.view = library.view || {};
 		edit.setValue( currMsg );
 		
 		function onSubmit( newMsg ) {
-			console.log( 'onSubmit', newMsg );
 			saveEdit( newMsg );
 			close();
 		}
@@ -1399,22 +1394,16 @@ library.view = library.view || {};
 		subBtn.addEventListener( 'click', subClick, false );
 		cancelBtn.addEventListener( 'click', cancelClick, false );
 		function subClick( e ) {
-			console.log( 'subClick', edit.getValue());
 			let newMsg = edit.getValue();
 			saveEdit( newMsg );
 			close();
 		}
 		
 		function cancelClick( e ) {
-			console.log( 'cancelClick' );
 			close();
 		}
 		
 		function saveEdit( newMsg ) {
-			console.log( 'saveEdit', {
-				newMsg  : newMsg,
-				currMsg : currMsg,
-			});
 			if ( !self.onEdit )
 				return;
 			
@@ -1535,12 +1524,10 @@ library.view = library.view || {};
 			const midnight = new Date().setHours( 24, 0, 0, 0 ); // set time to nearest next midnight,
 			// ..and it returns a timestamp of that midnight
 			const timeToMidnight = midnight - now;
-			console.log( 'timeToMidnight', timeToMidnight );
 			self.envelopeUpdate = window.setTimeout( update, timeToMidnight );
 		}
 		
 		function update() {
-			console.log( 'update' );
 			self.updateEnvelopeDate();
 			delete self.envelopeUpdate;
 			setNextUpdate();
@@ -1555,7 +1542,6 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.handleMsg = function( event ) {
 		const self = this;
-		console.log( 'handleMsg', event );
 		if ( self.exists( event.msgId ))
 			return;
 		
@@ -1790,10 +1776,6 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.updateEnvelopeDate = function() {
 		const self = this;
-		console.log( 'updateEnvelopeDate', {
-			order : self.envelopeOrder,
-			envs  : self.envelopes,
-		});
 		self.envelopeOrder.forEach( eId => {
 			let env = self.envelopes[ eId ];
 			let timeStr = self.getEnvelopeDayString( env.time, env.order );

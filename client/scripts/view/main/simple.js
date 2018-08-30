@@ -703,10 +703,6 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.setLastEvent = function( historyEvent ) {
 		const self = this;
-		console.log( 'setLastEvent', {
-			hE : historyEvent,
-			lE : self.lastEvent,
-		});
 		if ( !self.lastEvent )
 			self.setEvent( historyEvent );
 		
@@ -744,9 +740,7 @@ var hello = window.hello || {};
 		self.source.on( 'message', message );
 		self.source.on( 'msg-waiting', msgWaiting );
 		const lastMessage = self.source.getLastMessage();
-		console.log( 'lastMessage', lastMessage );
 		if ( lastMessage ) {
-			console.log( 'RecentItem.init - omigud a last message', lastMessage );
 			self.setMessage( lastMessage.data );
 		}
 		
@@ -848,7 +842,6 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
-		console.log( 'RecentItem.handleMsgWaiting', state );
 		self.unread.set( state.isWaiting ? 'true' : 'false' );
 		self.unread.setDisplay( state.unread || 1 );
 		if ( state.isWaiting )
@@ -872,7 +865,6 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.setMessage = function( msg, altMessage ) {
 		const self = this;
-		console.log( 'RecentItem.setMessage', msg );
 		if ( !msg.time )
 			msg.time = Date.now();
 		
@@ -1089,7 +1081,6 @@ var hello = window.hello || {};
 	
 	ns.RecentRoom.prototype.handleMessage = function( msg ) {
 		const self = this;
-		console.log( 'RecentRoom.handleMessage', msg );
 		if ( !msg || !msg.message )
 			return;
 		
@@ -1098,7 +1089,6 @@ var hello = window.hello || {};
 	}
 	
 	ns.RecentRoom.prototype.setMessage = function( msg ) {
-		console.log( 'RecentRoom.setMessage', msg );
 		const self = this;
 		self.lastEvent = {
 			type : 'message',

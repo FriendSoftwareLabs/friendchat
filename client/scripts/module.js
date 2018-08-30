@@ -829,7 +829,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleJoin = function( conf ) {
 		const self = this;
-		console.log( 'Presence.handleJoin', conf );
 		if ( null == conf ) {
 			console.log( 'null room, end of room list', conf );
 			return;
@@ -935,7 +934,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.addRoom = function( conf ) {
 		const self = this;
-		console.log( 'Presence.addRoom', conf );
 		if ( !conf.clientId ) {
 			console.log( 'addRoom - conf does not have clientId', conf );
 			return;

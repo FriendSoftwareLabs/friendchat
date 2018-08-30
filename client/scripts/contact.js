@@ -30,7 +30,6 @@ library.contact = library.contact || {};
 		if( !( this instanceof ns.Contact ))
 			return new ns.Contact( conf );
 		
-		console.log( 'Contact', conf );
 		var self = this;
 		self.moduleId = conf.moduleId;
 		self.parentPath = conf.parentPath || '';
@@ -147,7 +146,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.whenChatClosed = function( msg ) {
 		var self = this;
-		console.log( 'whenChatclosed', msg );
 		if ( hello.account.settings.popupChat === true ) {
 			api.Say( 'Message received' );
 			self.startChat(); // contact must implement
@@ -302,7 +300,6 @@ library.contact = library.contact || {};
 	ns.Contact.prototype.messageWaiting = function( isWaiting, message, from, time ) {
 		var self = this;
 		message = message || null;
-		console.log( 'app.contact.messageWaiting', message );
 		from = from || null;
 		time = time || Date.now();
 		self.toView({
@@ -626,7 +623,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.getLastMessage = function() {
 		const self = this;
-		console.log( 'getlastMessage', self.lastMessage );
 		return null;
 	}
 	
@@ -877,7 +873,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updateLastMessage = function() {
 		const self = this;
-		console.log( 'updateLastMessage', self.lastMessage );
 		if ( !self.lastMessage )
 			return;
 		
@@ -1248,7 +1243,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.resolveMessageName = function( msg ) {
 		const self = this;
-		console.log( 'PresenceRoom.getMessageNAme', msg );
 		let name;
 		if ( msg.fromId )
 			name = self.resolveName( msg.fromId );
@@ -1260,16 +1254,10 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.resolveName = function( accId ) {
 		const self = this;
-		console.log( 'resolveNAme', {
-			id : accId,
-			uid : self.userId,
-			ids : self.identities,
-		});
 		const user = self.identities[ accId ];
 		if ( accId === self.userId )
 			return null;
 		
-		console.log( 'resolveNAme - user', user );
 		if ( user )
 			return user.name;
 		else

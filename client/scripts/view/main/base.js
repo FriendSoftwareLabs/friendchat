@@ -114,7 +114,6 @@ library.view = library.view || {};
 	
 	ns.BaseContact.prototype.baseContactInit = function( parentView ) {
 		var self = this;
-		console.log( 'BaseContact.init', self.data.lastMessage );
 		self.lastMessage = self.data.lastMessage || null;
 		self.menuActions = new library.component.MiniMenuActions();
 		self.view = new library.component.SubView({

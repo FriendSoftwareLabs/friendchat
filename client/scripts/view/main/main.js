@@ -269,7 +269,6 @@ library.view = library.view || {};
 	
 	ns.TreerootContact.prototype.handleMessageWaiting = function( state ) {
 		const self = this;
-		console.log( 'main.TreerootContact.handleMessageWaiting', state );
 			let isWaiting;
 			if ( state.unread ) {
 				isWaiting = !!state.unread;
@@ -1730,7 +1729,6 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
-		console.log( 'main.presenceroom.handleMsgWaiting', state );
 		if ( state.isWaiting )
 			self.unreadMessages++;
 		else

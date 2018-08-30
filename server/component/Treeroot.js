@@ -369,6 +369,7 @@ ns.Treeroot.prototype.getUniqueId = function( callback ) {
 			return;
 		
 		if ( !data.uniqueid ) {
+			console.log( 'getUniqueId err', data );
 			self.uniqueId = null;
 			self.identityError();
 			callback( false );
@@ -382,7 +383,6 @@ ns.Treeroot.prototype.getUniqueId = function( callback ) {
 
 ns.Treeroot.prototype.initKeyExchange = function() {
 	var self = this;
-	//self.log( 'initKeyExchange', self.uniqueId );
 	self.sessionId = null;
 	self.validLogin = false;
 	if ( self.cryptoQueue.length )
@@ -393,14 +393,12 @@ ns.Treeroot.prototype.initKeyExchange = function() {
 
 ns.Treeroot.prototype.queueCrypto = function( socketId ) {
 	var self = this;
-	//self.log( 'queueCrypto', socketId );
 	self.cryptoQueue = self.cryptoQueue || [];
 	self.cryptoQueue.push( socketId );
 }
 
 ns.Treeroot.prototype.executeCryptoQueue = function() {
 	var self = this;
-	//self.log( 'executeCryptoQueue', self.cryptoQueue );
 	self.cryptoQueue.forEach( sendCryptoInit );
 	self.cryptoQueue = [];
 	
@@ -411,7 +409,6 @@ ns.Treeroot.prototype.executeCryptoQueue = function() {
 
 ns.Treeroot.prototype.handleKeyExchange = function( msg, socketId ) {
 	var self = this;
-	//self.log( 'handleKeyEx', msg );
 	if ( msg.type == 'err' ) {
 		self.handleKeyExClientError( msg.data );
 		return;
@@ -533,7 +530,6 @@ ns.Treeroot.prototype.sendSignedPass = function( signature, socketId ) {
 		callback : response,
 	};
 	
-	//self.log( 'sendSignedPass', signature );
 	self.queueRequest( req );
 	function response( res ) {
 		if ( !res ) {
@@ -652,7 +648,6 @@ ns.Treeroot.prototype.initializeClient = function( socketId ) {
 
 ns.Treeroot.prototype.clientKeyEx = function( msg, socketId ) {
 	var self = this;
-	//self.log( 'sendKeyEx', msg );
 	var keyExEvent = {
 		type : 'keyexchange',
 		data : msg,
@@ -953,7 +948,6 @@ ns.Treeroot.prototype.logout = function( callback ) {
 
 ns.Treeroot.prototype.unloadContacts = function() {
 	var self = this;
-	self.log( 'unloadContacts', self.contactState );
 	removeContacts();
 	removeSubscriptions();
 	self.contactState = {};
@@ -1056,7 +1050,6 @@ ns.Treeroot.prototype.startMessageLongPoll = function( contactId ) {
 	function doLongpoll() {
 		self.longpollMessages( contactId, null, longBack );
 		function longBack( res ) {
-			//self.log( 'longBack', res );
 			if ( res )
 				self.messagesToClient( res, contactId );
 			
@@ -1188,14 +1181,6 @@ ns.Treeroot.prototype.getUserList = function( reqId, socketId ) {
 
 ns.Treeroot.prototype.addContact = function( relation ) {
 	var self = this;
-	/*
-	self.log( 'addContact', {
-		relation : relation,
-		sids     : self.contacts.sids,
-		cids     : self.contacts.cids,
-		cState   : Object.keys( self.contactState ),
-	}, 3 );
-	*/
 	var contactState = self.contactState[ relation.ID ];
 	var contact = self.contacts.get( relation.ID );
 	if ( contactState || contact ) {
@@ -1673,7 +1658,6 @@ ns.Treeroot.prototype.setupChatEncrypt = function( encId, encKey, contactId ) {
 			key : encKey,
 		},
 	};
-	//self.log( 'setupChatEncrypt', enc.data );
 	self.toClientContact( enc, contact.clientId );
 }
 
@@ -1751,11 +1735,6 @@ ns.Treeroot.prototype.buildMessage = function( data, contactId, type ) {
 	else
 		timestamp = Date.parse( data.Date );
 	
-	self.log( 'buildMessage', {
-		message   : data.Message,
-		contactId : contact.serviceId,
-		posterId  : data.PosterID,
-	});
 	var from = contact.serviceId == data.PosterID ? contact.clientId : null;
 	var msgId = 'mid-' + data.ID;
 	var msg = {
@@ -2007,10 +1986,6 @@ ns.Treeroot.prototype.handleRelationRemoved = function( rel, uid ) {
 
 ns.Treeroot.prototype.handleHasNewMessage = function( rels, meta ) {
 	const self = this;
-	self.log( 'handleHasNewMessage', {
-		rels : rels,
-		meta : meta,
-	}, 3 );
 	const rel = rels[ 0 ];
 	const cId = meta.id;
 	const cState = self.contactState[ cId ];
@@ -2414,13 +2389,6 @@ ns.Treeroot.prototype.checkContacts = function( relations, requests ) {
 				return;
 			}
 			
-			/*
-			self.log( 'online change: '
-				+ relation.Username
-				+ ' - '
-				+ ( !!isOnline ).toString());
-			*/
-			
 			contact.online = isOnline;
 			var online = isOnline ? 'online' : 'offline';
 			var presence = {
@@ -2517,7 +2485,6 @@ ns.Treeroot.prototype.checkHasMessage = function( relation, serviceId, done ) {
 	} else
 		lastMsgId = rlm;
 	
-	//self.log( 'checkContacts - hasMessage', lastMsgId );
 	self.getNewMessages(
 		serviceId,
 		lastMsgId,
@@ -2530,7 +2497,6 @@ ns.Treeroot.prototype.checkHasMessage = function( relation, serviceId, done ) {
 			return;
 		}
 		
-		//self.log( 'checkContacts - hasMessage messageBack', messages );
 		let resTime = Date.now();
 		let runTimeMS = resTime - reqTime;
 		self.messagesToClient( messages, serviceId );
@@ -2993,7 +2959,6 @@ ns.Treeroot.prototype.sendRequest = function( request, done ) {
 	if ( self.sessionId )
 		data[ 'SessionID' ] = self.sessionId;
 	
-	//self.log( 'sendRequest', request );
 	var query = querystring.stringify( data );
 	var options = self.getPostOptions( path, query.length );
 	var req = https.request( options, requestBack );
@@ -3077,6 +3042,12 @@ ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
 		// nothing to list
 		if ( '0002' === data.code ) {
 			done( false );
+			return;
+		}
+		
+		// Wrong username or password
+		if ( '0003' === data.code ) {
+			done( data );
 			return;
 		}
 		

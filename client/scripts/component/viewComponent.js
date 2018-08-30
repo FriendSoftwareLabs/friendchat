@@ -1241,13 +1241,11 @@ library.component = library.component || {};
 	
 	ns.LinkExpand.prototype.expandImage = function( a ) {
 		var self = this;
-		console.log( 'expandImage', a );
 		var src = a.href;
 		var conf = {
 			src : src,
 		};
 		var htmlStr = self.template.get( 'image-expand-tmpl', conf );
-		console.log( 'html', htmlStr );
 		return htmlStr;
 	}
 	
