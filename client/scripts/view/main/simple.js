@@ -512,7 +512,6 @@ var hello = window.hello || {};
 		function onActive( isActive ) {
 			self.updateIsActive( iId, isActive );
 		}
-		
 	}
 	
 	ns.Recent.prototype.updateIsActive = function( itemId, isActive ) {
@@ -537,9 +536,9 @@ var hello = window.hello || {};
 			return;
 		
 		let before = null;
-		if ( isNewest( item ))
+		if ( isNewest( item )) {
 			before = self.itemOrder[ 1 ] || null;
-		else
+		} else
 			before = sortAndGetBeforeId( item );
 		
 		let beforeEl = null;
@@ -608,7 +607,7 @@ var hello = window.hello || {};
 			
 			function getTime( itemId ) {
 				const check = self.items[ itemId ];
-				let e = item.getLastEvent();
+				let e = check.getLastEvent();
 				if ( !e || !e.data )
 					return 0;
 				
@@ -621,7 +620,6 @@ var hello = window.hello || {};
 		const self = this;
 		moveToInactive( itemId );
 		self.removeFromItemOrder( itemId );
-		checkRemoveFromCurrentFirst( itemId );
 		self.removeFromHistory( itemId );
 		self.toggleNoRecent();
 		
@@ -631,18 +629,6 @@ var hello = window.hello || {};
 				return;
 			
 			self.inactive.appendChild( itemEl );
-		}
-		
-		function checkRemoveFromCurrentFirst( id ) {
-			if ( id === self.currentFirstItem )
-				self.currentFirstItem = getNewFirstItem();
-			
-			function getNewFirstItem() {
-				if ( !self.itemOrder.length )
-					return null;
-				
-				return self.itemOrder[ 0 ];
-			}
 		}
 	}
 	
@@ -668,6 +654,16 @@ var hello = window.hello || {};
 		self.itemOrder = self.itemOrder.filter( check => {
 			return itemId !== check;
 		});
+		
+		if ( itemId === self.currentFirstItem )
+			self.currentFirstItem = getNewFirstItem();
+		
+		function getNewFirstItem() {
+			if ( !self.itemOrder.length )
+				return null;
+			
+			return self.itemOrder[ 0 ];
+		}
 	}
 	
 	ns.Recent.prototype.checkHistory = function( itemId ) {
