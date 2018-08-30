@@ -531,6 +531,7 @@ var hello = window.hello || {};
 		if ( itemId === self.currentFirstItem )
 			return;
 		
+		self.removeFromItemOrder( itemId );
 		const item = self.items[ itemId ];
 		if ( !item )
 			return;
@@ -596,8 +597,7 @@ var hello = window.hello || {};
 			return beforeId
 			
 			function sortDown( checkId, index ) {
-				const check = self.items[ checkId ];
-				const checkTime = getTime( check );
+				const checkTime = getTime( checkId );
 				if ( checkTime > itemTime )
 					return false;
 				
@@ -606,7 +606,8 @@ var hello = window.hello || {};
 				return true;
 			}
 			
-			function getTime( item ) {
+			function getTime( itemId ) {
+				const check = self.items[ itemId ];
 				let e = item.getLastEvent();
 				if ( !e || !e.data )
 					return 0;
@@ -619,7 +620,7 @@ var hello = window.hello || {};
 	ns.Recent.prototype.toInactive = function( itemId ) {
 		const self = this;
 		moveToInactive( itemId );
-		removeFromItemOrder( itemId );
+		self.removeFromItemOrder( itemId );
 		checkRemoveFromCurrentFirst( itemId );
 		self.removeFromHistory( itemId );
 		self.toggleNoRecent();
@@ -630,12 +631,6 @@ var hello = window.hello || {};
 				return;
 			
 			self.inactive.appendChild( itemEl );
-		}
-		
-		function removeFromItemOrder( id ) {
-			self.itemOrder = self.itemOrder.filter( inOrder => {
-				return id !== inOrder;
-			});
 		}
 		
 		function checkRemoveFromCurrentFirst( id ) {
@@ -663,7 +658,16 @@ var hello = window.hello || {};
 		
 		delete mod.items[ contactId ];
 		delete self.items[ item.id ];
+		self.removeFromItemOrder( item.id );
+		
 		item.close();
+	}
+	
+	ns.Recent.prototype.removeFromItemOrder = function( itemId ) {
+		const self = this;
+		self.itemOrder = self.itemOrder.filter( check => {
+			return itemId !== check;
+		});
 	}
 	
 	ns.Recent.prototype.checkHistory = function( itemId ) {
