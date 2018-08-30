@@ -369,6 +369,7 @@ var hello = window.hello || {};
 		
 		self.modules = {};
 		self.items = {};
+		self.itemOrder = [];
 		
 		self.init( containerId );
 	}
@@ -530,33 +531,123 @@ var hello = window.hello || {};
 		if ( itemId === self.currentFirstItem )
 			return;
 		
-		const itemEl = document.getElementById( itemId );
-		let firstEl = null;
-		if ( self.currentFirstItem )
-			firstEl = document.getElementById( self.currentFirstItem ) || null;
+		const item = self.items[ itemId ];
+		if ( !item )
+			return;
 		
-		self.active.insertBefore( itemEl, firstEl );
-		self.currentFirstItem = itemId;
+		let before = null;
+		if ( isNewest( item ))
+			before = self.itemOrder[ 1 ] || null;
+		else
+			before = sortAndGetBeforeId( item );
 		
+		let beforeEl = null;
+		if ( before )
+			beforeEl = document.getElementById( before ) || null;
+		
+		self.active.insertBefore( item.el, beforeEl );
 		self.toggleNoRecent();
+		
+		function isNewest( item ) {
+			const current = self.items[ self.currentFirstItem ] || null;
+			if ( !current ) {
+				setFirst( item.id );
+				return true;
+			}
+			
+			const ile = item.getLastEvent();
+			const cle = current.getLastEvent();
+			if ( !ile || !ile.data.time )
+				return false;
+			
+			if ( !cle || !cle.data.time ) {
+				setFirst( item.id );
+				return true;
+			}
+			
+			if ( ile.data.time > cle.data.time ) {
+				setFirst( item.id );
+				return true;
+			} else
+				return false;
+			
+			function setFirst( id ) {
+				self.itemOrder.unshift( id );
+				self.currentFirstItem = item.id;
+			}
+		}
+		
+		function sortAndGetBeforeId( item ) {
+			let iId = item.id;
+			let ile = item.getLastEvent();
+			let itemTime;
+			if ( ile )
+				itemTime = ile.data.time || 0;
+			
+			let beforeId = null;
+			let insertIndex = null;
+			self.itemOrder.some( sortDown );
+			if ( null == insertIndex ) {
+				self.itemOrder.push( iId );
+				return null;
+			}
+			
+			self.itemOrder.splice( insertIndex, 0, iId );
+			return beforeId
+			
+			function sortDown( checkId, index ) {
+				const check = self.items[ checkId ];
+				const checkTime = getTime( check );
+				if ( checkTime > itemTime )
+					return false;
+				
+				beforeId = checkId;
+				insertIndex = index;
+				return true;
+			}
+			
+			function getTime( item ) {
+				let e = item.getLastEvent();
+				if ( !e || !e.data )
+					return 0;
+				
+				return e.data.time || 0;
+			}
+		}
 	}
 	
 	ns.Recent.prototype.toInactive = function( itemId ) {
 		const self = this;
-		const itemEl = document.getElementById( itemId );
-		self.inactive.appendChild( itemEl );
-		if ( itemId === self.currentFirstItem )
-			self.currentFirstItem = getCurrentFirstItem();
-		
+		moveToInactive( itemId );
+		removeFromItemOrder( itemId );
+		checkRemoveFromCurrentFirst( itemId );
 		self.removeFromHistory( itemId );
 		self.toggleNoRecent();
 		
-		function getCurrentFirstItem() {
-			let el = self.active.firstChild;
-			if ( !el )
-				return null;
+		function moveToInactive( id ) {
+			const itemEl = document.getElementById( id );
+			if ( !itemEl )
+				return;
 			
-			return el.id;
+			self.inactive.appendChild( itemEl );
+		}
+		
+		function removeFromItemOrder( id ) {
+			self.itemOrder = self.itemOrder.filter( inOrder => {
+				return id !== inOrder;
+			});
+		}
+		
+		function checkRemoveFromCurrentFirst( id ) {
+			if ( id === self.currentFirstItem )
+				self.currentFirstItem = getNewFirstItem();
+			
+			function getNewFirstItem() {
+				if ( !self.itemOrder.length )
+					return null;
+				
+				return self.itemOrder[ 0 ];
+			}
 		}
 	}
 	
