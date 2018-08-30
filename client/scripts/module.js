@@ -1121,7 +1121,12 @@ library.module = library.module || {};
 		};
 		
 		function getContacts( resolve, reject ) {
-			let items = Object.keys( self.contacts )
+			if ( !self.isLoggedIn ) {
+				reject( 'ERR_LOGIN' );
+				return;
+			}
+			
+			const items = Object.keys( self.contacts )
 				.map( cId => {
 					let contact = self.contacts[ cId ];
 					return build( contact, true );
@@ -1139,6 +1144,11 @@ library.module = library.module || {};
 		};
 		
 		function getAvailable( resolve, reject ) {
+			if ( !self.isLoggedIn ) {
+				reject( 'ERR_LOGIN' );
+				return;
+			}
+			
 			self.getUserList()
 				.then( usersBack )
 				.catch( usersError );
@@ -1799,9 +1809,11 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.updateAccount = function( data ) {
 		const self = this;
-		if ( !data.account )
+		self.isLoggedIn = false;
+		if ( !data || !data.account )
 			return;
 		
+		self.isLoggedIn = true;
 		var account = data.account;
 		var name = account.name || self.identity.name;
 		var avatar = getAvatarPath( account.imagePath );

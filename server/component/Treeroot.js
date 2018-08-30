@@ -258,6 +258,7 @@ ns.Treeroot.prototype.clearReconnect = function() {
 
 ns.Treeroot.prototype.reconnect = function( conf ) {
 	var self = this;
+	self.setNotLoggedIn();
 	if ( !self.conf.host || !self.conf.login ) {
 		self.disconnect();
 		return;
@@ -369,7 +370,6 @@ ns.Treeroot.prototype.getUniqueId = function( callback ) {
 			return;
 		
 		if ( !data.uniqueid ) {
-			console.log( 'getUniqueId err', data );
 			self.uniqueId = null;
 			self.identityError();
 			callback( false );
@@ -562,6 +562,11 @@ ns.Treeroot.prototype.keyExchangeComplete = function( sessionId, socketId ) {
 	}
 	
 	function accountBack( success ) {
+		if ( !success ) {
+			self.reconnect();
+			return;
+		}
+		
 		self.connectionStatus( 'online' );
 		self.executeCryptoQueue();
 		self.startContactUpdate();
@@ -2058,7 +2063,6 @@ ns.Treeroot.prototype.subscription = function( sub ) {
 	function cancel( sub ) { self.cancelSubscription( sub.clientId ); }
 }
 
-
 // TODO ( maybe? )
 // simple subscription check instead of doing a full contacts update
 ns.Treeroot.prototype.checkSubscriptionWaiting = function( callback ) {
@@ -2537,6 +2541,7 @@ ns.Treeroot.prototype.getAccountInfo = function( callback ) {
 		}
 		
 		var acc = res.items.Contacts[ 0 ];
+		self.account = {};
 		self.account.name = acc.Name || acc.DisplayName || acc.Username || acc.Email;
 		self.account.id = acc.ID;
 		self.account.avatarId = parseInt( acc.ImageID, 10 );
@@ -2574,6 +2579,16 @@ ns.Treeroot.prototype.getAccountInfo = function( callback ) {
 		self.toClient( msg );
 		callback( success );
 	}
+}
+
+ns.Treeroot.prototype.setNotLoggedIn = function() {
+	const self = this;
+	self.account = null;
+	const unset = {
+		type : 'account',
+		data : null,
+	};
+	self.toClient( unset );
 }
 
 ns.Treeroot.prototype.resetPassphrase = function( e, socketId ) {
