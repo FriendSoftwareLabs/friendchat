@@ -1397,7 +1397,6 @@ library.module = library.module || {};
 		self.sendKeyEx( pubKeyEvent );
 	}
 	
-	
 	ns.Treeroot.prototype.signTempPass = function( tmpPass ) {
 		const self = this;
 		if ( !self.crypt )
@@ -1508,7 +1507,7 @@ library.module = library.module || {};
 		function idBack( identity ) {
 			var update = {
 				setting : 'login',
-				value : identity,
+				value   : identity,
 			};
 			self.saveSetting( update );
 		}

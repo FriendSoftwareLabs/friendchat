@@ -286,6 +286,8 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.recentMessage = function( message, from, time ) {
 		const self = this;
+		const intercept = self.checkIntercept( message );
+		console.log( 'intercept', intercept );
 		const msg = {
 			type : 'message',
 			data : {
@@ -1686,6 +1688,7 @@ library.contact = library.contact || {};
 	
 	ns.TreerootContact.prototype.init = function() {
 		var self = this;
+		self.parseLastMessage();
 		self.bindView();
 		self.setupDormant();
 		
@@ -1702,6 +1705,19 @@ library.contact = library.contact || {};
 		function preLog( e ) { self.preprocessLog( e ); }
 		function addChatEncrypt( e ) { self.addChatEncrypt( e ); }
 		function updatePublicKey( e ) { self.updatePublicKey( e ); }
+	}
+	
+	ns.TreerootContact.prototype.parseLastMessage = function() {
+		const self = this;
+		if ( !self.lastMessage )
+			return;
+		
+		const intercept = self.checkIntercept( self.lastMessage.data.message );
+		if ( !intercept )
+			return;
+		
+		const notie = self.getInterceptNotification( self.lastMessage.data, intercept );
+		self.lastMessage.data.message = notie.message;
 	}
 	
 	ns.TreerootContact.prototype.setIdentity = function() {
