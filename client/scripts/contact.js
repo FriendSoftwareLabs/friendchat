@@ -30,6 +30,7 @@ library.contact = library.contact || {};
 		if( !( this instanceof ns.Contact ))
 			return new ns.Contact( conf );
 		
+		console.log( 'Contact', conf );
 		var self = this;
 		self.moduleId = conf.moduleId;
 		self.parentPath = conf.parentPath || '';
@@ -42,9 +43,19 @@ library.contact = library.contact || {};
 		self.messageMap = {};
 		self.chatCrypts = {};
 		self.encryptMessages = false;
+		self.lastMessage = self.data.lastMessage;
 		
 		self.contactInit( conf.parentView );
 	}
+	
+	// Public
+	
+	ns.Contact.prototype.getLastMessage = function() {
+		const self = this;
+		return self.lastMessage || null;
+	}
+	
+	// Private
 	
 	ns.Contact.prototype.contactInit = function( parentView ) {
 		var self = this;
@@ -127,6 +138,7 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.onChatMessage = function( msg ) {
 		var self = this;
+		self.recentMessage( msg.message, msg.from, msg.time );
 		if ( self.chatView )
 			self.whenChatOpen( msg );
 		else
@@ -135,9 +147,9 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.whenChatClosed = function( msg ) {
 		var self = this;
+		console.log( 'whenChatclosed', msg );
 		if ( hello.account.settings.popupChat === true ) {
 			api.Say( 'Message received' );
-			self.recentMessage( msg.message, msg.from, msg.time );
 			self.startChat(); // contact must implement
 			return;
 		}
@@ -146,12 +158,11 @@ library.contact = library.contact || {};
 			return;
 		
 		hello.playMsgAlert();
-		self.messageWaiting( true, msg.message, msg.from );
+		self.messageWaiting( true, msg.message, msg.from, msg.time );
 	}
 	
 	ns.Contact.prototype.whenChatOpen = function( msg ) {
 		var self = this;
-		self.recentMessage( msg.message, msg.from, msg.time );
 		if ( !msg.from )
 			return;
 		
@@ -291,6 +302,7 @@ library.contact = library.contact || {};
 	ns.Contact.prototype.messageWaiting = function( isWaiting, message, from, time ) {
 		var self = this;
 		message = message || null;
+		console.log( 'app.contact.messageWaiting', message );
 		from = from || null;
 		time = time || Date.now();
 		self.toView({
@@ -612,6 +624,12 @@ library.contact = library.contact || {};
 		self.inviteToServer( getInv );
 	}
 	
+	ns.PresenceRoom.prototype.getLastMessage = function() {
+		const self = this;
+		console.log( 'getlastMessage', self.lastMessage );
+		return null;
+	}
+	
 	ns.PresenceRoom.prototype.close = function() {
 		var self = this;
 		if ( self.live )
@@ -812,6 +830,7 @@ library.contact = library.contact || {};
 		self.persistent = state.persistent;
 		self.guestAvatar = state.guestAvatar;
 		self.identity.name = state.name;
+		self.lastMessage = state.lastMessage || null;
 		self.users = state.users;
 		self.peers = state.peers;
 		
@@ -819,17 +838,18 @@ library.contact = library.contact || {};
 		const viewUpdate = {
 			type : 'init',
 			data : {
-				isOwner    : self.userId === self.ownerId,
-				isAdmin    : user.admin,
-				isAuthed   : user.authed,
-				persistent : self.persistent,
-				name       : self.identity.name,
+				isOwner     : self.userId === self.ownerId,
+				isAdmin     : user.admin,
+				isAuthed    : user.authed,
+				persistent  : self.persistent,
+				name        : self.identity.name,
 			},
 		};
 		self.toView( viewUpdate );
 		
 		self.updateViewUsers();
 		self.updateIdentities();
+		self.updateLastMessage();
 		
 		// update main view with # of peers in a live session
 		const uptdPeers = {
@@ -853,6 +873,17 @@ library.contact = library.contact || {};
 		function getSelf() {
 			return self.users[ self.userId ];
 		}
+	}
+	
+	ns.PresenceRoom.prototype.updateLastMessage = function() {
+		const self = this;
+		console.log( 'updateLastMessage', self.lastMessage );
+		if ( !self.lastMessage )
+			return;
+		
+		let lm = self.lastMessage.data;
+		let from = self.resolveMessageName( lm );
+		self.recentMessage( lm.message, from, lm.time );
 	}
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
@@ -1208,34 +1239,41 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.onMessage = function( msg ) {
 		const self = this;
-		const from = getFrom( msg.fromId );
+		const from = self.resolveMessageName( msg );
+		self.recentMessage( msg.message, from, msg.time );
 		
-		// dont if from self
-		if ( msg.fromId === self.userId ) {
-			self.recentMessage( msg.message, from, msg.time );
-			return;
-		}
+		if ( !self.chatView )
+			self.messageWaiting( true, msg.message, from, msg.time );
+	}
+	
+	ns.PresenceRoom.prototype.resolveMessageName = function( msg ) {
+		const self = this;
+		console.log( 'PresenceRoom.getMessageNAme', msg );
+		let name;
+		if ( msg.fromId )
+			name = self.resolveName( msg.fromId );
+		else
+			name = 'Guest > ' + msg.name;
 		
-		// dont if chat or live is open
-		if ( self.chatView || self.live ) {
-			self.recentMessage( msg.message, from, msg.time );
-			return;
-		}
+		return name;
+	}
+	
+	ns.PresenceRoom.prototype.resolveName = function( accId ) {
+		const self = this;
+		console.log( 'resolveNAme', {
+			id : accId,
+			uid : self.userId,
+			ids : self.identities,
+		});
+		const user = self.identities[ accId ];
+		if ( accId === self.userId )
+			return null;
 		
-		// show msg bubble in main view
-		self.messageWaiting( true, msg.message, from, msg.time );
-		
-		function getFrom( id ) {
-			const user = self.identities[ id ];
-			if ( id === self.userId )
-				return null;
-			
-			if ( user )
-				return user.name;
-			else
-				return '>';
-			
-		}
+		console.log( 'resolveNAme - user', user );
+		if ( user )
+			return user.name;
+		else
+			return false;
 	}
 	
 	ns.PresenceRoom.prototype.setRequest = function( callback ) {

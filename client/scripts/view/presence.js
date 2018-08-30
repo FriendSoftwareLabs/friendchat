@@ -1555,6 +1555,7 @@ library.view = library.view || {};
 	
 	ns.MsgBuilder.prototype.handleMsg = function( event ) {
 		const self = this;
+		console.log( 'handleMsg', event );
 		if ( self.exists( event.msgId ))
 			return;
 		

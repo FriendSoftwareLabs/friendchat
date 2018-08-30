@@ -570,7 +570,7 @@ html body .tab-bar .tab-item.Button.IconButton
 }
 
 .recent-item .last-event-icon {
-    
+    opacity: 0.5;
 }
 
 .recent-item .min-height-dummy {

@@ -188,14 +188,23 @@ library.view = library.view || {};
 			statusMap   : {
 				'false'   : 'Off',
 				'true'    : 'Notify',
-				'offline' : 'Available',
 			},
 			display : '',
 		});
-		if ( self.data.unreadMessages ) {
-			self.unreadMessages = self.data.unreadMessages;
-			self.messageWaiting.setDisplay( self.data.unreadMessages );
-			self.messageWaiting.set( 'offline' );
+		if ( !!self.data.unreadMessages )
+			window.setTimeout( msgWaiting, 250 );
+		
+		function msgWaiting() {
+			const state = {
+				unread : self.data.unreadMessages,
+			};
+			if ( self.lastMessage ) {
+				const lm = self.lastMessage.data;
+				state.message = lm.message;
+				state.from = !!lm.from;
+				state.time = lm.time;
+			}
+			self.handleMessageWaiting( state );
 		}
 		
 		self.presence = new library.component.StatusIndicator({
@@ -249,15 +258,29 @@ library.view = library.view || {};
 		}
 		
 		function message( msg ) {
+			self.lastMessage = msg;
 			self.emit( 'message', msg );
 		}
 		
 		function messageWaiting( state ) {
-			let isWaiting = state.isWaiting;
-			if ( isWaiting )
-				self.unreadMessages += 1;
-			else
-				self.unreadMessages = 0;
+			self.handleMessageWaiting( state );
+		}
+	}
+	
+	ns.TreerootContact.prototype.handleMessageWaiting = function( state ) {
+		const self = this;
+		console.log( 'main.TreerootContact.handleMessageWaiting', state );
+			let isWaiting;
+			if ( state.unread ) {
+				isWaiting = !!state.unread;
+				self.unreadMessages = state.unread;
+			} else {
+				isWaiting = !!state.isWaiting;
+				if ( isWaiting )
+					self.unreadMessages += 1;
+				else
+					self.unreadMessages = 0;
+			}
 			
 			self.messageWaiting.set( isWaiting ? 'true' : 'false' );
 			let num = '';
@@ -265,9 +288,9 @@ library.view = library.view || {};
 				num = self.unreadMessages.toString();
 			
 			self.messageWaiting.setDisplay( num );
+			state.isWaiting = isWaiting;
 			state.unread = self.unreadMessages;
 			self.emit( 'msg-waiting', state );
-		}
 	}
 	
 })( library.view );
@@ -1707,6 +1730,7 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
+		console.log( 'main.presenceroom.handleMsgWaiting', state );
 		if ( state.isWaiting )
 			self.unreadMessages++;
 		else

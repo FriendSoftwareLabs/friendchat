@@ -78,7 +78,7 @@ library.view = library.view || {};
 	
 	ns.BaseContact.prototype.getLastMessage = function() {
 		const self = this;
-		return '';
+		return self.lastMessage || null;
 	}
 	
 	ns.BaseContact.prototype.openChat = function() {
@@ -114,6 +114,8 @@ library.view = library.view || {};
 	
 	ns.BaseContact.prototype.baseContactInit = function( parentView ) {
 		var self = this;
+		console.log( 'BaseContact.init', self.data.lastMessage );
+		self.lastMessage = self.data.lastMessage || null;
 		self.menuActions = new library.component.MiniMenuActions();
 		self.view = new library.component.SubView({
 			parent : parentView,
@@ -203,6 +205,7 @@ library.view = library.view || {};
 		
 		var element = document.getElementById( self.clientId );
 		element.parentNode.removeChild( element );
+		delete self.lastMessage;
 		self.closeEventEmitter();
 	}
 	

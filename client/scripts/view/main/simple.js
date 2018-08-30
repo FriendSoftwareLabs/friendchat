@@ -591,7 +591,7 @@ var hello = window.hello || {};
 		if ( !event )
 			return;
 		
-		item.setEvent( event );
+		item.setLastEvent( event );
 		self.toActive( itemId, true );
 	}
 	
@@ -701,6 +701,21 @@ var hello = window.hello || {};
 		handler( event.data );
 	}
 	
+	ns.RecentItem.prototype.setLastEvent = function( historyEvent ) {
+		const self = this;
+		console.log( 'setLastEvent', {
+			hE : historyEvent,
+			lE : self.lastEvent,
+		});
+		if ( !self.lastEvent )
+			self.setEvent( historyEvent );
+		
+		let historyTime = historyEvent.data.time;
+		let lastTime = self.lastEvent.data.time;
+		if ( historyTime > lastTime )
+			self.setEvent( historyEvent );
+	}
+	
 	ns.RecentItem.prototype.getLastEvent = function() {
 		const self = this;
 		return self.lastEvent;
@@ -728,23 +743,15 @@ var hello = window.hello || {};
 		
 		self.source.on( 'message', message );
 		self.source.on( 'msg-waiting', msgWaiting );
-		
-		setTimeout( checkUnread, 100 );
-		function checkUnread() {
-			let unread = self.source.getUnreadMessages();
-			if ( !unread )
-				return;
-			
-			let state = {
-				isWaiting : 'true',
-				unread    : unread,
-			};
-			self.handleMsgWaiting( state );
+		const lastMessage = self.source.getLastMessage();
+		console.log( 'lastMessage', lastMessage );
+		if ( lastMessage ) {
+			console.log( 'RecentItem.init - omigud a last message', lastMessage );
+			self.setMessage( lastMessage.data );
 		}
 		
 		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
-		
 		
 		self.el.addEventListener( 'click', elClick, false );
 		self.menuBtn.addEventListener( 'click', menuClick, false );
@@ -811,7 +818,7 @@ var hello = window.hello || {};
 			cssClass    : 'recent-led-unread',
 			statusMap   : {
 				'false'   : 'Off',
-				'true'    : 'Available',
+				'true'    : 'Notify',
 			},
 			display : '',
 		});
@@ -835,25 +842,13 @@ var hello = window.hello || {};
 		if ( !msg || ( !msg.message && !message ))
 			return;
 		
-		self.lastEvent = {
-			type : 'message',
-			data : msg,
-		};
-		
-		const time = msg.time || Date.now();
-		const now = library.tool.getChatTime( time );
-		message = msg.message || message;
-		if ( !msg.from )
-			message =  'You: ' + message;
-		
-		self.message.textContent = message;
-		self.messageTime.textContent = now;
-		
+		self.setMessage( msg, message );
 		self.setActive( true );
 	}
 	
 	ns.RecentItem.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
+		console.log( 'RecentItem.handleMsgWaiting', state );
 		self.unread.set( state.isWaiting ? 'true' : 'false' );
 		self.unread.setDisplay( state.unread || 1 );
 		if ( state.isWaiting )
@@ -873,6 +868,29 @@ var hello = window.hello || {};
 		function clear() {
 			self.unread.hide();
 		}
+	}
+	
+	ns.RecentItem.prototype.setMessage = function( msg, altMessage ) {
+		const self = this;
+		console.log( 'RecentItem.setMessage', msg );
+		if ( !msg.time )
+			msg.time = Date.now();
+		
+		if ( !msg.message )
+			msg.message = altMessage || '';
+		
+		const now = library.tool.getChatTime( msg.time );
+		let message = msg.message;
+		if ( !msg.from )
+			message =  'You: ' + message;
+		
+		self.message.textContent = message;
+		self.messageTime.textContent = now;
+		
+		self.lastEvent = {
+			type : 'message',
+			data : msg,
+		};
 	}
 	
 	ns.RecentItem.prototype.handleBodyClick = function() {
@@ -1071,9 +1089,17 @@ var hello = window.hello || {};
 	
 	ns.RecentRoom.prototype.handleMessage = function( msg ) {
 		const self = this;
+		console.log( 'RecentRoom.handleMessage', msg );
 		if ( !msg || !msg.message )
 			return;
 		
+		self.setMessage( msg );
+		self.setActive( true );
+	}
+	
+	ns.RecentRoom.prototype.setMessage = function( msg ) {
+		console.log( 'RecentRoom.setMessage', msg );
+		const self = this;
 		self.lastEvent = {
 			type : 'message',
 			data : msg,
@@ -1089,7 +1115,6 @@ var hello = window.hello || {};
 		self.message.textContent = msg.message;
 		self.messageTime.textContent = now;
 		
-		self.setActive( true );
 	}
 	
 	ns.RecentRoom.prototype.handleMsgWaiting = function( state ) {

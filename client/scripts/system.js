@@ -1783,7 +1783,7 @@ library.rtc = library.rtc || {};
 	ns.Message.prototype.message = function( data ) {
 		var self = this;
 		if ( !data ) {
-			console.log( 'Message - empty message', msg );
+			console.log( 'Message - empty message', data );
 			return;
 		}
 		

@@ -829,7 +829,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleJoin = function( conf ) {
 		const self = this;
-		//self.service.handle( conf );
+		console.log( 'Presence.handleJoin', conf );
 		if ( null == conf ) {
 			console.log( 'null room, end of room list', conf );
 			return;
@@ -935,6 +935,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.addRoom = function( conf ) {
 		const self = this;
+		console.log( 'Presence.addRoom', conf );
 		if ( !conf.clientId ) {
 			console.log( 'addRoom - conf does not have clientId', conf );
 			return;
@@ -950,7 +951,7 @@ library.module = library.module || {};
 		const host = library.tool.buildDestination(
 			null,
 			self.module.host,
-			self.module.port
+			self.module.port,
 		);
 		
 		conf.name = conf.name || null;
@@ -1258,7 +1259,7 @@ library.module = library.module || {};
 		};
 		
 		function contactPresence( msg ) { self.contactPresence( msg ); }
-		function addContact( data ) { self.addContact( data.contact ); }
+		function addContact( data ) { self.addContact( data ); }
 		function removeContact( data ) { self.removeContact( data.clientId ); }
 		
 		self.updateMap = {
@@ -1545,8 +1546,8 @@ library.module = library.module || {};
 		self.updateAccount( data );
 		
 		data.contacts.forEach( add );
-		function add( contact ) {
-			self.addContact( contact );
+		function add( data ) {
+			self.addContact( data );
 		}
 		
 		data.subscriptions.forEach( addSub );
@@ -1730,8 +1731,10 @@ library.module = library.module || {};
 		}
 	}
 	
-	ns.Treeroot.prototype.addContact = function( contact ) {
+	ns.Treeroot.prototype.addContact = function( data ) {
 		const self = this;
+		const contact = data.contact;
+		const cState = data.cState;
 		if ( !contact ) {
 			var cIds = Object.keys( self.contacts );
 			if ( !cIds.length && !self.nullContact ) {
@@ -1741,6 +1744,9 @@ library.module = library.module || {};
 			
 			return;
 		}
+		
+		if ( cState )
+			contact.lastMessage = cState.lastMessage;
 		
 		checkAvatar( contact );
 		self.nullContact = false;
@@ -1772,6 +1778,7 @@ library.module = library.module || {};
 		var contactObj = new library.contact.TreerootContact( conf );
 		self.contacts[ contact.clientId ] = contactObj;
 		contact.identity = contactObj.identity;
+		contact.lastMessage = contactObj.getLastMessage();
 		
 		self.view.sendMessage({
 			type : 'contact',

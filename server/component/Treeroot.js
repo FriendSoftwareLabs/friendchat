@@ -619,15 +619,21 @@ ns.Treeroot.prototype.initializeClient = function( socketId ) {
 	var contactIds = self.contacts.getClientIdList();
 	contactIds.forEach( addToState );
 	function addToState( id ) {
-		var contact = self.contacts.get( id );
-		var contactState = self.contactState[ contact.serviceId ];
-		if ( contactState.encId ) {
+		let contact = self.contacts.get( id );
+		let cState = self.contactState[ contact.serviceId ];
+		if ( cState.encId ) {
 			contact.enc = {
-				id : contactState.encId,
-				key : contactState.encKey,
-			}
+				id  : cState.encId,
+				key : cState.encKey,
+			};
 		}
-		state.contacts.push( contact );
+		let data = {
+			contact : contact,
+			cState  : {
+				lastMessage : cState.lastMessage,
+			},
+		};
+		state.contacts.push( data );
 	}
 	
 	var subIds = self.subscriptions.getClientIdList();
@@ -1240,13 +1246,22 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		self.toContactHandler( contact.clientId, data, socketId );
 	}
 	
-	var action = {
+	if ( relation.LastMessageData )
+		cState.lastMessage = self.buildMessage(
+			relation.LastMessageData,
+			relation.ID,
+		);
+	
+	const add = {
 		type : 'add',
 		data : {
-			contact : contact
-		}
+			contact : contact,
+			cState  : {
+				lastMessage : cState.lastMessage,
+			},
+		},
 	};
-	self.contactEvent( action );
+	self.contactEvent( add );
 	
 	return contact.serviceId;
 	
@@ -1265,6 +1280,7 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		
 		contact.imagePath = imgPath;
 		contact.unreadMessages = relation.UnSeenMessages;
+		
 		return contact;
 	}
 }
@@ -1697,51 +1713,69 @@ ns.Treeroot.prototype.messagesToClient = function(
 		self.log( 'wtf, no contact for: ', contactId );
 		return;
 	}
-	const cState = self.contactState[ contactId ];
 	
-	messages.forEach( push );
+	messages = messages.map( msg => {
+		let built = self.buildMessage( msg, contactId, type );
+		return built;
+	});
+	messages.forEach( toClient );
 	self.startMessageUpdates( contactId );
-	
-	function push( data ) {
-		if ( data.Message === undefined )
-			return;
-		
-		let lastMessageId = cState.lastMessageId || 0;
-		if ( 'log' !== type ) {
-			if ( data.ID <= lastMessageId )
-				return;
-			
-			cState.lastMessageId = data.ID;
-		}
-		
-		
-		//self.log( 'data date', data.Date );
-		let timestamp = null;
-		if ( data.TimeCreated )
-			timestamp = data.TimeCreated * 1000;
-		else
-			timestamp = Date.parse( data.Date );
-		
-		var from = contact.serviceId == data.PosterID ? contact.clientId : null;
-		var msgId = 'mid-' + data.ID;
-		var msg = {
-			type : 'message',
-			data : {
-				mid : msgId,
-				from :  from,
-				message : data.Message,
-				time : timestamp,
-			},
-		};
-		
-		if ( data.IsCrypto )
-			msg.data = addCrypto( msg.data, data, cState );
-		
-		if ( type )
-			msg =  wrapIn( type, msg );
-		
+	function toClient( msg ) {
 		self.toClientContact( msg, contact.clientId, socketId );
 	}
+}
+
+ns.Treeroot.prototype.buildMessage = function( data, contactId, type ) {
+	const self = this;
+	if ( data.Message === undefined )
+		return null;
+	
+	const contact = self.contacts.get( contactId );
+	const cState = self.contactState[ contactId ];
+	if ( !contact || !cState ) {
+		console.log( 'contact', contact );
+		return null;
+	}
+	
+	let lastMessageId = cState.lastMessageId || 0;
+	if ( 'log' !== type ) {
+		if ( data.ID <= lastMessageId )
+			return null;
+		
+		cState.lastMessageId = data.ID;
+	}
+	
+	let timestamp = null;
+	if ( data.TimeCreated )
+		timestamp = data.TimeCreated * 1000;
+	else
+		timestamp = Date.parse( data.Date );
+	
+	self.log( 'buildMessage', {
+		message   : data.Message,
+		contactId : contact.serviceId,
+		posterId  : data.PosterID,
+	});
+	var from = contact.serviceId == data.PosterID ? contact.clientId : null;
+	var msgId = 'mid-' + data.ID;
+	var msg = {
+		type : 'message',
+		data : {
+			mid     : msgId,
+			from    : from,
+			message : data.Message,
+			time    : timestamp,
+		},
+	};
+	
+	if ( data.IsCrypto )
+		msg.data = addCrypto( msg.data, data, cState );
+	
+	if ( type )
+		msg =  wrapIn( type, msg );
+	
+	cState.lastMessage = msg;
+	return msg;
 	
 	function wrapIn( type, msg ) {
 		var wrap = {
@@ -1848,7 +1882,7 @@ ns.Treeroot.prototype.startLongpollContacts = function() {
 		if ( !self.isPollingContacts )
 			return;
 		
-		self.longpollContacts( self.lastActivity, longBack );
+		self.longpollContacts( longBack );
 		function longBack( res ) {
 			self.lastActivity = null;
 			if ( !self.isPollingContacts )
@@ -1868,17 +1902,20 @@ ns.Treeroot.prototype.startLongpollContacts = function() {
 	}
 }
 
-ns.Treeroot.prototype.longpollContacts = function( lastActivity, callback ) {
+ns.Treeroot.prototype.longpollContacts = function( callback ) {
 	const self = this;
 	if ( self.contactsLongpollSent )
 		return;
 	
 	self.contactsLongpollSent = true;
 	const postData = {
-		'LastActivity' : lastActivity || ( Math.floor( Date.now() / 1000 )),
-		'Test'         : true,
-		'Loop'         : self.longpollContactsTimeout,
+		'LastActivity'   : self.lastActivity || ( Math.floor( Date.now() / 1000 )),
+		'Test'           : true,
+		'Loop'           : self.longpollContactsTimeout,
 	};
+	
+	if ( self.lastActivityId )
+		postData[ 'LastActivityID' ] = self.lastActivityId;
 	
 	var req = {
 		path     : self.relationsPath,
@@ -1898,34 +1935,33 @@ ns.Treeroot.prototype.stopLongpollContacts = function() {
 	self.isPollingContacts = false;
 }
 
-ns.Treeroot.prototype.handleContactsUpdate = function( items ) {
+ns.Treeroot.prototype.handleContactsUpdate = function( event ) {
 	const self = this;
-	let meta = items.TypeActivity;
-	let rels = self.getArr( items.Relations );
-	let subs = self.getArr( items.Requests );
-	if ( meta )
-		meta = parse( meta );
+	self.lastActivityId = event.LastActivityID;
+	let items = event.LastActivityData;
+	let rels = event.Relations;
+	let subs = event.Requests;
+	if ( !items )
+		items = getLegacyMeta( event.TypeActivity );
 	
-	if ( meta && meta.type ) {
+	if ( !items || !items.length )
+		return;
+	
+	items.forEach( handleEvent );
+	self.checkContacts( rels, subs );
+	
+	function handleEvent( meta ) {
+		if ( !meta || !meta.type )
+			return;
+		
 		if ( 'Relation' === meta.type ) {
 			rels = checkRelationRemoved( rels, meta.id );
 		}
 		
 		if ( 'Message' === meta.type ) {
-			if ( !rels[ 0 ] ) {
-				self.log( 'handleContactsUpdate, type Message - missing rels', {
-					rels   : rels,
-					meta  : meta,
-					items : items,
-				});
-			} else
-				self.handleHasNewMessage( rels[ 0 ], meta );
-				
-			return;
+			self.handleHasNewMessage( rels, meta );
 		}
 	}
-	
-	self.checkContacts( rels, subs );
 	
 	function checkRelationRemoved( rels, id ) {
 		rels = rels.filter( notRemoved );
@@ -1940,13 +1976,21 @@ ns.Treeroot.prototype.handleContactsUpdate = function( items ) {
 		}
 	}
 	
+	function getLegacyMeta( str ) {
+		let meta = parse( str );
+		if ( !meta )
+			return [];
+		
+		return [ meta ];
+	}
+	
 	function parse( type ) {
 		let res = null;
 		if ( !type )
 			return null;
 		
 		try {
-			res = JSON.parse( type )
+			res = JSON.parse( type );
 		} catch( e ) {
 			return null;
 		}
@@ -1961,17 +2005,23 @@ ns.Treeroot.prototype.handleRelationRemoved = function( rel, uid ) {
 	self.removeSubscription( uid );
 }
 
-ns.Treeroot.prototype.handleHasNewMessage = function( rel, meta ) {
+ns.Treeroot.prototype.handleHasNewMessage = function( rels, meta ) {
 	const self = this;
-	const sId = meta.id;
+	self.log( 'handleHasNewMessage', {
+		rels : rels,
+		meta : meta,
+	}, 3 );
+	const rel = rels[ 0 ];
+	const cId = meta.id;
+	const cState = self.contactState[ cId ];
 	if ( null == rel.LastMessage ) {
 		self.log( 'handleHasMessage - LastMessage is not defined', rel );
 		return;
 	}
 	
-	const lmId = parseInt( rel.LastMessage, 10 );
+	const lmId = parseInt( cState.lastMessageId, 10 );
 	self.getNewMessages(
-		sId,
+		cId,
 		lmId,
 		messagesBack
 	);
@@ -1982,7 +2032,7 @@ ns.Treeroot.prototype.handleHasNewMessage = function( rel, meta ) {
 			return;
 		}
 		
-		self.messagesToClient( messages, sId );
+		self.messagesToClient( messages, cId );
 	}
 }
 
