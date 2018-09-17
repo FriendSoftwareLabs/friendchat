@@ -1712,11 +1712,19 @@ library.contact = library.contact || {};
 		if ( !self.lastMessage )
 			return;
 		
-		const intercept = self.checkIntercept( self.lastMessage.data.message );
+		let msg = self.lastMessage.data;
+		console.log( 'parseLastMessage', msg );
+		if ( !msg )
+			return;
+		
+		if ( msg.dec )
+			msg = self.decryptMessage( msg );
+		
+		const intercept = self.checkIntercept( msg.message );
 		if ( !intercept )
 			return;
 		
-		const notie = self.getInterceptNotification( self.lastMessage.data, intercept );
+		const notie = self.getInterceptNotification( msg, intercept );
 		self.lastMessage.data.message = notie.message;
 	}
 	
