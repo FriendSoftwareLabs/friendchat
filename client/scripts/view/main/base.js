@@ -297,12 +297,14 @@ library.view = library.view || {};
 		
 		self.queryMap = {
 			'text'           : queryText,
+			'retry'          : queryRetry,
 			'secure'         : querySecure,
 			'secure-confirm' : querySecureConfirm,
 			'password'       : queryPassword,
 		};
 		
 		function queryText( e ) { self.queryText( e ); }
+		function queryRetry( e ) { self.queryRetry( e ); }
 		function querySecure( e ) { self.querySecure( e ); }
 		function querySecureConfirm( e ) { self.querySecureConfirm( e ); }
 		function queryPassword( e ) { self.queryPassword( e ); }
@@ -689,9 +691,9 @@ library.view = library.view || {};
 	ns.BaseModule.prototype.queryText = function( data ) {
 		var self = this;
 		var conf = {
-			id : friendUP.tool.uid( 'query-text' ),
+			id      : friendUP.tool.uid( 'query-text' ),
 			message : data.message || '',
-			value : data.value || '',
+			value   : data.value || '',
 		};
 		var element = hello.template.getElement( 'query-text-tmpl', conf );
 		self.serverMessage.show( element );
@@ -709,6 +711,41 @@ library.view = library.view || {};
 					return;
 				
 				self.returnQuery( callbackId, value );
+			}
+		}
+	}
+	
+	ns.BaseModule.prototype.queryRetry = function( data ) {
+		const self = this;
+		console.log( 'queryRetry', data );
+		const tmplConf = {
+			id         : friendUP.tool.uid( 'query-retry' ),
+			message    : data.message || '',
+			retryText  : data.value.retry,
+			cancelText : data.value.cancel,
+		};
+		const el = hello.template.getElement( 'query-retry-tmpl', tmplConf );
+		self.serverMessage.show( el );
+		bind( el );
+		
+		function bind( e ) {
+			let callbackId = data.callbackId;
+			let cancelBtn = el.querySelector( 'button.cancel' );
+			el.addEventListener( 'submit', retry, false );
+			cancelBtn.addEventListener( 'click', cancel, false );
+			
+			function retry( e ) {
+				e.preventDefault();
+				e.stopPropagation();
+				console.log( 'retry' );
+				self.returnQuery( callbackId, true );
+			}
+			
+			function cancel( e ) {
+				e.preventDefault();
+				e.stopPropagation();
+				console.log( 'cancel' );
+				self.returnQuery( callbackId, false );
 			}
 		}
 	}

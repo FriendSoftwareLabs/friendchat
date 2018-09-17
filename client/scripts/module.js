@@ -1287,12 +1287,14 @@ library.module = library.module || {};
 		function updateCryptoAccepted( e ) { self.updateCryptoAccepted( e ); }
 		
 		self.keyExEventMap = {
-			'uniqueid'     : handleUniqueId,
-			'signtemppass' : signTempPass,
+			'uniqueid'            : handleUniqueId,
+			'signtemppass'        : signTempPass,
+			'password-old-failed' : oldPassFail,
 		};
 		
 		function handleUniqueId( msg ) { self.handleUniqueId( msg ); }
 		function signTempPass( msg ) { self.signTempPass( msg ); }
+		function oldPassFail( e ) { self.oldPasswordFailed( e ); }
 		
 		self.bindView();
 		self.setupDormant();
@@ -1347,8 +1349,8 @@ library.module = library.module || {};
 		var uniqueId = data.uniqueId;
 		var storedPass = data.hashedPass || null;
 		self.setupCrypto( uniqueId, storedPass, setupDone );
-		function setupDone( publicKey, hashedPass ) {
-			self.sendPublicKey( publicKey, hashedPass );
+		function setupDone( publicKey, hashedPass, keys ) {
+			self.sendPublicKey( publicKey, hashedPass, null, keys );
 		}
 	}
 	
@@ -1375,15 +1377,15 @@ library.module = library.module || {};
 			if ( !keys )
 				throw new Error( 'huh? didnt get any crypto keys' );
 			
-			done( keys.pub, pass );
+			done( keys.pub, pass, keys );
 		}
 		
-		function done( pubKey, hashedPass ) {
-			doneBack( pubKey, hashedPass );
+		function done( pubKey, hashedPass, keys ) {
+			doneBack( pubKey, hashedPass, keys );
 		}
 	}
 	
-	ns.Treeroot.prototype.sendPublicKey = function( publicKey, hashedPass, recoveryKey ) {
+	ns.Treeroot.prototype.sendPublicKey = function( publicKey, hashedPass, recoveryKey, keys ) {
 		const self = this;
 		var pubKeyEvent = {
 			type : 'publickey',
@@ -1391,6 +1393,7 @@ library.module = library.module || {};
 				publicKey   : publicKey,
 				hashedPass  : hashedPass,
 				recoveryKey : recoveryKey,
+				keys        : keys,
 			},
 		};
 		
@@ -1404,20 +1407,27 @@ library.module = library.module || {};
 		
 		var clearText = self.crypt.deRSA( tmpPass );
 		if ( !clearText ) {
-			console.log( 'failed to decrypt', tmpPass );
-			self.keyExErr( 'signtemppass' );
+			console.log( 'failed to decrypt tmpPass', tmpPass );
+			self.keyExErr( 'decrypt-temppass' );
 			return;
 		}
 		
 		var signed = self.crypt.sign( clearText );
 		if ( !signed ) {
-			console.log( 'could not sign temp pass?', signed );
+			console.log( 'could not sign temp pass?', {
+				signed  : signed,
+				tmpPass : tmpPass,
+			});
+			self.keyExErr( 'sign-temppass' );
 			return;
 		}
 		
 		var signedEvent = {
 			type : 'signtemppass',
-			data : signed,
+			data : {
+				signed    : signed,
+				clearText : clearText,
+			},
 		};
 		
 		self.sendKeyEx( signedEvent );
@@ -1521,6 +1531,33 @@ library.module = library.module || {};
 	ns.Treeroot.prototype.moduleInfoMissing = function( msg ) {
 		const self = this;
 		self.viewInfo( 'info-missing' );
+	}
+	
+	ns.Treeroot.prototype.oldPasswordFailed = function( e ) {
+		const self = this;
+		console.log( 'oldPasswordFailed', e );
+		let time = library.tool.getChatTime( e.time || Date.now());
+		self.queryUser(
+			'retry', 
+			'Could not log in, secure key exchange failed - \
+			please provide timestamp to sokken: ' + time,
+			{
+				retry  : 'Retry procedure',
+				cancel : 'Provide a new password',
+			},
+			retryBack,
+		);
+		
+		function retryBack( retry ) {
+			console.log( 'retryBack', retry );
+			const event = {
+				type : 'password-retry',
+				data : {
+					retry : retry,
+				},
+			};
+			self.sendKeyEx( event );
+		}
 	}
 	
 	ns.Treeroot.prototype.bindView = function() {

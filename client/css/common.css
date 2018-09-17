@@ -125,6 +125,17 @@ body i.fa {
 	padding-left : 0.5em;
 }
 
+.button-row {
+	flex-wrap: wrap;
+}
+
+.button-row > .btn,
+.button-row > .button {
+	margin-right : 0;
+	margin-left : 0.3em;
+	margin-bottom : 0.2em;
+}
+
 .pad {
 	padding: 2em 0.75em;
 }

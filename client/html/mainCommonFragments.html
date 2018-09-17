@@ -446,6 +446,30 @@ value,
 </form>
 </script>
 
+<!-- QUERY-RETRY
+id,
+message,
+retryText,
+cancelText,
+-->
+<script id="query-retry-tmpl" type="text/html">
+<form id="<%= id %>" class="Box">
+    <div class="Message fortify">
+        <p>
+            <%= message %>
+        </p>
+    </div>
+    <div class="inputs group row end button-row">
+        <button type="button" class="cancel button fortify">
+            <%= cancelText %>
+        </button>
+        <button type="submit" class="button Accept fortify">
+            <i class="fa fa-fw fa-refresh"></i>
+            <%= retryText %>
+        </button>
+    </div>
+</form>
+</script>
 
 <!-- QUERY-SECURE
 id,

@@ -52,7 +52,8 @@ ns.Treeroot = function( clientConnection, clientId ) {
 	self.initReady = false;
 	self.cryptOngoing = false;
 	self.recoveryKey = null;
-	self.tryPass = null;
+	self.tryDBPass = null;
+	self.tryUserPass = null;
 	self.validLogin = false;
 	self.reqLoopActive = false;
 	self.reqLoopInterval = null;
@@ -151,14 +152,16 @@ ns.Treeroot.prototype.init = function() {
 	
 	//
 	self.keyExEventMap = {
-		'uniqueid'     : uniqueId,
-		'publickey'    : publicKey,
-		'signtemppass' : signTempPass,
+		'uniqueid'       : uniqueId,
+		'publickey'      : publicKey,
+		'signtemppass'   : signTempPass,
+		'password-retry' : retryPassword,
 	};
 	
 	function uniqueId( e, socketId ) { self.sendUniqueId( socketId ); }
 	function publicKey( e, socketId ) { self.handleClientPublicKey( e, socketId ); }
 	function signTempPass( e, socketId ) { self.sendSignedPass( e, socketId ); }
+	function retryPassword( e, socketId ) { self.retryDBPassword( e, socketId ); }
 	
 	//
 	self.contactEvents = {
@@ -282,6 +285,18 @@ ns.Treeroot.prototype.disconnect = function( callback ) {
 	}
 }
 
+ns.Treeroot.prototype.kill = function( callback ) {
+	var self = this;
+	self.sessionId = null;
+	self.initReady = false;
+	self.stop( stopped );
+	
+	function stopped() {
+		if( callback )
+			callback( true );
+	}
+}
+
 ns.Treeroot.prototype.setConf = function( data ) {
 	var self = this;
 	self.conf = self.conf || {};
@@ -384,7 +399,6 @@ ns.Treeroot.prototype.getUniqueId = function( callback ) {
 ns.Treeroot.prototype.initKeyExchange = function() {
 	var self = this;
 	self.sessionId = null;
-	self.validLogin = false;
 	if ( self.cryptoQueue.length )
 		self.executeCryptoQueue();
 	else
@@ -431,35 +445,69 @@ ns.Treeroot.prototype.handleKeyExchange = function( msg, socketId ) {
 
 ns.Treeroot.prototype.handleKeyExClientError = function( err ) {
 	var self = this;
-	if ( err.type == 'signtemppass' ) {
-		self.log( 'keyExClientError - signtemppass, resetting pass', err );
+	self.log( 'handleKeyExClientError', err );
+	if ( 'decrypt-temppass' === err.type ) {
+		self.log( 'keyExClientError - decrpyt temppass, resetting pass', err );
 		self.resetCrypto();
+		return;
+	}
+	
+	if ( 'sign-temppass' === err.type ) {
+		self.log( 'keyExClientError - signtemppass, reconnecting', err );
+		self.reconnect();
+		return;
 	}
 	
 }
 
 ns.Treeroot.prototype.sendUniqueId = function( socketId ) {
-	var self = this;
+	const self = this;
 	if ( !self.uniqueId ) {
 		self.queueCrypto( socketId );
 		return;
 	}
 	
-	var msg = {
+	self.cryptoSetupState = {
+		user           : self.conf.login,
+		uniqueId       : null,
+		dbPass         : null,
+		userPass       : null,
+		publicKey      : null,
+		recoveryKey    : null,
+		serverTempPass : null,
+	};
+	
+	self.tryDBPass = self.conf.password;
+	const msg = {
 		type : 'uniqueid',
 		data : {
 			uniqueId : self.uniqueId,
-			hashedPass : self.conf.password,
+			hashedPass : self.tryDBPass,
 		},
 	};
 	
 	self.clientKeyEx( msg, socketId );
+	self.cryptoSetupState.uniqueId = self.uniqueId;
+	self.cryptoSetupState.dbPass = self.tryDBPass;
 }
 
 ns.Treeroot.prototype.handleClientPublicKey = function( data, socketId ) {
-	var self = this;
+	const self = this;
 	self.cryptOngoing = socketId;
-	self.tryPass = data.hashedPass;
+	self.log( 'handleClientPublicKey', {
+		dbPass : self.tryDBPass,
+		hased  : data.hashedPass,
+	});
+	if ( data.hashedPass !== self.cryptoSetupState.dbPass )
+		self.cryptoSetupState.userPass = data.hashedPass;
+	
+	self.cryptoSetupState.publicKey = data.publicKey;
+	self.cryptoSetupState.recoveryKey = data.recoveryKey;
+	self.cryptoSetupState.keys = data.keys;
+	
+	if ( self.tryDBPass !== data.hashedPass )
+		self.tryUserPass = data.hashedPass;
+	
 	self.recoveryKey = data.recoveryKey || null;
 	self.sendPublicKey( data.publicKey, data.recoveryKey, pubKeyReply );
 	function pubKeyReply( tempPass ) {
@@ -508,6 +556,7 @@ ns.Treeroot.prototype.sendPublicKey = function( pubKey, recoveryKey, callback ) 
 
 ns.Treeroot.prototype.clientSignPass = function( tempPass, socketId ) {
 	var self = this;
+	self.cryptoSetupState.serverTempPass = tempPass;
 	var signPassEvent = {
 		type : 'signtemppass',
 		data : tempPass,
@@ -515,23 +564,26 @@ ns.Treeroot.prototype.clientSignPass = function( tempPass, socketId ) {
 	self.clientKeyEx( signPassEvent, socketId );
 }
 
-ns.Treeroot.prototype.sendSignedPass = function( signature, socketId ) {
+ns.Treeroot.prototype.sendSignedPass = function( data, socketId ) {
 	var self = this;
+	const signature = data.signed;
+	self.cryptoSetupState.signedPass = signature;
+	self.cryptoSetupState.clearText = data.clearText;
 	var postData = {
-		'Source' : self.source,
-		'UniqueID' : self.uniqueId,
+		'Source'    : self.source,
+		'UniqueID'  : self.uniqueId,
 		'Signature' : signature,
 	};
 	
 	var req = {
-		type : 'request',
-		path : self.authPath,
-		data : postData,
+		type     : 'request',
+		path     : self.authPath,
+		data     : postData,
 		callback : response,
 	};
 	
 	self.queueRequest( req );
-	function response( res ) {
+	function response( res, req, xml ) {
 		if ( !res ) {
 			self.log( 'sendSignedPass - incomplete result, disconnecting' );
 			self.setConnectionError( 'host', { host : self.conf.host } );
@@ -539,9 +591,12 @@ ns.Treeroot.prototype.sendSignedPass = function( signature, socketId ) {
 		}
 		
 		if ( !res.sessionid ) {
-			self.log( 'sendSignedPass - failed, response', res );
+			self.log( 'sendSignedPass - failed, response', {
+				res : res,
+				req : req,
+				xml : xml,
+			});
 			self.keyExchangeFailed();
-			
 			return;
 		}
 		
@@ -552,9 +607,21 @@ ns.Treeroot.prototype.sendSignedPass = function( signature, socketId ) {
 
 ns.Treeroot.prototype.keyExchangeComplete = function( sessionId, socketId ) {
 	var self = this;
-	self.updatePassword( self.tryPass, passBack );
+	self.log( 'keyExComplete', self.cryptoSetupState, 4 );
+	self.cryptoSetupState = null;
+	if ( self.tryUserPass )
+		self.updatePassword( self.tryUserPass, passBack );
+	else {
+		self.tryDBPass = null;
+		completeSetup();
+	}
+	
 	function passBack( success ) {
-		self.tryPass = null;
+		self.tryUserPass = null;
+		completeSetup();
+	}
+	
+	function completeSetup() {
 		self.validLogin = true;
 		self.cryptOngoing = null;
 		self.sessionId = sessionId;
@@ -576,6 +643,13 @@ ns.Treeroot.prototype.keyExchangeComplete = function( sessionId, socketId ) {
 
 ns.Treeroot.prototype.keyExchangeFailed = function() {
 	var self = this;
+	self.log( 'keyExFail', self.cryptoSetupState, 4 );
+	self.cryptoSetupState = null;
+	if ( self.tryDBPass ) {
+		self.askRetry();
+		return;
+	}
+	
 	self.resetCrypto( resetDone );
 	function resetDone() {
 		self.getUniqueId( uidBack );
@@ -589,16 +663,41 @@ ns.Treeroot.prototype.keyExchangeFailed = function() {
 	}
 }
 
+ns.Treeroot.prototype.askRetry = function() {
+	const self = this;
+	self.log( 'askRetry' );
+	self.setConnectionError();
+	const event = {
+		type : 'password-old-failed',
+		data : { time : Date.now() },
+	};
+	self.clientKeyEx( event );
+}
+
+ns.Treeroot.prototype.retryDBPassword = function( response, socketId ) {
+	const self = this;
+	self.log( 'retryDBPassword', response );
+	if ( !response )
+		return;
+	
+	if ( response.retry )
+		self.reconnect();
+	else
+		self.resetCrypto();
+}
+
+
 ns.Treeroot.prototype.resetCrypto = function( callback ) {
 	var self = this;
-	self.tryPass = null;
+	self.tryDBPass = null;
+	self.tryUserPass = null;
 	self.updatePassword( '', passBack );
 	function passBack( success ) {
 		if ( !success ) {
 			self.log( 'failed to reset password in DB??', update );
 		}
 		
-		self.conf.settings.password = '';
+		self.conf.password = '';
 		self.reconnect();
 	}
 }
@@ -883,18 +982,6 @@ ns.Treeroot.prototype.setConnectionOffline = function( data ) {
 		time : Date.now(),
 	};
 	self.connectionStatus( 'offline', data );
-}
-
-ns.Treeroot.prototype.kill = function( callback ) {
-	var self = this;
-	self.sessionId = null;
-	self.initReady = false;
-	self.stop( stopped );
-	
-	function stopped() {
-		if( callback )
-			callback( true );
-	}
 }
 
 ns.Treeroot.prototype.stop = function( callback ) {
