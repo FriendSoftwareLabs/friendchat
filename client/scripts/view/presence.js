@@ -618,12 +618,15 @@ library.view = library.view || {};
 		self.el.classList.toggle( 'hidden', !hasItems );
 	}
 	
-	ns.UserGroup.prototype.sort = function( id ) {
+	ns.UserGroup.prototype.sort = function() {
 		const self = this;
 		self.itemList.sort( byName );
 		function byName( idA, idB ) {
 			let a = self.items[ idA ];
 			let b = self.items[ idB ];
+			if ( a.name === b.name )
+				return 0;
+			
 			let ni = 0; // name character index
 			let res = 0;
 			do {
