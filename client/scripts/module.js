@@ -775,7 +775,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.passChallenge = function( event ) {
 		const self = this;
-		console.log( 'passChallenge', event );
+		console.log( 'passChallenge - NYI', event );
 	}
 	
 	ns.Presence.prototype.handleAccount = function( account ) {
@@ -941,7 +941,6 @@ library.module = library.module || {};
 		
 		let room = self.contacts[ conf.clientId ];
 		if ( room ) {
-			console.log( 'already initalized', conf );
 			room.reconnect();
 			return;
 		}
@@ -1535,7 +1534,6 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.oldPasswordFailed = function( e ) {
 		const self = this;
-		console.log( 'oldPasswordFailed', e );
 		let time = library.tool.getChatTime( e.time || Date.now());
 		self.queryUser(
 			'retry', 
@@ -1549,7 +1547,6 @@ library.module = library.module || {};
 		);
 		
 		function retryBack( retry ) {
-			console.log( 'retryBack', retry );
 			const event = {
 				type : 'password-retry',
 				data : {

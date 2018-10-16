@@ -908,7 +908,8 @@ library.component = library.component || {};
     // Public
     
     ns.SourceSelectPane.prototype.showDevices = function( currentDevices ) {
-        var self = this;
+        const self = this;
+        console.log( 'showDevices', currentDevices );
         self.refreshDevices( currentDevices );
     }
     
@@ -941,6 +942,7 @@ library.component = library.component || {};
         if ( outputDevice )
             selected.audiooutput = outputDevice;
         
+        console.log( 'getSelected', selected );
         return selected;
         
         function getSelectDevice( select ) {

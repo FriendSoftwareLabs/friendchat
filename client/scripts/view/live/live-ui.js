@@ -1257,10 +1257,6 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateQualityLevel = function( level ) {
 		var self = this;
-		console.log( 'UI.updateQualityLevel', {
-			level : level,
-			peers : self.peerGridOrder,
-		});
 		self.currentQuality = level;
 		self.peerIds.forEach( setLevel );
 		function setLevel( peerId ) {
@@ -2109,7 +2105,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleVideo = function( available ) {
 		var self = this;
-		console.log( 'UI.handleVideo', available );
 		if ( !self.stream )
 			return;
 		
@@ -2121,7 +2116,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleAudio = function( available ) {
 		var self = this;
-		console.log( 'UI.handleAudio', available );
 		if ( !self.stream )
 			return;
 		
@@ -2207,13 +2201,11 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.showAvatar = function() {
 		const self = this;
-		console.log( 'showAvatar' );
 		self.el.classList.toggle( 'no-avatar', false );
 	}
 	
 	ns.Peer.prototype.hideAvatar = function() {
 		const self = this;
-		console.log( 'hideAvatar' );
 		self.el.classList.toggle( 'no-avatar', true );
 	}
 	
@@ -2495,7 +2487,6 @@ library.component = library.component || {};
 	ns.Peer.prototype.applyQualityLevel = function( level ) {
 		const self = this;
 		self.currentQuality = level || self.currentQuality;
-		console.log( 'applyQualityLevel', self.currentQuality );
 		self.useCoverMode = 'low' === self.currentQuality ? false : true;
 		const isLow = ( 'low' === self.currentQuality );
 		self.el.classList.toggle( 'quality-low', isLow );
