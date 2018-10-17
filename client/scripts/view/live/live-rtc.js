@@ -1378,9 +1378,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function devBack( devices ) {
 			let label = selected.audiooutput;
 			let out = devices.audiooutput[ label ];
-			if ( out )
-				self.currentAudioOut = label;
+			if ( !out )
+				return;
 			
+			self.currentAudioOut = label;
 			self.emit( 'audio-sink', out.deviceId );
 		}
 		

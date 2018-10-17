@@ -96,10 +96,7 @@ library.rtc = library.rtc || {};
 		self.init();
 	}
 	
-	ns.MediaDevices.prototype.init = function() {
-		var self = this;
-		//console.log( 'media sources init' );
-	}
+	// Public
 	
 	/*
 	[ device, ]
@@ -145,6 +142,8 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
+	// Private
+	
 	// parser optional
 	// without parser, default output
 	// [ device, ]
@@ -171,6 +170,13 @@ library.rtc = library.rtc || {};
 			}
 		});
 	}
+	
+	
+	ns.MediaDevices.prototype.init = function() {
+		var self = this;
+		//console.log( 'media sources init' );
+	}
+	
 })( library.rtc );
 
 
@@ -762,7 +768,7 @@ library.rtc = library.rtc || {};
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = true;
+		self.spam = false;
 		
 		self.init();
 	}

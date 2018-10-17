@@ -1977,13 +1977,11 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleMedia = function( media ) {
 		const self = this;
-		if ( !media ) {
+		if ( !media )
 			return;
-		}
 		
-		if ( !self.stream ) {
+		if ( !self.stream )
 			self.setStream( media.id );
-		}
 		
 		self.stream.pause();
 		let srcObj = self.stream.srcObject;
@@ -1996,6 +1994,7 @@ library.component = library.component || {};
 		
 		self.stream.srcObject = media;
 		//self.bindStream();
+		//self.updateAudioSink();
 		self.stream.load();
 		
 		function clear( media ) {
@@ -2239,13 +2238,14 @@ library.component = library.component || {};
 		
 		self.stream = hello.template.getElement( 'stream-video-tmpl', conf );
 		self.stream.onloadedmetadata = play;
-		self.updateAudioSink();
+		//self.updateAudioSink();
 		
 		container.insertBefore( self.stream, RTCInfo );
 		self.toggleSpinner( false );
 		self.bindStreamResize();
 		
 		function play( e ) {
+			self.updateAudioSink();
 			self.stream.play();
 		}
 	}
@@ -2318,7 +2318,6 @@ library.component = library.component || {};
 	ns.Peer.prototype.updateAudioSink = function() {
 		const self = this;
 		const deviceId = self.audioSinkId || '';
-		
 		if ( !self.stream ) {
 			self.audioSinkId = deviceId;
 			console.log( 'setAudioSink - no stream' );
@@ -2330,10 +2329,12 @@ library.component = library.component || {};
 			return;
 		}
 		
+		/*
 		if ( self.stream.sinkId === deviceId ) {
 			console.log( 'setAudioSink - this deviceId is already set', deviceId );
 			return;
 		}
+		*/
 		
 		self.stream.setSinkId( deviceId )
 			.then( ok )
