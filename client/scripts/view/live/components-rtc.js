@@ -768,7 +768,7 @@ library.rtc = library.rtc || {};
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false;
+		self.spam = true;
 		
 		self.init();
 	}
@@ -1596,6 +1596,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.emitRouting = function() {
 		const self = this;
+		return;
 		const routing = self.getRouting( self.conn.localDescription.sdp );
 		self.setState( 'routing', routing );
 	}
