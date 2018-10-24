@@ -10,10 +10,21 @@ DELIMITER //
 DROP PROCEDURE IF EXISTS dummy;
 
 #
-# STARTUP / MAINTENANCE
+# DROP
+DROP PROCEDURE IF EXISTS purge_orphaned_settings;
+DROP PROCEDURE IF EXISTS account_get;
+DROP PROCEDURE IF EXISTS account_getpass;
+DROP PROCEDURE IF EXISTS account_set;
+DROP PROCEDURE IF EXISTS account_touch;
+DROP PROCEDURE IF EXISTS account_update;
+DROP PROCEDURE IF EXISTS account_remove;
+DROP PROCEDURE IF EXISTS module_get;
+DROP PROCEDURE IF EXISTS modules_get;
+DROP PROCEDURE IF EXISTS module_set;
+DROP PROCEDURE IF EXISTS module_update;
+DROP PROCEDURE IF EXISTS module_remove;
 
 # Purge settings entries that do not have a account or module parent
-DROP PROCEDURE IF EXISTS purge_orphaned_settings;
 CREATE PROCEDURE purge_orphaned_settings()
 BEGIN
 	DROP TABLE IF EXISTS tmp_s;
@@ -48,10 +59,9 @@ END//
 # ACCOUNT
 
 # GET
-DROP PROCEDURE IF EXISTS account_get;
 CREATE PROCEDURE account_get(
-	IN `userId` VARCHAR( 255 ),
-	IN `clientId` VARCHAR( 255 )
+	IN `userId` VARCHAR( 191 ),
+	IN `clientId` VARCHAR( 191 )
 )
 BEGIN
 
@@ -85,10 +95,9 @@ END IF;
 END//
 
 # GETPASS
-DROP PROCEDURE IF EXISTS account_getpass;
 CREATE PROCEDURE account_getpass(
-	IN `userId` VARCHAR( 255 ),
-	IN `name` VARCHAR( 255 )
+	IN `userId` VARCHAR( 191 ),
+	IN `name` VARCHAR( 191 )
 )
 BEGIN
 
@@ -102,12 +111,11 @@ WHERE a.userId = `userId` AND a.name = `name`;
 END//
 
 #SET
-DROP PROCEDURE IF EXISTS account_set;
 CREATE PROCEDURE account_set(
-	IN `clientId` VARCHAR( 255 ),
-	IN `userId` VARCHAR( 255 ),
-	IN `name` VARCHAR( 255 ),
-	IN `password` VARCHAR( 255 ),
+	IN `clientId` VARCHAR( 191 ),
+	IN `userId` VARCHAR( 191 ),
+	IN `name` VARCHAR( 191 ),
+	IN `password` VARCHAR( 191 ),
 	IN `skipPass` BOOLEAN,
 	IN `settings` TEXT
 )
@@ -141,9 +149,8 @@ END//
 
 
 # TOUCH
-DROP PROCEDURE IF EXISTS account_touch;
 CREATE PROCEDURE account_touch(
-	IN `clientId` VARCHAR( 255 )
+	IN `clientId` VARCHAR( 191 )
 )
 BEGIN
 
@@ -154,9 +161,8 @@ WHERE account.clientId = `clientId`;
 END//
 
 #UPDATE
-DROP PROCEDURE IF EXISTS account_update;
 CREATE PROCEDURE account_update(
-	IN `clientId` VARCHAR( 255 ),
+	IN `clientId` VARCHAR( 191 ),
 	IN `skipPass` BOOLEAN,
 	IN `settings` TEXT
 )
@@ -188,9 +194,8 @@ WHERE a.clientId = `clientId`;
 END//
 
 # REMOVE
-DROP PROCEDURE IF EXISTS account_remove;
 CREATE PROCEDURE account_remove(
-	IN `clientId` VARCHAR( 255 )
+	IN `clientId` VARCHAR( 191 )
 )
 BEGIN
 
@@ -206,10 +211,9 @@ END//
 # MODULE
 
 #GET
-DROP PROCEDURE IF EXISTS module_get;
 CREATE PROCEDURE module_get(
-	IN accountId VARCHAR( 255 ),
-	IN clientId VARCHAR( 255 )
+	IN accountId VARCHAR( 191 ),
+	IN clientId VARCHAR( 191 )
 )
 BEGIN
 	SELECT m.*, sj.settings
@@ -221,8 +225,7 @@ END//
 
 #GETS
 # this one is plural
-DROP PROCEDURE IF EXISTS modules_get;
-CREATE PROCEDURE modules_get( accountId VARCHAR( 255 ))
+CREATE PROCEDURE modules_get( accountId VARCHAR( 191 ))
 BEGIN
 	SELECT m.*, sj.settings
 	FROM module AS m
@@ -232,16 +235,15 @@ BEGIN
 END//
 
 #SET
-DROP PROCEDURE IF EXISTS module_set;
 CREATE PROCEDURE module_set(
-	`accountId` VARCHAR( 255 ),
-	`clientId` VARCHAR( 255 ),
-	`type` VARCHAR( 255 ),
-	`displayName` VARCHAR( 255 ),
-	`host` VARCHAR( 255 ),
+	`accountId` VARCHAR( 191 ),
+	`clientId` VARCHAR( 191 ),
+	`type` VARCHAR( 191 ),
+	`displayName` VARCHAR( 191 ),
+	`host` VARCHAR( 191 ),
 	`port` INT( 5 ),
-	`login` VARCHAR( 255 ),
-	`password` VARCHAR( 255 ),
+	`login` VARCHAR( 191 ),
+	`password` VARCHAR( 191 ),
 	`settings` TEXT
 )
 BEGIN
@@ -269,14 +271,13 @@ BEGIN
 END//
 
 #UPDATE
-DROP PROCEDURE IF EXISTS module_update;
 CREATE PROCEDURE module_update(
-	in `clientId` VARCHAR( 255 ),
-	in `displayName` VARCHAR( 255 ),
-	in `host` VARCHAR( 255 ),
+	in `clientId` VARCHAR( 191 ),
+	in `displayName` VARCHAR( 191 ),
+	in `host` VARCHAR( 191 ),
 	in `port` INT( 5 ),
-	in `login` VARCHAR( 255 ),
-	in `password` VARCHAR( 255 ),
+	in `login` VARCHAR( 191 ),
+	in `password` VARCHAR( 191 ),
 	in `settings` TEXT
 )
 BEGIN
@@ -328,10 +329,9 @@ WHERE m.clientId = `clientId`;
 END//
 
 # REMOVE
-DROP PROCEDURE IF EXISTS module_remove;
 CREATE PROCEDURE module_remove(
-	`accountId` VARCHAR( 255 ),
-	`clientId` VARCHAR( 255 )
+	`accountId` VARCHAR( 191 ),
+	`clientId` VARCHAR( 191 )
 )
 BEGIN
 

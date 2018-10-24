@@ -129,6 +129,7 @@ ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
 
 ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
 	var self = this;
+	log( 'createAccount', msg );
 	var dbAccount = null;
 	var ret = {
 		status : 403,

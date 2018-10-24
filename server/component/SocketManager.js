@@ -174,6 +174,7 @@ ns.SocketManager.prototype.releasePool = function() {
 
 ns.SocketManager.prototype.authenticate = function( bundle, socket ) {
 	const self = this;
+	log( 'authenticate', bundle, 3 );
 	if ( !bundle ) {
 		log( 'authenticate - no bundle', bundle );
 		close();
@@ -190,6 +191,7 @@ ns.SocketManager.prototype.authenticate = function( bundle, socket ) {
 		return;
 	}
 	
+	log( 'authenticate - token', token );
 	self.authRequest( token, authBack );
 	function authBack( data ) {
 		if ( !data ) {
@@ -250,6 +252,7 @@ ns.SocketManager.prototype.authRequest = function( token, callback ) {
 	fcRequest.post( req );
 	
 	function success( data ) {
+		log( 'authRequest - success', data );
 		callback( data );
 	}
 	
