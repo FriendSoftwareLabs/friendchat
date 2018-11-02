@@ -732,7 +732,6 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
-		console.log( 'updateConnState', state );
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
 		if (   'error' === state.type

@@ -430,7 +430,8 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
-		self.reconnect();
+		if ( isOnline )
+			self.reconnect();
 	}
 	
 	// Private

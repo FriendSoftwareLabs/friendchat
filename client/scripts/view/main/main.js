@@ -1648,10 +1648,8 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.toggleShowSetName = function( show ) {
 		const self = this;
-		if ( !self.setNameForm ) {
-			console.log( 'toggleShowSetName - no setNAmeForm', self );
+		if ( !self.setNameForm )
 			return;
-		}
 		
 		if ( self.showSetNameBtn )
 			self.showSetNameBtn.classList.toggle( 'hidden', show );

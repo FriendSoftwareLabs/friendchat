@@ -1105,6 +1105,7 @@ library.module = library.module || {};
 	// BaseModule.reconnect
 	ns.Treeroot.prototype.reconnect = function() {
 		const self = this;
+		self.initialize();
 	}
 	
 	ns.Treeroot.prototype.getSearchPools = function() {
@@ -1578,6 +1579,7 @@ library.module = library.module || {};
 		const self = this;
 		if ( self.initialized ) {
 			console.log( 'Treeroot.initializeState, already initialized', data );
+			self.updateState( data );
 			return;
 		}
 		
@@ -1599,6 +1601,41 @@ library.module = library.module || {};
 		if ( self.module.settings.msgCrypto && !self.module.settings.cryptoAccepted )
 			self.showCryptoWarnView();
 		
+	}
+	
+	ns.Treeroot.prototype.updateState = function( state ) {
+		const self = this;
+		const contacts = state.contacts;
+		if ( !contacts )
+			return;
+		
+		contacts.forEach( update );
+		
+		function update( conState ) {
+			let con = conState.contact;
+			let state = conState.cState;
+			let cId = con.clientId;
+			updateOnline( cId, con.online );
+			updateLastMessage( cId, state.lastMessage );
+		}
+		
+		function updateOnline( cId, isOnline ) {
+			self.contactPresence({
+				clientId : cId,
+				value    : isOnline ? 'online' : 'offline',
+			});
+		}
+		
+		function updateLastMessage( cId, lastMessage ) {
+			if ( !lastMessage )
+				return;
+			
+			let contact = self.contacts[ cId ];
+			if ( !contact )
+				return;
+			
+			contact.updateLastMessage( lastMessage );
+		}
 	}
 	
 	ns.Treeroot.prototype.setupDormant = function() {

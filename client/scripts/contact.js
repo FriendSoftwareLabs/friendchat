@@ -846,7 +846,7 @@ library.contact = library.contact || {};
 		
 		self.updateViewUsers();
 		self.updateIdentities();
-		self.updateLastMessage();
+		self.setLastMessage();
 		
 		// update main view with # of peers in a live session
 		const uptdPeers = {
@@ -872,7 +872,7 @@ library.contact = library.contact || {};
 		}
 	}
 	
-	ns.PresenceRoom.prototype.updateLastMessage = function() {
+	ns.PresenceRoom.prototype.setLastMessage = function() {
 		const self = this;
 		if ( !self.lastMessage )
 			return;
@@ -1683,6 +1683,21 @@ library.contact = library.contact || {};
 		}
 	}
 	
+	ns.TreerootContact.prototype.updateLastMessage = function( lastMessage ) {
+		const self = this;
+		if ( !self.lastMessage ) {
+			self.preprocessMessage( lastMessage.data );
+			return;
+		}
+		
+		let update = lastMessage.data;
+		let current = self.lastMessage.data;
+		if ( update.msgId === current.msgId )
+			return;
+		
+		self.preprocessMessage( lastMessage.data );
+	}
+	
 	// Private
 	
 	ns.TreerootContact.prototype.init = function() {
@@ -1904,6 +1919,11 @@ library.contact = library.contact || {};
 		var self = this;
 		if ( msg.dec )
 			msg = self.decryptMessage( msg );
+		
+		self.lastMessage = {
+			type : 'message',
+			data : msg,
+		};
 		
 		self.doMessageIntercept( msg );
 	}
