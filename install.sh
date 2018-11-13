@@ -484,20 +484,38 @@ echo "install.ini written"
 
 # Asks for database root password
 while true; do
-    mysqlRootPass=$(dialog --backtitle "Friend Chat installer" --passwordbox "Please enter mysql root password:" 8 50 --output-fd 1)
+    mysqlSudo=0
+    mysqlRootPass=$(dialog\
+    --backtitle "Friend Chat installer"\
+    --passwordbox "Please enter mysql root password, or leave it empty to run with 'sudo'" 8 50\
+    --output-fd 1)
     if [ $? = "1" ]
     then
         echo "$QUIT"
         exit 1
     fi
     # Checks mysql root password
-    mysql -u root -p$mysqlRootPass -e ";"
-    if [ $? == "0" ]; then
+    if [ -z "$mysqlRootPass" ]; then
+        mysqlSudo=1
         break;
+    else
+        mysql -u root -p$mysqlRootPass -e ";"
+        if [ $? == "0" ]; then
+            break;
+        fi
+        dialog\
+        --backtitle "Friend Chat installer"\
+        --msgbox "Invalid mysql password, please try again." 8 55\
+        --output-fd 1
     fi
-    dialog --backtitle "Friend Chat installer" --msgbox "Invalid mysql password, please try again." 8 55 --output-fd 1
 done
 
+mysqlAdminConnect="--host=$dbhost --port=$dbport --user=root"
+if [ "$mysqlSudo" ]; then
+    mysqlRootCall="sudo mysql"
+else
+    mysqlRootCall="mysql"
+fi
 
 # Evaluate return codes and abort script if not 0
 # $1 - return code
@@ -567,15 +585,13 @@ then
     sed -i -- "s/turn_password/${turnPass//\//\\/}/g" $PRESENCE_CFG_FILE
 fi
 
-# Temporary store the password in system variable to avoid warnings
 export MYSQL_PWD=$mysqlRootPass
 # Connection strings
-mysqlAdminConnect="--host=$dbhost --port=$dbport --user=root"
 mysqlconnect="--host=$dbhost --port=$dbport --user=$presenceDbUser"
 mysqlconnectdb=$mysqlconnect" --database=$presenceDbName"
 
 # Checks if user is already present or not
-userExists=$(mysql $mysqlAdminConnect \
+userExists=$($mysqlRootCall $mysqlAdminConnect \
 	--execute="SELECT mu.User FROM mysql.user AS mu WHERE mu.User='$presenceDbUser'")
     
 check_return_value $? "presence user check"
@@ -583,33 +599,33 @@ check_return_value $? "presence user check"
 if [ "$userExists" == "" ]; then
 	echo "Setting up user: $presenceDbUser"
 	# Creates user
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="CREATE USER $presenceDbUser@$dbhost IDENTIFIED BY '$presenceDbPass';"
 else
 	echo "User $presenceDbUser already exists, skipping"
 fi
 
 # Checks if database is already created
-dbpresent=$(mysql $mysqlAdminConnect \
+dbpresent=$($mysqlRootCall $mysqlAdminConnect \
 	--execute="SHOW DATABASES LIKE '$presenceDbName'")
 if [[ $dbpresent == *"$presenceDbName"* ]]; then
 	echo "Database $presenceDbName was found, skipping"
 	# Grants access to db in case user did not exist
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="GRANT ALL PRIVILEGES ON $presenceDbName.* TO $presenceDbUser@$dbhost;"
 	# apply privileges
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="FLUSH PRIVILEGES;"
 else
 	# Creates database
 	echo "Creating database: $presenceDbName"
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="CREATE DATABASE $presenceDbName"
 	# Grants access to db
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="GRANT ALL PRIVILEGES ON $presenceDbName.* TO $presenceDbUser@$dbhost;"
 	# apply privileges
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="FLUSH PRIVILEGES;"
 	# Switch to user
 	export MYSQL_PWD=$presenceDbPass
@@ -652,7 +668,7 @@ then
     cp "$FC_SERVER_FOLDER/example.config.js" $FC_CFG_FILE
     check_return_value $? "friendchat server copy config file"
 
-    # Pokes the new values in the presence/config.js file
+    # Pokes the new values in the freidncaht config.js file
     sed -i -- "s/dev : false/dev : $SELFSIGNED/g" $FC_CFG_FILE
     sed -i -- "s/hello_database_host/${dbhost//\//\\/}/g" $FC_CFG_FILE
     sed -i -- "s/3306/${dbport//\//\\/}/g" $FC_CFG_FILE
@@ -669,12 +685,12 @@ fi
 # Temporary store the password in system variable to avoid warnings
 export MYSQL_PWD=$mysqlRootPass
 # Set database connexion variables
-mysqlAdminConnect="--host=$dbhost --port=$dbport --user=root"
+#mysqlAdminConnect="--host=$dbhost --port=$dbport --user=root"
 mysqlconnect="--host=$dbhost --port=$dbport --user=$helloDbUser"
 mysqlconnectdb=$mysqlconnect" --database=$helloDbName"
 
 # Checks if user is already present or not, and creates it eventually
-userExists=$(mysql $mysqlAdminConnect \
+userExists=$($mysqlRootCall $mysqlAdminConnect \
 	--execute="SELECT mu.User FROM mysql.user AS mu WHERE mu.User='$helloDbUser'")
     
 check_return_value $? "friendchat db user check"
@@ -682,33 +698,33 @@ check_return_value $? "friendchat db user check"
 if [ "$userExists" == "" ]; then
 	echo "Setting up user: $helloDbUser"
 	# Creates user
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="CREATE USER $helloDbUser@$dbhost IDENTIFIED BY '$helloDbPass';"
 else
 	echo "User $helloDbUser already exists, skipping"
 fi
 
 # Checks for database existence and creates it if not present
-dbpresent=$(mysql $mysqlAdminConnect \
+dbpresent=$($mysqlRootCall $mysqlAdminConnect \
 	--execute="SHOW DATABASES LIKE '$helloDbName'")
 if [[ $dbpresent == *"$helloDbName"* ]]; then
 	echo "Database $helloDbName was found, skipping"
 	# Grants access to db in case user did not exist
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="GRANT ALL PRIVILEGES ON $helloDbName.* TO $helloDbUser@$dbhost;"
 	# apply privileges
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="FLUSH PRIVILEGES;"
 else
 	# Creates database
 	echo "Creating database: $helloDbName"
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="CREATE DATABASE $helloDbName"
 	# Grants access to db
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="GRANT ALL PRIVILEGES ON $helloDbName.* TO $helloDbUser@$dbhost;"
 	# apply privileges
-	mysql $mysqlAdminConnect \
+	$mysqlRootCall $mysqlAdminConnect \
 		--execute="FLUSH PRIVILEGES;"
 	# Switch to user
 	export MYSQL_PWD=$helloDbPass
