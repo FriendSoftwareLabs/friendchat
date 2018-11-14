@@ -31,115 +31,114 @@ if [ ! -x "${PATH_TO_DIALOG}" ]; then
 fi
 
 # Welcome
-    dialog --backtitle "Friend Chat installer" --yesno "\
+	dialog --backtitle "Friend Chat installer" --yesno "\
 Welcome to the Friend Chat installer.\n\n\
 Do you want to proceed with installation?" 10 55
 if [ $? -eq "1" ]; then
-    echo "$QUIT"
-    exit 1
+	echo "$QUIT"
+	exit 1
 fi
 
-# Installs node.js
+# node.js
 echo "Checking for node and npm"
 
 nv=$(node -v)
 npm=$(npm -v)
+
+# node exists
 if [ -z $nv ]; then
-    dialog --backtitle "Friend Chat installer" --yesno "\
-Friend Chat server requires node.js.\n\n\
-Choose YES to install it automatically, using 'n'\n\
-or NO to install it manually. This installer will exit\n\
-and a new terminal must be used after node is installed.\n\
-\n\
-Note: It is advised to install and manage node.js\n\
-using 'n', instruction at: https://github.com/tj/n " 16 65
-    if [ $? -eq "0" ]; then
-        curl -L http://git.io/n-install | bash
-        exit 1
-    else
-        exit 1
-    fi
-fi
-
-if [ "$nv" \< "v8.6.0" ]; then
-    dialog --backtitle "Friend Chat installer" --yesno "\
-Warning! node version found: $nv.\n\
-Recommended version: v8.6.0\n\
-\n\
-Choose YES to switch to version 8.6.0',\n\
-or NO continue using current version" 11 60
-    if [ $? -eq "0" ]; then
-        echo "Calling 'n' to change the version of node."
-        n 8.6.0
-    fi
-fi
-
-if [ -z "$npm" ]; then
     dialog --backtitle "Friend Chat installer" --msgbox "\
-node was found, but not npm. This is usually bad,\n\
-please fix your node.js installation \n\
+Friend Chat server requires node.js.\n\n\
+This installer will exit. Please install node.js,\n\
+then restart this script.\n\
 \n\
-Please note: it is advised to install and manage node.js\n\
-using 'n', instruction at: https://github.com/tj/n
-" 10 70
+Note #1: A useful tool for managing node is 'n',\n\
+instructions at: https://github.com/tj/n\n\
+Note #2: If you intend to run the servers as\n\
+system services, make sure node is available\n\
+globably, not just for the user ( for 'n', use sudo )" 17 65
     echo "Friend Chat installation aborted."
     exit 1
+fi
+
+# node version
+if [[ "$nv" =~ ^v1[0-9]\.* ]]; then
+    echo "Found compatible node.js version: $nv"
+else
+    dialog --backtitle "Friend Chat installer" --msgbox "\
+Incompatible node version found: $nv.\n\
+Required version is 10.x or higher.\n\
+\n\
+This installer will exit. Please update node,\n\
+then restart this script." 11 60
+    echo "Friend Chat installation aborted."
+    exit 1
+fi
+
+# npm exists
+if [ -z "$npm" ]; then
+	dialog --backtitle "Friend Chat installer" --msgbox "\
+node was found, but not npm. This is usually bad,\n\
+please fix your node.js installation \n\
+" 10 70
+	echo "Friend Chat installation aborted."
+	exit 1
 fi
 
 # Asks for friendup directory
 FRIEND_FOLDER="/home/$USER/friendup"
 while true; do
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Please enter the path to the FriendUp directory." 11 60 "$FRIEND_FOLDER" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ $temp != "" ]; then
-        FRIEND_FOLDER="$temp"
-    fi
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ $temp != "" ]; then
+		FRIEND_FOLDER="$temp"
+	fi
 
-    # Verifies the directory
-    if [ ! -f "$FRIEND_FOLDER/build/cfg/cfg.ini" ]; then
-        dialog --backtitle "Friend Chat installer" --msgbox "\
+	# Verifies the directory
+	if [ ! -f "$FRIEND_FOLDER/build/cfg/cfg.ini" ]; then
+		dialog --backtitle "Friend Chat installer" --msgbox "\
 Friend was not found in this directory,\n\
 or Friend was not properly installed." 10 50
-    else
-        break;
-    fi
+	else
+		break;
+	fi
 done
 
 # ask for git tmp folder
 INSTALL_TMP="/home/$USER/install_tmp"
 while true; do
-    if [ -f "$INSTALL_TMP/install.ini" ]; then
-        echo "Found tmp folder and install.ini, skipping tmp folder setup"
-        break;
-    fi
-    
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ -f "$INSTALL_TMP/install.ini" ]; then
+		echo "Found tmp folder and install.ini, skipping tmp folder setup"
+		break;
+	fi
+	
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 A temporary folder for cloing git repos will be used" 11 60 "$INSTALL_TMP" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ $temp != "" ]; then
-        INSTALL_TMP="$temp"
-    fi
-    
-    # creates directory if it does not exist
-    if [ ! -d "$INSTALL_TMP" ]; then
-        echo "creating tmp dir $INSTALL_TMP"
-        mkdir "$INSTALL_TMP"
-        if [ $? -ne 0 ]; then
-            dialog --backtitle "Friend Chat installer" --msgbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ $temp != "" ]; then
+		INSTALL_TMP="$temp"
+	fi
+	
+	# creates directory if it does not exist
+	if [ ! -d "$INSTALL_TMP" ]; then
+		echo "creating tmp dir $INSTALL_TMP"
+		mkdir "$INSTALL_TMP"
+		if [ $? -ne 0 ]; then
+			dialog --backtitle "Friend Chat installer" --msgbox "\
 Could not create directory, please try again" 10 50
-        else
-            break;
-        fi
-    else
-        break;
-    fi
+		else
+			break;
+		fi
+	else
+		break;
+	fi
 done
 
 # setup relevant folders
@@ -163,27 +162,27 @@ PRESENCE_CFG_FILE="$PRESENCE_FOLDER/config.js"
 
 if [ -f $FC_CLIENT_CFG_FILE ]
 then
-    FOUND_APP_CFG="Friend Chat app config found at\n\
+	FOUND_APP_CFG="Friend Chat app config found at\n\
 $FC_CLIENT_CFG_FILE\n\n"
 fi
 
 if [ -f $FC_CFG_FILE ]
 then
-    FOUND_HELLO_CFG="Friend Chat server config found at\n\
+	FOUND_HELLO_CFG="Friend Chat server config found at\n\
 $FC_CFG_FILE\n\n"
 fi
 
 if [ -f $PRESENCE_CFG_FILE ]
 then
-    echo "Found presenc cfg"
-    FOUND_PRESENCE_CFG="Presence server config found at\n\
+	echo "Found presenc cfg"
+	FOUND_PRESENCE_CFG="Presence server config found at\n\
 $PRESENCE_CFG_FILE\n"
 fi
 
 
 if [[ -f $FC_CLIENT_CFG_FILE || -f $FC_CFG_FILE || -f $PRESENCE_CFG_FILE ]]
 then
-    dialog --backtitle "Friend Chat installer" --yesno "\
+	dialog --backtitle "Friend Chat installer" --yesno "\
 $FOUND_APP_CFG\
 $FOUND_HELLO_CFG\
 $FOUND_PRESENCE_CFG\
@@ -194,10 +193,10 @@ Remove the relevant file and restart the installer\n\
 if you wish to create a fresh one.\n\
 \n\
 Abort installer?" 20 75
-    if [ $? -eq "0" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
+	if [ $? -eq "0" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
 fi
 
 # FriendCore config file
@@ -209,18 +208,18 @@ FC_INI_FILE="$INSTALL_TMP/install.ini"
 
 # load friend core things
 if [ -f $FUP_INI_FILE ]; then
-    dbhost=$(sed -nr "/^\[FriendCore\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
-    dbport=$(sed -nr "/^\[FriendCore\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
-    friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^domain[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
+	dbhost=$(sed -nr "/^\[FriendCore\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
+	dbport=$(sed -nr "/^\[FriendCore\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
+	friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^domain[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_INI_FILE)
 else
-    # New version of installer not used, get information from cfg/cfg.ini
-    dbhost=$(sed -nr "/^\[DatabaseUser\]/ { :l /^host[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
-    dbport=$(sed -nr "/^\[DatabaseUser\]/ { :l /^port[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
-    friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^fchost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
+	# New version of installer not used, get information from cfg/cfg.ini
+	dbhost=$(sed -nr "/^\[DatabaseUser\]/ { :l /^host[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
+	dbport=$(sed -nr "/^\[DatabaseUser\]/ { :l /^port[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
+	friendCoreDomain=$(sed -nr "/^\[FriendCore\]/ { :l /^fchost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FUP_CFG_FILE)
 
-    # Removes eventual ';' left by previous versions of Friend Core installers
-    dbhost=${dbhost//;}
-    friendCoreDomain=${friendCoreDomain//;}
+	# Removes eventual ';' left by previous versions of Friend Core installers
+	dbhost=${dbhost//;}
+	friendCoreDomain=${friendCoreDomain//;}
 fi
 
 # remove qotation marks
@@ -232,35 +231,35 @@ friendCoreDomain=${friendCoreDomain#\"}
 # load friendchat things
 if [ -f $FC_INI_FILE ]
 then
-    helloDbName=$(sed -nr "/^\[FriendChat\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    helloDbHost=$(sed -nr "/^\[FriendChat\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    helloDbPort=$(sed -nr "/^\[FriendChat\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    helloDbUser=$(sed -nr "/^\[FriendChat\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    helloDbPass=$(sed -nr "/^\[FriendChat\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    presenceDbName=$(sed -nr "/^\[Presence\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    presenceDbHost=$(sed -nr "/^\[Presence\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    presenceDbPort=$(sed -nr "/^\[Presence\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    presenceDbUser=$(sed -nr "/^\[Presence\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    presenceDbPass=$(sed -nr "/^\[Presence\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    stunHost=$(sed -nr "/^\[Presence\]/ { :l /^stun_srv[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    turnHost=$(sed -nr "/^\[Presence\]/ { :l /^turn_srv[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    turnUser=$(sed -nr "/^\[Presence\]/ { :l /^turn_user[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
-    turnPass=$(sed -nr "/^\[Presence\]/ { :l /^turn_pass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	helloDbName=$(sed -nr "/^\[FriendChat\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	helloDbHost=$(sed -nr "/^\[FriendChat\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	helloDbPort=$(sed -nr "/^\[FriendChat\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	helloDbUser=$(sed -nr "/^\[FriendChat\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	helloDbPass=$(sed -nr "/^\[FriendChat\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	presenceDbName=$(sed -nr "/^\[Presence\]/ { :l /^dbname[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	presenceDbHost=$(sed -nr "/^\[Presence\]/ { :l /^dbhost[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	presenceDbPort=$(sed -nr "/^\[Presence\]/ { :l /^dbport[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	presenceDbUser=$(sed -nr "/^\[Presence\]/ { :l /^dbuser[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	presenceDbPass=$(sed -nr "/^\[Presence\]/ { :l /^dbpass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	stunHost=$(sed -nr "/^\[Presence\]/ { :l /^stun_srv[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	turnHost=$(sed -nr "/^\[Presence\]/ { :l /^turn_srv[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	turnUser=$(sed -nr "/^\[Presence\]/ { :l /^turn_user[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
+	turnPass=$(sed -nr "/^\[Presence\]/ { :l /^turn_pass[ ]*=/ { s/.*=[ ]*//; p; q;}; n; b l;}" $FC_INI_FILE)
 else
-    helloDbName="friendchat"
-    helloDbHost="$dbhost"
-    helloDbPort="$dbport"
-    helloDbUser="friendchat"
-    helloDbPass=""
-    presenceDbName="presence"
-    presenceDbHost="$dbhost"
-    presenceDbPort="$dbport"
-    presenceDbUser="presence"
-    presenceDbPass=""
-    stunHost="your_stun_server.com:xxxx"
-    turnHost="your_turn_server.com:xxxx"
-    turnUser="your_turn_username"
-    turnPass="your_turn_password"
+	helloDbName="friendchat"
+	helloDbHost="$dbhost"
+	helloDbPort="$dbport"
+	helloDbUser="friendchat"
+	helloDbPass=""
+	presenceDbName="presence"
+	presenceDbHost="$dbhost"
+	presenceDbPort="$dbport"
+	presenceDbUser="presence"
+	presenceDbPass=""
+	stunHost="your_stun_server.com:xxxx"
+	turnHost="your_turn_server.com:xxxx"
+	turnUser="your_turn_username"
+	turnPass="your_turn_password"
 fi
 
 # Checks if TLS keys are defined
@@ -268,24 +267,24 @@ NEWTLS="0"
 SELFSIGNED="false"
 if [ ! -f "$FRIEND_BUILD/cfg/crt/key.pem" ]
 then
-    dialog --backtitle "Friend Chat installer" --msgbox "\
+	dialog --backtitle "Friend Chat installer" --msgbox "\
 Friend Chat requires TLS/SSL to work.\n\n\
 This script will now create them for you.\n\
 Please answer the following questions..." 11 70
 
-    # Call openssl to create the keys
-    if [ ! -d "$FRIEND_BUILD/cfg/crt" ]; then
-        mkdir "$FRIEND_BUILD/cfg/crt"
-    fi
-    echo "Calling openssl to create the keys."
-    openssl req -newkey rsa:2048 -nodes -sha512 -x509 -days 3650 -nodes -out "$FRIEND_BUILD/cfg/crt/certificate.pem" -keyout "$FRIEND_BUILD/cfg/crt/key.pem"
-    TLSNEW="1"
-    SELFSIGNED="true"
+	# Call openssl to create the keys
+	if [ ! -d "$FRIEND_BUILD/cfg/crt" ]; then
+		mkdir "$FRIEND_BUILD/cfg/crt"
+	fi
+	echo "Calling openssl to create the keys."
+	openssl req -newkey rsa:2048 -nodes -sha512 -x509 -days 3650 -nodes -out "$FRIEND_BUILD/cfg/crt/certificate.pem" -keyout "$FRIEND_BUILD/cfg/crt/key.pem"
+	TLSNEW="1"
+	SELFSIGNED="true"
 else
-    temp=$(openssl verify -CAfile "$FRIEND_BUILD/cfg/crt/certificate.pem" -CApath "$FRIEND_BUILD/cfg/crt/certificate.pem" "$FRIEND_BUILD/cfg/crt/certificate.pem")
-    if [ "$temp" == "$FRIEND_BUILD/cfg/crt/certificate.pem: OK" ]; then
-        SELFSIGNED="true";
-    fi
+	temp=$(openssl verify -CAfile "$FRIEND_BUILD/cfg/crt/certificate.pem" -CApath "$FRIEND_BUILD/cfg/crt/certificate.pem" "$FRIEND_BUILD/cfg/crt/certificate.pem")
+	if [ "$temp" == "$FRIEND_BUILD/cfg/crt/certificate.pem: OK" ]; then
+		SELFSIGNED="true";
+	fi
 fi
 
 # Asks for Friend Chat information
@@ -306,142 +305,142 @@ The installer will now ask for all the necessary\n\
 information and then set things up within Friend." 19 60
 
 while true; do
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Please enter the FQDN the Friend Chat client app\n\
 will use to connect to the Friend Chat service.\n\
 This is most likely the same domain on which FriendCore\n\
 is running" 12 70 "$friendCoreDomain" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        friendCoreDomain="$temp"
-    fi
-    
-    # hello db
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		friendCoreDomain="$temp"
+	fi
+	
+	# hello db
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Friend Chat server database.
 Please enter the name of the Friend Chat database." 11 60 "$helloDbName" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        helloDbName="$temp"
-    fi
-    
-    # hello db user
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		helloDbName="$temp"
+	fi
+	
+	# hello db user
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Friend Chat server database.\n\n\
 Please enter a mysql user name for the Friend Chat,\n\
 server database. It can be an existing user name or,\n\
 a new one but must be different from 'root'." 13 65 "$helloDbUser" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        helloDbUser="$temp"
-    fi
-    
-    # hello db pass
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		helloDbUser="$temp"
+	fi
+	
+	# hello db pass
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Friend Chat server database.\n\n\
 Please enter the password\n\
 for mysql user $helloDbUser:" 10 50 "$helloDbPass" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        helloDbPass="$temp"
-    fi
-    
-    # presence db
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		helloDbPass="$temp"
+	fi
+	
+	# presence db
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Presence server database.\n\n\
 Please enter the name of the Presence database." 12 55 "$presenceDbName" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        presenceDbName="$temp"
-    fi
-    
-    # presence db user
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		presenceDbName="$temp"
+	fi
+	
+	# presence db user
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Presence server database.\n\n\
 Please enter a mysql user name for Presence,\n\
 it can be an existing user name or a new one,\n\
 but must be different from 'root'." 13 65 "$presenceDbUser" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        presenceDbUser="$temp"
-    fi
-    
-    #presence db pass
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		presenceDbUser="$temp"
+	fi
+	
+	#presence db pass
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Presence server database.\n\n\
 Please enter the password\n\
 for mysql user $presenceDbUser:" 10 45 "$presenceDbPass" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        presenceDbPass="$temp"
-    fi
-    
-    # turn server host:port
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		presenceDbPass="$temp"
+	fi
+	
+	# turn server host:port
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Please enter the turn server domain:port" 10 50 "$turnHost" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        turnHost="$temp"
-    fi
-    
-    # turn user
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		turnHost="$temp"
+	fi
+	
+	# turn user
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Please enter the turn server username:" 10 50 "$turnUser" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        turnUser="$temp"
-    fi
-    
-    # turn pass
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		turnUser="$temp"
+	fi
+	
+	# turn pass
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Please enter the turn server password:" 10 50 "$turnPass" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        turnPass="$temp"
-    fi
-    
-    # stun host:port
-    temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		turnPass="$temp"
+	fi
+	
+	# stun host:port
+	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
 Please enter the stun server domain:port" 10 50 "$stunHost" --output-fd 1)
-    if [ $? = "1" ]; then
-        echo "$QUIT"
-        exit 1
-    fi
-    if [ "$temp" != "" ]; then
-        stunHost="$temp"
-    fi
-    
-    dialog --defaultno --backtitle "Friend Chat installer" --yesno "\
+	if [ $? = "1" ]; then
+		echo "$QUIT"
+		exit 1
+	fi
+	if [ "$temp" != "" ]; then
+		stunHost="$temp"
+	fi
+	
+	dialog --defaultno --backtitle "Friend Chat installer" --yesno "\
 Using the following values for Friend Chat:\n\
 \n\
 Domain: $friendCoreDomain\n\
@@ -456,9 +455,9 @@ TURN server username: $turnUser\n\
 TURN server password: $turnPass\n\
 STUN server address: $stunHost\n\n\
 Please check the values and confirm..." 20 75
-    if [ $? = "0" ]; then
-        break;
-    fi
+	if [ $? = "0" ]; then
+		break;
+	fi
 done
 
 # SAVE THE THINGS
@@ -511,22 +510,24 @@ while true; do
 done
 
 mysqlAdminConnect="--host=$dbhost --port=$dbport --user=root"
-if [ "$mysqlSudo" ]; then
+if [ $mysqlSudo -eq 1 ]; then
     mysqlRootCall="sudo mysql"
 else
     mysqlRootCall="mysql"
 fi
 
+echo "mysql root call: $mysqlRootCall"
+
 # Evaluate return codes and abort script if not 0
 # $1 - return code
 # $2  - <string> description of thing
 function check_return_value(){
-    if [ $1 -eq 0 ]; then
-        :
-    else
-        echo "Something failed, aborting: $2"
-        exit 1
-    fi
+	if [ $1 -eq 0 ]; then
+		:
+	else
+		echo "Something failed, aborting: $2"
+		exit 1
+	fi
 }
 
 PRESENCE_NPM_ERROR=0
@@ -538,51 +539,51 @@ HELLO_NPM_ERROR=0
 # close or update from git
 if [ ! -d "$PRESENCE_GIT" ]
 then
-    echo "Cloning Presence server from GIT"
-    cd $INSTALL_TMP
-    git clone $P_GIT
-    check_return_value $? "presence git clone"
+	echo "Cloning Presence server from GIT"
+	cd $INSTALL_TMP
+	git clone $P_GIT
+	check_return_value $? "presence git clone"
 else
-    cd $PRESENCE_GIT
-    git pull
-    check_return_value $? "presence git pull"
+	cd $PRESENCE_GIT
+	git pull
+	check_return_value $? "presence git pull"
 fi
 
 # Copies files into Friend build directory
 if [ ! -d "$PRESENCE_FOLDER" ]; then
-    mkdir "$PRESENCE_FOLDER"
+	mkdir "$PRESENCE_FOLDER"
 fi
 
 cd $PRESENCE_GIT
 rsync -ravl \
-    --exclude '/.git*' \
-    --exclude '/update.sh' \
-    --exclude '/install.sh' \
-    . "$PRESENCE_FOLDER"
+	--exclude '/.git*' \
+	--exclude '/update.sh' \
+	--exclude '/install.sh' \
+	. "$PRESENCE_FOLDER"
 
 cd $PRESENCE_FOLDER
 
 # setup
 if [ ! -e $PRESENCE_CFG_FILE ]
 then
-    # Copies example.config.js file to config.js
-    cp "$PRESENCE_FOLDER/example.config.js" $PRESENCE_CFG_FILE
-    check_return_value $? "presence copy config file"
+	# Copies example.config.js file to config.js
+	cp "$PRESENCE_FOLDER/example.config.js" $PRESENCE_CFG_FILE
+	check_return_value $? "presence copy config file"
 
-    # Pokes the new values in the presence/config.js file
-    sed -i -- "s/presence_database_host/${presenceDbHost//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/3306/${presenceDbPort//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/presence_database_user/${presenceDbUser//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/presence_database_password/${presenceDbPass//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/presence_database_name/${presenceDbName//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/presence_domain/${friendCoreDomain//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/path_to_key.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/key.pem/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/path_to_cert.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/certificate.pem/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/friendcore_domain/${friendCoreDomain//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/stun_url.com/${stunHost//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/turn_url.com/${turnHost//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/turn_username/${turnUser//\//\\/}/g" $PRESENCE_CFG_FILE
-    sed -i -- "s/turn_password/${turnPass//\//\\/}/g" $PRESENCE_CFG_FILE
+	# Pokes the new values in the presence/config.js file
+	sed -i -- "s/presence_database_host/${presenceDbHost//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/3306/${presenceDbPort//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/presence_database_user/${presenceDbUser//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/presence_database_password/${presenceDbPass//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/presence_database_name/${presenceDbName//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/presence_domain/${friendCoreDomain//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/path_to_key.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/key.pem/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/path_to_cert.pem/${FRIEND_BUILD//\//\\/}\/cfg\/crt\/certificate.pem/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/friendcore_domain/${friendCoreDomain//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/stun_url.com/${stunHost//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/turn_url.com/${turnHost//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/turn_username/${turnUser//\//\\/}/g" $PRESENCE_CFG_FILE
+	sed -i -- "s/turn_password/${turnPass//\//\\/}/g" $PRESENCE_CFG_FILE
 fi
 
 export MYSQL_PWD=$mysqlRootPass
@@ -593,7 +594,7 @@ mysqlconnectdb=$mysqlconnect" --database=$presenceDbName"
 # Checks if user is already present or not
 userExists=$($mysqlRootCall $mysqlAdminConnect \
 	--execute="SELECT mu.User FROM mysql.user AS mu WHERE mu.User='$presenceDbUser'")
-    
+	
 check_return_value $? "presence user check"
 
 if [ "$userExists" == "" ]; then
@@ -633,8 +634,8 @@ else
 	echo "Creating tables"
 	mysql $mysqlconnectdb \
 		--execute="SOURCE $PRESENCE_FOLDER/db/tables.sql"
-        
-    check_return_value $? "presence create tables"
+		
+	check_return_value $? "presence create tables"
 fi
 sleep 1
 
@@ -645,7 +646,7 @@ export MYSQL_PWD=''
 cd "$PRESENCE_FOLDER"
 npm install
 if [ $? -ne 0 ]; then
-    PRESENCE_NPM_ERROR=1
+	PRESENCE_NPM_ERROR=1
 fi
 
 # INSTALLATION OF FRIEND CHAT SERVER
@@ -653,14 +654,14 @@ fi
 
 # Copies files into Friend build directory
 if [ ! -d "$FC_SERVER_FOLDER" ]; then
-    mkdir "$FC_SERVER_FOLDER"
+	mkdir "$FC_SERVER_FOLDER"
 fi
 
 cd "$FRIENDCHAT_FOLDER/server"
 rsync -ravl \
-    --exclude '/.git*' \
-    --exclude '/update.sh' \
-    . "$FC_SERVER_FOLDER"
+	--exclude '/.git*' \
+	--exclude '/update.sh' \
+	. "$FC_SERVER_FOLDER"
 
 if [ ! -e $FC_CFG_FILE ]
 then
@@ -692,7 +693,7 @@ mysqlconnectdb=$mysqlconnect" --database=$helloDbName"
 # Checks if user is already present or not, and creates it eventually
 userExists=$($mysqlRootCall $mysqlAdminConnect \
 	--execute="SELECT mu.User FROM mysql.user AS mu WHERE mu.User='$helloDbUser'")
-    
+	
 check_return_value $? "friendchat db user check"
 
 if [ "$userExists" == "" ]; then
@@ -732,9 +733,9 @@ else
 	echo "Creating tables"
 	mysql $mysqlconnectdb \
 		--execute="SOURCE $FC_SERVER_FOLDER/scripts/sql/tables.sql"
-    
-    
-    check_return_value $? "friendchat create tables"
+	
+	
+	check_return_value $? "friendchat create tables"
 fi
 sleep 1
 
@@ -745,7 +746,7 @@ export MYSQL_PWD=''
 cd "$FC_SERVER_FOLDER"
 npm install
 if [ $? -ne 0 ]; then
-    HELLO_NPM_ERROR=1
+	HELLO_NPM_ERROR=1
 fi
 
 # Installation of the Friend Chat application
@@ -753,7 +754,7 @@ fi
 
 # Copies files into Friend build directory
 if [ ! -d "$FC_CLIENT_FOLDER" ]; then
-    mkdir "$FC_CLIENT_FOLDER"
+	mkdir "$FC_CLIENT_FOLDER"
 fi
 
 cd "$FRIENDCHAT_FOLDER/client"
@@ -764,12 +765,12 @@ rsync -ravl \
 
 if [ ! -e "$FC_CLIENT_FOLDER/local.config.js" ]
 then
-    # Copies example.local.config.js file to local.config.js
-    cp "$FC_CLIENT_FOLDER/example.local.config.js" "$FC_CLIENT_FOLDER/local.config.js"
-    check_return_value $? "friendchat client copy config file"
+	# Copies example.local.config.js file to local.config.js
+	cp "$FC_CLIENT_FOLDER/example.local.config.js" "$FC_CLIENT_FOLDER/local.config.js"
+	check_return_value $? "friendchat client copy config file"
 
-    # Pokes the new values in the local.config.js file
-    sed -i -- "s/friendcore_host/${friendCoreDomain//\//\\/}/g" "$FC_CLIENT_FOLDER/local.config.js"
+	# Pokes the new values in the local.config.js file
+	sed -i -- "s/friendcore_host/${friendCoreDomain//\//\\/}/g" "$FC_CLIENT_FOLDER/local.config.js"
 fi
 
 # SYSTEMD
@@ -785,28 +786,28 @@ function install_systemd_service(){
 	EXE=$1
 	WORKDIR=$(dirname "${EXE}")
 	DESCRIPTION=$3
-
+	
 	echo "Writing systemd script to temporary file $TMP"
-
+	
 	echo '[Unit]' > $TMP
-	echo 'Description=${DESCRIPTION}' >> $TMP
+	echo "Description=${DESCRIPTION}" >> $TMP
 	echo 'After=network.target' >> $TMP
-
+	
 	echo '[Service]' >> $TMP
 	echo 'Type=simple' >> $TMP
 	echo "User=${USER}" >> $TMP
 	echo "WorkingDirectory=${WORKDIR}" >> $TMP
-	echo "ExecStart=/usr/bin/node ${EXE}" >> $TMP
+	echo "ExecStart=${EXE}" >> $TMP
 	echo 'Restart=always' >> $TMP
 	echo 'RestartSec=3' >> $TMP
-
+	
 	echo '[Install]' >> $TMP
 	echo 'WantedBy=multi-user.target' >> $TMP
-
-	echo "Root password is required to copy $TMP to /etc/systemd/system and enable the service"
+	
+	echo "Superuser password is required to copy $TMP to /etc/systemd/system and enable the service"
 	sudo cp $TMP /etc/systemd/system/
 	sudo systemctl enable ${NAME}
-
+	
 	echo 'Service is installed and enabled'
 	echo "Use standard systemd commands to control the service:"
 	echo "systemctl start ${NAME}"
@@ -817,34 +818,39 @@ function install_systemd_service(){
 USE_SYSD="0"
 dialog --backtitle "Friend Chat installer" --yesno "\
 Do you wish to set up systemd to run FriendChat and Presence servers as system services?\n
-This requires root ( sudo ) access on your system" 10 50
+This requires superuser access on your system" 10 50
+HELLO_EXE=$FRIEND_BUILD/services/FriendChat/hello.js
+PRES_EXE=$FRIEND_BUILD/services/Presence/presence.js
+sudo chmod u+x $HELLO_EXE
+sudo chmod u+x $PRES_EXE
+
 if [ $? -eq "0" ]; then
-    USE_SYSD="1"
-    install_systemd_service "${FRIEND_BUILD}/services/FriendChat/hello.js" "friendchat-server" "FriendChat server (hello)"
-    install_systemd_service "${FRIEND_BUILD}/services/Presence/presence.js" "presence-server" "FriendChat server (presence)"
+	USE_SYSD="1"
+	install_systemd_service "${HELLO_EXE}" "friendchat-server" "FriendChat server"
+	install_systemd_service "${PRES_EXE}" "presence-server" "Presence server"
 else
-    echo "systemd setup declined"
+	echo "systemd setup declined"
 fi
 
 # Enable Friend Chat in Friend
 FUP_CFG_PATH="$FRIEND_BUILD/cfg/cfg.ini"
 CFG_IS_SET="0"
 while read line; do
-    if [[ $line == "[FriendChat]" ]]
-    then
-        CFG_IS_SET="1"
-    fi
+	if [[ $line == "[FriendChat]" ]]
+	then
+		CFG_IS_SET="1"
+	fi
 done <$FUP_CFG_PATH
 
 if [ $CFG_IS_SET -eq "0" ]
 then
-    echo "[FriendChat]" >> $FUP_CFG_PATH
-    echo "enabled = 1" >> $FUP_CFG_PATH
+	echo "[FriendChat]" >> $FUP_CFG_PATH
+	echo "enabled = 1" >> $FUP_CFG_PATH
 fi
 
 # done
 if [ "$TLSNEW" == "1" ]; then
-    dialog --backtitle "Friend Chat installer" --msgbox "\
+	dialog --backtitle "Friend Chat installer" --msgbox "\
 Warning : FriendCore MUST have TLS/SSL enabled, set it in FriendCore config:\n\
 [Core]\n\
 SSLEnable = 1\n\n\
@@ -855,7 +861,7 @@ fi
 
 COMPLETE_MSG=""
 if [ "$USE_SYSD" == "1" ]; then
-    COMPLETE_MSG="\
+	COMPLETE_MSG="\
 To start the servers use:\n\
 sudo systemctl start friendchat-server\n\
 sudo systemctl start presence-server\n\
@@ -864,7 +870,7 @@ To start automatically at boot:\n\
 sudo systemctl enable friendchat-server\n\
 sudo systemctl enable presence-server"
 else
-    COMPLETE_MSG="\
+	COMPLETE_MSG="\
 To start the servers:\n\
 FriendChat : $FC_SERVER_FOLDER\n\
 > node hello.js\n\

@@ -143,9 +143,14 @@ ns.Patches =function( conf, doneCallback ) {
 	self.db = conf.conn;
 	self.conf = conf;
 	self.done = doneCallback;
-	self.sqlDirectory = __dirname + '/../scripts/sql/';
-	self.patchDirectory = self.sqlDirectory;
-	self.proceduresPath = self.sqlDirectory + 'auto_update_procs.sh';
+	const cwd = __dirname.split( '/' );
+	cwd.pop();
+	const baseDir = cwd.join( '/' );
+	const sqlDirectory =  baseDir + '/scripts/sql/';
+	pLog( 'sqlDirectory', sqlDirectory );
+	self.patchDirectory = sqlDirectory;
+	self.procsScriptPath = sqlDirectory + 'auto_update_procs.sh';
+	self.procsUpdatePath = sqlDirectory + 'procedures.sql';
 	self.patchList = [];
 	
 	self.init();
@@ -171,13 +176,14 @@ ns.Patches.prototype.updateProcedures = function( procsDone ) {
 	var self = this;
 	var opts = {
 		env : {
-			dbHost : self.conf.dbHost,
-			dbName : self.conf.dbName,
-			dbUser : self.conf.dbUser,
-			dbPass : self.conf.dbPass,
+			procsPath  : self.procsUpdatePath,
+			dbHost     : self.conf.dbHost,
+			dbName     : self.conf.dbName,
+			dbUser     : self.conf.dbUser,
+			dbPass     : self.conf.dbPass,
 		},
 	};
-	var cmd = 'sh ' + self.proceduresPath;
+	var cmd = 'sh ' + self.procsScriptPath;
 	childProcess.exec( cmd, opts, execBack );
 	function execBack( error, stdout, stderr ) {
 		if ( error ) {
@@ -483,7 +489,7 @@ ns.Patches.prototype.applyPatches = function( doneBack ) {
 	}
 	
 	function readProcedures( callback ) {
-		readFile( self.proceduresPath, callback );
+		readFile( self.procsScriptPath, callback );
 	}
 	
 	function readFile( path, callback ) {

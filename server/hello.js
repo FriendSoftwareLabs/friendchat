@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 'use strict';
 
 /*©agpl*************************************************************************
@@ -25,6 +27,7 @@ var log = require( './component/Log' )( 'main' );
 var TLSWatch = require( './component/TLSWatch' );
 var WSS = require( './component/WebSocketServer' );
 var doGcLogging = false;
+log( 'hello dir', __dirname );
 
 if ( doGcLogging )
 	registerForGCEvents();
