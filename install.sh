@@ -99,7 +99,7 @@ Please enter the path to the FriendUp directory." 11 60 "$FRIEND_FOLDER" --outpu
 	fi
 
 	# Verifies the directory
-	if [ ! -f "$FRIEND_FOLDER/build/cfg/cfg.ini" ]; then
+	if [ ! -f "$FRIEND_FOLDER/cfg/cfg.ini" ]; then
 		dialog --backtitle "Friend Chat installer" --msgbox "\
 Friend was not found in this directory,\n\
 or Friend was not properly installed." 10 50
