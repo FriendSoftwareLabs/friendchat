@@ -12,8 +12,8 @@ fi
 echo "updating client, path: $FRIEND"
 
 # Creates destination directory if it does not exist
-if [ ! -d "$FRIEND/build/resources/webclient/apps/FriendChat" ]; then
-    mkdir "$FRIEND/build/resources/webclient/apps/FriendChat"
+if [ ! -d "$FRIEND/resources/webclient/apps/FriendChat" ]; then
+    mkdir "$FRIEND/resources/webclient/apps/FriendChat"
 fi
 
 # Copy the files
@@ -23,7 +23,7 @@ rsync -ravl \
 	--exclude '/update.sh' \
 	--exclude '/install.sh' \
 	--exclude '/readme.txt' \
-	. "$FRIEND/build/resources/webclient/apps/FriendChat"
+	. "$FRIEND/resources/webclient/apps/FriendChat"
 
 # End
 echo ""

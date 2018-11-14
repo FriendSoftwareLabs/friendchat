@@ -15,7 +15,7 @@ echo "FRIEND: $FRIEND"
 FRIEND_CHECK=$FRIEND
 
 # Eventually asks for the good directory
-if [ ! -f "$FRIEND_CHECK/build/cfg/cfg.ini" ]; then
+if [ ! -f "$FRIEND_CHECK/cfg/cfg.ini" ]; then
     while true; do
         temp=$(dialog --backtitle "Friend Chat update" --inputbox "\
 Please enter the path to the FriendUP directory." 11 60 "$FRIEND_CHECK" --output-fd 1)
@@ -29,7 +29,7 @@ Please enter the path to the FriendUP directory." 11 60 "$FRIEND_CHECK" --output
         fi
         
         # Verifies the directory
-        if [ ! -f "$FRIEND_CHECK/build/cfg/cfg.ini" ]; then
+        if [ ! -f "$FRIEND_CHECK/cfg/cfg.ini" ]; then
             dialog --backtitle "Friend Chat client update" --msgbox "\
 Friend was not found in this directory,\n\
 or Friend was not properly installed." 10 50

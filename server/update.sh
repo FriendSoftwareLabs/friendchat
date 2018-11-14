@@ -13,7 +13,7 @@ echo "Stopping friendchat-server system service"
 sudo systemctl stop friendchat-server
 
 # Creates destination directory if it does not exist
-FRIENDCHAT_SERVER="$FRIEND/build/services/FriendChat"
+FRIENDCHAT_SERVER="$FRIEND/services/FriendChat"
 if [ ! -d "$FRIENDCHAT_SERVER" ]; then
     mkdir "$FRIENDCHAT_SERVER"
 fi
@@ -28,7 +28,7 @@ rsync -ravl \
 	. "$FRIENDCHAT_SERVER"
 
 # Remove old startup script (if still exists)
-rm -f ${FRIEND}/build/autostart/startfriendchat.sh
+rm ${FRIEND}/autostart/startfriendchat.sh
 
 # Run npm
 echo "Calling 'npm install'."
