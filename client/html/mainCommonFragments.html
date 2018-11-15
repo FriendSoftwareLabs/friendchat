@@ -179,7 +179,7 @@ unreadId,
     <div class="avatar fortify"
         style="background-image:url(&#39;<%= avatar %>&#39;)"
     >
-        <div id="<%= statusId %>" class="recent-status">
+        <div id="<%= statusId %>" class="avatar-status">
         </div>
     </div>
     <div class="recent-info expand">
@@ -228,7 +228,7 @@ unreadId,
         style="background-image:url(&#39;<%= avatar %>&#39;)"
     >
         <i class="fa fa-fw fa-users <%= iconHidden %>"></i>
-        <div id="<%= statusId %>" class=recent-status></div>
+        <div id="<%= statusId %>" class=avatar-status></div>
     </div>
     <div class="recent-info expand">
         <div class="name-bar group row">
@@ -270,8 +270,10 @@ unreadId,
 clientId,
 folditId,
 moduleTitle,
-connectionStateId,
-contactsId,
+connStateId,
+itemsId,
+activeId,
+inactiveId,
 -->
 <script id="treeroot-module-tmpl" type="text/html">
     <div id="<%= clientId %>" class="module bar column BorderBottom">
@@ -286,14 +288,14 @@ contactsId,
             <div class="actions group row fortify">
                 <div class="foldit-status">
                 </div>
-                <div id="<%= connectionStateId %>">
+                <div id="<%= connStateId %>">
                 </div>
                 <div class="item-menu Button IconButton" title="">
                     <i class="fa fa-fw fa-ellipsis-v"></i>
                 </div>
             </div>
         </div>
-        <div id="<%= contactsId %>" class="contacts bar column">
+        <div id="<%= itemsId %>" class="contacts bar column">
             <div id="<%= activeId %>" class="active ZebraList Interactive">
             </div>
             <div class="inactive-container hidden">
@@ -326,18 +328,16 @@ optionMenuId,
     <div id="<%= clientId %>" class="treeroot contact group row MousePointer">
         <div class="contact-height-dummy fortify">
         </div>
-        <div class="contact-avatar fortify"
+        <div class="avatar fortify"
             style="background-image:url(&#39;<%= avatar %>&#39;)"
         >
         </div>
-        <div class="contact-name">
+        <div class="name expand">
             <%= name %>
         </div>
-        <div class="contact-status item-row bar row fortify">
-            <div id="<%= messageWaitingId %>">
-            </div>
-            <div id="<%= presenceId %>">
-            </div>
+        <div id="<%= messageWaitingId %>" class="fortify">
+        </div>
+        <div id="<%= presenceId %>" class="fortify">
         </div>
         <div class="item-menu Button IconButton fortify center-child">
             <i class="fa fa-fw fa-ellipsis-v"></i>
@@ -690,14 +690,14 @@ id,
 </script>
 
 <!-- PRESENCE 
-clientId,
+roomsId,
 folditId.
 moduleTitle,
 connStateId,
-contactsId,
+itemsId,
 -->
-<script id="presence-module-tmpl" type="text/html">
-<div id="<%= clientId %>" class="module bar column BorderBottom">
+<script id="presence-rooms-tmpl" type="text/html">
+<div id="<%= roomsId %>" class="module bar column BorderBottom">
     <div id="<%= folditId %>" class="module-head group row fortify MousePointer">
         <div class="module-logo fortify">
             <div class="logo center-child">
@@ -717,7 +717,7 @@ contactsId,
             </div>
         </div>
     </div>
-    <div id="<%= contactsId %>" class="contacts ZebraList Interactive">
+    <div id="<%= itemsId %>" class="contacts ZebraList Interactive">
     </div>
 </div>
 </script>
@@ -763,6 +763,39 @@ msgWaitingId,
     </div>
 </div>
 </script>
+
+
+<!-- PRESENCE CONTACT
+clientId,
+avatarSrc,
+statusId,
+name,
+liveStatusId,
+msgWaitingId,
+-->
+<script id="presence-contact-tmpl" type="text/html">
+<div id="<%= clientId %>" class="contact group row MousePointer">
+    <div class="avatar fortify"
+        style="background-image:url(&#39;<%= avatarSrc %>&#39;)"
+    >
+        <div id="<%= statusId %>" class="avatar-status">
+        </div>
+    </div>
+    <div class="name expand">
+        <%= name %>
+    </div>
+    <div class="group row item-row fortify">
+        <div id="<%= liveStatusId %>" class="fortify">
+        </div>
+        <div id="<%= msgWaitingId %>" class="fortify">
+        </div>
+    </div>
+    <div class="item-menu Button IconButton fortify center-child">
+        <i class="fa fa-fw fa-ellipsis-v"></i>
+    </div>
+</div>
+</script>
+
 
 <!-- PRESENCE QUERY HAS ACCOUNT
 id,

@@ -23,6 +23,7 @@
 const Presence = require( './Presence' );
 const Treeroot = require( './Treeroot' );
 const IRC = require( './IRC' );
+const Telegram = require( './Telegram' );
 
 const log = require( './Log' )( 'ModCtrl' );
 const modLog = require( './Log' )( 'ModuleProxy' );
@@ -119,7 +120,6 @@ ns.ModCtrl.prototype.addDefaultModules = function( modules, defaultUsername ) {
 
 ns.ModCtrl.prototype.receiveMsg = function( e, sid ) {
 	var self = this;
-	//log( 'receiveMessage', e, 3 );
 	var mod = self.modules[ e.type ];
 	if ( mod ) {
 		mod.receiveMsg( e.data, sid );
@@ -132,7 +132,7 @@ ns.ModCtrl.prototype.receiveMsg = function( e, sid ) {
 		return null;
 	}
 	
-	log( 'receiveMessage - unknown event', e );
+	//log( 'receiveMessage - unknown event', e );
 	return e;
 }
 
@@ -161,6 +161,7 @@ ns.ModCtrl.prototype.init = function() {
 		'presence' : Presence,
 		'treeroot' : Treeroot,
 		'irc'      : IRC,
+		'telegram' : Telegram,
 	};
 	
 	self.eventMap = {

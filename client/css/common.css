@@ -463,6 +463,50 @@ html body .displayNone {
 	opacity: 0.8;
 }
 
+.avatar > i {
+    font-size : 160%;
+}
+
+.avatar-status {
+    position : absolute;
+    right    : -0.3em;
+    bottom   : -0.3em;
+}
+
+.led-online-status {
+    height : 1.2em;
+    width : 1.2em;
+    border-radius: 0.7em;
+}
+
+.led-participants-status {
+    height : 1.44em;
+    width : unset;
+    border-radius: 0.8em;
+}
+
+.led-participants-status > div {
+    min-width: 1.1em;
+}
+
+.led-participants-status .display-area {
+    font-size: 0.7em;
+}
+
+.led-unread-status {
+    height: 1.3em;
+    border-radius: 0.65em;
+}
+
+.led-unread-status > div {
+    min-width: 1.3em;
+}
+
+.led-unread-status .display-area {
+    font-size: 0.9em;
+}
+
+
 /* FOLDIT */
 div.foldit-status {
 	flex: 0 0 auto;
@@ -923,5 +967,30 @@ html body .hidden {
 }
 
 .item-menu {
-	align-self: stretch;
+	align-self  : stretch;
+	margin-left : 0.3em;
+}
+
+/* LiveStatus */
+
+#hello .live-status {
+	border-radius: 3em;
+	padding : 0.3em;
+}
+
+.live-status-icon {
+	margin-right : 0.2em;
+	font-size: 130%;
+}
+
+.live-status-peers {
+}
+
+.live-status-peer {
+	margin-left : 0.2em;
+}
+
+.live-status-peer .avatar {
+	height : 1.7em;
+	width  : 1.7em;
 }

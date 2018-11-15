@@ -428,22 +428,17 @@ html body .tab-bar .tab-item.Button.IconButton
     height: 2.2em;
 }
 
-.contact .contact-avatar {
-    height: 2.4em;
-    width : 2.4em;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover;
-    margin-right: 1em;
-    border-radius: 100%;
-}
-
 .contacts .contact-name,
 .subscription .description {
     flex: 1 1 auto;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+}
+
+.room .name,
+.contact .name {
+    margin-left : 1em;
 }
 
 .contacts .contact-status,
@@ -494,57 +489,13 @@ html body .tab-bar .tab-item.Button.IconButton
     padding-left : 0.7em;
 }
 
-.recent-item .avatar {
+.avatar {
     position: relative;
     height : 2.5em;
     width  : 2.5em;
     border-radius       : 100%;
     background-position : center;
     background-size     : cover;
-}
-
-.recent-item .avatar > i {
-    font-size : 160%;
-}
-
-.recent-item .recent-status {
-    position : absolute;
-    right    : -0.3em;
-    bottom   : -0.3em;
-}
-
-
-.recent-led-status {
-    height : 1.2em;
-    width : 1.2em;
-    border-radius: 0.7em;
-}
-
-.recent-led-participants {
-    height : 1.5em;
-    width : unset;
-    border-radius: 0.8em;
-}
-
-.recent-led-participants > div {
-    min-width: 1.1em;
-}
-
-.recent-led-participants .display-area {
-    font-size: 0.7em;
-}
-
-.recent-led-unread {
-    height: 1.3em;
-    border-radius: 0.65em;
-}
-
-.recent-led-unread > div {
-    min-width: 1.3em;
-}
-
-.recent-led-unread .display-area {
-    font-size: 0.9em;
 }
 
 .recent-item .recent-info {

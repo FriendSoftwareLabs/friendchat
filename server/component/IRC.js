@@ -195,13 +195,13 @@ ns.IrcClient.prototype.init = function() {
 	self.setMessageMap(); // things from the client
 	self.setCommandMap(); // things from the server
 	
-	var logId = self.client.on(   'log'     , getLog );
-	var msgId = self.client.on(   'message' , handleMessage );
-	var cmdId = self.client.on(   'command' , handleCommand );
-	var rawId = self.client.on(   'raw'     , handleRaw );
-	var privId = self.client.on(  'private' , handlePrivate );
-	var settsId = self.client.on( 'settings', getSettings );
-	var settId = self.client.on(  'setting' , updateSetting );
+	var logId   = self.client.on( 'log'     , getLog        );
+	var msgId   = self.client.on( 'message' , handleMessage );
+	var cmdId   = self.client.on( 'command' , handleCommand );
+	var rawId   = self.client.on( 'raw'     , handleRaw     );
+	var privId  = self.client.on( 'private' , handlePrivate );
+	var settsId = self.client.on( 'settings', getSettings   );
+	var settId  = self.client.on( 'setting' , updateSetting );
 	self.clientListenerId = [];
 	self.clientListenerId.push( logId );
 	self.clientListenerId.push( msgId );
@@ -2168,7 +2168,6 @@ ns.Channel = function( conn, conf ) {
 		return new ns.Channel( conf );
 	
 	var self = this;
-	self.conn = conn;
 	self.clientId = conf.clientId;
 	self.name = conf.name;
 	self.server = conf.toServer;
@@ -2183,7 +2182,7 @@ ns.Channel = function( conn, conf ) {
 	
 	self.logTrimTimer = null;
 	
-	self.init();
+	self.init( conn );
 }
 
 // Public
@@ -2238,10 +2237,9 @@ ns.Channel.prototype.modeMap = {
 
 ns.Channel.prototype.modeOrder = [ 'm', 'v' ];
 
-ns.Channel.prototype.init = function() {
+ns.Channel.prototype.init = function( parentConn ) {
 	var self = this;
-	self.client = new events.EventNode( self.clientId, self.conn, unknownEvent, self.clientId );
-	delete self.conn;
+	self.client = new events.EventNode( self.clientId, parentConn, unknownEvent );
 	self.client.on( 'message', message );
 	self.client.on( 'log', getLog );
 	self.client.on( 'leave', leave );
@@ -2315,6 +2313,7 @@ ns.Channel.prototype.message = function( msg ) {
 
 ns.Channel.prototype.getLog = function( msg, cid ) {
 	var self = this;
+	tlog( 'getLog', self.log );
 	self.log.forEach( send );
 	function send( msg ) {
 		var wrap = {
@@ -2659,7 +2658,7 @@ ns.Private.prototype.close = function() {
 
 ns.Private.prototype.init = function() {
 	var self = this;
-	self.client = new events.EventNode( self.clientId, self.clientConn, unknownEvent, self.clientId );
+	self.client = new events.EventNode( self.clientId, self.clientConn, unknownEvent );
 	delete self.clientConn;
 	self.client.on( 'message', sendMessage );
 	self.client.on( 'log', sendLog );

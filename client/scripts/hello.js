@@ -1,5 +1,3 @@
-'use strict';
-
 /*©agpl*************************************************************************
 *                                                                              *
 * This file is part of FRIEND UNIFYING PLATFORM.                               *
@@ -19,6 +17,7 @@
 *                                                                              *
 *****************************************************************************©*/
 
+'use strict';
 var library = window.library || {};
 var friendUP = window.friendUP || {};
 var api = window.api;
@@ -136,7 +135,7 @@ var hello = null;
 				.catch( avaErr );
 				
 			function avaBack( avatar ) {
-				hello.identity.avatar = avatar;
+				hello.identity.updateAvatar( avatar );
 				self.loadHostConfig( confBack );
 			}
 			
@@ -178,7 +177,6 @@ var hello = null;
 		
 		new api.Module( conf );
 		function modBack( res ) {
-			console.log( 'getUserInfo - res', res );
 			const data = friendUP.tool.objectify( res );
 			callback( data );
 		}
@@ -646,7 +644,7 @@ var hello = null;
 	
 	ns.Hello.prototype.setupLiveRoom = function( permissions ) {
 		const self = this;
-		new library.component.GuestRoom( self.conn, permissions, onclose );
+		new library.component.GuestAccount( self.conn, permissions, onclose );
 		function onclose() { self.quit(); }
 		
 		//self.rtc.createClient( self.config.run.data );
@@ -841,7 +839,8 @@ var hello = null;
 					authId : self.app.authId,
 					userId : self.identity.fupId,
 				},
-				login : hello.identity.alias,
+				login   : hello.identity.alias,
+				fUserId : hello.identity.fUserId,
 			},
 		};
 		return bundle;
@@ -937,7 +936,7 @@ var hello = null;
 	
 	ns.Main.prototype.setConnState = function( state ) {
 		const self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'conn-state',
 			data : state,
 		});
@@ -946,7 +945,7 @@ var hello = null;
 	ns.Main.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
 		/*
-		self.view.sendMessage({
+		self.view.send({
 			type : 'app-online',
 			data : isOnline,
 		});

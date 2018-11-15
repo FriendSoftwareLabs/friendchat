@@ -85,6 +85,9 @@ var server = {
 					realName : '-',
 				},
 			},
+			telegram : {
+				foo : 'bar',
+			}
 		},
 	},
 };
@@ -126,6 +129,10 @@ var shared = {
 		irc : {
 			type : 'irc',
 			name : 'IRC',
+		},
+		telegram : {
+			type : 'telegram',
+			name : 'Telegram',
 		},
 	},
 };

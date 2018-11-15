@@ -125,7 +125,7 @@ ns.Account.prototype.receiveMsg = function( msg, sessionId ) {
 	if ( !msg ) // if a handler is found for the event, it gets eaten and null is returned
 		return;
 	
-	log( 'receiveMsg - unknown event', msg );
+	//log( 'receiveMsg - unknown event', msg, 4 );
 }
 
 ns.Account.prototype.keepAlive = function( data, sessionId ) {

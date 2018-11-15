@@ -181,8 +181,13 @@ ns.Emitter.prototype.emitterClose = function() {
 	delete self._emitterEventSink;
 }
 
+/* EventNode
 
-// EventNode
+- write things here
+- later
+
+*/
+
 const nLog = require( './Log' )( 'EventNode' );
 ns.EventNode = function( type, conn, sink, proxyType ) {
 	const self = this;
@@ -243,6 +248,115 @@ ns.EventNode.prototype._handleEvent = function() {
 	args.unshift( event.data );
 	args.unshift( event.type );
 	self.emit.apply( self, args );
+}
+
+/* RequestNode
+
+- Write things here aswell
+- also later
+
+*/
+
+ns.RequestNode = function( conn, eventSink ) {
+	const self = this;
+	ns.EventNode.call( self,
+		'request',
+		conn,
+		eventSink,
+		null,
+	);
+	
+	self._requests = {};
+	self._requestNodeInit();
+}
+
+util.inherits( ns.RequestNode, ns.EventNode );
+
+ns.RequestNode.prototype.request = async function( type, data ) {
+	const self = this;
+	return new Promise(( resolve, reject ) => {
+		function sendRequest( type, data ) {
+			const reqId = uuid.get( 'req' );
+			self._requests[ reqId ] = handleResponse;
+			const reqWrap = {
+				requestId : reqId,
+				request   : {
+					type    : type,
+					data    : data,
+				},
+			};
+			
+			self.send( reqWrap );
+		}
+		
+		function handleResponse( error, response ) {
+			delete self._requests[ reqId ];
+			if ( error ) {
+				reject( error );
+				return;
+			} else {
+				resolve( response );
+			}
+		}
+	});
+}
+
+// Private
+
+ns.RequestNode.prototype._requestNodeInit = function() {
+	const self = this;
+}
+
+ns.RequestNode.prototype._handleEvent = async function( req, sourceId ) {
+	const self = this;
+	if ( 'response' === req.type ) {
+		self._handleResponse( req.data, sourceId );
+		return;
+	}
+	
+	const reqId = req.requestId;
+	const request = req.request;
+	let response = null;
+	let error = null;
+	try {
+		response = await self._callListener( request )
+	} catch( err ) {
+		error = err;
+	}
+	
+	const res = {
+		type : 'response',
+		data : {
+			requestId : reqId,
+			error     : error,
+			response  : response,
+		},
+	};
+	self.send( res, sourceId );
+}
+
+ns.RequestNode.prototype._handleResponse = function( res, sourceId ) {
+	const self = this;
+	log( '_handleResponse - NYI', res );
+}
+
+ns.RequestNode.prototype._callListener = async function( req ) {
+	const self = this;
+	const type = req.type;
+	const listeners = self._emitterEvent2ListenerId[ type ];
+	if ( !listeners )
+		throw new Error( 'ERR_NO_LISTENER' );
+	
+	if ( 1 !== listeners.length )
+		throw new Error( 'ERR_MULTIPLE_LISTENERS' );
+	
+	const lId = listeners[ 0 ];
+	const listener = self._emitterListeners[ lId ];
+	try {
+		return listener( req.data );
+	} catch( err ) {
+		throw new Error( err );
+	}
 }
 
 module.exports = ns;

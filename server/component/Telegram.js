@@ -1,5 +1,3 @@
-'use strict';
-
 /*©agpl*************************************************************************
 *                                                                              *
 * This file is part of FRIEND UNIFYING PLATFORM.                               *
@@ -19,56 +17,48 @@
 *                                                                              *
 *****************************************************************************©*/
 
-var util = require( 'util' );
-var events = require( './Emitter' );
-var log = require( './Log')( 'MsgProxy' );
+'use strict';
+
+const log = require( './Log' )( 'Telegram' );
+const uuid = require( './UuidPrefix' )( 'live' );
+const events = require( './Emitter' );
+const tls = require( 'tls' );
+const util = require( 'util' );
+const fs = require( 'fs' );
 
 var ns = {};
 
-// Useful for passing into an unsafe environment where you dont want
-// to expose the connection object ( like a webscoket )
-ns.MsgProxy = function( conf ) {
-	if ( !( this instanceof ns.MsgProxy ))
-		return new ns.MsgProxy( conf );
+ns.Telegram = function( clientConn, clientId ) {
+	const self = this;
+	self.id = clientId;
+	self.type = 'telegram';
+	self.client = clientConn;
 	
-	var self = this;
-	events.Emitter.call( self );
-	self.sendMsg = conf.send;
+	self.init();
 }
 
-util.inherits( ns.MsgProxy, events.Emitter );
+// Public
 
-ns.MsgProxy.prototype.receiveMsg = function( msg, socketId ) {
-	var self = this;
-	self.emit( msg.type, msg.data, socketId );
+// Private
+
+ns.Telegram.prototype.init = function() {
+	const self = this;
+	log( 'init *______*' );
+	self.client.on( 'connect', connect );
+	
+	self.client.send({
+		type : 'initialize',
+	});
+	
+	function connect( e, sId ) { self.handleConnect( e, sId ); }
 }
 
-ns.MsgProxy.prototype.send = function( msg, socketId, altId ) {
-	var self = this;
-	if ( !msg.data ) {
-		try {
-			throw new Error( 'null data' );
-		} catch( err ) {
-			log( 'null data', msg, 3 );
-			log( 'null data trace', err.stack || err );
-		}
-	}
-	
-	if ( !self.sendMsg )
-		return;
-	
-	var wrap = null;
-	var id = altId || self.moduleId;
-	if ( !id )
-		wrap = msg;
-	else
-		wrap = {
-			type : id,
-			data : msg,
-		};
-	
-	self.sendMsg( wrap, socketId );
+ns.Telegram.prototype.handleConnect = function( conf, socketId ) {
+	const self = this;
+	log( 'handleConnect', {
+		conf : conf,
+		sId  : socketId,
+	}, 3 );
 }
 
-module.exports = ns.MsgProxy;
-
+module.exports = ns.Telegram;

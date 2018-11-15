@@ -196,10 +196,18 @@ var hello = window.hello || {};
 	
 	ns.ModuleControl.prototype.getContainerId = function( moduleType ) {
 		const self = this;
-		if ( 'presence' === moduleType )
-			return 'conferences';
-		else
-			return 'contacts';
+		return {
+			conference : 'conferences',
+			contact    : 'contacts',
+		};
+	}
+	
+	ns.ModuleControl.prototype.setGuide = function() {
+		const self = this;
+		self.guide = new library.component.InfoBox({
+			containerId : 'conversations',
+			element     : null,
+		});
 	}
 	
 })( library.view );
@@ -208,12 +216,12 @@ var hello = window.hello || {};
 	base module
 */
 (function( ns, undefined ) {
-	ns.BaseModule.prototype.setCss = function() { return; }
+	ns.BaseModule.prototype.setLogoCss = function() { return; }
 	ns.BaseModule.prototype.initFoldit = function() { return; }
-	ns.BaseModule.prototype.initStatus = function() {
+	ns.BaseModule.prototype.initConnStatus = function() {
 		const self = this;
-		self.connectionState = new library.component.StatusIndicator({
-			containerId : self.connectionState,
+		const conf = {
+			containerId : null,
 			type        : 'icon',
 			cssClass    : 'fa-circle',
 			statusMap   : {
@@ -223,7 +231,17 @@ var hello = window.hello || {};
 				connecting : 'Notify',
 				error      : 'Alert',
 			},
-		});
+		};
+		
+		if ( self.roomsConnState ) {
+			conf.containerId = self.roomsConnState;
+			self.roomsConnState = new library.component.StatusIndicator( conf );
+		}
+		
+		if ( self.contactsConnState ) {
+			conf.containerId = self.contactsConnState;
+			self.contactsConnState = new library.component.StatusIndicator( conf );
+		}
 	}
 	
 })( library.view );
@@ -232,24 +250,59 @@ var hello = window.hello || {};
 	presence
 */
 (function( ns, undefined ) {
-	ns.Presence.prototype.getTitleString = function() {
-		const self = this;
-		return 'Conference rooms';
-	}
+	ns.Presence.prototype.setLogoCss = function() { return; }
+	ns.Presence.prototype.initFoldit = function() { return; }
 	
-	ns.Presence.prototype.buildElement = function() {
+	ns.Presence.prototype.buildRoomsElement = function() {
 		const self = this;
-		const title = self.getTitleString();
-		const tmplId = 'simple-presence-module-tmpl';
+		const title = self.getTitleString( 'conference' );
+		const tmplId = 'simple-presence-rooms-tmpl';
 		const conf = {
-			clientId     : self.clientId,
+			roomsId      : self.roomsId,
 			title        : title,
-			connStateId  : self.connectionState,
-			contactsId   : self.contactsId,
+			connStateId  : self.roomsConnState,
+			itemsId      : self.roomItemsId,
 		};
 		const el = hello.template.getElement(  tmplId, conf );
-		const cont = document.getElementById( self.containerId );
+		const cont = document.getElementById( self.containers.conference );
 		cont.appendChild( el );
+	}
+	
+	ns.Presence.prototype.buildContactsElement = function() {
+		const self = this;
+		const title = self.getTitleString( 'contact' );
+		const tmplId = 'simple-presence-rooms-tmpl';
+		const conf = {
+			roomsId      : self.contactsId,
+			title        : title,
+			connStateId  : self.contactsConnState,
+			itemsId      : self.contactItemsId,
+		};
+		const el = hello.template.getElement(  tmplId, conf );
+		const cont = document.getElementById( self.containers.contact );
+		cont.appendChild( el );
+	}
+	
+	ns.Presence.prototype.initStatus = function() {
+		const self = this;
+		const conf = {
+			containerId : null,
+			type        : 'icon',
+			cssClass    : 'fa-circle',
+			statusMap   : {
+				offline    : 'Off',
+				online     : 'On',
+				open       : 'Warning',
+				connecting : 'Notify',
+				error      : 'Alert',
+			},
+		};
+		
+		conf.containerId = self.roomsConnState;
+		self.roomsConnState = new library.component.StatusIndicator( conf );
+		
+		conf.containerId = self.contactsConnState;
+		self.contactsConnState = new library.component.StatusIndicator( conf );
 	}
 	
 })( library.view );
@@ -259,27 +312,30 @@ var hello = window.hello || {};
 	treeroot
 */
 (function( ns, undefined ) {
+	ns.Treeroot.prototype.setLogoCss = function() { return; }
+	ns.Treeroot.prototype.initFoldit = function() { return; }
+	
 	ns.Treeroot.prototype.getTitleString = function() {
 		const self = this;
-		return 'Contacts';
+		return window.View.i18n( 'i18n_community_contacts' );
 	}
 	
-	ns.Treeroot.prototype.buildElement = function() {
+	ns.Treeroot.prototype.buildContactsElement = function() {
 		const self = this;
 		const title = self.getTitleString();
 		const tmplId = 'simple-treeroot-module-tmpl';
 		const conf = {
-			clientId          : self.clientId,
-			moduleTitle       : title,
-			connectionStateId : self.connectionState,
-			contactsId        : self.contactsId,
-			activeId          : self.activeId,
-			inactiveId        : self.inactiveId,
+			clientId    : self.contactsId,
+			moduleTitle : title,
+			connStateId : self.contactsConnState,
+			itemsId     : self.contactItemsId,
+			activeId    : self.activeId,
+			inactiveId  : self.inactiveId,
 		};
 		
 		const el = hello.template.getElement( tmplId, conf );
-		const cont = document.getElementById( self.containerId );
-		cont.appendChild( el );
+		const container = document.getElementById( self.containers.contact );
+		container.appendChild( el );
 		
 		// Toggle offline users
 		var toggleOfflineUsers = document.getElementById( 'button_' + conf.inactiveId );
@@ -300,7 +356,7 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.Treeroot.prototype.getMenuOptions = function() {
+	ns.Treeroot.prototype.getMenuOptions = function( type ) {
 		const self = this;
 		const opts = [
 			self.menuActions[ 'add-contact' ],
@@ -310,50 +366,6 @@ var hello = window.hello || {};
 		
 		return opts;
 	}
-	
-	ns.Treeroot.prototype.addMenu = function() {
-		const self = this;
-		return;
-		const settingsId = friendUP.tool.uid( 'settings' );
-		const settingsItem = {
-			type : 'item',
-			id : settingsId,
-			name : 'Settings',
-			faIcon : 'fa-cog',
-		};
-		
-		const reconnectId = friendUP.tool.uid( 'reconnect' );
-		const reconnectItem = {
-			type : 'item',
-			id : reconnectId,
-			name : 'Reconnect',
-			faIcon : 'fa-refresh',
-		};
-		
-		self.menuId = friendUP.tool.uid( 'menu' );
-		const folder = {
-			type : 'folder',
-			id : self.menuId,
-			name : 'module',
-			faIcon : 'fa-folder-o',
-			items : [
-				settingsItem,
-				reconnectItem,
-			],
-		};
-		
-		main.menu.add( folder, 'modules' );
-		
-		main.menu.on( settingsId, showSettings );
-		main.menu.on( reconnectId, doReconnect );
-		
-		function showSettings() { self.optionSettings(); }
-		function doReconnect() { self.optionReconnect(); }
-	}
-	
-	ns.Treeroot.prototype.setCss = function() { return; }
-	ns.Treeroot.prototype.initFoldit = function() { return; }
-	
 })( library.view );
 
 // Rececnt conversations
@@ -741,6 +753,7 @@ var hello = window.hello || {};
 		self.onActive = onActive;
 		
 		self.lastMessage = null;
+		self.sourceIds = [];
 		
 		self.init( containerId );
 	}
@@ -757,13 +770,17 @@ var hello = window.hello || {};
 		if ( self.unread )
 			self.unread.close();
 		
+		if ( self.source )
+			self.releaseSource();
+		
 		delete self.onActive;
 		delete self.containerId;
 		delete self.template;
-		delete self.source;
 		delete self.actions;
 		delete self.unread;
 		delete self.status;
+		delete self.source;
+		delete self.eventMap;
 		delete self.moduleId;
 		delete self.clientId;
 		delete self.id;
@@ -794,6 +811,9 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.setLastEvent = function( historyEvent ) {
 		const self = this;
+		if ( !historyEvent || !historyEvent.data )
+			return;
+		
 		if ( !self.lastEvent )
 			self.setEvent( historyEvent );
 		
@@ -828,12 +848,18 @@ var hello = window.hello || {};
 		self.bindElement();
 		self.buildIndicators();
 		
-		self.source.on( 'message', message );
-		self.source.on( 'msg-waiting', msgWaiting );
+		const msgId = self.source.on( 'message', message );
+		const waitId = self.source.on( 'msg-waiting', msgWaiting );
+		self.sourceIds.push( msgId );
+		self.sourceIds.push( waitId );
+		
 		const lastMessage = self.source.getLastMessage();
-		if ( lastMessage ) {
+		const unread = self.source.getUnreadMessages();
+		if ( lastMessage )
 			self.setMessage( lastMessage.data );
-		}
+		
+		if ( unread )
+			self.setUnread( unread );
 		
 		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
@@ -850,6 +876,16 @@ var hello = window.hello || {};
 			self.handleMenuClick();
 		}
 		
+	}
+	
+	ns.RecentItem.prototype.releaseSource = function() {
+		const self = this;
+		if ( !self.source || !self.sourceIds )
+			return;
+		
+		self.sourceIds.forEach( id => self.source.off( id ));
+		self.sourceIds = [];
+		delete self.source;
 	}
 	
 	ns.RecentItem.prototype.getTmplConf = function() {
@@ -883,7 +919,7 @@ var hello = window.hello || {};
 		self.status = new library.component.StatusIndicator({
 			containerId : self.status,
 			type        : 'led',
-			cssClass    : 'recent-led-status PadBorder',
+			cssClass    : 'led-online-status PadBorder',
 			statusMap   : {
 				offline   : 'Off',
 				online    : 'On',
@@ -891,7 +927,9 @@ var hello = window.hello || {};
 		});
 		self.handleOnline( self.source.getOnline());
 		
-		self.source.on( 'online', online );
+		const onlineId = self.source.on( 'online', online );
+		self.sourceIds.push( onlineId );
+		
 		function online( e ) { self.handleOnline( e ); }
 	}
 	
@@ -900,7 +938,7 @@ var hello = window.hello || {};
 		self.unread = new library.component.StatusDisplay({
 			containerId : self.unread,
 			type        : 'led',
-			cssClass    : 'recent-led-unread',
+			cssClass    : 'led-unread-status',
 			statusMap   : {
 				'false'   : 'Off',
 				'true'    : 'Notify',
@@ -933,24 +971,21 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
-		self.unread.set( state.isWaiting ? 'true' : 'false' );
-		self.unread.setDisplay( state.unread || 1 );
-		if ( state.isWaiting )
-			set( state );
-		else
-			clear();
-		
-		function set( state ) {
+		self.setUnread( state.unread );
+		if ( state.message )
+			self.handleMessage( state );
+	}
+	
+	ns.RecentItem.prototype.setUnread = function( unread ) {
+		const self = this;
+		if ( !!unread ) {
+			self.unread.set( 'true' );
+			self.unread.setDisplay( unread );
 			self.unread.show();
-			if ( !state.message ) {
-				state.from = true;
-				self.handleMessage( state, '>> You have unread messages' );
-			} else
-				self.handleMessage( state );
-		}
-		
-		function clear() {
+		} else {
 			self.unread.hide();
+			self.unread.set( 'false' );
+			self.unread.setDisplay( '' );
 		}
 	}
 	
@@ -1064,6 +1099,7 @@ var hello = window.hello || {};
 		
 		delete self.icon;
 		delete self.currentIcon;
+		delete self.iconMap;
 		delete self.live;
 		delete self.name;
 		
@@ -1110,7 +1146,7 @@ var hello = window.hello || {};
 		const conf = {
 			containerId : self.status,
 			type        : 'led',
-			cssClass    : 'recent-led-participants PadBorder',
+			cssClass    : 'led-participants-status PadBorder',
 			statusMap   : {
 				empty   : 'Off',
 				users   : 'Available',
@@ -1118,28 +1154,30 @@ var hello = window.hello || {};
 			display     : '-',
 		};
 		self.status = new library.component.StatusDisplay( conf );
-		self.source.on( 'participants', parties );
-		self.source.on( 'user-live', userLive );
+		const partyId = self.source.on( 'participants', parties );
+		const uLiveId = self.source.on( 'user-live', userLive );
+		self.sourceIds.push( partyId );
+		self.sourceIds.push( uLiveId );
 		
-		function parties( num ) {
-			if ( !num )
-				setNone();
-			else
-				setNum( num );
-			
-			function setNone() {
-				self.status.set( 'empty' );
-				self.status.setDisplay( '-' );
-			}
-			
-			function setNum( num ) {
-				self.status.set( 'users' );
-				self.status.setDisplay( num );
-			}
+		function parties( num ) { self.handleParties( num ); }
+		function userLive( isLive ) { self.handleUserLive( isLive ); }
+	}
+	
+	ns.RecentRoom.prototype.handleParties = function( num ) {
+		const self = this;
+		if ( !num )
+			setNone();
+		else
+			setNum( num );
+		
+		function setNone() {
+			self.status.set( 'empty' );
+			self.status.setDisplay( '-' );
 		}
 		
-		function userLive( isLive ) {
-			self.handleUserLive( isLive );
+		function setNum( num ) {
+			self.status.set( 'users' );
+			self.status.setDisplay( num );
 		}
 	}
 	
@@ -1156,7 +1194,8 @@ var hello = window.hello || {};
 		};
 		self.live = new library.component.StatusIndicator( conf );
 		self.live.hide();
-		self.source.on( 'live', live );
+		const liveId = self.source.on( 'live', live );
+		self.sourceIds.push( liveId );
 		
 		function live( isLive ) {
 			if ( isLive ) {

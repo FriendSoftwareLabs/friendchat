@@ -301,6 +301,14 @@ library.component = library.component || {};
 			throw new Error( 'hello.template not defined' );
 		
 		const container = document.getElementById( self.containerId );
+		if ( !container ) {
+			console.log(
+				'StatusIndicator.initIndicator - could not find element for id:',
+				self.containerId
+			);
+			return;
+		}
+		
 		if ( 'icon' === self.type )
 			self.buildIconIndicator( container );
 		else
@@ -310,7 +318,7 @@ library.component = library.component || {};
 		self.state = stateKeys[ 0 ];
 		self.inner.classList.add( self.statusMap[ self.state ]);
 	}
-		
+	
 	ns.StatusIndicator.prototype.buildIconIndicator = function( container ) {
 		const self = this;
 		const tmplId = self.typeTmplMap[ 'icon' ];
@@ -321,7 +329,7 @@ library.component = library.component || {};
 		container.appendChild( el );
 		self.bindIconIndicator( container );
 	}
-		
+	
 	ns.StatusIndicator.prototype.buildLEDIndicator = function( container ) {
 		const self = this;
 		const tmplId = self.typeTmplMap[ 'led' ];
@@ -2096,13 +2104,12 @@ library.component = library.component || {};
 	
 	ns.Search.prototype.renameMap = {
 		'Presence' : 'i18n_conference_rooms',
-		'Treeroot' : 'i18n_contacts',
+		'Treeroot' : 'i18n_community_contacts',
 	}
 	
 	ns.Search.prototype.init = function( parentConn, inputContainerId, resultsContainerId ) {
 		const self = this;
 		self.setActions();
-		self.filter = new library.component.Filter();
 		self.conn = new library.component.EventNode( 'search', parentConn, eventSink );
 		function eventSink( type, data ) {
 			console.log( 'Main.Search event sink - no handler for event', {
@@ -2175,14 +2182,14 @@ library.component = library.component || {};
 		if ( self.searchStr === str )
 			return;
 		
+		self.clearSearch();
+		self.setActive();
 		if ( isSameBaseSearch( str )) {
 			self.searchStr = str;
-			self.refreshResults();
+			self.searchTimeout = window.setTimeout( searchAnyway, 250 );
 			return;
 		}
 		
-		self.clearSearch();
-		self.setActive();
 		if ( 1 === str.length ) {
 			self.searchStr = str;
 			self.searchTimeout = window.setTimeout( searchAnyway, 2000 );
@@ -2299,12 +2306,14 @@ library.component = library.component || {};
 		
 		const src = event.data;
 		const sId = friendUP.tool.uid( 'src' );
+		const items = src.result;
+		if ( !items || !items.length )
+			return;
+		
 		const source = addSource( src, sId );
 		const poolEl = document.getElementById( source.uuid );
 		const poolContent = poolEl.querySelector( '.content' );
-		const items = src.result;
 		items.forEach( add );
-		refreshResults( source );
 		
 		function add( item ) {
 			let uuid = friendUP.tool.uid();
@@ -2353,20 +2362,6 @@ library.component = library.component || {};
 				return ' - ' + View.i18n( type );
 			}
 		}
-		
-		function refreshResults( source ) {
-			const pool = source.pool;
-			if ( !pool.length ) {
-				self.togglePool( source.uuid, false );
-				return;
-			}
-			
-			const hide = self.filter.inverseFilter( self.searchStr, pool );
-			if ( hide.length === pool.length )
-				self.togglePool( pool.uuid, false );
-			
-			self.toggleItems( hide, false );
-		}
 	}
 	
 	ns.Search.prototype.sourceNamer2k = function( name ) {
@@ -2387,13 +2382,13 @@ library.component = library.component || {};
 			hasMenu = false;
 		
 		const conf = {
-			uuid       : item.uuid,
-			name       : item.name || '',
-			email      : item.email || '---',
-			alias      : item.alias || '---',
-			avatar     : item.avatar || '',
-			subHidden  : hasAddRelation ? '' : 'hidden',
-			menuHidden : hasMenu ? '' : 'hidden',
+			uuid        : item.uuid,
+			name        : item.name || '',
+			email       : item.email || '',
+			avatar      : item.avatar || '',
+			emailHidden : item.email ? '' : 'hidden',
+			subHidden   : hasAddRelation ? '' : 'hidden',
+			menuHidden  : hasMenu ? '' : 'hidden',
 		};
 		
 		const el = self.template.getElement( 'search-result-contact-tmpl', conf );
@@ -2528,45 +2523,6 @@ library.component = library.component || {};
 		};
 		
 		self.sendAction( action );
-	}
-	
-	ns.Search.prototype.refreshResults = function() {
-		const self = this;
-		if ( !self.pools )
-			return;
-		
-		self.pools.forEach( sourceId => {
-			let source = self.sources[ sourceId ];
-			let pool = source.pool;
-			let show = self.filter.filter( self.searchStr, pool );
-			let hide = self.filter.inverseFilter( self.searchStr, pool );
-			self.togglePool( source.uuid, !!show.length )
-			self.toggleItems( show, true );
-			self.toggleItems( hide, false );
-		});
-	}
-	
-	ns.Search.prototype.toggleItems = function( list, show ) {
-		const self = this;
-		if ( !list.length )
-			return;
-		
-		list.forEach( item => {
-			let el = document.getElementById( item.uuid );
-			if ( !el )
-				return;
-			
-			el.classList.toggle( 'hidden', !show );
-		});
-	}
-	
-	ns.Search.prototype.togglePool = function( poolId, show ) {
-		const self = this;
-		const poolEl = document.getElementById( poolId );
-		if ( !poolEl )
-			return;
-		
-		poolEl.classList.toggle( 'hidden', !show );
 	}
 	
 	ns.Search.prototype.getItemMenuActions = function( item ) {

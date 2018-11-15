@@ -1,4 +1,3 @@
-'use strict';
 
 /*©agpl*************************************************************************
 *                                                                              *
@@ -85,6 +84,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.bindUI = function() {
 		const self = this;
+		self.titleContainer = document.getElementById( 'room-title' );
 		// buttons?
 		self.goVideoBtn = document.getElementById( 'upgrade-to-video' );
 		self.goAudioBtn = document.getElementById( 'upgrade-to-audio' );
@@ -142,8 +142,7 @@ library.view = library.view || {};
 		}
 		
 		// Handle paste if it isn't a file
-		window.addEventListener( 'paste', function( evt )
-		{
+		window.addEventListener( 'paste', function( evt ) {
 			var pastedItems = (evt.clipboardData || evt.originalEvent.clipboardData).items;
 			for( var i in pastedItems ) {
 				var item = pastedItems[i];
@@ -189,33 +188,46 @@ library.view = library.view || {};
 		}
 	}
 	
-	// conn
-	
+	ns.Presence.prototype.toggleUserListBtn = function( isVisible ) {
+		const self = this;
+		self.toggleUsersBtn.classList.toggle( 'hidden', !isVisible );
+	}
+
 	ns.Presence.prototype.bindConn = function() {
 		const self = this;
 		self.conn.on( 'initialize', initialize );
-		self.conn.on( 'state', state );
-		self.conn.on( 'chat', chat );
-		self.conn.on( 'live', live );
+		self.conn.on( 'state'     , state );
+		self.conn.on( 'online'    , online );
+		self.conn.on( 'offline'   , offline );
+		self.conn.on( 'chat'      , chat );
+		self.conn.on( 'live'      , live );
 		self.conn.on( 'persistent', persistent );
+		self.conn.on( 'title'     , title );
 		
 		function initialize( e ) { self.handleInitialize( e ); }
-		function state( e ) { self.handleState( e ); }
-		function chat( e ) { self.handleChat( e ); }
-		function live( e ) { self.handleLive( e ); }
+		function state( e      ) { self.handleState( e ); }
+		function online( e     ) { self.handleOnline( true ); }
+		function offline( e    ) { self.handleOnline( false ); }
+		function chat( e       ) { self.handleChat( e ); }
+		function live( e       ) { self.handleLive( e ); }
 		function persistent( e ) { self.handlePersistent( e ); }
+		function title( e      ) { self.handleTitle( e ); }
 	}
 	
 	ns.Presence.prototype.handleInitialize = function( conf ) {
 		const self = this;
-		friend.template.addFragments( conf.fragments );
+		hello.template = friend.template;
+		friend.template.addFragments( conf.commonFragments );
 		const state = conf.state;
-		// things
-		self.persistent = state.persistent;
-		self.name = state.roomName;
-		self.ownerId = state.ownerId;
-		self.userId = state.userId;
 		
+		// things
+		self.isPrivate  = state.isPrivate;
+		self.persistent = state.persistent;
+		self.name       = state.roomName;
+		self.ownerId    = state.ownerId;
+		self.userId     = state.userId;
+		self.contactId  = state.contactId;
+
 		self.users = new library.component.UserCtrl(
 			self.conn,
 			state.users,
@@ -227,12 +239,18 @@ library.view = library.view || {};
 		);
 		
 		self.user = self.users.get( self.userId );
-		
-		// set peers live
 		state.peers.forEach( setLive );
 		function setLive( uid ) {
-			self.users.setState( uid, 'live' );
+			self.users.setState( uid, 'live', true );
 		}
+		
+		self.liveStatus = new library.component.LiveStatus(
+			'live-status-container',
+			self.users,
+			self.userId,
+			friend.template
+		);
+		self.liveStatus.update( state.peers );
 		
 		// get logs when scrolling to top
 		self.logFetcher = new library.component.LogFetcher(
@@ -266,22 +284,14 @@ library.view = library.view || {};
 		
 		// message builder
 		self.msgBuilder = new library.component.MsgBuilder(
+			self.conn,
 			'messages',
 			self.userId,
 			self.users,
-			onMsgEdit,
 			self.parser,
 			self.linkExpand,
 			friend.template
 		);
-		
-		function onMsgEdit( event ) {
-			const edit = {
-				type : 'edit',
-				data : event,
-			};
-			self.sendChatEvent( edit );
-		}
 		
 		// multiline input
 		const inputConf = {
@@ -343,9 +353,13 @@ library.view = library.view || {};
 			self.input.focus();
 		}
 		
+		if ( self.isPrivate )
+			self.setPrivateUI();
+		else
+			self.setGroupUI();
+		
 		// dont focus input if VR device / mode
-		if ( 'VR' !== window.View.deviceType )
-		{
+		if ( 'VR' !== window.View.deviceType ) {
 			self.input.focus();
 		}
 		
@@ -355,7 +369,86 @@ library.view = library.view || {};
 			data : null,
 		});
 	}
+
+	ns.Presence.prototype.setPrivateUI = function() {
+		const self = this;
+		self.usersEl.classList.toggle( 'hidden', true );
+		self.toggleUserListBtn( false );
+		self.setContactTitle();
+	}
 	
+	ns.Presence.prototype.setGroupUI = function() {
+		const self = this;
+		if ( self.contactStatus ) {
+			self.contactStatus.close();
+			delete self.contactStatus;
+		}
+		
+		self.usersEl.classList.toggle( 'hidden', false );
+		self.toggleUserListBtn( true );
+		self.setGroupTitle();
+		
+	}
+	
+	ns.Presence.prototype.setContactTitle = function() {
+		const self = this;
+		if ( self.titleId )
+			self.clearTitle();
+		
+		self.titleId = friendUP.tool.uid( 'title' );
+		const stateId = friendUP.tool.uid( 'cstate' );
+		const user = self.users.get( self.contactId );
+		const conf = {
+			id             : self.titleId,
+			statusId       : stateId,
+			avatarCssKlass : self.users.getAvatarKlass( self.contactId ),
+			contactName    : user.name,
+		};
+		self.titleEl = friend.template.getElement( 'contact-title-tmpl', conf );
+		self.titleContainer.appendChild( self.titleEl );
+		
+		const statusConf = {
+			containerId : stateId,
+			type        : 'led',
+			cssClass    : 'led-online-status PadBorder',
+			statusMap   : {
+				offline   : 'Off',
+				online    : 'On',
+			},
+		};
+		self.contactStatus = new library.component.StatusIndicator( statusConf );
+		const isOnline = self.users.checkIsOnline( self.contactId );
+		self.handleOnline( isOnline );
+	}
+	
+	ns.Presence.prototype.setGroupTitle = function() {
+		const self = this;
+		if ( self.titleId )
+			self.clearTitle();
+		
+		self.titleId = friendUP.tool.uid( 'title' );
+		const conf = {
+			id       : self.titleId,
+			roomName : self.name,
+		};
+		self.titleEl = friend.template.getElement( 'group-title-tmpl', conf );
+		self.titleContainer.appendChild( self.titleEl );
+	}
+	
+	ns.Presence.prototype.clearTitle = function() {
+		const self = this;
+		if ( !self.titleId )
+			return;
+		
+		const el = document.getElementById( self.titleId );
+		self.titleId = null;
+		self.titleEl = null;
+		if ( !el )
+			return;
+		
+		el.parentNode.removeChild( el );
+	}
+
 	ns.Presence.prototype.handleState = function( state ) {
 		const self = this;
 		self.users.updateAll( state );
@@ -375,6 +468,19 @@ library.view = library.view || {};
 			};
 			self.sendChatEvent( logFrom );
 		}
+	}
+	
+	ns.Presence.prototype.handleOnline = function( isOnline ) {
+		const self = this;
+		if ( !self.isPrivate )
+			return;
+		
+		let state = isOnline ? 'online' : 'offline';
+		self.contactStatus.set( state );
+		if ( isOnline )
+			self.contactStatus.show();
+		else
+			self.contactStatus.hide();
 	}
 	
 	ns.Presence.prototype.handleChat = function( event ) {
@@ -442,6 +548,16 @@ library.view = library.view || {};
 		console.log( 'handlePersistent - NYI', event );
 	}
 	
+	ns.Presence.prototype.handleTitle = function( title ) {
+		const self = this;
+		if ( !self.titleId )
+			return;
+		
+		const titleEl = document.getElementById( self.titleId );
+		const nameEl = titleEl.querySelector( '.title-name' );
+		nameEl.textContent = title;
+	}
+	
 	// things
 	
 	ns.Presence.prototype.checkAutoComplete = function( e ) {
@@ -488,8 +604,7 @@ library.view = library.view || {};
 	
 })( library.view );
 
-
 window.View.run = run;
 function run( fupConf ) {
-	window.conference = new library.view.Presence( fupConf );
+    window.conference = new library.view.Presence( fupConf );
 }

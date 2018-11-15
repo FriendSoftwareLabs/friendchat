@@ -1,6 +1,8 @@
 <head>
 	<script src="
-		../scripts/component/common.js;
+		/webclient/js/utils/events.js;
+		webclient/apps/FriendChat/scripts/component/common.js;
+		webclient/js/utils/events.js;
 		webclient/apps/FriendChat/api/view.js;
 		webclient/apps/FriendChat/scripts/component/viewComponent.js;
 		webclient/apps/FriendChat/scripts/component/menu.js;
@@ -207,9 +209,9 @@ contactsId,
 			</div>
 			<div id="<%= connectionStateId %>">
 			</div>
-			<button id="<%= optionId %>" class="button" type="button">
-				<i class="fa fa-fw fa-bars"></i>
-			</button>
+			<div class="item-menu Button IconButton" title="">
+				<i class="fa fa-fw fa-ellipsis-v"></i>
+			</div>
 		</div>
 	</div>
 	<div id="<%= contactsId %>" class="contacts ZebraList Interactive">
@@ -245,8 +247,8 @@ logoPath,
 clientId,
 folditId,
 moduleTitle,
-connectionStateId,
-contactsId,
+connStateId,
+itemsId,
 -->
 <script id="irc-module-tmpl" type="text/html">
 <div id="<%= clientId %>" class="module bar column BorderBottom">
@@ -262,14 +264,14 @@ contactsId,
 		<div class="actions group row fortify">
 			<div class="foldit-status">
 			</div>
-			<div id="<%= connectionStateId %>">
+			<div id="<%= connStateId %>">
 			</div>
 			<div class="item-menu Button IconButton" title="">
 				<i class="fa fa-fw fa-ellipsis-v"></i>
 			</div>
 		</div>
 	</div>
-	<div id="<%= contactsId %>" class="contacts ZebraList Interactive">
+	<div id="<%= itemsId %>" class="contacts ZebraList Interactive">
 	</div>
 </div>
 </script>
@@ -284,14 +286,14 @@ messageWaitingId,
 <div id="<%= clientId %>" class="contact group row MousePointer">
 	<div class="contact-height-dummy fortify">
 	</div>
-	<div class="contact-name">
+	<div class="contact-name fortify">
 		<%= channelName %>
 	</div>
 	<div class="contact-status item-row bar row fortify">
 		<div id="<%= messageWaitingId %>">
 		</div>
 	</div>
-	<div class="item-menu flat-btn fortify center-child">
+	<div class="item-menu Button IconButton fortify center-child">
 		<i class="fa fa-fw fa-ellipsis-v"></i>
 	</div>
 </div>
@@ -306,14 +308,14 @@ messageWaitingId,
 <div id="<%= clientId %>" class="contact group row MousePointer">
 	<div class="contact-height-dummy fortify">
 	</div>
-	<div class="contact-name">
+	<div class="contact-name expand">
 		<%= contactName %>
 	</div>
 	<div class="contact-status item-row bar row fortify">
 		<div id="<%= messageWaitingId %>">
 		</div>
 	</div>
-	<div class="item-menu flat-btn fortify center-child">
+	<div class="item-menu Button IconButton fortify center-child">
 		<i class="fa fa-fw fa-ellipsis-v"></i>
 	</div>
 </div>

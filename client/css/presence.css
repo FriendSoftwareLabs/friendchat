@@ -1,3 +1,28 @@
+#head {
+	height: unset;
+	min-height: 3.5em;
+	padding : 0.3em 0.6em;
+}
+
+#room-title {
+	
+}
+
+#room-title .group-prefix,
+#room-title .title-name {
+	font-size: 130%;
+	font-weight: bold;
+}
+
+#room-title .avatar {
+	width        : 2.4em;
+	height       : 2.4em;
+	margin-right : 0.5em;
+}
+
+#live-status-container {
+	margin : 0 1em;
+}
 
 #foot {
 	height: unset;
@@ -25,7 +50,7 @@
 .log-fetch {
 	padding : 0em 1em;
 	padding-top : 1em;
-	height: 3em
+	height : 3em;
 }
 
 .log-fetch-msg,
@@ -57,10 +82,14 @@
 .msg-item .avatar {
 	width  : 2.4em;
 	height : 2.4em;
-	border-radius : 100%;
-	background-position: center;
-	background-size: cover;
-	background-repeat: no-repeat;
+}
+
+.avatar {
+	position            : relative;
+	border-radius       : 100%;
+	background-position : center;
+	background-size     : cover;
+	background-repeat   : no-repeat;
 }
 
 .msg-item .msg-container {

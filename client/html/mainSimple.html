@@ -1,7 +1,8 @@
 <head>
 	<script src="
-		../scripts/component/common.js;
+		/webclient/js/utils/events.js;
 		webclient/apps/FriendChat/scripts/component/tool.js;
+		webclient/apps/FriendChat/scripts/component/common.js;
 		webclient/apps/FriendChat/api/view.js;
 		webclient/apps/FriendChat/scripts/component/viewComponent.js;
 		webclient/apps/FriendChat/scripts/component/menu.js;
@@ -72,13 +73,13 @@
 <!-- TREEROOT MODULE
 clientId,
 moduleTitle,
-connectionStateId,
-contactsId,
+connStateId,
+itemsId,
 -->
 <script id="simple-treeroot-module-tmpl" type="text/html">
 <div id="<%= clientId %>" class="module bar column BorderBottom">
 	<div class="module-head group row fortify MousePointer">
-		<div id="<%= connectionStateId %>" class="fortify">
+		<div id="<%= connStateId %>" class="fortify">
 		</div>
 		<div class="module-title expand">
 			<%= moduleTitle %>
@@ -89,7 +90,7 @@ contactsId,
 			</div>
 		</div>
 	</div>
-	<div id="<%= contactsId %>" class="contacts bar column">
+	<div id="<%= itemsId %>" class="contacts bar column">
 		<div id="<%= activeId %>" class="active ZebraList Interactive">
 		</div>
 		<div class="inactive-container BorderTop">
@@ -104,7 +105,10 @@ contactsId,
 					- / -
 				</div>
 				<div>
-					<button class="IconSmall IconButton Button fa-caret-right FloatRight" id="button_<%= inactiveId %>">
+					<button
+						id="button_<%= inactiveId %>"
+						class="IconSmall IconButton Button fa-caret-right FloatRight"
+					>
  					</button>
  				</div>
 			</div>
@@ -116,13 +120,13 @@ contactsId,
 </script>
 
 <!-- PRESENCE 
-clientId,
+roomsId,
 title,
 connStateId,
-contactsId,
+itemsId,
 -->
-<script id="simple-presence-module-tmpl" type="text/html">
-<div id="<%= clientId %>" class="module bar column BorderBottom">
+<script id="simple-presence-rooms-tmpl" type="text/html">
+<div id="<%= roomsId %>" class="module bar column BorderBottom">
 	<div class="module-head group row fortify MousePointer">
 		<div id="<%= connStateId %>" class="fortify">
 		</div>
@@ -135,7 +139,7 @@ contactsId,
 			</div>
 		</div>
 	</div>
-	<div id="<%= contactsId %>" class="contacts ZebraList Interactive">
+	<div id="<%= itemsId %>" class="contacts ZebraList Interactive">
 	</div>
 </div>
 </script>

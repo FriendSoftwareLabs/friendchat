@@ -49,7 +49,7 @@ library.view = library.view || {};
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( event );
+		self.view.send( event );
 	}
 	
 	ns.PresenceChat.prototype.setTitle = function( title ) {
@@ -57,7 +57,12 @@ library.view = library.view || {};
 		if ( !self.view )
 			return;
 		
-		self.view.setTitle( title );
+		self.roomTitle = title;
+		self.view.setTitle( self.getTitle());
+		self.send({
+			type : 'title',
+			data : title,
+		});
 	}
 	
 	ns.PresenceChat.prototype.close = function() {
@@ -81,6 +86,7 @@ library.view = library.view || {};
 		function toView( e ) {
 			// lets not
 		}
+		
 		function toChat( link ) {
 			const chat = {
 				type : 'msg',
@@ -92,16 +98,23 @@ library.view = library.view || {};
 		}
 		
 		const filePath = 'html/presence.html';
+		self.roomTitle = self.state.roomName;
+		self.isPrivate = self.state.isPrivate;
+		
+		let viewWidth = 700;
+		if ( self.state.isPrivate )
+			viewWidth = 500;
+		
 		const windowConf = {
-			title  : self.state.roomName,
-			width  : 700,
+			title  : self.getTitle(),
+			width  : viewWidth,
 			height : 450,
 		};
 		
 		const initData = {
-			state     : self.state,
-			fragments : hello.commonFragments,
-			emojii    : hello.config.emojii,
+			state           : self.state,
+			commonFragments : hello.commonFragments,
+			emojii          : hello.config.emojii,
 		};
 		
 		self.view = new api.View(
@@ -145,6 +158,17 @@ library.view = library.view || {};
 			};
 			new api.Filedialog( o );
 		}
+	}
+	
+	ns.PresenceChat.prototype.getTitle = function() {
+		const self = this;
+		let roomTitle;
+		if ( self.isPrivate )
+			roomTitle = self.roomTitle + ' - ' + Application.i18n( 'i18n_private_chat' );
+		else
+			roomTitle = '#' + self.roomTitle + ' - ' + Application.i18n( 'i18n_group_chat' );
+		
+		return roomTitle;
 	}
 	
 })( library.view );
@@ -256,7 +280,7 @@ library.view = library.view || {};
 			type : 'conn-state',
 			data : state,
 		}
-		self.view.sendMessage( event );
+		self.view.send( event );
 	}
 	
 	ns.Loading.prototype.close = function() {
@@ -307,7 +331,7 @@ library.view = library.view || {};
 			toChat : toChat,
 		};
 		self.drop = new library.component.Droppings( dropConf );
-		function toView( e ) { self.sendMessage( e ); }
+		function toView( e ) { self.send( e ); }
 		function toChat( e ) { self.onmessage( e ); }
 		const windowConf = {
 			title    : 'Chatting with ' + self.state.contact.name,
@@ -392,7 +416,7 @@ library.view = library.view || {};
 			type : 'showencrypt',
 			data : isAvailable,
 		};
-		self.sendMessage( show );
+		self.send( show );
 	}
 	
 	ns.IMChat.prototype.toggleEncrypt = function( isOn ) {
@@ -401,7 +425,7 @@ library.view = library.view || {};
 			type : 'encrypt',
 			data : isOn,
 		};
-		self.sendMessage( toggle );
+		self.send( toggle );
 	}
 	
 	ns.IMChat.prototype.on = function( event, handler ) {
@@ -414,12 +438,12 @@ library.view = library.view || {};
 		console.log( 'appView.IMChat.off - NYI', { e: event });
 	}
 	
-	ns.IMChat.prototype.sendMessage = function( msg ) {
+	ns.IMChat.prototype.send = function( msg ) {
 		self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 	ns.IMChat.prototype.closed = function() {
@@ -452,12 +476,17 @@ library.view = library.view || {};
 	
 	// Public
 	
-	ns.Live.prototype.setTitle = function( name ) {
+	ns.Live.prototype.setTitle = function( title ) {
 		const self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.setTitle( name );
+		self.roomTitle = title;
+		self.view.setTitle( self.getTitle());
+		self.send({
+			type : 'title',
+			data : title,
+		});
 	}
 	
 	// Private
@@ -470,7 +499,7 @@ library.view = library.view || {};
 		};
 		self.drop = new library.component.Droppings( dropConf );
 		function toView( e ) {
-			self.sendMessage( e );
+			self.send( e );
 		}
 		function toChat( link ) {
 			const chat = {
@@ -508,10 +537,10 @@ library.view = library.view || {};
 				height = 350;
 			}
 			
-			let title = conf.isStream
-				? Application.i18n( 'i18n_stream_session' )
-				: Application.i18n( 'i18n_live_session' );
-			title = conf.roomName + ' - ' + title;
+			self.roomTitle = conf.roomName;
+			self.isPrivate = conf.isPrivate
+			self.isStream = conf.isStream;
+			const title = self.getTitle();
 			
 			const windowConf = {
 				title              : title,
@@ -565,6 +594,21 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.Live.prototype.getTitle = function() {
+		const self = this;
+		let roomTitle;
+		let postFix = self.isStream
+			? Application.i18n( 'i18n_stream_session' )
+			: Application.i18n( 'i18n_live_session' );
+		
+		if ( self.isPrivate )
+			roomTitle = self.roomTitle + ' - ' + postFix;
+		else
+			roomTitle = '#' + self.roomTitle + ' - ' + postFix;
+		
+		return roomTitle;
+	}
+	
 	ns.Live.prototype.bindView = function() {
 		var self = this;
 		self.view.on( 'local-setting', localSetting );
@@ -609,13 +653,14 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.Live.prototype.sendMessage = function( msg ) {
+	ns.Live.prototype.send = function( msg ) {
 		var self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
+	ns.Live.prototype.sendMessage = ns.Live.prototype.send;
 	
 	ns.Live.prototype.closed = function() {
 		const self = this;
@@ -713,10 +758,10 @@ library.view = library.view || {};
 			self.view.off( event );
 	}
 	
-	ns.FormView.prototype.sendMessage = function( msg ) {
+	ns.FormView.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 })( library.view );
@@ -776,7 +821,7 @@ library.view = library.view || {};
 	ns.ComponentForm.prototype.toView = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.ComponentForm.prototype.exit = function() {
@@ -867,7 +912,7 @@ library.view = library.view || {};
 				type : 'selectfile',
 				data : res,
 			};
-			self.sendMessage( selected );
+			self.send( selected );
 		}
 	}
 	
@@ -917,7 +962,7 @@ library.view = library.view || {};
 			type : 'saved',
 			data : data,
 		};
-		self.sendMessage( wrap );
+		self.send( wrap );
 	}
 	
 	ns.Settings.prototype.isDone = function() {
@@ -940,12 +985,12 @@ library.view = library.view || {};
 		self.view = null;
 	}
 	
-	ns.Settings.prototype.sendMessage = function( msg ) {
+	ns.Settings.prototype.send = function( msg ) {
 		var self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 })( library.view );
@@ -1023,12 +1068,12 @@ library.view = library.view || {};
 		self.onmessage( msg );
 	}
 	
-	ns.Console.prototype.sendMessage = function( msg ) {
+	ns.Console.prototype.send = function( msg ) {
 		var self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 	ns.Console.prototype.close = function() {
@@ -1076,7 +1121,7 @@ library.view = library.view || {};
 			toChat : toChat,
 		};
 		self.drop = new library.component.Droppings( dropConf );
-		function toView( e ) { self.sendMessage( e ); }
+		function toView( e ) { self.send( e ); }
 		function toChat( e ) { self.onmessage( e ); }
 		
 		const windowConf = {
@@ -1156,10 +1201,10 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.Conference.prototype.sendMessage = function( msg ) {
+	ns.Conference.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.Conference.prototype.viewClosed = function( event ) {
@@ -1216,10 +1261,10 @@ library.view = library.view || {};
 		self.close();
 	}
 	
-	ns.RtcAsk.prototype.sendMessage = function( msg ) {
+	ns.RtcAsk.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.RtcAsk.prototype.closed = function() {
@@ -1263,7 +1308,6 @@ library.view = library.view || {};
 	
 	ns.SpecifySession.prototype.init = function( sessions ) {
 		const self = this;
-		console.log( 'view.SpecifySession.init', self );
 		const filePath = 'html/specifySession.html';
 		const windowConf = {
 			title  : Application.i18n( 'i18n_select_session' ),
@@ -1285,7 +1329,6 @@ library.view = library.view || {};
 		self.view.on( 'select', select );
 		self.view.on( 'close', closed );
 		function select( roomId ) {
-			console.log( 'view.SpecifySession.onselect', roomId );
 			if ( !self.onselect )
 				return;
 			
@@ -1395,7 +1438,7 @@ library.view = library.view || {};
 	ns.TreerootUsers.prototype.toView = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 })( library.view );
@@ -1531,14 +1574,14 @@ library.view = library.view || {};
 				type : 'email',
 				data : data,
 			};
-			self.sendMessage( msg );
+			self.send( msg );
 		}
 	}
 	
-	ns.ShareInvite.prototype.sendMessage = function( msg ) {
+	ns.ShareInvite.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.ShareInvite.prototype.onClose = function() {
@@ -1607,7 +1650,7 @@ library.view = library.view || {};
 	ns.CryptoWarning.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.CryptoWarning.prototype.cleanup = function() {

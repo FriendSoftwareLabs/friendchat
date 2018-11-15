@@ -74,7 +74,8 @@ library.view = library.view || {};
 		const self = this;
 		const data = self.settings[ setting ];
 		const items = data.available;
-		const ids = items.map( item => item.clientId );
+		console.log( 'assignWorgs', items );
+		const ids = Object.keys( items );
 		const state = {
 			assigned : data.assigned,
 			items    : items,
@@ -87,7 +88,7 @@ library.view = library.view || {};
 		function build( setting, state ) {
 			const label = self.labelMap[ setting ] || setting;
 			const statusHTML = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			const items = state.items.map( buildItem );
+			const items = state.ids.map( buildItem );
 			const itemsHTML = items.join( '\r\n' );
 			const tmplConf = {
 				label      : label,
@@ -97,7 +98,8 @@ library.view = library.view || {};
 			state.el = hello.template.getElement( 'setting-assigned-worgs-tmpl', tmplConf );
 			self.container.appendChild( state.el );
 			
-			function buildItem( item ) {
+			function buildItem( wId ) {
+				let item = state.items[ wId ];
 				console.log( 'buildItem', {
 					item  : item,
 					state : state,

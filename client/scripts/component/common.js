@@ -46,8 +46,7 @@ to listeners registered through this interface
 	
 	// Added to objects public interface
 	
-	ns.EventEmitter.prototype.on = function( event, listener )
-	{
+	ns.EventEmitter.prototype.on = function( event, listener ) {
 		var self = this;
 		var id = friendUP.tool.uid( 'listener' );
 		var listenerIds = self.eventToListener[ event ];
@@ -61,8 +60,7 @@ to listeners registered through this interface
 		return id;
 	}
 	
-	ns.EventEmitter.prototype.once = function( event, listener )
-	{
+	ns.EventEmitter.prototype.once = function( event, listener ) {
 		var self = this;
 		var onceieId = self.on( event, onceie );
 		
@@ -73,8 +71,7 @@ to listeners registered through this interface
 		}
 	}
 	
-	ns.EventEmitter.prototype.off = function( listenerId )
-	{
+	ns.EventEmitter.prototype.off = function( listenerId ) {
 		var self = this;
 		var listener = self.eventListeners[ listenerId ];
 		if ( !listener )
@@ -86,8 +83,7 @@ to listeners registered through this interface
 		// remove from events listener id list
 		var events = Object.keys( self.eventToListener );
 		events.some( searchListenerIdList );
-		function searchListenerIdList( event )
-		{
+		function searchListenerIdList( event ) {
 			var listenerIds = self.eventToListener[ event ];
 			var index = listenerIds.indexOf( listenerId );
 			if ( index === -1 )
@@ -97,28 +93,24 @@ to listeners registered through this interface
 			return true;
 		}
 		
-		function removeListener( event, index )
-		{
+		function removeListener( event, index ) {
 			self.eventToListener[ event ].splice( index, 1 );
 		}
 	}
 	
-	ns.EventEmitter.prototype.release = function( type )
-	{
+	ns.EventEmitter.prototype.release = function( type ) {
 		var self = this;
 		if ( !type )
 			all();
 		else
 			ofType( type );
 		
-		function all()
-		{
+		function all() {
 			self.eventListeners = {};
 			self.eventToListener = {};
 		}
 		
-		function ofType( type )
-		{
+		function ofType( type ) {
 			var lids = self.eventToListener[ type ];
 			if ( !lids || !lids.length )
 				return;
@@ -126,8 +118,7 @@ to listeners registered through this interface
 			lids.forEach( remove );
 			delete self.eventToListener[ type ];
 			
-			function remove( lid )
-			{
+			function remove( lid ) {
 				delete self.eventListeners[ lid ];
 			}
 		}
@@ -136,8 +127,7 @@ to listeners registered through this interface
 	// emit can take any number of arguments
 	// the first MUST be the event type / listener id
 	// all extra arguments will be passed on to the handler
-	ns.EventEmitter.prototype.emit = function()
-	{
+	ns.EventEmitter.prototype.emit = function() {
 		var self = this;
 		var args = self._getArgs( arguments );
 		var event = args.shift();
@@ -150,8 +140,7 @@ to listeners registered through this interface
 		}
 		
 		listenerIds.forEach( emit );
-		function emit( listenerId )
-		{
+		function emit( listenerId ) {
 			var listener = self.eventListeners[ listenerId ];
 			if ( 'function' !== typeof( listener )) {
 				if ( self._eventSink )
@@ -163,15 +152,13 @@ to listeners registered through this interface
 			listener.apply( null, args );
 		}
 		
-		function emitOnDefault( type, args )
-		{
+		function emitOnDefault( type, args ) {
 			args.unshift( type );
 			self._eventSink.apply( null, args );
 		}
 	}
 	
-	ns.EventEmitter.prototype.closeEventEmitter = function()
-	{
+	ns.EventEmitter.prototype.closeEventEmitter = function() {
 		var self = this;
 		self.release();
 		delete self._eventSink;
@@ -179,8 +166,7 @@ to listeners registered through this interface
 	
 	// Private
 	
-	ns.EventEmitter.prototype._eventEmitterInit = function()
-	{
+	ns.EventEmitter.prototype._eventEmitterInit = function() {
 		var self = this;
 		// dont remove this, js is weird
 	}
@@ -289,6 +275,139 @@ inherits from EventEmitter
 	}
 })( library.component );
 
+
+// RequestNode
+// ALL HANDLERS ARE EXPECTED TO RETURN PROMISES
+// .request( t, d ) returns a Promise
+(function( ns, undefined ) {
+	ns.RequestNode = function(
+		conn,
+		eventSink,
+		onSend
+	) {
+		const self = this;
+		ns.EventNode.call( self,
+			'request',
+			conn,
+			eventSink,
+			onSend
+		);
+		
+		self._requests = {};
+		self.initRequestNode();
+	}
+	
+	ns.RequestNode.prototype = Object.create( ns.EventNode.prototype );
+	
+	// Public
+	
+	ns.RequestNode.prototype.request = function( type, data ) {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			let reqId = friendUP.tool.uid( 'req' );
+			self._requests[ reqId ] = handleResponse;
+			let reqWrap = {
+				requestId : reqId,
+				request   : {
+					type    : type,
+					data    : data,
+				},
+			};
+			self.send( reqWrap );
+			
+			function handleResponse( error, response ) {
+				delete self._requests[ reqId ];
+				if ( error )
+					reject( error );
+				else
+					resolve( response );
+			}
+		});
+	}
+	
+	// Private
+	
+	ns.RequestNode.prototype.initRequestNode = function() {
+		const self = this;
+	}
+	
+	ns.RequestNode.prototype.handle = function( event ) {
+		const self = this;
+		if ( 'response' === event.type ) {
+			self.handleResponse( event.data );
+			return;
+		}
+		
+		const reqId = event.requestId;
+		const request = event.request;
+		self.callListener( req )
+			.then( response )
+			.catch( error );
+			
+		function response( data ) {
+			const res = {
+				type : 'response',
+				data : {
+					requestId : reqId,
+					response  : data,
+				}
+			};
+			self.send( res );
+		}
+		
+		function error( err ) {
+			const errRes = {
+				type : 'response',
+				data : {
+					requestId : reqId,
+					error     : data,
+				},
+			};
+			self.send( errRes );
+		}
+	}
+	
+	ns.RequestNode.prototype.handleResponse = function( event ) {
+		const self = this;
+		const reqId = event.requestId;
+		const err = event.error || null;
+		const res = err ? null : ( event.response || null );
+		const handler = self._requests[ reqId ];
+		if ( !handler ) {
+			console.log( 'RequestNode.handleResponse - no handler for', {
+				event    : event,
+				handlers : self._requests,
+			});
+			return;
+		}
+		
+		handler( err, res );
+	}
+	
+	ns.RequestNode.prototype.callListener = function( req ) {
+		const self = this;
+		const type = req.type;
+		const data = req.data;
+		const listeners = self.eventToListener[ type ];
+		if ( !listeners || !listeners.length )
+			return error( 'ERR_NO_LISTENER' );
+		
+		if ( listeners.length !== 1 )
+			return error( 'ERR_MULTIPLE_LISTENERS' );
+		
+		const lId = listeners[ 0 ];
+		const listener = self.eventListeners[ lId ];
+		return listener( data );
+		
+		function error( errMsg ) {
+			return new Promise(( resolve, reject ) => {
+				reject( errMsg );
+			});
+		}
+	}
+	
+})( library.component );
+
 //SubView
 (function( ns, undefined ) {
 	ns.SubView = function( conf ) {
@@ -373,14 +492,14 @@ inherits from EventEmitter
 		//console.log( 'subview.' + self.type + '.handleMessage - no handler for', msg );
 	}
 	
-	ns.SubView.prototype.sendMessage = function( msg ) {
+	ns.SubView.prototype.send = function( msg ) {
 		var self = this;
 		var wrap = {
 			type : self.type,
 			data : msg
 		};
 		
-		self.parent.sendMessage( wrap );
+		self.parent.send( wrap );
 	}
 })( library.component );
 
@@ -397,6 +516,13 @@ inherits from EventEmitter
 	
 	// Public
 	
+	ns.Identity.prototype.updateAvatar = function( avatar ) {
+		const self = this;
+		self.avatar = avatar;
+		self.fupConf.Image = avatar;
+		// TODO ? self.emit( 'avatar', self.avatar );
+	}
+	
 	// Private
 	
 	ns.Identity.prototype.avatar    = '../gfx/avatar_blue.png';
@@ -404,7 +530,7 @@ inherits from EventEmitter
 	
 	ns.Identity.prototype.init = function( conf ) {
 		var self = this;
-		if ( conf.Name )
+		if ( conf.UniqueID )
 			self.fromFCUser( conf );
 		else
 			self.fromIdentity( conf );
@@ -415,6 +541,7 @@ inherits from EventEmitter
 		const self = this;
 		self.fupConf = conf;
 		self.fupId = conf.ID;
+		self.fUserId = conf.UniqueID;
 		self.name = library.tool.htmlDecode( conf.FullName );
 		self.alias = conf.Name;
 		self.email = conf.Email;
@@ -427,6 +554,7 @@ inherits from EventEmitter
 		const self = this;
 		self.fupConf = {
 			ID       : conf.fupId,
+			UniqueID : conf.fUserId,
 			FullName : conf.name,
 			Name     : conf.alias,
 			Email    : conf.email,
@@ -435,6 +563,7 @@ inherits from EventEmitter
 		};
 		
 		self.fupId = conf.fupId;
+		self.fUserId = conf.fUserId;
 		self.name = conf.name;
 		self.alias = conf.alias;
 		self.email = conf.email;
@@ -483,6 +612,79 @@ inherits from EventEmitter
 		});
 	}
 	
+})( library.component );
+
+/*
+	IdCahce
+*/
+(function( ns, undefined ) {
+	ns.IdCache = function( conn, identities ) {
+		const self = this;
+		
+		self.conn = null;
+		self.ids =  identities || {};
+		self.idList = [];
+		
+		self.init( conn );
+	}
 	
+	// Public
+	
+	ns.IdCache.prototype.close = function() {
+		const self = this;
+		self.conn.close();
+		delete self.conn;
+		delete self.ids;
+		delete self.idList;
+	}
+	
+	ns.IdCache.prototype.get = function( clientId ) {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			let id = self.ids[ clientId ];
+			if ( id ) {
+				resolve( id );
+				return;
+			}
+			
+			self.req.request( 'get', clientId )
+				.then( idBack )
+				.catch( idSad );
+			
+			function idBack( id ) {
+				self.add( id );
+				resolve( id );
+			}
+			
+			function idSad( err ) {
+				console.log( 'IdCache.get idSad', err );
+				reject( 'ERR_ERR_ERR' );
+			}
+		});
+	}
+	
+	// Pri<ate
+	
+	ns.IdCache.prototype.init = function( parentConn ) {
+		const self = this;
+		self.conn = new library.component.EventNode( 'identity', parentConn );
+		self.req = new library.component.RequestNode( self.conn );
+		self.conn.on( 'add', e => self.add( e ));
+		self.conn.on( 'update', e => self.update( e ));
+		
+	}
+	
+	ns.IdCache.prototype.add = function( id ) {
+		const self = this;
+		if ( !id || !id.clientId )
+			return;
+		
+		self.ids[ id.clientId ] = id;
+	}
+	
+	ns.IdCache.prototype.update = function( event ) {
+		const self = this;
+		console.log( 'IdCache.update - NYI', event );
+	}
 	
 })( library.component );

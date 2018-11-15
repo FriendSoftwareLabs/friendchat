@@ -2,10 +2,12 @@
 <html>
 	<head>
 		<script src="
-			../scripts/component/tool.js;
+			/webclient/js/utils/events.js;
+			webclient/apps/FriendChat/scripts/component/tool.js;
 			webclient/apps/FriendChat/api/view.js;
 			webclient/apps/FriendChat/scripts/component/parser.js;
 			webclient/apps/FriendChat/scripts/component/drop.js;
+			webclient/apps/FriendChat/scripts/component/common.js;
 			webclient/apps/FriendChat/scripts/component/viewComponent.js;
 			webclient/apps/FriendChat/scripts/view/presence/component.js;
 			webclient/apps/FriendChat/scripts/view/presence/presence.js
@@ -27,36 +29,42 @@
 -->
 <script id="body-tmpl" type="text/html">
 <div id="hello" class="conference bar column BackgroundDefault">
-	<div id="head" class="PaddingSmall BorderBottom fortify group row end">
-		<div class="actions fortify group row">
-			<button id="settings-btn"
-				class="IconButton button hidden"
-				title="{i18n_open_channel_settings}"
-				type="button"
-			>
-				<i class="fa fa-fw fa-cog"></i>
-			</button>
-			<button id="upgrade-to-video"
-				class="IconButton button"
-				title="{i18n_go_live}"
-				type="button"
-			>
-				<i class="fa fa-fw fa-video-camera"></i>
-			</button>
-			<button id="upgrade-to-audio"
-				class="IconButton button"
-				title="{i18n_go_live}"
-				type="button"
-			>
-				<i class="fa fa-fw fa-microphone"></i>
-			</button>
-			<button id="show-hide-btn"
-				class="IconButton button"
-				title="{i18n_show_hide_userlist}"
-				type="button"
-			>
-				<i class="fa fa-fw fa-users"></i>
-			</button>
+	<div id="head" class="BorderBottom fortify group row">
+		<div id="room-title" class="expand">
+		</div>
+		<div id="live-status-container" class="fortify">
+		</div>
+		<div id="room-actions" class="fortify">
+			<div class="actions fortify group row">
+				<button id="settings-btn"
+					class="IconButton button hidden"
+					title="{i18n_open_channel_settings}"
+					type="button"
+				>
+					<i class="fa fa-fw fa-cog"></i>
+				</button>
+				<button id="upgrade-to-video"
+					class="IconButton button"
+					title="{i18n_go_live}"
+					type="button"
+				>
+					<i class="fa fa-fw fa-video-camera"></i>
+				</button>
+				<button id="upgrade-to-audio"
+					class="IconButton button"
+					title="{i18n_go_live}"
+					type="button"
+				>
+					<i class="fa fa-fw fa-microphone"></i>
+				</button>
+				<button id="show-hide-btn"
+					class="IconButton button"
+					title="{i18n_show_hide_userlist}"
+					type="button"
+				>
+					<i class="fa fa-fw fa-users"></i>
+				</button>
+			</div>
 		</div>
 	</div>
 	<div id="main" class="main expand group row cover BorderBottom">
@@ -90,6 +98,63 @@
 		</form>
 	</div>
 	<div id="user-css" class="hidden">
+	</div>
+</div>
+</script>
+
+<!-- Group title
+id,
+roomName,
+-->
+<script id="group-title-tmpl" type="text/html">
+<div id="<%= id %>" class="group row start">
+	<div class="group-prefix fortify">
+		#
+	</div>
+	<div class="title-name expand">
+		<%= roomName %>
+	</div>
+</div>
+</script>
+
+<!-- Contact title
+id,
+statusId,
+avatarCssKlass,
+contactName,
+-->
+<script id="contact-title-tmpl" type="text/html">
+<div id="<%= id %>" class="group row start <%= avatarCssKlass %>">
+	<div class="avatar fortify">
+		<div id="<%= statusId %>" class="avatar-status">
+		</div>
+	</div>
+	<div class="title-name expand">
+		<%= contactName %>
+	</div>
+</div>
+</script>
+
+<!-- LiveStatus
+peersId,
+-->
+<script id="live-status-tmpl" type="text/html">
+<div class="live-status group row hidden Box">
+	<div class="live-status-icon LED">
+		<i class="fa fa-fw fa-video-camera Available"></i>
+	</div>
+	<div id="<%= peersId %>" class="live-status-peers group row">
+	</div>
+</div>
+</script>
+
+<!-- LiveStatusPeer
+id,
+avatarKlass,
+-->
+<script id="live-status-peer-tmpl" type="text/html">
+<div id="<%= id %>" class="live-status-peer <%= avatarKlass %>">
+	<div class="avatar">
 	</div>
 </div>
 </script>
@@ -295,7 +360,7 @@ usersId
 	<div class="section-head <%= sectionKlass %>">
 		<%= name %>
 	</div>
-	<div id="<%= usersId %>" class="ZebraList">
+	<div id="<%= usersId %>" class="ZebraList Interactive">
 	</div>
 </div>
 </script>

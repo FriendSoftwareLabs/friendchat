@@ -319,6 +319,8 @@ i18n_searching : Searching..
 i18n_email : Email
 i18n_contacts : Contacts
 i18n_conference_rooms : Conference rooms
+i18n_workgroup_contacts : Workgroup Contacts
+i18n_community_contacts : Community Contacts
 i18n_open_chat : Open chat
 i18n_go_live_audio : Go live, audio
 i18n_go_live_video : Go live, video
@@ -340,3 +342,5 @@ i18n_keep_link : Keep link
 i18n_room_name : Room name
 i18n_today : Today
 i18n_yesterday : Yesterday
+i18n_group_chat : Group chat
+i18n_private_chat : Private chat

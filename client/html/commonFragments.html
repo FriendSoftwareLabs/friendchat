@@ -42,7 +42,7 @@ uuid,
 avatar,
 name,
 email,
-alias,
+emialHidden,
 subHidden,
 menuHidden,
 -->
@@ -59,11 +59,8 @@ menuHidden,
         <div class="name">
             <%= name %>
         </div>
-        <div class="email">
+        <div class="email <%= emailHidden %>">
             {i18n_email}: <%= email %>
-        </div>
-        <div class="hacker-name">
-            {i18n_username}: <%= alias %>
         </div>
     </div>
     <div class="item-menu flat-btn fortify center-child <%= menuHidden%>">

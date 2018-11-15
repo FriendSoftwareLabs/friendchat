@@ -31,7 +31,7 @@ library.component = library.component || {};
 	ns.Init = function( viewConf ) {
 		const self = this;
 		
-		self.view = window.View;
+		self.conn = window.View;
 		self.rtc = null;
 		self.ui = null;
 		self.appOnline = null;
@@ -45,6 +45,7 @@ library.component = library.component || {};
 	ns.Init.prototype.init = function() {
 		const self = this;
 		self.appOnline = new library.component.AppOnline( window.View );
+		/*
 		self.conn = new library.component.EventNode(
 			null,
 			null,
@@ -62,6 +63,7 @@ library.component = library.component || {};
 				d : d,
 			});
 		}
+		*/
 		//
 		var fragments = document.getElementById( 'fragments' );
 		var fragStr = fragments.innerHTML;

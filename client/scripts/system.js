@@ -394,7 +394,7 @@ library.rtc = library.rtc || {};
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 })( library.system );
@@ -437,33 +437,47 @@ library.rtc = library.rtc || {};
 	// Private
 	
 	ns.ModuleControl.prototype.init = function() {
-		var self = this;
-		self.availableModules = setAvailable( hello.config.modules );
+		const self = this;
 		self.moduleMap =  {
 			treeroot : library.module.Treeroot,
-			irc : library.module.IRC,
+			irc      : library.module.IRC,
 			presence : library.module.Presence,
+			//telegram : library.module.Telegram,
 		};
+		self.availableModules = setAvailable( hello.config.modules );
 		
-		self.conn = new library.system.Message({
-			id : 'module',
-			handler : receiveMessage,
-		});
+		self.conn = new library.component.EventNode(
+			'module',
+			hello.conn,
+			eventSink
+		);
 		
+		self.conn.on( 'add', add );
+		self.conn.on( 'remove', remove );
+		self.conn.on( 'create', create );
+		
+		function eventSink( type, data ) {
+			console.log( 'ModuleControl - eventSink', {
+				type : type,
+				data : data,
+			});
+		}
+		
+		/*
 		self.connMap = {
 			'add' : add,
 			'remove' : remove,
 			'create' : create,
 		};
+		*/
 		
-		function receiveMessage( msg ) { self.receiveMessage( msg ); }
-		function add( msg ) { self.add( msg ); }
-		function remove( msg ) { self.handleRemove( msg ); }
+		function add( e ) { self.add( e ); }
+		function remove( e ) { self.handleRemove( e ); }
 		function create( e ) { self.createResult( e ); }
 		
 		self.view = new library.component.SubView({
 			parent : self.parentView,
-			type : 'module'
+			type   : 'module',
 		});
 		self.bindView();
 		
@@ -471,24 +485,16 @@ library.rtc = library.rtc || {};
 			var available = {};
 			var modKeys = Object.keys( modules );
 			modKeys.forEach( set );
+			return available;
+			
 			function set( key ) {
+				if ( !self.moduleMap[ key ])
+					return;
+				
 				var mod = modules[ key ];
 				available[ mod.type ] = mod.name;
 			}
-			return available;
 		}
-	}
-	
-	ns.ModuleControl.prototype.receiveMessage = function( msg ) {
-		var self = this;
-		var handler = self.connMap[ msg.type ];
-		
-		if ( !handler ) {
-			console.log( 'ModuleControl - no handler for', msg );
-			return;
-		}
-		
-		handler( msg.data );
 	}
 	
 	ns.ModuleControl.prototype.bindView = function() {
@@ -569,7 +575,7 @@ library.rtc = library.rtc || {};
 			type : 'treeroot',
 			name : 'Treeroot',
 		};
-		self.view.sendMessage({
+		self.view.send({
 			type : 'askaddmodule',
 			data : description,
 		});
@@ -681,7 +687,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.addToView = function( module ) {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'add',
 			data : module
 		});
@@ -689,7 +695,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.updateInView = function(  module ) {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'update',
 			data : module
 		});
@@ -711,7 +717,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.removeFromView = function( id ) {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'remove',
 			data : id
 		});
@@ -783,21 +789,22 @@ library.rtc = library.rtc || {};
 			permissions : permissions,
 		};
 		
-		if ( !self.sessionIds.length ) {
+		let roomId = null;
+		let groups = self.getGroupLive();
+		if ( !groups.length ) {
 			self.createRoom( contacts, permissions );
 			return;
 		}
 		
-		let roomId = null;
-		if ( 1 === self.sessionIds.length ) {
-			roomId = self.sessionIds[ 0 ];
+		if ( 1 === groups.length ) {
+			roomId = groups[ 0 ];
 			doInvite( roomId );
 		} else {
-			askSpecifyRoom();
+			askSpecifyRoom( groups );
 		}
 		
 		function askSpecifyRoom() {
-			let roomMetas = self.sessionIds.map( buildMeta );
+			let roomMetas = groups.map( buildMeta );
 			let conf = {
 				sessions : roomMetas,
 				onselect : onSelect,
@@ -846,7 +853,7 @@ library.rtc = library.rtc || {};
 		const localHost = self.service.getHost();
 		api.Say( 'Live invite received', { i : invite, 'if' : inviteFrom, s : selfie });
 		const message = inviteFrom.name
-				+ ' ' + Application.i18n('i18n_has_invited_you_to_live');
+				+ ' ' + Application.i18n( 'i18n_has_invited_you_to_live' );
 		const conf = {
 			message       : message,
 			activeSession : !!self.session,
@@ -940,6 +947,19 @@ library.rtc = library.rtc || {};
 	ns.RtcControl.prototype.init = function() {
 		var self = this;
 		
+	}
+	
+	ns.RtcControl.prototype.getGroupLive = function() {
+		const self = this;
+		let groupSessions = self.sessionIds.filter( sId => {
+			let sess = self.sessions[ sId ];
+			if ( !sess || sess.isPrivate )
+				return false;
+			
+			return true;
+		});
+		
+		return groupSessions;
 	}
 	
 	ns.RtcControl.prototype.askHost = function( contacts, selfie ) {
@@ -1229,7 +1249,7 @@ library.rtc = library.rtc || {};
 	ns.Notification.prototype.toggleLogView = function( bool ) {
 		var self = this;
 		var isNowOpen = hello.log.toggle();
-		self.view.sendMessage({
+		self.view.send({
 			type : 'toggle',
 			data : isNowOpen.toString(),
 		});
@@ -1237,7 +1257,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Notification.prototype.set = function( msg ) {
 		var self = this;
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 	ns.Notification.prototype.close = function() {
@@ -1420,7 +1440,7 @@ library.rtc = library.rtc || {};
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 	ns.Log.prototype.buildNotification = function( msg, alertLevel, timestamp ) {
@@ -1501,8 +1521,37 @@ library.rtc = library.rtc || {};
 	
 	// Public
 	
-	ns.Connection.prototype.send = function( msg ) {
+	ns.Connection.prototype.on = function( type, callback ) {
 		var self = this;
+		if ( !type || !callback ) {
+			console.log( 'connection.on: missing arguments',
+				{ type : type, callback : callback });
+			return false;
+		}
+		
+		if ( self.subscriber[ type ] ) {
+			console.log( 'subscriber type already exists - call .off( type ) to remove the previous one ', {
+				type : type,
+				subs : self.subscriber });
+			throw new Error( 'error, see log ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
+		}
+		
+		self.subscriber[ type ] = callback;
+	}
+	
+	ns.Connection.prototype.off = function( type ) {
+		var self = this;
+		if ( !type || !self.subscriber[ type ] ) {
+			console.log( 'connection.off - invalid subscriber', type );
+			return;
+		}
+		
+		delete self.subscriber[ type ];
+	}
+	ns.Connection.prototype.release = ns.Connection.prototype.off;
+	
+	ns.Connection.prototype.send = function( msg ) {
+		const self = this;
 		if ( !msg || !self.socket )
 			return false;
 		
@@ -1716,37 +1765,6 @@ library.rtc = library.rtc || {};
 		handler( event.data );
 	}
 	
-	ns.Connection.prototype.on = function( type, callback ) {
-		var self = this;
-		if ( !type || !callback ) {
-			console.log( 'connection.on: missing arguments',
-				{ type : type, callback : callback });
-			return false;
-		}
-		
-		if ( self.subscriber[ type ] ) {
-			console.log( 'subscriber type already exists - call .off( type )\
-				to remove the previous one ',
-				{
-					type : type,
-					subs : self.subscriber }
-				);
-			throw new Error( 'error, see previous log item ^^^' );
-		}
-		
-		self.subscriber[ type ] = callback;
-	}
-	
-	ns.Connection.prototype.off = function( type ) {
-		var self = this;
-		if ( !type || !self.subscriber[ type ] ) {
-			console.log( 'connection.off - invalid subscriber', type );
-			return;
-		}
-		
-		delete self.subscriber[ type ];
-	}
-	
 })( library.system );
 
 
@@ -1775,7 +1793,7 @@ library.rtc = library.rtc || {};
 		var self = this;
 		var wrap = {
 			type : self.parentId || self.id,
-			data : msg
+			data : msg,
 		};
 		
 		hello.conn.send( wrap );
@@ -1788,7 +1806,7 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		this.handler( data );
+		self.handler( data );
 	}
 	
 	ns.Message.prototype.close = function() {
@@ -2052,7 +2070,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Confirm.prototype.loaded = function( msg ) {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'initialize',
 			data : self.config,
 		});
@@ -2081,6 +2099,7 @@ library.rtc = library.rtc || {};
 		
 		self.id = null; // set by initialize / open event
 		self.roomId = conf.roomId;
+		self.isPrivate = conf.isPrivate;
 		self.conf = conf;
 		self.onclose = onclose;
 		self.sessionclose = sessionClose;
@@ -2109,7 +2128,7 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		self.view.sendMessage( event );
+		self.view.send( event );
 	}
 	
 	ns.RtcSession.prototype.setTitle = function( name ) {
@@ -2134,6 +2153,10 @@ library.rtc = library.rtc || {};
 			self.shareView.close();
 			self.shareView = null;
 		}
+		
+		delete self.conf;
+		delete self.isPrivate;
+		delete self.roomId;
 		
 		if ( sessionclose )
 			sessionclose();
@@ -2161,6 +2184,7 @@ library.rtc = library.rtc || {};
 			guestAvatar : viewConf.guestAvatar,
 			identities  : init.identities,
 			roomName    : viewConf.roomName,
+			isPrivate   : viewConf.isPrivate,
 			logTail     : roomConf.logTail,
 			rtcConf     : {
 				ICE         : roomConf.ICE,
@@ -2283,7 +2307,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 		self.sourceIds = [];
 		
 		self.searches = {};
-		self.filter = null;
 		self.listeners = {};
 		
 		self.init();
@@ -2293,10 +2316,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Items.prototype.close = function() {
 		const self = this;
-		if ( self.filter )
-			self.filter.close();
-		
-		delete self.filter;
 	}
 	
 	// TODO : constraints - list of source ids and/or scopes
@@ -2306,26 +2325,26 @@ Searchable collection(s) of users, rooms and other odds and ends
 	) {
 		const self = this;
 		const searchId = searchEvent.id;
-		const filter = searchEvent.str;
+		const needle = searchEvent.str;
 		const constraints = searchEvent.constraints;
 		
 		self.searches[ searchId ] = {
 			id       : searchId,
-			pools    : [],
+			results  : [],
 			listenId : listenId,
 		};
 		const search = self.searches[ searchId ];
 		self.sourceIds.forEach( sId => {
 			let source = self.sources[ sId ];
-			let res = source.getSearchPools();
-			res.pools.forEach( future => {
+			let res = source.search( needle );
+			res.results.forEach( future => {
 				let poolMeta = {
 					sourceId : sId,
 					source   : res.source,
 					done     : false,
 					future   : future,
 				};
-				search.pools.push( poolMeta );
+				search.results.push( poolMeta );
 				future
 					.then( poolBack )
 					.catch( poolErr );
@@ -2336,8 +2355,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 					poolMeta.actions = res.actions || [];
 					poolMeta.done = true;
 					delete poolMeta.future;
-					let result = self.filter.filter( filter, pool );
-					self.sendResult( searchId, poolMeta, result );
+					self.sendResult( searchId, poolMeta, pool );
 				}
 				
 				function poolErr( err ) {
@@ -2397,7 +2415,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Items.prototype.init = function() {
 		const self = this;
-		self.filter = new library.component.Filter();
 		self.actionMap = {
 			'add-relation'    : addRelation,
 			'remove-relation' : removeRelation,
@@ -2435,12 +2452,10 @@ Searchable collection(s) of users, rooms and other odds and ends
 			.catch( failed );
 			
 		function ok() {
-			console.log( 'Items.handleAddRelation - ok' );
 			updateView( true );
 		}
 		
 		function failed() {
-			console.log( 'Items.handleAddRelation - failed' );
 			updateView( false );
 		}
 		
@@ -2498,8 +2513,8 @@ Searchable collection(s) of users, rooms and other odds and ends
 		if ( !conn )
 			return;
 		
-		const total = search.pools.length;
-		let resultNum = search.pools
+		const total = search.results.length;
+		let resultNum = search.results
 			.filter( pool => pool.done )
 			.length;
 		
