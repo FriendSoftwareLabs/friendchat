@@ -530,7 +530,7 @@ inherits from EventEmitter
 	
 	ns.Identity.prototype.init = function( conf ) {
 		var self = this;
-		if ( conf.UniqueID )
+		if ( conf.UniqueID || conf.ID )
 			self.fromFCUser( conf );
 		else
 			self.fromIdentity( conf );
