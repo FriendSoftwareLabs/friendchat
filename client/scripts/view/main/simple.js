@@ -359,7 +359,6 @@ var hello = window.hello || {};
 	ns.Treeroot.prototype.getMenuOptions = function( type ) {
 		const self = this;
 		const opts = [
-			self.menuActions[ 'add-contact' ],
 			self.menuActions[ 'settings' ],
 			self.menuActions[ 'reconnect' ],
 		];

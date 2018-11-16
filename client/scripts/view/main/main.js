@@ -2151,7 +2151,7 @@ library.view = library.view || {};
 	
 	ns.Account.prototype.showSettings = function() {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'settings',
 		});
 	}
@@ -2344,7 +2344,7 @@ library.view = library.view || {};
 	
 	ns.ModuleControl.prototype.send = function( msg ) {
 		var self = this;
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 })( library.view );
 
@@ -2506,7 +2506,7 @@ library.view = library.view || {};
 	
 	ns.Notification.prototype.toggle = function() {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'toggle',
 		});
 		
@@ -3075,7 +3075,7 @@ library.view = library.view || {};
 		self.bindView();
 		self.setTemplate();
 		
-		self.view.sendMessage({
+		self.view.send({
 			type : 'loaded',
 		});
 	}
@@ -3139,7 +3139,7 @@ library.view = library.view || {};
 			self.recent || null
 		);
 		
-		self.view.sendMessage({
+		self.view.send({
 			type : 'ready',
 		});
 	}
@@ -3252,12 +3252,12 @@ library.view = library.view || {};
 		self.menu.on( 'logout', handleLogout );
 		self.menu.on( 'quit', handleQuit );
 		
-		function handleStartLive( e ) { self.view.sendMessage({ type : 'live' }); }
+		function handleStartLive( e ) { self.view.send({ type : 'live' }); }
 		function handleAddChat( e ) { self.module.create(); }
 		function handleAccountSettings( e ) { self.account.showSettings(); }
-		function handleAbout( e ) { self.view.sendMessage({ type : 'about' }); }
-		function handleLogout( e ) { self.view.sendMessage({ type : 'logout' }); }
-		function handleQuit( e ) { self.view.sendMessage({ type : 'quit' }); }
+		function handleAbout( e ) { self.view.send({ type : 'about' }); }
+		function handleLogout( e ) { self.view.send({ type : 'logout' }); }
+		function handleQuit( e ) { self.view.send({ type : 'quit' }); }
 	}
 	
 	ns.Main.prototype.showMenu = function( folderId ) {
