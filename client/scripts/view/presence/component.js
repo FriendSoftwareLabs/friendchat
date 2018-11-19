@@ -375,10 +375,12 @@ var hello = window.hello || {};
         self.users = {};
         self.userIds = [];
         self.onlines = onlineList;
-        self.groups = {};
-        self.groupIds = [];
         self.containerId = containerId;
         self.template = templateManager;
+        
+        self.groups = {};
+        self.groupIds = [];
+        self.groupsAvailable = {};
         
         self.init( workgroups, users, guestAvatar );
     }
@@ -512,7 +514,7 @@ var hello = window.hello || {};
         delete self.onlines;
         delete self.groups;
         delete self.groupIds;
-        delete self.available;
+        delete self.groupsAvailable;
     }
     
     // Private
