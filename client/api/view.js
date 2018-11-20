@@ -700,8 +700,12 @@ var friend = window.friend || {};
 		if( !themeData )
 			return;
 		
-		if( themeData && typeof( themeData ) == 'string' )
+		try {
 			themeData = JSON.parse( themeData );
+		} catch ( ex ) {
+			console.log( 'failed to parse themeData', ex );
+			return;
+		}
 		
 		if( friend.themeStyleElement )
 			friend.themeStyleElement.innerHTML = '';
