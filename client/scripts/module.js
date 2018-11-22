@@ -1784,6 +1784,9 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.moduleInfoMissing = function( msg ) {
 		const self = this;
+		if ( self.initializing )
+			clearTimeout( self.initializing );
+		
 		self.viewInfo( 'info-missing' );
 	}
 	

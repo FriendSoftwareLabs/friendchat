@@ -463,7 +463,7 @@ library.view = library.view || {};
 			accountBtn.addEventListener( 'click', createAccount, false );
 			
 			function scienceAccount( e ) { self.scienceRegister(); }
-			function showSettings( e ) { self.optionSettings(); }
+			function showSettings( e ) { self.handleAction( 'settings' ); }
 			function createAccount( e ) { self.showCreateAccount(); }
 		}
 	}

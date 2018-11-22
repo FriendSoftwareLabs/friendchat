@@ -2787,7 +2787,6 @@ ns.Treeroot.prototype.register = function( data, socketId ) {
 	self.queueRequest( req, true );
 	function response( res ) {
 		if ( res.response != 'ok' ) {
-			self.log( 'register failed', data );
 			regFailed( res.reason );
 			self.setConnectionError( 'info-missing', self.conf );
 			return
