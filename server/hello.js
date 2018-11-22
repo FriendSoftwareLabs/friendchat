@@ -48,7 +48,7 @@ var state = {
 state.config = global.config.get();
 
 var MysqlPool = require( './component/MysqlPool' );
-var RequestHandler = require( './component/RequestHandler' );
+//var RequestHandler = require( './component/RequestHandler' );
 var ChatSockets = require( './component/ChatSockets' );
 
 checkTLSPaths( tlsLoaded );

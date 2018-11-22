@@ -72,11 +72,11 @@ var hello = window.hello || {};
 		};
 		
 		var menuItems = [
-			modules,
+			//modules,
 			liveItem,
 			settingsItem,
 			aboutItem,
-			logoutItem,
+			//logoutItem,
 			quitItem,
 		];
 		

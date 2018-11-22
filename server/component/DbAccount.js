@@ -22,14 +22,12 @@
 var log = require('./Log')('DbAccount');
 var util = require('util');
 var events = require('events');
-var bcrypt = require('bcrypt');
 var uuid = require( './UuidPrefix' )( 'account' );
 var conf = require( './Config' );
 
 var accountDefaults = global.config.server.defaults.account;
 var nativeKeys = {
 	'name' : true,
-	'skipPass' : true,
 };
 
 this.DbAccount = function( pool, userId ) {
@@ -103,14 +101,10 @@ this.DbAccount.prototype.set = function( account, callback ) {
 		'clientId',
 		'userId',
 		'name',
-		'password',
-		'skipPass',
 		'settings',
 	];
 	
 	account.clientId = uuid.v4();
-	account.password = bcrypt.hashSync( account.password, 10 );
-	account.skipPass = account.skipPass || accountDefaults.skipPass;
 	account.settings = stringify( accountDefaults.settings );
 	var values = [];
 	fields.forEach( add );
@@ -149,42 +143,24 @@ this.DbAccount.prototype.touch = function( clientId, callback ) { // callback is
 	}
 }
 
-this.DbAccount.prototype.checkPassword = function( name, password, callback ) {
+this.DbAccount.prototype.getAccountId = function( name, callback ) {
 	var self = this;
 	var values = [
 		self.userId,
 		name,
 	];
-	var query = self.buildCall( 'account_getpass', values.length );
-	self.buildCall( 'account_getpass', values.length );
-	self.conn.query( query, values, passBack );
-	function passBack( err, rows ) {
+	var query = self.buildCall( 'account_get_id', values.length );
+	self.conn.query( query, values, accIdBack );
+	function accIdBack( err, rows ) {
 		if ( err ) {
-			log( 'account.cehckpass - error', err );
+			log( 'account.getAccountId - error', err );
 			callback( false );
 			return;
 		}
 		
 		var account = rows[ 0 ][ 0 ];
 		if ( !account ) {
-			log( 'checkPassword - no account', { n: name, uid : self.userId });
-			callback( false );
-			return;
-		}
-		
-		if ( account.skipPass ) {
-			callback( account.clientId );
-			return;
-		}
-		
-		if ( !password ) {
-			callback( false );
-			return;
-		}
-		
-		var validPass = bcrypt.compareSync( password, account.password );
-		if ( !validPass ) {
-			log( 'account.checkpassword - invalid pass' );
+			log( 'getAccountId - no account', values );
 			callback( false );
 			return;
 		}
@@ -200,7 +176,6 @@ this.DbAccount.prototype.update = function( account, callback ) {
 	
 	var keys = [
 		'clientId',
-		'skipPass',
 		'settings',
 	];
 	var values = keys.map( add );

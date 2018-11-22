@@ -38,7 +38,7 @@ library.view = library.view || {};
 	ns.Account.prototype.setup = function() {
 		var self = this;
 		self.validKeys = [
-			'skipPass',
+			//'skipPass',
 			'popupChat',
 			'msgAlert',
 			'inAppMenu',

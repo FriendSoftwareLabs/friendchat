@@ -36,6 +36,7 @@ ns.SocketManager = function( tlsConf, port ) {
 	
 	self.sockets = {}; // connections not logged in
 	self.sessions = {}; // logged in, can now be restored from the client
+	self.socketToUserId = {};
 	self.key = null;
 	self.cert = null;
 	self.pool = null;
@@ -203,6 +204,7 @@ ns.SocketManager.prototype.authenticate = function( bundle, socket ) {
 			return;
 		}
 		
+		self.socketToUserId[ socket.id ] = token.userId;
 		self.bind( socket );
 	}
 	

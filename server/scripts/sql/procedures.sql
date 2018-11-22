@@ -12,6 +12,7 @@ DROP PROCEDURE IF EXISTS dummy;
 #
 # DROP
 DROP PROCEDURE IF EXISTS purge_orphaned_settings;
+DROP PROCEDURE IF EXISTS account_get_id;
 DROP PROCEDURE IF EXISTS account_get;
 DROP PROCEDURE IF EXISTS account_getpass;
 DROP PROCEDURE IF EXISTS account_set;
@@ -58,6 +59,23 @@ END//
 #
 # ACCOUNT
 
+# GET ACCOUNT ID
+CREATE PROCEDURE account_get_id(
+	IN `userId` VARCHAR( 191 ),
+	IN `name`   VARCHAR( 191 )
+)
+BEGIN
+SELECT
+	a.clientId
+FROM account AS a
+WHERE
+	a.userId = `userId`
+AND
+	a.name = `name`;
+
+END//
+
+
 # GET
 CREATE PROCEDURE account_get(
 	IN `userId` VARCHAR( 191 ),
@@ -71,7 +89,6 @@ IF ( `clientId` IS NULL ) THEN
 		a.userId,
 		a.name,
 		a.lastLogin,
-		a.skipPass,
 		s.settings
 	FROM account AS a
 	LEFT JOIN settings_json AS s
@@ -84,7 +101,6 @@ ELSE
 		a.userId,
 		a.name,
 		a.lastLogin,
-		a.skipPass,
 		s.settings
 	FROM account AS a
 	LEFT JOIN settings_json AS s
@@ -94,29 +110,11 @@ END IF;
 
 END//
 
-# GETPASS
-CREATE PROCEDURE account_getpass(
-	IN `userId` VARCHAR( 191 ),
-	IN `name` VARCHAR( 191 )
-)
-BEGIN
-
-SELECT
-	a.clientId,
-	a.password,
-	a.skipPass
-FROM account AS a
-WHERE a.userId = `userId` AND a.name = `name`;
-
-END//
-
 #SET
 CREATE PROCEDURE account_set(
 	IN `clientId` VARCHAR( 191 ),
 	IN `userId` VARCHAR( 191 ),
 	IN `name` VARCHAR( 191 ),
-	IN `password` VARCHAR( 191 ),
-	IN `skipPass` BOOLEAN,
 	IN `settings` TEXT
 )
 BEGIN
@@ -125,15 +123,11 @@ INSERT INTO account (
 	`clientId`,
 	`userId`,
 	`name`,
-	`password`,
-	`skipPass`,
 	`lastLogin`
 ) VALUES (
 	`clientId`,
 	`userId`,
 	`name`,
-	`password`,
-	`skipPass`,
 	null
 );
 
@@ -163,7 +157,6 @@ END//
 #UPDATE
 CREATE PROCEDURE account_update(
 	IN `clientId` VARCHAR( 191 ),
-	IN `skipPass` BOOLEAN,
 	IN `settings` TEXT
 )
 BEGIN
@@ -175,10 +168,6 @@ LEFT JOIN settings_json AS s
 ON a.clientId = s.clientId
 WHERE a.clientId = `clientId`;
 
-IF ( `skipPass` IS NULL ) THEN
-	SELECT tmp_acc_row.skipPass INTO `skipPass` FROM tmp_acc_row;
-END IF;
-
 IF ( `settings` IS NULL ) THEN
 	SELECT tmp_acc_row.settings INTO `settings` FROM tmp_acc_row;
 END IF;
@@ -187,7 +176,6 @@ UPDATE account AS a
 LEFT JOIN settings_json AS s
 ON a.clientId = s.clientId
 SET
-a.skipPass = `skipPass`,
 s.settings = `settings`
 WHERE a.clientId = `clientId`;
 

@@ -117,24 +117,25 @@ library.view = library.view || {};
 	ns.Login.prototype.bindAccount = function( account ) {
 		var self = this;
 		var accountElement = document.getElementById( account.clientId );
-		var deleteButton = accountElement.querySelector( 'button[type="button"' );
-		var passwordInput = accountElement.querySelector( '.password > input' );
+		//var deleteButton = accountElement.querySelector( 'button[type="button"' );
+		//var passwordInput = accountElement.querySelector( '.password > input' );
 		
 		accountElement.addEventListener( 'submit', loginSubmit, false );
-		deleteButton.addEventListener( 'click', deleteAccount, false );
-		passwordInput.addEventListener( 'focus', showFocus, false );
+		//deleteButton.addEventListener( 'click', deleteAccount, false );
+		//passwordInput.addEventListener( 'focus', showFocus, false );
 		
 		function loginSubmit( e ) {
 			e.preventDefault();
 			e.stopPropagation();
 			var loginData = {
 				clientId : account.clientId,
-				password : passwordInput.value,
+				//password : passwordInput.value,
 			};
 			self.login( loginData );
-			clearPass();
+			//clearPass();
 		}
 		
+		/*
 		function deleteAccount( e ) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -160,6 +161,7 @@ library.view = library.view || {};
 			var passwordInput = accountElement.querySelector( 'input' );
 			passwordInput.value = '';
 		}
+		*/
 	}
 	
 	ns.Login.prototype.login = function( data ) {
@@ -198,11 +200,11 @@ library.view = library.view || {};
 	
 	ns.Login.prototype.bindEvents = function() {
 		var self = this;
-		var createButton = document.getElementById( 'create' );
+		//var createButton = document.getElementById( 'create' );
 		
-		createButton.addEventListener( 'click', showCreate, false );
+		//createButton.addEventListener( 'click', showCreate, false );
 		
-		function showCreate( e ) { self.showCreate( e ); }
+		//function showCreate( e ) { self.showCreate( e ); }
 	}
 	
 	ns.Login.prototype.showCreate = function( e ) {

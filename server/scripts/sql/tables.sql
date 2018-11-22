@@ -16,8 +16,6 @@ CREATE TABLE `account` (
 	`clientId`  VARCHAR(191) NOT NULL UNIQUE,
 	`userId`    VARCHAR(191) NOT NULL,
 	`name`      VARCHAR(191) NOT NULL,
-	`password`  VARCHAR(191),
-	`skipPass`  BOOLEAN NOT NULL,
 	`lastLogin` TIMESTAMP NULL,
 	PRIMARY KEY(_id),
 	CONSTRAINT UNIQUE `userId_name`( userId, name )
@@ -91,6 +89,6 @@ INSERT INTO `db_history`(
 	`comment`
 ) VALUES (
 	1,
-	12,
+	14,
 	'table version'
 );

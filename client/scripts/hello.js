@@ -17,6 +17,8 @@
 *                                                                              *
 *****************************************************************************©*/
 
+//"bcrypt"      : "^3.0.2",
+
 'use strict';
 var library = window.library || {};
 var friendUP = window.friendUP || {};
@@ -158,6 +160,8 @@ var hello = null;
 		
 		self.timeNow( 'honst config loaded' );
 		library.tool.mergeObjects( self.config, hostConf );
+		self.config.appName = self.config.appName || 'Friend Chat';
+		console.log( 'hello.config', hello.config );
 		self.preInit();
 	}
 	
@@ -1030,7 +1034,7 @@ var hello = null;
 	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
 		const self = this;
 		const winConf = {
-			title: hello.config.appName || 'Friend Chat',
+			title: hello.config.appName,
 			width : 440,
 			height : 600,
 		};
@@ -1047,7 +1051,7 @@ var hello = null;
 	ns.Main.prototype.openAdvView = function( initConf, onClose ) {
 		const self = this;
 		const winConf = {
-			title: hello.config.appName || 'Friend Chat',
+			title: hello.config.appName,
 			width : 440,
 			height : 600,
 		};
@@ -1129,13 +1133,8 @@ var hello = null;
 			name    : Application.i18n('i18n_account_settings'),
 			command : 'account_account',
 		};
-		const logout = {
-			name    : Application.i18n('i18n_log_out'),
-			command : 'account_logout',
-		};
 		const accItems = [
 			settings,
-			logout,
 		];
 		const account = {
 			name : Application.i18n('i18n_account_menu'),

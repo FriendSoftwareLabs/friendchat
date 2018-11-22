@@ -164,9 +164,7 @@ library.rtc = library.rtc || {};
 				}
 			}
 			
-			accounts.forEach( add )
-			function add( account ) { self.add( account ); }
-			
+			accounts.forEach( acc => self.add( acc ));
 			if ( doAutoLogin( accounts ))
 				return;
 			
@@ -185,9 +183,6 @@ library.rtc = library.rtc || {};
 					return false;
 				
 				var account = accounts[ 0 ];
-				if ( !account.skipPass )
-					return false;
-				
 				self.login( account );
 				return true;
 			}
@@ -232,7 +227,6 @@ library.rtc = library.rtc || {};
 		var self = this;
 		var data = {
 			name : hello.identity.alias,
-			skipPass : true,
 		};
 		
 		self.createAccount( data );
@@ -1037,7 +1031,6 @@ library.rtc = library.rtc || {};
 		self.availability = null;
 		self.clientId = conf.account.clientId;
 		self.displayName = conf.account.name;
-		self.skipPass = conf.account.skipPass;
 		self.settings = conf.account.settings || {};
 		self.conn = null;
 		
