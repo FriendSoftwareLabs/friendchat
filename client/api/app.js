@@ -862,6 +862,8 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype = Object.create( fupLocal.AppEvent.prototype );
 	
+	// Public
+	
 	ns.Application.prototype.createView = function(
 		path,
 		conf,
@@ -879,6 +881,17 @@ var friend = window.friend || {}; // already instanced stuff
 		);
 		return view;
 	}
+	
+	ns.Application.prototype.setSingleInstance = function( setSingle ) {
+		const self = this;
+		self.sendMessage({
+			type    : 'system',
+			command : 'setsingleinstance',
+			value   : setSingle,
+		});
+	}
+	
+	// Private
 	
 	ns.Application.prototype.toAllViews = function( event ) {
 		const self = this;
@@ -900,12 +913,12 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		var fid = self.setCallback( loadCallback );
 		self.sendMessage({
-			type : 'file',
-			method : 'load',
-			data : { path: path },
-			filePath: self.filePath,
-			vars : vars || [],
-			fileId : fid,
+			type     : 'file',
+			method   : 'load',
+			data     : { path: path },
+			filePath : self.filePath,
+			vars     : vars || [],
+			fileId   : fid,
 		});
 	}
 	

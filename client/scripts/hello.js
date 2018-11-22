@@ -88,6 +88,7 @@ var hello = null;
 		if ( fupConf )
 			self.config.run = fupConf;
 		
+		self.app.setSingleInstance( true );
 		self.loadCommonFragments( fragmentsLoaded );
 		function fragmentsLoaded() {
 			self.timeNow( 'fragmentsLoaded' );
