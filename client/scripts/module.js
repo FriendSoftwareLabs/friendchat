@@ -1424,7 +1424,7 @@ library.module = library.module || {};
 				type       : 'contact',
 				isRelation : isRelation,
 				name       : id.name,
-				email      : id.email,
+				email      : '', // id.email,
 				avatar     : id.avatar || '',
 				alias      : null,
 				isOnline   : id.isOnline || false,
