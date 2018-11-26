@@ -4,11 +4,11 @@
 
 ALTER DATABASE CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `settings_json`;
 DROP TABLE IF EXISTS `contact`;
+DROP TABLE IF EXISTS `identity`;
 DROP TABLE IF EXISTS `module`;
 DROP TABLE IF EXISTS `account`;
-DROP TABLE IF EXISTS `settings_json`;
-DROP TABLE IF EXISTS `identity`;
 DROP TABLE IF EXISTS `db_history`;
 
 CREATE TABLE `account` (
