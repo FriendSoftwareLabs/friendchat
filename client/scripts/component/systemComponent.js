@@ -471,7 +471,7 @@ library.component = library.component || {};
 				.catch( idFail );
 			
 			function idBack( identity ) {
-				console.log( 'PresenceService.sendMsgToFID - idBack', identity );
+				//console.log( 'PresenceService.sendMsgToFID - idBack', identity );
 				//self.sendMessage
 				if ( !identity )
 					resolve( false );
@@ -482,7 +482,7 @@ library.component = library.component || {};
 				//resolve( identity );
 				
 				function sendOk( res ) {
-					console.log( 'PresenceService.prototype.sendMsgToFID - sendOk', res );
+					//console.log( 'PresenceService.prototype.sendMsgToFID - sendOk', res );
 					resolve( true );
 				}
 			}
@@ -528,11 +528,13 @@ library.component = library.component || {};
 		hello.dormant.addFun( msgToFID );
 		
 		function sendMsgToFID( fId, message, open ) {
+			/*
 			console.log( 'sendMsgToFID', {
 				fId       : fId,
 				message   : message,
 				open      : open,
 			});
+			*/
 			
 			return new Promise(( resolve, reject ) => {
 				if ( !self.presence ) {
@@ -548,7 +550,7 @@ library.component = library.component || {};
 				.catch( msgFail );
 				
 				function msgSent( res ) {
-					console.log( 'sendMsgToFID - msgSent', res );
+					//console.log( 'sendMsgToFID - msgSent', res );
 					resolve( res );
 				}
 				

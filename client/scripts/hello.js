@@ -92,7 +92,6 @@ var hello = null;
 		self.startTiming = Date.now();
 		self.lastTiming = self.startTiming;
 		
-		console.log( 'self.config', self.config );
 		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
 			console.log( '--- ENABLING DORMANT APPARENTLY ---', self.config );
 			self.dormantEnabled = true;

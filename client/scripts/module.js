@@ -609,7 +609,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.getFriendContact = function( friendId ) {
 		const self = this;
-		console.log( 'getFriendContact', friendId );
+		//console.log( 'getFriendContact', friendId );
 		return new Promise(( resolve, reject ) => {
 			const getFC = {
 				friendId : friendId,
@@ -634,10 +634,10 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.addContact = function( clientId ) {
 		const self = this;
-		console.log( 'Presence.addContact', clientId );
+		//console.log( 'Presence.addContact', clientId );
 		return new Promise(( resolve, reject ) => {
 			if ( self.contacts[ clientId ]) {
-				console.log( 'Presence.addContact - already exists', self.contacts );
+				//console.log( 'Presence.addContact - already exists', self.contacts );
 				resolve( clientId );
 				return;
 			}
@@ -650,7 +650,7 @@ library.module = library.module || {};
 				.catch( reject );
 			
 			function addBack( clientId ) {
-				console.log( 'addBack', clientId );
+				//console.log( 'addBack', clientId );
 				resolve( clientId );
 			}
 		});
@@ -658,7 +658,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.getContact = function( clientId ) {
 		const self = this;
-		console.log( 'Presence.getContact', clientId );
+		//console.log( 'Presence.getContact', clientId );
 		return new Promise(( resolve, reject ) => {
 			let contact = self.contacts[ clientId ];
 			if ( contact ) {
@@ -671,7 +671,7 @@ library.module = library.module || {};
 				.catch( reject );
 				
 			function cAdded( clientId ) {
-				console.log( 'cAdded', clientId );
+				//console.log( 'cAdded', clientId );
 				if ( !clientId ) {
 					resolve( null );
 					return;

@@ -220,11 +220,6 @@ ns.Presence.prototype.clear = function() {
 ns.Presence.prototype.handleAccountStage = function( event ) {
 	const self = this;
 	// general event
-	if ( !event ) {
-		self.createAccount();
-		return;
-	}
-	
 	if ( !event || !event.type ) {
 		defaultHandler();
 		return;
@@ -327,7 +322,7 @@ ns.Presence.prototype.accountCreated = function( acc ) {
 
 ns.Presence.prototype.tryLogin = function() {
 	const self = this;
-	if ( !self.identity || !self.identity.alias ) {
+	if ( !self.identity ) {
 		log( 'tryLogin - no login', {
 			conf : self.conf,
 			id   : self.identity,
@@ -335,6 +330,7 @@ ns.Presence.prototype.tryLogin = function() {
 		return;
 	}
 	
+	self.identity.fUsername = self.identity.fUsername || self.identity.alias;
 	const login = {
 		type : 'login',
 		data : self.identity,

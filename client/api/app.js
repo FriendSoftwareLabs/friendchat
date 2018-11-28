@@ -1299,7 +1299,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.getDoors = function( callback ) {
 		var self = this;
-		console.log( 'getDoors' );
+		//console.log( 'getDoors' );
 		var callbackId = self.app.setCallback( callBackWrap );
 		self.send({
 			method     : 'getDoors',
@@ -1307,7 +1307,7 @@ window.Application = new fupLocal.Application();
 		});
 		
 		function callBackWrap( msg ) {
-			console.log( 'getDoors.callBackWrap', msg );
+			//console.log( 'getDoors.callBackWrap', msg );
 			for ( var infoKey in msg )
 				self.setupProxyDoor( msg[ infoKey ] );
 			if ( callback )
@@ -1317,7 +1317,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleMessage = function( msg ) {
 		var self = this;
-		console.log( 'Dormant.handleMessage', msg );
+		//console.log( 'Dormant.handleMessage', msg );
 		var handler = self.methodMap[ msg.method ];
 		if ( !handler ) {
 			console.log( 'Dormant.handleMessage - no handler for', msg );
@@ -1329,23 +1329,25 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleGetDirectory = function( msg ) {
 		var self = this;
+		/*
 		console.log( 'handleGetDirectory', {
 			msg : msg,
 			doors : self.doors,
 		});
+		*/
 		var door = self.doors[ msg.doorId ];
 		if ( !door ) {
 			consolelog( 'Doormant.handleGetDirectory - no door for', { m : msg, d : self.doors });
 		}
 		
 		var dir = door.getDirectory( msg );
-		console.log( 'handleGetDirectory - dir', dir );
-		self.sendBack( dir, msg );
+		//console.log( 'handleGetDirectory - dir', dir );
+		self.sendBack( null, dir, msg );
 	}
 	
 	ns.Dormant.prototype.handleUpdateTitle = function( msg ) {
 		var self = this;
-		console.log( 'handleUpdateTitle', msg );
+		//console.log( 'handleUpdateTitle', msg );
 		var door = self.doors[ msg.doorId ];
 		if ( !door ) {
 			console.log( 'Doormant - no door for', { m : msg, d : self.doors });
@@ -1357,7 +1359,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleExecute = function( event ) {
 		var self = this;
-		console.log( 'handleExecute', event );
+		//console.log( 'handleExecute', event );
 		const door = self.doors[ event.doorId ];
 		if ( !door ) {
 			console.log( 'handleExecute - no door', { e : event, self : self });
@@ -1370,19 +1372,20 @@ window.Application = new fupLocal.Application();
 				event : event,
 				door  : door,
 				res   : res,
+				err   : err,
 			});
-			self.sendBack( res, event );
+			self.sendBack( err, res, event );
 		}
 	}
 	
 	ns.Dormant.prototype.handleCallback = function( msg ) {
 		var self = this;
-		console.log( 'handleCallback', msg );
+		console.log( 'handleCallback - NYI', msg );
 	}
 	
 	ns.Dormant.prototype.set = function( doorObj ) {
 		var self = this;
-		console.log( 'setDoor', doorObj );
+		//console.log( 'setDoor', doorObj );
 		var doorId = friendUP.tool.uid( 'door' );
 		doorObj.doorId = doorId;
 		self.doors[ doorId ] = doorObj;
@@ -1391,17 +1394,18 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.get = function( doorId ) {
 		var self = this;
-		console.log( 'getDoor', doorId );
+		//console.log( 'getDoor', doorId );
 		return self.doors[ doorId ];
 	}
 	
-	ns.Dormant.prototype.sendBack = function( data, event ) {
+	ns.Dormant.prototype.sendBack = function( err, data, event ) {
 		var self = this;
 		var msg = {
-			method : 'callback',
+			method     : 'callback',
 			callbackId : event.callbackId,
-			doorId : event.doorId,
-			data : data,
+			doorId     : event.doorId,
+			data       : data,
+			error      : err,
 		};
 		console.log( 'Dormant.sendBack', msg );
 		self.send( msg );
@@ -1479,7 +1483,7 @@ friend.Dormant = new fupLocal.Dormant;
 			return;
 		}
 		
-		console.log( 'addFun', item );
+		//console.log( 'addFun', item );
 		dir.funs[ item.title ] = item;
 		dir.items.push( item );
 	}
@@ -1509,8 +1513,8 @@ friend.Dormant = new fupLocal.Dormant;
 	
 	ns.Door.prototype.getDirectory = function( msg ) {
 		var self = this;
-		//const path = self.normalizePath( msg.path );
-		console.log( 'getDirectory', msg );
+		const path = self.normalizePath( msg.path );
+		//console.log( 'getDirectory', msg );
 		const dir = self.dirs[ msg.path ];
 		if ( !dir ) {
 			console.log( 'Dormant / Door.getDirectory - no dir found', {
@@ -1522,7 +1526,7 @@ friend.Dormant = new fupLocal.Dormant;
 		
 		let items = dir.itemize();
 		items = items.map( addDoorInfo );
-		console.log( 'Door.getDirectory', { m : msg, dir : dir, dirs : self.dirs, self : self });
+		//console.log( 'Door.getDirectory', { m : msg, dir : dir, dirs : self.dirs, self : self });
 		return items;
 		
 		function addDoorInfo( item ) {
@@ -1585,13 +1589,15 @@ friend.Dormant = new fupLocal.Dormant;
 	
 	ns.Door.prototype.normalizePath = function( path ) {
 		const self = this;
-		console.log( 'normalizePath', path );
+		//console.log( 'normalizePath', path );
 		if ( !path ) {
+			/*
 			try {
 				throw new Error( 'normalizePath' );
 			} catch( e ) {
 				console.log( 'normalizePath - no path - trace', e );
 			}
+			*/
 			path = '';
 		}
 		
@@ -1603,7 +1609,7 @@ friend.Dormant = new fupLocal.Dormant;
 	
 	ns.Door.prototype.init = function() {
 		var self = this;
-		console.log( 'Door.init', self );
+		//console.log( 'Door.init', self );
 		self.basePath = self.title + ':';
 		self.baseRX = new RegExp( '^' + self.basePath, '' );
 		
