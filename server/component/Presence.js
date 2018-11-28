@@ -220,7 +220,7 @@ ns.Presence.prototype.clear = function() {
 ns.Presence.prototype.handleAccountStage = function( event ) {
 	const self = this;
 	// general event
-	if ( !event && !self.conf.login ) {
+	if ( !event ) {
 		self.createAccount();
 		return;
 	}

@@ -33,7 +33,7 @@ library.contact = library.contact || {};
 		const self = this;
 		library.component.EventEmitter.call( self );
 		self.moduleId = conf.moduleId;
-		self.parentPath = conf.parentPath || '';
+		self.dormantParentPath = conf.dormantParentPath || '';
 		self.clientId = self.data.clientId;
 		self.displayName = self.data.displayName || self.data.name;
 		self.lastMessage = self.data.lastMessage;
@@ -140,25 +140,25 @@ library.contact = library.contact || {};
 		self.chatMessage( data );
 	}
 	
-	ns.Contact.prototype.onChatMessage = function( msg ) {
+	ns.Contact.prototype.onChatMessage = function( msg, silent ) {
 		var self = this;
 		self.recentMessage( msg.message, msg.from, msg.time );
+		if ( !msg.from )
+			return;
+		
 		if ( self.chatView )
-			self.whenChatOpen( msg );
+			self.whenChatOpen( msg, silent );
 		else
-			self.whenChatClosed( msg );
+			self.whenChatClosed( msg, silent );
 	}
 	
-	ns.Contact.prototype.whenChatClosed = function( msg ) {
+	ns.Contact.prototype.whenChatClosed = function( msg, silent ) {
 		var self = this;
 		if ( hello.account.settings.popupChat === true ) {
 			api.Say( 'Message received' );
 			self.startChat(); // contact must implement
 			return;
 		}
-		
-		if ( !msg.from )
-			return;
 		
 		hello.playMsgAlert();
 		self.messageWaiting( true, msg.message, msg.from, msg.time );
@@ -179,11 +179,8 @@ library.contact = library.contact || {};
 		}
 	}
 	
-	ns.Contact.prototype.whenChatOpen = function( msg ) {
+	ns.Contact.prototype.whenChatOpen = function( msg, silent ) {
 		var self = this;
-		if ( !msg.from )
-			return;
-		
 		hello.playMsgAlert();
 		if ( !self.chatView.view.isMinimized )
 			return;
@@ -507,10 +504,7 @@ library.contact = library.contact || {};
 		if ( !self.chatView )
 			return;
 		
-		if ( self.chatView.send )
-			self.chatView.send( event );
-		else
-			self.chatView.send( event );
+		self.chatView.send( event );
 	}
 	
 	ns.Contact.prototype.send = function( event ) {
@@ -565,6 +559,20 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype = Object.create( ns.Contact.prototype );
 	
 	// Public
+	
+	ns.PresenceRoom.prototype.sendMessage = function( message, openView ) {
+		const self = this;
+		console.log( 'PresenceRoom.sendMessage', message );
+		const msg = {
+			type : 'msg',
+			data : {
+				message : message,
+			},
+		};
+		self.sendChatEvent( msg );
+		if ( openView )
+			self.openChat();
+	}
 	
 	ns.PresenceRoom.prototype.reconnect = function() {
 		const self = this;
@@ -1338,9 +1346,7 @@ library.contact = library.contact || {};
 		}
 		
 		self.toChat( chat );
-		
-		if ( self.live )
-			self.live.send( chat );
+		self.toLive( chat );
 	}
 	
 	ns.PresenceRoom.prototype.onMessage = function( msg ) {
@@ -1534,6 +1540,14 @@ library.contact = library.contact || {};
 		self.view.send( wrap );
 		if ( self.chatView )
 			self.chatView.send( wrap );
+	}
+	
+	ns.PresenceRoom.prototype.toLive = function( event ) {
+		const self = this;
+		if ( !self.live )
+			return;
+		
+		self.live.send( event );
 	}
 	
 	ns.PresenceRoom.prototype.updatePeers = function( event ) {
@@ -1848,6 +1862,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.handleInitializeContact = function( state ) {
 		const self = this;
+		console.log( 'handleInitializeContact', state );
 		self.isOpen = true;
 		self.handleInitialize( state );
 		if ( self.openChatPending ) {
@@ -2157,19 +2172,36 @@ library.contact = library.contact || {};
 	ns.TreerootContact.prototype.setIdentity = function() {
 		var self = this;
 		self.identity = {
-			clientId : self.clientId,
-			name     : self.displayName,
-			email    : self.data.email,
-			avatar   : self.data.imagePath,
+			clientId  : self.clientId,
+			name      : self.displayName,
+			username  : self.data.Username,
+			email     : self.data.email,
+			serviceId : self.data.ID,
+			avatar    : null,
 		};
+		self.setAvatar();
+	}
+	
+	ns.TreerootContact.prototype.setAvatar = function() {
+		var self = this;
+		self.identity.avatar = self.data.imagePath;
 	}
 	
 	ns.TreerootContact.prototype.setupDormant = function() {
 		const self = this;
+		if ( !self.dormantParentPath )
+			return;
+		
+		let path = [
+			self.identity.username,
+			self.identity.serviceId,
+		];
+		path = path.join( '_' );
+		
 		self.door = new api.DoorDir({
-			title : self.identity.name,
-			path  : self.data.Username + '/',
-		}, self.parentPath );
+			title : path,
+			path  : path + '/',
+		}, self.dormantParentPath );
 		
 		const getId = new api.DoorFun({
 			title   : 'GetIdentity',
@@ -2181,9 +2213,15 @@ library.contact = library.contact || {};
 			execute : sendMessage,
 		}, self.door.fullPath );
 		
+		const invite = new api.DoorFun({
+			title  : 'InviteToLive',
+			execute : inviteToLive,
+		}, self.door.fullPath );
+		
 		hello.dormant.addDir( self.door );
 		hello.dormant.addFun( getId );
 		hello.dormant.addFun( sendMsg );
+		hello.dormant.addFun( invite );
 		
 		function getIdentity() {
 			return self.identity;
@@ -2193,6 +2231,24 @@ library.contact = library.contact || {};
 			console.log( 'dormant.contact.sendMessage - NYI', {
 				self : self,
 				msg : msg,
+			});
+			if ( !msg )
+				return true;
+			
+			if ( msg.join )
+				msg = msg.join( ' ' );
+			
+			self.sendChatMessage( msg );
+			return true;
+		}
+		
+		function inviteToLive( args ) {
+			console.log( 'inviteToLive', args );
+			args = args || [];
+			let mode = args[ 0 ];
+			mode = mode || 'video';
+			self.handleStartLive({
+				mode : mode,
 			});
 		}
 	}
@@ -2213,11 +2269,6 @@ library.contact = library.contact || {};
 		function startAudio( e ) { self.startAudio( e ); }
 		function option( msg ) { console.log( 'contact.option - NYI', msg ); }
 		function remove( msg ) { self.removeRelation( msg ); }
-	}
-	
-	ns.TreerootContact.prototype.setAvatar = function() {
-		var self = this;
-		self.identity.avatar = self.data.imagePath;
 	}
 	
 	ns.TreerootContact.prototype.updatePublicKey = function( pKey ) {
@@ -2499,6 +2550,9 @@ library.contact = library.contact || {};
 		if ( self.chatView )
 			self.chatView.close();
 		
+		if ( self.door )
+			self.door.close();
+		
 		self.contactClose();
 	}
 	
@@ -2516,6 +2570,7 @@ library.contact = library.contact || {};
 		self.data = conf.channel;
 		self.viewTheme = conf.viewTheme;
 		self.user = conf.user;
+		self.requests = {};
 		
 		ns.Contact.call( this, conf );
 		
@@ -2526,23 +2581,120 @@ library.contact = library.contact || {};
 	
 	ns.IrcChannel.prototype = Object.create( ns.Contact.prototype );
 	
+	// Public
+	
+	ns.IrcChannel.prototype.close = function() {
+		const self = this;
+		self.closeChannel();
+		self.contactClose();
+	}
+	
+	// Private
+	
+	ns.IrcChannel.prototype.sendRequest = function( req, callback ) {
+		const self = this;
+		reqId = friendUP.tool.uid( 'req' );
+		self.requests[ reqId ] = callback;
+		self.send({
+			type : 'request',
+			data : {
+				type : reqId,
+				data : req,
+			},
+		});
+	}
+	
+	ns.IrcChannel.prototype.handleRequest = function( event ) {
+		const self = this;
+		console.log( 'handleRequest', event );
+		const reqId = event.type;
+		const reqCallback = self.requests[ reqId ];
+		if ( !reqCallback ) {
+			console.log( 'handleREquest - no callback for', {
+				event : event,
+				reqs  : self.requests,
+			});
+			return;
+		}
+		
+		delete self.requests[ reqId ];
+		let res  = event.data;
+		reqCallback( res.err, res.res );
+	}
+	
 	ns.IrcChannel.prototype.init = function() {
 		var self = this;
+		console.log( 'ircchannel.init' );
 		delete self.interceptMap[ 'live-invite' ];
 		
 		if ( self.data.users )
 			self.setState( self.data );
 		
+		self.setupDormant();
 		self.bindServerEvents();
 		self.bindView();
 		self.setSettingsMaps();
 	}
 	
 	ns.IrcChannel.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.room = {
-			name : self.data.displayName,
+			name     : self.data.displayName,
+			clientId : self.data.clientId,
 		};
+	}
+	
+	ns.IrcChannel.prototype.setupDormant = function() {
+		const self = this;
+		if ( !self.dormantParentPath )
+			return;
+		
+		let mid = self.clientId.split( '-' )[ 1 ];
+		path = self.room.name;
+		self.door = new api.DoorDir({
+			title : path,
+			path  : path + '/',
+		}, self.dormantParentPath );
+		
+		const sendMsg = new api.DoorFun({
+			title   : 'SendMessage',
+			execute : sendMessage,
+		}, self.door.fullPath );
+		
+		const userlist = new api.DoorFun({
+			title   : 'GetUserlist',
+			execute : getUserlist,
+		}, self.door.fullPath );
+		
+		hello.dormant.addDir( self.door );
+		hello.dormant.addFun( sendMsg );
+		hello.dormant.addFun( userlist );
+		
+		function sendMessage( msg ) {
+			console.log( 'dormant.irchannel.sendMessage', {
+				self : self,
+				msg : msg,
+			});
+			if ( !msg )
+				return true; 
+			
+			if ( msg.join )
+				msg = msg.join( ' ' );
+			
+			self.sendMessage( msg );
+			return true;
+		}
+		
+		function getUserlist( args, callback ) {
+			self.sendRequest({
+				type : 'userlist',
+				
+			}, listBack );
+			
+			function listBack( err, res ) {
+				callback( err, res );
+			}
+		}
 	}
 	
 	ns.IrcChannel.prototype.bindServerEvents = function() {
@@ -2557,10 +2709,12 @@ library.contact = library.contact || {};
 		self.conn.on( 'quit', userQuit );
 		self.conn.on( 'kick', kick );
 		self.conn.on( 'ban', ban );
+		//self.conn.on( 'log', logMsg );
 		self.conn.on( 'topic', updateTopic );
 		self.conn.on( 'setting', setting );
 		self.conn.on( 'state', handleState );
 		self.conn.on( 'user', updateUser );
+		self.conn.on( 'request', requestResult );
 		
 		function handleMessage(  e ) { self.handleMessage( e ); }
 		function handleAction(   e ) { self.handleAction( e ); }
@@ -2577,6 +2731,7 @@ library.contact = library.contact || {};
 		function setting(        e ) { self.updateSetting( e ); }
 		function handleState(    e ) { self.showChannel( e ); }
 		function updateUser(     e ) { self.updateUser( e ); }
+		function requestResult(  e ) { self.handleRequest( e ); }
 	}
 	
 	ns.IrcChannel.prototype.onChatMessage = function( msg ) {
@@ -2890,8 +3045,15 @@ library.contact = library.contact || {};
 	
 	ns.IrcChannel.prototype.closeChannel = function( msg ) {
 		var self = this;
-		self.chatView.close();
+		if ( self.chatView )
+			self.chatView.close();
+		
 		self.chatView = null;
+		
+		if ( self.door )
+			self.door.close();
+		
+		self.door = null;
 	}
 	
 })( library.contact );

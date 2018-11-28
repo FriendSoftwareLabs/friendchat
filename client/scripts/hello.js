@@ -54,6 +54,13 @@ var hello = null;
 	
 	// 'Public'
 	
+	// Presence calls this
+	ns.Hello.prototype.setServiceProvider = function( service ) {
+		const self = this;
+		console.log( 'Hello.setServiceProvider', service );
+		self.service = service;
+	}
+	
 	ns.Hello.prototype.timeNow = function( str ) {
 		const self = this;
 		let now = Date.now();
@@ -69,7 +76,7 @@ var hello = null;
 	// Priv
 	
 	ns.Hello.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.app.run = fun;
 		self.app.receiveMessage = receiveMessage;
 		
@@ -84,6 +91,17 @@ var hello = null;
 		const self = this;
 		self.startTiming = Date.now();
 		self.lastTiming = self.startTiming;
+		
+		console.log( 'self.config', self.config );
+		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
+			console.log( '--- ENABLING DORMANT APPARENTLY ---', self.config );
+			self.dormantEnabled = true;
+			
+			if ( self.config.iWouldLikeOtherAppsToReadMyLogsBecausePrivacyIsOverrated )
+				self.dormantAllowRead = true;
+			if ( self.config.letOtherAppsSpamMyContactsWithGenuineOffersThatAreNotScams )
+				self.dormantAllowWrite = true;
+		}
 		
 		if ( fupConf )
 			self.config.run = fupConf;
@@ -397,7 +415,13 @@ var hello = null;
 		self.request = new library.system.Request({ conn : self.conn });
 		self.intercept = new library.system.Interceptor();
 		self.rtc = new library.system.RtcControl();
-		self.dormant = new library.system.Dormant();
+		
+		console.log( 'dormantEnabled', self.dormantEnabled );
+		if ( self.dormantEnabled )
+			self.dormant = new library.system.Dormant(
+				self.dormantAllowRead,
+				self.dormantAllowWrite,
+			);
 		
 		self.conn.connect( connBack );
 		function connBack( err ) {
@@ -1191,12 +1215,6 @@ var hello = null;
 	
 	ns.Main.prototype.startLive = function() {
 		var self = this;
-		/*
-		var identity = {
-			name : hello.identity.name || library.tool.getName(),
-			avatar : library.component.Identity.prototype.avatar,
-		};
-		*/
 		hello.rtc.createRoom( null, null );
 	}
 	
@@ -1241,7 +1259,6 @@ var hello = null;
 		
 		hello.module = new library.system.ModuleControl({
 			parentView : self.view,
-			//firstLogin : self.account.firstLogin,
 		});
 	}
 	

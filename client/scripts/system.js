@@ -428,6 +428,23 @@ library.rtc = library.rtc || {};
 			self.reconnect();
 	}
 	
+	ns.ModuleControl.prototype.getPresence = function() {
+		const self = this;
+		console.log( 'getPresence active', self.active );
+		let ids = Object.keys( self.active );
+		let pres = null;
+		ids.some( id => {
+			let mod = self.active[ id ];
+			if ( 'presence' === mod.type ) {
+				pres = mod;
+				return true;
+			}
+			
+			return false;
+		});
+		return pres;
+	}
+	
 	// Private
 	
 	ns.ModuleControl.prototype.init = function() {
@@ -815,12 +832,12 @@ library.rtc = library.rtc || {};
 		}
 		
 		function doInvite( roomId ) {
-			self.service.invite( userConf, roomId );
+			hello.service.invite( userConf, roomId );
 		}
 		
 		function buildMeta( sId ) {
 			let session = self.sessions[ sId ];
-			let meta = self.service.getRoomInfo( sId );
+			let meta = hello.service.getRoomInfo( sId );
 			meta.created = session.created;
 			return meta;
 		}
@@ -844,7 +861,7 @@ library.rtc = library.rtc || {};
 			return;
 		
 		const inviteHost = invite.host.split( '/' )[ 0 ];
-		const localHost = self.service.getHost();
+		const localHost = hello.service.getHost();
 		api.Say( 'Live invite received', { i : invite, 'if' : inviteFrom, s : selfie });
 		const message = inviteFrom.name
 				+ ' ' + Application.i18n( 'i18n_has_invited_you_to_live' );
@@ -930,10 +947,9 @@ library.rtc = library.rtc || {};
 		self.getRoom( 'join', sessionConf );
 	}
 	
-	// Presence module calls this and provides an interface
-	ns.RtcControl.prototype.setServiceProvider = function( provider ) {
-		var self = this;
-		self.service = provider;
+	ns.RtcControl.prototype.leave = function() {
+		const self = this;
+		self.closeSession();
 	}
 	
 	// private
@@ -971,7 +987,7 @@ library.rtc = library.rtc || {};
 			type : action,
 			data : sessionConf,
 		};
-		self.service.createRoom( roomReq );
+		hello.service.createRoom( roomReq );
 	}
 	
 	ns.RtcControl.prototype.createSession = function( conf, eventSink, onclose ) {
@@ -980,7 +996,7 @@ library.rtc = library.rtc || {};
 		if ( self.sessions[ sId ] )
 			self.closeSession( sId );
 		
-		conf.user = conf.user || self.service.getIdentity();
+		conf.user = conf.user || hello.service.getIdentity();
 		conf.permissions = conf.permissions || {
 			send : {
 				audio : true,
@@ -1016,6 +1032,47 @@ library.rtc = library.rtc || {};
 		delete self.sessions[ sId ];
 		self.sessionIds = Object.keys( self.sessions );
 		session.close();
+	}
+	
+	ns.RtcControl.prototype.setupDormant = function() {
+		const self = this;
+		return;
+		
+		console.log( 'setupDormant', hello.dormant );
+		
+		if ( !hello.dormant )
+			return;
+		
+		const path = 'Live';
+		self.door = new api.DoorDir({
+			title : 'Live',
+			path  : 'Live/',
+		}, '' );
+		
+		const closeFn = new api.DoorFun({
+			title   : 'Close',
+			execute : close,
+		}, self.door.fullPath );
+		
+		hello.dormant.addDir( self.door );
+		hello.dormant.addFun( closeFn );
+		
+		function close() {
+			self.leave();
+		}
+	}
+	
+	ns.RtcControl.prototype.closeDormant = function() {
+		const self = this;
+		console.log( 'closeDormant', self.session );
+		if ( !self.session )
+			return;
+		
+		if ( !self.door )
+			return;
+		
+		hello.dormant.remove( self.door );
+		self.door = null;
 	}
 	
 })( library.system );
@@ -2211,17 +2268,19 @@ library.rtc = library.rtc || {};
 	
 })( library.rtc );
 
+
+//
 (function( ns, undefined ) {
-	ns.Dormant = function() {
-		if ( !( this instanceof ns.Dormant ))
-			return new ns.Dormant();
-		
+	ns.Dormant = function( allowRead, allowWrite ) {
 		if ( !friend.Dormant ) {
 			console.log( 'Dormant not defined' );
 			return false;
 		}
 		
 		var self = this;
+		self.allowRead = allowRead;
+		self.allowWrite = allowWrite;
+		
 		self.init();
 	}
 	
@@ -2237,6 +2296,18 @@ library.rtc = library.rtc || {};
 		self.door.addFun( item );
 	}
 	
+	ns.Dormant.prototype.remove = function( item ) {
+		const self = this;
+		self.door.remove( item );
+	}
+	
+	ns.Dormant.prototype.close = function() {
+		const self = this;
+		delete self.allowRead;
+		delete self.allowWrite;
+		self.door.close();
+	}
+	
 	// Private
 	
 	ns.Dormant.prototype.init = function() {
@@ -2248,44 +2319,99 @@ library.rtc = library.rtc || {};
 		self.door = new api.Door( conf );
 		self.dormant.add( self.door );
 		self.setBase();
-		
 	}
 	
 	ns.Dormant.prototype.setBase = function() {
 		var self = this;
-		const funDir = new api.DoorDir({
+		
+		const fDir = new api.DoorDir({
 			title : 'Functions',
 			path  : 'Functions/',
 		}, '' );
 		
-		const getIdentityDoor = new api.DoorFun({
+		/*
+		const modDir = new api.DoorDir({
+			title : 'Modules',
+			path  : 'Modules/',
+		}, '' );
+		
+		const getIdentityFun = new api.DoorFun({
 			title   : 'GetIdentity',
 			execute : getIdentity,
-		}, funDir.fullPath );
+		}, fDir.fullPath );
 		
-		self.addDir( funDir );
-		self.addFun( getIdentityDoor );
+		const startLiveFun = new api.DoorFun({
+			title   : 'StartLive',
+			execute : startLive,
+		}, fDir.fullPath );
 		
+		const openLiveFun = new api.DoorFun({
+			title   : 'OpenLive',
+			execute : openLive,
+		}, fDir.fullPath );
+		
+		const closeLiveFun = new api.DoorFun({
+			title   : 'CloseLive',
+			execute : closeLive,
+		}, fDir.fullPath );
+		
+		*/
+		
+		const quitFun = new api.DoorFun({
+			title   : 'Quit',
+			execute : quit,
+		}, fDir.fullPath );
+		
+		/*
+		self.addFun( getIdentityFun );
+		self.addFun( startLiveFun );
+		self.addFun( openLiveFun );
+		self.addFun( closeLiveFun );
+		*/
+		
+		self.addDir( fDir );
+		//self.addDir( modDir );
+		self.addFun( quitFun );
+		
+		/*
 		function getIdentity() {
-			console.log( 'dormant fun getIdentity' );
 			return hello.identity;
 		}
 		
-		/*
-		self.door.addDir({
-			MetaType: 'Directory',
-			Title: 'functions',
-			Icon: 'Directory',
-			Path: 'functions/',
-			Position: 'left',
-			Module: 'files',
-			Command: 'dormant',
-			Filesize: 4096,
-			Flags: '',
-			Type: 'Dormant',
-			Dormant: '',
-		});
+		function startLive() {
+			if ( !hello.main ) {
+				return 'ERR_NOT_LOGGED_IN';
+			}
+			
+			hello.main.joinLive();
+		}
+		
+		function openLive( args ) {
+			console.log( 'openLive', args );
+			if ( !hello.main )
+				return;
+			
+			let pres = hello.module.getPresence();
+			if ( !pres )
+				return;
+			
+			console.log( 'hasPresecne', pres );
+			pres.openLive( args[ 0 ] || 'fnetRoom' );
+		}
+		
+		function closeLive() {
+			if ( !hello.rtc ) {
+				return true;
+			}
+			
+			hello.rtc.leave();
+		}
+		
 		*/
+		
+		function quit() {
+			hello.quit();
+		}
 	}
 	
 })( library.system );

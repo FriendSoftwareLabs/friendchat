@@ -1251,9 +1251,9 @@ window.Application = new fupLocal.Application();
 		var self = this;
 		self.methodMap = {
 			'getdirectory' : getDirectory,
-			'updatetitle' : updateTitle,
-			'execute' : execute,
-			'callback' : callback,
+			'updatetitle'  : updateTitle,
+			'execute'      : execute,
+			'callback'     : callback,
 		};
 		
 		function getDirectory( e ) { self.handleGetDirectory( e ); }
@@ -1261,6 +1261,8 @@ window.Application = new fupLocal.Application();
 		function execute( e ) { self.handleExecute( e ); }
 		function callback( e ) { self.handleCallback( e ); }
 	}
+	
+	// Public
 	
 	ns.Dormant.prototype.add = function( door ) {
 		var self = this;
@@ -1273,6 +1275,23 @@ window.Application = new fupLocal.Application();
 		self.send( msg );
 	}
 	
+	ns.Dormant.prototype.remove = function( doorId ) {
+		const self = this;
+		let door = self.doors[ doorId ];
+		if ( !door )
+			return;
+		
+		delete self.doors[ doorId ];
+		const remove = {
+			method : 'delAppDoor',
+			title  : door.title,
+		}
+	}
+	
+	ns.Dormant.prototype.close = function() {
+		const self = this;
+	}
+	
 	ns.Dormant.prototype.setupProxy = function( info ) {
 		var self = this;
 		console.log( 'setupProxyDoor - NYI', info );
@@ -1280,7 +1299,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.getDoors = function( callback ) {
 		var self = this;
-		//console.log( 'getDoors' );
+		console.log( 'getDoors' );
 		var callbackId = self.app.setCallback( callBackWrap );
 		self.send({
 			method     : 'getDoors',
@@ -1288,7 +1307,7 @@ window.Application = new fupLocal.Application();
 		});
 		
 		function callBackWrap( msg ) {
-			//console.log( 'getDoors.callBackWrap', msg );
+			console.log( 'getDoors.callBackWrap', msg );
 			for ( var infoKey in msg )
 				self.setupProxyDoor( msg[ infoKey ] );
 			if ( callback )
@@ -1298,7 +1317,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleMessage = function( msg ) {
 		var self = this;
-		//console.log( 'Dormant.handleMessage', msg );
+		console.log( 'Dormant.handleMessage', msg );
 		var handler = self.methodMap[ msg.method ];
 		if ( !handler ) {
 			console.log( 'Dormant.handleMessage - no handler for', msg );
@@ -1310,25 +1329,23 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleGetDirectory = function( msg ) {
 		var self = this;
-		/*
 		console.log( 'handleGetDirectory', {
 			msg : msg,
 			doors : self.doors,
 		});
-		*/
 		var door = self.doors[ msg.doorId ];
 		if ( !door ) {
 			consolelog( 'Doormant.handleGetDirectory - no door for', { m : msg, d : self.doors });
 		}
 		
 		var dir = door.getDirectory( msg );
-		//console.log( 'handleGetDirectory - dir', dir );
+		console.log( 'handleGetDirectory - dir', dir );
 		self.sendBack( dir, msg );
 	}
 	
 	ns.Dormant.prototype.handleUpdateTitle = function( msg ) {
 		var self = this;
-		//console.log( 'handleUpdateTitle', msg );
+		console.log( 'handleUpdateTitle', msg );
 		var door = self.doors[ msg.doorId ];
 		if ( !door ) {
 			console.log( 'Doormant - no door for', { m : msg, d : self.doors });
@@ -1340,21 +1357,22 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleExecute = function( event ) {
 		var self = this;
+		console.log( 'handleExecute', event );
 		const door = self.doors[ event.doorId ];
 		if ( !door ) {
 			console.log( 'handleExecute - no door', { e : event, self : self });
 			return;
 		}
 		
-		const data = door.execute( event );
-		/*
-		console.log( 'handleExecute, data', {
-			event : event,
-			door : door,
-			data : data,
-		});
-		*/
-		self.sendBack( data, event );
+		door.execute( event, execBack );
+		function execBack( err , res ) {
+			console.log( 'handleExecute, execBack', {
+				event : event,
+				door  : door,
+				res   : res,
+			});
+			self.sendBack( res, event );
+		}
 	}
 	
 	ns.Dormant.prototype.handleCallback = function( msg ) {
@@ -1364,7 +1382,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.set = function( doorObj ) {
 		var self = this;
-		//console.log( 'setDoor', doorObj );
+		console.log( 'setDoor', doorObj );
 		var doorId = friendUP.tool.uid( 'door' );
 		doorObj.doorId = doorId;
 		self.doors[ doorId ] = doorObj;
@@ -1373,14 +1391,8 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.get = function( doorId ) {
 		var self = this;
-		//console.log( 'getDoor', doorId );
+		console.log( 'getDoor', doorId );
 		return self.doors[ doorId ];
-	}
-	
-	ns.Dormant.prototype.remove = function( doorId ) {
-		var self = this;
-		if ( self.doors[ doorId ])
-			delete self.doors[ doorId ];
 	}
 	
 	ns.Dormant.prototype.sendBack = function( data, event ) {
@@ -1391,7 +1403,7 @@ window.Application = new fupLocal.Application();
 			doorId : event.doorId,
 			data : data,
 		};
-		//console.log( 'Dormant.sendBack', msg );
+		console.log( 'Dormant.sendBack', msg );
 		self.send( msg );
 	}
 	
@@ -1423,67 +1435,15 @@ friend.Dormant = new fupLocal.Dormant;
 		self.init();
 	}
 	
-	ns.Door.prototype.getDirectory = function( msg ) {
-		var self = this;
-		//const path = self.normalizePath( msg.path );
-		//console.log( 'getDirectory', msg );
-		const dir = self.dirs[ msg.path ];
-		if ( !dir ) {
-			console.log( 'Dormant / Door.getDirectory - no dir found', {
-				msg  : msg,
-				dirs : self.dirs,
-			});
-			return;
-		}
-		
-		let items = dir.itemize();
-		items = items.map( addDoorInfo );
-		//console.log( 'Door.getDirectory', { m : msg, dir : dir, dirs : self.dirs, self : self });
-		return items;
-		
-		function addDoorInfo( item ) {
-			item.Dormant = {
-				title  : self.title,
-				doorId : self.doorId,
-			};
-			return item;
-		}
-	}
+	// Public
 	
-	ns.Door.prototype.execute = function( event ) {
+	ns.Door.prototype.close = function() {
 		const self = this;
-		const fnName = event.dormantCommand;
-		const fnArgs = event.dormantArgs;
-		/*
-		console.log( 'Dormant / Door.execute', {
-			e : event,
-			name : fnName,
-			args : fnArgs,
-			dirs : self.dirs
-		});
-		*/
-		
-		let path = self.normalizePath( 'Functions/' );
-		//path = self.normalizePath( path );
-		const parent = self.dirs[ path ];
-		const fun = parent.funs[ event.dormantCommand ];
-		if ( !fun ) {
-			console.log( 'no fun for', event );
-			return null;
-		}
-		
-		//console.log( 'found fun item', fun );
-		if ( !fun.execute ) {
-			console.log( '..but no funtion to execute', fun );
-			return null;
-		}
-		
-		return fun.execute( fnArgs );
+		console.log( 'door.close - NYI' ) ;
 	}
 	
 	ns.Door.prototype.addDir = function( dir ) {
 		const self = this;
-		//const base = self.setParentDir( dir.Path );
 		if ( !dir.fullPath || !dir.fullPath.length ) {
 			console.log( 'Dormant / Door.addItem - invalid path', dir );
 			throw new Error( 'Dormant / Door.addItem - invalid path' );
@@ -1519,13 +1479,122 @@ friend.Dormant = new fupLocal.Dormant;
 			return;
 		}
 		
-		//console.log( 'addFun', item );
+		console.log( 'addFun', item );
 		dir.funs[ item.title ] = item;
 		dir.items.push( item );
 	}
 	
+	ns.Door.prototype.remove = function( dir ) {
+		const self = this;
+		let path = dir.fullPath;
+		let target = self.dirs[ path ];
+		let parent = self.dirs[ dir.parentPath ];
+		console.log( 'remove', {
+			dir  : dir,
+			dirs : self.dirs,
+			target : target,
+			parent : parent,
+		});
+		if ( !target )
+			return;
+		
+		parent.items = parent.items.filter( notTarget );
+		delete self.dirs[ path ];
+		target.close();
+		
+		function notTarget( item ) {
+			return item.fullPath !== target.fullPath;
+		}
+	}
+	
+	ns.Door.prototype.getDirectory = function( msg ) {
+		var self = this;
+		//const path = self.normalizePath( msg.path );
+		console.log( 'getDirectory', msg );
+		const dir = self.dirs[ msg.path ];
+		if ( !dir ) {
+			console.log( 'Dormant / Door.getDirectory - no dir found', {
+				msg  : msg,
+				dirs : self.dirs,
+			});
+			return null;
+		}
+		
+		let items = dir.itemize();
+		items = items.map( addDoorInfo );
+		console.log( 'Door.getDirectory', { m : msg, dir : dir, dirs : self.dirs, self : self });
+		return items;
+		
+		function addDoorInfo( item ) {
+			item.Dormant = {
+				title  : self.title,
+				doorId : self.doorId,
+			};
+			return item;
+		}
+	}
+	
+	ns.Door.prototype.execute = function( event, callback ) {
+		const self = this;
+		const fnPath = event.dormantPath;
+		const fnName = event.dormantCommand;
+		let   fnArgs = event.dormantArgs;
+		console.log( 'Door.execute', {
+			e    : event    ,
+			path : fnPath   ,
+			name : fnName   ,
+			args : fnArgs   ,
+			dirs : self.dirs,
+		});
+		
+		//let path = self.normalizePath( 'Functions/' );
+		path = self.normalizePath( fnPath );
+		const parent = self.dirs[ path ];
+		const fun = parent.funs[ event.dormantCommand ];
+		if ( !fun ) {
+			console.log( 'no fun for', event );
+			callback( 'ERR_DORMANT_NO_FUN_DOOR', null );
+		}
+		
+		console.log( 'found fun item', fun );
+		if ( !fun.execute|| !fun.execute.apply ) {
+			console.log( '..but no funtion to execute', fun );
+			callback( 'ERR_DORMANT_NO_FUN', null );
+		}
+		
+		const future = fun.execute.apply( null, fnArgs )
+		if ( !future ) {
+			callback( null, true );
+			return;
+		}
+		
+		future
+			.then( exeOk )
+			.catch( exeFail );
+		
+		function exeOk( res ) {
+			callback( null, res );
+		}
+		
+		function exeFail( err ) {
+			callback( err, null );
+		}
+	}
+	
+	// Private
+	
 	ns.Door.prototype.normalizePath = function( path ) {
 		const self = this;
+		console.log( 'normalizePath', path );
+		if ( !path ) {
+			try {
+				throw new Error( 'normalizePath' );
+			} catch( e ) {
+				console.log( 'normalizePath - no path - trace', e );
+			}
+			path = '';
+		}
+		
 		if ( null == path.match( self.baseRX ))
 			path = self.basePath + path;
 		
@@ -1534,7 +1603,7 @@ friend.Dormant = new fupLocal.Dormant;
 	
 	ns.Door.prototype.init = function() {
 		var self = this;
-		//console.log( 'Door.init', self );
+		console.log( 'Door.init', self );
 		self.basePath = self.title + ':';
 		self.baseRX = new RegExp( '^' + self.basePath, '' );
 		
@@ -1556,6 +1625,7 @@ api.DoorItem = function( conf, parentPath ) {
 	self.path = conf.path;
 	self.title = conf.title;
 	self.parentPath = parentPath;
+	self.module = 'files';
 	
 	self.baseInit();
 };
@@ -1566,7 +1636,7 @@ api.DoorItem.prototype.itemize = function() {
 	const self = this;
 	const items = [];
 	self.items.forEach( serialize );
-	//console.log( 'itemize', items );
+	console.log( 'itemize', items );
 	return items;
 	
 	function serialize( item ) {
@@ -1578,9 +1648,10 @@ api.DoorItem.prototype.itemize = function() {
 api.DoorItem.prototype.serialize = function() {
 	const self = this;
 	const conf = {
-		MetaType  : self.meta || 'Meta',
+		MetaType  : self.metaType || 'Meta',
+		Module    : self.module || undefined,
 		Title     : self.title,
-		FileName  : self.title,
+		FileName  : self.fileName || undefined,
 		IconClass : self.iconClass || '',
 		Path      : self.fullPath,
 		Position  : 'left',
@@ -1606,8 +1677,10 @@ api.DoorItem.prototype.baseInit = function() {
 //
 api.DoorDir = function( conf, parentPath ) {
 	const self = this;
+	console.log( 'DoorDir', conf );
 	self.iconClass = conf.icon || 'Directory';
 	self.type = 'Directory';
+	self.fileName = conf.path;
 	self.metaType = 'Directory';
 	self.fileSize = 4096;
 	api.DoorItem.call( self, conf, parentPath );
@@ -1621,6 +1694,13 @@ api.DoorDir = function( conf, parentPath ) {
 api.DoorDir.prototype = Object.create( api.DoorItem.prototype );
 
 // Public
+
+api.DoorDir.prototype.close = function() {
+	const self = this;
+	self.funs = null;
+	self.items.forEach( item => item.close());
+	self.items = null;
+}
 
 // Private
 
@@ -1636,9 +1716,10 @@ api.DoorFun = function( conf, parentPath ) {
 	const self = this;
 	//conf.path = conf.title;
 	self.type = 'DormantFunction';
+	self.metaType = 'Meta';
 	self.execute = conf.execute;
 	self.iconClass = conf.icon || 'File';
-	self.fileSize = 16;
+	self.fileSize = 1337;
 	api.DoorItem.call( self, conf, parentPath );
 	
 	self.init();
@@ -1647,6 +1728,11 @@ api.DoorFun = function( conf, parentPath ) {
 api.DoorFun.prototype = Object.create( api.DoorItem.prototype );
 
 // Public
+
+api.DoorFun.prototype.close = function() {
+	const self = this;
+	delete self.execute;
+}
 
 // Private
 
@@ -1657,6 +1743,8 @@ api.DoorFun.prototype.init = function() {
 
 //
 // file in Dormant dir
+//
+// NYI
 
 // SoundAlert
 (function( ns, undefined ) {

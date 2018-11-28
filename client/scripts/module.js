@@ -32,7 +32,7 @@ library.module = library.module || {};
 		
 		const self = this;
 		self.module = conf.module;
-		self.parentView = conf.parentView
+		self.parentView = conf.parentView;
 		self.clientId = self.module.clientId;
 		self.onremove = conf.onremove;
 		
@@ -607,6 +607,108 @@ library.module = library.module || {};
 		}
 	}
 	
+	ns.Presence.prototype.getFriendContact = function( friendId ) {
+		const self = this;
+		console.log( 'getFriendContact', friendId );
+		return new Promise(( resolve, reject ) => {
+			const getFC = {
+				friendId : friendId,
+			};
+			self.req.request( 'friend-get', getFC )
+				.then( resolve )
+				.catch( reject );
+			
+			/*
+			function ok( identity ) {
+				console.log( 'addFriendContact - req ok', identity );
+				resolve( identity );
+			}
+			
+			function fail( err ) {
+				console.log( 'addFriendContact - req err', err );
+				reject( err );
+			}
+			*/
+		});
+	}
+	
+	ns.Presence.prototype.addContact = function( clientId ) {
+		const self = this;
+		console.log( 'Presence.addContact', clientId );
+		return new Promise(( resolve, reject ) => {
+			if ( self.contacts[ clientId ]) {
+				console.log( 'Presence.addContact - already exists', self.contacts );
+				resolve( clientId );
+				return;
+			}
+			
+			const add = {
+				clientId : clientId,
+			};
+			self.req.request( 'contact-add', add )
+				.then( addBack )
+				.catch( reject );
+			
+			function addBack( clientId ) {
+				console.log( 'addBack', clientId );
+				resolve( clientId );
+			}
+		});
+	}
+	
+	ns.Presence.prototype.getContact = function( clientId ) {
+		const self = this;
+		console.log( 'Presence.getContact', clientId );
+		return new Promise(( resolve, reject ) => {
+			let contact = self.contacts[ clientId ];
+			if ( contact ) {
+				resolve( contact );
+				return;
+			}
+			
+			self.addContact( clientId )
+				.then( cAdded )
+				.catch( reject );
+				
+			function cAdded( clientId ) {
+				console.log( 'cAdded', clientId );
+				if ( !clientId ) {
+					resolve( null );
+					return;
+				}
+				
+				contact = self.contacts[ clientId ];
+				if ( !contact ) {
+					reject( 'ERR_FUCK_STILL_NO_CONTACT' );
+					return;
+				}
+				
+				resolve( contact );
+			}
+		});
+		
+	}
+	
+	ns.Presence.prototype.sendMessage = function( clientId, message, openChat ) {
+		const self = this;
+		console.log( 'Presence.sendMessage', arguments );
+		return new Promise(( resolve, reject ) => {
+			self.getContact( clientId )
+				.then( contactBack )
+				.catch( reject );
+			
+			function contactBack( contact ) {
+				if ( !contact ) {
+					reject( 'ERR_NOT_AVAILABLE' );
+					return;
+				}
+				
+				contact.sendMessage( message, openChat );
+				resolve( true );
+			}
+		});
+	}
+	
 	ns.Presence.prototype.openChat = function( conf ) {
 		const self = this;
 		const item = self.getTypeItem( conf.id, conf.type );
@@ -645,6 +747,28 @@ library.module = library.module || {};
 			in : invite,
 			id : identity,
 		});
+	}
+	
+	ns.Presence.prototype.openLive = function( roomName ) {
+		const self = this;
+		console.log( 'openLive', roomName );
+		let cIds = Object.keys( self.contacts );
+		let room = null;
+		cIds.some( cId => {
+			let r = self.contacts[ cId ];
+			console.log( 'room', r );
+			if ( roomName === r.identity.name ) {
+				room = r;
+				return true;
+			}
+			
+			return false;
+		});
+		
+		if ( !room )
+			return false;
+		
+		room.joinLive();
 	}
 	
 	ns.Presence.prototype.leave = function( roomId ) {
@@ -697,35 +821,23 @@ library.module = library.module || {};
 		}
 	}
 	
+	ns.Presence.prototype.initialize = function() {
+		const self = this;
+		console.log( 'Presence.initialize - NYI', arguments );
+	}
+	
 	ns.Presence.prototype.setup = function() {
 		const self = this;
 		// register as service provider with the rtc bridge
-		const serviceConf = {
-			ongetinfo   : onGetInfo,
-			oncreate    : onCreate,
-			onhost      : onHost,
-			onevent     : onEvent,
-			onclose     : onClose,
-			oninvite    : onInvite,
-			onidentity  : onIdentity,
-		}
-		self.service = new library.component.RTCService( serviceConf );
-		hello.rtc.setServiceProvider( self.service );
-		
-		function onGetInfo( e ) { return self.handleServiceOnGetInfo( e ); }
-		function onCreate( e ) { self.handleServiceOnCreate( e ); }
-		function onHost( e ) { return self.account.host; }
-		function onEvent( e ) { self.handleServiceOnEvent( e ); }
-		function onClose( e ) { self.handleServiceOnClose( e ); }
-		function onInvite( e, rid ) { self.handleServiceOnInvite( e, rid ); }
-		function onIdentity() { return self.identity; }
+		self.service = new library.component.PresenceService( self );
+		hello.setServiceProvider( self.service );
 		
 		self.sendModuleInit();
 	}
 	
-	ns.Presence.prototype.initialize = function() {
+	ns.Presence.prototype.getHost = function() {
 		const self = this;
-		console.log( 'Presence.initialize - NYI', arguments );
+		return self.account.host;
 	}
 	
 	ns.Presence.prototype.sendModuleInit = function() {
@@ -758,7 +870,7 @@ library.module = library.module || {};
 	
 	// from service
 	
-	ns.Presence.prototype.handleServiceOnGetInfo = function( clientId ) {
+	ns.Presence.prototype.serviceGetRoomInfo = function( clientId ) {
 		const self = this;
 		const item = self.getTypeItem( clientId );
 		if ( !item )
@@ -772,7 +884,7 @@ library.module = library.module || {};
 		};
 	}
 	
-	ns.Presence.prototype.handleServiceOnCreate = function( event ) {
+	ns.Presence.prototype.serviceCreateRoom = function( event ) {
 		const self = this;
 		var reqId = friendUP.tool.uid( 'req' );
 		var session = event.data;
@@ -800,9 +912,9 @@ library.module = library.module || {};
 		console.log( 'handleServiceOnCreate - unknown event', event );
 	}
 	
-	ns.Presence.prototype.handleServiceOnEvent = function( event ) {
+	ns.Presence.prototype.handleServiceEvent = function( event ) {
 		const self = this;
-		console.log( 'handleServiceOnEvent - NYI', event );
+		console.log( 'handleServiceEvent - NYI', event );
 	}
 	
 	ns.Presence.prototype.handleServiceOnClose = function( event ) {
@@ -810,7 +922,7 @@ library.module = library.module || {};
 		console.log( 'handleServiceOnClose - NYI', event );
 	}
 	
-	ns.Presence.prototype.handleServiceOnInvite = function( conf, roomId ) {
+	ns.Presence.prototype.serviceLiveInvite = function( conf, roomId ) {
 		const self = this;
 		const contacts = conf.contacts;
 		const permissions = conf.permissions;
@@ -819,7 +931,6 @@ library.module = library.module || {};
 		
 		self.sendInvites( 'live', contacts, roomId );
 	}
-	
 	
 	// from server
 	
@@ -833,6 +944,7 @@ library.module = library.module || {};
 			data : self.accountId,
 		};
 		self.toView( uid );
+		//self.setupDormant();
 		
 		function updateAccount( account ) {
 			self.account = account;
@@ -864,11 +976,13 @@ library.module = library.module || {};
 		
 		self.accountId = accountId;
 		self.acc = new library.component.EventNode( accountId, self.conn, accEventSink );
+		self.req = new library.component.RequestNode( self.acc, accReqEventSink );
 		
 		self.bindAcc();
 		self.initializeAccount();
 		
 		function accEventSink() { console.log( 'Presence.accEventSink', arguments ); }
+		function accReqEventSink() { console.log( 'Presence.accReqEventSink', arguments ); }
 	}
 	
 	ns.Presence.prototype.initializeAccount = function() {
@@ -1009,10 +1123,6 @@ library.module = library.module || {};
 			return;
 		
 		contact.handleEvent( event );
-	}
-	
-	ns.Presence.prototype.addContact = function( contact ) {
-		const self = this;
 	}
 	
 	ns.Presence.prototype.handleInvite = function( event ) {
@@ -1320,6 +1430,59 @@ library.module = library.module || {};
 		return room;
 	}
 	
+	ns.Presence.prototype.setupDormant = function() {
+		const self = this;
+		console.log( 'Presence.setupDormant - enabled?', hello.dormantEnabled );
+		if ( !hello.dormant )
+			return;
+		
+		if ( !hello.dormant.allowWrite )
+			return;
+		
+		console.log( 'Presence.dormantParentPath', self.dormantParentPath );
+		if ( self.dormantParentPath )
+			return;
+		
+		console.log( 'Presence.setupDormant', self );
+		/*
+		let uid = self.clientId.split( '-' )[1];
+		let path = [
+			'presence',
+			uid,
+		];
+		path = path.join( '_' );
+		*/
+		const path = 'Presence';
+		const presence = new api.DoorDir({
+			title : path,
+			path  : path + '/',
+		}, 'Modules/' );
+		
+		/*
+		const contacts = new api.DoorDir({
+			title : 'Contacts',
+			path  : 'Contacts/',
+		}, presence.fullPath );
+		self.dormantParentPath = contacts.fullPath;
+		
+		const getIdentityFn = new api.DoorFun({
+			title   : 'GetIdentity',
+			execute : getIdentity,
+		}, presence.fullPath );
+		
+		hello.dormant.addDir( presence );
+		hello.dormant.addDir( contacts );
+		hello.dormant.addFun( getIdentityFn );
+		
+		function getIdentity() {
+			return self.identity;
+		}
+		
+		*/
+		
+		hello.dormant.addDir( presence );
+	}
+	
 })( library.module );
 
 
@@ -1542,7 +1705,7 @@ library.module = library.module || {};
 		function oldPassFail( e ) { self.oldPasswordFailed( e ); }
 		
 		self.bindView();
-		self.setupDormant();
+		//self.setupDormant();
 		
 		if ( self.module.login )
 			self.initCrypto();
@@ -1896,10 +2059,32 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.setupDormant = function() {
 		const self = this;
+		console.log( 'Treeroot.setupDormant - enabled?', hello.dormantEnabled );
+		if ( !hello.dormantEnabled )
+			return;
+			
+		if ( self.dormantParentPath )
+			return;
+		
+		console.log( 'setupDormant', self );
+		let uid = self.clientId.split( '-' )[1];
+		let path = [
+			'treeroot',
+			self.module.host,
+			self.identity.serviceId,
+			uid
+		];
+		path = path.join( '_' );
+		const treeroot = new api.DoorDir({
+			title : path,
+			path  : path + '/',
+		}, 'Modules/' );
+		/*
 		const treeroot = new api.DoorDir({
 			title : 'treeroot - ' + self.module.host,
 			path  : self.clientId + '/',
 		}, '' );
+		*/
 		
 		const contacts = new api.DoorDir({
 			title : 'Contacts',
@@ -2088,14 +2273,14 @@ library.module = library.module || {};
 			return;
 		
 		var conf = {
-			moduleId   : self.clientId,
-			parentConn : self.conn,
-			parentView : self.parentView,
-			parentPath : self.dormantParentPath,
-			contact    : contact,
-			msgCrypto  : !!self.module.settings.msgCrypto,
-			encrypt    : encrypt,
-			decrypt    : decrypt,
+			moduleId          : self.clientId,
+			parentConn        : self.conn,
+			parentView        : self.parentView,
+			//dormantParentPath : self.dormantParentPath,
+			contact           : contact,
+			msgCrypto         : !!self.module.settings.msgCrypto,
+			encrypt           : encrypt,
+			decrypt           : decrypt,
 		};
 		
 		function encrypt( e ) {
@@ -2139,17 +2324,20 @@ library.module = library.module || {};
 		self.isLoggedIn = false;
 		if ( !data || !data.account )
 			return;
-		
-		self.isLoggedIn = true;
-		var account = data.account;
-		var name = account.name || self.identity.name;
-		var avatar = getAvatarPath( account.imagePath );
+
+		const account = data.account;
+		const name = account.name || self.identity.name;
+		const username = account.username;
+		const avatar = getAvatarPath( account.imagePath );
 		self.identity = {
-			clientId : self.clientId,
-			name : name,
-			avatar : avatar,
+			clientId  : self.clientId,
+			name      : name,
+			avatar    : avatar,
+			username  : username,
+			serviceId : account.id,
 		};
 		
+		//self.setupDormant();
 		self.view.send({
 			type : 'account',
 			data : self.identity,
@@ -2661,6 +2849,7 @@ library.module = library.module || {};
 		
 		self.bindView();
 		self.initialize();
+		//self.setupDormant();
 	}
 	
 	ns.IRC.prototype.handleConnecting = function() {
@@ -2721,6 +2910,80 @@ library.module = library.module || {};
 		function reconnectClick( msg ) { self.optionReconnect( msg ); }
 		function disconnectClick( msg ) { self.optionDisconnect( msg ); }
 		function leaveClick( msg ) { self.leaveChannel( msg ); }
+	}
+	
+	ns.IRC.prototype.setupDormant = function() {
+		const self = this;
+		if ( !hello.dormantEnabled )
+			return;
+		
+		if ( self.dormantParentPath )
+			return;
+		
+		console.log( 'setupDormant', self );
+		let mid = self.clientId.split( '-' )[1];
+		let path = [
+			'irc',
+			self.module.host,
+			self.identity.name,
+			mid
+		];
+		
+		path = path.join( '_' );
+		const irc = new api.DoorDir({
+			title : path,
+			path  : path + '/',
+		}, 'Modules/' );
+		
+		const channels = new api.DoorDir({
+			title : 'Channels',
+			path  : 'Channels/',
+		}, irc.fullPath );
+		
+		const privMsg = new api.DoorDir({
+			title : 'PrivMsg',
+			path  : 'PrivMsg/',
+		}, irc.fullPath );
+		
+		self.dormantChannelPath = channels.fullPath;
+		self.dormantPrivMsgPath = privMsg.fullPath;
+		
+		const joinChannelFn = new api.DoorFun({
+			title   : 'JoinChannel',
+			execute : joinChannel,
+		}, irc.fullPath );
+		
+		const leaveChannelFn = new api.DoorFun({
+			title   : 'LeaveChannel',
+			execute : leaveChannel,
+		}, irc.fullPath );
+		
+		hello.dormant.addDir( irc );
+		hello.dormant.addDir( channels );
+		hello.dormant.addDir( privMsg );
+		hello.dormant.addFun( joinChannelFn );
+		hello.dormant.addFun( leaveChannelFn );
+		
+		function joinChannel( args, callback ) {
+			if ( !args || !args.length ) {
+				callback( 'ERR_INVALID_ARGS', null );
+				return;
+			}
+			
+			self.joinChannel( args[ 0 ]);
+			return true;
+		}
+		
+		function leaveChannel( args, callback ) {
+			console.log( 'dormant.irc.leaveChannel', args );
+			if ( !args || !args.length ) {
+				callback( 'ERR_INVALID_ARGS', null );
+				return;
+			}
+			
+			self.leaveChannel( args[0] );
+			return true;
+		}
 	}
 	
 	ns.IRC.prototype.toggleConsole =function( data ) {
@@ -2856,12 +3119,13 @@ library.module = library.module || {};
 		}
 		
 		var conf = {
-			moduleId   : self.clientId,
-			parentConn : self.conn,
-			parentView : self.parentView,
-			user       : self.identity,
-			channel    : channel,
-			viewTheme  : self.module.settings.ircTheme,
+			moduleId          : self.clientId,
+			parentConn        : self.conn,
+			parentView        : self.parentView,
+			dormantParentPath : self.dormantChannelPath,
+			user              : self.identity,
+			channel           : channel,
+			viewTheme         : self.module.settings.ircTheme,
 		};
 		
 		var chanObj = new library.contact.IrcChannel( conf );
@@ -2994,12 +3258,13 @@ library.module = library.module || {};
 	ns.IRC.prototype.createPrivateChat = function( contact, forceOpen ) {
 		const self = this;
 		var conf = {
-			moduleId   : self.clientId,
-			parentConn : self.conn,
-			parentView : self.parentView,
-			contact    : contact,
-			user       : self.identity,
-			viewTheme  : self.module.settings.ircTheme,
+			moduleId          : self.clientId,
+			parentConn        : self.conn,
+			parentView        : self.parentView,
+			dormantParentPath : self.dormantPrivMsgPath,
+			contact           : contact,
+			user              : self.identity,
+			viewTheme         : self.module.settings.ircTheme,
 		};
 		
 		var privObj = new library.contact.IrcPrivMsg( conf );

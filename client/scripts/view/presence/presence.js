@@ -219,6 +219,7 @@ library.view = library.view || {};
 		hello.template = friend.template;
 		friend.template.addFragments( conf.commonFragments );
 		const state = conf.state;
+		console.log( 'view.Presence.handleInitialize', state );
 		
 		// things
 		self.isPrivate  = state.isPrivate;

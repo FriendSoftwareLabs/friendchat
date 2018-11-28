@@ -333,6 +333,7 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.handle = function( event ) {
 		const self = this;
+		console.log( 'handle', event );
 		if ( 'response' === event.type ) {
 			self.handleResponse( event.data );
 			return;
@@ -369,6 +370,7 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.handleResponse = function( event ) {
 		const self = this;
+		console.log( 'handleResponse', event );
 		const reqId = event.requestId;
 		const err = event.error || null;
 		const res = err ? null : ( event.response || null );
@@ -540,13 +542,13 @@ inherits from EventEmitter
 	ns.Identity.prototype.fromFCUser = function( conf ) {
 		const self = this;
 		self.fupConf = conf;
-		self.fupId = conf.ID;
+		self.fupId   = conf.ID;
 		self.fUserId = conf.UniqueID;
-		self.name = library.tool.htmlDecode( conf.FullName );
-		self.alias = conf.Name;
-		self.email = conf.Email;
-		self.avatar = conf.Image; // || self.avatar;
-		self.level = conf.Level;
+		self.name    = library.tool.htmlDecode( conf.FullName );
+		self.alias   = conf.Name;
+		self.email   = conf.Email;
+		self.avatar  = conf.Image; // || self.avatar;
+		self.level   = conf.Level;
 		
 	}
 	
@@ -562,13 +564,13 @@ inherits from EventEmitter
 			Level    : conf.level,
 		};
 		
-		self.fupId = conf.fupId;
+		self.fupId   = conf.fupId;
 		self.fUserId = conf.fUserId;
-		self.name = conf.name;
-		self.alias = conf.alias;
-		self.email = conf.email;
-		self.avatar = conf.avatar, // || self.avatar;
-		self.level = conf.level;
+		self.name    = conf.name;
+		self.alias   = conf.alias;
+		self.email   = conf.email;
+		self.avatar  = conf.avatar, // || self.avatar;
+		self.level   = conf.level;
 	}
 	
 })( library.component );

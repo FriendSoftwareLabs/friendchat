@@ -2244,18 +2244,51 @@ ns.Channel.prototype.init = function( parentConn ) {
 	self.client.on( 'log', getLog );
 	self.client.on( 'leave', leave );
 	self.client.on( 'state', getState );
+	self.client.on( 'request', request );
 	
-	function message(  e, cid ) {   self.message( e, cid ); }
-	function getLog(   e, cid ) {    self.getLog( e, cid ); }
-	function cmdTopic( e, cid ) {  self.cmdTopic( e, cid ); }
-	function leave(    e, cid ) {     self.leave( e, cid ); }
-	function getState( e, cid ) { self.sendState( e, cid ); }
+	function message(  e, cid ) { self.message(       e, cid ); }
+	function getLog(   e, cid ) { self.getLog(        e, cid ); }
+	function cmdTopic( e, cid ) { self.cmdTopic(      e, cid ); }
+	function leave(    e, cid ) { self.leave(         e, cid ); }
+	function getState( e, cid ) { self.sendState(     e, cid ); }
+	function request(  e, cid ) { self.handleRequest( e, cid ); }
 	
 	var timeout = 1000 * 60 * 10; // 10 minutes
 	self.logTrimTimer = setInterval( trimLog, timeout );
 	function trimLog() { self.trimLog(); }
 	
 	function unknownEvent( e ) { tlog( 'unknownEvent', e ); }
+}
+
+ns.Channel.prototype.handleRequest = function( event, cid ) {
+	const self = this;
+	const reqId = event.type;
+	const req = event.data;
+	let err = null;
+	let res = {
+		foo : 'bar',
+	};
+	
+	if ( 'userlist' === req.type )
+		res = self.compileUserlist();
+	
+	self.toClient({
+		type : 'request',
+		data : {
+			type : reqId,
+			data : {
+				err : err,
+				res : res,
+			},
+		},
+	});
+}
+
+ns.Channel.prototype.compileUserlist = function() {
+	const self = this;
+	let uids = Object.keys( self.users );
+	let list = uids.map( u => self.users[ u ].name );
+	return list;
 }
 
 ns.Channel.prototype.getState = function() {

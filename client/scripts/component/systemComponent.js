@@ -393,92 +393,174 @@ library.component = library.component || {};
 	
 })( library.component );
 
-// RTCService
+// PresenceService
 (function( ns, undefined ) {
-	ns.RTCService = function( conf ) {
+	ns.PresenceService = function( presence ) {
 		var self = this;
-		self.onhost = conf.onhost;
-		self.ongetinfo = conf.ongetinfo;
-		self.oncreate = conf.oncreate;
-		self.onevent = conf.onevent;
-		self.onclose = conf.onclose;
+		self.presence = presence;
+		/*
 		self.oninvite = conf.oninvite;
 		self.onidentity = conf.onidentity;
+		*/
 		
 		library.component.EventEmitter.call( self );
 		
 		self.init();
 	}
 	
-	ns.RTCService.prototype = Object.create(
+	ns.PresenceService.prototype = Object.create(
 		library.component.EventEmitter.prototype );
 	
 	// Public
 	
-	ns.RTCService.prototype.getHost = function() {
+	ns.PresenceService.prototype.getHost = function() {
 		const self = this;
-		return self.onhost();
-	}
-	
-	ns.RTCService.prototype.getRoomInfo = function( roomId ) {
-		const self = this;
-		if ( !self.ongetinfo )
-			return null;
-		
-		return self.ongetinfo( roomId );
-	}
-	
-	ns.RTCService.prototype.createRoom = function( req ) {
-		var self = this;
-		if ( !self.oncreate ) {
-			console.log( 'RTCService.getRoom - no handler', req );
+		if ( !self.presence )
 			return;
-		}
 		
-		self.oncreate( req );
+		return self.presence.getHost();
 	}
 	
-	ns.RTCService.prototype.getIdentity = function() {
+	ns.PresenceService.prototype.getRoomInfo = function( roomId ) {
 		const self = this;
-		return self.onidentity();
-	}
-	
-	
-	ns.RTCService.prototype.invite = function( conf, roomId ) {
-		const self = this;
-		self.oninvite( conf, roomId );
-	}
-	
-	ns.RTCService.prototype.send = function( event ) {
-		var self = this;
-		if ( self.onevent ) {
-			console.log( 'RTCService.send - no onevent', event );
+		if ( !self.presence )
 			return;
-		}
 		
-		self.onevent( event );
+		return self.presence.serviceGetRoomInfo( roomId );
 	}
 	
-	ns.RTCService.prototype.close = function() {
+	ns.PresenceService.prototype.createRoom = function( req ) {
 		var self = this;
-		delete self.ongetinfo;
-		delete self.oncreate;
-		delete self.onevent;
-		delete self.onclose;
-		delete self.oninvite;
-		delete self.onhost;
-		delete self.onidentity;
+		if ( !self.presence )
+			return;
 		
+		self.presence.serviceCreateRoom( req );
+	}
+	
+	ns.PresenceService.prototype.getIdentity = function() {
+		const self = this;
+		if ( !self.presence )
+			return;
+		
+		return self.presence.identity;
+	}
+	
+	ns.PresenceService.prototype.invite = function( conf, roomId ) {
+		const self = this;
+		if ( !self.presence )
+			return;
+		
+		self.presence.serviceLiveInvite( conf, roomId );
+	}
+	
+	ns.PresenceService.prototype.sendMsgToFID = function( uId, message, open ) {
+		const self = this;
+		if ( '--open' === open )
+			open = true;
+		else
+			open = false;
+		
+		return new Promise(( resolve, reject ) => {
+			if ( !self.presence ) {
+				reject( 'ERR_SERVICE_NOT_AVAILABLE' );
+				return;
+			}
+			
+			self.presence.getFriendContact( uId )
+				.then( idBack )
+				.catch( idFail );
+			
+			function idBack( identity ) {
+				console.log( 'PresenceService.sendMsgToFID - idBack', identity );
+				//self.sendMessage
+				if ( !identity )
+					resolve( false );
+				
+				self.presence.sendMessage( identity.clientId, message, open )
+					.then( sendOk )
+					.catch( reject );
+				//resolve( identity );
+				
+				function sendOk( res ) {
+					console.log( 'PresenceService.prototype.sendMsgToFID - sendOk', res );
+					resolve( true );
+				}
+			}
+			
+			function idFail( err ) {
+				console.log( 'PresenceService.sendMsgToFID - idFail', err );
+				reject( err );
+			}
+		});
+	}
+	
+	ns.PresenceService.prototype.send = function( event ) {
+		var self = this;
+		if ( !self.presence )
+			return;
+		
+		self.presence.handleServiceEvent( event );
+	}
+	
+	ns.PresenceService.prototype.close = function() {
+		var self = this;
+		delete self.service;
+		self.release();
 	}
 	
 	// Private
 	
-	ns.RTCService.prototype.init = function() {
+	ns.PresenceService.prototype.init = function() {
 		var self = this;
-		
+		self.setupDormant();
 	}
 	
-	ns.RTCService.prototype.handle = function( event ) {
+	ns.PresenceService.prototype.setupDormant = function() {
+		const self = this;
+		if ( !hello.dormant || !hello.dormant.allowWrite )
+			return;
+		
+		const msgToFID = new api.DoorFun({
+			title   : 'SendMessageToFriendID',
+			execute : sendMsgToFID,
+		}, 'Functions/' );
+		
+		hello.dormant.addFun( msgToFID );
+		
+		function sendMsgToFID( fId, message, open ) {
+			console.log( 'sendMsgToFID', {
+				fId       : fId,
+				message   : message,
+				open      : open,
+			});
+			
+			return new Promise(( resolve, reject ) => {
+				if ( !self.presence ) {
+					reject( 'ERR_NO_SERVICE' );
+					return;
+				}
+				
+				hello.service.sendMsgToFID(
+					fId,
+					message,
+					open
+				).then( msgSent )
+				.catch( msgFail );
+				
+				function msgSent( res ) {
+					console.log( 'sendMsgToFID - msgSent', res );
+					resolve( res );
+				}
+				
+				function msgFail( err ) {
+					console.log( 'sendMsgToFID - msgFail', err );
+					reject( err );
+				}
+			});
+		}
+	}
+	
+	ns.PresenceService.prototype.handle = function( event ) {
 		var self = this;
 		self.emit( event.type, event.data );
 	}
