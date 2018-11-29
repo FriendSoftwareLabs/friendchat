@@ -52,6 +52,14 @@ library.view = library.view || {};
 		self.view.send( event );
 	}
 	
+	ns.PresenceChat.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
 	ns.PresenceChat.prototype.setTitle = function( title ) {
 		const self = this;
 		if ( !self.view )
@@ -316,10 +324,22 @@ library.view = library.view || {};
 		self.init();
 	}
 	
+	// Public
+	
 	ns.IMChat.prototype.setTitle = function( title ) {
 		var self = this;
 		self.view.setTitle( title );
 	}
+	
+	ns.IMChat.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	// Private
 	
 	ns.IMChat.prototype.init = function() {
 		var self = this;

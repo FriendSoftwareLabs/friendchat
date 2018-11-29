@@ -842,8 +842,10 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.openChat = function() {
 		const self = this;
-		if ( self.chatView )
-			self.closeChat();
+		if ( self.chatView ) {
+			self.chatView.show();
+			return;
+		}
 		
 		self.messageWaiting( false );
 		const initData = {
@@ -1889,8 +1891,10 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChatView = function() {
 		const self = this;
-		if ( self.chatView )
-			self.closeChat();
+		if ( self.chatView ) {
+			self.chatView.show();
+			return;
+		}
 		
 		self.messageWaiting( false );
 		const initData = {
@@ -3174,7 +3178,7 @@ library.contact = library.contact || {};
 	ns.IrcPrivMsg.prototype.openChat = function( readyBack ) {
 		var self =this;
 		if ( self.chatView ) {
-			self.chatView.activate();
+			self.chatView.show();
 			return;
 		}
 		
