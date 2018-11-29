@@ -944,6 +944,9 @@ library.module = library.module || {};
 		
 		self.initialized = true;
 		updateAccount( state.account );
+		if ( !self.idc )
+			self.idc = new library.component.IdCache( self.acc, state.identities );
+		
 		self.setupRooms( state.rooms );
 		self.handleContactInit( state.contacts );
 		const uid = {
@@ -955,9 +958,6 @@ library.module = library.module || {};
 		
 		function updateAccount( account ) {
 			self.account = account;
-			if ( !self.idc )
-				self.idc = new library.component.IdCache( self.acc );
-			
 			if ( self.account.name !== self.identity.name )
 				updateName();
 			
@@ -1058,6 +1058,9 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleContactAdd = function( contact ) {
 		const self = this;
+		if ( !self.idc )
+			return;
+		
 		let cId = contact.clientId;
 		let room = self.contacts[ cId ];
 		if ( room ) {
@@ -1065,7 +1068,6 @@ library.module = library.module || {};
 			return;
 		}
 		
-		console.log( 'handleContactAdd', contact );
 		const host = library.tool.buildDestination(
 			null,
 			self.module.host,

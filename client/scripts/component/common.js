@@ -622,7 +622,6 @@ inherits from EventEmitter
 (function( ns, undefined ) {
 	ns.IdCache = function( conn, identities ) {
 		const self = this;
-		
 		self.conn = null;
 		self.ids =  identities || {};
 		self.idList = [];
@@ -663,6 +662,11 @@ inherits from EventEmitter
 				reject( 'ERR_ERR_ERR' );
 			}
 		});
+	}
+	
+	ns.IdCache.prototype.update = function( idMap ) {
+		const self = this;
+		console.log( 'idCache.update', idMap );
 	}
 	
 	// Pri<ate
