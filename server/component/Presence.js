@@ -83,6 +83,7 @@ ns.Presence.prototype.init = function() {
 	function connUpdated( e ) { self.handleConnUpdate( e ); }
 	function loginUpdated( e ) { self.handleLoginUpdate( e ); }
 	
+	console.log( 'sending initialize' );
 	self.client.send({
 		type : 'initialize',
 		data : true,
@@ -97,7 +98,7 @@ ns.Presence.prototype.initialize = function( initConf, socketId ) {
 	if ( !self.server || !self.server.connected )
 		self.connect();
 	else
-		self.sendAccount();
+		self.sendAccount( socketId );
 	
 	self.client.emitState();
 	
@@ -186,7 +187,6 @@ ns.Presence.prototype.releaseServerConn = function() {
 
 ns.Presence.prototype.handleConnReady = function() {
 	const self = this;
-	log( 'handlConnReady', self.accountId );
 	if ( !self.accountId )
 		return;
 	
@@ -347,7 +347,7 @@ ns.Presence.prototype.doLoggedInThings = function( accountId ) {
 	self.sendAccount();
 }
 
-ns.Presence.prototype.sendAccount = function() {
+ns.Presence.prototype.sendAccount = function( socketId ) {
 	const self = this;
 	if ( !self.accountId )
 		return;
@@ -356,7 +356,7 @@ ns.Presence.prototype.sendAccount = function() {
 		type : 'account',
 		data : self.accountId,
 	};
-	self.client.send( acc );
+	self.client.send( acc, socketId );
 }
 
 ns.Presence.prototype.bindAccount = function( accId ) {

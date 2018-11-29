@@ -274,6 +274,7 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.reconnectNow = function() {
 		const self = this;
+		self.initialized = false;
 		var msg = {
 			type : 'reconnect',
 		};
@@ -282,6 +283,7 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.disconnectNow = function() {
 		const self = this;
+		self.initialized = false;
 		var msg = {
 			type : 'disconnect',
 		};
@@ -521,6 +523,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
+		self.initialized = false;
 		self.sendModuleInit();
 		return;
 		
@@ -936,6 +939,10 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
+		if ( self.initialized )
+			return;
+		
+		self.initialized = true;
 		updateAccount( state.account );
 		self.setupRooms( state.rooms );
 		self.handleContactInit( state.contacts );
@@ -1058,6 +1065,7 @@ library.module = library.module || {};
 			return;
 		}
 		
+		console.log( 'handleContactAdd', contact );
 		const host = library.tool.buildDestination(
 			null,
 			self.module.host,
@@ -1067,7 +1075,7 @@ library.module = library.module || {};
 		self.idc.get( contact.clientId )
 			.then( idBack )
 			.catch();
-			
+		
 		function idBack( identity ) {
 			contact.identity = identity;
 			const conf = {
