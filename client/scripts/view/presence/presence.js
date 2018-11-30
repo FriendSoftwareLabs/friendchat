@@ -399,6 +399,11 @@ library.view = library.view || {};
 		self.titleId = friendUP.tool.uid( 'title' );
 		const stateId = friendUP.tool.uid( 'cstate' );
 		const user = self.users.get( self.contactId );
+		if ( !user ) {
+			console.log( 'setContactTitle - no user', self );
+			return;
+		}
+		
 		const conf = {
 			id             : self.titleId,
 			statusId       : stateId,

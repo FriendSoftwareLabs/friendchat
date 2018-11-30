@@ -1068,6 +1068,9 @@ library.module = library.module || {};
 			return;
 		}
 		
+		// prevents setting the contact twice, this fn is async
+		self.contacts[ cId ] = true;
+		
 		const host = library.tool.buildDestination(
 			null,
 			self.module.host,
@@ -1091,6 +1094,7 @@ library.module = library.module || {};
 				userId     : self.accountId,
 			};
 			
+			console.log( 'handleContactAdd - conf', conf );
 			room = new library.contact.PresenceContact( conf );
 			self.contacts[ cId ] = room;
 			const viewConf = room.getViewConf();
@@ -2334,7 +2338,8 @@ library.module = library.module || {};
 		self.isLoggedIn = false;
 		if ( !data || !data.account )
 			return;
-
+		
+		self.isLoggedIn = true;
 		const account = data.account;
 		const name = account.name || self.identity.name;
 		const username = account.username;
