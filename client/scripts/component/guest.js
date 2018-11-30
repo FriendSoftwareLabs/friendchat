@@ -50,7 +50,6 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.init = function() {
 		const self = this;
-		console.log('GuestAccount.init', self );
 		self.conn.on( 'ready', ready );
 		self.conn.on( 'account', account );
 		
@@ -60,7 +59,6 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.handleConnReady = function( e ) {
 		const self = this;
-		console.log( 'handleConnReady', e );
 		const init = {
 			type : 'initialize',
 		};
@@ -69,7 +67,6 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.handleAccount = function( loginEvent ) {
 		const self = this;
-		console.log( 'GuestAccount.handleAccount', loginEvent );
 		const accId = loginEvent.data;
 		self.accountId = accId;
 		self.acc = new library.component.EventNode( accId, self.conn, accSink );
@@ -98,7 +95,6 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.handleInit = function( state ) {
 		const self = this;
-		console.log( 'GuestAccount.handleInit', state );
 		if ( self.account )
 			return;
 		
@@ -131,12 +127,12 @@ library.component = library.component || {};
 	*/
 	ns.GuestAccount.prototype.handleJoinedRoom = function( conf ) {
 		const self = this;
-		console.log( 'GuestAccount.handleJoinedRoom', conf );
 		self.roomId = conf.clientId;
 		const roomConf = {
-			roomId   : self.roomId,
-			identity : conf,
-			idCache  : self.idc,
+			roomId      : self.roomId,
+			identity    : conf,
+			permissions : self.permissions,
+			idCache     : self.idc,
 		};
 		self.room = new library.component.GuestRoom( roomConf, self.acc );
 	}
@@ -155,12 +151,9 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.GuestRoom = function( conf, accConn ) {
 		const self = this;
-		console.log( 'GuestRoom', {
-			conf    : conf,
-			accConn : accConn,
-		});
 		self.id = conf.roomId;
 		self.identity = conf.identity;
+		self.permissions = conf.permissions;
 		self.idc = conf.idCache;
 		
 		self.conn = null;
@@ -191,7 +184,6 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.init = function( accConn ) {
 		const self = this;
-		console.log( 'GuestRoom.init', self );
 		self.conn = new library.component.EventNode( self.id, accConn, roomSink );
 		self.conn.on( 'initialize', init );
 		self.conn.on( 'identity', identity );
@@ -216,7 +208,6 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleInit = function( state ) {
 		const self = this;
-		console.log( 'GuestRoom.handleInit', state );
 		self.users = state.users;
 		self.identities = state.identities || {};
 		const perms = self.permissions || {
@@ -269,7 +260,6 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.updateIdentity = function( data ) {
 		const self = this;
-		console.log( 'updateIdentity', data );
 		let uid = data.userId;
 		let id = data.identity;
 		self.identities[ uid ] = id;
