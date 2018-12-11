@@ -562,7 +562,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.sendMessage = function( message, openView ) {
 		const self = this;
-		console.log( 'PresenceRoom.sendMessage', message );
 		const msg = {
 			type : 'msg',
 			data : {
@@ -576,6 +575,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'PresenceRoom.reconnect', self );
 		self.send({
 			type : 'initialize',
 		});
@@ -1807,6 +1807,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.open = function() {
 		const self = this;
+		console.log( 'open( send )' );
 		self.send({
 			type : 'open',
 			data : null,
@@ -1815,6 +1816,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.handleOpen = function( isOpen ) {
 		const self = this;
+		console.log( 'handleOpen', isOpen );
 		if ( self.isOpen === isOpen )
 			return;
 		
@@ -1857,6 +1859,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.sendInit = function() {
 		const self = this;
+		console.log( 'sendInit' );
 		self.send({
 			type : 'initialize',
 		});
@@ -1864,7 +1867,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.handleInitializeContact = function( state ) {
 		const self = this;
-		console.log( 'handleInitializeContact', state );
 		self.isOpen = true;
 		self.handleInitialize( state );
 		if ( self.openChatPending ) {
@@ -1882,6 +1884,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChat = function() {
 		const self = this;
+		console.log( 'openChat', self.isOpen );
 		if ( !self.isOpen ) {
 			self.openChatPending = true;
 			self.open();

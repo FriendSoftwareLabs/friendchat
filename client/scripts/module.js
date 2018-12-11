@@ -942,11 +942,11 @@ library.module = library.module || {};
 		if ( self.initialized )
 			return;
 		
-		self.initialized = true;
-		updateAccount( state.account );
 		if ( !self.idc )
 			self.idc = new library.component.IdCache( self.acc, state.identities );
 		
+		self.initialized = true;
+		updateAccount( state.account );
 		self.setupRooms( state.rooms );
 		self.handleContactInit( state.contacts );
 		const uid = {
@@ -958,18 +958,31 @@ library.module = library.module || {};
 		
 		function updateAccount( account ) {
 			self.account = account;
-			if ( self.account.name !== self.identity.name )
+			const id = account.identity;
+			if ( id.name !== self.identity.name )
 				updateName();
 			
-			if ( self.account.avatar !== self.identity.avatar )
+			if ( id.avatar !== self.identity.avatar )
 				updateAvatar();
 			
+			cId = id.clientId;
+			self.idc.update({
+				cId : id,
+			});
+			self.identity = id;
+			
 			function updateName() {
-				
+				console.log( 'Presence.handleAccountInit - updateName, NYI', {
+					'account id' : self.account.identity,
+					identity     : self.identity,
+				});
 			}
 			
 			function updateAvatar() {
-				
+				console.log( 'Presence.handleAccountInit - updateAvatar, NYI', {
+					'account id' : self.account.identity,
+					identity     : self.identity,
+				});
 			}
 		}
 	}
@@ -1094,7 +1107,6 @@ library.module = library.module || {};
 				userId     : self.accountId,
 			};
 			
-			console.log( 'handleContactAdd - conf', conf );
 			room = new library.contact.PresenceContact( conf );
 			self.contacts[ cId ] = room;
 			const viewConf = room.getViewConf();
