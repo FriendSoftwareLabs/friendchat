@@ -1963,6 +1963,8 @@ library.view = library.view || {};
 		self.conn.on( 'message', message );
 		self.conn.on( 'msg-waiting', msgWaiting );
 		
+		self.bindLive();
+		
 		function isOnline( e ) { self.handleOnline( e ); }
 		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
@@ -2001,10 +2003,13 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.buildLive = function() {
 		const self = this;
-		self.liveStatus = new library.component.StatusIndicator({
+		self.liveStatus = new library.component.CallStatus( self.liveStatus, true );
+		self.liveStatus.on( 'video', () => self.startVideo());
+		self.liveStatus.on( 'audio', () => self.startVoice());
+		self.liveStatus.on( 'notify', () => self.sendCallNotification());
+		/*
+		self.liveStatus = new library.component.StatusCall({
 			containerId : self.liveStatus,
-			type      : 'icon',
-			cssClass  : 'fa-video-camera',
 			statusMap : {
 				'empty'  : 'Off',
 				'other'  : 'Available',
@@ -2012,6 +2017,7 @@ library.view = library.view || {};
 				'user'   : 'On',
 			},
 		});
+		*/
 	}
 	
 	ns.PresenceContact.prototype.buildMsgWaiting = function() {
@@ -2036,6 +2042,55 @@ library.view = library.view || {};
 			self.menuActions[ 'live-audio' ],
 		];
 		return opts;
+	}
+	
+	ns.PresenceContact.prototype.bindLive = function() {
+		const self = this;
+		self.live = new library.component.EventNode(
+			'live',
+			self.conn
+		);
+		self.live.on( 'user-join', userJoin );
+		self.live.on( 'user-leave', userLeave );
+		self.live.on( 'peers', peers );
+		self.live.on( 'join', join );
+		self.live.on( 'leave', leave );
+		
+		function userJoin( accId ) {
+			self.isLive = true;
+			self.liveStatus.setUserLive( true );
+			self.emit( 'live-user', true );
+		}
+		
+		function userLeave( accId ) {
+			self.isLive = false;
+			self.liveStatus.setUserLive( false );
+			self.emit( 'live-user', false );
+		}
+		
+		function peers( peers ) {
+			console.log( 'peers', peers );
+			self.livePeers = peers;
+			
+		}
+		
+		function join( peer ) {
+			const peerId = peer.peerId;
+			if ( peerId !== self.clientId )
+				return;
+			
+			self.liveStatus.setContactLive( true );
+			self.emit( 'live-contact', true );
+		}
+		
+		function leave( peer ) {
+			const peerId = peer.peerId;
+			if ( peerId !== self.clientId )
+				return;
+			
+			self.liveStatus.setContactLive( false );
+			self.emit( 'live-contact', false );
+		}
 	}
 	
 	ns.PresenceContact.prototype.handleOnline = function( isOnline ) {
@@ -2078,6 +2133,15 @@ library.view = library.view || {};
 			self.msgStatus.show();
 		else
 			self.msgStatus.hide();
+	}
+	
+	ns.PresenceContact.prototype.sendCallNotification = function() {
+		const self = this;
+		const notie = {
+			type : 'call-notification',
+			data : null,
+		};
+		self.send( notie );
 	}
 	
 })( library.view );

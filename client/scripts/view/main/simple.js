@@ -769,6 +769,9 @@ var hello = window.hello || {};
 		if ( self.unread )
 			self.unread.close();
 		
+		if ( self.callStatus )
+			self.callStatus.close();
+		
 		if ( self.source )
 			self.releaseSource();
 		
@@ -779,6 +782,7 @@ var hello = window.hello || {};
 		delete self.unread;
 		delete self.status;
 		delete self.source;
+		delete self.callStatus;
 		delete self.eventMap;
 		delete self.moduleId;
 		delete self.clientId;
@@ -841,6 +845,7 @@ var hello = window.hello || {};
 		const container = document.getElementById( containerId );
 		self.status = friendUP.tool.uid( 'status' );
 		self.unread = friendUP.tool.uid( 'unread' );
+		self.callStatus = friendUP.tool.uid( 'call' );
 		const tmplConf = self.getTmplConf();
 		self.el = self.template.getElement( self.tmplId, tmplConf );
 		container.appendChild( self.el );
@@ -849,8 +854,16 @@ var hello = window.hello || {};
 		
 		const msgId = self.source.on( 'message', message );
 		const waitId = self.source.on( 'msg-waiting', msgWaiting );
+		const liveUserId = self.source.on( 'live-user', ( e ) => {
+			self.callStatus.setUserLive( e );
+		});
+		const liveContactId = self.source.on( 'live-contact', ( e ) => {
+			self.callStatus.setContactLive( e );
+		});
 		self.sourceIds.push( msgId );
 		self.sourceIds.push( waitId );
+		self.sourceIds.push( liveUserId );
+		self.sourceIds.push( liveContactId );
 		
 		const lastMessage = self.source.getLastMessage();
 		const unread = self.source.getUnreadMessages();
@@ -890,13 +903,14 @@ var hello = window.hello || {};
 	ns.RecentItem.prototype.getTmplConf = function() {
 		const self = this;
 		return {
-			id          : self.id,
-			avatar      : self.source.getAvatar(),
-			statusId    : self.status,
-			name        : self.source.getName(),
-			lastMsgTime : '',
-			lastMsg     : '',
-			unreadId    : self.unread,
+			id           : self.id,
+			avatar       : self.source.getAvatar(),
+			statusId     : self.status,
+			name         : self.source.getName(),
+			lastMsgTime  : '',
+			lastMsg      : '',
+			unreadId     : self.unread,
+			callStatusId : self.callStatus,
 		};
 	}
 	
@@ -911,6 +925,7 @@ var hello = window.hello || {};
 		const self = this;
 		self.buildStatusIndicator();
 		self.buildUnreadIndicator();
+		self.buildCallStatus();
 	}
 	
 	ns.RecentItem.prototype.buildStatusIndicator = function() {
@@ -945,6 +960,13 @@ var hello = window.hello || {};
 			display : '',
 		});
 		self.unread.hide();
+	}
+	
+	ns.RecentItem.prototype.buildCallStatus = function() {
+		const self = this;
+		self.callStatus = new library.component.CallStatus( self.callStatus );
+		self.callStatus.on( 'video', () => self.source.startVideo());
+		self.callStatus.on( 'audio', () => self.source.startVoice());
 	}
 	
 	ns.RecentItem.prototype.handleOnline = function( isOnline ) {

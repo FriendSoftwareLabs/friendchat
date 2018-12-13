@@ -173,6 +173,7 @@ name,
 lastMsgTime,
 lastMsg,
 unreadId,
+callStatusId
 -->
 <script id="recent-item-tmpl" type="text/html">
 <div id="<%= id %>" class="recent-item group row">
@@ -203,6 +204,8 @@ unreadId,
                 </div>
             </div>
         </div>
+    </div>
+    <div id="<%= callStatusId %>">
     </div>
     <div class="item-menu Button IconButton fortify center-child">
         <i class="fa fa-fw fa-ellipsis-v"></i>
@@ -847,6 +850,32 @@ login,
         </button>
     </div>
 </form>
+</script>
+
+<!-- PRESENCE CALL STATUS
+id,
+-->
+<script id="call-status-tmpl" type="text/html">
+<div id="<%= id %>" class="presence-call group row">
+    <div class="call-status hidden Available">
+        <i class="fa fa-fw fa-phone"></i>
+    </div>
+    <div class="call-incoming group row hidden">
+        <div class="button accept-video Accept">
+            <i class="fa fa-fw fa-video-camera"></i>
+        </div>
+        <div class="button accept-audio Accept">
+            <i class="fa fa-fw fa-microphone"></i>
+        </div>
+    </div>
+    <div class="call-outgoing hidden">
+        <div class="LED hidden">
+            <i class="fa fa-fw fa-cube On"></i>
+        </div>
+    </div>
+    <div class="call-live hidden">
+    </div>
+</div>
 </script>
 
     </div>

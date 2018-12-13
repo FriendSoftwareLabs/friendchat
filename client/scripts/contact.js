@@ -583,6 +583,11 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		var self = this;
+		console.log( 'joinLive', {
+			c : conf,
+			l : self.live,
+			s : self.settings,
+		});
 		// check if room has been initialized
 		if ( !self.settings ) {
 			self.goLivePending = conf || {};
@@ -1323,14 +1328,20 @@ library.contact = library.contact || {};
 			|| 'join' === event.type
 			|| 'leave' === event.type
 		) {
-			self.liveToView( event );
-			self.updatePeers( event );
+			self.onLive( event );
 		}
 		
 		if ( !self.live )
 			return;
 		
 		self.live.send( event );
+	}
+	
+	ns.PresenceRoom.prototype.onLive = function( event ) {
+		const self = this;
+		console.log( 'PresenceRoom.onLive', event );
+		self.liveToView( event );
+		self.updatePeers( event );
 	}
 	
 	ns.PresenceRoom.prototype.handleChat = function( event ) {
@@ -1798,6 +1809,9 @@ library.contact = library.contact || {};
 		function offline( e ) { self.handleOffline( e ); }
 		
 		self.bindView();
+		self.view.on( 'call-notification',
+			( e ) => self.handleCallNotification( e ));
+		
 		self.isOpen = false;
 	}
 	
@@ -1857,9 +1871,33 @@ library.contact = library.contact || {};
 			});
 	}
 	
+	ns.PresenceContact.prototype.onLive = function( event ) {
+		const self = this;
+		self.liveToView( event );
+		self.updatePeers( event );
+	}
+	
+	ns.PresenceContact.prototype.handleCallNotification = function() {
+		const self = this;
+		const trans = Application.i18n( 'i18n_incoming_call' );
+		api.Say( trans );
+		const notie = {
+			title         : self.identity.name,
+			text          : trans,
+			callback      : nClose,
+			clickCallback : nClick,
+		};
+		
+		hello.app.notify( notie );
+		
+		function nClose() {}
+		function nClick() {
+			self.startVideo();
+		}
+	}
+	
 	ns.PresenceContact.prototype.sendInit = function() {
 		const self = this;
-		console.log( 'sendInit' );
 		self.send({
 			type : 'initialize',
 		});

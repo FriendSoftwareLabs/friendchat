@@ -561,3 +561,46 @@ html body .tab-bar .tab-item.Button.IconButton
 .room-name-form .input-wrap {
     margin-right : 0.3em;
 }
+
+/*
+ CALL
+*/
+
+.presence-call {
+    border-radius: 3em;
+    padding : 0.3em;
+}
+
+#hello .call-status {
+    border-radius: 3em;
+    padding : 0.4em;
+    margin-right : 0.3em;
+}
+
+.call-incoming {
+    
+}
+
+#hello .accept-video,
+#hello .accept-audio {
+    padding : 0.4em;
+}
+
+#hello .accept-video {
+    border-top-left-radius: 3em;
+    border-bottom-left-radius: 3em;
+    margin : unset;
+}
+
+#hello .accept-audio {
+    border-top-right-radius: 3em;
+    border-bottom-right-radius: 3em;
+}
+
+.call-outgoing {
+    
+}
+
+.call-live {
+    
+}

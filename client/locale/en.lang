@@ -344,3 +344,4 @@ i18n_today : Today
 i18n_yesterday : Yesterday
 i18n_group_chat : Group chat
 i18n_private_chat : Private chat
+i18n_incoming_call : Incoming call
