@@ -694,3 +694,169 @@ inherits from EventEmitter
 	}
 	
 })( library.component );
+
+
+// CallStatus
+(function( ns, undefined ) {
+	ns.CallStatus = function( containerId ) {
+		const self = this;
+		self.containerId = containerId;
+		self.statusKlass = '';
+		library.component.EventEmitter.call( self );
+		
+		self.init();
+	}
+	
+	ns.CallStatus.prototype = Object.create( library.component.EventEmitter.prototype );
+	
+	// Public
+	
+	ns.CallStatus.prototype.setUserLive = function( isLive ) {
+		const self = this;
+		if ( self.userLive === isLive )
+			return;
+		
+		self.userLive = isLive;
+		self.update( 'user' );
+	}
+	
+	ns.CallStatus.prototype.setContactLive = function( isLive ) {
+		const self = this;
+		if ( self.contactLive === isLive )
+			return;
+		
+		self.contactLive = isLive;
+		self.update( 'contact' );
+	}
+	
+	ns.CallStatus.prototype.close = function() {
+		const self = this;
+		const el = self.el;
+		delete self.el;
+		if ( el )
+			el.parentNode.removeChild( el );
+		
+		delete self.containerId;
+	}
+	
+	// Pri>ate
+	
+	ns.CallStatus.prototype.init = function() {
+		const self = this;
+		if ( !hello.template )
+			throw new Error( 'hello.template not available' );
+		
+		const parent = document.getElementById( self.containerId );
+		if ( !parent )
+			throw new Error( 'container not found' );
+		
+		const elId = friendUP.tool.uid( 'call' );
+		const conf = {
+			id : elId,
+		};
+		self.el = hello.template.getElement( 'call-status-tmpl', conf );
+		parent.appendChild( self.el );
+		self.status = self.el.querySelector( '.call-status' );
+		//self.statusIcon = self.status.querySelector( 'i' );
+		self.inc = self.el.querySelector( '.call-incoming' );
+		self.acceptVideo = self.inc.querySelector( '.accept-video' );
+		self.acceptAudio = self.inc.querySelector( '.accept-audio' );
+		self.out = self.el.querySelector( '.call-outgoing' );
+		self.live = self.el.querySelector( '.call-live' );
+		
+		self.acceptVideo.addEventListener( 'click', startVideo, false );
+		self.acceptAudio.addEventListener( 'click', startAudio, false );
+		
+		self.current = null;
+		
+		function startVideo( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.emit( 'video' );
+		}
+		
+		function startAudio( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.emit( 'audio' );
+		}
+	}
+	
+	ns.CallStatus.prototype.update = function( from ) {
+		const self = this;
+		self.clearCurrent();
+		if ( !self.userLive && !self.contactLive ) {
+			self.setInactive();
+			return;
+		}
+		
+		if ( self.userLive && self.contactLive ) {
+			self.setLive();
+			return;
+		}
+		
+		if ( self.userLive ) {
+			self.setOutgoing();
+		}
+		
+		if ( self.contactLive )
+			if ( 'contact' === from )
+				self.setIncoming( true );
+			else
+				self.setIncoming();
+	}
+	
+	ns.CallStatus.prototype.setInactive = function() {
+		const self = this;
+		self.status.classList.toggle( 'hidden', true );
+	}
+	
+	ns.CallStatus.prototype.setIncoming = function( notify ) {
+		const self = this;
+		if ( notify )
+			self.emit( 'notify', true );
+		
+		self.setStatus( 'Danger' );
+		self.inc.classList.toggle( 'hidden', false );
+		self.current = self.inc;
+	}
+	
+	ns.CallStatus.prototype.setOutgoing = function() {
+		const self = this;
+		self.setStatus( 'Available' );
+		self.out.classList.toggle( 'hidden', false );
+		self.current = self.out;
+	}
+	
+	ns.CallStatus.prototype.setLive = function() {
+		const self = this;
+		self.setStatus( 'On' );
+	}
+	
+	ns.CallStatus.prototype.setStatus = function( status ) {
+		const self = this;
+		return;
+		console.log( 'setStatus', {
+			current : self.statusKlass,
+			status  : status,
+		});
+		self.status.classList.toggle( 'hidden', false );
+		if ( self.statusKlass === status )
+			return;
+		
+		if ( self.statusKlass )
+			self.status.classList.toggle( self.statusKlass, false );
+		
+		self.status.classList.toggle( status, true );
+		self.statusKlass = status;
+	}
+	
+	ns.CallStatus.prototype.clearCurrent = function() {
+		const self = this;
+		if ( self.current )
+			self.current.classList.toggle( 'hidden', true );
+		
+		self.current = null;
+	}
+	
+})( library.component );
