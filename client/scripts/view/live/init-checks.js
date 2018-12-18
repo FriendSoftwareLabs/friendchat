@@ -798,6 +798,7 @@ library.rtc = library.rtc || {};
         'samsung' : 'success',
         'android' : 'warning',
         'iphone'  : 'warning',
+        'unknown' : 'warning',
     }
     
     ns.BrowserCheck.prototype.supportString = {
@@ -852,7 +853,7 @@ library.rtc = library.rtc || {};
         is[ 'firefox' ] = !!window.InstallTrigger;
         
         // CHROME
-        is[ 'chrome' ] = !!window.chrome && !!window.chrome.webstore;
+        is[ 'chrome' ] = !!window.chrome;
         is[ 'blink' ] = ( is[ 'chrome' ] || is[ 'opera' ] ) && !!window.CSS;
         /*
         if ( is[ 'blink' ]) {
@@ -941,12 +942,7 @@ library.rtc = library.rtc || {};
     ns.BrowserCheck.prototype.done = function() {
         const self = this;
         let browser = getBrowser();
-        let supType = 'error';
-        if ( 'unknown' !== browser ) {
-            let sT = self.supportMap[ browser.toLowerCase() ];
-            if ( sT )
-                supType = sT;
-        }
+        let supType = self.supportMap[ browser.toLowerCase() ] || 'error';
         
         if ( self.isMobile ) {
             browser += ' ' + self.isMobile;
@@ -960,7 +956,7 @@ library.rtc = library.rtc || {};
         
         var supString = self.supportString[ supType ];
         var support = {
-            type  : supType,
+            type    : supType,
             message : supString,
         };
         
