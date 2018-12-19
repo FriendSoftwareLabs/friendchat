@@ -628,12 +628,15 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		//console.log( 'app.receiveEvent', msg );
 		msg.origin = e.origin;
-		
 		var handler = self.commandMap[ msg.command ];
 		if ( handler ) {
 			handler( msg );
+			return;
+		}
+		
+		if ( 'system' === msg.type ) {
+			self.handleSystem( msg );
 			return;
 		}
 		
@@ -661,6 +664,32 @@ var friend = window.friend || {}; // already instanced stuff
 		var self = this;
 		const type = msg.command || msg.callback || msg.viewId;
 		self.emit( type, msg.data );
+	}
+	
+	ns.AppEvent.prototype.handleSystem = function( msg ) {
+		const self = this;
+		console.log( 'handleSystem', msg );
+		const cbId = msg.callback;
+		const future = self.emit( msg.method, msg.data );
+		if ( !cbId )
+			return;
+		
+		if ( !future ) {
+			self.returnCallback( null, null, cbId );
+			return;
+		}
+		
+		future
+			.then( resBack )
+			.catch( errBack );
+			
+		function resBack( res ) {
+			self.returnCallback( null, res, cbId );
+		}
+		
+		function errBack( err ) {
+			self.returnCallback( err, null, cbId );
+		}
 	}
 	
 	ns.AppEvent.prototype.handleFiledialog = function( msg ) {
@@ -949,6 +978,19 @@ var friend = window.friend || {}; // already instanced stuff
 			clickcallback : ccid,
 		}
 		self.sendMessage( msg );
+	}
+	
+	ns.Application.prototype.returnCallback = function( error, result, callbackId ) {
+		const self = this;
+		const event = {
+			type       : 'system',
+			command    : 'callback',
+			callbackId : callbackId,
+			error      : error,
+			data       : result,
+		};
+		console.log( 'returnCallback', event );
+		self.sendMessage( event );
 	}
 	
 	ns.Application.prototype.sendMessage = function( msg, callback ) {
