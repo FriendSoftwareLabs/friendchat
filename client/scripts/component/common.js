@@ -808,7 +808,8 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setInactive = function() {
 		const self = this;
-		self.status.classList.toggle( 'hidden', true );
+		self.el.classList.toggle( 'hidden', true );
+		//self.status.classList.toggle( 'hidden', true );
 	}
 	
 	ns.CallStatus.prototype.setIncoming = function( notify ) {
@@ -835,6 +836,7 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setStatus = function( status ) {
 		const self = this;
+		self.el.classList.toggle( 'hidden', false );
 		return;
 		console.log( 'setStatus', {
 			current : self.statusKlass,
