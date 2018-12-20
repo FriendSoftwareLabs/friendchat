@@ -182,6 +182,7 @@ library.contact = library.contact || {};
 	ns.Contact.prototype.whenChatOpen = function( msg, silent ) {
 		var self = this;
 		hello.playMsgAlert();
+		return;
 		if ( !self.chatView.view.isMinimized )
 			return;
 		

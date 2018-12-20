@@ -592,6 +592,7 @@ var friend = window.friend || {}; // already instanced stuff
 			'applicationstorage' : storage,
 			'libraryresponse' : libResponse,
 			'refreshtheme' : refreshTheme,
+			'notification' : notification,
 			'quit' : quit,
 		};
 		
@@ -606,6 +607,7 @@ var friend = window.friend || {}; // already instanced stuff
 		function storage( e ) { self.storage( e ); }
 		function libResponse( e ) { self.handleLibResponse( e ); }
 		function refreshTheme( e ) { self.handleRefreshTheme( e ); }
+		function notification( e ) { self.handleCmdNotify( e ); }
 		function quit( e ) { self.quit(); }
 		
 		self.notifyMap = {
@@ -668,7 +670,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleSystem = function( msg ) {
 		const self = this;
-		console.log( 'handleSystem', msg );
 		const cbId = msg.callback;
 		const future = self.emit( msg.method, msg.data );
 		if ( !cbId )
@@ -799,6 +800,15 @@ var friend = window.friend || {}; // already instanced stuff
 		
 	}
 	
+	ns.AppEvent.prototype.handleCmdNotify = function( msg ) {
+		const self = this;
+		if ( msg.callback || msg.clickcallback ) {
+			var yep = self.handleCallback( msg );
+			if ( yep )
+				return;
+		}
+	}
+	
 	ns.AppEvent.prototype.register = function( msg ) {
 		var self = this;
 		window.origin = msg.origin;
@@ -854,7 +864,7 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		
 		var view = self.views[ msg.viewId ];
-		view.isMinimized = msg.value;
+		view.isMinimized = !!msg.value;
 	}
 	
 	ns.AppEvent.prototype.initialize = function( msg ) {
