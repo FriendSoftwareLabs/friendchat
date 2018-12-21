@@ -769,7 +769,7 @@ var hello = window.hello || {};
 		if ( self.unread )
 			self.unread.close();
 		
-		if ( self.callStatus )
+		if ( self.callStatus && self.callStatus.close )
 			self.callStatus.close();
 		
 		if ( self.source )
