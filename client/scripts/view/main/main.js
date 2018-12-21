@@ -1748,7 +1748,7 @@ library.view = library.view || {};
 		}
 		
 		self.removeNameThings();
-		if ( self.isAdmin )
+		if ( self.isOwner || self.isAdmin )
 			self.toggleSettings( true );
 	}
 	
