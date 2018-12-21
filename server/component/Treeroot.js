@@ -517,6 +517,9 @@ ns.Treeroot.prototype.handleClientPublicKey = function( data, socketId ) {
 		return;
 	
 	self.cryptOngoing = socketId;
+	if ( !self.cryptoSetupState )
+		self.cryptoSetupState = {};
+	
 	if ( data.hashedPass !== self.cryptoSetupState.dbPass )
 		self.cryptoSetupState.userPass = data.hashedPass;
 	
