@@ -63,11 +63,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTC = function( conn, view, conf, onclose, onready ) {
 		const self = this;
+		//console.log( 'RTC', conf );
 		self.conn = conn || null;
 		self.view = view;
 		self.userId = conf.userId;
 		self.rtcConf = conf.rtcConf;
 		self.isGuest = conf.isGuest;
+		self.isPrivate = conf.isPrivate;
 		self.peerList = conf.peerList;
 		self.identities = conf.identities || {};
 		self.guestAvatar = conf.guestAvatar;
@@ -256,7 +258,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.menu.on( 'restart'          , restart );
 		self.menu.on( 'mode-presentation', presentation );
 		
-		if ( self.isGuest ) {
+		if ( self.isGuest || self.isPrivate ) {
 			self.menu.disable( 'share' );
 		}
 		
