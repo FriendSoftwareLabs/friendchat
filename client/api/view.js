@@ -309,6 +309,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.init = function() {
 		var self = this;
+		console.log( 'View.init' );
 		self.addAPIScripts();
 		document.addEventListener( 'readystatechange', checkState, false );
 		function checkState( e ) {
@@ -413,8 +414,17 @@ var friend = window.friend || {};
 			self.handleConf();
 		
 		// mousedown listeing
-		document.body.addEventListener( 'mousedown', activate, false );
-		function activate( e ) { self.activate( e ); }
+		document.body.addEventListener( 'mousedown', mouseDownThings, false );
+		document.body.addEventListener( 'mouseup', mouseUpThings, false );
+		
+		function mouseDownThings( e ) {
+			self.activate( e );
+			self.queueInputFocusCheck();
+		}
+		
+		function mouseUpThings( e ) {
+			self.queueInputFocusCheck();
+		}
 		
 		// key down listening
 		self.keyDownQualifiers = [
@@ -424,11 +434,17 @@ var friend = window.friend || {};
 			'altKey',
 		];
 		document.body.addEventListener( 'keydown', onKeyDown, false );
+		document.body.addEventListener( 'keyup', onKeyUp, false );
+		
 		function onKeyDown( e ) {
 			if ( !self.isActive )
 				return;
 			
 			self.handleKeyDown( e );
+		}
+		
+		function onKeyUp( e ) {
+			self.queueInputFocusCheck();
 		}
 		
 		//
@@ -448,13 +464,12 @@ var friend = window.friend || {};
 			return;
 		
 		const keyEvent = {};
-		self.keyDownQualifiers.forEach( add );
-		function add( prop ) {
+		self.keyDownQualifiers.forEach( prop => {
 			if ( !e[ prop ])
 				return;
 			
 			keyEvent[ prop ] = e[ prop ];
-		}
+		});
 		
 		keyEvent.keyCode = keyCode;
 		const event = {
@@ -466,10 +481,9 @@ var friend = window.friend || {};
 		self.sendBase( event );
 		
 		function hasNoModifier( keyDown ) {
-			return !self.keyDownQualifiers.some( isSet );
-			function isSet( modKey ) {
+			return !self.keyDownQualifiers.some( modKey => {
 				return !!keyDown[ modKey ];
-			}
+			});
 		}
 		
 		function isModifier( keyCode ) {
@@ -628,6 +642,55 @@ var friend = window.friend || {};
 				return true;
 			}
 		}
+	}
+	
+	ns.View.prototype.queueInputFocusCheck = function( e ) {
+		const self = this;
+		if ( self.inputFocusCheckTimeout )
+			return;
+		
+		self.inputFocusCheckTimeout = window.setTimeout( runCheck, 250 );
+		function runCheck() {
+			delete self.inputFocusCheckTimeout;
+			self.checkInputHasFocus();
+		}
+	}
+	
+	ns.View.prototype.checkInputHasFocus = function() {
+		const self = this;
+		const focus = document.activeElement;
+		if ( !focus || !isInput( focus )) {
+			if ( self.inputHasUserFocus )
+				setFocusChange( false );
+		} else {
+			if ( !self.inputHasUserFocus )
+				setFocusChange( true );
+		}
+		
+		function isInput( el ) {
+			const tag = el.tagName;
+			const editable = !!el.getAttribute( 'contenteditable' );
+			return !!(
+				editable
+				|| 'TEXTAREA' === tag
+				|| 'INPUT' === tag
+			);
+		}
+		
+		function setFocusChange( hasFocus ) {
+			self.inputHasUserFocus = hasFocus;
+			self.sendWindowState( 'input-focus', hasFocus );
+		}
+	}
+	
+	ns.View.prototype.sendWindowState = function( type, value ) {
+		const self = this;
+		const state = {
+			method : 'windowstate',
+			state  : type,
+			value  : value,
+		};
+		self.sendViewEvent( state );
 	}
 	
 	ns.View.prototype.activate = function() {
