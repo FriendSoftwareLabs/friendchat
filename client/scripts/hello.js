@@ -48,6 +48,7 @@ var hello = null;
 		
 		self.forceShowLogin = false;
 		self.isOnline = false;
+		self.pushies = [];
 		
 		self.init();
 	}
@@ -57,8 +58,9 @@ var hello = null;
 	// Presence calls this
 	ns.Hello.prototype.setServiceProvider = function( service ) {
 		const self = this;
-		console.log( 'Hello.setServiceProvider', service );
 		self.service = service;
+		if ( self.pushies && self.pushies.length )
+			self.pushies.forEach( extra => self.service.handlePushNotification( extra ));
 	}
 	
 	ns.Hello.prototype.timeNow = function( str ) {
@@ -91,6 +93,7 @@ var hello = null;
 		const self = this;
 		self.startTiming = Date.now();
 		self.lastTiming = self.startTiming;
+		self.app.on( 'notification', n => self.handlePushNotie( n ));
 		
 		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
 			console.log( '--- ENABLING DORMANT APPARENTLY ---', self.config );
@@ -939,6 +942,28 @@ var hello = null;
 	ns.Hello.prototype.receiveMessage = function( msg ) {
 		var self = this;
 		console.log( 'Hello.receiveMessage', msg );
+	}
+	
+	ns.Hello.prototype.handlePushNotie = function( event ) {
+		const self = this;
+		if ( !event || !event.extra ) {
+			console.log( 'hello.handlePushNotie - not valid event', event );
+			return;
+		}
+		
+		let extra = friendUP.tool.parse( event.extra );
+		if ( !extra ) {
+			console.log( 'hello.handlePushNotie - invalid data', {
+				event : event,
+				extra : extra,
+			});
+			return;
+		}
+		
+		if ( self.service )
+			self.service.handlePushNotification( extra );
+		else
+			self.pushies.push( extra );
 	}
 	
 })( window );

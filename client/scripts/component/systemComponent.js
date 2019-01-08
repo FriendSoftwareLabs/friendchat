@@ -494,6 +494,18 @@ library.component = library.component || {};
 		});
 	}
 	
+	ns.PresenceService.prototype.handlePushNotification = function( extra ) {
+		const self = this;
+		const roomId = extra.roomId;
+		const msgId = extra.msgId;
+		if ( !roomId ) {
+			console.log( 'PresenceService.handlePushNotification - missing room id', extra );
+			return;
+		}
+		
+		self.presence.openChat({ id : roomId });
+	}
+	
 	ns.PresenceService.prototype.send = function( event ) {
 		var self = this;
 		if ( !self.presence )

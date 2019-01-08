@@ -670,6 +670,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleSystem = function( msg ) {
 		const self = this;
+		console.log( 'handleSystem', msg );
 		const cbId = msg.callback;
 		const future = self.emit( msg.method, msg.data );
 		if ( !cbId )

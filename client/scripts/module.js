@@ -715,8 +715,11 @@ library.module = library.module || {};
 	ns.Presence.prototype.openChat = function( conf ) {
 		const self = this;
 		const item = self.getTypeItem( conf.id, conf.type );
-		if ( !item )
+		if ( !item ) {
+			console.log( 'Presence.openChat - chat not found for, queueueueueing', conf );
+			self.openChatWaiting.push( conf.id );
 			return;
+		}
 		
 		item.openChat();
 	}
@@ -1116,13 +1119,23 @@ library.module = library.module || {};
 			};
 			self.toView( cAdd );
 			
-			if ( isOpenChatWaiting( cId ))
+			if ( self.checkOpenChatWaiting( cId ))
 				room.openChat();
 		}
+	}
+	
+	ns.Presence.prototype.checkOpenChatWaiting = function( clientId ) {
+		const self = this;
+		let isWaiting = false;
+		self.openChatWaiting = self.openChatWaiting.filter( wId => {
+			if ( wId !== clientId )
+				return true; // keep entry
+			
+			isWaiting = true;
+			return false;
+		});
 		
-		function isOpenChatWaiting( cId ) {
-			return self.openChatWaiting.some( wId => wId === cId );
-		}
+		return isWaiting;
 	}
 	
 	ns.Presence.prototype.handleContactRemove = function( clientId ) {
@@ -1284,7 +1297,8 @@ library.module = library.module || {};
 			return;
 		}
 		
-		let room = self.rooms[ conf.clientId ];
+		const cId = conf.clientId;
+		let room = self.rooms[ cId ];
 		if ( room ) {
 			room.reconnect();
 			return;
@@ -1309,7 +1323,7 @@ library.module = library.module || {};
 		};
 		
 		room = new library.contact.PresenceRoom( roomConf );
-		self.rooms[ room.clientId ] = room;
+		self.rooms[ cId ] = room;
 		conf.identity = room.identity;
 		
 		const addRoom = {
@@ -1319,6 +1333,9 @@ library.module = library.module || {};
 		self.toView( addRoom );
 		
 		room.on( 'contact', contactEvent );
+		
+		if ( self.checkOpenChatWaiting( cId ))
+			room.openChat();
 		
 		return room;
 		
