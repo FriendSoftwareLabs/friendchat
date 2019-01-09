@@ -18,6 +18,7 @@
 *****************************************************************************©*/
 
 'use strict';
+
 var friendUP = window.friendUP || {};
 var api = window.api || {}; // use stuff on this object
 var fupLocal = {}; // internals
@@ -140,8 +141,9 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.activate = function() {
 		var self = this;
+		console.log( 'activate' );
 		var activate = {
-			method : 'setFlag',
+			method : 'setviewflag',
 			data : {
 				flag : 'minimized',
 				value : false,
@@ -150,8 +152,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self._send( activate );
 	}
 	
-	ns.View.prototype.showFiledialog = function( conf, callback )
-	{
+	ns.View.prototype.showFiledialog = function( conf, callback ) {
 		/* conf:
 		dialogType, ( 'open' default )
 		path,
@@ -860,12 +861,29 @@ var friend = window.friend || {}; // already instanced stuff
 	}
 	
 	ns.AppEvent.prototype.setViewFlag = function( msg ) {
-		var self = this;
-		if ( 'minimized' !== msg.flag )
+		const self = this;
+		let view = self.views[ msg.viewId ];
+		if ( !view )
 			return;
 		
-		var view = self.views[ msg.viewId ];
-		view.isMinimized = !!msg.value;
+		let flag = msg.flag;
+		let value = msg.value;
+		if ( !flag )
+			return;
+		
+		if ( 'minimized' === flag )
+			setMini( view, value );
+		
+		if ( 'maximized' === flag )
+			setMaxi( view, value );
+		
+		function setMini( view, value ) {
+			view.isMinimized = !!value;
+		}
+		
+		function setMaxi( view, value ) {
+			view.isMaximized = !!value;
+		}
 	}
 	
 	ns.AppEvent.prototype.initialize = function( msg ) {

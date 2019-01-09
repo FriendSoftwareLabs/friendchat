@@ -74,10 +74,12 @@ var friend = window.friend || {};
 		self.notifyMap = {
 			'activateview' : activated,
 			'deactivateview' : deactivated,
+			'setviewflag' : setViewFlag,
 		};
 		
 		function activated( e ) { self.activated( e ); }
 		function deactivated( e ) { self.deactivated( e ); }
+		function setViewFlag( e ) { self.handleViewFlag( e ); }
 		
 		window.addEventListener( 'message', receiveEvent, false );
 		function receiveEvent( e ) { self.receiveEvent( e ); }
@@ -733,6 +735,11 @@ var friend = window.friend || {};
 		};
 		self.send( minimized );
 		document.body.classList.toggle( 'activated', false );
+	}
+	
+	ns.View.prototype.handleViewFlag = function( e ) {
+		const self = this;
+		console.log( 'handleViewFlag', e );
 	}
 	
 	ns.View.prototype.handleViewTheme = function( msg ) {
