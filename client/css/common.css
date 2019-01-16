@@ -915,9 +915,13 @@ html body .hidden {
 	width               : 2.5em;
 	height              : 2.5em;
 	background-color    : transparent;
-	border-radius       : 15%;
+	border-radius       : 100%;
 	background-position : center center;
 	background-size     : cover;
+}
+
+.search-result-room .avatar {
+	border-radius : 2px;
 }
 
 .search-result-subscribe {

@@ -576,6 +576,7 @@ library.module = library.module || {};
 					type       : 'room',
 					isRelation : true,
 					name       : room.identity.name,
+					avatar     : room.identity.avatar,
 				};
 				return item;
 			}
@@ -1179,6 +1180,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleJoin = function( conf ) {
 		const self = this;
+		console.log( 'handleJoin', conf );
 		if ( null == conf ) {
 			console.log( 'null room, end of room list', conf );
 			return;
@@ -1292,6 +1294,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.addRoom = function( conf ) {
 		const self = this;
+		console.log( 'addRoom', conf );
 		if ( !conf.clientId ) {
 			console.log( 'addRoom - conf does not have clientId', conf );
 			return;

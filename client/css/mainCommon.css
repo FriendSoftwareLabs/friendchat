@@ -498,6 +498,13 @@ html body .tab-bar .tab-item.Button.IconButton
     background-size     : cover;
 }
 
+
+.room .avatar,
+.recent-room .avatar {
+    border-radius       : 2px;
+}
+
+
 .recent-item .recent-info {
     overflow: hidden;
 }

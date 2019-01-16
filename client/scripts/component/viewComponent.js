@@ -2420,10 +2420,12 @@ library.component = library.component || {};
 	
 	ns.Search.prototype.buildRoom = function( item ) {
 		const self = this;
+		console.log( 'buildRoom', item );
 		const conf = {
-			uuid   : item.uuid,
-			name   : item.name || '',
-			avatar : item.avatar || '',
+			uuid       : item.uuid,
+			name       : item.name || '',
+			avatar     : item.avatar || '',
+			iconHidden : item.avatar ? 'hidden' : '',
 		};
 		const el = self.template.getElement( 'search-result-room-tmpl', conf );
 		const menuBtn = el.querySelector( '.item-menu')

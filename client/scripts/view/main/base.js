@@ -130,13 +130,33 @@ library.view = library.view || {};
 		var self = this;
 		self.identity = id;
 		self.updateName();
+		self.updateAvatar();
+		self.emit( 'identity', self.identity );
 	}
 	
 	ns.BaseContact.prototype.updateName = function() {
 		var self = this;
 		var element = document.getElementById( self.clientId );
-		var nameElement = element.querySelector( '.contact-name' );
-		nameElement.textContent = self.identity.name;
+		var nameEl = element.querySelector( '.name' );
+		if ( !nameEl ) {
+			console.log( 'BaseContact.updateName - could not find name element', self );
+			return;
+		}
+		
+		nameEl.textContent = self.identity.name;
+	}
+	
+	ns.BaseContact.prototype.updateAvatar = function() {
+		const self = this;
+		const element = document.getElementById( self.clientId );
+		const avatarEl = element.querySelector( '.avatar' );
+		if ( !avatarEl ) {
+			console.log( 'BaseContact.updateAvatar - could not find avatar element', self );
+			return;
+		}
+		
+		const ava = self.identity.avatar || '';
+		avatarEl.style[ 'background-image' ] = "url('" + ava + "')";
 	}
 	
 	ns.BaseContact.prototype.bindItem = function() {

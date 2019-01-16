@@ -852,19 +852,28 @@ var hello = window.hello || {};
 		self.bindElement();
 		self.buildIndicators();
 		
+		//
 		const msgId = self.source.on( 'message', message );
 		const waitId = self.source.on( 'msg-waiting', msgWaiting );
+		const idId = self.source.on( 'identity', idUpdate );
 		const liveUserId = self.source.on( 'live-user', ( e ) => {
 			self.callStatus.setUserLive( e );
 		});
 		const liveContactId = self.source.on( 'live-contact', ( e ) => {
 			self.callStatus.setContactLive( e );
 		});
+		
+		function message( e ) { self.handleMessage( e ); }
+		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
+		function idUpdate( e ) { self.handleIdentity( e ); }
+		
 		self.sourceIds.push( msgId );
 		self.sourceIds.push( waitId );
+		self.sourceIds.push( idId );
 		self.sourceIds.push( liveUserId );
 		self.sourceIds.push( liveContactId );
 		
+		//
 		const lastMessage = self.source.getLastMessage();
 		const unread = self.source.getUnreadMessages();
 		if ( lastMessage )
@@ -873,8 +882,6 @@ var hello = window.hello || {};
 		if ( unread )
 			self.setUnread( unread );
 		
-		function message( e ) { self.handleMessage( e ); }
-		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
 		
 		self.el.addEventListener( 'click', elClick, false );
 		self.menuBtn.addEventListener( 'click', menuClick, false );
@@ -995,6 +1002,19 @@ var hello = window.hello || {};
 		self.setUnread( state.unread );
 		if ( state.message )
 			self.handleMessage( state );
+	}
+	
+	ns.RecentItem.prototype.handleIdentity = function( id ) {
+		const self = this;
+		const nameEl = self.el.querySelector( '.name' );
+		const avatarEl = self.el.querySelector( '.avatar' );
+		if ( nameEl )
+			nameEl.textContent = id.name;
+		
+		if ( avatarEl ) {
+			const ava = "url('" + id.avatar + "')";
+			avatarEl.style[ 'background-image' ] = ava;
+		}
 	}
 	
 	ns.RecentItem.prototype.setUnread = function( unread ) {

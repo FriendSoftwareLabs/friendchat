@@ -727,14 +727,17 @@ itemsId,
 
 <!-- PRESENCE ROOM
 clientId,
+avatar,
 name,
 roomStatusId,
 liveStatusId,
 msgWaitingId,
 -->
 <script id="presence-room-tmpl" type="text/html">
-<div id="<%= clientId %>" class="contact group row MousePointer">
+<div id="<%= clientId %>" class="contact room group row MousePointer">
     <div class="contact-height-dummy fortify">
+    </div>
+    <div class="avatar" style="background-image:url(&#39;<%= avatar %>&#39;)">
     </div>
     <button class="button show-set-name fortify hidden" title="Set a name and save room">
         <i class="fa fa-fw fa-edit"></i>
@@ -750,7 +753,7 @@ msgWaitingId,
             <i class="fa fa-fw fa-close"></i>
         </button>
     </form>
-    <div class="contact-name expand">
+    <div class="name expand">
         <%= name %>
     </div>
     <div class="contact-status item-row bar row fortify">

@@ -1589,6 +1589,7 @@ library.view = library.view || {};
 		var conf = {
 			clientId     : self.clientId,
 			name         : self.identity.name,
+			avatar       : self.identity.avatar,
 			roomStatusId : self.roomStatus,
 			liveStatusId : self.liveStatus,
 			msgWaitingId : self.msgWaiting,
@@ -1604,7 +1605,7 @@ library.view = library.view || {};
 		
 		self.showSetNameBtn = el.querySelector( '.show-set-name' );
 		self.setNameForm = el.querySelector( '.room-name-form' );
-		self.nameEl = el.querySelector( '.contact-name' );
+		self.nameEl = el.querySelector( '.name' );
 		const hideSetNameBtn = self.setNameForm.querySelector( '.hide-set-name' );
 		self.setNameInput = self.setNameForm.querySelector( 'input' );
 		

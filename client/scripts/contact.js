@@ -537,7 +537,8 @@ library.contact = library.contact || {};
 // PRESENCEROOM
 (function( ns, undefined ) {
 	ns.PresenceRoom = function( conf ) {
-		var self = this;
+		const self = this;
+		console.log( 'PresenceRoom', conf );
 		self.type = 'presence';
 		self.data = conf.room;
 		self.idc = conf.idCache;
@@ -703,7 +704,7 @@ library.contact = library.contact || {};
 		self.conn.on( 'authed', authed );
 		self.conn.on( 'workgroup', workgroup );
 		self.conn.on( 'invite', invite );
-		self.conn.on( 'name', roomName );
+		self.conn.on( 'room-update', roomUpdate );
 		self.conn.on( 'join', userJoin );
 		self.conn.on( 'leave', userLeave );
 		self.conn.on( 'live', live );
@@ -718,7 +719,7 @@ library.contact = library.contact || {};
 		function authed( e ) { self.handleAuthed( e ); }
 		function workgroup( e ) { self.handleWorkgroup( e ); }
 		function invite( e ) { self.handleInvite( e ); }
-		function roomName( e ) { self.handleRoomName( e ); }
+		function roomUpdate( e ) { self.handleRoomUpdate( e ); }
 		function userJoin( e ) { self.handleJoin( e ); }
 		function userLeave( e ) { self.handleLeave( e ); }
 		function live( e ) { self.handleLive( e ); }
@@ -1000,7 +1001,6 @@ library.contact = library.contact || {};
 			data : event,
 		};
 		self.toView( persistent );
-		self.handleRoomName( event.name );
 		
 		if ( !self.chatView )
 			return;
@@ -1059,9 +1059,6 @@ library.contact = library.contact || {};
 		
 		if ( 'isStream' === event.setting )
 			self.settings.isStream = event.value;
-		
-		if ( 'roomName' === event.setting )
-			self.handleRoomName( event.value );
 		
 		const update = {
 			type : 'settings',
@@ -1199,9 +1196,11 @@ library.contact = library.contact || {};
 		}
 	}
 	
-	ns.PresenceRoom.prototype.handleRoomName = function( name ) {
+	ns.PresenceRoom.prototype.handleRoomUpdate = function( update ) {
 		const self = this;
+		const name = update.name;
 		self.identity.name = name;
+		self.identity.avatar = update.avatar;
 		self.toView({
 			type : 'identity',
 			data : self.identity,

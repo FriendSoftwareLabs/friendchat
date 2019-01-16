@@ -73,11 +73,14 @@ menuHidden,
 uuid,
 name,
 avatar,
+iconHidden,
 -->
 <script id="search-result-room-tmpl" type="text/html">
 <div id="<%= uuid %>" class="search-result-room group row">
-    <div class="avatar fortify center-child">
-        <i class="fa fa-fw fa-users"></i>
+    <div class="avatar fortify center-child"
+    	style="background-image:url(&#39;<%= avatar %>&#39;)"
+    >
+        <i class="fa fa-fw fa-users <%= iconHidden %>"></i>
     </div>
     <div class="item-info expand">
         <div class="name">
