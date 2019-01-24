@@ -140,15 +140,11 @@ var friend = window.friend || {}; // already instanced stuff
 	}
 	
 	ns.View.prototype.activate = function() {
-		var self = this;
-		console.log( 'activate' );
-		var activate = {
-			method : 'setviewflag',
-			data : {
-				flag : 'minimized',
-				value : false,
-			},
+		const self = this;
+		const activate = {
+			method : 'activate',
 		};
+		console.log( 'activate', activate );
 		self._send( activate );
 	}
 	
