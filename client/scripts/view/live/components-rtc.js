@@ -963,7 +963,8 @@ library.rtc = library.rtc || {};
 		}
 		
 		let peerConf = {
-			iceServers         : self.rtc.ICE,
+			iceServers   : self.rtc.ICE,
+			sdpSemantics : 'unified-plan',
 		};
 		
 		if ( self.peerId )
