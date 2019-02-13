@@ -1585,11 +1585,12 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.buildElement = function() {
 		var self = this;
+		console.log( 'PresenceRoom - buildElement', self );
 		var tmplId = 'presence-room-tmpl';
 		var conf = {
 			clientId     : self.clientId,
 			name         : self.identity.name,
-			avatar       : self.identity.avatar,
+			avatar       : self.identity.avatar || '',
 			roomStatusId : self.roomStatus,
 			liveStatusId : self.liveStatus,
 			msgWaitingId : self.msgWaiting,
