@@ -875,6 +875,14 @@ library.rtc = library.rtc || {};
 		self.tryNegotiation();
 	}
 	
+	ns.Session.prototype.getRTCState = function() {
+		const self = this;
+		const state = {
+			signal : self.conn ? self.conn.signalingState : '',
+		};
+		return state;
+	}
+	
 	ns.Session.prototype.close = function() {
 		const self = this;
 		self.log( 'session.close' );

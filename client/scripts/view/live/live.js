@@ -83,10 +83,12 @@ library.component = library.component || {};
 		//
 		self.conn.on( 'focus', focus );
 		self.conn.on( 'initialize', initialize );
+		self.conn.on( 'restore', restore );
 		self.conn.on( 'closeview', closeView );
 		
 		function focus( e ) {}
 		function initialize( e ) { self.initialize( e ); }
+		function restore( e ) { self.handleRestore( e ); }
 		function closeView( e ) { self.closeAllTheThings( e ); }
 		
 		//
@@ -134,10 +136,21 @@ library.component = library.component || {};
 		function onclose() { self.closeAllTheThings(); }
 	}
 	
+	ns.Init.prototype.handleRestore = function( init ) {
+		const self = this;
+		if ( !self.rtc )
+			self.closeAllTheThings();
+		
+		self.rtc.restore( init );
+	}
+	
 	ns.Init.prototype.closeAllTheThings = function() {
 		const self = this;
-		self.rtc.close();
-		self.ui.close();
+		if ( self.rtc )
+			self.rtc.close();
+		
+		if ( self.ui )
+			self.ui.close();
 		
 		self.view.sendMessage({
 			type : 'close',

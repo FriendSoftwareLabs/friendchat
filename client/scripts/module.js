@@ -122,9 +122,10 @@ library.module = library.module || {};
 		
 		self.connectionMap = {
 			'connecting' : function( e ) { self.handleConnecting( e ); },
+			'open'       : e => self.handleConnOpen( e ),
 			'online'     : function( e ) { self.handleOnline( e ); },
 			'error'      : function( e ) { self.handleConnectionError( e ); },
-			'offline'    : function( e ) { self.handleOffline( e ); }
+			'offline'    : function( e ) { self.handleOffline( e ); },
 		};
 		self.connectionErrorMap = {};
 		
@@ -189,6 +190,11 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.handleConnecting = function( data ) {
 		const self = this;
 		//console.log( 'connecting', data );
+	}
+	
+	ns.BaseModule.prototype.handleConnOpen = function( data ) {
+		const self = this;
+		//console.log( 'handleConnOpen', data );
 	}
 	
 	ns.BaseModule.prototype.handleOnline = function( data ) {
@@ -523,10 +529,10 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'P.reconnect' );
 		self.initialized = false;
 		self.sendModuleInit();
 		return;
-		
 		
 		let cIds = Object.keys( self.contacts );
 		let rIds = Object.keys( self.rooms );
@@ -788,6 +794,7 @@ library.module = library.module || {};
 	ns.Presence.prototype.init = function() {
 		const self = this;
 		// server
+		self.conn.on( 'initialize', e => self.initialize( e ));
 		self.conn.on( 'account', handleAccount );
 		self.conn.on( 'clear', clear );
 		
@@ -830,7 +837,8 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.initialize = function() {
 		const self = this;
-		console.log( 'Presence.initialize - NYI', arguments );
+		console.log( 'Presence.initialize', self );
+		self.sendModuleInit();
 	}
 	
 	ns.Presence.prototype.setup = function() {
@@ -864,6 +872,7 @@ library.module = library.module || {};
 				identity   : id,
 			},
 		};
+		console.log( 'P.sendModuleInit', init );
 		self.send( init );
 	}
 	
@@ -943,6 +952,10 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
+		console.log( 'handleAccountInit', {
+			inited : self.initialized,
+			state  : state,
+		});
 		if ( self.initialized )
 			return;
 		
@@ -1081,7 +1094,9 @@ library.module = library.module || {};
 		let cId = contact.clientId;
 		let room = self.contacts[ cId ];
 		if ( room ) {
-			room.reconnect();
+			if ( room.reconnect )
+				room.reconnect();
+			
 			return;
 		}
 		

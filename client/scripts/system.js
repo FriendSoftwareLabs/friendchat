@@ -1025,6 +1025,10 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.closeSession = function( sId ) {
 		const self = this;
+		console.log( 'RtcControl.closeSession', {
+			sid : sId,
+			ses : self.sessions,
+		});
 		if ( !self.sessions[ sId ])
 			return;
 		
@@ -2224,6 +2228,12 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcSession.prototype.initialize = function( init ) {
 		const self = this;
+		if ( self.view ) {
+			self.restore( init );
+			return;
+		}
+		
+		console.log( 'RtcSession.initialize', init );
 		self.id = init.liveId;
 		const roomConf = init.liveConf;
 		const viewConf = self.conf;
@@ -2264,6 +2274,16 @@ library.rtc = library.rtc || {};
 			if ( onclose )
 				onclose();
 		}
+	}
+	
+	ns.RtcSession.prototype.restore = function( init ) {
+		const self = this;
+		console.log( 'RtcSession.restore', init );
+		const res = {
+			type : 'restore',
+			data : init,
+		};
+		self.send( res );
 	}
 	
 })( library.rtc );

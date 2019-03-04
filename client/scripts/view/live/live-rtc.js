@@ -87,6 +87,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.init();
 	}
 	
+	// Public
+	
+	ns.RTC.prototype.restore = function( init ) {
+		const self = this;
+		console.log( 'RTC.restore', init );
+		self.identities = init.identities;
+		const conf = init.liveConf;
+		self.handleQuality( conf.quality );
+		self.handleMode( conf.mode );
+		self.syncPeers( conf.peerList );
+	}
+	
+	// Private
+	
 	ns.RTC.prototype.init = function() {
 		var self = this;
 		self.bindMenu();
@@ -243,11 +257,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( peerId === self.userId )
 				return;
 			
-			var conf = {
-				peerId : peerId,
-				isHost : true,
-			};
-			self.createPeer( conf );
+			self.createPeer( peerId );
 		}
 	}
 	
@@ -395,15 +405,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleQuality = function( quality ) {
 		const self = this;
+		console.log( 'quality', quality );
 		if ( !self.selfie )
 			return;
 		
+		self.quality = quality;
 		self.selfie.setRoomQuality( quality );
 		
 	}
 	
 	ns.RTC.prototype.handleMode = function( event ) {
 		const self = this;
+		if ( !event )
+			event = {};
+		
 		let mode = event.type;
 		if ( '' === mode )
 			self.setModeNormal();
@@ -517,8 +532,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handlePeerJoin = function( peer ) {
 		const self = this;
+		console.log( 'handlePeerJoin', {
+			uid  : self.userId,
+			peer : peer,
+		});
+		if ( self.userId === peer.peerId )
+			return;
+		
 		peer.isHost = false;
-		self.createPeer( peer );
+		self.createPeer( peer.peerId );
 	}
 	
 	ns.RTC.prototype.handlePeerLeft = function( peer ) {
@@ -639,14 +661,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.syncPeers = function( peers ) {
+	ns.RTC.prototype.syncPeers = function( peerIds ) {
 		var self = this;
-		checkRemoved( peers );
-		checkJoined( peers );
+		console.log( 'syncPeers', {
+			local : self.peers,
+			server : peerIds,
+		});
+		checkRemoved( peerIds );
+		restartCurrent();
+		checkJoined( peerIds );
 		
-		function checkRemoved( peers ) {
+		function checkRemoved( pids ) {
 			var localPids = Object.keys( self.peers );
-			var serverPids = peers.map( getId );
+			console.log( 'syncPeers - checkRemoved', {
+				local : localPids,
+				server : pids,
+			});
+			var serverPids = pids;
 			var removed = localPids.filter( notInPeers );
 			removed.forEach( remove );
 			function remove( pid ) {
@@ -654,23 +685,34 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			function notInPeers( pid ) {
+				if ( pid === self.userId )
+					return false;
+				
 				var index = serverPids.indexOf( pid );
 				return !!( -1 === index );
 			}
-			
-			function getId( peer ) { return peer.peerId; }
 		}
 		
-		function checkJoined( peers ) {
-			var joined = peers.filter( notFound );
+		function restartCurrent() {
+			const healthCheck = true;
+			self.restartPeers( healthCheck );
+		}
+		
+		function checkJoined( pids ) {
+			var joined = pids.filter( notFound );
 			joined.forEach( add );
 			
-			function notFound( peer ) {
-				var pid = peer.peerId;
+			function notFound( pid ) {
+				if ( pid === self.userId )
+					return false;
+				
 				return !self.peers[ pid ];
 			}
 			
-			function add( peer ) { /* add a peer */ }
+			function add( pid ) {
+				console.log( 'syncPeers.add', pid );
+				self.createPeer( pid )
+			}
 		}
 	}
 	
@@ -682,7 +724,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.restartPeers = function() {
+	ns.RTC.prototype.restartPeers = function( healthCheck ) {
 		const self = this;
 		let pids = Object.keys( self.peers );
 		pids.forEach( restart );
@@ -694,26 +736,30 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( !peer )
 				return;
 			
-			peer.restart();
+			peer.restart( healthCheck );
 		}
 	}
 	
-	ns.RTC.prototype.createPeer = function( data ) {
+	ns.RTC.prototype.createPeer = function( peerId ) {
 		const self = this;
-		const pid = data.peerId;
-		let peer = self.peers[ pid ];
-		if ( peer ) {
-			console.log( 'createPeer - already exists', self.peers );
-			peer.close();
-			delete self.peers[ pid ];
-			self.view.removePeer( pid );
-			peer = null;
+		console.log( 'createPeer', peerId );
+		if ( peerId === self.userId ) {
+			console.log( 'tried to add self lol', {
+				pid  : peerId,
+				self : self,
+			});
+			return;
 		}
 		
-		if ( null == data.isHost )
-			data.isHost = false;
+		let peer = self.peers[ peerId ];
+		if ( peer ) {
+			console.log( 'createPeer - already exists, soft restart', self.peers );
+			const healthCheck = true;
+			peer.restart( healthCheck );
+			return;
+		}
 		
-		let identity = self.identities[ pid ];
+		let identity = self.identities[ peerId ];
 		if ( !identity )
 			identity = {
 				name   : '---',
@@ -729,11 +775,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const Peer = getPeerConstructor( self.browser );
 		peer = new Peer({
-			id          : pid,
+			id          : peerId,
 			identity    : identity,
 			permissions : self.permissions,
 			isFocus     : isFocus,
-			isHost      : data.isHost,
 			signal      : self.conn,
 			rtcConf     : self.rtcConf,
 			selfie      : self.selfie,
@@ -745,13 +790,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		peer.on( 'set-focus', setFocus );
 		
 		function nestedApp( e ) { self.view.addNestedApp( e ); }
-		function setFocus( e ) { self.setPeerFocus( e, pid ); }
+		function setFocus( e ) { self.setPeerFocus( e, peerId ); }
 		
 		self.peers[ peer.id ] = peer;
 		self.view.addPeer( peer );
 		
-		function signalRemovePeer() { self.signalRemovePeer( data.peerId ); }
-		function closeCmd() { self.closePeer( data.peerId ); }
+		function signalRemovePeer() { self.signalRemovePeer( peerId ); }
+		function closeCmd() { self.closePeer( peerId ); }
 		
 		function getPeerConstructor( browser ) {
 			if ( 'safari' === browser )
@@ -1989,8 +2034,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Peer.prototype.restart = function() {
+	// healthcheck is optional and will abort restart if things look ok
+	ns.Peer.prototype.restart = function( checkHealth ) {
 		const self = this;
+		console.log( 'Peer.restart', checkHealth );
+		if ( checkHealth ) {
+			let healthy = self.checkIsHealthy();
+			if ( healthy )
+				return;
+		}
+		
 		sendRestart();
 		self.state = '';
 		self.doRestart();
@@ -2052,6 +2105,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.startSync = function() {
 		const self = this;
 		const now = self.syncStamp || Date.now();
+		self.isHost = null;
 		self.syncStamp = now;
 		const sync = {
 			type : 'sync',
@@ -2071,9 +2125,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleSync = function( remoteStamp ) {
 		const self = this;
-		// sync has already been set, ignore
-		if ( null != self.isHost )
+		console.log( 'handleSync', {
+			self  : self,
+			stamp : remoteStamp,
+		});
+		if ( null != self.isHost ) {
+			if ( self.isHost )
+				self.syncStamp = remoteStamp - 1;
+			else
+				self.syncStamp = remoteStamp + 1;
+			
+			self.acceptSync( remoteStamp );
 			return;
+		}
 		
 		// invalid remote stamp, drop
 		if ( null == remoteStamp ) {
@@ -2084,7 +2148,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		// same stamp, reroll
 		if ( self.syncStamp === remoteStamp ) {
 			self.stopSync();
-			const delay = ( Math.floor( Math.random * 20 ) + 1 ); // we dont want a 0ms delay
+			const delay = ( Math.floor( Math.random * 20 ) + 1 );
 			console.log( 'handleSync - equal, reroll', delay );
 			setTimeout( restart, delay );
 			function restart() {
@@ -2379,6 +2443,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			},
 		};
 		self.emit( 'state', rtcPing );
+	}
+	
+	ns.Peer.prototype.checkIsHealthy = function() {
+		const self = this;
+		const rtcState = self.session.getRTCState();
+		console.log( 'checkIsHealthy', rtcState );
+		if ( 'stable' === rtcState.signal )
+			return true;
+		else
+			return false;
 	}
 	
 	ns.Peer.prototype.handleReconnect = function( sid ) {

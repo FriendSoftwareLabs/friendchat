@@ -290,6 +290,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
 		var self = this;
+		console.log( 'hello.ws.open' );
 		self.clearConnectTimeout();
 		self.reconnectAttempt = 0;
 		// we're waiting for authenticate challenge
@@ -298,7 +299,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		var self = this;
-		console.log( 'Socket.handleClose', e );
+		console.log( 'hello.ws.close', e );
 		self.cleanup();
 		self.setState( 'close', e );
 		self.doReconnect();
@@ -306,7 +307,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		var self = this;
-		console.log( 'Socket.handleError', e );
+		console.log( 'hello.ws.error', e );
 		self.clearConnectTimeout();
 		self.cleanup();
 		self.setState( 'error', e );
@@ -342,6 +343,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		var self = this;
+		console.log( 'hello.ws.handleSession', sessionId );
 		if ( sessionId && ( self.session === sessionId )) {
 			self.setReady();
 			return;
@@ -369,6 +371,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.unsetSession = function() {
 		var self = this;
+		console.log( 'hello.ws.unsetSession' );
 		self.session = false;
 		var msg = {
 			type : 'session',

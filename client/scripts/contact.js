@@ -593,11 +593,14 @@ library.contact = library.contact || {};
 		// check if room has been initialized
 		if ( !self.settings ) {
 			self.goLivePending = conf || {};
+			console.log( 'P.joinLive - waiting for settings, returning' );
 			return;
 		}
 		
-		if ( self.live )
+		if ( self.live ) {
+			console.log( 'P.joinLive - already have live object', self.live );
 			return; // we already are in a live _in this room_
+		}
 		
 		conf = conf || {};
 		conf.roomId = self.clientId;
@@ -608,8 +611,10 @@ library.contact = library.contact || {};
 			conf.isStream = true;
 		
 		self.live = hello.rtc.createSession( conf, liveToServer, onClose );
-		if ( !self.live )
+		if ( !self.live ) {
+			console.log( 'P.joinLive - live wasnt not created..', self );
 			return; // session wasnt created, because :reasons:
+		}
 		
 		// tell server
 		const join = {
@@ -635,6 +640,7 @@ library.contact = library.contact || {};
 		function liveName( e ) { self.handleLiveName( e ); }
 		function viewSwitch( e ) { self.handleViewSwitch( e ); }
 		function onClose( e ) {
+			console.log( 'P.joinLive - onClose' );
 			self.closeLive();
 			const leave = {
 				type : 'leave',
@@ -970,6 +976,8 @@ library.contact = library.contact || {};
 			let liveConf = self.goLivePending;
 			delete self.goLivePending;
 			self.joinLive( liveConf );
+		} else if ( self.live ) {
+			self.restoreLive();
 		}
 		
 		self.updateActive();
@@ -977,6 +985,16 @@ library.contact = library.contact || {};
 		function getSelf() {
 			return self.users[ self.userId ];
 		}
+	}
+	
+	ns.PresenceRoom.prototype.restoreLive = function() {
+		const self = this;
+		console.log( 'PresenceRoom.restoreLive', self.live );
+		const restore = {
+			type : 'live-restore',
+			data : Date.now(),
+		};
+		self.send( restore );
 	}
 	
 	ns.PresenceRoom.prototype.setLastMessage = function() {
@@ -1663,10 +1681,13 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.closeLive = function() {
 		const self = this;
-		if ( !self.live )
+		console.log( 'P.closeLive', self.live );
+		const live = self.live;
+		if ( !live )
 			return;
 		
-		self.live.close();
+		delete self.live;
+		live.close();
 		const userLeave = {
 			type : 'user-leave',
 		};
@@ -1676,6 +1697,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleCloseLive = function( liveId ) {
 		const self = this;
+		console.log( 'P.handleCloseLive', liveId );
 		// close the things
 		if ( !liveId ) {
 			clearView();
