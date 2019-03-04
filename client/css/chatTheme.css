@@ -25,6 +25,11 @@ Prepend with .im-chat or .conference classes to specify for view type
 	font-size : 120%;
 }
 
+[mobile] #chatting-with
+{
+	display: none;
+}
+
 #main {}
 
 .messages {

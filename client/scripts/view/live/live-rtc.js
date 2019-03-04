@@ -1359,6 +1359,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			share();
 		
 		function unshare() {
+			
+			self.screenshareEl.classList.add( 'inactive' );
+			
 			self.chromeSourceId = null;
 			self.chromeSourceOpts = null;
 			self.menu.setState( 'toggle-screen-share', false );
@@ -1373,6 +1376,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( !res || !res.sid )
 					return;
 				
+				self.screenshareEl.classList.remove( 'inactive' );
 				self.chromeSourceId = res.sid;
 				self.chromeSourceOpts = res.opts;
 				self.menu.setState( 'toggle-screen-share', true );
@@ -1423,12 +1427,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			.catch( fail );
 		
 		function devBack( devices ) {
-			let label = selected.audiooutput;
-			let out = devices.audiooutput[ label ];
+			let deviceId = selected.audiooutput;
+			let out = devices.audiooutput[ deviceId ];
 			if ( !out )
 				return;
 			
-			self.currentAudioOut = label;
+			self.currentAudioOut = deviceId;
 			self.emit( 'audio-sink', out.deviceId );
 		}
 		
@@ -1588,13 +1592,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			getMedia( conf );
 			
-			function setDevice( type, label ) {
+			function setDevice( type, deviceId ) {
 				var sourceType = type + 'input';
-				var device = availableDevices[ sourceType ][ label ];
+				var device = availableDevices[ sourceType ][ deviceId ];
 				if ( !device ) {
-					console.log( 'device not found for label', {
+					console.log( 'device not found for deviceId', {
 						sourceType : sourceType,
-						label : label,
+						deviceId : deviceId,
 						available : availableDevices });
 					return;
 				}
@@ -1640,7 +1644,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			done( null, media );
 			
 			function updateDevice( track, type ) {
-				self.currentDevices[ type ] = track.label;
+				self.currentDevices[ type ] = track.deviceId;
 			}
 		}
 		

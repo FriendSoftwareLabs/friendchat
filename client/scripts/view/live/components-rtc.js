@@ -108,13 +108,14 @@ library.rtc = library.rtc || {};
 	
 	/*
 	{
-		audioinput : { label : device, }
-		audiooutput : { label : device, }
-		videoinput : { label : device, }
+		audioinput : { deviceId : device, }
+		audiooutput : { deviceId : device, }
+		videoinput : { deviceId : device, }
 		
 		!important : in case of no permission / blocked devices, only one device will
 		be returned for audio and video each. This is because they all have the same 
 		label; "".
+		!! IMPORTANT : Changed labels to deviceId for keys!
 	}
 	*/
 	ns.MediaDevices.prototype.getByType = function() {
@@ -128,6 +129,9 @@ library.rtc = library.rtc || {};
 				videoinput : {},
 			};
 			
+			var audioNum = 1;
+			var videoNum = 1;
+			
 			arr.forEach( sort );
 			return devObj;
 			
@@ -137,7 +141,15 @@ library.rtc = library.rtc || {};
 					return;
 				}
 				
-				devObj[ dev.kind ][ dev.label ] = dev;
+				var lb = dev.kind.substr( 0, 1 ).toUpperCase() + dev.kind.substr( 1, dev.kind.length - 1 );
+				if( dev.kind == 'audioinput' )
+					lb += ' ' + audioNum++;
+				else if( dev.kind == 'videoinput' )
+					lb += ' ' + videoNum++;
+				
+				dev.labelOverride = lb;
+				
+				devObj[ dev.kind ][ dev.deviceId ] = dev;
 			}
 		}
 	}
@@ -366,10 +378,18 @@ library.rtc = library.rtc || {};
 			function setBuffer() {
 				self.analyser.getByteTimeDomainData( self.timeBuffer );
 				if ( self.onBuffer )
+				{
 					setTimeout( emitBuffer, 0 );
+				}
 				
 				function emitBuffer() {
-					self.onBuffer( self.timeBuffer, self.volumeHistory );
+					try
+					{
+						self.onBuffer( self.timeBuffer, self.volumeHistory );
+					}
+					catch( e )
+					{
+					}
 				}
 			}
 			
@@ -846,23 +866,23 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
-	ns.Session.prototype.createDataChannel = function( label, opts ) {
+	ns.Session.prototype.createDataChannel = function( deviceId, opts ) {
 		const self = this;
-		if ( !label )
-			throw new Error( 'rtc.createDataChannel - no label' );
+		if ( !deviceId )
+			throw new Error( 'rtc.createDataChannel - no device id' );
 		
-		self.log( 'createDataChannel', label );
-		const conn = self.conn.createDataChannel( label, opts );
+		self.log( 'createDataChannel', deviceId );
+		const conn = self.conn.createDataChannel( deviceId, opts );
 		const channel = self.setDataChannel( conn );
 		return channel;
 		
 	}
 	
-	ns.Session.prototype.closeDataChannel = function( label ) {
+	ns.Session.prototype.closeDataChannel = function( deviceId ) {
 		const self = this;
-		const channel = self.channels[ label ];
-		self.log( 'closeDataChannel', label );
-		delete self.channels[ label ];
+		const channel = self.channels[ deviceId ];
+		self.log( 'closeDataChannel', deviceId );
+		delete self.channels[ deviceId ];
 		if ( !channel )
 			return;
 		
@@ -904,8 +924,8 @@ library.rtc = library.rtc || {};
 		delete self.isHost;
 		
 		function closeDataChannels() {
-			for ( let label in self.channels )
-				self.closeDataChannel( label );
+			for ( let deviceId in self.channels )
+				self.closeDataChannel( deviceId );
 		}
 		
 		function closeRTC() {
@@ -1757,14 +1777,13 @@ library.rtc = library.rtc || {};
 	ns.Session.prototype.setDataChannel = function( conn ) {
 		const self = this;
 		self.log( 'setDataChannel', conn );
-		const label = conn.label;
 		const channel = new library.rtc.DataChannel( conn, onClose, eventSink );
-		self.channels[ label ] = channel;
+		self.channels[ conn.deviceId ] = channel;
 		return channel;
 		
 		function onClose( e ) {
-			self.log( 'datachannel closed', label );
-			delete self.channels[ label ];
+			self.log( 'datachannel closed', conn.deviceId );
+			delete self.channels[ conn.deviceId ];
 		}
 		
 		function eventSink() {
@@ -1931,7 +1950,7 @@ library.rtc = library.rtc || {};
 		eventSink
 	) {
 		const self = this;
-		self.id = conn.label;
+		self.id = conn.deviceId;
 		self.conn = conn;
 		self.onclose = onClose;
 		
@@ -2121,6 +2140,36 @@ library.rtc = library.rtc || {};
 		.catch( deviceError );
 		
 		function devsBack( available ) {
+			
+			var kinds = {};
+			
+			// Force labels with label overrides!
+			for( var a in available )
+			{
+				for( var a2 in available[a] )
+				{
+					var knd = false;
+					for( var b in available[a][a2] )
+					{
+						if( b == 'kind' )
+						{
+							var str = available[a][a2][b];
+							if( !kinds[ str ] )
+							{
+								kinds[ str ] = 1;
+							}
+							knd = str.substr( 0, 1 ).toUpperCase() + str.substr( 1, str.length - 1 ) + ' ' + kinds[ str ]++;
+						}
+					}
+					for( var b in available[a][a2] )
+					{
+						if( b == 'label' )
+						{
+							available[a][a2][b + 'Override'] = knd;
+						}
+					}
+				}
+			}
 			setupConf( available );
 		}
 		
@@ -2343,21 +2392,21 @@ library.rtc = library.rtc || {};
 			return conf;
 		
 		const deviceType = type + 'input';
-		let label = self.preferedDevices[ deviceType ];
-		if ( !label ) {
+		let deviceId = self.preferedDevices[ deviceType ];
+		if ( !deviceId ) {
 			console.log( 'Media.setDevice', {
 				type : type,
 				avai : available,
 				pref : self.preferedDevices,
 				curr : self.currentDevices,
 			});
-			label = self.currentDevices[ deviceType ];
+			deviceId = self.currentDevices[ deviceType ];
 		}
 		
-		if ( !label )
+		if ( !deviceId )
 			return conf;
 		
-		let device = available[ deviceType ][ label ];
+		let device = available[ deviceType ][ deviceId ];
 		if ( !device )
 			return conf;
 		
@@ -2438,8 +2487,8 @@ library.rtc = library.rtc || {};
 		const self = this;
 		let aT = media.getAudioTracks()[ 0 ];
 		let vT = media.getVideoTracks()[ 0 ];
-		self.currentDevices.audioinput = aT ? aT.label : false;
-		self.currentDevices.videoinput = vT ? vT.label : false;
+		self.currentDevices.audioinput = aT ? aT.deviceId : false;
+		self.currentDevices.videoinput = vT ? vT.deviceId : false;
 	}
 	
 	ns.Media.prototype.setMedia = function( media ) {
@@ -2462,7 +2511,7 @@ library.rtc = library.rtc || {};
 				self.emit( 'track-ended', {
 					id    : track.id,
 					kind  : track.kind,
-					label : track.label,
+					label : track.labelOverride
 				});
 			}
 		});

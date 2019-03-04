@@ -237,7 +237,7 @@ library.rtc = library.rtc || {};
             return;
         }
         
-        var deviceLabel = tracks[ 0 ].label;
+        var deviceLabel = tracks[ 0 ].labelOverride;
         self.ui.updateAudioInput( { desc : deviceLabel } );
         new library.rtc.AudioInputDetect( mediaStream, doneBack );
         function doneBack( err ) {

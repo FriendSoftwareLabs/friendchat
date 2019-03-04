@@ -56,3 +56,8 @@
 .IconSmall.icon-bigger:before {
 	font-size: 20px;
 }
+
+#recent-active
+{
+	overflow: auto;
+}

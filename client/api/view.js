@@ -60,6 +60,7 @@ var friend = window.friend || {};
 			'register'     : register,
 			'viewtheme'    : viewtheme,
 			'refreshtheme' : systemTheme,
+			'callback'     : callback
 		};
 		
 		function close( e ) { self.close( e ); }
@@ -70,6 +71,11 @@ var friend = window.friend || {};
 		function register( e ) { self.register( e ); }
 		function viewtheme( e ) { self.handleViewTheme( e ); }
 		function systemTheme( e ) { self.handleSystemTheme( e ); }
+		function callback( e ) {
+			if( e.data && self.callbacks[ e.callback ] ) {
+				self.executeCallback( e.callback, e.data );
+			}
+		};
 		
 		self.notifyMap = {
 			'activateview' : activated,
@@ -86,6 +92,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.ViewEvent.prototype.receiveEvent = function( e ) {
+		
 		var self = this;
 		if ( !e.data ) {
 			console.log( 'View.receiveEvent - no data', e );
@@ -109,7 +116,9 @@ var friend = window.friend || {};
 			console.log( 'view.receiveEvent - no msg for event', e );
 			return;
 		}
+		
 		msg.origin = e.origin;
+		
 		var handler = self.eventMap[ msg.command ];
 		if ( !handler ) {
 			self.viewEvent( msg );
@@ -181,12 +190,41 @@ var friend = window.friend || {};
 		self.scriptsLoaded = false;
 		self.cssLoaded = false;
 		
+		self.callbacks = {}; // Some callbacks
+		
 		self.init();
 	}
 	
 	ns.View.prototype = Object.create( api.ViewEvent.prototype );
 	
 	// public
+	
+	ns.View.prototype.addCallback = function( callback )
+	{
+		const self = this;
+		
+		var id = friendUP.tool.uid();
+		self.callbacks[ id ] = callback;
+		return id;
+	}
+	
+	ns.View.prototype.executeCallback = function( cid, data )
+	{
+		const self = this;
+		
+		if( self.callbacks[ cid ] )
+		{
+			self.callbacks[ cid ]( data );
+		}
+		// Clean up
+		var out = {};
+		for( var a in self.callbacks )
+		{
+			if( a != cid )
+				out[ a ] = self.callbacks[ a ];
+		}
+		self.callbacks = out;
+	}
 	
 	ns.View.prototype.toggleFullscreen = function( targetElement ) {
 		const self = this;
@@ -695,6 +733,34 @@ var friend = window.friend || {};
 		self.sendViewEvent( state );
 	}
 	
+	// Show the camera
+	ns.View.prototype.openCamera = function( flags, callback )
+	{
+		const self = this;
+		
+		// Create the callback
+		var cbk = function( msg ) {
+			callback( msg.data );
+		};
+		
+		// The message
+		var o = {
+			type: 'view',
+			method: 'opencamera',
+			viewId: self.id,
+			targetViewId: self.id, // TODO: This may be needed!
+			flags: flags
+		};
+		
+		// Add a callback
+		if( callback )
+		{
+			o.callback = self.addCallback( callback );
+		}
+		
+		self.sendBase( o );
+	}
+	
 	ns.View.prototype.activate = function() {
 		var self = this;
 		var msg = {
@@ -790,7 +856,7 @@ var friend = window.friend || {};
 			document.getElementsByTagName( 'head' )[0].appendChild( friend.themeStyleElement );
 		}
 		
-		var shades = [ 'dark', 'charcoal' ];
+		var shades = [ 'dark', 'charcoal', 'synthwave' ];
 		for( var c in shades )
 		{
 			var uf = shades[c].charAt( 0 ).toUpperCase() + shades[c].substr( 1, shades[c].length - 1 );
@@ -1098,7 +1164,22 @@ window.View = new api.View();
 			uworker.postMessage( fileMessage );		
 		}
 		
+		// Support blob format
+		if( evt.type && evt.type == 'blob' )
+		{
+			evt.blob.name = 'cameraimage.png';
+			evt.clipboardData = { items: [ { 
+				kind: 'file', 
+				getAsFile()
+				{
+					return evt.blob;
+				} } ] 
+			};
+			evt.originalEvent = {};
+		}
+		
 		var pastedItems = ( evt.clipboardData || evt.originalEvent.clipboardData ).items;
+		
 		for( var i in pastedItems )
 		{
 			var item = pastedItems[i];

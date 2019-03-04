@@ -84,6 +84,28 @@
 			<div id="connecting-peers" class="hidden">
 			</div>
 		</div>
+		<div id="live-button-bar" class="BackgroundHeavier">
+			<div class="live-group-left">
+				<div class="live-image-button text-chat">
+				</div>
+				<div class="live-image-button screen-share inactive">
+				</div>
+			</div>
+			<div class="live-group-middle">
+				<div class="live-image-button audio-toggle">
+				</div>
+				<div class="live-image-button hangup">
+				</div>
+				<div class="live-image-button video-toggle">
+				</div>
+			</div>
+			<div class="live-group-right">
+				<!--<div class="live-image-button people">
+				</div>-->
+				<div class="live-image-button settings">
+				</div>
+			</div>
+		</div>
 		<div id="fragments" class="hidden">
 
 <!-- Selfie
@@ -382,7 +404,7 @@ id,
 src,
 -->
 <script id="stream-video-tmpl" type="text/html">
-<video id="<%= id %>" src="<%= src %>" class="video stream Accelerated" autoplay="autoplay">
+<video id="<%= id %>" src="<%= src %>" class="video stream Accelerated" autoplay="autoplay" playinline>
 </video>
 </script>
 
@@ -447,7 +469,7 @@ current,
 				<i class="fa fa-fw fa-reply"></i>
 			</div>
 			<div id="source-title" class="expand">
-				{i18n_select_input_source}
+				{i18n_audio_video_settings}
 			</div>
 		</div>
 		<div id="source-status">
@@ -470,6 +492,18 @@ current,
 			</div>
 		</div>
 		<div id="source-input">
+			<div id="audiooutput-container" class="group row">
+				<div class="select-message">
+					{i18n_available_speakers}
+				</div>
+				<div id="audiooutput-error" class="error-message hidden">
+				</div>
+				<div class="expand">
+					<div id="audiooutput-select">
+					</div>
+				</div>
+				<video id="audiooutput-test" class="hidden" playinline>
+			</div>
 			<div id="audioinput-container" class="group row">
 				<div class="expand">
 					<div class="select-message">
@@ -488,51 +522,44 @@ current,
 					<div id="audioinput-select">
 					</div>
 				</div>
-				<div id="source-select-av-container" class="fortify">
+				<div id="source-select-av-container" class="fortify BackgroundHeaviest Rounded BordersDefault">
 				</div>
 			</div>
-			<div id="videoinput-container">
+			<div id="videoinput-container" class="group row">
 				<div class="select-message">
 					{i18n_available_video_sources}
 				</div>
 				<div id="videoinput-error" class="error-message hidden">
 				</div>
-				<div id="videoinput-select">
+				<div class="expand">
+					<div id="videoinput-select">
+					</div>
 				</div>
 			</div>
-			<div id="audiooutput-container">
-				<div class="select-message">
-					{i18n_available_speakers}
+		</div>
+		<div id="source-input-preview">
+			<div id="source-preview">
+				<div class="preview-hint">
+					Preview
 				</div>
-				<div id="audiooutput-error" class="error-message hidden">
+				<div class="preview-show">
+					<i id="source-select-no-preview" class="fa fa-fw fa-close"></i>
+					<video id="source-select-preview" src="" playinline autoplay="autoplay">
 				</div>
-				<div id="audiooutput-select">
-				</div>
-				<video id="audiooutput-test" class="hidden">
 			</div>
-			<div id="source-select-buttons" class="group row tighten">
+		</div>
+		<div id="source-input-buttons">
+			<div id="source-select-buttons">
+				<button class="button danger discard-select" title="Discard any changes and close">
+					{i18n_cancel}
+				</button>
 				<button class="button accept apply-select" title="Apply current selection">
-					<i class="fa fa-fw fa-check"></i>
-					{i18n_apply}
+					{i18n_save}
 				</button>
 				<button class="button refresh-select" title="Check for changes in available devices">
-					<i class="fa fa-fw fa-refresh"></i>
 					{i18n_refresh}
 				</button>
-				<button class="button danger discard-select" title="Discard any changes and close">
-					<i class="fa fa-fw fa-close"></i>
-					{i18n_discard}
-				</button>
 			</div>
-		</div>
-	</div>
-	<div id="source-preview">
-		<div class="preview-hint">
-			Preview
-		</div>
-		<div class="preview-show">
-			<i id="source-select-no-preview" class="fa fa-fw fa-close"></i>
-			<video id="source-select-preview" src="">
 		</div>
 	</div>
 </script>
@@ -922,7 +949,7 @@ contentId,
 			<i class="fa fa-fw fa-close"></i>
 		</div>
 	</div>
-	<div class="menu-pos-reset">
+	<div class="menu-pos-reset ScrollBarSmall">
 		<div id="<%= contentId %>" class="menu-content group row left">
 		</div>
 	</div>
@@ -993,7 +1020,7 @@ faIcon,
 <script id="live-chat-tmpl" type="text/html">
 <div id="live-chat" class="bar column">
 	<div id="live-chat-message-container" class="expand">
-		<div id="live-chat-messages" class="SelectableText">
+		<div id="live-chat-messages" class="SelectableText SmoothScrolling">
 		</div>
 	</div>
 	<div id="live-chat-is-typing" class="fortify">

@@ -4,8 +4,8 @@
 	padding : 0.3em 0.6em;
 }
 
-#room-title {
-	
+[mobile] #room-title {
+	display: none;
 }
 
 #room-title .group-prefix,
@@ -27,6 +27,12 @@
 #foot {
 	height: unset;
 }
+
+body[mobile] #emojii-panel-button
+{
+	display: none !important;
+}
+
 
 .section-head {
 	font-weight: bold;
@@ -179,14 +185,83 @@
 }
 
 #users-container {
-	width : 12em;
-	transition : width 0.2s;
+	width : 12em;	
+	transform : translateX(0);
+	transition : transform 0.25s;
 	overflow: visible;
 }
 
+[mobile] #users-container {
+	position: absolute;
+	width: 80%;
+ 	right: 0;
+ 	top: 0;
+ 	height: 100%;
+}
+ 
+[mobile] #users-container:after {
+	content: " ";
+	display: block;
+	position: absolute;
+	left: 0;
+	width: 0;
+	right: 100%;
+	height: 100%;
+	top: 0;
+	background: rgba(0,0,0,0.5);
+	transition: opacity 0.5s;
+	opacity: 0;
+}
+
+[mobile] #users-container:not(.users-hide) {	
+	box-shadow: 0px 0px 5px rgba(0,0,0,1);
+}
+
+[mobile] #users-container:not(.users-hide):after {
+	left: auto;
+	width: 50%;
+	opacity: 1;
+}
+ 
 #users-container.users-hide {
-	width : 0em;
-	transition : width 0.2s;
+	transform : translateX(100%);
+	transition : transform 0.25s;
+}
+
+body:not([mobile]) #users-container.users-hide {
+	width: 0;
+	overflow: hidden;
+}
+
+[mobile] #users-container:not(.users-hide) #users-header:before {
+	content: "\f00d";
+	display: inline-block;
+	font-family: fontawesome;
+	margin-right: 10px;
+}
+
+body:not([mobile]) #users-header
+{
+	display: none;
+}
+
+[mobile] #users-header span
+{
+	font-weight: bold;
+}
+
+[mobile] #users-container:not(.users-hide) #user-groups .name:before {
+	content: " ";
+	display: block;
+	float: left;
+	height: 2px;
+	width: 10px;
+}
+
+[mobile] [mobileHidden] {	
+	visibility: hidden;
+	pointer-events: none;
+	transition: none;
 }
 
 #users-position { position: relative; }
@@ -259,3 +334,45 @@ html body div > .textarea-wrap textarea {
 .emojii-item:hover {
 	opacity: 1;
 }
+
+#main
+{
+	overflow-x: hidden;
+}
+
+#attachment-menu
+{
+	transition: transform 0.25s;
+	transform: scale3d(1,0,1);
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	left: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.85);
+	color: white;
+	text-align: center;
+	box-sizing: border-box;
+	padding: 10px;
+	z-index: 3;
+}
+
+#attachment-menu button
+{
+	width: 100%;
+	display: block;
+	margin: 0 0 10px 0;
+}
+
+html > body > div #attachment-menu button
+{
+	color: white;
+}
+
+#attachment-menu.Showing
+{
+	transform: scale3d(1,1,1);
+	
+}
+
+

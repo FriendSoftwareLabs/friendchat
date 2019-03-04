@@ -637,6 +637,7 @@ library.view = library.view || {};
 		self.setServerMessageBox();
 	}
 	
+	// Show the menu for the base module
 	ns.BaseModule.prototype.showMenu = function( type ) {
 		const self = this;
 		if ( !type )

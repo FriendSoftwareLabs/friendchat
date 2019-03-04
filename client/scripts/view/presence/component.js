@@ -348,11 +348,44 @@ var hello = window.hello || {};
 	}
 	
 	ns.GroupUser.prototype.handleClick = function() {
+		
 		const self = this;
 		self.conn.send({
 			type : 'contact-open',
 			data : self.id,
 		});
+		this.toggleUserList( false );
+	}
+	
+	ns.GroupUser.prototype.toggleUserList = function( force ) {
+		const self = this;
+		
+		var usersEl = document.getElementById( 'users-container' );
+		var toggleUsersBtn = document.getElementById( 'show-hide-btn' );
+		
+		if ( null == force ) {
+			usersEl.classList.toggle( 'users-hide' );
+			if( usersEl.classList.contains( 'users-hide' ) )
+			{
+				toggleUsersBtn.classList.remove( 'danger' );
+			}
+			else
+			{
+				toggleUsersBtn.classList.add( 'danger' );
+			}
+		// We are forcing
+		} 
+		else
+		{
+			if( force === false ) {
+				usersEl.classList.add( 'users-hide' );
+				toggleUsersBtn.classList.remove( 'danger' );
+			}
+			else {
+				usersEl.classList.remove( 'users-hide' );
+				toggleUsersBtn.classList.add( 'danger' );
+			}
+		}
 	}
 	
 })( library.component );

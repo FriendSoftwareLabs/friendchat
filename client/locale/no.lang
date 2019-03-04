@@ -1,44 +1,50 @@
-i18n_share : Share
-i18n_share_links : Share links with someone who is not using FriendUP, so they can join your live session.
-i18n_share_file : Share a file
-i18n_public : Public
-i18n_a_public_link : A public link can be used an unlimited number of times, by anyone, until invalidated.
-i18n_create_email : Create email
-i18n_copy_to_clipboard : Copy to clipboard
-i18n_make_the_session_private : Make the session private and invalidates the link
-i18n_make_the_session_public : Make the session public, and generate a link
-i18n_these_links_on_to_one : These links are one-time-use. Links marked in red have been used and are no longer valid.
-i18n_add_invite : Add invite
-i18n_use_the_menu : Use the menu to get started.
-i18n_create_a_new_account : Create a new account
-i18n_create : Create
-i18n_reset : Reset
-i18n_submit : Submit
-i18n_create_an_account : Create an account
-i18n_done : Done
-i18n_channel_settings : Channel settings
-i18n_irc_settings : IRC settings
-i18n_join : join
-i18n_treeroot_settings : Treeroot settings
-i18n_workgroups : Workgroups
-i18n_user_limit : User limit
-i18n_a : A
-i18n_friendup : FriendUP
-i18n_communication_tool : communication tool
+i18n_share : Del
+i18n_share_links : Del lenker med dem smo ikke bruker Friend, slik at de kan delta i din videokonferanse.
+i18n_share_file : Del en fil
+i18n_public : Offentlig
+i18n_a_public_link : En offentlig lenke kan brukes et ubegrenset antall ganger av alle, inntil den fjernes.
+i18n_create_email : Lag en e-post
+i18n_copy_to_clipboard : Kopier til utklippstavle
+i18n_make_the_session_private : Gjør økten din privat og slett den offentlige lenken
+i18n_make_the_session_public : Gjør økten Make the session public, and generate a link
+i18n_these_links_on_to_one : Disse lenkene er for bruk kun én gang. Lenker markert i rødt er brukt og ikke lengre gyldige.
+i18n_add_invite : Inviter brukere
+i18n_use_the_menu : Bruk menyen for å starte.
+i18n_create_a_new_account : Lag en ny konto
+i18n_create : Ny
+i18n_reset : Nullstill
+i18n_submit : Utfør
+i18n_create_an_account : Lag en konto
+i18n_done : Ferdig
+i18n_channel_settings : Kanalinnstillinger
+i18n_irc_settings : IRC-innstillinger
+i18n_join : delta
+i18n_treeroot_settings : Friend Community inntillinger
+i18n_workgroups : Arbeidsgrupper
+i18n_user_limit : Brukerbegrensning
+i18n_a : Et
+i18n_friendup : Friend
+i18n_communication_tool : kommunikasjonsverktøy
 i18n_friend_chat : Friend Chat
-i18n_made_by : made by
+i18n_made_by : laget av
 i18n_sokken : sokken
-i18n_used_under_creative : used under Creative Commons ( attribution )
-i18n_about : About
-i18n_legal : Legal
-i18n_add_an_image : Add an image
-i18n_confirm : Confirm
-i18n_cancel : Cancel
-i18n_deny : Deny
-i18n_warning_message_encryption : WARNING! Message encryption is enabled on
-i18n_if_you_forget : If you forget your password, you will never be able to read old messages again.
-i18n_continue_to_encrypt : Continue to encrypt messages
-i18n_turn_off_encryption : Turn off encryption
+i18n_used_under_creative : brukt under Creative Commons ( attribution )
+i18n_about : Om applikasjonen
+i18n_about_short : Om
+i18n_legal : Juridisk
+i18n_add_an_image : Legg til et bilde
+i18n_confirm : Bekreft
+i18n_cancel : Avbryt
+i18n_deny : Avslå
+i18n_warning_message_encryption : ADVARSEL! Meldingskryptering er skrudd på
+i18n_if_you_forget : Hvis du glemmer passordet ditt vil du miste muligheten til å lese gamle meldinger.
+i18n_continue_to_encrypt : Fortsett med å kryptere meldinger
+i18n_turn_off_encryption : Skru av kryptering
+
+
+
+
+
 i18n_toggle_multiline_input : Toggle multiline input. Enter/return will no longer send the message, instead inserting a new line. While multiline is off shift+enter will insert a newline.
 i18n_messages_will_be : Messages will be read out to you
 i18n_encrypt_the_message : Encrypt the message before sending
@@ -49,7 +55,7 @@ i18n_video : Video
 i18n_error : Error
 i18n_closed : Closed
 i18n_select_input_source : Select input source
-i18n_audio_video_settings : Audio/Video Settings
+i18n_audio_video_settings : Lyd/Bilde Innstillinger
 i18n_these_are_the_media : These are the media input sources your browser has access to.
 i18n_show_available : Show available
 i18n_ignore : Ignore
@@ -203,7 +209,7 @@ i18n_ice_servers : ICE servers
 i18n_video_input : Video input
 i18n_audio_input : Audio input
 i18n_no_devices_detected : No devices detected
-i18n_devices_detected_unavailable : Devices detected, but unavailable.
+i18n_devices_detected_unavailable : Dine enheter er ikke tilgjengelige.
 i18n_no_selection : < no selection >
 i18n_not_available : not available
 i18n_connection  : Connection
@@ -316,21 +322,25 @@ i18n_stream_state_source_connecting : Source connecting
 i18n_stream_state_stream_connecting : Connecting to stream
 i18n_discard_changes : Cancel
 i18n_save_changes : Save changes
-i18n_save : Save
+
+i18n_save : Lagre
+
 i18n_searching : Searching..
 i18n_email : Email
 i18n_contacts : Contacts
 i18n_conference_rooms : Conference rooms
-i18n_conference_members : Members
-i18n_workgroup_contacts : Workgroup Contacts
-i18n_community_contacts : Community Contacts
+
+i18n_conference_members : Deltakere
+i18n_workgroup_contacts : Gruppe-kontakter
+i18n_community_contacts : Community-kontakter
+
 i18n_open_chat : Open chat
 i18n_go_live_audio : Go live, audio
 i18n_go_live_video : Go live, video
 i18n_invite_to_video : Invite to video chat
 i18n_invite_to_audio : Invite to voice chat
 i18n_invite_to_room : Invite to Room
-i18n_recent_conversations : Conversations
+i18n_recent_conversations : Activity
 i18n_remove_contact : Remove contact
 i18n_leave_room : Leave room
 i18n_remove_chat : Remove chat
@@ -345,8 +355,10 @@ i18n_keep_link : Keep link
 i18n_room_name : Room name
 i18n_today : Today
 i18n_yesterday : Yesterday
-i18n_group_chat : Group chat
-i18n_private_chat : Private chat
-i18n_incoming_call : Incoming call
-i18n_take_a_picture : Take a picture
-i18n_choose_a_file : Choose a file
+
+i18n_group_chat : Gruppesamtale
+i18n_private_chat : Privat samtale
+i18n_incoming_call : Innkommende samtale
+
+i18n_take_a_picture : Ta et bilde
+i18n_choose_a_file : Velg en fil

@@ -100,13 +100,35 @@ library.view = library.view || {};
 		const attachBtn = document.getElementById( 'attachment' );
 		
 		// chat things
-		//self.messagesEl = document.getElementById( 'messages' );
+		self.messagesEl = document.getElementById( 'messages' );
 		const emoPanelBtn = document.getElementById( 'emojii-panel-button' );
 		const inputForm = document.getElementById( 'input-form' );
 		const submitBtn = document.getElementById( 'chat-submit' );
 		
+		if( 'DESKTOP' != window.View.deviceType )
+		{
+			document.getElementById( 'users-header' ).innerHTML = '<span>' + View.i18n( 'i18n_conference_members' ) + ':</span>';
+		}
+		
+		// Timeout for loading messages
+		setTimeout( function()
+		{
+			self.messagesEl.classList.add( 'SmoothScrolling' );
+		}, 50 );
+		
 		self.goVideoBtn.addEventListener( 'click', goVideoClick, false );
 		self.goAudioBtn.addEventListener( 'click', goAudioClick, false );
+		self.usersEl.addEventListener( 'touchend', function( e )
+		{
+			var t = e.target ? e.target : e.srcElement;
+			if( t && ( t.id == 'users-container' || t.id == 'users-header' || t.tagName == 'SPAN' ) )
+			{
+				setTimeout( function()
+				{
+					self.toggleUserList( false );
+				}, 50 );
+			}
+		}, false );
 		
 		self.toggleUsersBtn.addEventListener( 'click', toggleUserList, false );
 		emoPanelBtn.addEventListener( 'click', toggleEmoPanel, false );
@@ -115,6 +137,58 @@ library.view = library.view || {};
 		attachBtn.addEventListener( 'click', attach, false );
 		
 		function attach( e ) {
+			var men = ge( 'attachment-menu' );
+			
+			var can = men.querySelector( '.Cancel' );
+			var cam = men.querySelector( '.Camera' );
+			var upl = men.querySelector( '.Upload' );
+			can.onclick = function(){
+				men.classList.remove( 'Showing' );
+			}
+			
+			if( men.classList.contains( 'Showing' ) ) {
+				men.classList.remove( 'Showing' );
+			}
+			else {
+				men.classList.add( 'Showing' );
+			}
+			upl.onclick = function( e ){
+				men.classList.remove( 'Showing' );
+				executeAttach( e );
+			}
+			cam.onclick = function( e ){
+				men.classList.remove( 'Showing' );
+				self.conn.openCamera( false, function( data ) {
+					
+					var raw = window.atob( data.data.split( ';base64,' )[1] );
+					
+					var uInt8Array = new Uint8Array( raw.length );
+					for ( var i = 0; i < raw.length; ++i ) {
+						uInt8Array[ i ] = raw.charCodeAt( i );
+					}
+				
+					var bl = new Blob( [ uInt8Array ], { type: 'image/png', encoding: 'utf-8' } );
+					
+					// Paste the blob!
+					var p = new api.PasteHandler();
+					p.paste( { type: 'blob', blob: bl }, function( data )
+					{
+						self.conn.send(	{
+							type: 'drag-n-drop',
+							data: [ {
+								Type: 'File',
+								Path: data.path
+							} ]
+						} );
+					} );
+				
+					
+				} );
+			}
+		}
+		
+		function executeAttach( e )
+		{
 			self.send( {
 				type: 'attach',
 				data: false
@@ -165,7 +239,6 @@ library.view = library.view || {};
 				}
 			}
 		} );
-		
 	}
 	
 	ns.Presence.prototype.goLive = function( type ) {
@@ -181,10 +254,26 @@ library.view = library.view || {};
 		const self = this;
 		if ( null == force ) {
 			self.usersEl.classList.toggle( 'users-hide' );
-			self.toggleUsersBtn.classList.toggle( 'danger' );
-		} else {
-			self.usersEl.classList.toggle( 'users-hide', !force );
-			self.toggleUsersBtn.classList.toggle( 'danger', !force );
+			if( self.usersEl.classList.contains( 'users-hide' ) )
+			{
+				self.toggleUsersBtn.classList.remove( 'danger' );
+			}
+			else
+			{
+				self.toggleUsersBtn.classList.add( 'danger' );
+			}
+		// We are forcing
+		} 
+		else
+		{
+			if( force === false ) {
+				self.usersEl.classList.add( 'users-hide' );
+				self.toggleUsersBtn.classList.remove( 'danger' );
+			}
+			else {
+				self.usersEl.classList.remove( 'users-hide' );
+				self.toggleUsersBtn.classList.add( 'danger' );
+			}
 		}
 	}
 	
@@ -238,6 +327,12 @@ library.view = library.view || {};
 			'users-position',
 			friend.template
 		);
+		
+		// Just kill this class (only needed on load)
+		setTimeout( function()
+		{
+			self.usersEl.removeAttribute( 'mobileHidden' );
+		}, 800 );
 		
 		self.user = self.users.get( self.userId );
 		/*
@@ -363,7 +458,7 @@ library.view = library.view || {};
 			self.setGroupUI();
 		
 		// dont focus input if VR device / mode
-		if ( 'VR' !== window.View.deviceType ) {
+		if ( 'DESKTOP' == window.View.deviceType ) {
 			self.input.focus();
 		}
 		

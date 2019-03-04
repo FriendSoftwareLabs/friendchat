@@ -2,9 +2,16 @@
 	height: 100%;
 }
 
+#worgs > div,
+#worgs-items
+{
+	max-width: 100%;
+}
+
 .settings {
 	width : 100%;
 	padding : 1em 0;
+	overflow-x: hidden;
 }
 
 .setting {
@@ -12,7 +19,7 @@
 }
 
 .label {
-	min-width : 10em;
+	min-width : 8.5em;
 	padding-right : 0.5em;
 	text-align: right;
 	line-height: 2em;

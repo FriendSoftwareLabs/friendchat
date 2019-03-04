@@ -256,9 +256,15 @@ body i.fa {
 .group,
 .bar {
 	display: flex;
-	align-items:center;
+	align-items: center;
 	align-content: center;
 	justify-content : space-between;
+}
+
+.group.baseline,
+.bar.baseline
+{
+	align-items: baseline;
 }
 
 .group.row,
@@ -294,7 +300,7 @@ body i.fa {
 .bar.allow-wrap { flex-wrap : wrap; }
 
 .group > .expand,
-.bar > .expand { flex : 1 1 auto; }
+.bar > .expand { flex : 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
 
 .group > .fortify,
 .bar > .fortify { flex : 0 0 auto; }

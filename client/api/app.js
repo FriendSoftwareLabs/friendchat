@@ -178,6 +178,55 @@ var friend = window.friend || {}; // already instanced stuff
 		self.app.sendMessage( filedialog );
 	}
 	
+	// DESKTOP
+	// MOBILE
+	// VR
+	ns.View.prototype.setDeviceType = function( type ) {
+		var self = this;
+		self.deviceType = type;
+		if ( !type || 'string' === typeof( type ))
+			return;
+		
+		self.deviceType = type.toUpperCase();
+		console.log( 'deviceType set to', type );
+	}
+	
+	// DESKTOP
+	// MOBILE
+	// VR
+	ns.View.prototype.detectDeviceType = function() {
+		const self = this;
+		let type = 'DESKTOP'; // default
+		const test = [
+			'VR',
+			'Mobile',
+		]; // priority list
+		const rxBody = test.join( '|' );
+		const rx = new RegExp( '(' + rxBody + ')', 'g' );
+		const ua = window.navigator.userAgent;
+		const match = ua.match( rx );
+		if ( match )
+			type = get( test, match );
+		
+		type = type.toUpperCase();
+		self.setDeviceType( type );
+		
+		function get( test, match ) {
+			let type = '';
+			test.some( is );
+			return type;
+			
+			function is( value ) {
+				if ( -1 === match.indexOf( value ))
+					return false;
+				
+				type = value;
+				return true;
+			}
+		}
+	}
+	
+	
 	// Private
 	
 	ns.View.prototype.initView = function() {

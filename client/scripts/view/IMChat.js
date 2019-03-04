@@ -87,6 +87,12 @@ library.component = library.component || {};
 		self.view.sendMessage({
 			type : 'loaded',
 		});
+		
+		// Timeout for loading messages
+		setTimeout( function()
+		{
+			self.messages.classList.add( 'SmoothScrolling' );
+		}, 50 );
 	};
 	
 	ns.IMChat.prototype.bindView = function() {
@@ -284,7 +290,7 @@ library.component = library.component || {};
 			type : 'ready',
 		});
 		
-		if ( 'VR' !== window.View.deviceType )
+		if ( 'DESKTOP' !== window.View.deviceType )
 			self.setFocus( true );
 	}
 	
@@ -398,6 +404,59 @@ library.component = library.component || {};
 		}
 		
 		function attach( e ) {
+			var men = ge( 'attachment-menu' );
+			
+			var can = men.querySelector( '.Cancel' );
+			var cam = men.querySelector( '.Camera' );
+			var upl = men.querySelector( '.Upload' );
+			can.onclick = function(){
+				console.log( 'Here: ', men );
+				men.classList.remove( 'Showing' );
+			}
+			
+			if( men.classList.contains( 'Showing' ) ) {
+				men.classList.remove( 'Showing' );
+			}
+			else {
+				men.classList.add( 'Showing' );
+			}
+			upl.onclick = function( e ){
+				men.classList.remove( 'Showing' );
+				executeAttach( e );
+			}
+			cam.onclick = function( e ){
+				men.classList.remove( 'Showing' );
+				self.view.openCamera( false, function( data ) {
+					
+					var raw = window.atob( data.data.split( ';base64,' )[1] );
+					
+					var uInt8Array = new Uint8Array( raw.length );
+					for ( var i = 0; i < raw.length; ++i ) {
+						uInt8Array[ i ] = raw.charCodeAt( i );
+					}
+				
+					var bl = new Blob( [ uInt8Array ], { type: 'image/png', encoding: 'utf-8' } );
+					
+					// Paste the blob!
+					var p = new api.PasteHandler();
+					p.paste( { type: 'blob', blob: bl }, function( data )
+					{
+						self.view.send(	{
+							type: 'drag-n-drop',
+							data: [ {
+								Type: 'File',
+								Path: data.path
+							} ]
+						} );
+					} );
+				
+					
+				} );
+			}
+		}
+		
+		function executeAttach( e )
+		{
 			self.send( {
 				type: 'attach',
 				data: false
@@ -412,6 +471,8 @@ library.component = library.component || {};
 	}
 	
 	ns.IMChat.prototype.handleFocus = function( isFocus ) {
+		if( View.deviceType != 'DESKTOP' )
+			return;
 		var self= this;
 		if ( !self.input )
 			return;
@@ -425,6 +486,8 @@ library.component = library.component || {};
 	}
 	
 	ns.IMChat.prototype.setFocus = function() {
+		if( View.deviceType != 'DESKTOP' )
+			return;
 		var self = this;
 		if ( !self.input )
 			return;

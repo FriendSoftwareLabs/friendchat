@@ -118,7 +118,7 @@ library.component = library.component || {};
 		let localSettings = liveConf.localSettings;
 		
 		// init ui
-		self.ui = new library.view.UI( self.conn, liveConf, localSettings );
+		self.ui = new library.view.UI( self.conn, liveConf, localSettings, self );
 		
 		// init Model
 		self.rtc = new library.rtc.RTC(
@@ -152,7 +152,7 @@ library.component = library.component || {};
 		if ( self.ui )
 			self.ui.close();
 		
-		self.view.sendMessage({
+		window.View.sendMessage({
 			type : 'close',
 		});
 	}

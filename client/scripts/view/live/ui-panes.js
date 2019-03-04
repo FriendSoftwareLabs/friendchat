@@ -947,14 +947,14 @@ library.component = library.component || {};
             if ( !select )
                 return null;
             
-            var label = select.value;
-            if ( !label.length )
+            var deviceId = select.value;
+            if ( !deviceId.length )
                 return null;
             
-            if ( 'none' === label )
+            if ( 'none' === deviceId )
                 return false;
             
-            return label;
+            return deviceId;
         }
     }
     
@@ -982,6 +982,7 @@ library.component = library.component || {};
     ns.SourceSelectPane.prototype.bind = function() {
         const self = this;
         self.previewEl = document.getElementById( 'source-select-preview' );
+        self.previewEx = document.getElementById( 'source-select-no-preview' );
         self.previewEl.muted = true;
         self.previewEl.preload = 'metadata';
         
@@ -1124,18 +1125,18 @@ library.component = library.component || {};
         
         function setupSelect( conf ) {
             var devices = self.allDevices[ conf.type ];
-            var labels = Object.keys( devices );
+            
+            var deviceIds = Object.keys( devices );
             
             // no devices available
-            if ( !labels.length ) {
+            if ( !deviceIds.length ) {
                 self.toggleSelectError( conf.type, View.i18n('i18n_no_devices_detected'), true );
                 return;
             }
             
-            // if theres one device and it has an empty label,
-            // the device type has been blocked in browser settigns
-            if ( labels.length === 1 ) {
-                if ( labels[ 0 ] === '' ) {
+            // Ignores blocked devices...
+            if ( deviceIds.length === 1 ) {
+                if ( deviceIds[ 0 ] === '' ) {
                     self.toggleSelectError( conf.type,
                             View.i18n('i18n_devices_detected_unavailable'),
                         true );
@@ -1149,6 +1150,7 @@ library.component = library.component || {};
                     label : 'none',
                     displayLabel : View.i18n( 'i18n_no_selection' ),
                     kind : conf.type,
+                    deviceId : false
                 }
             
             const select = self.buildSelect( conf.type, devices );
@@ -1160,6 +1162,7 @@ library.component = library.component || {};
         }
     }
     
+    // Set the preview video rect
     ns.SourceSelectPane.prototype.setPreview = function( selected ) {
         const self = this;
         self.clearPreview();
@@ -1168,52 +1171,69 @@ library.component = library.component || {};
         let audioDeviceId = null;
         let videoDeviceId = null;
         
+        // The selected has audio
         if ( selected.audioinput ) {
             let aiDev = self.allDevices.audioinput[ selected.audioinput ];
-            audioDeviceId = aiDev.deviceId;
+            if( aiDev && aiDev.deviceId )
+            {
+            	audioDeviceId = aiDev.deviceId;
+            }
         }
         
+        // The selected has video
         if ( selected.videoinput ) {
             let viDev = self.allDevices.videoinput[ selected.videoinput ];
-            videoDeviceId = viDev.deviceId;
+            if( viDev && viDev.deviceId )
+            {
+	            videoDeviceId = viDev.deviceId;
+	        }
         }
         
+        // If video device
         if ( audioDeviceId )
             audioDevice = { "deviceId" : audioDeviceId };
         
+        // If audio device
         if ( videoDeviceId )
             videoDevice = { "deviceId" : videoDeviceId };
         
         var mediaConf = {
             audio : audioDevice,
-            video : videoDevice,
+            video : videoDevice
         };
         
+        // No audio and video - just return
         if ( !mediaConf.audio && !mediaConf.video )
+        {
+        	self.previewEx.style.display = '';
             return;
-        
+        }
+       
+       	// Get user media depending on query 
         navigator.mediaDevices.getUserMedia( mediaConf )
             .then( setMedia )
             .catch( mediaErr );
         
+        // Upon getting a media stream, set audio and or video
         function setMedia( stream ) {
             if ( mediaConf.audio ) {
                 self.showAV( stream );
                 self.checkAudioInput( stream );
             }
             
+            // Get stream tracks
             const tracks = stream.getTracks();
-            const srcObject = self.previewEl.srcObject;
-            if ( !srcObject )
-                self.previewEl.srcObject = stream;
-            else
-                tracks.forEach( add );
             
-            self.previewEl.load();
-            
-            function add( track ) {
-                srcObject.addTrack( track );
+            if( stream )
+            {
+            	self.previewEl.srcObject = stream;
+            	self.previewEx.style.display = 'none';
             }
+            else
+            {
+            	self.previewEl.srcObject = null;
+            	self.previewEx.style.display = '';
+           	}
         }
         
         function mediaErr( err ) {
@@ -1269,6 +1289,7 @@ library.component = library.component || {};
         delete self.volume;
     }
     
+    // Check audio device
     ns.SourceSelectPane.prototype.checkAudioInput = function( stream ) {
         var self = this;
         var checkEl = document.getElementById( 'audioinput-checking' );
@@ -1284,13 +1305,14 @@ library.component = library.component || {};
         }
     }
     
+    // Set the audio device
     ns.SourceSelectPane.prototype.setAudioSink = function( selected ) {
         const self = this;
         if ( !self.previewEl )
             return;
         
-        let label = selected[ 'audiooutput' ];
-        let dev = self.allDevices.audiooutput[ label ];
+        let deviceId = selected[ 'audiooutput' ];
+        let dev = self.allDevices.audiooutput[ deviceId ];
         
         if ( !dev )
             return;
@@ -1308,23 +1330,27 @@ library.component = library.component || {};
         }
     }
     
+    // Bind select element
     ns.SourceSelectPane.prototype.bindSelect = function( element ) {
         var self = this;
         element.addEventListener( 'change', selectChange, false );
         function selectChange( e ) {
             var selected = self.getSelected();
-            if ( 'source-select-audiooutput' === e.target.id )
+            if ( 'source-select-audiooutput' === e.target.id ) {
                 self.setAudioSink( selected );
-            else
+            }
+            else {
                 self.setPreview( selected );
+            }
         }
     }
     
+    // Build select options
     ns.SourceSelectPane.prototype.buildSelect = function( type, obj ) {
         var self = this;
         var options = [];
-        for ( var label in obj ) {
-            const optStr = buildOption( obj[ label ]);
+        for ( var deviceId in obj ) {
+            const optStr = buildOption( obj[ deviceId ]);
             options.push( optStr );
         }
         
@@ -1339,23 +1365,25 @@ library.component = library.component || {};
         function buildOption( item ) {
             var selected = '';
             
+            var lab = item.label ? item.label : item.labelOverride;
+            
             // if there is a device dfined..
             if ( self.currentDevices && self.currentDevices[ item.kind ] ) {
                 var currDev = self.currentDevices[ item.kind ];
                 // ..check if its this one
-                if ( currDev === item.label )
+                if ( currDev === item.deviceId )
                     selected = 'selected';
             } else {
                 // ..no device defined, so check if this is the 'no select' or default entry
-                if (( item.label === 'none' ) || ( 'default' === item.deviceId ))
+                if ( ( lab === 'none' ) || ( 'default' === item.deviceId ) )
                     selected = 'selected';
                 
             }
             
             var optionConf = {
-                value    : item.label,
+                value    : item.deviceId,
                 selected : selected,
-                label    : item.displayLabel || item.label,
+                label    : item.displayLabel || lab
             };
             var html = hello.template.get( 'source-select-option-tmpl', optionConf );
             return html;

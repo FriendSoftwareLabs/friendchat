@@ -27,9 +27,10 @@ library.component = library.component || {};
 
 // UI for live session
 (function( ns, undefined ) {
-	ns.UI = function( conn, liveConf, localSettings ) {
+	ns.UI = function( conn, liveConf, localSettings, live ) {
 		const self = this;
 		self.conn = conn;
+		self.liveScope = live; // Live scope
 		self.localSettings = localSettings;
 		self.guestAvatar = liveConf.guestAvatar;
 		self.rtc = null;
@@ -169,6 +170,73 @@ library.component = library.component || {};
 		self.teaseChat = document.getElementById( 'tease-chat-container' );
 		self.liveContent = document.getElementById( 'live-content' );
 		self.lists = document.getElementById( 'lists-container' );
+		
+		// Different classes from the quick access button menu
+		var liveButtons = [ 
+			'text-chat', 'screen-share', 'audio-toggle', 'hangup', 
+			'video-toggle', 'people', 'settings' 
+		];
+		var uiButtons = document.getElementById( 'live-button-bar' );
+		for( var a = 0; a < liveButtons.length; a++ )
+		{
+			var test = uiButtons.querySelector( '.' + liveButtons[ a ] );
+			if( test )
+			{
+				var bStr = liveButtons[ a ].split( '-' ).join( '' );
+				uiButtons[ bStr ] = test;
+			}
+		}
+		
+		// Make a reference
+		self.uiButtons = uiButtons;
+		
+		// Just hang up!
+		uiButtons.hangup.onclick = function(){ 
+			self.liveScope.closeAllTheThings();
+		};
+		
+		// Toggle text chat
+		uiButtons.textchat.onclick = function(){ 
+			if ( !self.chatUI )
+				return;	
+			self.chatUI.toggle();
+		}
+		
+		// Start screen sharing 
+		uiButtons.screenshare.onclick = function(){
+			self.liveScope.rtc.selfie.screenshareEl = uiButtons.screenshare;
+			self.liveScope.rtc.selfie.toggleShareScreen();
+		};
+		
+		// Toggle audio
+		uiButtons.audiotoggle.onclick = function( e ) {
+			var mbtn = self.liveScope.rtc.view.peers.selfie.muteBtn;
+			
+			mbtn.click();
+						
+			if( !mbtn.classList.contains( 'danger' ) )
+			{
+				uiButtons.audiotoggle.classList.remove( 'muted' );
+			}
+			else 
+			{
+				uiButtons.audiotoggle.classList.add( 'muted' );
+			}
+		};
+		
+		// Toggle video
+		uiButtons.videotoggle.onclick = function( e ) {
+			var info = self.liveScope.rtc.selfie.permissions.send;
+			if( !info.video )
+				uiButtons.videotoggle.classList.remove( 'muted' );
+			else uiButtons.videotoggle.classList.add( 'muted' );
+			self.liveScope.rtc.selfie.toggleSendVideo( e )
+		};
+		
+		// Show settings
+		uiButtons.settings.onclick = function( e ) {
+			self.liveScope.rtc.selfie.showSourceSelect();
+		}
 		
 		document.addEventListener( 'mousemove', mouseMoved, false );
 		document.addEventListener( 'mouseleave', catchLeave, false );
@@ -1268,7 +1336,8 @@ library.component = library.component || {};
 	ns.UI.prototype.close = function() {
 		var self = this;
 		delete self.conn;
-		self.menu.close();
+		if( self.menu && self.menu.close )
+			self.menu.close();
 		delete self.menu;
 	}
 	

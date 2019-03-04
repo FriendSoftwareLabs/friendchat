@@ -68,12 +68,24 @@
 		</div>
 	</div>
 	<div id="main" class="main expand group row cover BorderBottom">
+		<div id="attachment-menu">
+			<button class="IconButton IconSmall fa-camera Camera">
+				{i18n_take_a_picture}
+			</button>
+			<button class="IconButton IconSmall fa-upload Upload">
+				{i18n_choose_a_file}
+			</button>
+			<button class="IconButton IconSmall fa-remove Cancel">
+				{i18n_cancel}
+			</button>
+		</div>
 		<div id="message-container" class="expand">
 			<div id="messages" class="SelectableText">
 			</div>
 		</div>
-		<div id="users-container" class="fortify group column cover BackgroundHeavy">
-			<div id="users-position" class="expand">
+		<div id="users-container" class="fortify group column cover BackgroundDefault" mobileHidden="mobileHidden">
+			<div id="users-header" class="Padding BorderBottom"></div>
+			<div id="users-position" class="expand BackgroundHeavy">
 				
 			</div>
 		</div>
