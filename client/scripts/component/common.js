@@ -132,24 +132,31 @@ to listeners registered through this interface
 		var args = self._getArgs( arguments );
 		var event = args.shift();
 		var listenerIds = self.eventToListener[ event ];
+		let caught = false;
 		if ( !listenerIds || !listenerIds.length ) {
 			if ( self._eventSink )
 				emitOnDefault( event, args );
 			
-			return;
+			console.log( 'emit - caught: ' + event + ' - ' + caught.toString());
+			return caught;
 		}
 		
-		listenerIds.forEach( emit );
-		function emit( listenerId ) {
+		caught = listenerIds.reduce( emit, false );
+		if ( !caught )
+			console.log( 'emit - caught: ' + event + ' - ' + caught.toString());
+		
+		return caught;
+		function emit( caught, listenerId ) {
 			var listener = self.eventListeners[ listenerId ];
 			if ( 'function' !== typeof( listener )) {
 				if ( self._eventSink )
 					emitOnDefault( event, args );
 				
-				return;
+				return caught;
 			}
 			
 			listener.apply( null, args );
+			return true;
 		}
 		
 		function emitOnDefault( type, args ) {
@@ -707,12 +714,14 @@ inherits from EventEmitter
 		self.init();
 	}
 	
-	ns.CallStatus.prototype = Object.create( library.component.EventEmitter.prototype );
+	ns.CallStatus.prototype = Object.create( 
+		library.component.EventEmitter.prototype );
 	
 	// Public
 	
 	ns.CallStatus.prototype.setUserLive = function( isLive ) {
 		const self = this;
+		console.log( 'setUSerLive', [ self.userLive, isLive ]);
 		if ( self.userLive === isLive )
 			return;
 		
@@ -722,6 +731,7 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setContactLive = function( isLive ) {
 		const self = this;
+		console.log( 'setContactLive', [ self.contactLive, isLive ]);
 		if ( self.contactLive === isLive )
 			return;
 		
@@ -769,6 +779,15 @@ inherits from EventEmitter
 		
 		self.current = null;
 		
+		self.out.addEventListener( 'click', outClick, false );
+		
+		function outClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			console.log( 'outClick', e );
+			self.emit( 'show' );
+		}
+		
 		function startVideo( e ) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -790,13 +809,16 @@ inherits from EventEmitter
 			return;
 		}
 		
+		/*
 		if ( self.userLive && self.contactLive ) {
 			self.setLive();
 			return;
 		}
+		*/
 		
 		if ( self.userLive ) {
 			self.setOutgoing();
+			return;
 		}
 		
 		if ( self.contactLive )
@@ -814,16 +836,18 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setIncoming = function( notify ) {
 		const self = this;
+		console.log( 'setIncoming', notify );
 		if ( notify )
 			self.emit( 'notify', true );
 		
-		self.setStatus( 'Danger' );
+		self.setStatus( 'Available' );
 		self.inc.classList.toggle( 'hidden', false );
 		self.current = self.inc;
 	}
 	
 	ns.CallStatus.prototype.setOutgoing = function() {
 		const self = this;
+		console.log( 'setOutGoing' );
 		self.setStatus( 'Available' );
 		self.out.classList.toggle( 'hidden', false );
 		self.current = self.out;
@@ -831,7 +855,7 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setLive = function() {
 		const self = this;
-		self.setStatus( 'On' );
+		self.setStatus( 'DangerText' );
 	}
 	
 	ns.CallStatus.prototype.setStatus = function( status ) {

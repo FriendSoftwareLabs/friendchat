@@ -496,6 +496,14 @@ library.view = library.view || {};
 	
 	// Public
 	
+	ns.Live.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
 	ns.Live.prototype.setTitle = function( title ) {
 		const self = this;
 		if ( !self.view )

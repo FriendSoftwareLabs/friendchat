@@ -127,6 +127,12 @@ var hello = window.hello || {};
 			el.classList.toggle( 'hidden', !isActive );
 		}
 		
+		// Rtc sessions
+		self.rtc = new library.view.RtcState(
+			self.view,
+			'rtc-state',
+		);
+		
 		// Recent conversations
 		self.recent = new library.view.Recent(
 			'conversations',
@@ -208,6 +214,96 @@ var hello = window.hello || {};
 			containerId : 'conversations',
 			element     : null,
 		});
+	}
+	
+})( library.view );
+
+/*
+	rtc state
+*/
+( function( ns, undefined ) {
+	ns.RtcState = function( parentConn, containerId ) {
+		const self = this;
+		self.containerId = containerId;
+		
+		self.conn = null;
+		
+		self.init( parentConn );
+	}
+	
+	// Public
+	
+	ns.RtcState.prototype.close = function() {
+		const self = this;
+		if ( self.conn )
+			self.conn.close();
+		
+		self.removeAll();
+		
+		delete self.conn;
+		delete self.el;
+	}
+	
+	// Private
+	
+	ns.RtcState.prototype.init = function( parentConn ) {
+		const self = this;
+		self.el = document.getElementById( self.containerId );
+		self.conn = new library.component.EventNode( 'rtc', parentConn, sink );
+		self.conn.on( 'add', e => self.addSession( e ));
+		self.conn.on( 'remove', e => self.removeSession( e ));
+		
+		function sink( ...args ) {
+			console.log( 'view.RtcState.eventSink', args );
+		}
+	}
+	
+	ns.RtcState.prototype.addSession = function( sess ) {
+		const self = this;
+		if ( !self.el )
+			return;
+		
+		const sId = sess.id;
+		const id = 'sess_' + sId;
+		conf = {
+			id    : id,
+			title : sess.conf.roomName,
+		};
+		const el = hello.template.getElement( 'rtc-state-tmpl', conf );
+		self.el.appendChild( el );
+		el.addEventListener( 'click', elClick, false );
+		
+		function elClick( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+			const show = {
+				type : 'show',
+				data : sId,
+			};
+			self.send( show );
+		}
+	}
+	
+	ns.RtcState.prototype.removeSession = function( sId ) {
+		const self = this;
+		const id = 'sess_' + sId;
+		const el = document.getElementById( id );
+		if ( !el )
+			return;
+		
+		el.parentNode.removeChild( el );
+	}
+	
+	ns.RtcState.prototype.removeAll = function() {
+		const self = this;
+	}
+	
+	ns.RtcState.prototype.send = function( event ) {
+		const self = this;
+		if ( !self.conn )
+			return;
+		
+		self.conn.send( event );
 	}
 	
 })( library.view );
@@ -608,7 +704,7 @@ var hello = window.hello || {};
 			
 			function sortDown( checkId, index ) {
 				const checkTime = getTime( checkId );
-				if ( checkTime > itemTime )
+				if (( 0 !== checkTime ) && ( checkTime > itemTime))
 					return false;
 				
 				beforeId = checkId;
@@ -775,6 +871,9 @@ var hello = window.hello || {};
 		if ( self.source )
 			self.releaseSource();
 		
+		delete self.icon;
+		delete self.iconMap;
+		delete self.currentIcon;
 		delete self.onActive;
 		delete self.containerId;
 		delete self.template;
@@ -805,6 +904,7 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.setEvent = function( event ) {
 		const self = this;
+		console.log( 'setEvent', event );
 		let handler = self.eventMap[ event.type ];
 		if ( !handler )
 			return;
@@ -814,6 +914,7 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.setLastEvent = function( historyEvent ) {
 		const self = this;
+		console.log( 'setLastEvent', historyEvent );
 		if ( !historyEvent || !historyEvent.data )
 			return;
 		
@@ -833,13 +934,17 @@ var hello = window.hello || {};
 	
 	// Private
 	
+	ns.RecentItem.prototype.iconMap = {
+		'message' : 'fa-comment',
+		'live'    : 'fa-video-camera',
+	};
+	
 	ns.RecentItem.prototype.init = function( containerId ) {
 		const self = this;
 		self.eventMap = {
-			'message' : handleMessage,
+			'message' : ( e ) => self.handleMessage( e ),
+			'live'    : ( e ) => self.handleLive( e ),
 		};
-		
-		function handleMessage( e ) { self.handleMessage( e ); }
 		
 		self.actions = new library.component.MiniMenuActions();
 		const container = document.getElementById( containerId );
@@ -856,12 +961,6 @@ var hello = window.hello || {};
 		const msgId = self.source.on( 'message', message );
 		const waitId = self.source.on( 'msg-waiting', msgWaiting );
 		const idId = self.source.on( 'identity', idUpdate );
-		const liveUserId = self.source.on( 'live-user', ( e ) => {
-			self.callStatus.setUserLive( e );
-		});
-		const liveContactId = self.source.on( 'live-contact', ( e ) => {
-			self.callStatus.setContactLive( e );
-		});
 		
 		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
@@ -870,8 +969,6 @@ var hello = window.hello || {};
 		self.sourceIds.push( msgId );
 		self.sourceIds.push( waitId );
 		self.sourceIds.push( idId );
-		self.sourceIds.push( liveUserId );
-		self.sourceIds.push( liveContactId );
 		
 		//
 		const lastMessage = self.source.getLastMessage();
@@ -910,19 +1007,21 @@ var hello = window.hello || {};
 	ns.RecentItem.prototype.getTmplConf = function() {
 		const self = this;
 		return {
-			id           : self.id,
-			avatar       : self.source.getAvatar(),
-			statusId     : self.status,
-			name         : self.source.getName(),
-			lastMsgTime  : '',
-			lastMsg      : '',
-			unreadId     : self.unread,
-			callStatusId : self.callStatus,
+			id            : self.id,
+			avatar        : self.source.getAvatar(),
+			statusId      : self.status,
+			name          : self.source.getName(),
+			lastEventIcon : '',
+			lastMsgTime   : '',
+			lastMsg       : '',
+			unreadId      : self.unread,
+			callStatusId  : self.callStatus,
 		};
 	}
 	
 	ns.RecentItem.prototype.bindElement = function() {
 		const self = this;
+		self.icon = self.el.querySelector( '.recent-info .recent-state .last-event-icon i' );
 		self.message = self.el.querySelector( '.recent-info .recent-state .last-message' );
 		self.messageTime = self.el.querySelector( '.recent-info .name-bar .last-msg-time' );
 		self.menuBtn = self.el.querySelector( '.item-menu' );
@@ -974,6 +1073,30 @@ var hello = window.hello || {};
 		self.callStatus = new library.component.CallStatus( self.callStatus );
 		self.callStatus.on( 'video', () => self.source.startVideo());
 		self.callStatus.on( 'audio', () => self.source.startVoice());
+		self.callStatus.on( 'show', () => self.source.showLive());
+		
+		const liveUserId = self.source.on( 'live-user', ( e ) => {
+			self.callStatus.setUserLive( e );
+		});
+		const liveContactId = self.source.on( 'live-contact', ( isLive ) => {
+			console.log( 'live-contact', isLive );
+			self.callStatus.setContactLive( isLive );
+			if ( !isLive )
+				return;
+			
+			const inc = {
+				type : 'live',
+				data : {
+					from    : null,
+					message : View.i18n( 'i18n_incoming_call' ),
+					time    : Date.now(),
+				},
+			};
+			self.setEvent( inc );
+		});
+		
+		self.sourceIds.push( liveUserId );
+		self.sourceIds.push( liveContactId );
 	}
 	
 	ns.RecentItem.prototype.handleOnline = function( isOnline ) {
@@ -994,6 +1117,21 @@ var hello = window.hello || {};
 			return;
 		
 		self.setMessage( msg, message );
+		self.setActive( true );
+	}
+	
+	ns.RecentItem.prototype.handleLive = function( event ) {
+		const self = this;
+		self.lastEvent = {
+			type : 'live',
+			data : event,
+		};
+		const now = library.tool.getChatTime( event.time );
+		self.setIcon( 'live' );
+		//self.name.textContent = '';
+		self.message.textContent = event.message;
+		self.messageTime.textContent = now;
+		
 		self.setActive( true );
 	}
 	
@@ -1043,6 +1181,7 @@ var hello = window.hello || {};
 		if ( !msg.from )
 			message =  'You: ' + message;
 		
+		self.setIcon( 'message' );
 		self.message.textContent = message;
 		self.messageTime.textContent = now;
 		
@@ -1050,6 +1189,7 @@ var hello = window.hello || {};
 			type : 'message',
 			data : msg,
 		};
+		console.log( 'setMessage - done', self.lastEvent );
 	}
 	
 	ns.RecentItem.prototype.handleBodyClick = function() {
@@ -1080,6 +1220,23 @@ var hello = window.hello || {};
 			if ( 'open-chat' === selected )
 				self.source.openChat();
 		}
+	}
+	
+	ns.RecentItem.prototype.setIcon = function( iconId ) {
+		const self = this;
+		if ( iconId === self.currentIcon )
+			return;
+		
+		let curr = self.iconMap[ self.currentIcon ];
+		let next = self.iconMap[ iconId ];
+		if ( !next )
+			return;
+		
+		if ( curr )
+			self.icon.classList.toggle( curr, false );
+		
+		self.icon.classList.toggle( next, true  );
+		self.currentIcon = iconId;
 	}
 	
 })( library.view );
@@ -1116,20 +1273,13 @@ var hello = window.hello || {};
 	ns.RecentRoom.prototype = Object.create( ns.RecentItem.prototype );
 	
 	ns.RecentRoom.prototype.tmplId = 'recent-room-tmpl';
-	ns.RecentRoom.prototype.iconMap = {
-		'message' : 'fa-comment',
-		'live'    : 'fa-video-camera',
-	};
 	
 	ns.RecentRoom.prototype.roomInit = function() {
 		const self = this;
 		self.eventMap = {
-			'message' : handleMessage,
-			'live'    : handleLive,
+			'message' : e => self.handleMessage( e ),
+			'live'    : e => self.handleLive( e ),
 		};
-		
-		function handleMessage( e ) { self.handleMessage( e ); }
-		function handleLive( e ) { self.handleUserLive( e ); }
 	}
 	
 	ns.RecentRoom.prototype.baseClose = ns.RecentRoom.prototype.close;
@@ -1138,9 +1288,6 @@ var hello = window.hello || {};
 		if ( self.live )
 			self.live.close();
 		
-		delete self.icon;
-		delete self.currentIcon;
-		delete self.iconMap;
 		delete self.live;
 		delete self.name;
 		
@@ -1196,12 +1343,9 @@ var hello = window.hello || {};
 		};
 		self.status = new library.component.StatusDisplay( conf );
 		const partyId = self.source.on( 'participants', parties );
-		const uLiveId = self.source.on( 'user-live', userLive );
 		self.sourceIds.push( partyId );
-		self.sourceIds.push( uLiveId );
 		
 		function parties( num ) { self.handleParties( num ); }
-		function userLive( isLive ) { self.handleUserLive( isLive ); }
 	}
 	
 	ns.RecentRoom.prototype.handleParties = function( num ) {
@@ -1230,23 +1374,52 @@ var hello = window.hello || {};
 			cssClass    : 'fa-video-camera',
 			statusMap   : {
 				'empty'   : 'Off',
-				'users'   : 'Available',
+				'others'  : 'Available',
+				'user'    : 'DangerText',
 			},
 		};
 		self.live = new library.component.StatusIndicator( conf );
+		self.live.on( 'click', () => self.source.showLive());
 		self.live.hide();
+		
 		const liveId = self.source.on( 'live', live );
+		const userLiveId = self.source.on( 'live-user', ( e ) => userLive( e ))
 		self.sourceIds.push( liveId );
+		self.sourceIds.push( userLiveId );
 		
 		function live( isLive ) {
 			if ( isLive ) {
-				self.live.set( 'users' );
+				self.live.set( 'others' );
 				self.live.show();
 			}
 			else {
 				self.live.set( 'empty' );
 				self.live.hide();
 			}
+		}
+		
+		function userLive( isLive ) {
+			if ( isLive ) {
+				self.live.set( 'user' );
+				self.live.show();
+			}
+			
+			let msg = null;
+			if ( isLive )
+				msg = 'You joined a live session';
+			else
+				msg = 'You were in a live session';
+			
+			const live = {
+				type : 'live',
+				data : {
+					from    : null,
+					time    : Date.now(),
+					message : msg,
+				},
+			};
+			
+			self.setEvent( live );
 		}
 	}
 	
@@ -1298,43 +1471,19 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.RecentRoom.prototype.handleUserLive = function( isLive ) {
+	ns.RecentRoom.prototype.handleLive = function( event ) {
 		const self = this;
-		let msg = null;
 		self.lastEvent = {
 			type : 'live',
-			data : isLive,
+			data : event,
 		};
-		
-		if ( isLive )
-			msg = 'You joined a live session';
-		else
-			msg = 'You were in a live session';
-		
-		const now = library.tool.getChatTime( Date.now());
+		const now = library.tool.getChatTime( event.time );
 		self.setIcon( 'live' );
 		self.name.textContent = '';
-		self.message.textContent = msg;
+		self.message.textContent = event.message;
 		self.messageTime.textContent = now;
 		
 		self.setActive( true );
-	}
-	
-	ns.RecentRoom.prototype.setIcon = function( iconId ) {
-		const self = this;
-		if ( iconId === self.currentIcon )
-			return;
-		
-		let curr = self.iconMap[ self.currentIcon ];
-		let next = self.iconMap[ iconId ];
-		if ( !next )
-			return;
-		
-		if ( curr )
-			self.icon.classList.toggle( curr, false );
-		
-		self.icon.classList.toggle( next, true  );
-		self.currentIcon = iconId;
 	}
 	
 })( library.view );

@@ -538,7 +538,6 @@ library.contact = library.contact || {};
 (function( ns, undefined ) {
 	ns.PresenceRoom = function( conf ) {
 		const self = this;
-		console.log( 'PresenceRoom', conf );
 		self.type = 'presence';
 		self.data = conf.room;
 		self.idc = conf.idCache;
@@ -591,15 +590,15 @@ library.contact = library.contact || {};
 			s : self.settings,
 		});
 		// check if room has been initialized
+		if ( self.live ) {
+			self.live.show();
+			return; // we already are in a live _in this room_
+		}
+		
 		if ( !self.settings ) {
 			self.goLivePending = conf || {};
 			console.log( 'P.joinLive - waiting for settings, returning' );
 			return;
-		}
-		
-		if ( self.live ) {
-			console.log( 'P.joinLive - already have live object', self.live );
-			return; // we already are in a live _in this room_
 		}
 		
 		conf = conf || {};
@@ -746,6 +745,7 @@ library.contact = library.contact || {};
 		self.view.on( 'rename', rename );
 		self.view.on( 'live-video', startVideo );
 		self.view.on( 'live-audio', startAudio );
+		self.view.on( 'live-show', e => self.joinLive());
 		self.view.on( 'open-chat', chat );
 		self.view.on( 'leave-room', leave );
 		
@@ -882,7 +882,7 @@ library.contact = library.contact || {};
 		);
 		
 		self.chatView.on( 'chat', chat );
-		self.chatView.on( 'live-upgrade', goLive );
+		self.chatView.on( 'live', goLive );
 		self.chatView.on( 'contact-open', openContact );
 		
 		function eventSink( e ) { console.log( 'unhandled chat view event', e ); }
@@ -894,8 +894,10 @@ library.contact = library.contact || {};
 		function goLive( e ) {
 			if ( 'video' === e )
 				self.startVideo();
-			else
+			if ( 'audio' === e )
 				self.startAudio();
+			if ( 'show' === e )
+				self.joinLive();
 		}
 		function openContact( e ) { self.handleContactOpen( e ); }
 	}
@@ -1944,7 +1946,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChat = function() {
 		const self = this;
-		console.log( 'openChat', self.isOpen );
 		if ( !self.isOpen ) {
 			self.openChatPending = true;
 			self.open();
@@ -1981,7 +1982,7 @@ library.contact = library.contact || {};
 		);
 		
 		self.chatView.on( 'chat', chat );
-		self.chatView.on( 'live-upgrade', goLive );
+		self.chatView.on( 'live', goLive );
 		
 		self.updateActive();
 		

@@ -761,16 +761,13 @@ library.rtc = library.rtc || {};
 
 // RTCCONTROL
 (function( ns, undefined ) {
-	ns.RtcControl = function() {
-		if ( !( this instanceof ns.RtcControl ))
-			return new ns.RtcControl();
-		
-		var self = this;
+	ns.RtcControl = function( viewConn ) {
+		const self = this;
 		self.sessions = {};
 		self.sessionIds = [];
 		self.roomRequests = {};
 		
-		self.init();
+		self.init( viewConn );
 	}
 	
 	// Public
@@ -952,11 +949,19 @@ library.rtc = library.rtc || {};
 		self.closeSession();
 	}
 	
+	ns.RtcControl.prototype.close = function() {
+		const self = this;
+		if ( self.view )
+			self.view.close();
+		
+		delete self.view;
+	}
+	
 	// private
 	
-	ns.RtcControl.prototype.init = function() {
+	ns.RtcControl.prototype.init = function( viewConn ) {
 		var self = this;
-		
+		self.bindView( viewConn );
 	}
 	
 	ns.RtcControl.prototype.getGroupLive = function() {
@@ -1011,6 +1016,14 @@ library.rtc = library.rtc || {};
 		let session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
 		self.sessions[ sId ] = session;
 		self.sessionIds.push( sId );
+		const sess = {
+			type : 'add',
+			data : {
+				id   : session.roomId,
+				conf : session.conf,
+			},
+		};
+		self.toView( sess );
 		return session;
 		
 		function sessionClosed() {
@@ -1025,17 +1038,56 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.closeSession = function( sId ) {
 		const self = this;
-		console.log( 'RtcControl.closeSession', {
-			sid : sId,
-			ses : self.sessions,
-		});
-		if ( !self.sessions[ sId ])
-			return;
-		
 		let session = self.sessions[ sId ];
+		if ( !session ) {
+			console.log( 'RtcControl.closeSession - no session found for', {
+				sId      : sId,
+				sessions : self.sessions,
+			});
+			return;
+		}
+		
 		delete self.sessions[ sId ];
 		self.sessionIds = Object.keys( self.sessions );
+		
+		const remove = {
+			type : 'remove',
+			data : sId,
+		};
+		self.toView( remove );
+		
 		session.close();
+	}
+	
+	ns.RtcControl.prototype.bindView = function( viewConn ) {
+		const self = this;
+		self.view = new library.component.EventNode( 'rtc', viewConn, viewSink );
+		self.view.on( 'show', e => self.showSession( e ));
+		
+		function viewSink( ...args ) {
+			console.log( 'RtcControl.viewSink', args );
+		}
+	}
+	
+	ns.RtcControl.prototype.toView = function( event ) {
+		const self = this;
+		console.log( 'toView', self.view );
+		if ( self.view )
+			self.view.send( event );
+	}
+	
+	ns.RtcControl.prototype.showSession = function( sId ) {
+		const self = this;
+		const session = self.sessions[ sId ];
+		if ( !session ) {
+			console.log( 'RtcControl.showSession - no session for', {
+				sId      : sId,
+				sessions : self.sessions,
+			});
+			return;
+		}
+		
+		session.show();
 	}
 	
 	ns.RtcControl.prototype.setupDormant = function() {
@@ -2173,6 +2225,14 @@ library.rtc = library.rtc || {};
 	// Public
 	
 	// from EventEmitter: on(), once(), off() and release();
+	
+	ns.RtcSession.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.show();
+	}
 	
 	//
 	ns.RtcSession.prototype.send = function( event ) {

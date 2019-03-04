@@ -964,13 +964,14 @@ library.module = library.module || {};
 		
 		self.initialized = true;
 		updateAccount( state.account );
-		self.setupRooms( state.rooms );
-		self.handleContactInit( state.contacts );
 		const uid = {
 			type : 'user-id',
 			data : self.accountId,
 		};
 		self.toView( uid );
+		
+		self.setupRooms( state.rooms );
+		self.handleContactInit( state.contacts );
 		//self.setupDormant();
 		
 		function updateAccount( account ) {
@@ -1309,7 +1310,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.addRoom = function( conf ) {
 		const self = this;
-		console.log( 'addRoom', conf );
 		if ( !conf.clientId ) {
 			console.log( 'addRoom - conf does not have clientId', conf );
 			return;

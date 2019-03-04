@@ -38,6 +38,19 @@
 	position: relative;
 }
 
+#rtc-state {
+	padding : 0.3em 0.5em;
+}
+
+.rtc-session {
+	padding : 0 0.2em;
+}
+
+.rtc-session .title {
+	margin-left : 0.5em;
+	line-height: 1.8em;
+}
+
 /* Misc classes */
 
 .IconSmall.icon-bigger:before {

@@ -1748,6 +1748,8 @@ var hello = window.hello || {};
 		tmplManager
 	) {
 		const self = this;
+		library.component.EventEmitter.call( self );
+		
 		self.containerId = containerId;
 		self.users = users;
 		self.userId = userId;
@@ -1759,6 +1761,9 @@ var hello = window.hello || {};
 		self.init();
 	}
 	
+	ns.LiveStatus.prototype = Object.create(
+		library.component.EventEmitter.prototype );
+	
 	// Public
 	
 	ns.LiveStatus.prototype.update = function( peerList ) {
@@ -1768,10 +1773,14 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.close = function() {
 		const self = this;
-		self.users.off( self.stateEventId );
+		if ( self.users && self.stateEventId )
+			self.users.off( self.stateEventId );
 		
-		self.el.parentNode.removeChild( self.el );
+		if ( self.el && self.el.parentNode )
+			self.el.parentNode.removeChild( self.el );
+		
 		delete self.el;
+		delete self.icon;
 		delete self.peers;
 		delete self.peerList;
 		delete self.peerIdMap;
@@ -1795,11 +1804,28 @@ var hello = window.hello || {};
 		self.el = self.template.getElement( 'live-status-tmpl', elConf );
 		const container = document.getElementById( self.containerId );
 		container.appendChild( self.el );
+		self.icon = self.el.querySelector( '.live-status-icon i' );
 		self.peers = document.getElementById( self.peers );
+		
+		//
+		self.el.addEventListener( 'click', elClick, false );
+		function elClick( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+			self.handleElClick();
+		}
 		
 		// listen
 		self.stateEventId = self.users.on( 'state', live );
 		function live( e ) { self.handleLive( e ); }
+	}
+	
+	ns.LiveStatus.prototype.handleElClick = function() {
+		const self = this;
+		if ( self.userLive )
+			self.emit( 'show' );
+		else
+			self.emit( 'join' );
 	}
 	
 	ns.LiveStatus.prototype.handleLive = function( event ) {
@@ -1828,6 +1854,9 @@ var hello = window.hello || {};
 		self.peerIdMap[ userId ] = peerId;
 		self.peers.appendChild( peerEl );
 		self.peerList.push( userId );
+		if ( userId === self.userId )
+			self.setUserLive( true );
+		
 		self.updateVisibility();
 	}
 	
@@ -1841,6 +1870,9 @@ var hello = window.hello || {};
 		const el = document.getElementById( peerId );
 		el.parentNode.removeChild( el );
 		self.peerList = self.peerList.filter( pId => pId !== userId );
+		if ( userId === self.userId )
+			self.setUserLive( false );
+		
 		self.updateVisibility();
 	}
 	
@@ -1848,6 +1880,16 @@ var hello = window.hello || {};
 		const self = this;
 		const show = !!self.peerList.length ? true : false;
 		self.el.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.LiveStatus.prototype.setUserLive = function( isLive ) {
+		const self = this;
+		self.userLive = isLive;
+		if ( !self.icon )
+			return;
+		
+		self.icon.classList.toggle( 'Available', !isLive );
+		self.icon.classList.toggle( 'DangerText', isLive );
 	}
 	
 })( library.component );

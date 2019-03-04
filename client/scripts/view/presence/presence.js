@@ -32,7 +32,7 @@ library.view = library.view || {};
 		self.name = null;
 		self.ownerId = null;
 		self.userId = null;
-		self.users = {};
+		self.users = null;
 		self.onlineList = [];
 		
 		self.appOnline = null;
@@ -171,7 +171,7 @@ library.view = library.view || {};
 	ns.Presence.prototype.goLive = function( type ) {
 		const self = this;
 		const goLive = {
-			type : 'live-upgrade',
+			type : 'live',
 			data : type,
 		};
 		self.send( goLive );
@@ -240,10 +240,11 @@ library.view = library.view || {};
 		);
 		
 		self.user = self.users.get( self.userId );
-		state.peers.forEach( setLive );
-		function setLive( uid ) {
+		/*
+		state.peers.forEach( uid => {
 			self.users.setState( uid, 'live', true );
-		}
+		});
+		*/
 		
 		self.liveStatus = new library.component.LiveStatus(
 			'live-status-container',
@@ -252,6 +253,8 @@ library.view = library.view || {};
 			friend.template
 		);
 		self.liveStatus.update( state.peers );
+		self.liveStatus.on( 'show', e => self.goLive( 'show' ));
+		self.liveStatus.on( 'join', e => self.goLive( 'video' ));
 		
 		// get logs when scrolling to top
 		self.logFetcher = new library.component.LogFetcher(
@@ -536,6 +539,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleLive = function( event ) {
 		const self = this;
+		console.log( 'chat.Presence.handleLive', event )
 		if ( !event.data || !event.data.peerId )
 			return;
 		

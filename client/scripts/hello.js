@@ -416,7 +416,6 @@ var hello = null;
 		self.items = new library.system.Items();
 		self.request = new library.system.Request({ conn : self.conn });
 		self.intercept = new library.system.Interceptor();
-		self.rtc = new library.system.RtcControl();
 		
 		console.log( 'dormantEnabled', self.dormantEnabled );
 		if ( self.dormantEnabled )
@@ -652,7 +651,6 @@ var hello = null;
 			self.conn = new library.system.Connection( host, onWSState );
 			self.items = new library.system.Items();
 			self.intercept = new library.system.Interceptor();
-			self.rtc = new library.system.RtcControl();
 			self.conn.connect( connBack );
 			
 			function connBack( err, res ) {
@@ -1284,6 +1282,8 @@ var hello = null;
 		hello.module = new library.system.ModuleControl({
 			parentView : self.view,
 		});
+		
+		hello.rtc = new library.system.RtcControl( self.view );
 	}
 	
 	ns.Main.prototype.closeThings = function() {
@@ -1296,6 +1296,11 @@ var hello = null;
 		if ( hello.account ) {
 			hello.account.close();
 			hello.account = null;
+		}
+		
+		if ( hello.rtc ) {
+			hello.rtc.close();
+			hello.rtc = null;
 		}
 		
 		if ( self.view ) {

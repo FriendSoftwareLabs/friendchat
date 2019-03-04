@@ -1238,6 +1238,7 @@ library.view = library.view || {};
 (function( ns, undefined ) {
 	ns.Presence = function( conf ) {
 		const self = this;
+		console.log( 'main.Presence', conf );
 		self.userId = conf.userId;
 		
 		library.view.BaseModule.call( self, conf );
@@ -1516,7 +1517,7 @@ library.view = library.view || {};
 
 (function( ns, undefined ) {
 	ns.PresenceRoom = function( conf ) {
-		var self = this;
+		const self = this;
 		self.type = 'room';
 		self.data = conf.room;
 		self.userId = conf.userId;
@@ -1533,6 +1534,19 @@ library.view = library.view || {};
 	}
 	
 	ns.PresenceRoom.prototype = Object.create( ns.BaseContact.prototype );
+	
+	// Public
+	
+	ns.PresenceRoom.prototype.showLive = function() {
+		const self = this;
+		console.log( 'PresenceRoom.showLive' );
+		const show = {
+			type : 'live-show',
+		};
+		self.send( show );
+	}
+	
+	// Private
 	
 	ns.PresenceRoom.prototype.init = function() {
 		var self = this;
@@ -1562,11 +1576,13 @@ library.view = library.view || {};
 				'empty'  : 'Off',
 				'others' : 'Available',
 				'timeout': 'Notify',
-				'user'   : 'On',
+				'user'   : 'DangerText',
 			},
 			display : '-',
 		};
 		self.liveStatus = new library.component.StatusDisplay( liveConf );
+		self.liveStatus.on( 'click', () => self.showLive());
+		self.liveStatus.hide();
 		
 		const msgConf = {
 			containerId : self.msgWaiting,
@@ -1578,6 +1594,7 @@ library.view = library.view || {};
 			},
 		};
 		self.msgWaiting = new library.component.StatusIndicator( msgConf );
+		self.msgWaiting.hide();
 		
 		self.bindUI();
 		self.bindView();
@@ -1824,34 +1841,31 @@ library.view = library.view || {};
 		self.live.on( 'leave', leave );
 		
 		function userJoin( accId ) {
-			self.isLive = true;
-			self.updateLiveDisplay();
+			self.addToPeers( self.userId );
+			self.updateLiveDisplay( true );
 		}
 		
 		function userLeave( accId ) {
-			self.isLive = false;
-			self.updateLiveDisplay();
+			self.removeFromPeers( self.userId );
+			self.updateLiveDisplay( false );
 		}
 		
 		function peers( peers ) {
 			self.livePeers = peers;
+			const isInPeerList = self.checkIsInPeerList( self.userId );
+			self.userIsLive = isInPeerList ? true : false;
 			self.updateLiveDisplay();
 		}
 		
 		function join( peer ) {
 			const peerId = peer.peerId;
-			const pix = self.livePeers.indexOf( peerId );
-			if ( -1 === pix )
-				self.livePeers.push( peerId );
-			
+			self.addToPeers( peerId );
 			self.updateLiveDisplay();
 		}
 		
 		function leave( peer ) {
 			const peerId = peer.peerId;
-			self.livePeers = self.livePeers
-				.filter( isNotLeaver );
-				
+			self.removeFromPeers( peerId );
 			self.updateLiveDisplay();
 			
 			function isNotLeaver( pid ) {
@@ -1860,47 +1874,73 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.PresenceRoom.prototype.updateLiveDisplay = function() {
+	ns.PresenceRoom.prototype.updateLiveDisplay = function( isLive ) {
 		const self = this;
+		const isInPeers = self.checkIsInPeerList( self.userId );
 		const num = self.livePeers.length;
-		if ( !num )
-			self.emit( 'live', false );
-		else
-			self.emit( 'live', true );
-		
-		setDisplay();
-		const isInPeerList = !( -1 == self.livePeers.indexOf( self.userId ));
-		if ( isInPeerList && self.isLive ) {
+		setDisplay( num );
+		if (( null != isLive ) && ( isLive !== self.userIsLive )) {
+			self.userIsLive = isLive;
 			setStatus( 'user' );
-			self.emit( 'user-live', true );
-			self.userIsLive = true;
+			self.emit( 'live-user', isLive );
 			return;
 		}
 		
-		if ( isInPeerList ) {
+		if ( isInPeers && !self.userIsLive ) {
 			setStatus( 'timeout' );
 			return;
 		}
 		
-		if ( self.userIsLive ) {
-			self.userIsLive = false;
-			self.emit( 'user-live', false );
+		if ( !isInPeers ) {
+			if ( num ) {
+				self.emit( 'live', true );
+				setStatus( 'others' );
+			}
+			else {
+				self.emit( 'live', false );
+				setStatus( 'empty' );
+			}
 		}
-		
-		if ( self.livePeers.length )
-			setStatus( 'others' );
-		else
-			setStatus( 'empty' );
 		
 		function setStatus( type ) {
 			self.liveStatus.set( type );
 		}
+		
 		function setDisplay( num ) {
-			if ( 0 == num )
-				num = '-';
-			
-			self.liveStatus.setDisplay( num );
+			if ( !num ) {
+				self.liveStatus.hide();
+				self.liveStatus.setDisplay( '' );
+			}
+			else {
+				self.liveStatus.setDisplay( num );
+				self.liveStatus.show();
+			}
 		}
+	}
+	
+	ns.PresenceRoom.prototype.addToPeers = function( accId ) {
+		const self = this;
+		const isIn = self.checkIsInPeerList( accId );
+		if ( isIn )
+			return;
+		
+		self.livePeers.push( accId );
+	}
+	
+	ns.PresenceRoom.prototype.removeFromPeers = function( accId ) {
+		const self = this;
+		const index = self.livePeers.indexOf( accId );
+		if ( -1 === index )
+			return;
+		
+		self.livePeers.splice( index, 1 );
+	}
+	
+	ns.PresenceRoom.prototype.checkIsInPeerList = function( accId ) {
+		const self = this;
+		const index = self.livePeers.indexOf( accId );
+		const isInPeerList = !( -1 === index );
+		return isInPeerList;
 	}
 	
 })( library.view );
@@ -1925,6 +1965,14 @@ library.view = library.view || {};
 	ns.PresenceContact.prototype = Object.create( library.view.BaseContact.prototype );
 	
 	// Public
+	
+	ns.PresenceContact.prototype.showLive = function() {
+		const self = this;
+		const show = {
+			type : 'live-show',
+		};
+		self.send( show );
+	}
 	
 	ns.PresenceContact.prototype.getOnline = function() {
 		const self = this;
@@ -2009,6 +2057,7 @@ library.view = library.view || {};
 		self.liveStatus.on( 'video', () => self.startVideo());
 		self.liveStatus.on( 'audio', () => self.startVoice());
 		self.liveStatus.on( 'notify', () => self.sendCallNotification());
+		self.liveStatus.on( 'show', () => self.showLive());
 		/*
 		self.liveStatus = new library.component.StatusCall({
 			containerId : self.liveStatus,
@@ -2073,7 +2122,6 @@ library.view = library.view || {};
 		function peers( peers ) {
 			console.log( 'peers', peers );
 			self.livePeers = peers;
-			
 		}
 		
 		function join( peer ) {

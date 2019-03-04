@@ -94,6 +94,21 @@ message,
 </div>
 </script>
 
+<!-- rtc-state-tmpl
+id,
+title,
+-->
+<script id="rtc-state-tmpl" type="text/html">
+<div id="<%= id %>" class="rtc-session group row">
+    <div class="LED DangerText fortify">
+        <i class="fa fa-fw fa-video-camera"></i>
+    </div>
+    <div class="title left expand">
+        <%= title %>
+    </div>
+</div>
+</script>
+
 <!-- minimenu
 id,
 -->
@@ -193,6 +208,9 @@ callStatusId
             </div>
         </div>
         <div class="recent-state group row">
+            <div class="last-event-icon fortify">
+                <i class="fa fa-fw <%= lastEventIcon %>"></i>
+            </div>
             <div class="last-message expand">
                 <%= lastMsg %>
             </div><!--
@@ -872,8 +890,8 @@ id,
         </div>
     </div>
     <div class="call-outgoing hidden">
-        <div class="LED hidden">
-            <i class="fa fa-fw fa-cube On"></i>
+        <div class="LED">
+            <i class="fa fa-fw fa-video-camera DangerText"></i>
         </div>
     </div>
     <div class="call-live hidden">

@@ -249,6 +249,8 @@ library.component = library.component || {};
 (function( ns, undefined) {
 	ns.StatusIndicator = function( conf ) {
 		const self = this;
+		library.component.EventEmitter.call( self );
+		
 		self.containerId = conf.containerId;
 		self.type = conf.type;
 		self.cssClass = conf.cssClass;
@@ -259,6 +261,9 @@ library.component = library.component || {};
 		self.initIndicator();
 	}
 	
+	ns.StatusIndicator.prototype = Object.create( 
+		library.component.EventEmitter.prototype );
+	
 	ns.StatusIndicator.prototype.typeTmplMap = {
 		'led' : 'status-indicator-led-tmpl',
 		'icon' : 'status-indicator-icon-tmpl',
@@ -268,7 +273,11 @@ library.component = library.component || {};
 	
 	ns.StatusIndicator.prototype.close = function() {
 		const self = this;
-		// do things probably
+		if ( self.el && self.el.parentNode )
+			self.el.parentNode.removeChild( self.el );
+		
+		delete self.inner;
+		delete self.el;
 	}
 	
 	ns.StatusIndicator.prototype.set = function( stateKey ) {
@@ -317,6 +326,14 @@ library.component = library.component || {};
 		const stateKeys = Object.keys( self.statusMap );
 		self.state = stateKeys[ 0 ];
 		self.inner.classList.add( self.statusMap[ self.state ]);
+		self.el.addEventListener( 'click', elClick, false );
+		function elClick( e ) {
+			const handled = self.emit( 'click' );
+			if ( handled ) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+		}
 	}
 	
 	ns.StatusIndicator.prototype.buildIconIndicator = function( container ) {
@@ -325,8 +342,8 @@ library.component = library.component || {};
 		const conf = {
 			faClass : self.cssClass,
 		};
-		const el = hello.template.getElement( tmplId, conf );
-		container.appendChild( el );
+		self.el = hello.template.getElement( tmplId, conf );
+		container.appendChild( self.el );
 		self.bindIconIndicator( container );
 	}
 	
@@ -336,8 +353,8 @@ library.component = library.component || {};
 		const conf = {
 			ledShapeClass : self.cssClass,
 		};
-		const el = hello.template.getElement( tmplId, conf );
-		container.appendChild( el );
+		self.el = hello.template.getElement( tmplId, conf );
+		container.appendChild( self.el );
 		self.bindLEDIndicator( container );
 	}
 	
