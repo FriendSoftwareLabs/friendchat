@@ -135,6 +135,13 @@ library.view = library.view || {};
 		inputForm.addEventListener( 'submit', inputSubmit, false );
 		submitBtn.addEventListener( 'click', inputSubmit, false );
 		attachBtn.addEventListener( 'click', attach, false );
+		self.usersEl.addEventListener( 'touchstart', function( e )
+		{
+			var t = e.target ? e.target : e.srcElement;
+			if( t && t.id && t.id == 'main' )
+				toggleUserList.click();
+		}, false );
+		
 		
 		function attach( e ) {
 			var men = ge( 'attachment-menu' );
@@ -275,6 +282,8 @@ library.view = library.view || {};
 				self.toggleUsersBtn.classList.add( 'danger' );
 			}
 		}
+		// Just kill this class (only needed on load)
+		self.usersEl.classList.remove( 'MobileHidden' );
 	}
 	
 	ns.Presence.prototype.toggleUserListBtn = function( isVisible ) {
@@ -367,6 +376,7 @@ library.view = library.view || {};
 					firstId : firstMsgId,
 				},
 			};
+			console.log( 'onFetch - logFrom', logFrom );
 			self.sendChatEvent( logFrom );
 		}
 		

@@ -1240,6 +1240,7 @@ library.component = library.component || {};
 		}
 	}
 	
+	// Evaluate content and add a "link"
 	ns.LinkExpand.prototype.replace = function( a, content ) {
 		var self = this;
 		var src = a.href;
@@ -1254,13 +1255,24 @@ library.component = library.component || {};
 		
 		var conf = {
 			href    : a.href,
-			file    : file,
-			content : content,
+			file    : file
 		};
 		
 		var el = self.template.getElement( 'link-expand-tmpl', conf );
+		el.querySelector( '.link-expand-content' ).appendChild( content );
 		var parent = a.parentNode;
 		parent.removeChild( a );
+		
+		if( el.querySelector( '.link-expand-image' ) && content.secretOnClickFunction )
+		{
+			var as = el.getElementsByTagName( 'a' );
+			for( var a = 0; a < as.length; a++ ) {
+				as[ a ].href = 'javascript:void(0)';
+				as[ a ].onclick = content.secretOnClickFunction;
+				break;
+			}
+		}
+		
 		parent.appendChild( el );
 	}
 	
@@ -1270,8 +1282,35 @@ library.component = library.component || {};
 		var conf = {
 			src : src,
 		};
-		var htmlStr = self.template.get( 'image-expand-tmpl', conf );
-		return htmlStr;
+		var htmlElement = self.template.getElement( 'image-expand-tmpl', conf );
+		function clFunc( e )
+		{
+			e.preventDefault();
+			e.stopPropagation();
+			
+			self.getMIME( src )
+				.then( success )
+				.catch( failed );
+			return
+			
+			function failed()
+			{
+				return false;
+			}
+			function success( mime ) {
+				if( mime.type == 'image' )
+				{
+					window.View.sendBase( {
+						type: 'dos',
+						method: 'openWindowByFilename',
+						args: { fileInfo: { Path: src }, ext: 'jpg' }
+					} );
+				}
+			}
+		}
+		htmlElement.addEventListener( 'click', clFunc, false );
+		htmlElement.secretOnClickFunction = clFunc;
+		return htmlElement;
 	}
 	
 	ns.LinkExpand.prototype.expandAudio = function( a ) {
@@ -1280,8 +1319,8 @@ library.component = library.component || {};
 		var conf = {
 			src : src,
 		};
-		var htmlStr = self.template.get( 'audio-expand-tmpl', conf );
-		return htmlStr;
+		var htmlElement = self.template.getElement( 'audio-expand-tmpl', conf );
+		return htmlElement;
 	}
 	
 	ns.LinkExpand.prototype.expandVideo = function( a ) {
@@ -1290,8 +1329,8 @@ library.component = library.component || {};
 		var conf = {
 			src : src,
 		};
-		var htmlStr = self.template.get( 'video-expand-tmpl', conf );
-		return htmlStr;
+		var htmlElement = self.template.getElement( 'video-expand-tmpl', conf );
+		return htmlElement;
 	}
 	
 	ns.LinkExpand.prototype.expandFile = function( a, mime ) {
@@ -1305,8 +1344,8 @@ library.component = library.component || {};
 		var conf = {
 			typeClass : typeClass
 		};
-		var htmlStr = self.template.get( 'file-expand-tmpl', conf );
-		return htmlStr;
+		var htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
+		return htmlElement;
 	}
 	
 	ns.LinkExpand.prototype.expandText = function( a, mime ) {
@@ -2643,6 +2682,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		};
 		self.el = self.tmpl.getElement( 'mini-menu-tmpl', tmplConf );
 		self.menu = self.el.querySelector( '.mini-menu-content' );
+		self.menucover = self.el.querySelector( '.mini-menu-cover' );
 		self.addOptions( options );
 		
 		if ( x1 )
@@ -2651,6 +2691,11 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			self.menu.style.left = x2;
 		
 		const parent = document.getElementById( parentId );
+
+		// Add an element to exit the building
+		self.menucover.addEventListener( 'touchstart', menuBlur, false );
+		
+		// 
 		parent.appendChild( self.el );
 		const ownHeight = self.menu.clientHeight;
 		let maxHeight = ( viewHeight - 10 ) + 'px';
@@ -2660,6 +2705,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		self.menu.style.top = top;
 		self.menu.focus();
 		self.menu.addEventListener( 'blur', menuBlur, false );
+		
 		function menuBlur( e ) {
 			self.close();
 		}

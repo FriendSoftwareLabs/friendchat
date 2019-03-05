@@ -166,7 +166,9 @@ library.view = library.view || {};
 		
 		element.addEventListener( 'click', click, false );
 		if ( self.itemMenu )
+		{
 			self.itemMenu.addEventListener( 'click', menuClick, false );
+		}
 		
 		function click( e ) { self.openChat(); }
 		function menuClick( e ) { self.showMenu( e ); }
@@ -653,15 +655,15 @@ library.view = library.view || {};
 		if ( !menuEl )
 			return;
 		
-		const options = self.getMenuOptions( type );
-		if ( !options || !options.length )
+		const opts = self.getMenuOptions( type );
+		if ( !opts || !opts.length )
 			return;
 		
 		new library.component.MiniMenu(
 			hello.template,
 			menuEl,
 			'hello',
-			options,
+			opts,
 			onSelect,
 		);
 		

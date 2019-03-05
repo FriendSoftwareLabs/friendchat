@@ -198,7 +198,7 @@ body[mobile] #emojii-panel-button
  	top: 0;
  	height: 100%;
 }
- 
+
 [mobile] #users-container:after {
 	content: " ";
 	display: block;
@@ -263,6 +263,17 @@ body:not([mobile]) #users-header
 	pointer-events: none;
 	transition: none;
 }
+
+[mobile] #users-container.users-hide {
+	transform : translateX(100%);
+	transition : transform 0.25s;
+}
+
+[mobile] .MobileHidden {	
+	visibility: hidden;
+	pointer-events: none;
+}
+
 
 #users-position { position: relative; }
 #user-groups {
@@ -374,5 +385,3 @@ html > body > div #attachment-menu button
 	transform: scale3d(1,1,1);
 	
 }
-
-

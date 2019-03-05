@@ -42,8 +42,12 @@
 }
 
 .link-expand .link-expand-image {
-	background-size : contain;
+	background-position: center;
+	background-size: contain;
 	background-repeat: no-repeat;
+	background-color: rgba(0,0,0,0.1);
+	border-radius: 3px;
+	border: 10px solid rgba(0,0,0,0.0);
 }
 
 .link-expand .link-expand-file {

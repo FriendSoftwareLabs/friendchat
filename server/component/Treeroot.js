@@ -1523,6 +1523,7 @@ ns.Treeroot.prototype.getLog = function( clientId, socketId ) {
 		}
 		
 		self.messagesToClient( messages, cId, 'log', socketId );
+		sendNullMessage();
 	}
 	
 	function sendNullMessage() {

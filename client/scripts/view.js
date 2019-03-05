@@ -195,7 +195,7 @@ library.view = library.view || {};
 	ns.About.prototype.init = function() {
 		var self = this;
 		const windowConf = {
-			title  : ( hello.config.appName + ' - About' ) || 'Friend Chat - About',
+			title  : ( Application.i18n( 'i18n_about_short' ) + ' ' + ( hello.config.appName ? hello.config.appName : 'Friend Chat' ) ) || 'Friend Chat - About',
 			width  : 400,
 			height : 400,
 		};

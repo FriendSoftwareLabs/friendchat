@@ -135,7 +135,7 @@ var hello = null;
 				return;
 			}
 			
-			//self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/served.ogg' );
+			//self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/NewMessage.ogg' );
 			self.msgAlert = new api.SoundAlert( 
 				'webclient/apps/FriendChat/res/Friend_Hello.wav' );
 			

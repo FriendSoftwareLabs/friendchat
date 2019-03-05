@@ -1,5 +1,3 @@
-'use strict';
-
 /*©agpl*************************************************************************
 *                                                                              *
 * This file is part of FRIEND UNIFYING PLATFORM.                               *
@@ -18,6 +16,8 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.        *
 *                                                                              *
 *****************************************************************************©*/
+
+'use strict';
 
 var library = window.library || {};
 var friendUP = window.friendUP || {};
@@ -126,11 +126,14 @@ library.component = library.component || {};
 	
 	ns.IMChat.prototype.handleLog = function( log ) {
 		var self = this;
+		console.log( 'IMChat.handleLog', log );
 		if ( self.isWaiting )
 			self.removeWaiting();
 		
-		if ( !log )
+		if ( !log ) {
+			self.toggleSmoothScroll( true );
 			return;
+		}
 		
 		if ( !logIsHistory( log ))
 			return;
@@ -228,6 +231,14 @@ library.component = library.component || {};
 		waitingElement.parentNode.removeChild( waitingElement );
 	}
 	
+	ns.IMChat.prototype.toggleSmoothScroll = function( setSmooth ) {
+		const self = this;
+		if ( !self.messages )
+			return;
+		
+		self.messages.classList.toggle( 'SmoothScrolling', setSmooth );
+	}
+	
 	ns.IMChat.prototype.initialize = function( data ) {
 		var self = this;
 		self.contact = data.state.contact;
@@ -285,6 +296,7 @@ library.component = library.component || {};
 		// stuff
 		self.setChattingWith();
 		self.setAvatarCss();
+		//self.toggleSmoothScroll( false );
 		
 		self.view.sendMessage({
 			type : 'ready',

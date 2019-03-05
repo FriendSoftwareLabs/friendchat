@@ -226,7 +226,6 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 	}
 	
-	
 	// Private
 	
 	ns.View.prototype.initView = function() {

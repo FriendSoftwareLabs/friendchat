@@ -683,7 +683,8 @@ var hello = window.hello || {};
 		self.conn.on( 'identity', identity );
 		self.conn.on( 'auth', auth );
 		self.conn.on( 'workgroups-assigned', worgsAssigned );
-		self.conn.on( 'workgroup-available', worgAvailable );
+		self.conn.on( 'workgroup-added', worgAvailable );
+		self.conn.on( 'workgroup-removed', e => self.handleWorgRemoved( e ));
 		
 		function online( e ) { self.handleOnline( e ); }
 		function offline( e ) { self.handleOffline( e ); }
@@ -1231,6 +1232,8 @@ var hello = window.hello || {};
 		if ( newIds )
 			self.users.addIdentities( newIds );
 		
+		toggleSmooth( false );
+		// wait for dom to update lol
 		self.supressConfirm = true;
 		
 		if ( 'before' === log.type )
@@ -1241,7 +1244,17 @@ var hello = window.hello || {};
 		self.supressConfirm = false;
 		let lMId = self.getLastMsgId();
 		self.confirmEvent( 'message', lMId );
+		window.setTimeout( tglsmt, 1000 );
+		function tglsmt() {
+			toggleSmooth( true );
+		}
 		
+		function toggleSmooth( setSmooth ) {
+			if ( !self.container )
+				return;
+			
+			self.container.classList.toggle( 'SmoothScrolling', setSmooth );
+		}
 	}
 	
 	ns.MsgBuilder.prototype.handleLogBefore = function( items ) {

@@ -1164,8 +1164,8 @@ library.contact = library.contact || {};
 		if ( 'assigned' === event.type )
 			updateAssigned( event.data );
 		
-		if ( 'available' === event.type )
-			updateAvailable( event.data );
+		if ( 'added' === event.type )
+			add( event.data );
 		
 		function updateAssigned( ass ) {
 			self.workgroups.assigned = ass;
@@ -1176,12 +1176,12 @@ library.contact = library.contact || {};
 				});
 		}
 		
-		function updateAvailable( worg ) {
+		function add( worg ) {
 			const wId = worg.clientId;
 			self.workgroups.available[ wId ] = worg;
 			if ( self.chatView )
 				self.chatView.send({
-					type : 'workgroup-available',
+					type : 'workgroup-added',
 					data : worg,
 				});
 		}

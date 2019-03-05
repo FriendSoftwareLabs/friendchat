@@ -19,17 +19,18 @@ i18n_done : Done
 i18n_channel_settings : Channel settings
 i18n_irc_settings : IRC settings
 i18n_join : join
-i18n_treeroot_settings : Treeroot settings
+i18n_treeroot_settings : Friend Community settings
 i18n_workgroups : Workgroups
 i18n_user_limit : User limit
 i18n_a : A
-i18n_friendup : FriendUP
+i18n_friendup : Friend
 i18n_communication_tool : communication tool
 i18n_friend_chat : Friend Chat
 i18n_made_by : made by
 i18n_sokken : sokken
 i18n_used_under_creative : used under Creative Commons ( attribution )
 i18n_about : About
+i18n_about_short : About
 i18n_legal : Legal
 i18n_add_an_image : Add an image
 i18n_confirm : Confirm
@@ -330,7 +331,7 @@ i18n_go_live_video : Go live, video
 i18n_invite_to_video : Invite to video chat
 i18n_invite_to_audio : Invite to voice chat
 i18n_invite_to_room : Invite to Room
-i18n_recent_conversations : Conversations
+i18n_recent_conversations : Latest activity
 i18n_remove_contact : Remove contact
 i18n_leave_room : Leave room
 i18n_remove_chat : Remove chat

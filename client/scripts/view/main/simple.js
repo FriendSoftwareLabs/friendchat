@@ -111,7 +111,7 @@ var hello = window.hello || {};
 	ns.Main.prototype.initMain = function() {}
 	
 	// To initialize simple GUI
-	ns.Main.prototype.initSimple = function() {
+	ns.Main.prototype.initSimple = function( settings ) {
 		const self = this;
 		// search
 		self.search = new library.component.Search(
@@ -139,6 +139,11 @@ var hello = window.hello || {};
 			self.recentHistory,
 			hello.template
 		);
+		
+		// Check if we *want* the inapp menu
+		if ( settings.inAppMenu ) {
+			self.enableInAppMenu();
+		}
 		
 		// tabs
 		var btabs = document.getElementById( 'main-tabs' );
@@ -177,6 +182,17 @@ var hello = window.hello || {};
 			addTab( tabs[a], pages, a );
 		}
 	}
+	
+	ns.Main.prototype.enableInAppMenu = function() {
+		var self = this;
+		var menu = document.getElementById( 'menu-btn' );
+		if( menu )
+			menu.classList.remove( 'hidden' );
+		var head = document.getElementById( 'head' );
+		if( head )
+			head.classList.remove( 'PaddingRight' );
+	}
+	
 	
 })( library.view );
 
@@ -921,6 +937,14 @@ var hello = window.hello || {};
 		if ( !self.lastEvent )
 			self.setEvent( historyEvent );
 		
+		if ( !self.lastEvent || !self.lastEvent.data ) {
+			console.log( 'RecentItem.setLastEvent - missing things', {
+				hE   : historyEvent,
+				lE   : self.lastEvent,
+				self : self,
+			});
+			return;
+		}
 		let historyTime = historyEvent.data.time;
 		let lastTime = self.lastEvent.data.time;
 		if ( historyTime > lastTime )
@@ -982,6 +1006,7 @@ var hello = window.hello || {};
 		
 		self.el.addEventListener( 'click', elClick, false );
 		self.menuBtn.addEventListener( 'click', menuClick, false );
+		self.menuBtn.addEventListener( 'tuochend', menuClick, false );
 		
 		function elClick( e ) {
 			self.handleBodyClick();

@@ -1442,6 +1442,7 @@ library.view = library.view || {};
 		let opts = [
 			self.menuActions[ 'reconnect' ],
 		];
+		
 		if ( 'conference' === type )
 			opts.push( self.menuActions[ 'create-room' ]);
 		
@@ -3238,7 +3239,7 @@ library.view = library.view || {};
 		
 		// See if we have a simple gui? Then init.
 		if( self.initSimple )
-			self.initSimple();
+			self.initSimple( settings );
 		else
 			self.initMain( settings );
 		
