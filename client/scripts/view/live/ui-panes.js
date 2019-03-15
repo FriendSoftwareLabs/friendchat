@@ -1360,6 +1360,7 @@ library.component = library.component || {};
             optionsHtml : options.join(),
         };
         var selectElement = hello.template.getElement( 'source-select-tmpl', selectConf );
+        
         return selectElement;
         
         function buildOption( item ) {

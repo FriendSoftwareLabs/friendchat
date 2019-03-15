@@ -1199,9 +1199,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function shareCheckBack( err, isAvailable ) {
 			if ( err || !isAvailable ) {
 				self.toggleMenuScreenShareInstall( true );
+				self.screenShareAvailable = false;
 				return;
 			}
-			
+			else {
+				self.screenShareAvailable = true;
+			}
 		}
 		
 		const sourceConf = {
@@ -1255,7 +1258,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		if ( self.isScreenSharing ) {
-			self.menu.setState( 'toggle-screen-share', true );
+			//self.menu.setState( 'toggle-screen-share', true );
 			self.toggleScreenMode( 'contain' );
 		}
 	}
@@ -1343,11 +1346,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function connBack( err, res ) {
 			if ( err ) {
 				self.close();
+				self.screenShareAvailable = false;
 				return;
 			}
 			
 			self.extConn.setConnected( true );
 			self.toggleMenuScreenShareInstall( false );
+			self.screenShareAvailable = true;
 		}
 	}
 	
@@ -1364,7 +1369,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.chromeSourceId = null;
 			self.chromeSourceOpts = null;
-			self.menu.setState( 'toggle-screen-share', false );
+			//self.menu.setState( 'toggle-screen-share', false );
 			self.isScreenSharing = false;
 			self.toggleScreenMode( 'cover' );
 			self.setupStream();
@@ -1379,7 +1384,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				self.screenshareEl.classList.remove( 'inactive' );
 				self.chromeSourceId = res.sid;
 				self.chromeSourceOpts = res.opts;
-				self.menu.setState( 'toggle-screen-share', true );
+				//self.menu.setState( 'toggle-screen-share', true );
 				self.isScreenSharing = true;
 				self.toggleScreenMode( 'contain' );
 				self.media.shareScreen( res.sid );

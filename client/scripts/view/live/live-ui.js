@@ -30,7 +30,6 @@ library.component = library.component || {};
 	ns.UI = function( conn, liveConf, localSettings, live ) {
 		const self = this;
 		self.conn = conn;
-		self.liveScope = live; // Live scope
 		self.localSettings = localSettings;
 		self.guestAvatar = liveConf.guestAvatar;
 		self.rtc = null;
@@ -192,7 +191,7 @@ library.component = library.component || {};
 		
 		// Just hang up!
 		uiButtons.hangup.onclick = function(){ 
-			self.liveScope.closeAllTheThings();
+			window.live.rtc.close();
 		};
 		
 		// Toggle text chat
@@ -204,14 +203,23 @@ library.component = library.component || {};
 		
 		// Start screen sharing 
 		uiButtons.screenshare.onclick = function(){
-			self.liveScope.rtc.selfie.screenshareEl = uiButtons.screenshare;
-			self.liveScope.rtc.selfie.toggleShareScreen();
+			
+			// Try to toggle screen share
+			if( self.peers.selfie.peer.screenShareAvailable )
+			{
+				self.peers.selfie.peer.toggleShareScreen();
+			}
+			// Or install the extension
+			else
+			{
+				self.peers.selfie.peer.openScreenExtInstall();
+			}
+			self.peers.selfie.peer.screenshareEl = uiButtons.screenshare;
 		};
 		
 		// Toggle audio
 		uiButtons.audiotoggle.onclick = function( e ) {
-			var mbtn = self.liveScope.rtc.view.peers.selfie.muteBtn;
-			
+			var mbtn = self.peers.selfie.muteBtn;
 			mbtn.click();
 						
 			if( !mbtn.classList.contains( 'danger' ) )
@@ -226,16 +234,16 @@ library.component = library.component || {};
 		
 		// Toggle video
 		uiButtons.videotoggle.onclick = function( e ) {
-			var info = self.liveScope.rtc.selfie.permissions.send;
+			var info = self.peers.selfie.peer.permissions.send;
 			if( !info.video )
 				uiButtons.videotoggle.classList.remove( 'muted' );
 			else uiButtons.videotoggle.classList.add( 'muted' );
-			self.liveScope.rtc.selfie.toggleSendVideo( e )
+			self.peers.selfie.peer.toggleSendVideo( e )
 		};
 		
 		// Show settings
 		uiButtons.settings.onclick = function( e ) {
-			self.liveScope.rtc.selfie.showSourceSelect();
+			self.peers.selfie.peer.showSourceSelect();
 		}
 		
 		document.addEventListener( 'mousemove', mouseMoved, false );
