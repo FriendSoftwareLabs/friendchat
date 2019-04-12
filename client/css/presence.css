@@ -15,9 +15,10 @@
 }
 
 #room-title .avatar {
-	width        : 2.4em;
-	height       : 2.4em;
-	margin-right : 0.5em;
+	width         : 2.4em;
+	height        : 2.4em;
+	margin-right  : 0.5em;
+	margin-bottom : 0.2em;
 }
 
 #live-status-container {
@@ -33,6 +34,9 @@ body[mobile] #emojii-panel-button
 	display: none !important;
 }
 
+.user-group {
+	margin-bottom : 0.3em;
+}
 
 .section-head {
 	font-weight: bold;
@@ -85,9 +89,14 @@ body[mobile] #emojii-panel-button
 	padding : 0.2em 0.6em;
 }
 
+.avatar-offset,
 .msg-item .avatar {
+	margin-top : 0.2em;
 	width  : 2.4em;
 	height : 2.4em;
+}
+.avatar-offset {
+	height: 0;
 }
 
 .avatar {
@@ -96,6 +105,10 @@ body[mobile] #emojii-panel-button
 	background-position : center;
 	background-size     : cover;
 	background-repeat   : no-repeat;
+}
+
+.avatar.room {
+	border-radius : 3px;
 }
 
 .msg-item .msg-container {
@@ -119,26 +132,59 @@ body[mobile] #emojii-panel-button
 	margin-top: 0.5em;
 }
 
+.work-msg .name,
 .msg-group .name {
 	font-weight : bold;
+	font-size: 110%;
 }
 
 .msg-container {
 	
 }
 
-.msg-container .edit-msg {
-	max-height: 1.7em;
-	opacity: 0;
-	transition: all 0.2s;
+.work-msg .work-to-from {
+	font-style: italic;
 }
 
-.msg-container:hover .edit-msg {
-	opacity: 1;
+.work-msg .work-to-from-name {
+	margin-left : 0.4em;
+	font-weight: bold;
+	opacity: 0.8;
+}
+
+.work-targets {
+	padding-left: 0.5em;
+	font-weight: bold;
+	opacity: 0.8;
+}
+
+.msg-content {
+	position: relative;
+}
+
+.msg-item .msg-actions {
+	position   : absolute;
+	right      : 0;
+	height     : 100%;
+	max-height : 1.6em;
+	display    : none;
+}
+
+.msg-item:hover .msg-actions {
+	display: flex;
+}
+
+.msg-item .msg-actions .pre-grad {
+	width : 2em;
+	height: 100%;
+}
+
+.msg-container .edit-msg {
+	
 }
 
 .time {
-	padding : 0 0.1em 0 0.5em;
+	padding : 0 0 0 0.5em;
 	text-align: right;
 	opacity: 0.3;
 }
@@ -168,20 +214,67 @@ body[mobile] #emojii-panel-button
 	padding : 0.3em;
 }
 
+.edit-reason {
+	padding : 0.2em 0;
+}
+
+.edited-info {
+	font-weight: bold;
+	font-style: italic;
+	padding-left : 0.5em;
+}
+
+.edited-info > div:not( .avatar-offset ) {
+	font-size: 80%;
+}
+
+.edited-name,
+.edited-reason {
+	opacity: 0.5;
+}
+
+.edited-reason {
+	padding : 0 0.5em;
+}
+
+.edited-time {
+	opacity : 0.3;
+}
+
 .system-container {
 	
 }
 
-.edit-msg-ui {
+.msg-box {
 	margin-top : 0.8em;
 }
 
-.edit-msg-ui .actions {
+.msg-box .actions {
 	padding : 0.5em 0;
 }
 
-.edit-msg-ui .actions > * {
+.msg-box .actions > * {
 	padding-left : 0.3em;
+}
+
+.msg-target-targets {
+	padding : 0.4em 0em;
+}
+
+.msg-target {
+	border-radius : 0.3em;
+	margin-right : 0.3em;
+	margin-top : 0.2em;
+	padding : 0 0.3em;
+	line-height: 2em;
+}
+
+.msg-target .target-cancel {
+	opacity: 0.5;
+}
+
+.msg-target .target-cancel:hover {
+	opacity: 1;
 }
 
 #users-container {

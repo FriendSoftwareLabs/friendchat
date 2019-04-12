@@ -351,3 +351,14 @@ i18n_private_chat : Private chat
 i18n_incoming_call : Incoming call
 i18n_take_a_picture : Take a picture
 i18n_choose_a_file : Choose a file
+i18n_send : Send
+i18n_room_msg_beep : Room msg beep
+i18n_private_msg_beep : Private msg beep
+i18n_reason_for_edit : Reason for edit
+i18n_edited_by : Edited by
+i18n_reason : Reason
+i18n_all_groups : All groups
+i18n_all_members : All members
+i18n_message_to : sent to
+i18n_message_from : sent by
+i18n_private_message_to : privately to

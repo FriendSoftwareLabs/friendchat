@@ -1141,6 +1141,7 @@ library.rtc = library.rtc || {};
 			return new ns.Account( conf );
 		
 		var self = this;
+		console.log( 'Account', conf );
 		self.availability = null;
 		self.clientId = conf.account.clientId;
 		self.displayName = conf.account.name;
@@ -1179,12 +1180,11 @@ library.rtc = library.rtc || {};
 		function updateSetting( e ) { self.updateSetting( e ); }
 		
 		self.updateMap = {
-			'popupChat' : updatePopupChat,
-			'msgAlert'  : updateMsgAlert,
+			'popupChat'    : e => self.updatePopupChat( e ),
+			'msgAlert'     : e => self.updateMsgAlert( e ),
+			'roomAlert'    : e => self.updateRoomAlert( e ),
+			'privateAlert' : e => self.updatePrivateAlert( e ),
 		};
-		
-		function updatePopupChat( e ) { self.updatePopupChat( e ); }
-		function updateMsgAlert( e ) { self.updateMsgAlert( e ); }
 		
 		self.view = new library.component.SubView({
 			parent : parentView,
@@ -1230,6 +1230,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Account.prototype.showSettings = function( data ) {
 		var self = this;
+		console.log( 'showSettings', data );
 		if ( self.settingsView )
 			return;
 		
@@ -1281,6 +1282,15 @@ library.rtc = library.rtc || {};
 	ns.Account.prototype.updateMsgAlert = function( value ) {
 		var self = this;
 		self.settings.msgAlert = value;
+	}
+	
+	ns.Account.prototype.updateRoomAlert = function( value ) {
+		const self = this;
+		self.settings.roomAlert = value;
+	}
+	ns.Account.prototype.updatePrivateAlert = function( value ) {
+		const self = this;
+		self.settings.privateAlert = value;
 	}
 	
 	ns.Account.prototype.load = function( account ) {

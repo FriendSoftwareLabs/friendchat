@@ -211,16 +211,16 @@ date,
 <!-- message group
 msgId,
 userKlass,
-bgKlass,
+selfKlass,
 from,
 time,
 message,
-editKlass,
+msgActions,
 -->
 <script id="msg-group-tmpl" type="text/html">
 <div id="<%= msgId %>" class="msg-item msg-group 
 							  <%= userKlass %> 
-							  <%= bgKlass %> 
+							  <%= selfKlass %> 
 							  ">
 	<div class="group-container group row left">
 		<div class="avatar fortify">
@@ -229,17 +229,17 @@ editKlass,
 			<div class="msg-meta">
 				<div class="name"><%= from %></div>
 			</div>
-			<div class="group row left">
+			<div class="msg-content group row">
 				<div class="str hidden"><%= original %></div>
 				<div class="message expand"><%= message %></div>
-				<div class="edit-msg Button IconButton fortify center-child <%= editKlass %>">
-					<i class="fa fa-fw fa-edit"></i>
-				</div>
 				<div class="time fortify">
 					<%= time %>
 				</div>
+				<%= msgActions %>
 			</div>
 		</div>
+	</div>
+	<div class="edit-container">
 	</div>
 	<div class="system-container">
 	</div>
@@ -248,26 +248,92 @@ editKlass,
 
 <!-- message
 msgId,
-bgKlass
+selfKlass
 time,
-editKlass,
+msgActions,
 -->
 <script id="msg-tmpl" type="text/html">
-<div id="<%= msgId %>" class="msg-item msg <%= bgKlass %>">
-	<div class="msg-container group row left">
+<div id="<%= msgId %>" class="msg-item msg <%= selfKlass %>">
+	<div class="msg-container msg-content group row">
 		<div class="avatar blank fortify"></div>
 		<div class="str hidden"><%= original %></div>
 		<div class="message expand"><%= message %></div>
-		<div class="edit-msg Button IconButton fortify center-child <%= editKlass %>">
-			<i class="fa fa-fw fa-edit"></i>
-		</div>
 		<div class="time fortify">
 			<%= time %>
 		</div>
+		<%= msgActions %>
+	</div>
+	<div class="edit-container">
 	</div>
 	<div class="system-container">
 	</div>
  </div>
+</script>
+
+
+<!-- workroom message
+msgId,
+userKlass,
+selfKlass,
+avatarType,
+name,
+toFromHidden,
+toFromNameHidden,
+toFromMsg,
+toFromName,
+targets,
+original,
+message,
+msgActions,
+time,
+-->
+<script id="work-msg-tmpl" type="text/html">
+<div id="<%= msgId %>" class="msg-item work-msg 
+							  <%= userKlass %> 
+							  <%= selfKlass %> 
+							  ">
+	<div class="group-container group row left">
+		<div class="avatar <%= avatarType %> fortify">
+		</div>
+		<div class="msg-container expand">
+			<div class="msg-meta">
+				<div class="group row start right">
+					<div class="name">
+						<%= name %>
+					</div>
+					<div class="work-to-from <%= toFromHidden %>">
+						, <%= toFromMsg %>
+					</div>
+					<div class="work-to-from-name <%= toFromNameHidden %>">
+						<%= toFromName %>
+					</div>
+				</div>
+				<div class="work-targets">
+					<%= targets %>
+				</div>
+			</div>
+			<div class="msg-content group row">
+				<div class="str hidden"><%= original %></div>
+				<div class="message expand"><%= message %></div>
+				<div class="time fortify">
+					<%= time %>
+				</div>
+				<%= msgActions %>
+			</div>
+		</div>
+	</div>
+	<div class="edit-container">
+	</div>
+	<div class="system-container">
+	</div>
+</div>
+</script>
+
+<!-- workroom message target
+target,
+-->
+<script id="work-msg-target-tmpl" type="text/html">
+<div class="work-target"><%= target %></div>
 </script>
 
 <!-- action
@@ -332,12 +398,34 @@ time,
 </div>
 </script>
 
+<!-- message actions
+gradHidden,
+editHidden,
+forwardHidden,
+-->
+<script id="msg-actions-tmpl" type="text/html">
+<div class="msg-actions fortify group row BackgroundDefault">
+	<div class="pre-grad gradHidden BackgroundDefault hidden">
+	</div>
+	<div class="edit-msg Button IconButton fortify center-child <%= editHidden %>">
+		<i class="fa fa-fw fa-edit"></i>
+	</div>
+	<div class="forward-msg Button IconButton fortify center-child <%= forwardHidden %>">
+		<i class="fa fa-fw fa-mail-forward"></i>
+	</div>
+</div>
+</script>
+
 <!-- edit message ui
-multiId
+multiId,
+reasonHidden,
 -->
 <script id="edit-msg-ui-tmpl" type="text/html">
-<div class="edit-msg-ui">
+<div class="msg-box">
 	<div id="<%= multiId %>" class="edit-wrap">
+	</div>
+	<div class="edit-reason input-wrap <%= reasonHidden %>">
+		<input class="edit-reason-input" type="text" placeholder="{i18n_reason_for_edit}">
 	</div>
 	<div class="actions group row end">
 		<button class="edit-cancel Button">
@@ -351,6 +439,66 @@ multiId
 	</div>
 </div>
 </script>
+
+<!-- edit info
+editId,
+name,
+time,
+reason,
+-->
+<script id="edit-info-tmpl" type="text/html">
+<div id="<%= editId %>" class="edited-info group row allow-wrap">
+	<div class="avatar-offset">
+	</div>
+	<div class="edited-name fortify">
+		{i18n_edited_by}: <%= name %>
+	</div>
+	<div class="edited-reason expand">
+		{i18n_reason}: <%= reason %>
+	</div>
+	<div class="edited-time fortify">
+		<%= time %>
+	</div>
+</div>
+</script>
+
+<!-- msg target box
+id,
+inputId,
+-->
+<script id="msg-target-box-tmpl" type="text/html">
+<div id="<%= id %>" class="msg-box bar column editing Rounded BackgroundHeavy BordersDefault">
+	<div class="msg-target-targets group row allow-wrap start">
+	</div>
+	<div id="<%= inputId %>" class="edit-wrap">
+	</div>
+	<div class="actions group row end">
+		<button class="edit-cancel Button">
+			<i class="fa fa-fw fa-close"></i>
+			{i18n_cancel}
+		</button>
+		<button class="send Button Accept">
+			<i class="fa fa-fw fa-paper-plane"></i>
+			{i18n_send}
+		</button>
+	</div>
+</div>
+</script>
+
+<!-- msg target
+name,
+-->
+<script id="msg-target-tmpl" type="text/html">
+<div class="msg-target group row fortify Available">
+	<div class="target-name fortify">
+		<%= name %>
+	</div>
+	<div class="target-cancel fortify">
+		<i class="fa fa-fw fa-close"></i>
+	</div>
+</div>
+</script>
+
 
 <!-- UserCtrl
 
@@ -369,7 +517,7 @@ sectionKlass,
 usersId
 -->
 <script id="user-group-tmpl" type="text/html">
-<div id="<%= clientId %>" class="hidden">
+<div id="<%= clientId %>" class="user-group hidden">
 	<div class="section-head <%= sectionKlass %>">
 		<%= name %>
 	</div>

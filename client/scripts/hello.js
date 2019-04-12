@@ -93,7 +93,9 @@ var hello = null;
 		const self = this;
 		self.startTiming = Date.now();
 		self.lastTiming = self.startTiming;
-		self.app.on( 'notification', n => self.handlePushNotie( n ));
+		self.app.on( 'pushnotification', n => self.handlePushNotie( n ));
+		self.app.on( 'notification', n => self.handleNotie( n ));
+		self.app.on( 'app-resume', n => self.handleAppResume( n ));
 		
 		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
 			console.log( '--- ENABLING DORMANT APPARENTLY ---', self.config );
@@ -964,6 +966,38 @@ var hello = null;
 			self.pushies.push( extra );
 	}
 	
+	ns.Hello.prototype.handleNotie = function( event ) {
+		const self = this;
+		console.log( 'hello.handleNotie - nyi lol', event );
+		if ( !event || !event.extra ) {
+			console.log( 'hello.handleNotie - invalid event', event );
+			return;
+		}
+		
+		if ( !event.clicked ) {
+			console.log( 'hello.handleNotie - not clicked', event );
+			return;
+		}
+		
+		let extra = friendUP.tool.parse( event.extra );
+		if ( !extra ) {
+			console.log( 'hello.handleNotie - invalid extra', event );
+			return;
+		}
+		
+		if ( self.service )
+			self.service.handlePushNotification( extra );
+		else
+			self.pushies.push( extra );
+	}
+	
+	ns.Hello.prototype.handleAppResume = function( event ) {
+		const self = this;
+		console.log( 'Hello.handleAppResume', event );
+		//self.module.reconnect();
+		self.reconnect();
+	}
+	
 })( window );
 
 
@@ -1021,7 +1055,8 @@ var hello = null;
 		function loadRecentHistory() {
 			api.ApplicationStorage.get( 'recent-history', recentBack );
 			function recentBack( res ) {
-				self.recentHistory = res.data || {};
+				 self.recentHistory = res.data || {};
+				//self.recentHistory = {};
 				doSetup( null );
 			}
 		}

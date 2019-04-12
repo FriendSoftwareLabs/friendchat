@@ -324,6 +324,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleMinimized = function( isMinimized ) {
 		const self = this;
+		console.log( 'app.View.handleMinimized ' + self.id, isMinimized );
 		self.isMinimized = isMinimized;
 	}
 	
@@ -658,25 +659,27 @@ var friend = window.friend || {}; // already instanced stuff
 		self.notifyMap = {
 			'closeview'   : closeView,
 			'setviewflag' : setViewFlag,
+			'wakeup'      : appWakeup,
 		}
 		
-		function closeView( msg ) { self.closeView( msg ); }
+		function closeView( e ) { self.closeView( e ); }
 		function setViewFlag( e ) { self.setViewFlag( e ); }
+		function appWakeup( e ) { self.appWakeup( e ); }
 		
 		window.addEventListener( 'message', receiveEvent, false );
 		function receiveEvent( e ) { self.receiveEvent( e ); }
 	}
 	
 	ns.AppEvent.prototype.receiveEvent = function( e ) {
-		var self = this;
-		var msg = friendUP.tool.parse( e.data );
+		const self = this;
+		const msg = friendUP.tool.parse( e.data );
 		if ( !msg ) {
 			console.log( 'app.receiveEvent - no msg for event', e );
 			return;
 		}
 		
 		msg.origin = e.origin;
-		var handler = self.commandMap[ msg.command ];
+		const handler = self.commandMap[ msg.command ];
 		if ( handler ) {
 			handler( msg );
 			return;
@@ -686,6 +689,13 @@ var friend = window.friend || {}; // already instanced stuff
 			self.handleSystem( msg );
 			return;
 		}
+		
+		/*
+		if ( 'notify' === msg.type ) {
+			self.handleNotify( msg );
+			return;
+		}
+		*/
 		
 		if ( msg.callback || msg.clickcallback ) {
 			var yep = self.handleCallback( msg );
@@ -715,7 +725,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleSystem = function( msg ) {
 		const self = this;
-		console.log( 'handleSystem', msg );
 		const cbId = msg.callback;
 		const future = self.emit( msg.method, msg.data );
 		if ( !cbId )
@@ -883,9 +892,8 @@ var friend = window.friend || {}; // already instanced stuff
 	}
 	
 	ns.AppEvent.prototype.handleNotify = function( msg ) {
-		var self = this;
-		var handler = self.notifyMap[ msg.method ];
-		
+		const self = this;
+		const handler = self.notifyMap[ msg.method ];
 		if ( !handler ) {
 			console.log( 'app.AppEvent.notify - no handler for ', msg );
 			return;
@@ -906,6 +914,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.setViewFlag = function( msg ) {
 		const self = this;
+		//console.log( 'setViewFlag - ' + self.id, msg );
 		let view = self.views[ msg.viewId ];
 		if ( !view )
 			return;
@@ -916,18 +925,17 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		
 		if ( 'minimized' === flag )
-			setMini( view, value );
+			view.isMinimized = !!value;
 		
 		if ( 'maximized' === flag )
-			setMaxi( view, value );
-		
-		function setMini( view, value ) {
-			view.isMinimized = !!value;
-		}
-		
-		function setMaxi( view, value ) {
 			view.isMaximized = !!value;
-		}
+		
+	}
+	
+	ns.AppEvent.prototype.appWakeup = function( event ) {
+		const self = this;
+		console.log( 'appWakeup', event );
+		self.emit( 'app-resume', event );
 	}
 	
 	ns.AppEvent.prototype.initialize = function( msg ) {

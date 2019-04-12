@@ -152,14 +152,6 @@ body i.fa {
 	display: inline-block;
 }
 
-.input-wrap {
-	
-}
-
-.input-wrap > input {
-	width : 100%;
-}
-
 /* color codez - TODO use friendUP themes ones */
 .good {
 	color : rgb( 81, 144, 57 );
@@ -421,6 +413,14 @@ html body .displayNone {
 	box-sizing: border-box;
 }
 
+.input-wrap {
+	
+}
+
+.input-wrap input {
+	line-height: 1.4em;
+	width : 100%;
+}
 
 .textarea-wrap {
 	

@@ -30,7 +30,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Socket ))
 			return new ns.Socket( conf );
 		
-		var self = this;
+		const self = this;
 		
 		// REQUIRED CONFIG
 		self.url = conf.url;
@@ -205,6 +205,12 @@ library.component = library.component || {};
 				allow   : self.allowReconnect,
 				timeout : self.isConnTimeout,
 			});
+			const reason = JSON.stringify({
+				session : self.session,
+				allow   : self.allowReconnect,
+				timeout : self.isConnTimeout,
+			});
+			console.log( reason );
 			self.ended();
 			return false;
 		}
@@ -290,11 +296,10 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
 		var self = this;
-		console.log( 'hello.ws.open' );
 		self.clearConnectTimeout();
 		self.reconnectAttempt = 0;
-		// we're waiting for authenticate challenge
 		self.setState( 'open', e );
+		// waiting for authenticate challenge
 	}
 	
 	ns.Socket.prototype.handleClose = function( e ) {

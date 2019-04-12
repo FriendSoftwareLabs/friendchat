@@ -795,11 +795,6 @@ var friend = window.friend || {};
 		});
 		
 		self.isActive = false;
-		const minimized = {
-			type : 'minimized',
-			data : true,
-		};
-		self.send( minimized );
 		document.body.classList.toggle( 'activated', false );
 	}
 	
@@ -819,7 +814,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.handleSystemTheme = function( data ) {
 		var self = this;
-		console.log( 'handleSystemTheme' );
 		self.setIsLoading( true );
 		self.theme = data.theme;
 		self.setBaseCss( setBack );

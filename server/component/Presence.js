@@ -725,11 +725,13 @@ ns.ServerConn.prototype.handleOpen = function() {
 		type : 'open',
 		data : Date.now(),
 	}
+	log( 'conn - handleOpen' );
 	self.emitState( status );
 }
 
 ns.ServerConn.prototype.handleClose = function() {
 	var self = this;
+	log( 'conn - handleClose' );
 	self.connected = false;
 	var status = {
 		type : 'offline',
@@ -740,12 +742,13 @@ ns.ServerConn.prototype.handleClose = function() {
 
 ns.ServerConn.prototype.handleError = function( err ) {
 	const self = this;
+	log( 'conn - handleError', err );
 	self.handleDisconnect( err );
-	
 }
 
 ns.ServerConn.prototype.handleEnded = function( err ) {
 	const self = this;
+	log( 'conn - handleEnded', err );
 	self.handleDisconnect( err );
 }
 

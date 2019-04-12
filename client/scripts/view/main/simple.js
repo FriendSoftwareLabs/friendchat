@@ -492,7 +492,7 @@ var hello = window.hello || {};
 		
 		self.modules = {};
 		self.items = {};
-		self.itemOrder = [];
+		self.itemOrder = null;
 		
 		self.init( containerId );
 	}
@@ -501,6 +501,9 @@ var hello = window.hello || {};
 	
 	ns.Recent.prototype.close = function() {
 		const self = this;
+		if ( self.itemOrder )
+			self.itemOrder.close();
+		
 		self.releaseModules();
 		delete self.template;
 		delete self.history;
@@ -510,6 +513,8 @@ var hello = window.hello || {};
 		delete self.inactive;
 		delete self.modules;
 		delete self.items;
+		delete self.itemOrder;
+		
 		const el = self.el;
 		if ( !el )
 			return;
@@ -565,6 +570,7 @@ var hello = window.hello || {};
 		container.appendChild( self.el );
 		self.active = document.getElementById( 'recent-active' );
 		self.inactive = document.getElementById( 'recent-inactive' );
+		self.itemOrder = new library.component.ListOrder( 'recent-active' );
 		
 		self.splash = document.getElementById( 'recent-splash' );
 		self.noRecent = document.getElementById( 'no-recent-convos' );
@@ -602,19 +608,19 @@ var hello = window.hello || {};
 		ids.forEach( id => self.releaseModule( id ));
 	}
 	
-	ns.Recent.prototype.handleItemAdd = function( moduleId, contact ) {
+	ns.Recent.prototype.handleItemAdd = function( moduleId, source ) {
 		const self = this;
 		const mod = self.modules[ moduleId ];
 		if ( !mod )
 			return;
 		
 		let Item = null;
-		if ( 'room' === contact.type )
+		if ( 'room' === source.type )
 			Item = library.view.RecentRoom;
 		else
 			Item = library.view.RecentItem;
 		
-		const cId = contact.id;
+		const cId = source.id;
 		if ( mod.items[ cId ])
 			self.handleItemRemove( moduleId, cId );
 		
@@ -623,14 +629,17 @@ var hello = window.hello || {};
 			iId,
 			cId,
 			moduleId,
-			contact,
+			source,
 			'recent-inactive',
 			self.template,
 			onActive
 		);
 		mod.items[ cId ] = item;
-		self.items[ item.id ] = item;
+		self.items[ iId ] = item;
 		self.checkHistory( iId );
+		const pri = item.getPriorityConf();
+		if ( 0 !== pri.priority )
+			self.updateIsActive( iId, true );
 		
 		function onActive( isActive ) {
 			self.updateIsActive( iId, isActive );
@@ -647,102 +656,33 @@ var hello = window.hello || {};
 	
 	ns.Recent.prototype.toActive = function( itemId, isHistory ) {
 		const self = this;
+		const item = self.items[ itemId ];
+		if ( !item ) {
+			console.log( 'Recent.toActive - no item for', itemId );
+			return;
+		}
+		
+		//self.active.appendChild( item.el );
+		self.toggleNoRecent();
+		
 		if ( !isHistory )
 			self.saveToHistory( itemId );
 		
-		if ( itemId === self.currentFirstItem )
+		if ( self.itemOrder.checkIsFirstItem( itemId )) {
 			return;
-		
-		self.removeFromItemOrder( itemId );
-		const item = self.items[ itemId ];
-		if ( !item )
-			return;
-		
-		let before = null;
-		if ( isNewest( item )) {
-			before = self.itemOrder[ 1 ] || null;
-		} else
-			before = sortAndGetBeforeId( item );
-		
-		let beforeEl = null;
-		if ( before )
-			beforeEl = document.getElementById( before ) || null;
-		
-		self.active.insertBefore( item.el, beforeEl );
-		self.toggleNoRecent();
-		
-		function isNewest( item ) {
-			const current = self.items[ self.currentFirstItem ] || null;
-			if ( !current ) {
-				setFirst( item.id );
-				return true;
-			}
-			
-			const ile = item.getLastEvent();
-			const cle = current.getLastEvent();
-			if ( !ile || !ile.data.time )
-				return false;
-			
-			if ( !cle || !cle.data.time ) {
-				setFirst( item.id );
-				return true;
-			}
-			
-			if ( ile.data.time > cle.data.time ) {
-				setFirst( item.id );
-				return true;
-			} else
-				return false;
-			
-			function setFirst( id ) {
-				self.itemOrder.unshift( id );
-				self.currentFirstItem = item.id;
-			}
 		}
 		
-		function sortAndGetBeforeId( item ) {
-			let iId = item.id;
-			let ile = item.getLastEvent();
-			let itemTime;
-			if ( ile )
-				itemTime = ile.data.time || 0;
-			
-			let beforeId = null;
-			let insertIndex = null;
-			self.itemOrder.some( sortDown );
-			if ( null == insertIndex ) {
-				self.itemOrder.push( iId );
-				return null;
-			}
-			
-			self.itemOrder.splice( insertIndex, 0, iId );
-			return beforeId
-			
-			function sortDown( checkId, index ) {
-				const checkTime = getTime( checkId );
-				if (( 0 !== checkTime ) && ( checkTime > itemTime))
-					return false;
-				
-				beforeId = checkId;
-				insertIndex = index;
-				return true;
-			}
-			
-			function getTime( itemId ) {
-				const check = self.items[ itemId ];
-				let e = check.getLastEvent();
-				if ( !e || !e.data )
-					return 0;
-				
-				return e.data.time || 0;
-			}
-		}
+		const conf = item.getPriorityConf();
+		self.itemOrder.add( conf );
+		return;
+		
 	}
 	
 	ns.Recent.prototype.toInactive = function( itemId ) {
 		const self = this;
+		self.itemOrder.remove( itemId );
 		moveToInactive( itemId );
-		self.removeFromItemOrder( itemId );
+		//self.removeFromItemOrder( itemId );
 		self.removeFromHistory( itemId );
 		self.toggleNoRecent();
 		
@@ -774,19 +714,7 @@ var hello = window.hello || {};
 	
 	ns.Recent.prototype.removeFromItemOrder = function( itemId ) {
 		const self = this;
-		self.itemOrder = self.itemOrder.filter( check => {
-			return itemId !== check;
-		});
-		
-		if ( itemId === self.currentFirstItem )
-			self.currentFirstItem = getNewFirstItem();
-		
-		function getNewFirstItem() {
-			if ( !self.itemOrder.length )
-				return null;
-			
-			return self.itemOrder[ 0 ];
-		}
+		self.itemOrder.remove( itemId );
 	}
 	
 	ns.Recent.prototype.checkHistory = function( itemId ) {
@@ -873,6 +801,23 @@ var hello = window.hello || {};
 	
 	// Public
 	
+	ns.RecentItem.prototype.getPriorityConf = function() {
+		const self = this;
+		const src = self.source;
+		const name = src.getName();
+		let time = null;
+		if ( self.lastEvent && self.lastEvent.data )
+			time = self.lastEvent.data.time;
+		
+		
+		return {
+			clientId : self.id,
+			priority : src.getPriority(),
+			time     : time,
+			name     : name,
+		};
+	}
+	
 	ns.RecentItem.prototype.close = function() {
 		const self = this;
 		if ( self.status )
@@ -920,7 +865,6 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.setEvent = function( event ) {
 		const self = this;
-		console.log( 'setEvent', event );
 		let handler = self.eventMap[ event.type ];
 		if ( !handler )
 			return;
@@ -930,7 +874,6 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.setLastEvent = function( historyEvent ) {
 		const self = this;
-		console.log( 'setLastEvent', historyEvent );
 		if ( !historyEvent || !historyEvent.data )
 			return;
 		
@@ -985,28 +928,21 @@ var hello = window.hello || {};
 		const msgId = self.source.on( 'message', message );
 		const waitId = self.source.on( 'msg-waiting', msgWaiting );
 		const idId = self.source.on( 'identity', idUpdate );
+		const relId = self.source.on( 'relation', relation );
 		
 		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
 		function idUpdate( e ) { self.handleIdentity( e ); }
+		function relation( e ) { self.updateRelation( e ); }
 		
 		self.sourceIds.push( msgId );
 		self.sourceIds.push( waitId );
 		self.sourceIds.push( idId );
-		
-		//
-		const lastMessage = self.source.getLastMessage();
-		const unread = self.source.getUnreadMessages();
-		if ( lastMessage )
-			self.setMessage( lastMessage.data );
-		
-		if ( unread )
-			self.setUnread( unread );
-		
+		self.sourceIds.push( relId );
 		
 		self.el.addEventListener( 'click', elClick, false );
 		self.menuBtn.addEventListener( 'click', menuClick, false );
-		self.menuBtn.addEventListener( 'tuochend', menuClick, false );
+		self.menuBtn.addEventListener( 'touchend', menuClick, false );
 		
 		function elClick( e ) {
 			self.handleBodyClick();
@@ -1016,6 +952,18 @@ var hello = window.hello || {};
 			e.stopPropagation();
 			self.handleMenuClick();
 		}
+		
+	}
+	
+	ns.RecentItem.prototype.updateRelation = function( relation ) {
+		const self = this;
+		const lastMessage = relation.lastMessage;
+		const unread = relation.unreadMessages;
+		if ( lastMessage )
+			self.setMessage( lastMessage.data );
+		
+		if ( null != unread )
+			self.setUnread( unread );
 		
 	}
 	
@@ -1104,7 +1052,6 @@ var hello = window.hello || {};
 			self.callStatus.setUserLive( e );
 		});
 		const liveContactId = self.source.on( 'live-contact', ( isLive ) => {
-			console.log( 'live-contact', isLive );
 			self.callStatus.setContactLive( isLive );
 			if ( !isLive )
 				return;
@@ -1162,7 +1109,7 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
-		self.setUnread( state.unread );
+		self.setUnread( state.unreadMessages );
 		if ( state.message )
 			self.handleMessage( state );
 	}
@@ -1186,6 +1133,7 @@ var hello = window.hello || {};
 			self.unread.set( 'true' );
 			self.unread.setDisplay( unread );
 			self.unread.show();
+			self.setActive( true );
 		} else {
 			self.unread.hide();
 			self.unread.set( 'false' );
@@ -1214,7 +1162,6 @@ var hello = window.hello || {};
 			type : 'message',
 			data : msg,
 		};
-		console.log( 'setMessage - done', self.lastEvent );
 	}
 	
 	ns.RecentItem.prototype.handleBodyClick = function() {
@@ -1486,7 +1433,7 @@ var hello = window.hello || {};
 		
 		function set( state ) {
 			self.unread.show();
-			self.unread.setDisplay( state.unread || 1 );
+			self.unread.setDisplay( state.unreadMessages || 1 );
 			self.handleMessage( state );
 		}
 		

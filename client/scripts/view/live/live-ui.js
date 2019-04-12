@@ -1091,7 +1091,7 @@ library.component = library.component || {};
 			quality,
 			restart,
 			fullscreen,
-			//screenShare,
+			screenShare,
 			screenShareExt,
 			presentation,
 			source,

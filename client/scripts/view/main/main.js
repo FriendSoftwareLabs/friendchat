@@ -1238,7 +1238,6 @@ library.view = library.view || {};
 (function( ns, undefined ) {
 	ns.Presence = function( conf ) {
 		const self = this;
-		console.log( 'main.Presence', conf );
 		self.userId = conf.userId;
 		
 		library.view.BaseModule.call( self, conf );
@@ -1252,6 +1251,9 @@ library.view = library.view || {};
 	// Pirvate
 	ns.Presence.prototype.init = function() {
 		const self = this;
+		self.roomOrder = new library.component.ListOrder( self.roomItemsId );
+		self.contactOrder = new library.component.ListOrder( self.contactItemsId );
+		
 		self.queryMap[ 'account-ask' ] = askForAccount;
 		self.queryMap[ 'account-create' ] = createAccount;
 		self.queryMap[ 'login-invalid' ] = loginInvalid;
@@ -1282,7 +1284,7 @@ library.view = library.view || {};
 		const self = this;
 		const tmplId = 'presence-rooms-tmpl';
 		const conf = {
-			roomsId     : self.contactsId,
+			roomsId      : self.contactsId,
 			folditId     : self.contactsFoldit,
 			title        : self.getTitleString( 'contact' ),
 			connStateId  : self.contactsConnState,
@@ -1363,13 +1365,20 @@ library.view = library.view || {};
 			userId      : self.userId,
 			room        : conf,
 		};
-		const room = new library.view.PresenceRoom( roomConf );
+		
+		let PThing = library.view.PresenceRoom;
+		if ( conf.isView )
+			PThing = library.view.PresenceView;
+		
+		const room = new PThing( roomConf );
 		self.rooms[ cId ] = room;
 		self.emit( 'add', room );
+		self.roomOrder.add( conf );
 	}
 	
 	ns.Presence.prototype.handleRoomLeave = function( roomId ) {
 		const self = this;
+		self.roomOrder.remove( roomId );
 		self.emit( 'remove', roomId );
 		const room = self.rooms[ roomId ];
 		if ( !room ) {
@@ -1430,6 +1439,7 @@ library.view = library.view || {};
 		self.contacts[ cId ] = contact;
 		self.contactIds.push( cId );
 		self.emit( 'add', contact );
+		self.contactOrder.add( conf.identity );
 	}
 	
 	ns.Presence.prototype.handleContactJoin = function( conf ) {
@@ -1540,7 +1550,6 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.showLive = function() {
 		const self = this;
-		console.log( 'PresenceRoom.showLive' );
 		const show = {
 			type : 'live-show',
 		};
@@ -1557,6 +1566,31 @@ library.view = library.view || {};
 			self.updateName();
 		}
 		
+		self.buildRoomStatus();
+		self.buildLiveStatus();
+		self.buildMsgWaiting();
+		self.bindUI();
+		self.bindView();
+	}
+	
+	ns.PresenceRoom.prototype.buildElement = function() {
+		var self = this;
+		var tmplId = 'presence-room-tmpl';
+		var conf = {
+			clientId     : self.clientId,
+			name         : self.identity.name,
+			avatar       : self.identity.avatar || '',
+			roomStatusId : self.roomStatus,
+			liveStatusId : self.liveStatus,
+			msgWaitingId : self.msgWaiting,
+		};
+		var container = document.getElementById( self.containerId );
+		var el = hello.template.getElement( tmplId, conf );
+		container.appendChild( el );
+	}
+	
+	ns.PresenceRoom.prototype.buildRoomStatus = function() {
+		const self = this;
 		const roomConf = {
 			containerId : self.roomStatus,
 			type        : 'icon',
@@ -1565,10 +1599,13 @@ library.view = library.view || {};
 				'empty' : 'Off',
 				'users' : 'Available',
 			},
-			display : '- / -',
+			display : '--',
 		};
 		self.roomStatus = new library.component.StatusDisplay( roomConf );
-		
+	}
+	
+	ns.PresenceRoom.prototype.buildLiveStatus = function() {
+		const self = this;
 		const liveConf = {
 			containerId : self.liveStatus,
 			type      : 'icon',
@@ -1584,43 +1621,27 @@ library.view = library.view || {};
 		self.liveStatus = new library.component.StatusDisplay( liveConf );
 		self.liveStatus.on( 'click', () => self.showLive());
 		self.liveStatus.hide();
-		
-		const msgConf = {
-			containerId : self.msgWaiting,
-			type : 'icon',
-			cssClass : 'fa-comment',
-			statusMap : {
-				'false' : 'Off',
-				'true' : 'Notify'
-			},
-		};
-		self.msgWaiting = new library.component.StatusIndicator( msgConf );
-		self.msgWaiting.hide();
-		
-		self.bindUI();
-		self.bindView();
 	}
 	
-	ns.PresenceRoom.prototype.buildElement = function() {
-		var self = this;
-		console.log( 'PresenceRoom - buildElement', self );
-		var tmplId = 'presence-room-tmpl';
-		var conf = {
-			clientId     : self.clientId,
-			name         : self.identity.name,
-			avatar       : self.identity.avatar || '',
-			roomStatusId : self.roomStatus,
-			liveStatusId : self.liveStatus,
-			msgWaitingId : self.msgWaiting,
+	ns.PresenceRoom.prototype.buildMsgWaiting = function() {
+		const self = this;
+		const msgConf = {
+			containerId : self.msgWaiting,
+			type        : 'led',
+			cssClass    : 'led-unread-status',
+			statusMap   : {
+				'false'   : 'Off',
+				'true'    : 'Notify'
+			},
+			display     : '',
 		};
-		var container = document.getElementById( self.containerId );
-		var el = hello.template.getElement( tmplId, conf );
-		container.appendChild( el );
+		self.msgWaiting = new library.component.StatusDisplay( msgConf );
+		self.msgWaiting.hide();
 	}
 	
 	ns.PresenceRoom.prototype.bindUI = function() {
-		var self = this;
-		var el = document.getElementById( self.clientId );
+		const self = this;
+		const el = document.getElementById( self.clientId );
 		
 		self.showSetNameBtn = el.querySelector( '.show-set-name' );
 		self.setNameForm = el.querySelector( '.room-name-form' );
@@ -1710,7 +1731,7 @@ library.view = library.view || {};
 		if ( self.menuSettings )
 			opts.push( self.menuActions[ 'settings' ]);
 		
-		if ( self.isAuthed )
+		if ( self.isOwner || self.isAuthed )
 			opts.push( self.menuActions[ 'leave-room' ]);
 		
 		return opts;
@@ -1735,6 +1756,7 @@ library.view = library.view || {};
 		self.conn.on( 'init', init );
 		self.conn.on( 'auth', auth );
 		self.conn.on( 'persistent', persistent );
+		self.conn.on( 'relation', relation );
 		self.conn.on( 'message', message );
 		self.conn.on( 'msg-waiting', msgWaiting );
 		self.conn.on( 'users', users );
@@ -1742,8 +1764,9 @@ library.view = library.view || {};
 		self.bindLive();
 		
 		function init( e ) { self.handleInit( e ); }
-		function persistent( e ) { self.handlePersistent( e ); }
 		function auth( e ) { self.handleIsAuthed( e ); }
+		function persistent( e ) { self.handlePersistent( e ); }
+		function relation( e ) { self.handleRelation( e ); }
 		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
 		function users( e ) { self.updateRoomStatus( e ); }
@@ -1790,6 +1813,14 @@ library.view = library.view || {};
 		delete self.setNameForm;
 	}
 	
+	ns.PresenceRoom.prototype.handleRelation = function( relation ) {
+		const self = this;
+		self.lastMessage = relation.lastMessage;
+		self.unreadMessages = relation.unreadMessages;
+		self.setMsgWaiting( self.unreadMessages || 0 );
+		self.emit( 'relation', relation );
+	}
+	
 	ns.PresenceRoom.prototype.handleMessage = function( msg ) {
 		const self = this;
 		self.emit( 'message', msg );
@@ -1797,14 +1828,33 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
-		if ( state.isWaiting )
-			self.unreadMessages++;
-		else
-			self.unreadMessages = 0;
+		if ( null != state.unreadMessages ) {
+			self.unreadMessages = state.unreadMessages;
+			state.isWaiting = true;
+		}
+		else {
+			if ( state.isWaiting )
+				self.unreadMessages++;
+			else
+				self.unreadMessages = 0;
+			
+			state.unreadMessages = self.unreadMessages;
+		}
 		
-		state.unread = self.unreadMessages;
-		self.msgWaiting.set( state.isWaiting ? 'true' : 'false' );
 		self.emit( 'msg-waiting', state );
+		self.setMsgWaiting( self.unreadMessages );
+	}
+	
+	ns.PresenceRoom.prototype.setMsgWaiting = function( unread ) {
+		const self = this;
+		const isWaiting = !!unread;
+		const state = isWaiting ? 'true' : 'false';
+		self.msgWaiting.set( state );
+		self.msgWaiting.setDisplay( unread );
+		if ( isWaiting )
+			self.msgWaiting.show();
+		else
+			self.msgWaiting.hide();
 	}
 	
 	ns.PresenceRoom.prototype.toggleSettings = function( show ) {
@@ -1815,14 +1865,11 @@ library.view = library.view || {};
 	ns.PresenceRoom.prototype.updateRoomStatus = function( data ) {
 		const self = this;
 		let state = 'empty';
-		if ( 0 !== data.online )
-			state = 'users';
-		
-		//let display = [ data.online, data.users ];
-		//display = display.join( ' / ' );
 		let online = '-';
-		if ( 0 !== data.online )
+		if ( 0 !== data.online ) {
+			state = 'users';
 			online = data.online;
+		}
 		
 		self.roomStatus.set( state );
 		self.roomStatus.setDisplay( online );
@@ -1946,6 +1993,28 @@ library.view = library.view || {};
 	
 })( library.view );
 
+(function( ns, undefined ) {
+	ns.PresenceView = function( conf, conn ) {
+		const self = this;
+		library.view.PresenceRoom.call( self, conf, conn );
+	}
+	
+	ns.PresenceView.prototype = Object.create( library.view.PresenceRoom.prototype );
+	
+	ns.PresenceView.prototype.bindLive = function() {}
+	ns.PresenceView.prototype.buildLiveStatus = function() {}
+	
+	ns.PresenceView.prototype.getMenuOptions = function() {
+		const self = this;
+		const opts = [
+			self.menuActions[ 'open-chat' ],
+		];
+		
+		return opts;
+	}
+	
+})( library.view );
+
 
 // PresenceContact
 (function( ns, undefiend ) {
@@ -1986,7 +2055,7 @@ library.view = library.view || {};
 		const self = this;
 		self.onlineStatus = friendUP.tool.uid( 'status' );
 		self.liveStatus = friendUP.tool.uid( 'live' );
-		self.msgStatus = friendUP.tool.uid( 'msg' );
+		self.msgWaiting = friendUP.tool.uid( 'msg' );
 		const tmplId = 'presence-contact-tmpl';
 		const conf = {
 			clientId     : self.clientId,
@@ -1994,7 +2063,7 @@ library.view = library.view || {};
 			statusId     : self.onlineStatus,
 			name         : self.identity.name,
 			liveStatusId : self.liveStatus,
-			msgWaitingId : self.msgStatus,
+			msgWaitingId : self.msgWaiting,
 		};
 		const container = document.getElementById( self.containerId );
 		const el = hello.template.getElement( tmplId, conf );
@@ -2003,39 +2072,29 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.init = function( contact ) {
 		const self = this;
-		self.unreadMessages = contact.unreadMessages || 0;
-		self.lastMessage = contact.lastMessage || null;
-		
 		self.buildStatus();
 		self.buildLive();
 		self.buildMsgWaiting();
 		
 		self.conn.on( 'online', isOnline );
+		self.conn.on( 'relation', relation );
 		self.conn.on( 'message', message );
 		self.conn.on( 'msg-waiting', msgWaiting );
 		
 		self.bindLive();
 		
 		function isOnline( e ) { self.handleOnline( e ); }
+		function relation( e ) { self.handleRelation( e ); }
 		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
 		
 		self.handleOnline( self.identity.isOnline );
-		if ( !!self.unreadMessages )
-			unreadMessages();
 		
-		function unreadMessages() {
-			const state = {
-				unread : self.unreadMessages,
-			};
-			if ( self.lastMessage ) {
-				const lm = self.lastMessage.data;
-				state.message = lm.message;
-				state.from = !!lm.from;
-				state.time = lm.time;
-			}
-			self.handleMsgWaiting( state );
-		}
+		if ( !contact.relation )
+			return;
+		
+		window.setTimeout( () => self.handleRelation( contact.relation ), 1 );
+		
 	}
 	
 	ns.PresenceContact.prototype.buildStatus = function() {
@@ -2074,8 +2133,8 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.buildMsgWaiting = function() {
 		const self = this;
-		self.msgStatus = new library.component.StatusDisplay({
-			containerId : self.msgStatus,
+		self.msgWaiting = new library.component.StatusDisplay({
+			containerId : self.msgWaiting,
 			type        : 'led',
 			cssClass    : 'led-unread-status',
 			statusMap   : {
@@ -2121,7 +2180,6 @@ library.view = library.view || {};
 		}
 		
 		function peers( peers ) {
-			console.log( 'peers', peers );
 			self.livePeers = peers;
 		}
 		
@@ -2158,6 +2216,14 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.PresenceContact.prototype.handleRelation = function( relation ) {
+		const self = this;
+		self.unreadMessages = relation.unreadMessages;
+		self.lastMessage = relation.lastMessage;
+		self.setMsgWaiting( self.unreadMessages || 0 );
+		self.emit( 'relation', relation );
+	}
+	
 	ns.PresenceContact.prototype.handleMessage = function( msg ) {
 		const self = this;
 		self.emit( 'message', msg );
@@ -2165,8 +2231,8 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
-		if ( state.unread ) {
-			self.unreadMessages = state.unread;
+		if ( null != state.unreadMessages ) {
+			self.unreadMessages = state.unreadMessages;
 			state.isWaiting = true;
 		}
 		else {
@@ -2174,16 +2240,24 @@ library.view = library.view || {};
 				self.unreadMessages++;
 			else
 				self.unreadMessages = 0;
+			
+			state.unreadMessages = self.unreadMessages;
 		}
 		
-		state.unread = self.unreadMessages;
-		self.msgStatus.set( state.isWaiting ? 'true' : 'false' );
-		self.msgStatus.setDisplay( self.unreadMessages );
 		self.emit( 'msg-waiting', state );
-		if ( state.isWaiting )
-			self.msgStatus.show();
+		self.setMsgWaiting( self.unreadMessages );
+	}
+	
+	ns.PresenceContact.prototype.setMsgWaiting = function( unread ) {
+		const self = this;
+		const isWaiting = !!unread;
+		const state = isWaiting ? 'true' : 'false';
+		self.msgWaiting.set( state );
+		self.msgWaiting.setDisplay( unread );
+		if ( isWaiting )
+			self.msgWaiting.show();
 		else
-			self.msgStatus.hide();
+			self.msgWaiting.hide();
 	}
 	
 	ns.PresenceContact.prototype.sendCallNotification = function() {

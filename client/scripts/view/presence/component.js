@@ -232,21 +232,22 @@ var hello = window.hello || {};
 // GroupUser
 (function( ns, undefined ) {
 	ns.GroupUser = function(
-		id,
+		clientId,
 		conn,
-		conf,
+		user,
+		id,
 		tmplManager
 	) {
 		const self = this;
-		self.id = id;
+		self.id = clientId;
 		self.conn = conn;
-		self.name = conf.name;
-		self.avatar = conf.avatar;
-		self.isAdmin = conf.isAdmin || false;
-		self.isAuthed = conf.isAuthed || false;
-		self.isGuest = conf.isGuest || false;
-		self.workgroups = conf.workgroups;
-		self.state = conf.state || '';
+		self.name = id.name;
+		self.avatar = id.avatar;
+		self.isAdmin = !!id.isAdmin;
+		self.isAuthed = !!user.isAuthed;
+		self.isGuest = !!id.isGuest;
+		self.workgroups = user.workgroups;
+		self.state = user.state || '';
 		self.template = tmplManager;
 		
 		self.el = null;
@@ -299,6 +300,9 @@ var hello = window.hello || {};
 	
 	ns.GroupUser.prototype.close = function() {
 		const self = this;
+		if ( self.el && self.el.parentNode )
+			self.el.parentNode.removeChild( self.el );
+		
 		delete self.id;
 		delete self.conn;
 		delete self.template;
@@ -395,8 +399,10 @@ var hello = window.hello || {};
 	ns.UserCtrl = function(
 		conn,
 		users,
+		identities,
 		onlineList,
 		workgroups,
+		roomAvatar,
 		guestAvatar,
 		containerId,
 		templateManager
@@ -408,6 +414,7 @@ var hello = window.hello || {};
 		self.users = {};
 		self.userIds = [];
 		self.onlines = onlineList;
+		self.identities = {};
 		self.containerId = containerId;
 		self.template = templateManager;
 		
@@ -415,7 +422,13 @@ var hello = window.hello || {};
 		self.groupIds = [];
 		self.groupsAvailable = {};
 		
-		self.init( workgroups, users, guestAvatar );
+		self.init(
+			workgroups,
+			users,
+			identities,
+			roomAvatar,
+			guestAvatar
+		);
 	}
 	
 	ns.UserCtrl.prototype = Object.create( library.component.EventEmitter.prototype );
@@ -434,6 +447,11 @@ var hello = window.hello || {};
 			return null;
 		
 		return self.groups[ user.group ] || null;
+	}
+	
+	ns.UserCtrl.prototype.getWorkgroup = function( worgId ) {
+		const self = this;
+		return self.groupsAvailable[ worgId ] || null;
 	}
 	
 	ns.UserCtrl.prototype.checkIsOnline = function( userId ) {
@@ -497,7 +515,12 @@ var hello = window.hello || {};
 				else
 					return false;
 			});
-			add.forEach( fid => self.handleJoin( fresh[ fid ]));
+			add.forEach( uid => {
+				const event = {
+					user : fresh[ uid ],
+				};
+				self.handleJoin( event );
+			});
 		}
 		
 		function updateOnline( fresh ) {
@@ -522,13 +545,13 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.UserCtrl.prototype.getAvatarKlass = function( userId ) {
+	ns.UserCtrl.prototype.getAvatarKlass = function( clientId ) {
 		const self = this;
-		const user = self.users[ userId ];
+		const user = self.users[ clientId ];
 		if ( user.isGuest )
-			userId = 'guest-user';
+			clientId = 'guest-user';
 		
-		return self.getUserCssKlass( userId );
+		return self.getUserCssKlass( clientId );
 	}
 	
 	ns.UserCtrl.prototype.close = function() {
@@ -539,8 +562,15 @@ var hello = window.hello || {};
 		if ( self.el )
 			self.el.parentNode.removeChild( self.el );
 		
+		if ( self.req )
+			self.req.close();
+		
+		if ( self.conn )
+			self.conn.close();
+		
 		delete self.detached;
 		delete self.el;
+		delete self.req;
 		delete self.conn;
 		delete self.users;
 		delete self.userIds;
@@ -552,21 +582,22 @@ var hello = window.hello || {};
 	
 	// Private
 	
-	ns.UserCtrl.prototype.init = function( workgroups, users, guestAvatar ) {
+	ns.UserCtrl.prototype.init = function(
+		workgroups,
+		users,
+		identities,
+		roomAvatar,
+		guestAvatar
+	) {
 		const self = this;
 		self.build();
 		self.initBaseGroups();
-		
 		self.setWorkgroups( workgroups );
-		
-		if ( users ) {
-			let uids = Object.keys( users );
-			uids.forEach( uid => self.handleJoin( users[ uid ]));
-		}
-		
+		self.addIds( identities );
+		self.addUsers( users );
+		self.addUserCss( self.workId, roomAvatar );
 		self.addUserCss( 'guest-user', guestAvatar );
 		self.addUserCss( 'default-user', guestAvatar );
-		
 		self.bindConn();
 	}
 	
@@ -609,10 +640,11 @@ var hello = window.hello || {};
 			},
 		];
 		
-		base.forEach( add );
-		function add( groupConf ) {
-			self.addWorkgroup( groupConf );
-		}
+		base.forEach( worg => {
+			let wId = worg.clientId;
+			self.groupsAvailable[ wId ] = worg;
+			self.addUserGroup( worg.clientId );
+		});
 	}
 	
 	ns.UserCtrl.prototype.setWorkgroups = function( conf ) {
@@ -620,10 +652,15 @@ var hello = window.hello || {};
 		if ( !conf || !conf.assigned )
 			return;
 		
+		self.workId = conf.workId;
 		const ava = conf.available;
 		const ass = conf.assigned;
-		self.groupsAvailable = conf.ava;
-		ass.forEach( worg => self.addWorkgroup( worg ));
+		avaIds = Object.keys( ava );
+		avaIds.forEach( wId => {
+			let worg = ava[ wId ];
+			self.groupsAvailable[ wId ] = worg;
+		});
+		ass.forEach( worg => self.addUserGroup( worg.clientId ));
 	}
 	
 	ns.UserCtrl.prototype.addWorgAvailable = function( worg ) {
@@ -632,16 +669,18 @@ var hello = window.hello || {};
 		self.groupsAvailable[ wId ] = worg;
 	}
 	
-	ns.UserCtrl.prototype.addWorkgroup = function( worg ) {
+	ns.UserCtrl.prototype.addUserGroup = function( groupId, beforeId, sectionKlass ) {
 		const self = this;
-		if ( !worg || !worg.clientId )
+		if ( !groupId )
 			return;
 		
-		if ( self.groups[ worg.clientId ])
+		const wId = groupId;
+		if ( self.groups[ wId ])
 			return;
 		
+		worg = self.groupsAvailable[ wId ];
 		if ( null == worg.sectionKlass )
-			worg.sectionKlass = 'Available';
+			worg.sectionKlass = sectionKlass || 'Available';
 		
 		let group = new library.component.UserGroup(
 			worg,
@@ -649,24 +688,65 @@ var hello = window.hello || {};
 			self.users,
 			self.template,
 		);
-		self.groups[ group.clientId ] = group;
-		self.groupIds.push( group.clientId );
 		
-		if ( 'offline' !== group.clientId )
+		self.groups[ wId ] = group;
+		if ( null == beforeId )
+			self.groupIds.push( wId );
+		else
+			self.moveGroupBefore( wId, beforeId );
+		
+		if ( 'offline' !== wId )
 			moveOfflineToBottom();
 		
 		function moveOfflineToBottom() {
 			const offline = self.groups[ 'offline' ];
 			if ( !offline )
-				throw new Error( 'Hey fucko, you forgot to remove this part' );
+				return;
 			
 			self.el.appendChild( offline.el );
 		}
 	}
 	
-	ns.UserCtrl.prototype.removeWorkgroup = function( worgId ) {
+	ns.UserCtrl.prototype.moveGroupBefore = function( worgId, beforeId ) {
 		const self = this;
-		console.log( 'removeWorkgroup - NYI', worgId );
+		const wEl = document.getElementById( worgId );
+		const bEl = document.getElementById( beforeId ) || null;
+		self.el.insertBefore( wEl, bEl );
+	}
+	
+	ns.UserCtrl.prototype.removeUserGroup = function( worgId ) {
+		const self = this;
+		console.log( 'removeUserGroup - NYI', worgId );
+	}
+	
+	ns.UserCtrl.prototype.addUsers = function( users ) {
+		const self = this;
+		if ( !users )
+			return;
+		
+		let uids = Object.keys( users );
+		uids.forEach( uid => {
+			const event = {
+				user : users[ uid ],
+			};
+			self.handleJoin( event );
+		});
+	}
+	
+	ns.UserCtrl.prototype.addIds = function( ids ) {
+		const self = this;
+		cIds = Object.keys( ids );
+		cIds.forEach( cId => {
+			const id = ids[ cId ];
+			self.addId( id );
+		});
+	}
+	
+	ns.UserCtrl.prototype.addId = function( id ) {
+		const self = this;
+		const cId = id.clientId;
+		self.identities[ cId ] = id;
+		self.addUserCss( cId, id.avatar );
 	}
 	
 	ns.UserCtrl.prototype.bindConn = function() {
@@ -720,9 +800,9 @@ var hello = window.hello || {};
 		console.log( 'closeGroups - NYI', self.groups );
 	}
 	
-	ns.UserCtrl.prototype.handleOnline = function( data ) {
+	ns.UserCtrl.prototype.handleOnline = function( id ) {
 		const self = this;
-		const uid = data.clientId;
+		const uid = id.clientId;
 		const user = self.users[ uid ];
 		if ( !user )
 			return;
@@ -731,9 +811,7 @@ var hello = window.hello || {};
 			return;
 		
 		self.onlines.push( uid );
-		user.isAdmin = data.isAdmin;
-		user.isAuthed = data.isAuthed;
-		user.workgroups = data.workgroups;
+		user.isAdmin = id.isAdmin;
 		self.setUserToGroup( uid );
 	}
 	
@@ -750,9 +828,14 @@ var hello = window.hello || {};
 		self.moveUserToGroup( userId, 'offline' );
 	}
 	
-	ns.UserCtrl.prototype.handleJoin = function( user ) {
+	ns.UserCtrl.prototype.handleJoin = function( event ) {
 		const self = this;
+		const user = event.user;
 		const uid = user.clientId;
+		let id = event.id;
+		if ( id )
+			self.addId( id );
+		
 		if ( null != self.users[ uid ] ) {
 			console.log( 'UserCtrl.addUser - user already present ( hueuhueh )', {
 				user  : user,
@@ -761,10 +844,24 @@ var hello = window.hello || {};
 			return;
 		}
 		
+		if ( !id )
+			id = self.identities[ uid ];
+		
+		if ( !id ) {
+			console.log( 'UserCtrl.handleJoin - no id for user', {
+				event : event,
+				user : user,
+				id : id,
+				ids : self.identities,
+			});
+			return;
+		}
+		
 		const userItem = new library.component.GroupUser(
 			uid,
 			self.conn,
 			user,
+			id,
 			self.template
 		);
 		self.users[ uid ] = userItem;
@@ -835,7 +932,14 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.handleIdentity = function( id ) {
 		const self = this;
-		console.log( 'UserCtrl.handleIdentity - NYI', id );
+		if ( !id || !id.clientId ) {
+			console.log( 'UserCtrl.handleIdentity - invalid id', id );
+			return;
+		}
+		
+		const cId = id.clientId;
+		self.addUserCss( cId, id.avatar );
+		self.identities[ cId ] = id;
 	}
 	
 	ns.UserCtrl.prototype.handleAuth = function( event ) {
@@ -849,7 +953,7 @@ var hello = window.hello || {};
 			return;
 		
 		wgs.forEach( add );
-		function add( wg ) { self.addWorkgroup( wg ); }
+		function add( wg ) { self.addUserGroup( wg.clientId ); }
 	}
 	
 	ns.UserCtrl.prototype.moveUserToGroup = function( userId, groupId ) {
@@ -919,6 +1023,12 @@ var hello = window.hello || {};
 		
 		const container = document.getElementById( 'user-css' );
 		const klassName = self.getUserCssKlass( userId );
+		const exists = container.querySelector( '.' + klassName );
+		if ( exists ) {
+			console.log( 'addUserCss - already added', exists );
+			return;
+		}
+		
 		const cssConf = {
 			clientId  : userId,
 			klassName : klassName,
@@ -928,9 +1038,9 @@ var hello = window.hello || {};
 		container.appendChild( cssEl );
 	}
 	
-	ns.UserCtrl.prototype.getUserCssKlass = function( userId ) {
+	ns.UserCtrl.prototype.getUserCssKlass = function( clientId ) {
 		const self = this;
-		return userId + '-klass';
+		return clientId + '-klass';
 	}
 	
 })( library.component );
@@ -939,28 +1049,35 @@ var hello = window.hello || {};
 // MsgBuilder
 (function( ns, undefined ) {
 	ns.MsgBuilder = function(
-		conn,
+		parentConn,
 		containerId,
-		userId,
 		users,
+		userId,
+		roomId,
+		workgroups,
+		input,
 		parser,
 		linkExpand,
 		templateManager
 	) {
 		const self = this;
-		self.conn = conn;
 		self.containerId = containerId;
-		self.userId = userId;
 		self.users = users;
+		self.userId = userId;
+		self.roomId = roomId;
+		self.workgroupId = null;
+		self.supergroupId = null;
+		self.input = input;
 		self.parser = parser || null;
 		self.linkEx = linkExpand || null;
 		self.template = templateManager;
 		
+		self.conn = null
 		self.envelopes = {};
 		self.envelopeOrder = [];
 		self.supressConfirm = false;
 		
-		self.init();
+		self.init( parentConn, workgroups );
 	}
 	
 	// Public
@@ -979,25 +1096,35 @@ var hello = window.hello || {};
 		return handler( event.data );
 	}
 	
-	ns.MsgBuilder.prototype.update = function( event ) {
+	ns.MsgBuilder.prototype.update = function( event, isEdit ) {
 		const self = this;
-		if ( !event || !event.msgId )
+		if ( !event || !event.data )
 			return;
 		
-		let update = event.message;
+		let msg = event.data;
+		const el = document.getElementById( msg.msgId );
+		if ( !el ) {
+			console.log( 'no msg el to update', event );
+			return;
+		}
+		
+		let update = msg.message;
 		let parsed = null;
 		if ( self.parser )
 			parsed = self.parser.work( update );
 		else
 			parsed = update;
 		
-		const el = document.getElementById( event.msgId );
 		const orgEl = el.querySelector( '.msg-container .str' );
 		const msgEl = el.querySelector( '.msg-container .message' );
 		orgEl.textContent = update;
 		msgEl.innerHTML = parsed;
+		if ( isEdit )
+			self.setEdit( msg );
+		
 		if ( self.linkEx )
 			self.linkEx.work( msgEl );
+		
 	}
 	
 	ns.MsgBuilder.prototype.editMessage = function( itemId ) {
@@ -1005,6 +1132,42 @@ var hello = window.hello || {};
 		const el = document.getElementById( itemId );
 		if ( el.isEditing )
 			return;
+		
+		const getMsg = {
+			msgId : itemId,
+		};
+		self.req.request( 'edit-get', getMsg )
+			.then( msgBack )
+			.catch( reqErr );
+			
+		function msgBack( event ) {
+			if ( !event ) {
+				editError( 'ERR_EDIT_NO_EVENT' );
+				return;
+			}
+			
+			self.doEdit( event );
+		}
+		
+		function reqErr( err ) {
+			console.log( 'reqErr', err );
+			editError( 'ERR_EDIT_REQUEST_FAILED' );
+		}
+		
+		function editError( err ) {
+			console.log( 'editError', err );
+		}
+	}
+	
+	ns.MsgBuilder.prototype.doEdit =  function( event ) {
+		const self = this;
+		const msg = event.data;
+		const mId = msg.msgId;
+		const el = document.getElementById( mId );
+		if ( !el ) {
+			console.log( 'MsgBuilder.doEdit - no element found for', event );
+			return;
+		}
 		
 		el.isEditing = true;
 		el.classList.add(
@@ -1016,14 +1179,19 @@ var hello = window.hello || {};
 		const editIconEl = el.querySelector( '.msg-container .edit-msg' );
 		editIconEl.classList.toggle( 'hidden', true );
 		
-		const msgEl = el.querySelector( '.msg-container .str' );
 		const sysEl = el.querySelector( '.system-container' );
-		const currMsg = msgEl.textContent;
 		const multiId = friendUP.tool.uid( 'edit' );
+		const reasonRequired = checkReasonIsRequired( msg );
+		let reasonHidden = 'hidden';
+		if ( reasonRequired )
+			reasonHidden = '';
+		
 		const editConf = {
-			multiId : multiId,
+			multiId      : multiId,
+			reasonHidden : reasonHidden,
 		};
 		const editEl = self.template.getElement( 'edit-msg-ui-tmpl', editConf );
+		const reasonInput = editEl.querySelector( '.edit-reason-input' );
 		const subBtn = editEl.querySelector( '.actions .edit-submit' );
 		const cancelBtn = editEl.querySelector( '.actions .edit-cancel' );
 		sysEl.appendChild( editEl );
@@ -1035,36 +1203,96 @@ var hello = window.hello || {};
 			onstate         : () => {},
 		};
 		const edit = new library.component.MultiInput( multiConf );
-		edit.setValue( currMsg );
-		
-		function onSubmit( newMsg ) {
-			saveEdit( newMsg );
-			close();
-		}
+		edit.setValue( msg.message );
 		
 		subBtn.addEventListener( 'click', subClick, false );
 		cancelBtn.addEventListener( 'click', cancelClick, false );
+		
+		function onSubmit( newMsg ) {
+			handleInput( newMsg );
+		}
+		
 		function subClick( e ) {
 			let newMsg = edit.getValue();
-			saveEdit( newMsg );
+			handleInput( newMsg );
+		}
+		
+		function handleInput( msg ) {
+			let reason = null;
+			if ( reasonInput ) {
+				reason = getReason();
+				if ( reasonRequired && !reason ) {
+					setReasonRequired();
+					return;
+				}
+			}
+			
+			saveEdit( msg, reason );
 			close();
+		}
+		
+		function isAuthor() {
+			const user = self.users.get( self.userId );
+			if ( !user )
+				return false;
+			
+			return msg.fromId === self.userId;
+		}
+		
+		function getReason() {
+			let reason = reasonInput.value;
+			if ( reason && reason.length ) {
+				setReasonRequired( false );
+				return reason;
+			} else
+				return null;
+		}
+		
+		function setReasonRequired( show ) {
+			if ( null == show )
+				show = true;
+			
+			reasonInput.classList.toggle( 'Required', show );
+		}
+		
+		function checkReasonIsRequired( msg ) {
+			if ( msg.editId )
+				return true;
+			
+			if ( !isAuthor())
+				return true;
+			
+			const now = Date.now();
+			const gracePeriod = 1000 * 60 * 5;
+			let maxTime = msg.time + gracePeriod;
+			if ( maxTime < now )
+				return true;
+			
+			return false;
 		}
 		
 		function cancelClick( e ) {
 			close();
 		}
 		
-		function saveEdit( newMsg ) {
+		function saveEdit( newMsg, reason ) {
 			const edit = {
-				type : 'edit',
-				data : {
-					msgId   : itemId,
-					message : newMsg,
-					reson   : null,
-				},
+				msgId   : mId,
+				message : newMsg,
+				reason  : reason,
 			};
 			
-			self.send( edit );
+			self.req.request( 'edit-save', edit )
+				.then( editBack )
+				.catch( editErr );
+			
+			function editBack( res ) {
+				console.log( 'editBack', res );
+			}
+			
+			function editErr( err ) {
+				console.log( 'editErr', err );
+			}
 		}
 		
 		function close() {
@@ -1081,25 +1309,65 @@ var hello = window.hello || {};
 		}
 	}
 	
+	ns.MsgBuilder.prototype.forwardMessage = function( msgId ) {
+		const self = this;
+		const el = document.getElementById( msgId );
+		const srcEl = el.querySelector( '.msg-content .str' );
+		if ( !srcEl ) {
+			console.log( 'forwardMessage - could not find str', {
+				mId : msgId,
+				el  : el,
+			});
+			return;
+		}
+		
+		const str = srcEl.textContent;
+		if ( !str || !str.length ) {
+			console.log( 'forwardMessage - no content found', {
+				mId : msgId,
+				el  : el,
+				str : str,
+			});
+			return;
+		}
+		
+		self.input.setValue( str );
+	}
+	
 	ns.MsgBuilder.prototype.getFirstMsgId = function() {
 		const self = this;
-		if ( !self.envelopeOrder.length )
+		const firstMsg = self.getFirstMsg();
+		if ( !firstMsg )
 			return null;
 		
-		const firstEnvelopeId = self.envelopeOrder[ 0 ];
-		const firstEnvelope = self.envelopes[ firstEnvelopeId ];
-		return firstEnvelope.firstMsgId || null;
+		return firstMsg.msgId;
+	}
+	
+	ns.MsgBuilder.prototype.getFirstMsgTime = function() {
+		const self = this;
+		let firstMsg = self.getFirstMsg();
+		if ( !firstMsg )
+			return null;
+		
+		return firstMsg.time;
 	}
 	
 	ns.MsgBuilder.prototype.getLastMsgId = function() {
 		const self = this;
-		if ( !self.envelopeOrder.length )
+		const lastMsg = self.getLastMsg();
+		if ( !lastMsg )
 			return null;
 		
-		const eo = self.envelopeOrder;
-		const lastEnvId = eo[ eo.length - 1 ];
-		const lastEnvelope = self.envelopes[ lastEnvId ];
-		return lastEnvelope.lastMsgId || null;
+		return lastMsg.msgId;
+	}
+	
+	ns.MsgBuilder.prototype.getLastMsgTime = function() {
+		const self = this;
+		const lastMsg = self.getLastMsg();
+		if ( !lastMsg )
+			return null;
+		
+		return lastMsg.time;
 	}
 	
 	ns.MsgBuilder.prototype.close = function() {
@@ -1110,8 +1378,11 @@ var hello = window.hello || {};
 		}
 		
 		delete self.conn;
-		delete self.userId;
 		delete self.users;
+		delete self.userId;
+		delete self.roomId;
+		delete self.workgroupId;
+		delete self.input;
 		delete self.onEdit;
 		delete self.parser;
 		delete self.linkEx;
@@ -1128,8 +1399,27 @@ var hello = window.hello || {};
 		'notification' : 'chat-notie-tmpl',
 	}
 	
-	ns.MsgBuilder.prototype.init = function() {
+	ns.MsgBuilder.prototype.init = function( parentConn, workgroups ) {
 		const self = this;
+		if ( workgroups) {
+			self.workgroupId = workgroups.workId || '';
+			self.supergroupId = workgroups.superId || '';
+		}
+		
+		self.conn = new library.component.EventNode(
+			'chat',
+			parentConn
+		);
+		
+		self.req = new library.component.RequestNode(
+			self.conn,
+			reqSink
+		);
+		
+		function reqSink( ...args ) {
+			console.log( 'MsgBuilder reqSink', args );
+		}
+		
 		self.container = document.getElementById( self.containerId );
 		if ( !self.container )
 			throw new Error( 'MsgBuilder.init - container element not found for id: '
@@ -1140,13 +1430,17 @@ var hello = window.hello || {};
 			throw new Error( 'MsgBuilder - missing things ^^^' );
 		}
 		
+		self.users.on( 'msg-target', e => self.handleMsgTarget( e ));
 		self.startEnvelopeUpdates();
 		
 		self.eventMap = {
 			'msg'          : msg,
+			'work-msg'     : msg,
 			'action'       : action,
 			'notification' : notie,
 			'log'          : log,
+			'update'       : e => { self.update( e )},
+			'edit'         : e => { self.update( e, true )},
 		};
 		
 		function msg( e ) { return self.handleMsg( e ); }
@@ -1156,13 +1450,250 @@ var hello = window.hello || {};
 		
 		self.logMap = {
 			'msg'          : logMsg,
+			'work-msg'     : logWorkMsg,
 			'action'       : logAction,
 			'notification' : logNotie,
 		};
 		
 		function logMsg( e ) { return self.buildMsg( e ); }
+		function logWorkMsg( e ) { return self.buildWorkMsg( e ); }
 		function logAction( e ) { return self.buildAction( e ); }
 		function logNotie( e ) { return self.buildNotie( e ); }
+	}
+	
+	ns.MsgBuilder.prototype.getFirstMsg = function() {
+		const self = this;
+		if ( !self.envelopeOrder.length )
+			return null;
+		
+		const firstEnvelopeId = self.envelopeOrder[ 0 ];
+		const firstEnvelope = self.envelopes[ firstEnvelopeId ];
+		return firstEnvelope.firstMsg || null;
+	}
+	
+	ns.MsgBuilder.prototype.getLastMsg = function() {
+		const self = this;
+		if ( !self.envelopeOrder.length )
+			return null;
+		
+		const eo = self.envelopeOrder;
+		const lastEnvId = eo[ eo.length - 1 ];
+		const lastEnvelope = self.envelopes[ lastEnvId ];
+		return lastEnvelope.lastMsg || null;
+	}
+	
+	ns.MsgBuilder.prototype.handleMsgTarget = function( data ) {
+		const self = this;
+		if ( !self.msgTargets )
+			self.msgTargets = {};
+		
+		const AG = 'all_groups';
+		const AM = 'all_members';
+		const wId = data.workgroup;
+		const uId = data.user;
+		const wT = self.msgTargets[ wId ];
+		
+		// special target, discard any other targets
+		if ( AG === wId || AM === wId ) {
+			self.msgTargets = {};
+			self.msgTargets[ wId ] = true;
+			self.updateMsgTarget();
+			return;
+		}
+		
+		if ( self.msgTargets[ AG ] || self.msgTargets[ AM ])
+			return;
+		
+		// worg already set as target, no further action required
+		if ( wT && ( null == wT.length ))
+			return;
+		
+		// worg set as target, discard any user targets in worg
+		if ( wT && !uId )
+			self.msgTargets[ wId ] = true;
+		
+		// worg+user target, add
+		if ( wT && uId ) {
+			const uIdx = wT.indexOf( uId );
+			if ( -1 !== uIdx )
+				return; // already set
+			
+			wT.push( uId );
+		}
+		
+		// not yet set, do the thing
+		if ( !wT ) {
+			if ( !uId )
+				self.msgTargets[ wId ] = true;
+			else
+				self.msgTargets[ wId ] = [ uId ];
+		}
+		
+		self.updateMsgTarget();
+	}
+	
+	ns.MsgBuilder.prototype.updateMsgTarget = function() {
+		const self = this;
+		if ( !self.msgTargetEl )
+			buildBox();
+		
+		setTargets();
+		
+		function buildBox() {
+			self.msgTargetId = friendUP.tool.uid( 'target' );
+			let inputId = friendUP.tool.uid( 'input' );
+			const conf = {
+				id      : self.msgTargetId,
+				inputId : inputId,
+			};
+			self.msgTargetEl = self.template.getElement( 'msg-target-box-tmpl', conf );
+			self.container.appendChild( self.msgTargetEl );
+			const cancelBtn = self.msgTargetEl.querySelector( '.edit-cancel' );
+			const sendBtn = self.msgTargetEl.querySelector( '.send' );
+			
+			cancelBtn.addEventListener( 'click', cancel, false );
+			sendBtn.addEventListener( 'click', send, false );
+			
+			function cancel( e ) {
+				e.stopPropagation();
+				e.preventDefault();
+				self.cancelMsgTarget();
+			}
+			
+			function send( e ) {
+				e.stopPropagation();
+				e.preventDefault();
+				self.sendMsgTarget();
+			}
+			
+			const multiConf = {
+				containerId     : inputId,
+				templateManager : self.template,
+				onsubmit        : onSubmit,
+				onstate         : () => {},
+			};
+			self.msgTargetInput = new library.component.MultiInput( multiConf );
+			const currMsg = self.input.getValue();
+			self.msgTargetInput.setValue( currMsg );
+			self.input.setValue( '' );
+			
+			function onSubmit() {
+				self.sendMsgTarget();
+			}
+		}
+		
+		function setTargets() {
+			const targetsEl = self.msgTargetEl.querySelector( '.msg-target-targets' );
+			targetsEl.innerHTML = null;
+			wTIds = Object.keys( self.msgTargets );
+			wTIds.some( wId => {
+				if ( 'all_groups' === wId || 'all_members' === wId ) {
+					setSpecial( wId );
+					return true;
+				}
+				
+				const wT = self.msgTargets[ wId ];
+				if ( null == wT.length ) {
+					addWorg( wId );
+					return false;
+				}
+				
+				wT.forEach( uId => addUser( uId, wId ));
+				return false;
+			});
+			
+			function setSpecial( id ) {
+				const worg = self.users.getWorkgroup( id );
+				setEl( worg.name, id, null );
+			}
+			
+			function addWorg( worgId ) {
+				const worg = self.users.getWorkgroup( worgId );
+				const name = '#' + worg.name;
+				setEl( name, worgId, null );
+			}
+			
+			function addUser( userId, worgId ) {
+				const worg = self.users.getWorkgroup( worgId );
+				const user = self.users.getMember( worgId, userId );
+				const name = '#' + worg.name + '/' + user.name;
+				setEl( name, worgId, userId );
+			}
+			
+			function setEl( name, worgId, userId ) {
+				const conf = {
+					name : name,
+				};
+				const el = self.template.getElement( 'msg-target-tmpl', conf );
+				targetsEl.appendChild( el );
+				const cancelBtn = el.querySelector( '.target-cancel' );
+				cancelBtn.addEventListener( 'click', cancel, false );
+				
+				function cancel( e ) {
+					e.stopPropagation();
+					e.preventDefault();
+					remove( el, worgId, userId );
+				}
+			}
+			
+			function remove( el, worgId, userId ) {
+				el.parentNode.removeChild( el );
+				if ( !userId )
+					delete self.msgTargets[ worgId ];
+				else {
+					wTs = self.msgTargets[ worgId ];
+					self.msgTargets[ worgId ] = wTs.filter( tId => tId != userId );
+					if ( self.msgTargets[ worgId ].length )
+						return;
+					
+					delete self.msgTargets[ worgId ];
+				}
+				
+				const anyLeft = !!Object.keys( self.msgTargets ).length
+				if ( !anyLeft )
+					self.cancelMsgTarget();
+				
+			}
+		}
+		
+	}
+	
+	ns.MsgBuilder.prototype.sendMsgTarget = function() {
+		const self = this;
+		if ( !self.msgTargetInput )
+			return;
+		
+		const message = self.msgTargetInput.getValue();
+		if ( !message || !message.length )
+			return;
+		
+		const msg = {
+			type : 'work-msg',
+			data : {
+				message : message,
+				targets : self.msgTargets,
+			},
+		};
+		self.send( msg );
+		self.msgTargetInput.setValue( '' );
+		self.cancelMsgTarget();
+	}
+	
+	ns.MsgBuilder.prototype.cancelMsgTarget = function() {
+		const self = this;
+		if ( !self.msgTargets )
+			return;
+		
+		const message = self.msgTargetInput.getValue();
+		if ( message && message.length )
+			self.input.setValue( message );
+		
+		self.msgTargetInput.close();
+		const el = self.msgTargetEl;
+		el.parentNode.removeChild( el );
+		delete self.msgTargetId;
+		delete self.msgTargetEl;
+		delete self.msgTargets;
 	}
 	
 	ns.MsgBuilder.prototype.startEnvelopeUpdates = function() {
@@ -1200,15 +1731,22 @@ var hello = window.hello || {};
 		
 		const time = self.parseTime( event.time );
 		const envelope = self.getEnvelope( time.envelope );
-		event.time = time.time;
 		const conf = {
 			inGroup : self.isLastSpeaker( event, envelope ),
 			event   : event,
 		};
 		
-		const el = self.buildMsg( conf );
-		envelope.lastSpeakerId = event.fromId;
-		self.addItem( el, envelope );
+		let el = null;
+		if ( 'msg' === event.type ) {
+			el = self.buildMsg( conf );
+			envelope.lastSpeakerId = event.fromId;
+		}
+		else {
+			el = self.buildWorkMsg( conf );
+			envelope.lastSpeakerId = null;
+		}
+		
+		self.addItem( el, envelope, event );
 		self.confirmEvent( 'message', event.msgId );
 		return el;
 	}
@@ -1259,11 +1797,17 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLogBefore = function( items ) {
 		const self = this;
-		var lastSpeakerId = null;
-		var lastIndex = ( items.length - 1 );
-		var prevEnvelope = null;
-		var firstMsgId = null;
+		if ( null == items.length )
+			return;
+		
+		let lastSpeakerId = null;
+		let lastIndex = ( items.length - 1 );
+		let prevEnvelope = null;
+		let firstMsg = null;
 		items.forEach( handle );
+		if ( prevEnvelope )
+			prevEnvelope.firstMsg = firstMsg;
+		
 		function handle( item, index ) {
 			const handler = self.logMap[ item.type ];
 			if ( !handler ) {
@@ -1276,20 +1820,25 @@ var hello = window.hello || {};
 				return;
 			
 			// 
-			if ( null == firstMsgId )
-				firstMsgId = event.msgId;
+			if ( null == firstMsg ) {
+				firstMsg = event;
+			}
 			
 			let time = self.parseTime( event.time );
 			let envelope = self.getEnvelope( time.envelope );
 			if ( prevEnvelope && ( envelope.id !== prevEnvelope.id )) {
+				prevEnvelope.firstMsg = firstMsg;
 				lastSpeakerId = null;
-				prevEnvelope.firstMsgId = firstMsgId;
+				firstMsg = event;
 				prevEnvelope = envelope;
 			}
 			
-			event.time = time.time;
-			let isPrevSpeaker = (( null != event.fromId ) &&
-								( lastSpeakerId === event.fromId ));
+			//event.time = time.time;
+			let isPrevSpeaker = (
+				( null != event.fromId )
+				&& ( lastSpeakerId === event.fromId )
+				&& ( event.type === 'msg' )
+			);
 			
 			let conf = {
 				inGroup : isPrevSpeaker,
@@ -1297,12 +1846,31 @@ var hello = window.hello || {};
 			};
 			
 			let el = handler( conf );
-			self.addLogItem( el, envelope );
+			if ( !el ) {
+				console.log( 'no el, abort', event );
+				prevEnvelope = envelope;
+				if ( firstMsg.msgId === event.msgId )
+					firstMsg = null;
+				
+				return;
+			}
 			
-			lastSpeakerId = event.fromId;
+			self.addLogItem( el, envelope, event );
 			
-			if ( index === lastIndex )
-				envelope.firstMsgId = firstMsgId;
+			if ( 'msg' === event.type )
+				lastSpeakerId = event.fromId;
+			else
+				lastSpeakerId = null;
+			
+			/*
+			if ( index === lastIndex ) {
+				console.log( 'index === lastIndex - set firstMsg on envelope', {
+					envelope : envelope,
+					firstMsg : event,
+				});
+				envelope.firstMsg = firstMsg;
+			}
+			*/
 			
 			prevEnvelope = envelope;
 		}
@@ -1319,45 +1887,60 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.isLastSpeaker = function( event, envelope ) {
 		const self = this;
+		if ( 'msg' !== event.type )
+			return false;
+		
 		if ( null == envelope.lastSpeakerId )
 			return false;
 		
 		return event.fromId === envelope.lastSpeakerId;
 	}
 	
-	ns.MsgBuilder.prototype.addItem = function( el, envelope ) {
+	ns.MsgBuilder.prototype.addItem = function( el, envelope, msg ) {
 		const self = this;
-		if ( null == envelope.firstMsgId )
-			envelope.firstMsgId = el.id;
+		if ( null == envelope.firstMsg )
+			envelope.firstMsg = msg;
 		
-		envelope.lastMsgId = el.id;
+		envelope.lastMsg = msg;
 		envelope.el.appendChild( el );
 		self.bindItem( el.id );
+		
+		if ( msg.editId )
+			self.setEdit( msg );
 	}
 	
-	ns.MsgBuilder.prototype.addLogItem = function( el, envelope ) {
+	ns.MsgBuilder.prototype.addLogItem = function( el, envelope, msg ) {
 		const self = this;
-		if ( !envelope.firstMsgId )
-			envelope.lastMsgId = el.id;
+		if ( !envelope.firstMsg )
+			envelope.lastMsg = msg;
 		
-		const before = document.getElementById( envelope.firstMsgId );
+		let fMsg = envelope.firstMsg;
+		let before = null;
+		if ( fMsg )
+			before = document.getElementById( fMsg.msgId );
+		
 		envelope.el.insertBefore( el, before );
 		self.bindItem( el.id );
+		
+		if ( msg.editId )
+			self.setEdit( msg );
+		
 	}
 	
 	ns.MsgBuilder.prototype.buildMsg = function( conf ) {
 		const self = this;
 		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
-		//const tmplId = 'msg-tmpl';
 		const msg = conf.event;
 		const uId = msg.fromId;
 		const mId = msg.msgId;
+		const user = self.users.get( self.userId );
 		const isGuest = uId == null ? true : false;
 		
 		let name = '';
 		let userKlass = '';
-		let bgKlass = 'sw1';
-		let editKlass = 'hidden';
+		let selfKlass = 'sw1';
+		let canEdit = false;
+		let canForward = self.checkCanForward( msg );
 		if ( isGuest ) {
 			name = 'Guest > ' + msg.name;
 			userKlass = 'guest-user-klass';
@@ -1367,9 +1950,12 @@ var hello = window.hello || {};
 		}
 		
 		if ( uId === self.userId ) {
-			bgKlass = 'sw2';
-			editKlass = '';
+			selfKlass = 'sw2 isSelf';
+			canEdit = true;
 		}
+		
+		if ( user && user.isAdmin )
+			canEdit = true;
 		
 		let original = msg.message;
 		let message = null;
@@ -1378,15 +1964,17 @@ var hello = window.hello || {};
 		else
 			message = original;
 		
+		const timeStr = self.getClockStamp( msg.time );
+		const actionsHtml = self.buildMsgActions( canEdit, canForward );
 		const msgConf = {
-			msgId     : mId,
-			userKlass : userKlass,
-			bgKlass   : bgKlass,
-			from      : name,
-			time      : msg.time,
-			original  : original,
-			message   : message,
-			editKlass : editKlass,
+			msgId      : mId,
+			userKlass  : userKlass,
+			selfKlass  : selfKlass,
+			from       : name,
+			time       : timeStr,
+			original   : original,
+			message    : message,
+			msgActions : actionsHtml,
 		};
 		const el = self.template.getElement( tmplId, msgConf );
 		if ( self.linkEx )
@@ -1395,22 +1983,310 @@ var hello = window.hello || {};
 		return el;
 	}
 	
-	ns.MsgBuilder.prototype.buildAction = function() {
+	ns.MsgBuilder.prototype.buildWorkMsg = function( conf ) {
 		const self = this;
+		const tmplId = 'work-msg-tmpl';
+		const msg = conf.event;
+		const uId = msg.fromId;
+		const fromId = self.users.getIdentity( uId );
+		const fromUser = self.users.get( uId );
+		const selfUser = self.users.get( self.userId );
+		const mId = msg.msgId;
+		if ( !msg.targets ) {
+			console.log( 'MsgBuilder.buildWorkMsg - no targets', conf );
+			return null;
+		}
+		
+		const source = self.users.getWorkgroup( msg.source );
+		if ( !source ) {
+			console.log( 'buildWorkMsg - no source, aborting', {
+				msg  : conf.event,
+				self : self,
+			});
+			return null;
+		}
+		
+		let fromSuper = false;
+		let fromSub = false;
+		let fromThis = false;
+		if ( msg.source === self.supergroupId )
+			fromSuper = true;
+		
+		if ( msg.source === self.workgroupId )
+			fromThis = true;
+		
+		if ( !fromSuper && !fromThis )
+			fromSub = true;
+		
+		let userKlass = '';
+		let selfKlass = 'sw1';
+		let avatarType = '';
+		let toFromHidden = 'hidden';
+		let toFromNameHidden = 'hidden';
+		let toFromMsg = '';
+		let toFromName = '';
+		let name = null;
+		let canEdit = false;
+		let canForward = self.checkCanForward( msg );
+		const twIds = Object.keys( msg.targets );
+		let targetNames = [];
+		let targetHtmls = [];
+		
+		if ( fromThis ) {
+			if ( !fromUser ) {
+				
+			} else {
+				twIds.forEach( twId => {
+					setToAll( twId, msg, targetNames );
+				});
+				targetHtmls = buildTargetEls( targetNames );
+				toFromHidden = '';
+				toFromMsg = View.i18n( 'i18n_message_to' );
+			}
+		}
+		
+		if ( fromSuper ) {
+			setToUsers( self.workgroupId, msg, targetNames )
+			if ( targetNames.length ) {
+				targetHtmls = buildTargetEls( targetNames );
+				toFromHidden = '';
+				toFromMsg = View.i18n( 'i18n_private_message_to' );
+			}
+		}
+		
+		if ( fromSuper ) {
+			userKlass = self.users.getAvatarKlass( self.supergroupId );
+			avatarType = 'room';
+			name = source.name;
+		}
+		
+		if ( fromThis ) {
+			if ( fromUser ) {
+				userKlass = self.users.getAvatarKlass( uId );
+				name = fromUser.name;
+			}
+			else {
+				avatarType = 'room';
+				userKlass = self.users.getAvatarKlass( self.workgroupId );
+				name = source.name;
+			}
+		}
+		
+		if ( fromSub ) {
+			userKlass = self.users.getAvatarKlass( msg.fromId );
+			name = msg.name; //'#' + source.name
+			toFromHidden = 'hidden';
+			toFromNameHidden = 'hidden';
+			toFromMsg = View.i18n( 'i18n_message_from' );
+			toFromName =  msg.name;
+			if ( !fromUser )
+				canEdit = true;
+		}
+		
+		if ( uId === self.userId ) {
+			selfKlass = 'sw2 isSelf';
+			canEdit = true;
+		}
+		
+		if ( fromUser && fromUser.isAdmin )
+			canEdit = true;
+		
+		let original = msg.message;
+		let message = null;
+		if ( self.parser )
+			message = self.parser.work( original );
+		else
+			message = original;
+		
+		const timeStr = self.getClockStamp( msg.time );
+		const actionsHtml = self.buildMsgActions( canEdit, canForward );
+		const msgConf = {
+			msgId            : mId,
+			userKlass        : userKlass,
+			selfKlass        : selfKlass,
+			avatarType       : avatarType,
+			name             : name,
+			toFromHidden     : toFromHidden,
+			toFromNameHidden : toFromNameHidden,
+			toFromMsg        : toFromMsg,
+			toFromName       : toFromName,
+			targets          : targetHtmls.join( '' ),
+			time             : timeStr,
+			original         : original,
+			message          : message,
+			msgActions       : actionsHtml,
+		};
+		const el = self.template.getElement( tmplId, msgConf );
+		if ( self.linkEx )
+			self.linkEx.work( el );
+		
+		return el;
+		
+		function buildTargetEls( targets ) {
+			return targets.map( target => {
+				let tarStr = target; //source + ' -> ' + target;
+				let html = self.template.get( 'work-msg-target-tmpl', { target : tarStr });
+				return html;
+			});
+		}
+		
+		function setToUsers( twId, msg, targetNames ) {
+			const worg = self.users.getWorkgroup( twId );
+			if ( !worg )
+				return;
+			
+			const targets = msg.targets[ twId ];
+			if ( !targets || !targets.length )
+				return;
+			
+			targets.forEach( uId => {
+				const user = self.users.get( uId );
+				if ( !user )
+					return;
+				
+				targetNames.push( user.name );
+			});
+		}
+		
+		function setToAll( twId, msg, targetNames ) {
+			const worg = self.users.getWorkgroup( twId );
+			if ( !worg ) {
+				console.log( 'addTargetNames - no worg', {
+					twId  : twId,
+					users : self.users,
+				});
+				return;
+			}
+			
+			const target = msg.targets[ twId ];
+			if ( null == target.length )
+				targetNames.push( wName( worg ) );
+			else
+				setNames( worg, target );
+			
+			function setNames( worg, targets ) {
+				const wId = worg.clientId;
+				targets.forEach( uId => {
+					let user = null;
+					if ( wId === self.workgroupId )
+						user = self.users.get( uId );
+					else
+						user = self.users.getMember( wId, uId );
+					
+					if ( !user ) {
+						console.log( 'setNames - no user for', {
+							uid : uId,
+							w   : worg,
+						});
+						return;
+					}
+					
+					const name = wName( worg ) + '/' + user.name;
+					targetNames.push( name );
+				});
+			}
+			
+			function wName( worg ) {
+				return '#' + worg.name;
+			}
+		}
+	}
+	
+	ns.MsgBuilder.prototype.buildMsgActions = function( canEdit, canForward ) {
+		const self = this;
+		const editHidden = set( canEdit );
+		const forwardHidden = set( canForward );
+		const gradHidden = set( canEdit || canForward );
+		const conf = {
+			editHidden    : editHidden,
+			forwardHidden : forwardHidden,
+			gradHidden    : gradHidden,
+		};
+		const html = self.template.get( 'msg-actions-tmpl', conf );
+		return html;
+		
+		function set( canDo ) {
+			return canDo ? '' : 'hidden';
+		}
 	}
 	
 	ns.MsgBuilder.prototype.buildNotie = function() {
 		const self = this;
 	}
 	
+	ns.MsgBuilder.prototype.setEdit = function( msg ) {
+		const self = this;
+		const mId = msg.msgId;
+		const eId = msg.editId;
+		const el = document.getElementById( mId );
+		if ( !el ) {
+			console.log( 'MsgBuilder.setEdit - no element for', msg );
+			return;
+		}
+		
+		const editer = self.users.get( msg.editBy );
+		const reason = msg.editReason;
+		const time = self.getClockStamp( msg.editTime );
+		let name = '';
+		if ( editer ) {
+			name = editer.name;
+		} else
+			console.log( 'MsgBuilder.update - could not find editer for', msg );
+		
+		let editEl = el.querySelector( '.edited-info' );
+		if ( editEl ) {
+			editEl.parentNode.removeChild( editEl );
+			editEl = null;
+		}
+		
+		const editContEl = el.querySelector( '.edit-container' );
+		const conf = {
+			editId : eId,
+			name   : name,
+			time   : time,
+			reason : reason,
+		};
+		editEl = self.template.getElement( 'edit-info-tmpl', conf );
+		editContEl.appendChild( editEl );
+	}
+	
 	ns.MsgBuilder.prototype.bindItem = function( itemId ) {
 		const self = this;
 		const el = document.getElementById( itemId );
-		const editBtn = el.querySelector( '.msg-container .edit-msg' );
-		editBtn.addEventListener( 'click', editClick, false );
+		const actionsQuery = '.msg-content .msg-actions';
+		const editBtn = el.querySelector( actionsQuery + ' .edit-msg' );
+		const fwdBtn = el.querySelector( actionsQuery + ' .forward-msg' );
+		if ( editBtn )
+		  editBtn.addEventListener( 'click', editClick, false );
+		if ( fwdBtn )
+		  fwdBtn.addEventListener( 'click', fwdClick, false );
+		
 		function editClick( e ) {
 			self.editMessage( itemId );
 		}
+		
+		function fwdClick( e ) {
+			self.forwardMessage( itemId );
+		}
+	}
+	
+	ns.MsgBuilder.prototype.checkCanForward = function( msg ) {
+		const self = this;
+		if ( !self.workgroupId )
+			return;
+		
+		let user = self.users.get( self.userId );
+		let from = self.users.get( msg.fromId );
+		if ( !user )
+			return false;
+		
+		if ( user.isAdmin )
+			return true;
+		
+		if ( msg.fromId === self.userId )
+			return true;
+		
+		return false;
 	}
 	
 	ns.MsgBuilder.prototype.getEnvelope = function( envConf ) {
@@ -1461,26 +2337,13 @@ var hello = window.hello || {};
 			return null;
 		
 		const tokens = {
-			time       : getClockStamp( time ),
-			date       : getDateStamp( time ),
+			time       : self.getClockStamp( timestamp ),
+			date       : self.getDateStamp( timestamp ),
 			envelope   : getEnvelope( time ),
 			timestamp  : timestamp,
 		};
 		
 		return tokens;
-		
-		//
-		function getClockStamp( time ) {
-			let str = ''
-				+ pad( time.getHours()) + ':'
-				+ pad( time.getMinutes()) + ':'
-				+ pad( time.getSeconds());
-			return str;
-		}
-		
-		function getDateStamp( time ) {
-			return time.toLocaleDateString();
-		}
 		
 		function getEnvelope( time ) {
 			const order = self.getEnvelopeTime( time );
@@ -1494,11 +2357,25 @@ var hello = window.hello || {};
 			};
 			return envelope;
 		}
+	}
+	
+	ns.MsgBuilder.prototype.getClockStamp = function( timestamp ) {
+		const time = new Date( timestamp );
+		const str = ''
+			+ pad( time.getHours()) + ':'
+			+ pad( time.getMinutes()) + ':'
+			+ pad( time.getSeconds());
+		return str;
 		
 		function pad( time ) {
 			var str = time.toString();
 			return 1 !== str.length ? str : '0' + str;
 		}
+	}
+	
+	ns.MsgBuilder.prototype.getDateStamp = function( timestamp ) {
+		const time = new Date( timestamp );
+		return time.toLocaleDateString();
 	}
 	
 	ns.MsgBuilder.prototype.getEnvelopeTime = function( time ) {
@@ -1554,11 +2431,10 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.send = function( event ) {
 		const self = this;
-		const wrap = {
-			type : 'chat',
-			data : event,
-		};
-		self.conn.send( wrap );
+		if ( !self.conn )
+			return;
+		
+		self.conn.send( event );
 	}
 	
 })( library.component );
@@ -1736,8 +2612,9 @@ var hello = window.hello || {};
 		self.infoHeight = self.info.clientHeight;
 		
 		//bind
-		self.parent.addEventListener( 'wheel', wheel, true );
-		function wheel( e ) {
+		self.parent.addEventListener( 'wheel', checkTop, true );
+		self.parent.addEventListener( 'touchend', checkTop, true );
+		function checkTop( e ) {
 			e.stopPropagation();
 			self.checkIsScrolledUp( e );
 		}

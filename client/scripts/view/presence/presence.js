@@ -320,35 +320,39 @@ library.view = library.view || {};
 		console.log( 'view.Presence.handleInitialize', state );
 		
 		// things
+		self.clientId   = state.clientId;
 		self.isPrivate  = state.isPrivate;
+		self.isView     = state.isView;
 		self.persistent = state.persistent;
 		self.name       = state.roomName;
 		self.ownerId    = state.ownerId;
 		self.userId     = state.userId;
 		self.contactId  = state.contactId;
-
-		self.users = new library.component.UserCtrl(
+		
+		let UserCtrl = library.component.UserCtrl;
+		if ( state.workgroups && state.workgroups.workId )
+			UserCtrl = ns.UserWorkCtrl;
+		
+		self.users = new UserCtrl(
 			self.conn,
 			state.users,
+			state.identities,
 			state.onlineList,
 			state.workgroups,
+			state.roomAvatar,
 			state.guestAvatar,
 			'users-position',
-			friend.template
+			friend.template,
+			state.config
 		);
 		
 		// Just kill this class (only needed on load)
-		setTimeout( function()
+		window.setTimeout( function()
 		{
 			self.usersEl.removeAttribute( 'mobileHidden' );
 		}, 800 );
 		
 		self.user = self.users.get( self.userId );
-		/*
-		state.peers.forEach( uid => {
-			self.users.setState( uid, 'live', true );
-		});
-		*/
 		
 		self.liveStatus = new library.component.LiveStatus(
 			'live-status-container',
@@ -370,10 +374,12 @@ library.view = library.view || {};
 		
 		function onFetch() {
 			const firstMsgId = self.msgBuilder.getFirstMsgId();
+			const firstMsgTime = self.msgBuilder.getFirstMsgTime();
 			const logFrom = {
 				type : 'log',
 				data : {
-					firstId : firstMsgId,
+					firstId   : firstMsgId,
+					firstTime : firstMsgTime,
 				},
 			};
 			console.log( 'onFetch - logFrom', logFrom );
@@ -391,21 +397,12 @@ library.view = library.view || {};
 		self.parser.use( 'LinkStd' );
 		self.parser.use( 'Emojii', conf.emojii );
 		
-		// message builder
-		self.msgBuilder = new library.component.MsgBuilder(
-			self.conn,
-			'messages',
-			self.userId,
-			self.users,
-			self.parser,
-			self.linkExpand,
-			friend.template
-		);
-		
 		// multiline input
+		const isMobile = ( window.View.deviceType === 'MOBILE' );
 		const inputConf = {
 			containerId     : 'input-container',
 			templateManager : friend.template,
+			enterIsNewline  : isMobile,
 			onsubmit        : onSubmit,
 			onstate         : onState,
 		};
@@ -428,6 +425,20 @@ library.view = library.view || {};
 			};
 			self.sendChatEvent( state );
 		}
+		
+		// message builder
+		self.msgBuilder = new library.component.MsgBuilder(
+			self.conn,
+			'messages',
+			self.users,
+			self.userId,
+			self.clientId,
+			state.workgroups,
+			self.input,
+			self.parser,
+			self.linkExpand,
+			friend.template
+		);
 		
 		// input history
 		const hConf = {
@@ -464,6 +475,8 @@ library.view = library.view || {};
 		
 		if ( self.isPrivate )
 			self.setPrivateUI();
+		else if ( self.isView )
+			self.setViewUI();
 		else
 			self.setGroupUI();
 		
@@ -486,12 +499,24 @@ library.view = library.view || {};
 		self.setContactTitle();
 	}
 	
+	ns.Presence.prototype.setViewUI = function() {
+		const self = this;
+		self.usersEl.classList.toggle( 'hidden', true );
+		self.toggleUserListBtn( false );
+		self.liveStatus.close();
+		self.goVideoBtn.classList.toggle( 'hidden', true );
+		self.goAudioBtn.classList.toggle( 'hidden', true );
+		self.setGroupTitle();
+	}
+	
 	ns.Presence.prototype.setGroupUI = function() {
 		const self = this;
+		/*
 		if ( self.contactStatus ) {
 			self.contactStatus.close();
 			delete self.contactStatus;
 		}
+		*/
 		
 		self.usersEl.classList.toggle( 'hidden', false );
 		self.toggleUserListBtn( true );
@@ -573,11 +598,11 @@ library.view = library.view || {};
 		reloadLog();
 		
 		function reloadLog() {
-			let lastMsgId = self.msgBuilder.getLastMsgId();
+			let lastMsgTime = self.msgBuilder.getLastMsgTime();
 			const logFrom = {
 				type : 'log',
 				data : {
-					lastId : lastMsgId,
+					lastTime : lastMsgTime,
 				},
 			};
 			self.sendChatEvent( logFrom );
@@ -599,17 +624,30 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleChat = function( event ) {
 		const self = this;
-		if ( 'msg' === event.type )
-			self.msgBuilder.handle( event );
+		const type = event.type;
+		const data = event.data;
+		if ( 'state' === type ) {
+			self.setChatState( data );
+			return;
+		}
 		
-		if ( 'state' === event.type )
-			self.setChatState( event.data );
+		if ( 'log' === type ) {
+			self.handleLog( data );
+			return;
+		}
+		/*
+		if ( 'update' === type ) {
+			self.msgBuilder.update( data );
+			return;
+		}
 		
-		if ( 'log' === event.type )
-			self.handleLog( event.data );
-		
-		if ( 'update' === event.type )
-			self.msgBuilder.update( event.data );
+		if ( 'edit' === type ) {
+			const isEdit = true;
+			self.msgBuilder.update( data, isEdit );
+			return;
+		}
+		*/
+		self.msgBuilder.handle( event );
 	}
 	
 	ns.Presence.prototype.handleLog = function( logs ) {
@@ -644,7 +682,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleLive = function( event ) {
 		const self = this;
-		console.log( 'chat.Presence.handleLive', event )
 		if ( !event.data || !event.data.peerId )
 			return;
 		
@@ -719,7 +756,479 @@ library.view = library.view || {};
 	
 })( library.view );
 
+
+//
+(function( ns, undefined ) {
+	ns.WorkGroup = function(
+		conf,
+		containerId,
+		userSource,
+		templateManager,
+		onClick,
+	) {
+		const self = this;
+		self.onClick = onClick;
+		library.component.UserGroup.call( self,
+			conf,
+			containerId,
+			userSource,
+			templateManager
+		);
+	}
+	
+	ns.WorkGroup.prototype = Object.create( library.component.UserGroup.prototype );
+	
+	// Public
+	
+	ns.WorkGroup.prototype.baseClose = library.component.UserGroup.prototype.close;
+	ns.WorkGroup.prototype.close = function() {
+		const self = this;
+		delete self.onClick;
+		self.baseClose();
+	}
+	
+	// Private
+	
+	ns.WorkGroup.prototype.init = function() {
+		const self = this;
+		const elConf = {
+			clientId     : self.clientId,
+			name         : self.name,
+			sectionKlass : self.sectionKlass,
+			usersId      : self.usersId,
+		};
+		self.el = self.template.getElement( 'user-group-tmpl', elConf );
+		const container = document.getElementById( self.containerId );
+		if ( !container )
+			throw new Error( 'UserGroup.init - invalid container id: ' + self.containerId );
+		
+		container.appendChild( self.el );
+		self.head = self.el.querySelector( '.section-head' );
+		self.head.addEventListener( 'click', headClick, false );
+		self.usersEl = document.getElementById( self.usersId );
+		self.updateVisible();
+		
+		function headClick( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+			self.handleClick();
+		}
+	}
+	
+	ns.WorkGroup.prototype.updateVisible = function() {
+		const self = this;
+		self.el.classList.toggle( 'hidden', false );
+	}
+	
+	ns.WorkGroup.prototype.handleClick = function() {
+		const self = this;
+		if ( self.onClick )
+			self.onClick( self.clientId );
+	}
+})( library.view );
+
+
+//
+(function( ns, undefined ) {
+	ns.WorkUser = function(
+		clientId,
+		user,
+		id,
+		tmplManager,
+		onClick
+	) {
+		const self = this;
+		self.onClick = onClick;
+		library.component.GroupUser.call( self,
+			clientId,
+			null,
+			user,
+			id,
+			tmplManager
+		);
+		
+	}
+	
+	ns.WorkUser.prototype = Object.create( library.component.GroupUser.prototype );
+	
+	// Public
+	
+	ns.WorkUser.prototype.baseClose = library.component.GroupUser.prototype.close;
+	ns.WorkUser.prototype.close = function() {
+		const self = this;
+		delete self.onClick;
+		self.baseClose();
+	}
+	
+	// Private
+	
+	ns.WorkUser.prototype.handleClick = function() {
+		const self = this;
+		if ( self.onClick )
+			self.onClick( self.id );
+	}
+	
+})( library.view );
+
+// 
+(function( ns, undefined ) {
+	ns.UserWorkCtrl = function(
+		conn,
+		users,
+		identities,
+		onlineList,
+		workgroups,
+		roomAvatar,
+		guestAvatar,
+		containerId,
+		templateManager,
+		serverConfig
+	) {
+		const self = this;
+		self.conf = serverConfig;
+		self.members = {};
+		self.works = {};
+		self.rooms = null;
+		self.subGroups = [];
+		library.component.UserCtrl.call( self,
+			conn,
+			users,
+			identities,
+			onlineList,
+			workgroups,
+			roomAvatar,
+			guestAvatar,
+			containerId,
+			templateManager
+		);
+	}
+	
+	ns.UserWorkCtrl.prototype = Object.create( library.component.UserCtrl.prototype );
+	
+	// Public
+	
+	ns.UserWorkCtrl.prototype.getMember = function( worgId, userId ) {
+		const self = this;
+		const members = self.members[ worgId ];
+		if ( !members )
+			return null;
+		
+		return members[ userId ];
+	}
+	
+	ns.UserWorkCtrl.prototype.getIdentity = function( clientId ) {
+		const self = this;
+		return self.identities[ clientId ] || null;
+	}
+	
+	ns.UserWorkCtrl.prototype.getAvatarKlass = function( clientId ) {
+		const self = this;
+		const user = self.users[ clientId ];
+		if ( user && user.isGuest )
+			clientId = 'guest-user';
+		
+		return self.getUserCssKlass( clientId );
+	}
+	
+	// Private
+	
+	ns.UserWorkCtrl.prototype.init = function( workgroups, users, ids, roomAvatar ) {
+		const self = this;
+		self.build();
+		self.initBaseGroups();
+		self.addIds( ids );
+		self.setWorkgroups( workgroups );
+		self.addUsers( users );
+		self.addUserCss( self.workId, roomAvatar );
+		self.bindConn();
+		
+		self.conn.on( 'workgroup-sub-rooms', e => self.handleSubRooms( e ));
+		self.conn.on( 'workgroup-members', e => self.handleWorgMembers( e ));
+		
+		//function worgMembers( e ) { self.handleWorgMembers( e ); }
+	}
+	
+	ns.UserWorkCtrl.prototype.initBaseGroups = function() {
+		const self = this;
+		const base = [
+			{
+				clientId     : 'all_groups',
+				name         : View.i18n( 'i18n_all_groups' ),
+				sectionKlass : 'Action',
+			},
+			/*
+			{
+				clientId     : 'all_members',
+				name         : View.i18n( 'i18n_all_members' ),
+				sectionKlass : 'Action',
+			},
+			*/
+		];
+		
+		base.forEach( worg => {
+			let wId = worg.clientId;
+			self.groupsAvailable[ wId ] = worg;
+			self.addWorkGroup( worg.clientId );
+		});
+	}
+	
+	ns.UserWorkCtrl.prototype.handleSubRooms = function( subIds ) {
+		const self = this;
+		if ( !subIds )
+			subIds = [];
+		
+		const curr = self.subGroups;
+		const remove = curr.filter( notInSubs );
+		const add = subIds.filter( notInCurr );
+		remove.forEach( wId => self.removeWorkgroup( wId ));
+		add.forEach( wId => self.addWorkGroup( wId, null, 'Available' ));
+		self.subGroups = subIds;
+		
+		self.toggleSpecials();
+		
+		function notInSubs( cId ) {
+			return !subIds.some( sId => sId === cId );
+		}
+		
+		function notInCurr( sId ) {
+			return !curr.some( cId => cId === sId );
+		}
+	}
+	
+	ns.UserWorkCtrl.prototype.handleWorgMembers = function( event ) {
+		const self = this;
+		const workId = event.workId;
+		const members = event.members;
+		members.forEach( member => {
+			cId = member.clientId;
+			if ( !self.identities[ cId ])
+				self.identities[ cId ] = member;
+		});
+		
+		self.setWorkMembers( event.workId, event.members );
+	}
+	
+	ns.UserWorkCtrl.prototype.setWorkgroups = function( conf ) {
+		const self = this;
+		if ( !conf || !conf.available )
+			return;
+		
+		self.workId = conf.workId;
+		self.superId = conf.superId;
+		self.addRooms( conf.rooms );
+		const users = conf.users;
+		if ( users )
+			users.forEach( user => self.addUserCss( user.clientId, user.avatar ));
+		
+		const members = conf.members;
+		const groups = conf.available;
+		const gIds = Object.keys( groups );
+		gIds.forEach( setGAvailable );
+		self.addUserGroup( conf.workId, 'all_groups', 'Accept' );
+		
+		console.log( 'xxxx conf', self.conf );
+		if ( conf.superId && !( self.conf && self.conf.subsHaveSuperView )) {
+			const superId = conf.superId;
+			self.addWorkGroup( superId, self.workId, 'Action' );
+			self.setWorkMembers( superId, members[ superId ] );
+			const groupEl = document.getElementById( self.workId );
+			const el = document.getElementById( superId );
+			self.el.insertBefore( el, groupEl );
+		}
+		
+		self.handleSubRooms( conf.subIds, conf.members );
+		self.subGroups.forEach( wId => {
+			self.setWorkMembers( wId, members[ wId ]);
+		});
+		
+		function setGAvailable( gId ) {
+			group = groups[ gId ];
+			self.groupsAvailable[ gId ] = group;
+		}
+	}
+	
+	ns.UserWorkCtrl.prototype.addRooms = function( rooms ) {
+		const self = this;
+		if ( !rooms )
+			return;
+		
+		self.rooms = rooms;
+		const rIds = Object.keys( rooms );
+		rIds.forEach( rId => {
+			const room = self.rooms[ rId ];
+			self.addUserCss( room.workId, room.avatar );
+		});
+	}
+	
+	ns.UserWorkCtrl.prototype.addWorkGroup = function( worgId, beforeId, sectionKlass ) {
+		const self = this;
+		if ( self.works[ worgId ]) {
+			console.log( 'addWorkGroup - already added', worgId );
+			return;
+		}
+		
+		const worg = self.groupsAvailable[ worgId ];
+		if ( !worg ) {
+			console.log( 'addWorkGroup - no worg for', {
+				wId : worgId,
+				ava : self.groupsAvailable,
+			});
+			return;
+		}
+		
+		if ( null == worg.sectionKlass )
+			worg.sectionKlass = sectionKlass || 'Available';
+		
+		worg.sectionKlass = worg.sectionKlass + ' MousePointer';
+		
+		if ( !self.members[ worgId ])
+			self.members[ worgId ] = {};
+		
+		let members = self.members[ worgId ];
+		let group = new library.view.WorkGroup(
+			worg,
+			self.el.id,
+			members,
+			self.template,
+			onClick
+		);
+		let cId = group.clientId;
+		self.works[ cId ] = group;
+		self.workIds = Object.keys( self.works );
+		
+		if ( null != beforeId )
+			self.moveGroupBefore( worgId, beforeId );
+		
+		function onClick( id ) {
+			const target = {
+				workgroup : id,
+				user      : null,
+			};
+			self.emit( 'msg-target', target );
+		}
+	}
+	
+	ns.UserWorkCtrl.prototype.removeWorkgroup = function( worgId ) {
+		const self = this;
+		const group = self.works[ worgId ];
+		if ( !group ) {
+			console.log( 'no group for', {
+				wId : worgId,
+				members : self.members,
+				worgs : self.works,
+			});
+			return;
+		}
+		
+		group.close();
+		delete self.members[ worgId ];
+		delete self.works[ worgId ];
+		self.workIds = Object.keys( self.works );
+	}
+	
+	ns.UserWorkCtrl.prototype.setWorkMembers = function( worgId, idList ) {
+		const self = this;
+		let group = self.works[ worgId ];
+		let members = self.members[ worgId ];
+		if ( !members ) {
+			console.log( 'UserWrokCtrl.setWorkMembers - no members for worg', {
+				worgId : worgId,
+				idList : idList,
+				self : self,
+			});
+			return;
+		}
+		
+		let mIds = Object.keys( members );
+		let remove = mIds.filter( notInIdList );
+		remove.forEach( mId => self.removeMember( mId, worgId ));
+		idList.forEach( conf => {
+			const cId = conf.clientId;
+			if ( members[ cId ])
+				return;
+			
+			const identity = self.identities[ cId ];
+			let user = new library.view.WorkUser(
+				cId,
+				conf,
+				identity,
+				self.template,
+				onClick
+			);
+			members[ cId ] = user;
+			self.addUserCss( cId, identity.avatar );
+			group.attach( cId );
+		});
+		
+		function notInIdList( mId ) {
+			return !idList.some( id => id.clientId === mId );
+		}
+		
+		function onClick( id ) {
+			const target = {
+				workgroup : worgId,
+				user      : id,
+			};
+			self.emit( 'msg-target', target );
+		}
+	}
+	
+	ns.UserWorkCtrl.prototype.removeMember = function( userId, worgId ) {
+		const self = this;
+		const members = self.members[ worgId ];
+		if ( !members )
+			return;
+		
+		const user = members[ userId ];
+		if ( !user )
+			return;
+		
+		const group = self.works[ worgId ];
+		if ( !group )
+			return;
+		
+		group.detach( userId );
+		delete members[ userId ];
+		user.close();
+	}
+	
+	ns.UserWorkCtrl.prototype.setUserToGroup = function( userId ) {
+		const self = this;
+		const user = self.users[ userId ];
+		if ( !user || !user.workgroups ) {
+			console.log( 'setUSertoGroup - no user for', {
+				uid : userId,
+				users : self.users,
+			});
+			return;
+		}
+		
+		const isInWorg = user.workgroups.some( worgId => worgId === self.workId );
+		if ( !isInWorg ) {
+			console.log( 'wtf?=', {
+				u : user,
+				w : self.workId,
+			});
+		}
+		
+		self.moveUserToGroup( user.id, self.workId );
+	}
+	
+	ns.UserWorkCtrl.prototype.toggleSpecials = function() {
+		const self = this;
+		const show = !!self.subGroups.length;
+		const grps = self.works[ 'all_groups' ];
+		const mbms = self.works[ 'all_members' ];
+		if ( grps && grps.el )
+			grps.el.classList.toggle( 'hidden', !show );
+		
+		if ( mbms && mbms.el )
+			mbms.el.classList.toggle( 'hidden', !show );
+	}
+	
+})( library.view );
+
 window.View.run = run;
 function run( fupConf ) {
-    window.conference = new library.view.Presence( fupConf );
+	window.conference = new library.view.Presence( fupConf );
 }

@@ -1437,6 +1437,7 @@ library.component = library.component || {};
 		self.containerId = conf.containerId;
 		self.singleOnly = !!conf.singleOnly;
 		self.multiIsOn = !!conf.multiIsOn;
+		self.enterIsNewline = !!conf.enterIsNewline;
 		self.template = conf.templateManager;
 		self.onsubmit = conf.onsubmit;
 		self.onstate = conf.onstate;
@@ -1510,6 +1511,7 @@ library.component = library.component || {};
 	ns.MultiInput.prototype.close = function() {
 		var self = this;
 		delete self.containerId;
+		delete self.enterIsNewline;
 		delete self.template;
 		delete self.onsubmit;
 		delete self.onstate;
@@ -1598,8 +1600,13 @@ library.component = library.component || {};
 	
 	ns.MultiInput.prototype.handleEnter = function( e ) {
 		var self = this;
-		self.doSubmit( e );
-		return false;
+		if ( self.enterIsNewline ) {
+			self.checkLineBreaks( true );
+			return true;
+		} else {
+			self.doSubmit( e );
+			return false;
+		}
 	}
 	
 	ns.MultiInput.prototype.handleSpecialEnter = function( e ) {
@@ -2871,4 +2878,347 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		
 		return self;
 	};
+})( library.component );
+
+/* ListOrder
+	
+	order a list of DOM elements in a specific container,
+	based on priority, then on time or name within the priority.
+	
+	the element must already be set in DOM before adding
+	the element will not be removed from DOM by ListOrder.remove()
+	
+*/
+( function( ns, undefined ) {
+	ns.ListOrder = function( listElId ) {
+		const self = this;
+		self.list = null;
+		self.prio = [];
+		self.prio[ 0 ] = []; // 0, no prio
+
+		self.init( listElId );
+	}
+	
+	// Public
+	
+	/* add
+		itemConf : {
+			clientId : <element id string>,
+			priority : <number - 1, 2, ..., 9 >, optional, 0 is no priority
+			name     : <string>, used for ordering within a priority group
+		}
+	*/
+	ns.ListOrder.prototype.add = function( itemConf ) {
+		const self = this;
+		if ( !itemConf ) {
+			console.log( 'ListOrder.add - u wot m8?' );
+			return;
+		}
+		
+		const cId = itemConf.clientId;
+		const el = document.getElementById( cId );
+		if ( !el ) {
+			console.log( 'ListOrder.add - no el found for', itemConf );
+			return;
+		}
+		
+		if ( self.checkIsAdded( cId ))
+			self.update( itemConf );
+		else
+			self.addToPrio( itemConf );
+	}
+	
+	/* update
+		itemConf is same as for .add()
+	*/
+	ns.ListOrder.prototype.update = function( itemConf ) {
+		const self = this;
+		if ( !itemConf )
+			return;
+		
+		const cId = itemConf.clientId;
+		const el = document.getElementById( cId );
+		if ( !el ) {
+			console.log( 'ListOrder.update - no element for id, removing', itemConf );
+			self.remove( cId );
+			return;
+		}
+		
+		self.updateInPrio( itemConf );
+	}
+	
+	/* remove
+		does not remove the element from DOM, only from being sorted in the list
+	*/
+	ns.ListOrder.prototype.remove = function( clientId ) {
+		const self = this;
+		let foundIn = null;
+		self.prio.some( prio => {
+			const index = prio.findIndex( item => {
+				return item.id === clientId;
+			});
+			
+			if ( -1 === index )
+				return false;
+			
+			console.log( 'found removeable in', prio.join(','));
+			prio.splice( index, 1 );
+			foundIn = prio;
+			return true;
+		});
+		console.log( 'remove - prio after', self.prio );
+		return !!foundIn;
+	}
+	
+	ns.ListOrder.prototype.checkIsFirstItem = function( clientId ) {
+		const self = this;
+		const index = self.getItemIndex( clientId );
+		return ( 0 === index );
+	}
+	
+	ns.ListOrder.prototype.close = function() {
+		const self = this;
+	}
+	
+	// Private
+	
+	ns.ListOrder.prototype.init = function( listId ) {
+		const self = this;
+		self.list = document.getElementById( listId );
+		if ( !self.list )
+			throw new Error( 'ListOrder - could not init, no element found' );
+		
+		const children = self.list.children;
+		if ( !children.length ) {
+			self.children = [];
+			return;
+		}
+		
+		let i = children.length;
+		for( ;!!i; ) {
+			--i;
+			const el = children[ i ];
+			self.prio[ 0 ][ i ] = {
+				id   : el.id,
+				pri  : 0,
+				time : 0,
+				name : '',
+			};
+		}
+		
+		console.log( 'ListOrder.init found things', self.prio );
+	}
+	
+	ns.ListOrder.prototype.getItemIndex = function( id ) {
+		const self = this;
+		let itemIndex = null;
+		self.prio.some( prio => {
+			return prio.some(( item, index ) => {
+				if ( item.id !== id )
+					return false;
+				
+				itemIndex = index;
+				return true;
+			});
+		});
+		
+		return itemIndex;
+	}
+	
+	ns.ListOrder.prototype.checkIsAdded = function( id ) {
+		const self = this;
+		const index = self.getItemIndex( id );
+		return index != null;
+	}
+	
+	ns.ListOrder.prototype.addToPrio = function( conf ) {
+		const self = this;
+		const id = conf.clientId;
+		let pri = self.normalizePriority( conf.priority );
+		const time = conf.time || null;
+		const name = conf.name || '';
+		if ( !self.prio[ pri ])
+			self.prio[ pri ] = [];
+		
+		const prio = self.prio[ pri ];
+		prio.push({
+			id   : id,
+			time : time,
+			name : name,
+		});
+		
+		if ( ( null == time ) && ( '' === name )) {
+			self.applyOrder( pri );
+			return;
+		}
+		
+		self.reorder( pri );
+	}
+	
+	ns.ListOrder.prototype.updateInPrio = function( conf ) {
+		const self = this;
+		const id = conf.clientId;
+		let pri = self.normalizePriority( conf.priority );
+		const prio = self.prio[ pri ];
+		if ( !prio ) {
+			console.log( 'ListOrder.updateInPrio - prio not found', {
+				conf : conf,
+				pri  : pri,
+				prio : self.prio,
+			});
+			return;
+		}
+		
+		prio.some( item => {
+			if ( item.id != id )
+				return false;
+			
+			item.time = conf.time;
+			item.name = conf.name;
+			return true;
+		});
+		
+		self.reorder( pri );
+	}
+	
+	ns.ListOrder.prototype.reorder = function( pri  ) {
+		const self = this;
+		const prio = self.prio[ pri ];
+		if ( !prio ) {
+			console.log( 'ListOrder.reorder - no prio found', {
+				pri  : pri,
+				prio : self.prio,
+			});
+			return;
+		}
+		
+		prio.sort(( a, b ) => {
+			let res = 0;
+			if ( null != a.time )
+				res = sortByTime( a, b );
+			else
+				res = sortByName( a, b );
+			
+			return res;
+		});
+		
+		
+		self.applyOrder( pri );
+		
+		function sortByTime( a, b ) {
+			at = a.time || 0;
+			bt = b.time || 0;
+			if ( at < bt )
+				return 1;
+			if ( at > bt )
+				return -1;
+			
+			if ( a.name && b.name )
+				return sortByName( a, b );
+			else
+				return 0;
+		}
+		
+		function sortByName( a, b ) {
+			if ( !a.name || !b.name )
+				return 0;
+			
+			const an = a.name.toLowerCase();
+			const bn = b.name.toLowerCase();
+			if ( '' === an )
+				return -1;
+			if ( '' === bn )
+				return 1;
+			if ( an < bn )
+				return -1;
+			if ( an > bn )
+				return 1;
+			return 0;
+		}
+	}
+	
+	ns.ListOrder.prototype.applyOrder = function( pri ) {
+		const self = this;
+		const prio = self.prio[ pri ];
+		if ( !prio )
+			return;
+		
+		if ( 0 === pri ) {
+			reapply( null, prio );
+			return;
+		}
+		
+		const nextIndex = self.getNextPri( pri );
+		const nextPrio = self.prio[ nextIndex ];
+		const nextFirstItem = nextPrio[ 0 ];
+		let nextEl = null
+		if ( nextFirstItem )
+			nextEl = document.getElementById( nextFirstItem.id );
+		
+		reapply( nextEl, prio );
+		
+		function reapply( before, list ) {
+			list.forEach( item => {
+				id = item.id;
+				const el = document.getElementById( id );
+				if ( !el ) {
+					console.log( 'listOrder.applyOrder, apply - no el for', {
+						item  : item,
+						shelf : self,
+					});
+					return;
+				}
+				self.list.insertBefore( el, before );
+			});
+		}
+	}
+	
+	ns.ListOrder.prototype.getNextPri = function( basePrio ) {
+		const self = this;
+		let getNext = false;
+		let prevPrio = null;
+		let nextPrio = null;
+		self.prio.some(( prio, index ) => {
+			if ( getNext ) {
+				nextPrio = index;
+				return true;
+			}
+			
+			if ( basePrio === index )
+				getNext = true;
+			else
+				prevPrio = index;
+		});
+		
+		return nextPrio || 0;
+	}
+	
+	ns.ListOrder.prototype.getFirstPri = function() {
+		const self = this;
+		let firstPrio = 0;
+		self.prio.some(( prio, index ) => {
+			if ( 0 == index )
+				return false;
+			
+			//const prio = self.prio[ index ];
+			if ( !prio.length )
+				return false;
+			
+			firstPrio = index;
+			return true;
+		});
+		return firstPrio;
+	}
+	
+	ns.ListOrder.prototype.normalizePriority = function( pri ) {
+		if ( null == pri )
+			return 0;
+		
+		pri = pri || 0;
+		if ( pri > 9 )
+			pri = 0;
+		
+		return pri;
+	}
+	
 })( library.component );

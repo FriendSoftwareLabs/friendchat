@@ -137,15 +137,12 @@ to listeners registered through this interface
 			if ( self._eventSink )
 				emitOnDefault( event, args );
 			
-			console.log( 'emit - caught: ' + event + ' - ' + caught.toString());
 			return caught;
 		}
 		
 		caught = listenerIds.reduce( emit, false );
-		if ( !caught )
-			console.log( 'emit - caught: ' + event + ' - ' + caught.toString());
-		
 		return caught;
+		
 		function emit( caught, listenerId ) {
 			var listener = self.eventListeners[ listenerId ];
 			if ( 'function' !== typeof( listener )) {
@@ -340,7 +337,6 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.handle = function( event ) {
 		const self = this;
-		console.log( 'handle', event );
 		if ( 'response' === event.type ) {
 			self.handleResponse( event.data );
 			return;
@@ -377,7 +373,6 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.handleResponse = function( event ) {
 		const self = this;
-		console.log( 'handleResponse', event );
 		const reqId = event.requestId;
 		const err = event.error || null;
 		const res = err ? null : ( event.response || null );
@@ -632,6 +627,7 @@ inherits from EventEmitter
 		self.conn = null;
 		self.ids =  identities || {};
 		self.idList = [];
+		self.loading = {};
 		
 		self.init( conn );
 	}
@@ -655,25 +651,79 @@ inherits from EventEmitter
 				return;
 			}
 			
-			self.req.request( 'get', clientId )
+			let loader = self.loading[ clientId ];
+			if ( !loader ) {
+				loader = get( clientId );
+				self.loading[ clientId ] = loader;
+			}
+			
+			loader
 				.then( idBack )
 				.catch( idSad );
 			
+			function get( cId ) {
+				return self.req.request( 'get', clientId );
+			}
+			
 			function idBack( id ) {
+				clear( clientId );
 				self.add( id );
 				resolve( id );
 			}
 			
 			function idSad( err ) {
+				clear( clientId );
 				console.log( 'IdCache.get idSad', err );
 				reject( 'ERR_ERR_ERR' );
 			}
+			
+			function clear( cId ) {
+				delete self.loading[ cId ];
+			}
+		});
+	}
+	
+	ns.IdCache.prototype.getList = function( list ) {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			const known = [];
+			const unknown = [];
+			list.forEach( cId => {
+				let id = self.ids[ cId ];
+				if ( id )
+					known.push( id );
+				else
+					unknown.push( cId );
+			});
+			
+			if ( known.length === list.length ) {
+				resolve( known );
+				return;
+			}
+			
+			let loaded = [];
+			Promise.all( unknown.map( get ))
+				.then( loadBack )
+				.catch( e => {
+					console.log( 'IdCache.getList, load err', e );
+				});
+			
+			function loadBack( idsBack ) {
+				loaded = idsBack.filter( id => !!id );
+				const complete = known.concat( loaded );
+				resolve( complete );
+			}
+			
+			function get( cId ) {
+				return self.get( cId );
+			}
+			
 		});
 	}
 	
 	ns.IdCache.prototype.update = function( idMap ) {
 		const self = this;
-		console.log( 'idCache.update', idMap );
+		console.log( 'idCache.update - NYI', idMap );
 	}
 	
 	// Pri<ate
@@ -693,11 +743,6 @@ inherits from EventEmitter
 			return;
 		
 		self.ids[ id.clientId ] = id;
-	}
-	
-	ns.IdCache.prototype.update = function( event ) {
-		const self = this;
-		console.log( 'IdCache.update - NYI', event );
 	}
 	
 })( library.component );

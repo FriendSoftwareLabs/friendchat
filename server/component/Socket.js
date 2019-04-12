@@ -375,7 +375,7 @@ ns.Socket.prototype.executeSendQueue = function() {
 	var self = this;
 	self.sendQueue.forEach( send );
 	self.sendQueue = [];
-	
+	 
 	function send( msg ) {
 		self.sendOnSocket( msg );
 	}
@@ -383,15 +383,17 @@ ns.Socket.prototype.executeSendQueue = function() {
 
 ns.Socket.prototype.connError = function( event ) {
 	var self = this;
-	self.handleError();
+	log( 'connError', event );
+	self.handleClose();
 }
 
 ns.Socket.prototype.connClose = function( event ) {
 	var self = this;
-	self.handleError();
+	log( 'connClose', event );
+	self.handleClose();
 }
 
-ns.Socket.prototype.handleError = function() {
+ns.Socket.prototype.handleClose = function() {
 	var self = this;
 	if ( !self.sessionId ) {
 		self.kill();

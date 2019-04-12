@@ -52,14 +52,6 @@ library.view = library.view || {};
 		self.view.send( event );
 	}
 	
-	ns.PresenceChat.prototype.show = function() {
-		const self = this;
-		if ( !self.view )
-			return;
-		
-		self.view.activate();
-	}
-	
 	ns.PresenceChat.prototype.setTitle = function( title ) {
 		const self = this;
 		if ( !self.view )
@@ -71,6 +63,23 @@ library.view = library.view || {};
 			type : 'title',
 			data : title,
 		});
+	}
+	
+	ns.PresenceChat.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.PresenceChat.prototype.checkMinimized = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		console.log( 'checkMinimized  - view.isMinimized', self.view.isMinimized );
+		return self.view.isMinimized;
 	}
 	
 	ns.PresenceChat.prototype.close = function() {
@@ -339,6 +348,15 @@ library.view = library.view || {};
 		self.view.activate();
 	}
 	
+	ns.IMChat.prototype.checkMinimized = function() {
+		const self = this;
+		console.log( 'checkMinimized', self.view );
+		if ( !self.view )
+			return null;
+		
+		return self.view.isMinimized;
+	}
+	
 	// Private
 	
 	ns.IMChat.prototype.init = function() {
@@ -515,6 +533,23 @@ library.view = library.view || {};
 			type : 'title',
 			data : title,
 		});
+	}
+	
+	ns.Live.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.Live.prototype.checkMinimized = function() {
+		const self = this;
+		console.log( 'checkMinimized', self.view );
+		if ( !self.view )
+			return null;
+		
+		return self.view.isMinimized;
 	}
 	
 	// Private
@@ -1141,6 +1176,27 @@ library.view = library.view || {};
 		
 		self.init();
 	}
+	
+	// Public
+	
+	ns.Conference.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.Conference.prototype.checkMinimized = function() {
+		const self = this;
+		console.log( 'checkMinimized', self.view );
+		if ( !self.view )
+			return null;
+		
+		return self.view.isMinimized;
+	}
+	
+	// Private
 	
 	ns.Conference.prototype.init = function() {
 		var self = this;

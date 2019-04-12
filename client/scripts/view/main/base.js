@@ -33,6 +33,7 @@ library.view = library.view || {};
 		library.component.EventEmitter.call( self, eventSink );
 		self.clientId = self.data.clientId;
 		self.id = self.clientId;
+		self.priority = self.data.priority;
 		self.identity = self.data.identity;
 		self.containerId = conf.containerId;
 		self.menuActions = conf.menuActions;
@@ -58,6 +59,11 @@ library.view = library.view || {};
 	ns.BaseContact.prototype.getOnline = function() {
 		const self = this;
 		return false;
+	}
+	
+	ns.BaseContact.prototype.getPriority = function() {
+		const self = this;
+		return self.data.priority || 0;
 	}
 	
 	ns.BaseContact.prototype.getAvatar = function() {
