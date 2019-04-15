@@ -2125,7 +2125,6 @@ library.rtc = library.rtc || {};
 		if ( null != permissions )
 			self.permissions = permissions;
 		
-		
 		if ( null != preferedDevices )
 			self.preferedDevices = preferedDevices;
 		
@@ -2140,7 +2139,6 @@ library.rtc = library.rtc || {};
 		.catch( deviceError );
 		
 		function devsBack( available ) {
-			
 			var kinds = {};
 			
 			// Force labels with label overrides!
@@ -2199,7 +2197,6 @@ library.rtc = library.rtc || {};
 				.catch( mediaError );
 			
 			function mediaBack( media ) {
-				console.log( 'Media.create - mediaBack', media );
 				self.setCurrentDevices( media );
 				self.setMedia( media );
 			}

@@ -2129,14 +2129,13 @@ library.component = library.component || {};
 	ns.Peer.prototype.handleTrack = function( type, track ) {
 		const self = this;
 		// set state
-		const alreadyUpdating = !!self.isUpdatingStream;
 		if ( !self.isUpdatingStream ) {
 			self.stream.pause();
 			self.isUpdatingStream = true;
 		}
 		
 		//
-		remove( type );
+		self.removeTrack( type );
 		if ( null == track ) {
 			self.stream.load();
 			return;
@@ -2144,21 +2143,26 @@ library.component = library.component || {};
 		
 		self.stream.srcObject.addTrack( track );
 		self.stream.load();
+	}
+	
+	ns.Peer.prototype.removeTrack = function( type ) {
+		const self = this;
+		const srcObj = self.stream.srcObject;
+		let removed = false;
+		if ( !srcObj )
+			return false;
 		
-		function remove( type ) {
-			let srcObj = self.stream.srcObject;
-			if ( !srcObj )
+		let tracks = srcObj.getTracks();
+		tracks.forEach( removeType );
+		return removed;
+		
+		function removeType( track ) {
+			if ( type !== track.kind )
 				return;
 			
-			let tracks = srcObj.getTracks();
-			tracks.forEach( removeType );
-			function removeType( track ) {
-				if ( type !== track.kind )
-					return;
-				
-				srcObj.removeTrack( track );
-				track.stop();
-			}
+			srcObj.removeTrack( track );
+			track.stop();
+			removed = true;
 		}
 	}
 	
@@ -2176,27 +2180,35 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleTracksAvailable = function( available ) {
 		const self = this;
-		console.log( 'UI.handleTracksAvailable', available );
+		let removedAThing = false;
+		if ( !available.audio )
+			removedAThing = self.removeTrack( 'audio' );
+		
+		if ( !available.video )
+			removedAThing = self.removeTrack( 'video' );
+		
+		if ( removedAThing )
+			self.stream.load();
 	}
 	
 	ns.Peer.prototype.handleVideo = function( available ) {
-		var self = this;
+		const self = this;
 		if ( !self.stream )
 			return;
 		
 		self.isVideo = available;
-		self.updateStream();
+		//self.updateStream();
 		self.updateButtonVisibility();
 		self.toggleStream();
 	}
 	
 	ns.Peer.prototype.handleAudio = function( available ) {
-		var self = this;
+		const self = this;
 		if ( !self.stream )
 			return;
 		
 		self.isAudio = available;
-		self.updateStream();
+		//self.updateStream();
 		self.updateButtonVisibility();
 	}
 	

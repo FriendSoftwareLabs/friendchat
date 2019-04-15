@@ -1525,7 +1525,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.setupStream = function( callback, permissions, preferedDevices ) {
-		var self = this;
+		const self = this;
 		if ( self.streamBack ) {
 			let oldBack = self.streamBack;
 			delete self.streamBack;
@@ -1720,7 +1720,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.setStream = function( stream ) {
-		const self = this;		
+		const self = this;
 		self.stream = stream;
 		
 		if ( self.isMute ) {
@@ -2859,14 +2859,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.trackAdded = function( track ) {
-		var self = this;
+		const self = this;
 		if ( !self.stream ) {
 			self.stream = new window.MediaStream();
 			self.emit( 'media', self.stream );
 		}
 		
 		//self.bindTrack( track );
-		var type = track.kind;
+		const type = track.kind;
 		if ( 'video' === type )
 			addVideo( track );
 		if ( 'audio' === type )
@@ -2897,11 +2897,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.updateTracksAvailable = function( tracks ) {
 		const self = this;
-		console.log( 'updateTracksAvailable', tracks );
 		self.sending = tracks;
 		if ( !self.sending.video && self.isFocus )
 			self.toggleFocus();
-			
+		
 		self.emit( 'meta', {
 			sending : self.sending,
 		});
@@ -2911,16 +2910,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		if ( self.permissions.receive.video )
 			self.emit( 'video', tracks.video );
+		
+		self.emit( 'tracks-available', tracks );
 	}
 	
 	ns.Peer.prototype.sendMeta = function() {
-		var self = this;
+		const self = this;
 		if ( !self.selfie ) {
 			console.log( 'sendMeta - no selfie, no send', self );
 			return;
 		}
 		
-		let send = self.permissions.send;
+		const send = self.permissions.send;
 		let rec = null;
 		if ( null != self.isFocus ) {
 			rec = {
@@ -2931,7 +2932,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			rec = self.permissions.receive;
 		
 		self.state = 'sync-meta';
-		var meta = {
+		const meta = {
 			browser   : self.selfie.browser,
 			state     : {
 				isMuted    : self.selfie.isMute,
@@ -2941,6 +2942,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			sending : send,
 			receive : rec,
 		};
+		
 		self.send({
 			type : 'meta',
 			data : meta,
@@ -2948,7 +2950,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.handleMeta = function( meta ) {
-		var self = this;
+		const self = this;
 		if ( !self.isHost )
 			self.sendMeta();
 		
@@ -2962,7 +2964,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.updateMeta( meta );
-		var signalState = {
+		const signalState = {
 			type : 'signal',
 			data : {
 				type : 'nominal',

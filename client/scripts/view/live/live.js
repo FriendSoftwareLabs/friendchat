@@ -73,7 +73,7 @@ library.component = library.component || {};
 		//
 		var dropConf = {
 			targetId : 'hello',
-			ondrop : onDrop,
+			ondrop   : onDrop,
 		};
 		self.drop = new library.component.Drop( dropConf );
 		function onDrop( dropped ) {
