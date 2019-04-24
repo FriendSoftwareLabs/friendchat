@@ -2147,6 +2147,9 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.removeTrack = function( type ) {
 		const self = this;
+		if ( !self.stream )
+			return;
+		
 		const srcObj = self.stream.srcObject;
 		let removed = false;
 		if ( !srcObj )
