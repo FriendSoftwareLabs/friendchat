@@ -455,16 +455,14 @@ library.component = library.component || {};
 // BOTTOMSCROLLER
 (function( ns, undefined ) {
 	ns.BottomScroller = function( elementId, conf  ) {
-		if ( !( this instanceof ns.BottomScroller ))
-			return new ns.BottomScroller( elementId, conf );
-		
+		const self = this;
 		if ( !elementId )
-			throw new Error( 'library.component.BottomScroller requires a elementId' );
+			throw new Error( 'library.component.BottomScroller requires an elementId' );
 		
 		conf = conf || {};
 		
-		var self = this;
-		self.elementId = elementId; // the element being scrolled, as opposed to its viewport / container
+		self.elementId = elementId; // the element being scrolled, as opposed to its
+									// viewport / container
 		self.scrollAtBottom = true;
 		self.scrollTresholdPercent = 25; // percent - used to calculate scrollTreshold.
 		                                 // For a static ( pixel ) value, set to 
@@ -488,6 +486,7 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.init = function() {
 		const self = this;
+		window.addEventListener( 'resize', resizeEvent, false ); 
 		self.element = document.getElementById( self.elementId );
 		self.element.addEventListener( 'scroll', scrollEvent, false );
 		if ( window.ResizeObserver ) {
@@ -495,9 +494,7 @@ library.component = library.component || {};
 			self.boxResize.observe( self.element );
 		}
 		
-		//window.addEventListener( 'resize', resizeEvent, false );
 		function scrollEvent( e ) { self.checkIsAtBottom( e ); }
-		function loadedEvent( e ) { console.log( 'BottomScroller.loadedevent - noop', e ); }
 		function resizeEvent( e ) { self.handleResize(); }
 		
 		self.observer = new window.MutationObserver( domMutated );
@@ -516,8 +513,18 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.handleResize = function( e ) {
 		const self = this;
-		self.updateScrollTreshold();
-		self.scrollToBottom();
+		if ( null != self.resizeTimeout ) {
+			window.clearTimeout( self.resizeTimeout );
+			self.resizeTimeout = null;
+		}
+		
+		self.resizeTimeout = window.setTimeout( update, 100 );
+		function update() {
+			console.log( 'BottomScroller.handleResize - update' );
+			self.resizeTimeout = null;
+			self.updateScrollTreshold();
+			self.scrollToBottom();
+		}
 	}
 	
 	ns.BottomScroller.prototype.onMutation = function( mutations ) {
