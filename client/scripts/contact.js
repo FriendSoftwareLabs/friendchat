@@ -2117,8 +2117,7 @@ library.contact = library.contact || {};
 		self.identities[ self.identity.clientId ] = self.identity;
 		self.contactId = self.identity.clientId;
 		
-		if ( contact.relation )
-			self.relation = contact.relation;
+		self.setRelation( contact.relation );
 		
 		self.conn.on( 'open', open );
 		self.conn.on( 'initialize', init );
@@ -2145,6 +2144,19 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.setIdentity = function() {
 		const self = this;
+	}
+	
+	ns.PresenceContact.prototype.setRelation = function( rel ) {
+		const self = this;
+		if ( !rel )
+			return;
+		
+		self.relation = rel;
+		if ( !rel.lastMessage )
+			return;
+		
+		self.setLastMessage( rel.lastMessage );
+		self.relation.lastMessage = self.lastMessage;
 	}
 	
 	ns.PresenceContact.prototype.open = function() {

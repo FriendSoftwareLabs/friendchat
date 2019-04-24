@@ -520,7 +520,6 @@ library.component = library.component || {};
 		
 		self.resizeTimeout = window.setTimeout( update, 100 );
 		function update() {
-			console.log( 'BottomScroller.handleResize - update' );
 			self.resizeTimeout = null;
 			self.updateScrollTreshold();
 			self.scrollToBottom();
