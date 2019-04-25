@@ -918,11 +918,6 @@ library.view = library.view || {};
 		return members[ userId ];
 	}
 	
-	ns.UserWorkCtrl.prototype.getIdentity = function( clientId ) {
-		const self = this;
-		return self.identities[ clientId ] || null;
-	}
-	
 	ns.UserWorkCtrl.prototype.getAvatarKlass = function( clientId ) {
 		const self = this;
 		const user = self.users[ clientId ];
@@ -938,7 +933,7 @@ library.view = library.view || {};
 		const self = this;
 		self.build();
 		self.initBaseGroups();
-		self.addIds( ids );
+		self.addIdentities( ids );
 		self.setWorkgroups( workgroups );
 		self.addUsers( users );
 		self.addUserCss( self.workId, roomAvatar );

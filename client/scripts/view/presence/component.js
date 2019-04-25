@@ -452,11 +452,6 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.getId = function( clientId ) {
 		const self = this;
 		const id = self.identities[ clientId ];
-		console.log( 'UserCtrl.getId', {
-			cId : clientId,
-			id  : id,
-			ids : self.identities,
-		});
 		return id || null;
 	}
 	
@@ -491,12 +486,11 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addIdentities = function( idMap ) {
 		const self = this;
-		let ids = Object.keys( idMap );
-		ids.forEach( addCss );
-		function addCss( id ) {
-			let identity = idMap[ id ];
-			self.addUserCss( id, identity.avatar );
-		}
+		cIds = Object.keys( idMap );
+		cIds.forEach( cId => {
+			const id = idMap[ cId ];
+			self.addId( id );
+		});
 	}
 	
 	ns.UserCtrl.prototype.updateAll = function( state ) {
@@ -610,7 +604,7 @@ var hello = window.hello || {};
 		self.build();
 		self.initBaseGroups();
 		self.setWorkgroups( workgroups );
-		self.addIds( identities );
+		self.addIdentities( identities );
 		self.addUsers( users );
 		self.addUserCss( self.workId, roomAvatar );
 		self.addUserCss( 'guest-user', guestAvatar );
@@ -750,18 +744,12 @@ var hello = window.hello || {};
 		});
 	}
 	
-	ns.UserCtrl.prototype.addIds = function( ids ) {
-		const self = this;
-		cIds = Object.keys( ids );
-		cIds.forEach( cId => {
-			const id = ids[ cId ];
-			self.addId( id );
-		});
-	}
-	
 	ns.UserCtrl.prototype.addId = function( id ) {
 		const self = this;
 		const cId = id.clientId;
+		if ( self.identities[ cId ])
+			return;
+		
 		self.identities[ cId ] = id;
 		self.addUserCss( cId, id.avatar );
 	}
@@ -1782,6 +1770,7 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLog = function( log ) {
 		const self = this;
+		console.log( 'MsgBuilder.handleLog', log );
 		let events = log.data.events;
 		let newIds = log.data.ids;
 		if ( newIds )
@@ -2005,7 +1994,7 @@ var hello = window.hello || {};
 		const tmplId = 'work-msg-tmpl';
 		const msg = conf.event;
 		const uId = msg.fromId;
-		const fromId = self.users.getIdentity( uId );
+		const fromId = self.users.getId( uId );
 		const fromUser = self.users.get( uId );
 		const selfUser = self.users.get( self.userId );
 		const mId = msg.msgId;
@@ -2157,7 +2146,7 @@ var hello = window.hello || {};
 				return;
 			
 			targets.forEach( uId => {
-				const user = self.users.get( uId );
+				const user = self.users.getId( uId );
 				if ( !user )
 					return;
 				
@@ -2184,12 +2173,14 @@ var hello = window.hello || {};
 			function setNames( worg, targets ) {
 				const wId = worg.clientId;
 				targets.forEach( uId => {
-					let user = null;
+					let user = self.users.getId( uId );
+					/*
 					if ( wId === self.workgroupId )
-						user = self.users.get( uId );
+						user = 
 					else
 						user = self.users.getMember( wId, uId );
 					
+					*/
 					if ( !user ) {
 						console.log( 'setNames - no user for', {
 							uid : uId,
