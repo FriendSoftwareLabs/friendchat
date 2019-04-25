@@ -346,13 +346,13 @@ library.view = library.view || {};
 			state.config
 		);
 		
+		self.user = self.users.getId( self.userId );
 		// Just kill this class (only needed on load)
 		window.setTimeout( function()
 		{
 			self.usersEl.removeAttribute( 'mobileHidden' );
 		}, 800 );
 		
-		self.user = self.users.get( self.userId );
 		
 		self.liveStatus = new library.component.LiveStatus(
 			'live-status-container',
@@ -375,15 +375,15 @@ library.view = library.view || {};
 		function onFetch() {
 			const firstMsgId = self.msgBuilder.getFirstMsgId();
 			const firstMsgTime = self.msgBuilder.getFirstMsgTime();
-			const logFrom = {
+			const logBefore = {
 				type : 'log',
 				data : {
 					firstId   : firstMsgId,
 					firstTime : firstMsgTime,
 				},
 			};
-			console.log( 'onFetch - logFrom', logFrom );
-			self.sendChatEvent( logFrom );
+			console.log( 'onFetch - logBefore', logBefore );
+			self.sendChatEvent( logBefore );
 		}
 		
 		// link expansion
@@ -480,12 +480,13 @@ library.view = library.view || {};
 		else
 			self.setGroupUI();
 		
-		// dont focus input if VR device / mode
+		// only focus input if desktop
 		if ( 'DESKTOP' == window.View.deviceType ) {
 			self.input.focus();
 		}
 		
 		self.conn.ready();
+		console.log( 'send log' );
 		self.sendChatEvent({
 			type : 'log',
 			data : null,
@@ -531,7 +532,7 @@ library.view = library.view || {};
 		
 		self.titleId = friendUP.tool.uid( 'title' );
 		const stateId = friendUP.tool.uid( 'cstate' );
-		const user = self.users.get( self.contactId );
+		const user = self.users.getId( self.contactId );
 		if ( !user ) {
 			console.log( 'setContactTitle - no user', self );
 			return;
@@ -590,6 +591,7 @@ library.view = library.view || {};
 
 	ns.Presence.prototype.handleState = function( state ) {
 		const self = this;
+		console.log( 'view.Presence.handleState', state );
 		self.users.updateAll( state );
 		//removeOld( state.users );
 		//addNew( state.users );

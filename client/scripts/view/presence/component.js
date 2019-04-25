@@ -449,6 +449,17 @@ var hello = window.hello || {};
 		return self.groups[ user.group ] || null;
 	}
 	
+	ns.UserCtrl.prototype.getId = function( clientId ) {
+		const self = this;
+		const id = self.identities[ clientId ];
+		console.log( 'UserCtrl.getId', {
+			cId : clientId,
+			id  : id,
+			ids : self.identities,
+		});
+		return id || null;
+	}
+	
 	ns.UserCtrl.prototype.getWorkgroup = function( worgId ) {
 		const self = this;
 		return self.groupsAvailable[ worgId ] || null;
@@ -547,7 +558,12 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.getAvatarKlass = function( clientId ) {
 		const self = this;
-		const user = self.users[ clientId ];
+		const user = self.get( clientId );
+		console.log( 'getAvatarKlass', {
+			cId   : clientId,
+			user  : user,
+			users : self.users,
+		});
 		if ( user.isGuest )
 			clientId = 'guest-user';
 		
@@ -590,6 +606,7 @@ var hello = window.hello || {};
 		guestAvatar
 	) {
 		const self = this;
+		console.log( 'UserCtrl.init', users );
 		self.build();
 		self.initBaseGroups();
 		self.setWorkgroups( workgroups );
