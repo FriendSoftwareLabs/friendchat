@@ -171,13 +171,19 @@ library.view = library.view || {};
 		self.itemMenu = element.querySelector( '.item-menu' );
 		
 		element.addEventListener( 'click', click, false );
-		if ( self.itemMenu )
-		{
-			self.itemMenu.addEventListener( 'click', menuClick, false );
+		if ( self.itemMenu ) {
+			if ( 'DESKTOP' === window.View.deviceType )
+				self.itemMenu.addEventListener( 'click', menuClick, false );
+			else
+				self.itemMenu.addEventListener( 'touchend', menuClick, false );
 		}
 		
 		function click( e ) { self.openChat(); }
-		function menuClick( e ) { self.showMenu( e ); }
+		function menuClick( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+			self.showMenu( e );
+		}
 	}
 	
 	ns.BaseContact.prototype.showMenu = function( e ) {
@@ -391,12 +397,18 @@ library.view = library.view || {};
 		const contactsEl = document.getElementById( self.contactsId );
 		if ( roomsEl ) {
 			self.roomsMenu = roomsEl.querySelector( '.actions .item-menu' );
-			self.roomsMenu.addEventListener( 'click', roomsMenuClick, false );
+			if ( 'DESKTOP' === window.View.deviceType )
+				self.roomsMenu.addEventListener( 'click', roomsMenuClick, false );
+			else
+				self.roomsMenu.addEventListener( 'touchend', roomsMenuClick, false );
 		}
 		
 		if ( contactsEl ) {
 			self.contactsMenu = contactsEl.querySelector( '.actions .item-menu' );
-			self.contactsMenu.addEventListener( 'click', contactsMenuClick, false );
+			if ( 'DESKTOP' === window.View.deviceType )
+				self.contactsMenu.addEventListener( 'click', contactsMenuClick, false );
+			else
+				self.contactsMenu.addEventListener( 'touchend', contactsMenuClick, false );
 		}
 		
 		function roomsMenuClick( e ) {
@@ -408,7 +420,6 @@ library.view = library.view || {};
 		function contactsMenuClick( e ) {
 			e.stopPropagation();
 			e.preventDefault();
-			
 			self.showMenu( 'contact' );
 		}
 	}

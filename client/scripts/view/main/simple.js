@@ -847,7 +847,7 @@ var hello = window.hello || {};
 		delete self.moduleId;
 		delete self.clientId;
 		delete self.id;
-		delete self.menuBtn;
+		//delete self.menuBtn;
 		delete self.message;
 		delete self.messageTime;
 		delete self.lastMessage;
@@ -941,8 +941,12 @@ var hello = window.hello || {};
 		self.sourceIds.push( relId );
 		
 		self.el.addEventListener( 'click', elClick, false );
-		self.menuBtn.addEventListener( 'click', menuClick, false );
-		self.menuBtn.addEventListener( 'touchend', menuClick, false );
+		if ( self.menuBtn ) {
+			if ( 'DESKTOP' === window.View.deviceType )
+				self.menuBtn.addEventListener( 'click', menuClick, false );
+			else
+				self.menuBtn.addEventListener( 'touchend', menuClick, false );
+		}
 		
 		function elClick( e ) {
 			self.handleBodyClick();
@@ -950,6 +954,7 @@ var hello = window.hello || {};
 		
 		function menuClick( e ) {
 			e.stopPropagation();
+			e.preventDefault();
 			self.handleMenuClick();
 		}
 		
@@ -964,7 +969,6 @@ var hello = window.hello || {};
 		
 		if ( null != unread )
 			self.setUnread( unread );
-		
 	}
 	
 	ns.RecentItem.prototype.releaseSource = function() {
@@ -997,7 +1001,7 @@ var hello = window.hello || {};
 		self.icon = self.el.querySelector( '.recent-info .recent-state .last-event-icon i' );
 		self.message = self.el.querySelector( '.recent-info .recent-state .last-message' );
 		self.messageTime = self.el.querySelector( '.recent-info .name-bar .last-msg-time' );
-		self.menuBtn = self.el.querySelector( '.item-menu' );
+		//self.menuBtn = self.el.querySelector( '.item-menu' );
 	}
 	
 	ns.RecentItem.prototype.buildIndicators = function() {
@@ -1291,7 +1295,7 @@ var hello = window.hello || {};
 		self.messageTime = self.el.querySelector( '.recent-info .name-bar .last-msg-time' );
 		self.name = self.el.querySelector( '.recent-info .recent-state .last-msg-name' );
 		self.message = self.el.querySelector( '.recent-info .recent-state .last-message' );
-		self.menuBtn = self.el.querySelector( '.item-menu' );
+		//self.menuBtn = self.el.querySelector( '.item-menu' );
 	}
 	
 	ns.RecentRoom.prototype.buildIndicators = function() {
@@ -1308,8 +1312,8 @@ var hello = window.hello || {};
 			type        : 'led',
 			cssClass    : 'led-participants-status PadBorder',
 			statusMap   : {
-				empty   : 'Off',
-				users   : 'Available',
+				empty     : 'Off',
+				users     : 'Available',
 			},
 			display     : '-',
 		};

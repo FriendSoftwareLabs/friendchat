@@ -2695,7 +2695,6 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		};
 		self.el = self.tmpl.getElement( 'mini-menu-tmpl', tmplConf );
 		self.menu = self.el.querySelector( '.mini-menu-content' );
-		self.menucover = self.el.querySelector( '.mini-menu-cover' );
 		self.addOptions( options );
 		
 		if ( x1 )
@@ -2704,11 +2703,6 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			self.menu.style.left = x2;
 		
 		const parent = document.getElementById( parentId );
-
-		// Add an element to exit the building
-		self.menucover.addEventListener( 'touchstart', menuBlur, false );
-		
-		// 
 		parent.appendChild( self.el );
 		const ownHeight = self.menu.clientHeight;
 		let maxHeight = ( viewHeight - 10 ) + 'px';
@@ -2718,8 +2712,21 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		self.menu.style.top = top;
 		self.menu.focus();
 		self.menu.addEventListener( 'blur', menuBlur, false );
+		self.el.addEventListener( 'touchstart', touchStart, false );
+		self.el.addEventListener( 'touchend', touchEnd, false );
 		
 		function menuBlur( e ) {
+			self.close();
+		}
+		
+		function touchStart( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+		}
+		
+		function touchEnd( e ) {
+			e.stopPropagation();
+			e.preventDefault();
 			self.close();
 		}
 	}
@@ -2778,7 +2785,11 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			faIcon : opt.faIcon || 'fa-cube',
 		};
 		let optEl = self.tmpl.getElement( 'mini-menu-option-tmpl', conf );
-		optEl.addEventListener( 'click', optClick, false );
+		if ( 'DESKTOP' === window.View.deviceType )
+			optEl.addEventListener( 'click', optClick, false );
+		else
+			optEl.addEventListener( 'touchstart', optClick, false );
+		
 		self.menu.appendChild( optEl );
 		
 		function optClick( e ) {
