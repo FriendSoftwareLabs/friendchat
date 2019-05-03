@@ -43,6 +43,7 @@ library.view = library.view || {};
 	ns.Presence.prototype.init = function() {
 		const self = this;
 		View.setBody();
+		self.buildUserList();
 		self.appOnline = new library.component.AppOnline( View );
 		
 		// scroll to bottom on new message
@@ -62,9 +63,9 @@ library.view = library.view || {};
 		}
 		
 		// drag and drop handler
-		var dropConf = {
+		const dropConf = {
 			targetId : 'hello',
-			ondrop : onDrop,
+			ondrop   : onDrop,
 		}
 		self.drop = new library.component.Drop( dropConf );
 		function onDrop( event ) { self.send( event ); }
@@ -73,11 +74,31 @@ library.view = library.view || {};
 		self.bindUI();
 		self.bindConn();
 		
-		if ( 'MOBILE' === window.View.deviceType )
-			self.toggleUserList( false );
-		
 		//
 		self.conn.loaded();
+	}
+	
+	ns.Presence.prototype.buildUserList = function() {
+		const self = this;
+		let tmpl = null;
+		const isDesktop = ( 'DESKTOP' === window.View.deviceType );
+		if ( isDesktop )
+			tmpl = 'users-desktop-tmpl';
+		else
+			tmpl = 'users-other-tmpl';
+		
+		const appendEl = document.getElementById( 'main' );
+		const el = friend.template.getElement( tmpl, {});
+		appendEl.appendChild( el );
+		
+		self.usersEl = document.getElementById( 'users-container' );
+		if( !isDesktop )
+			self.usersEl.addEventListener( 'click', usersClick, false );
+		
+		function usersClick( e ) {
+			e.preventDefault();
+			self.toggleUserList( false );
+		}
 	}
 	
 	// ui
@@ -88,60 +109,27 @@ library.view = library.view || {};
 		// buttons?
 		self.goVideoBtn = document.getElementById( 'upgrade-to-video' );
 		self.goAudioBtn = document.getElementById( 'upgrade-to-audio' );
+		self.toggleUsersBtn = document.getElementById( 'show-hide-btn' );
 		
 		// user list things
-		self.usersEl = document.getElementById( 'users-container' );
-		self.adminsEl = document.getElementById( 'admin-users' );
-		self.onlineEl = document.getElementById( 'online-users' );
-		self.guestsEl = document.getElementById( 'guest-users' );
-		self.offlineEl = document.getElementById( 'offline-users' );
-		self.detachedEl = document.getElementById( 'detached' );
-		self.toggleUsersBtn = document.getElementById( 'show-hide-btn' );
-		const attachBtn = document.getElementById( 'attachment' );
+		
 		
 		// chat things
 		self.messagesEl = document.getElementById( 'messages' );
 		const emoPanelBtn = document.getElementById( 'emojii-panel-button' );
 		const inputForm = document.getElementById( 'input-form' );
 		const submitBtn = document.getElementById( 'chat-submit' );
+		const attachBtn = document.getElementById( 'attachment' );
 		
-		if( 'DESKTOP' != window.View.deviceType )
-		{
-			document.getElementById( 'users-header' ).innerHTML = '<span>' + View.i18n( 'i18n_conference_members' ) + ':</span>';
-		}
-		
-		// Timeout for loading messages
-		setTimeout( function()
-		{
-			self.messagesEl.classList.add( 'SmoothScrolling' );
-		}, 50 );
-		
+		//
 		self.goVideoBtn.addEventListener( 'click', goVideoClick, false );
 		self.goAudioBtn.addEventListener( 'click', goAudioClick, false );
-		self.usersEl.addEventListener( 'touchend', function( e )
-		{
-			var t = e.target ? e.target : e.srcElement;
-			if( t && ( t.id == 'users-container' || t.id == 'users-header' || t.tagName == 'SPAN' ) )
-			{
-				setTimeout( function()
-				{
-					self.toggleUserList( false );
-				}, 50 );
-			}
-		}, false );
-		
 		self.toggleUsersBtn.addEventListener( 'click', toggleUserList, false );
+		
 		emoPanelBtn.addEventListener( 'click', toggleEmoPanel, false );
 		inputForm.addEventListener( 'submit', inputSubmit, false );
 		submitBtn.addEventListener( 'click', inputSubmit, false );
 		attachBtn.addEventListener( 'click', attach, false );
-		self.usersEl.addEventListener( 'touchstart', function( e )
-		{
-			var t = e.target ? e.target : e.srcElement;
-			if( t && t.id && t.id == 'main' )
-				toggleUserList.click();
-		}, false );
-		
 		
 		function attach( e ) {
 			var men = ge( 'attachment-menu' );
@@ -260,35 +248,21 @@ library.view = library.view || {};
 	ns.Presence.prototype.toggleUserList = function( force ) {
 		const self = this;
 		if ( null == force ) {
-			self.usersEl.classList.toggle( 'users-hide' );
-			if( self.usersEl.classList.contains( 'users-hide' ) )
-			{
-				self.toggleUsersBtn.classList.remove( 'danger' );
-			}
-			else
-			{
-				self.toggleUsersBtn.classList.add( 'danger' );
-			}
-		// We are forcing
-		} 
-		else
-		{
-			if( force === false ) {
-				self.usersEl.classList.add( 'users-hide' );
-				self.toggleUsersBtn.classList.remove( 'danger' );
-			}
-			else {
-				self.usersEl.classList.remove( 'users-hide' );
-				self.toggleUsersBtn.classList.add( 'danger' );
-			}
+			const isHidden = self.usersEl.classList.contains( 'users-hide' );
+			toggle( isHidden );
+		} else
+			toggle( force );
+		
+		function toggle( show ) {
+			self.messagesEl.classList.toggle( 'SmoothScrolling', !show );
+			self.usersEl.classList.toggle( 'users-hide', !show );
+			self.toggleUsersBtn.classList.toggle( 'danger', show );
 		}
-		// Just kill this class (only needed on load)
-		self.usersEl.classList.remove( 'MobileHidden' );
 	}
 	
-	ns.Presence.prototype.toggleUserListBtn = function( isVisible ) {
+	ns.Presence.prototype.toggleUserListBtn = function( show ) {
 		const self = this;
-		self.toggleUsersBtn.classList.toggle( 'hidden', !isVisible );
+		self.toggleUsersBtn.classList.toggle( 'hidden', !show );
 	}
 
 	ns.Presence.prototype.bindConn = function() {
@@ -333,6 +307,7 @@ library.view = library.view || {};
 		if ( state.workgroups && state.workgroups.workId )
 			UserCtrl = ns.UserWorkCtrl;
 		
+		//
 		self.users = new UserCtrl(
 			self.conn,
 			state.users,
@@ -345,15 +320,9 @@ library.view = library.view || {};
 			friend.template,
 			state.config
 		);
-		
 		self.user = self.users.getId( self.userId );
-		// Just kill this class (only needed on load)
-		window.setTimeout( function()
-		{
-			self.usersEl.removeAttribute( 'mobileHidden' );
-		}, 800 );
 		
-		
+		//
 		self.liveStatus = new library.component.LiveStatus(
 			'live-status-container',
 			self.users,
@@ -806,13 +775,21 @@ library.view = library.view || {};
 		
 		container.appendChild( self.el );
 		self.head = self.el.querySelector( '.section-head' );
-		self.head.addEventListener( 'click', headClick, false );
+		//self.head.addEventListener( 'click', headClick, false );
+		self.head.addEventListener( 'click', groupPoke, false );
+		/*
+		if ( 'DESKTOP' === window.View.deviceType )
+			self.head.addEventListener( 'click', groupPoke, false );
+		else
+			self.head.addEventListener( 'touchend', groupPoke, false );
+		*/
+		
 		self.usersEl = document.getElementById( self.usersId );
 		self.updateVisible();
 		
-		function headClick( e ) {
-			e.stopPropagation();
-			e.preventDefault();
+		function groupPoke( e ) {
+			//e.stopPropagation();
+			//e.preventDefault();
 			self.handleClick();
 		}
 	}
@@ -822,11 +799,12 @@ library.view = library.view || {};
 		self.el.classList.toggle( 'hidden', false );
 	}
 	
-	ns.WorkGroup.prototype.handleClick = function() {
+	ns.WorkGroup.prototype.handleClick = function( e ) {
 		const self = this;
 		if ( self.onClick )
 			self.onClick( self.clientId );
 	}
+	
 })( library.view );
 
 
@@ -864,8 +842,10 @@ library.view = library.view || {};
 	
 	// Private
 	
-	ns.WorkUser.prototype.handleClick = function() {
+	ns.WorkUser.prototype.handleClick = function( e ) {
 		const self = this;
+		e.preventDefault();
+		console.log( 'WorkUser.handleClick', e );
 		if ( self.onClick )
 			self.onClick( self.id );
 	}

@@ -278,97 +278,66 @@ body[mobile] #emojii-panel-button
 }
 
 #users-container {
-	width : 12em;	
-	transform : translateX(0);
-	transition : transform 0.25s;
-	overflow: visible;
+	position   : relative;
+	transition : width 0.15s;
+	width      : 12em;
 }
 
 [mobile] #users-container {
-	position: absolute;
-	width: 80%;
- 	right: 0;
- 	top: 0;
- 	height: 100%;
+	position   : absolute;
+	transition : unset;
+	width      : 100%;
+ 	right      : 0;
+ 	top        : 0;
+ 	bottom     : 0;
 }
 
-[mobile] #users-container:after {
-	content: " ";
-	display: block;
-	position: absolute;
-	left: 0;
-	width: 0;
-	right: 100%;
-	height: 100%;
-	top: 0;
+[mobile] #users-cover {
 	background: rgba(0,0,0,0.5);
-	transition: opacity 0.5s;
-	opacity: 0;
-}
-
-[mobile] #users-container:not(.users-hide) {	
-	box-shadow: 0px 0px 5px rgba(0,0,0,1);
-}
-
-[mobile] #users-container:not(.users-hide):after {
-	left: auto;
-	width: 50%;
+	transition: opacity 0.15s;
 	opacity: 1;
 }
- 
+
+[mobile] #users-content {
+	width : 12em;
+	transition: width 0.15s;
+}
+
 #users-container.users-hide {
-	transform : translateX(100%);
-	transition : transform 0.25s;
-}
-
-body:not([mobile]) #users-container.users-hide {
-	width: 0;
-	overflow: hidden;
-}
-
-[mobile] #users-container:not(.users-hide) #users-header:before {
-	content: "\f00d";
-	display: inline-block;
-	font-family: fontawesome;
-	margin-right: 10px;
-}
-
-body:not([mobile]) #users-header
-{
-	display: none;
-}
-
-[mobile] #users-header span
-{
-	font-weight: bold;
-}
-
-[mobile] #users-container:not(.users-hide) #user-groups .name:before {
-	content: " ";
-	display: block;
-	float: left;
-	height: 2px;
-	width: 10px;
-}
-
-[mobile] [mobileHidden] {	
-	visibility: hidden;
-	pointer-events: none;
-	transition: none;
+	width      : 0;
+	overflow   : hidden;
+	transition : width 0.15s;
 }
 
 [mobile] #users-container.users-hide {
-	transform : translateX(100%);
-	transition : transform 0.25s;
+	transition       : width 0s;
+	transition-delay : 0.15s;
+	overflow         : unset;
 }
 
-[mobile] .MobileHidden {	
-	visibility: hidden;
-	pointer-events: none;
+[mobile] #users-container.users-hide #users-cover {
+	transition : opacity 0.15s;
+	opacity    : 0;
 }
 
+[mobile] #users-container.users-hide #users-content {
+	transition : width 0.15s;
+	width      : 0;
+}
 
-#users-position { position: relative; }
+[mobile] #users-close {
+	height : 1.8em;
+	margin-right : 1em;
+}
+
+[mobile] #users-title {
+	font-weight: bold;
+}
+
+#users-position {
+	position : relative;
+}
+
 #user-groups {
 	position: absolute;
 	top: 0;

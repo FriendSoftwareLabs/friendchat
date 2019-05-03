@@ -345,51 +345,27 @@ var hello = window.hello || {};
 			if ( self.isGuest )
 				return;
 			
-			self.el.addEventListener( 'click', userClick, false );
+			self.el.addEventListener( 'click', userPoke, false );
+			/*
+			if ( 'DESKTOP' === window.View.deviceType )
+				self.el.addEventListener( 'click', userPoke, false );
+			else
+				self.el.addEventListener( 'touchend', userPoke, false );
+			*/
 			
-			function userClick( e ) { self.handleClick(); }
+			function userPoke( e ) {
+				e.preventDefault();
+				self.handleClick( e );
+			}
 		}
 	}
 	
-	ns.GroupUser.prototype.handleClick = function() {
-		
+	ns.GroupUser.prototype.handleClick = function( e ) {
 		const self = this;
 		self.conn.send({
 			type : 'contact-open',
 			data : self.id,
 		});
-		this.toggleUserList( false );
-	}
-	
-	ns.GroupUser.prototype.toggleUserList = function( force ) {
-		const self = this;
-		
-		var usersEl = document.getElementById( 'users-container' );
-		var toggleUsersBtn = document.getElementById( 'show-hide-btn' );
-		
-		if ( null == force ) {
-			usersEl.classList.toggle( 'users-hide' );
-			if( usersEl.classList.contains( 'users-hide' ) )
-			{
-				toggleUsersBtn.classList.remove( 'danger' );
-			}
-			else
-			{
-				toggleUsersBtn.classList.add( 'danger' );
-			}
-		// We are forcing
-		} 
-		else
-		{
-			if( force === false ) {
-				usersEl.classList.add( 'users-hide' );
-				toggleUsersBtn.classList.remove( 'danger' );
-			}
-			else {
-				usersEl.classList.remove( 'users-hide' );
-				toggleUsersBtn.classList.add( 'danger' );
-			}
-		}
 	}
 	
 })( library.component );
@@ -1776,7 +1752,7 @@ var hello = window.hello || {};
 		if ( newIds )
 			self.users.addIdentities( newIds );
 		
-		toggleSmooth( false );
+		self.toggleSmooth( false );
 		// wait for dom to update lol
 		self.supressConfirm = true;
 		
@@ -1790,14 +1766,7 @@ var hello = window.hello || {};
 		self.confirmEvent( 'message', lMId );
 		window.setTimeout( tglsmt, 1000 );
 		function tglsmt() {
-			toggleSmooth( true );
-		}
-		
-		function toggleSmooth( setSmooth ) {
-			if ( !self.container )
-				return;
-			
-			self.container.classList.toggle( 'SmoothScrolling', setSmooth );
+			self.toggleSmooth( true );
 		}
 	}
 	
@@ -1900,6 +1869,14 @@ var hello = window.hello || {};
 			return false;
 		
 		return event.fromId === envelope.lastSpeakerId;
+	}
+	
+	ns.MsgBuilder.prototype.toggleSmooth = function( setSmooth ) {
+		const self = this;
+		if ( !self.container )
+			return;
+		
+		self.container.classList.toggle( 'SmoothScrolling', setSmooth );
 	}
 	
 	ns.MsgBuilder.prototype.addItem = function( el, envelope, msg ) {

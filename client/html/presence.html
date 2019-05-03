@@ -83,13 +83,7 @@
 			<div id="messages" class="SelectableText">
 			</div>
 		</div>
-		<div id="users-container" class="fortify group column cover BackgroundDefault" mobileHidden="mobileHidden">
-			<div id="users-header" class="Padding BorderBottom">
-			</div>
-			<div id="users-position" class="expand BackgroundHeavy">
-				
-			</div>
-		</div>
+		<!-- users list is inserted here -->
 	</div>
 	<div id="foot" class="group row fortify cover">
 		<div id="emojii-panel-button" class="button flat fortify center-child">
@@ -111,6 +105,41 @@
 		</form>
 	</div>
 	<div id="user-css" class="hidden">
+	</div>
+</div>
+</script>
+
+<!-- Users list desktop
+	
+-->
+<script id="users-desktop-tmpl" type="text/html">
+	<div id="users-container" class="fortify group column cover BackgroundDefault">
+		<div id="users-header" class="group row start Padding BorderBottom">
+		</div>
+		<div id="users-position" class="expand BackgroundHeavy">
+		</div>
+	</div>
+</script>
+
+<!-- Users list for other devices
+
+-->
+<script id="users-other-tmpl" type="text/html">
+<div id="users-container" class="group row cover users-hide">
+	<div id="users-cover" class="expand">
+	</div>
+	<div id="users-content" class="fortify group column cover BackgroundDefault">
+		<div id="users-header" class="group row start Padding BorderBottom">
+			<div id="users-close" class="center-child">
+				<i class="fa fa-fw fa-close"></i>
+			</div>
+			<div id="users-title">
+				{i18n_conference_members}
+			</div>
+		</div>
+		<div id="users-position" class="expand BackgroundHeavy SmoothScrolling">
+			
+		</div>
 	</div>
 </div>
 </script>
