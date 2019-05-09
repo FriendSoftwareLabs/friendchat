@@ -79,6 +79,10 @@ var hello = null;
 	
 	ns.Hello.prototype.init = function() {
 		const self = this;
+		console.log( 'self.config', self.config );
+		if ( self.config.dev )
+			self.app.setDev( self.config.host );
+		
 		self.app.run = fun;
 		self.app.receiveMessage = receiveMessage;
 		

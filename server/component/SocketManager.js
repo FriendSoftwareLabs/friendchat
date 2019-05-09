@@ -77,7 +77,7 @@ ns.SocketManager.prototype.initWS = function() {
 		function setWss() {
 			var conf = {
 				port : self.port,
-				tls : self.tls,
+				tls  : self.tls,
 			};
 			
 			try {
@@ -117,14 +117,14 @@ ns.SocketManager.prototype.bindPool = function() {
 	self.pool.on( 'connection', poolConnection );
 	
 	function poolConnection( conn ) {
-		var sid = self.makeSocketId();
-		var conf = {
+		const sid = self.makeSocketId();
+		const conf = {
 			id : sid,
 			conn : conn,
 		};
-		var socket = new Socket( conf );
-		var patience = 1000 * 10; // 10 seconds before closing the socket,
-		                          //if no auth message is received
+		const socket = new Socket( conf );
+		const patience = 1000 * 10; // 10 seconds before closing the socket,
+		                            //if no auth message is received
 		socket.authTimeout = setTimeout( closeSocket, patience );
 		socket.on( 'authenticate', checkAuth );
 		socket.on( 'session', checkSession );

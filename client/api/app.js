@@ -240,6 +240,12 @@ var friend = window.friend || {}; // already instanced stuff
 			windowConf.viewConf.translations = self.app.translations;
 		}
 		
+		console.log( 'app.View.initView', self.app.isDev );
+		if ( null != self.app.isDev ) {
+			windowConf.viewConf = windowConf.viewConf || {};
+			windowConf.viewConf.isDev = self.app.isDev;
+		}
+		
 		self.app.on( self.id, viewMessage );
 		self.app.sendMessage({
 			type   : 'view',
@@ -703,13 +709,18 @@ var friend = window.friend || {}; // already instanced stuff
 				return;
 		}
 		
+		if ( msg.viewId ) {
+			self.handleFromView( msg );
+			return;
+		}
+		
 		self.appMessage( msg );
 	}
 	
 	ns.AppEvent.prototype.handleCallback = function( msg ) {
-		var self = this;
-		var cid = msg.callback || msg.clickcallback;
-		var callback = self.getCallback( cid );
+		const self = this;
+		const cid = msg.callback || msg.clickcallback;
+		const callback = self.getCallback( cid );
 		if ( !callback )
 			return false;
 		
@@ -717,9 +728,15 @@ var friend = window.friend || {}; // already instanced stuff
 		return true;
 	}
 	
+	ns.AppEvent.prototype.handleFromView = function( msg ) {
+		const self = this;
+		const type = msg.viewId;
+		self.emit( type, msg.data );
+	}
+	
 	ns.AppEvent.prototype.appMessage = function( msg ) {
 		var self = this;
-		const type = msg.command || msg.callback || msg.viewId;
+		const type = msg.command || msg.callback;
 		self.emit( type, msg.data );
 	}
 	
@@ -1001,6 +1018,13 @@ var friend = window.friend || {}; // already instanced stuff
 		});
 	}
 	
+	ns.Application.prototype.setDev = function( dumpHost ) {
+		const self = this;
+		self.isDev = dumpHost;
+		if ( dumpHost )
+			self.initLogSock();
+	}
+	
 	// Private
 	
 	ns.Application.prototype.toAllViews = function( event ) {
@@ -1234,6 +1258,12 @@ var friend = window.friend || {}; // already instanced stuff
 			}
 		}
 		return str;
+	}
+	
+	ns.Application.prototype.initLogSock = function() {
+		const self = this;
+		const host = self.isDev;
+		self.logSock = new api.LogSock( host );
 	}
 	
 })( fupLocal );

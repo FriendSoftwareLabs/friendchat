@@ -130,7 +130,7 @@ ns.TLSWatch.prototype.emitChange = function() {
 	}
 	
 	var bundle = {
-		key : self.keyUpdate || self.keyCurr,
+		key  : self.keyUpdate || self.keyCurr,
 		cert : self.certUpdate || self.certCurr,
 	};
 	self.onchange( bundle );

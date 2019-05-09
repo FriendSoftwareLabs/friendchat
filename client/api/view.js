@@ -348,7 +348,7 @@ var friend = window.friend || {};
 	// private
 	
 	ns.View.prototype.init = function() {
-		var self = this;
+		const self = this;
 		console.log( 'View.init' );
 		self.addAPIScripts();
 		document.addEventListener( 'readystatechange', checkState, false );
@@ -358,7 +358,7 @@ var friend = window.friend || {};
 				self.setIsLoading( true );
 			}
 			
-			if ( document.readyState === 'complete' ) {
+			if ( 'complete' === document.readyState ) {
 			}
 		}
 	}
@@ -448,6 +448,9 @@ var friend = window.friend || {};
 		self.themeData = conf.themeData;
 		self.config = conf.viewConf;
 		
+		if ( self.config.isDev )
+			self.initLogSock();
+		
 		self.detectDeviceType();
 		self.setBaseCss( baseCssLoaded );
 		if ( self.config )
@@ -495,6 +498,11 @@ var friend = window.friend || {};
 			
 			self.checkAllLoaded();
 		}
+	}
+	
+	ns.View.prototype.initLogSock = function() {
+		const self = this;
+		console.log( 'view.initLogSock', api.LogSockView );
 	}
 	
 	ns.View.prototype.handleKeyDown = function( e ) {

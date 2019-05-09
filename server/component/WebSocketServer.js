@@ -28,7 +28,7 @@ var ns = {};
 		if ( !( this instanceof ns.WebSocketServer ))
 			return new ns.WebSocketServer( conf );
 		
-		var self = this;
+		const self = this;
 		self.conf = conf;
 		
 		if ( self.conf.tls )
