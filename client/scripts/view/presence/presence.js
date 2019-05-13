@@ -461,7 +461,7 @@ library.view = library.view || {};
 			data : null,
 		});
 	}
-
+	
 	ns.Presence.prototype.setPrivateUI = function() {
 		const self = this;
 		self.usersEl.classList.toggle( 'hidden', true );

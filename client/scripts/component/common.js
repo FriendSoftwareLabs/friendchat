@@ -662,7 +662,10 @@ inherits from EventEmitter
 				.catch( idSad );
 			
 			function get( cId ) {
-				return self.req.request( 'get', clientId );
+				if ( !cId || ( 'string' != typeof( cId )))
+					console.trace( 'IdCache.get', cId );
+				
+				return self.req.request( 'get', cId );
 			}
 			
 			function idBack( id ) {

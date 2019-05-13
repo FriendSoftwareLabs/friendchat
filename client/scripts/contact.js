@@ -2219,7 +2219,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.handleInitializeContact = function( state ) {
 		const self = this;
-		console.log( 'handleInitializeContact', state );
 		self.isOpen = true;
 		if ( self.openChatPending || self.openLivePending )
 			delete state.relation;

@@ -1316,8 +1316,8 @@ library.view = library.view || {};
 	ns.Presence.prototype.bindModuleEvents = function() {
 		var self = this;
 		self.mod.on( 'user-id', userId );
-		self.mod.on( 'join', joinedRoom );
-		self.mod.on( 'remove', leftRoom );
+		self.mod.on( 'room-join', joinedRoom );
+		self.mod.on( 'room-remove', leftRoom );
 		self.mod.on( 'contact-list', contactList );
 		self.mod.on( 'contact-add', contactAdd );
 		self.mod.on( 'contact-remove', contactRemove );

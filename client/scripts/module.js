@@ -431,12 +431,13 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.removeRoom = function( clientId ) {
 		const self = this;
+		console.log( 'removeRoom', clientId );
 		const room = self.rooms[ clientId ];
 		if ( !room )
 			return;
 		
 		self.view.send({
-			type : 'remove',
+			type : 'room-remove',
 			data : clientId,
 		});
 		delete self.rooms[ clientId ];
@@ -535,19 +536,6 @@ library.module = library.module || {};
 		const self = this;
 		self.initialized = false;
 		self.sendModuleInit();
-		return;
-		
-		let cIds = Object.keys( self.contacts );
-		let rIds = Object.keys( self.rooms );
-		cIds.forEach( id => {
-			let con = self.contacts[ id ];
-			con.reconnect();
-		});
-		
-		rIds.forEach( id => {
-			let room = self.rooms[ id ];
-			room.reconnect();
-		});
 	}
 	
 	ns.Presence.prototype.search = function( searchStr ) {
@@ -932,6 +920,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
+		console.log( 'handleAccountInit', state );
 		if ( self.initialized )
 			return;
 		
@@ -1210,14 +1199,22 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.setupRooms = function( rooms ) {
 		const self = this;
-		if ( !rooms )
+		console.log( 'Presence.setupRooms', rooms );
+		if ( !rooms || !rooms.length )
 			return;
 		
 		rooms.forEach( room => self.addRoom( room ));
+		const list = rooms.map( r => r.clientId );
+		console.log( 'list', list );
+		self.checkCurrentRooms( list );
 	}
 	
-	ns.Presence.prototype.handleJoin = function( conf ) {
+	ns.Presence.prototype.handleJoin = function( rooms ) {
 		const self = this;
+		console.log( 'Presence.handleJoin', rooms );
+		const conf = rooms.joined;
+		const list = rooms.current;
+		self.checkCurrentRooms( list );
 		if ( null == conf ) {
 			console.log( 'null room, end of room list', conf );
 			return;
@@ -1237,6 +1234,49 @@ library.module = library.module || {};
 	ns.Presence.prototype.handleRoomClosed = function( roomId ) {
 		const self = this;
 		self.removeRoom( roomId );
+	}
+	
+	ns.Presence.prototype.checkCurrentRooms = function( list ) {
+		const self = this;
+		console.log( 'checkCurrentRooms', list );
+		if ( null == list )
+			return;
+		
+		if ( !self.initialized )
+			return;
+		
+		if ( null != self.checkRoomsTimeout )
+			window.clearTimeout( self.checkRoomsTimeout );
+		
+		self.checkRoomsTimeout = window.setTimeout( check, 500 );
+		
+		function check() {
+			console.log( 'check', list );
+			const missing = list.filter( rId => !self.rooms[ rId ]);
+			const stale = self.roomIds.filter( rId => {
+				return !list.some( lId => rId == lId );
+			});
+			
+			console.log( 'check, results', {
+				missing : missing,
+				stale   : stale,
+			});
+			
+			if ( missing.length )
+				missing.forEach( join );
+			
+			if ( stale.length )
+				stale.forEach( rId => self.removeRoom( rId ));
+			
+		}
+		
+		function join( roomId ) {
+			const event = {
+				type : 'room-get',
+				data : roomId,
+			};
+			self.toAccount( event );
+		}
 	}
 	
 	ns.Presence.prototype.handleRequest = function( reqId, roomId ) {
@@ -1289,7 +1329,7 @@ library.module = library.module || {};
 	ns.Presence.prototype.createRoom = function( conf ) {
 		const self = this;
 		const create = {
-			type : 'create',
+			type : 'room-create',
 			data : conf,
 		};
 		self.toAccount( create );
@@ -1306,7 +1346,7 @@ library.module = library.module || {};
 		}
 		
 		const join = {
-			type : 'join',
+			type : 'room-join',
 			data : conf,
 		};
 		self.toAccount( join );
@@ -1370,7 +1410,7 @@ library.module = library.module || {};
 		conf.identity = room.identity;
 		
 		const addRoom = {
-			type : 'join',
+			type : 'room-join',
 			data : conf,
 		};
 		self.toView( addRoom );
