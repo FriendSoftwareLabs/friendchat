@@ -2168,15 +2168,33 @@ library.view = library.view || {};
 		self.live.on( 'leave', leave );
 		
 		function userJoin( accId ) {
+			console.log( 'userJoin', accId );
 			self.isLive = true;
-			self.liveStatus.setUserLive( true );
-			self.emit( 'live-user', true );
+			if ( self.liveState ) {
+				self.liveState.missed = false;
+				self.liveState.user = true;
+			}
+			else
+				self.liveState = {
+					user   : true,
+					missed : false,
+				};
+			
+			self.liveStatus.setUserLive( self.liveState );
+			self.emit( 'live-state', self.liveState );
 		}
 		
 		function userLeave( accId ) {
+			console.log( 'userLeave', accId );
 			self.isLive = false;
+			if ( !self.liveState )
+				return;
+			
+			self.liveState.user = false;
 			self.liveStatus.setUserLive( false );
-			self.emit( 'live-user', false );
+			self.emit( 'live-state', self.liveState );
+			if ( !self.liveState.peer )
+				self.liveState = null;
 		}
 		
 		function peers( peers ) {
@@ -2184,21 +2202,38 @@ library.view = library.view || {};
 		}
 		
 		function join( peer ) {
+			console.log( 'peerJoin', peer );
 			const peerId = peer.peerId;
 			if ( peerId !== self.clientId )
 				return;
 			
+			if ( self.liveState ) {
+				self.liveState.peer = true;
+			}
+			else
+				self.liveState = {
+					peer   : true,
+					missed : true,
+				};
+			
 			self.liveStatus.setContactLive( true );
-			self.emit( 'live-contact', true );
+			self.emit( 'live-state', self.liveState );
 		}
 		
 		function leave( peer ) {
+			console.log( 'peerLeave', peer );
 			const peerId = peer.peerId;
 			if ( peerId !== self.clientId )
 				return;
 			
+			if ( !self.liveState )
+				return;
+			
+			self.liveState.peer = false;
 			self.liveStatus.setContactLive( false );
-			self.emit( 'live-contact', false );
+			self.emit( 'live-state', self.liveState );
+			if ( !self.liveState.user )
+				self.liveState = null;
 		}
 	}
 	

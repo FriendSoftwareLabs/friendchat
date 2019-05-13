@@ -1052,27 +1052,48 @@ var hello = window.hello || {};
 		self.callStatus.on( 'audio', () => self.source.startVoice());
 		self.callStatus.on( 'show', () => self.source.showLive());
 		
-		const liveUserId = self.source.on( 'live-user', ( e ) => {
-			self.callStatus.setUserLive( e );
-		});
-		const liveContactId = self.source.on( 'live-contact', ( isLive ) => {
-			self.callStatus.setContactLive( isLive );
-			if ( !isLive )
-				return;
-			
+		const liveStateId = self.source.on( 'live-state', state => self.handleLiveState( state ));
+		
+		self.sourceIds.push( liveStateId );
+	}
+	
+	ns.RecentItem.prototype.handleLiveState = function( state ) {
+		const self = this;
+		console.log( 'ReventItem.handleLiveState', state );
+		self.callStatus.setUserLive( state.user );
+		self.callStatus.setContactLive( state.peer );
+		
+		if ( !state.missed )
+			return;
+		
+		if ( !state.user && state.peer ) {
+			setIncomming();
+			return;
+		}
+		
+		setMissed();
+		
+		function setIncomming() {
+			const msg = View.i18n( 'i18n_incoming_call' );
+			setLiveEvent( msg );
+		}
+		
+		function setMissed() {
+			const msg = View.i18n( 'i18n_missed_call' );
+			setLiveEvent( msg );
+		}
+		
+		function setLiveEvent( message ) {
 			const inc = {
 				type : 'live',
 				data : {
 					from    : null,
-					message : View.i18n( 'i18n_incoming_call' ),
+					message : message,
 					time    : Date.now(),
 				},
 			};
 			self.setEvent( inc );
-		});
-		
-		self.sourceIds.push( liveUserId );
-		self.sourceIds.push( liveContactId );
+		}
 	}
 	
 	ns.RecentItem.prototype.handleOnline = function( isOnline ) {
