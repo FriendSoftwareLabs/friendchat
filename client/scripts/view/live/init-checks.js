@@ -792,7 +792,7 @@ library.rtc = library.rtc || {};
         'edge'    : 'error',
         'opera'   : 'warning',
         'safari'  : 'warning',
-        'firefox' : 'warning',
+        'firefox' : 'success',
         'chrome'  : 'success',
         'blink'   : 'success',
         'samsung' : 'success',
