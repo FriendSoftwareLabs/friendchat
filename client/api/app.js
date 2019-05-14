@@ -927,7 +927,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.setViewFlag = function( msg ) {
 		const self = this;
-		//console.log( 'setViewFlag - ' + self.id, msg );
 		let view = self.views[ msg.viewId ];
 		if ( !view )
 			return;

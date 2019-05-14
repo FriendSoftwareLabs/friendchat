@@ -30,7 +30,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Subscriber ))
 			return new ns.Subscriber( conf );
 		
-		var self = this;
+		const self = this;
 		self.type = 'subscription';
 		self.data = conf.subscriber;
 		self.isReceived = conf.subscriber.isRecieved; // TODO received / recieved - spelling
@@ -48,7 +48,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.Subscriber.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.bindEvents();
 	}
 	
@@ -58,7 +58,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var tmplId = self.isReceived ? 'subscription-tmpl' : 'subscribee-tmpl';
 		var tmplConf = {
 			clientId : self.clientId,
@@ -70,7 +70,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( self.clientId );
 		
 		var acceptBtn = element.querySelector( '.subscriber .allowSub' );
@@ -90,7 +90,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.acceptSub = function( e ) {
-		var self = this;
+		const self = this;
 		self.conn.send({
 			type : 'allow',
 		});
@@ -98,7 +98,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.denySub = function( e ) {
-		var self = this;
+		const self = this;
 		self.conn.send({
 			type : 'deny',
 		});
@@ -106,7 +106,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.cancelSub = function( e ) {
-		var self = this;
+		const self = this;
 		self.conn.send({
 			type : 'cancel'
 		});
@@ -114,7 +114,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.showSpinner = function() {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( self.clientId );
 		var actions = element.querySelector( '.actions-container' );
 		var spinner = element.querySelector( '.action-pending' );
@@ -131,7 +131,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.TreerootContact ))
 			return new ns.TreerootContact( conf );
 		
-		var self = this;
+		const self = this;
 		self.data = conf.contact;
 		self.online = conf.contact.online;
 		// id is later replaced by the component
@@ -179,7 +179,7 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootContact.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.messageWaiting = new library.component.StatusDisplay({
 			containerId : self.messageWaiting,
 			type        : 'icon',
@@ -223,7 +223,7 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootContact.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var conf = {
 			clientId         : self.clientId,
 			avatar           : self.identity.avatar,
@@ -243,12 +243,12 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootContact.prototype.showSettings = function() {
-		var self = this;
+		const self = this;
 		console.log( 'view.treerootcontact.showSettings - NYI' );
 	}
 	
 	ns.TreerootContact.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.conn.on( 'presence', presence );
 		self.conn.on( 'message', message );
 		self.conn.on( 'msg-waiting', messageWaiting );
@@ -318,7 +318,7 @@ library.view = library.view || {};
 	ns.Treeroot.prototype = Object.create( library.view.BaseModule.prototype );
 	
 	ns.Treeroot.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.infoMap = self.infoMap || {};
 		self.infoMap[ 'offline' ] = serverOffline;
 		self.infoMap[ 'reconnecting' ] = reconnecting;
@@ -375,7 +375,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.setLogoCss = function() {
-		var self = this;
+		const self = this;
 		var logoPath = 'https://treeroot.org/upload/images-master/logo.png';
 		var conf = {
 			logoPath : logoPath,
@@ -384,7 +384,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.initFoldit = function() {
-		var self = this;
+		const self = this;
 		self.contactsFoldit = new library.component.Foldit({
 			folderId : self.contactsFoldit,
 			foldeeId : self.contactItemsId,
@@ -406,7 +406,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.serverOffline = function( data ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'module-offline' ),
 		};
@@ -426,7 +426,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.reconnecting = function( msg ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'reconnecting' ),
 		};
@@ -446,7 +446,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.moduleInfoMissing = function( data ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'login-missing' ),
 		};
@@ -563,7 +563,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.scienceRegister = function() {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'scienceregister',
 		};
@@ -571,7 +571,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.showCreateAccount = function() {
-		var self = this;
+		const self = this;
 		var registerEvent = {
 			type : 'register',
 		};
@@ -579,7 +579,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.saveSetting = function( type, value ) {
-		var self = this;
+		const self = this;
 		var update = {
 			setting : type,
 			value : value,
@@ -592,14 +592,14 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.bind = function() {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( self.contactsId );
 		self.inactiveContainer = element.querySelector( '.inactive-container' );
 		self.inactiveStats = self.inactiveContainer.querySelector( '.inactive-stats' );
 	}
 	
 	ns.Treeroot.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.mod.on( 'account', updateAccount );
 		self.mod.on( 'contact', handleContact );
 		self.mod.on( 'subscriber', addSubscriber );
@@ -613,14 +613,14 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.updateAccount = function( account ) {
-		var self = this;
+		const self = this;
 		self.identity = account;
 		self.identity.name = self.identity.name || '---';
 		self.updateTitle();
 	}
 	
 	ns.Treeroot.prototype.addContact = function( data ) {
-		var self = this;
+		const self = this;
 		self.serverMessage.hide();
 		var conf = {
 			contact     : data,
@@ -635,7 +635,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.addSubscriber = function( subData ) {
-		var self = this;
+		const self = this;
 		self.serverMessage.hide();
 		var conf = {
 			subscriber  : subData,
@@ -652,7 +652,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.handleContact = function( msg ) {
-		var self = this;
+		const self = this;
 		var handler = self.contactMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'view.module.handleContact - no handler for', msg );
@@ -663,7 +663,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.contactPresence = function( data ) {
-		var self = this;
+		const self = this;
 		var contact = self.contacts[ data.clientId ];
 		if ( !contact ) {
 			console.log( 'view.module.contactPresence - no contact found for', data );
@@ -675,7 +675,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortContact = function( contact ) {
-		var self = this;
+		const self = this;
 		var clientId = contact.clientId;
 		var presence = contact.presence.get();
 		if ( 'offline' !== presence ) {
@@ -717,7 +717,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortOnline = function() {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( self.activeId );
 		var beforeElement = getBeforeElement();
 		
@@ -748,7 +748,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortInactive = function() {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( self.inactiveId );
 		self.inactiveIds.forEach( reorder );
 		function reorder( clientId ) {
@@ -759,7 +759,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortSubs = function() {
-		var self = this;
+		const self = this;
 		var actives = document.getElementById( self.activeId );
 		var hidden = document.getElementById( self.inactiveId );
 		self.sortContactIds( self.subIds );
@@ -775,7 +775,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortContactIds = function( idArr ) {
-		var self = this;
+		const self = this;
 		idArr.sort( byName );
 		function byName( a, b ) {
 			var ca = self.contacts[ a ].identity.name.toUpperCase();
@@ -789,7 +789,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.updateCount = function() {
-		var self = this;
+		const self = this;
 		var max = Object.keys( self.contacts ).length;
 		var num = self.inactiveIds.length;
 		num = num + self.subIds.length;
@@ -798,7 +798,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.removeContact = function( clientId ) {
-		var self = this;
+		const self = this;
 		var contact = self.contacts[ clientId ];
 		if ( !contact ) {
 			console.log( 'no contact for clientId', clientId );
@@ -854,7 +854,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.subscribe = function( e ) {
-		var self = this;
+		const self = this;
 		e.preventDefault();
 		e.stopPropagation();
 		self.mod.send({
@@ -863,7 +863,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.queryPassReset = function( data ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id      : friendUP.tool.uid( 'query-pass-reset' ),
 			message : data.message,
@@ -897,7 +897,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.getName = function() {
-		var self = this;
+		const self = this;
 		var host = self.module.host.split( '.' )[ 0 ];
 		var name = self.module.displayName || host || self.type;
 		name = friendUP.tool.ucfirst( name );
@@ -918,7 +918,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.IrcChannel ))
 			return new ns.IrcChannel( conf );
 		
-		var self = this;
+		const self = this;
 		self.data = conf.channel;
 		self.topic = '';
 		self.mode = {};
@@ -936,7 +936,7 @@ library.view = library.view || {};
 	ns.IrcChannel.prototype = Object.create( library.view.BaseContact.prototype );
 	
 	ns.IrcChannel.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.messageWaiting = new library.component.StatusIndicator({
 			containerId : self.messageWaiting,
 			type : 'icon',
@@ -952,7 +952,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IrcChannel.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var conf = {
 			clientId : self.clientId,
 			channelName : self.identity.name,
@@ -966,7 +966,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IrcChannel.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.conn.on( 'highlight', highlight );
 		self.conn.on( 'msg-waiting', messageWaiting );
 		
@@ -975,7 +975,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IrcChannel.prototype.setHighlight = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'view.IrcChannel.setHighlight - NYI', msg );
 	}
 	
@@ -1001,7 +1001,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.IrcPrivate ))
 			return new ns.IrcPrivate( conf );
 		
-		var self = this;
+		const self = this;
 		self.data = conf.contact;
 		self.messageWaiting = friendUP.tool.uid( 'message-waiting' );
 		
@@ -1017,7 +1017,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.IrcPrivate.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.messageWaiting = new library.component.StatusIndicator({
 			containerId : self.messageWaiting,
 			type : 'icon',
@@ -1033,7 +1033,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IrcPrivate.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var tmplId = 'irc-private-tmpl';
 		var conf = {
 			clientId : self.clientId,
@@ -1061,7 +1061,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IrcPrivate.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.conn.on( 'msg-waiting', messageWaiting );
 		self.conn.on( 'highlight', handleHighlight );
 		
@@ -1092,7 +1092,7 @@ library.view = library.view || {};
 	ns.IRC.prototype = Object.create( library.view.BaseModule.prototype );
 	
 	ns.IRC.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			name : self.module.settings.nick,
 		};
@@ -1108,7 +1108,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IRC.prototype.buildRoomsElement = function() {
-		var self = this;
+		const self = this;
 		var tmplId = 'irc-module-tmpl';
 		var title = self.getTitleString();
 		var conf = {
@@ -1143,7 +1143,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IRC.prototype.bindModuleEvents = function() {
-		var self = this;
+		const self = this;
 		self.mod.on( 'private', handlePrivate );
 		self.mod.on( 'join', handleJoin );
 		self.mod.on( 'leave', handleLeave );
@@ -1159,7 +1159,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IRC.prototype.addPrivate = function( data ) {
-		var self = this;
+		const self = this;
 		var conf = {
 			menuActison : self.menuActions,
 			containerId : self.roomItemsId,
@@ -1172,7 +1172,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IRC.prototype.joinChannel = function( data ) {
-		var self = this;
+		const self = this;
 		var conf = {
 			menuActions : self.menuActions,
 			containerId : self.roomItemsId,
@@ -1184,7 +1184,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IRC.prototype.leaveChannel = function( clientId ) {
-		var self = this;
+		const self = this;
 		var channel = self.contacts[ clientId ];
 		if ( !channel ) {
 			return;
@@ -1205,7 +1205,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IRC.prototype.updateSetting = function( data ) {
-		var self = this;
+		const self = this;
 		if ( data.setting != 'displayName' )
 			return;
 		
@@ -1314,7 +1314,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Presence.prototype.bindModuleEvents = function() {
-		var self = this;
+		const self = this;
 		self.mod.on( 'user-id', userId );
 		self.mod.on( 'room-join', joinedRoom );
 		self.mod.on( 'room-remove', leftRoom );
@@ -1463,7 +1463,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Presence.prototype.askForAccount = function( event ) {
-		var self = this;
+		const self = this;
 		const createId = friendUP.tool.uid( 'create' );
 		const haveId = friendUP.tool.uid( 'have' );
 		var conf = {
@@ -1487,7 +1487,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Presence.prototype.createAccount = function( event ) {
-		var self = this;
+		const self = this;
 		var el = hello.template.getElement( 'presence-create-account-tmpl', conf );
 		self.serverMessage.show( el );
 		bind( el );
@@ -1514,7 +1514,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Presence.prototype.loginInvalid = function( event ) {
-		var self = this;
+		const self = this;
 		console.log( 'loginInvalid', event );
 	}
 	
@@ -1559,7 +1559,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.PresenceRoom.prototype.init = function() {
-		var self = this;
+		const self = this;
 		if ( !self.identity.name ) {
 			self.unnamed = true;
 			self.identity.name = '[ temporary room ]';
@@ -1574,7 +1574,7 @@ library.view = library.view || {};
 	}
 	
 	ns.PresenceRoom.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var tmplId = 'presence-room-tmpl';
 		var conf = {
 			clientId     : self.clientId,
@@ -1752,7 +1752,7 @@ library.view = library.view || {};
 	}
 	
 	ns.PresenceRoom.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.conn.on( 'init', init );
 		self.conn.on( 'auth', auth );
 		self.conn.on( 'persistent', persistent );
@@ -2168,7 +2168,6 @@ library.view = library.view || {};
 		self.live.on( 'leave', leave );
 		
 		function userJoin( accId ) {
-			console.log( 'userJoin', accId );
 			self.isLive = true;
 			if ( self.liveState ) {
 				self.liveState.missed = false;
@@ -2185,7 +2184,6 @@ library.view = library.view || {};
 		}
 		
 		function userLeave( accId ) {
-			console.log( 'userLeave', accId );
 			self.isLive = false;
 			if ( !self.liveState )
 				return;
@@ -2202,7 +2200,6 @@ library.view = library.view || {};
 		}
 		
 		function join( peer ) {
-			console.log( 'peerJoin', peer );
 			const peerId = peer.peerId;
 			if ( peerId !== self.clientId )
 				return;
@@ -2221,7 +2218,6 @@ library.view = library.view || {};
 		}
 		
 		function leave( peer ) {
-			console.log( 'peerLeave', peer );
 			const peerId = peer.peerId;
 			if ( peerId !== self.clientId )
 				return;
@@ -2313,7 +2309,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Telegram ))
 			return new ns.Telegram( conf );
 		
-		var self = this;
+		const self = this;
 		library.view.BaseModule.call( self, conf );
 		
 		self.init();
@@ -2338,14 +2334,14 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Account ))
 			return new ns.Account();
 		
-		var self = this;
+		const self = this;
 		self.view = null;
 		
 		self.init();
 	}
 	
 	ns.Account.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.view = new library.component.SubView({
 			parent : window.View,
 			type : 'account',
@@ -2355,7 +2351,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Account.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'update', update );
 		self.view.on( 'availability', setAvailability );
 		
@@ -2364,17 +2360,17 @@ library.view = library.view || {};
 	}
 	
 	ns.Account.prototype.update = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'view.Account.update - NYI', data );
 	}
 	
 	ns.Account.prototype.setAvailability = function( state ) {
-		var self = this;
+		const self = this;
 		console.log( 'view.Account.setAvaliability - NYI', state );
 	}
 	
 	ns.Account.prototype.showSettings = function() {
-		var self = this;
+		const self = this;
 		self.view.send({
 			type : 'settings',
 		});
@@ -2401,7 +2397,7 @@ library.view = library.view || {};
 	// Public
 	
 	ns.ModuleControl.prototype.create = function( module ) {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'create',
 		};
@@ -2415,7 +2411,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.ModuleControl.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.moduleTypeMap = {
 			treeroot : library.view.Treeroot,
 			irc      : library.view.IRC,
@@ -2441,7 +2437,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'add', add );
 		self.view.on( 'remove', remove );
 		self.view.on( 'showguide', showguide );
@@ -2493,7 +2489,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.remove = function( clientId ) {
-		var self = this;
+		const self = this;
 		var module = self.active[ clientId ];
 		
 		if ( !module )
@@ -2515,7 +2511,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.askAddModule = function( data ) {
-		var self = this;
+		const self = this;
 		self.askAddType = data.type;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'ask-add-mod' ),
@@ -2556,7 +2552,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.showGuide = function() {
-		var self = this;
+		const self = this;
 		var guideConf = {
 			title : 'Ohnoes!',
 			explanation : 'No chat network added ',
@@ -2567,7 +2563,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		self.view.send( msg );
 	}
 })( library.view );
@@ -2579,7 +2575,7 @@ library.view = library.view || {};
 		if( !( this instanceof ns.Notification))
 			return new ns.Notification( containerId );
 		
-		var self = this;
+		const self = this;
 		self.type = 'notification';
 		self.containerId = containerId;
 		self.output = friendUP.tool.uid( 'notification-output' );
@@ -2590,7 +2586,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.buildHtml();
 		self.view = new library.component.SubView({
 			parent : window.View,
@@ -2604,7 +2600,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.buildHtml = function() {
-		var self = this;
+		const self = this;
 		var conf = {
 			outputId : self.output,
 			unreadId : self.unread,
@@ -2617,7 +2613,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'clear', clear );
 		self.view.on( 'toggle', setLogOpen );
 		self.view.on( 'info', info );
@@ -2638,61 +2634,61 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.clear = function() {
-		var self = this;
+		const self = this;
 		self.setEmpty();
 		self.clearUnread();
 	}
 	
 	ns.Notification.prototype.setLogOpen = function( isOpen ) {
-		var self = this;
+		const self = this;
 		self.logIsOpen = isOpen === 'true' ? true : false;
 		if ( self.logIsOpen )
 			self.clearUnread();
 	}
 	
 	ns.Notification.prototype.setInfo = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setPositive = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setNotify = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setAlert = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setWaiting = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setRunForTheHills = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setEmpty = function() {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( '-' );
 		self.set( data, false );
 		self.clearUnread();
@@ -2709,7 +2705,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.set = function( msg, doIncrement ) { // doIncrement defaults to true
-		var self = this;
+		const self = this;
 		var increment = ( typeof( doIncrement ) != 'undefined' ) ? doIncrement : true;
 		var tmplId = msg.tmplId || 'notification-message-tmpl';
 		var html = hello.template.get( tmplId, msg.conf );
@@ -2722,14 +2718,14 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( self.containerId );
 		container.addEventListener( 'click', click, false );
 		function click( e ) { self.toggle(); }
 	}
 	
 	ns.Notification.prototype.toggle = function() {
-		var self = this;
+		const self = this;
 		self.view.send({
 			type : 'toggle',
 		});
@@ -2738,7 +2734,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.setUnread = function() {
-		var self = this;
+		const self = this;
 		if ( self.logIsOpen )
 			return;
 		
@@ -2748,7 +2744,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.clearUnread = function() {
-		var self = this;
+		const self = this;
 		self.output.classList.toggle( 'unread', false );
 		self.unread.innerHTML = ' ';
 	}
@@ -3275,7 +3271,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Main ))
 			return new ns.Main();
 		
-		var self = this;
+		const self = this;
 		self.view = window.View;
 		self.optionMenu = 'option-menu';
 		self.notification = null;
@@ -3294,7 +3290,7 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.init = function()
 	{
-		var self = this;
+		const self = this;
 		self.bindEvents();
 		self.bindView();
 		self.setTemplate();
@@ -3306,7 +3302,7 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.bindEvents = function()
 	{
-		var self = this;
+		const self = this;
 		self.mainMenuContainer = document.getElementById( 'main-menu' );
 		self.mainMenuBtn = document.getElementById( 'menu-btn' );
 		
@@ -3325,7 +3321,7 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.bindView = function()
 	{
-		var self = this;
+		const self = this;
 		//self.view.receiveMessage = receiveMessage;
 		self.view.on( 'initialize', initialize );
 		
@@ -3394,7 +3390,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Main.prototype.addMenu = function() {
-		var self = this;
+		const self = this;
 		var modules = {
 			type   : 'folder',
 			id     : 'modules',
@@ -3485,19 +3481,19 @@ library.view = library.view || {};
 	}
 	
 	ns.Main.prototype.showMenu = function( folderId ) {
-		var self = this;
+		const self = this;
 		self.mainMenuContainer.classList.toggle( 'hidden', false );
 		self.menu.show( folderId );
 	}
 	
 	ns.Main.prototype.hideMenu = function() {
-		var self = this;
+		const self = this;
 		self.mainMenuContainer.classList.toggle( 'hidden', true );
 		self.menu.hide();
 	}
 	
 	ns.Main.prototype.enableInAppMenu = function() {
-		var self = this;
+		const self = this;
 		var foot = document.getElementById( 'foot' );
 		var head = document.getElementById( 'head' );
 		foot.classList.add( 'hidden' );
@@ -3506,7 +3502,7 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.setTemplate = function()
 	{
-		var self = this;
+		const self = this;
 		var fragments = document.getElementById( 'fragments' );
 		var fragStr = fragments.innerHTML;
 		fragStr = View.i18nReplaceInString( fragStr );
@@ -3514,7 +3510,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Main.prototype.receiveMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		
 	}
 	

@@ -349,7 +349,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.init = function() {
 		const self = this;
-		console.log( 'View.init' );
 		self.addAPIScripts();
 		document.addEventListener( 'readystatechange', checkState, false );
 		function checkState( e ) {

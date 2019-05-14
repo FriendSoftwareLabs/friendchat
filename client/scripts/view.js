@@ -78,7 +78,6 @@ library.view = library.view || {};
 		if ( !self.view )
 			return null;
 		
-		console.log( 'checkMinimized  - view.isMinimized', self.view.isMinimized );
 		return self.view.isMinimized;
 	}
 	
@@ -350,7 +349,6 @@ library.view = library.view || {};
 	
 	ns.IMChat.prototype.checkMinimized = function() {
 		const self = this;
-		console.log( 'checkMinimized', self.view );
 		if ( !self.view )
 			return null;
 		
@@ -545,7 +543,6 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.checkMinimized = function() {
 		const self = this;
-		console.log( 'checkMinimized', self.view );
 		if ( !self.view )
 			return null;
 		
@@ -1189,7 +1186,6 @@ library.view = library.view || {};
 	
 	ns.Conference.prototype.checkMinimized = function() {
 		const self = this;
-		console.log( 'checkMinimized', self.view );
 		if ( !self.view )
 			return null;
 		

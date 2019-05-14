@@ -736,14 +736,8 @@ library.contact = library.contact || {};
 			return;
 		
 		let current = self.users[ userId ];
-		if ( !current ) {
-			console.log( 'PresenceRoom.handleOnline  - huh? no users for', {
-				user : userState,
-				users : self.users,
-				self : self,
-			});
+		if ( !current )
 			return;
-		}
 		
 		current.isAdmin = userState.isAdmin;
 		self.onlineList.push( userId );
@@ -1489,7 +1483,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleJoin = function( user ) {
 		const self = this;
-		console.log( 'handleJoin', user );
 		const uId = user.clientId;
 		self.idc.get( uId )
 			.then( idBack )
@@ -1526,7 +1519,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLeave = function( userId ) {
 		const self = this;
-		console.log( 'handleLeave', userId );
 		delete self.users[ userId ];
 		self.userIds = Object.keys( self.users );
 		const leave = {
@@ -2162,7 +2154,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.open = function() {
 		const self = this;
-		console.log( 'open' );
 		self.send({
 			type : 'open',
 			data : null,
@@ -2171,7 +2162,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.handleOpen = function( isOpen ) {
 		const self = this;
-		console.log( 'handleOpen', isOpen );
 		if ( self.isOpen === isOpen )
 			return;
 		
@@ -2239,7 +2229,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChat = function() {
 		const self = this;
-		console.log( 'openChat - isOpen', self.isOpen );
 		if ( !self.isOpen ) {
 			self.openChatPending = true;
 			self.open();
@@ -2249,7 +2238,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChatView = function() {
 		const self = this;
-		console.log( 'openChatView - users', self.users );
 		self.openChatPending = false;
 		if ( self.chatView ) {
 			self.chatView.show();

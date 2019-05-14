@@ -431,7 +431,6 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.removeRoom = function( clientId ) {
 		const self = this;
-		console.log( 'removeRoom', clientId );
 		const room = self.rooms[ clientId ];
 		if ( !room )
 			return;
@@ -920,7 +919,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
-		console.log( 'handleAccountInit', state );
 		if ( self.initialized )
 			return;
 		
@@ -955,17 +953,11 @@ library.module = library.module || {};
 			self.identity = id;
 			
 			function updateName() {
-				console.log( 'Presence.handleAccountInit - updateName, NYI', {
-					'account id' : self.account.identity,
-					identity     : self.identity,
-				});
+				
 			}
 			
 			function updateAvatar() {
-				console.log( 'Presence.handleAccountInit - updateAvatar, NYI', {
-					'account id' : self.account.identity,
-					identity     : self.identity,
-				});
+				
 			}
 		}
 	}
@@ -1143,13 +1135,15 @@ library.module = library.module || {};
 			room.setUserOnline( clientId, userState );
 		});
 		
+		/*
 		self.idc.get( clientId )
 			.then( idBack )
 			.catch(e => {});
 			
 		function idBack( id ) {
-			console.log( 'handleContactOnline - idBack - NYI', id );
+			
 		}
+		*/
 	}
 	
 	ns.Presence.prototype.checkOpenChatWaiting = function( clientId ) {
@@ -1199,19 +1193,16 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.setupRooms = function( rooms ) {
 		const self = this;
-		console.log( 'Presence.setupRooms', rooms );
 		if ( !rooms || !rooms.length )
 			return;
 		
 		rooms.forEach( room => self.addRoom( room ));
 		const list = rooms.map( r => r.clientId );
-		console.log( 'list', list );
 		self.checkCurrentRooms( list );
 	}
 	
 	ns.Presence.prototype.handleJoin = function( rooms ) {
 		const self = this;
-		console.log( 'Presence.handleJoin', rooms );
 		const conf = rooms.joined;
 		const list = rooms.current;
 		self.checkCurrentRooms( list );
@@ -1238,7 +1229,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.checkCurrentRooms = function( list ) {
 		const self = this;
-		console.log( 'checkCurrentRooms', list );
 		if ( null == list )
 			return;
 		
@@ -1251,15 +1241,9 @@ library.module = library.module || {};
 		self.checkRoomsTimeout = window.setTimeout( check, 500 );
 		
 		function check() {
-			console.log( 'check', list );
 			const missing = list.filter( rId => !self.rooms[ rId ]);
 			const stale = self.roomIds.filter( rId => {
 				return !list.some( lId => rId == lId );
-			});
-			
-			console.log( 'check, results', {
-				missing : missing,
-				stale   : stale,
 			});
 			
 			if ( missing.length )

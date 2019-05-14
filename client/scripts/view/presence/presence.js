@@ -291,7 +291,6 @@ library.view = library.view || {};
 		hello.template = friend.template;
 		friend.template.addFragments( conf.commonFragments );
 		const state = conf.state;
-		console.log( 'view.Presence.handleInitialize', state );
 		
 		// things
 		self.clientId   = state.clientId;
@@ -455,7 +454,6 @@ library.view = library.view || {};
 		}
 		
 		self.conn.ready();
-		console.log( 'send log' );
 		self.sendChatEvent({
 			type : 'log',
 			data : null,
@@ -560,7 +558,6 @@ library.view = library.view || {};
 
 	ns.Presence.prototype.handleState = function( state ) {
 		const self = this;
-		console.log( 'view.Presence.handleState', state );
 		self.users.updateAll( state );
 		//removeOld( state.users );
 		//addNew( state.users );
@@ -845,7 +842,6 @@ library.view = library.view || {};
 	ns.WorkUser.prototype.handleClick = function( e ) {
 		const self = this;
 		e.preventDefault();
-		console.log( 'WorkUser.handleClick', e );
 		if ( self.onClick )
 			self.onClick( self.id );
 	}
@@ -1003,7 +999,6 @@ library.view = library.view || {};
 		gIds.forEach( setGAvailable );
 		self.addUserGroup( conf.workId, 'all_groups', 'Accept' );
 		
-		console.log( 'xxxx conf', self.conf );
 		if ( conf.superId && !( self.conf && self.conf.subsHaveSuperView )) {
 			const superId = conf.superId;
 			self.addWorkGroup( superId, self.workId, 'Action' );

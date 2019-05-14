@@ -29,7 +29,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.BaseContact ))
 			return new ns.BaseContact( conf );
 		
-		var self = this;
+		const self = this;
 		library.component.EventEmitter.call( self, eventSink );
 		self.clientId = self.data.clientId;
 		self.id = self.clientId;
@@ -113,7 +113,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.BaseContact.prototype.baseContactInit = function( parentConn ) {
-		var self = this;
+		const self = this;
 		self.setupConn( parentConn );
 		self.lastMessage = self.data.lastMessage || null;
 		self.menuActions = new library.component.MiniMenuActions();
@@ -133,7 +133,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseContact.prototype.updateIdentity = function( id ) {
-		var self = this;
+		const self = this;
 		self.identity = id;
 		self.updateName();
 		self.updateAvatar();
@@ -141,7 +141,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseContact.prototype.updateName = function() {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( self.clientId );
 		var nameEl = element.querySelector( '.name' );
 		if ( !nameEl ) {
@@ -166,7 +166,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseContact.prototype.bindItem = function() {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( self.clientId );
 		self.itemMenu = element.querySelector( '.item-menu' );
 		
@@ -207,7 +207,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseContact.prototype.startLive = function( mode, perms ) {
-		var self = this;
+		const self = this;
 		mode = mode || 'video';
 		self.send({
 			type : 'start-live',
@@ -219,19 +219,19 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseContact.prototype.remove = function() {
-		var self = this;
+		const self = this;
 		self.send({
 			type: 'remove',
 		});
 	}
 	
 	ns.BaseContact.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		self.conn.send( msg );
 	}
 	
 	ns.BaseContact.prototype.close = function() {
-		var self = this;
+		const self = this;
 		self.conn.close();
 		
 		var element = document.getElementById( self.clientId );
@@ -249,7 +249,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.BaseModule ))
 			return new ns.BaseModule( conf );
 		
-		var self = this;
+		const self = this;
 		library.component.EventEmitter.call( self, eventSink );
 		
 		self.clientId = conf.module.clientId;
@@ -770,7 +770,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.showInitializing = function() {
-		var self = this;
+		const self = this;
 		if ( self.initalized )
 			return;
 		
@@ -783,7 +783,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.showMessage = function( message ) {
-		var self = this;
+		const self = this;
 		var id = friendUP.tool.uid( 'message' );
 		var conf = {
 			id : id,
@@ -794,7 +794,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.clearInfo = function() {
-		var self = this;
+		const self = this;
 		self.serverMessage.hide();
 	}
 	
@@ -808,7 +808,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.updateHandler = function( update ) {
-		var self = this;
+		const self = this;
 		if ( !self.updateMap )
 			throw new Error( 'no updateMap defined for module: ' + self.type );
 		
@@ -822,19 +822,19 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.updateModule = function( update ) {
-		var self = this;
+		const self = this;
 		self.module.name = update.name;
 		self.updateTitle();
 	}
 	
 	ns.BaseModule.prototype.updateIdentity = function( update ) {
-		var self = this;
+		const self = this;
 		self.identity = update;
 		self.updateTitle();
 	}
 	
 	ns.BaseModule.prototype.queryHandler = function( msg ) {
-		var self = this;
+		const self = this;
 		var handler = self.queryMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'mod.handleQuery - no handler for', msg );
@@ -845,7 +845,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.querySecure = function( data ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'query-secure' ),
 			message : data.message || '',
@@ -872,7 +872,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.querySecureConfirm = function( data ) {
-		var self = this;
+		const self = this;
 		var conf = {
 			id      : friendUP.tool.uid( 'query-secure-confirm' ),
 			message : data.message || '',
@@ -901,7 +901,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.queryPassword = function( data ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'query-password' ),
 			message : data.message || '',
@@ -942,7 +942,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.queryText = function( data ) {
-		var self = this;
+		const self = this;
 		var conf = {
 			id      : friendUP.tool.uid( 'query-text' ),
 			message : data.message || '',
@@ -1017,7 +1017,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.infoHandler = function( info ) {
-		var self = this;
+		const self = this;
 		var handler = self.infoMap[ info.type ];
 		if ( !handler ) {
 			console.log( 'no handler for info', info );
@@ -1028,7 +1028,7 @@ library.view = library.view || {};
 	}
 	
 	ns.BaseModule.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		self.mod.send( msg );
 	}
 	

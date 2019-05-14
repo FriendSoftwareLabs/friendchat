@@ -65,9 +65,9 @@ var hello = null;
 	
 	ns.Hello.prototype.timeNow = function( str ) {
 		const self = this;
-		let now = Date.now();
-		let sinceBeginning = now - self.startTiming;
-		let sinceLast = now - self.lastTiming;
+		const now = Date.now();
+		const sinceBeginning = now - self.startTiming;
+		const sinceLast = now - self.lastTiming;
 		console.log( 'Timing: ' + str, {
 			total : sinceBeginning,
 			last  : sinceLast,
@@ -79,7 +79,7 @@ var hello = null;
 	
 	ns.Hello.prototype.init = function() {
 		const self = this;
-		console.log( 'self.config', self.config );
+		console.log( 'config', self.config );
 		if ( self.config.dev )
 			self.app.setDev( self.config.host );
 		
