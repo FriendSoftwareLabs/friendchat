@@ -188,7 +188,7 @@ var hello = null;
 		self.timeNow( 'honst config loaded' );
 		library.tool.mergeObjects( self.config, hostConf );
 		self.config.appName = self.config.appName || 'Friend Chat';
-		console.log( 'hello.config', hello.config );
+		console.log( 'hello - host config', hello.config );
 		self.preInit();
 	}
 	
@@ -423,7 +423,6 @@ var hello = null;
 		self.request = new library.system.Request({ conn : self.conn });
 		self.intercept = new library.system.Interceptor();
 		
-		console.log( 'dormantEnabled', self.dormantEnabled );
 		if ( self.dormantEnabled )
 			self.dormant = new library.system.Dormant(
 				self.dormantAllowRead,
@@ -945,7 +944,7 @@ var hello = null;
 	
 	ns.Hello.prototype.receiveMessage = function( msg ) {
 		var self = this;
-		console.log( 'Hello.receiveMessage', msg );
+		console.log( 'Hello.receiveMessage - NOOP', msg );
 	}
 	
 	ns.Hello.prototype.handlePushNotie = function( event ) {
@@ -972,7 +971,7 @@ var hello = null;
 	
 	ns.Hello.prototype.handleNotie = function( event ) {
 		const self = this;
-		console.log( 'hello.handleNotie - nyi lol', event );
+		console.log( 'hello.handleNotie', event );
 		if ( !event || !event.extra ) {
 			console.log( 'hello.handleNotie - invalid event', event );
 			return;

@@ -529,11 +529,6 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.getAvatarKlass = function( clientId ) {
 		const self = this;
 		const user = self.get( clientId );
-		console.log( 'getAvatarKlass', {
-			cId   : clientId,
-			user  : user,
-			users : self.users,
-		});
 		if ( user.isGuest )
 			clientId = 'guest-user';
 		
@@ -576,7 +571,6 @@ var hello = window.hello || {};
 		guestAvatar
 	) {
 		const self = this;
-		console.log( 'UserCtrl.init', users );
 		self.build();
 		self.initBaseGroups();
 		self.setWorkgroups( workgroups );
@@ -1746,7 +1740,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLog = function( log ) {
 		const self = this;
-		console.log( 'MsgBuilder.handleLog', log );
 		let events = log.data.events;
 		let newIds = log.data.ids;
 		if ( newIds )

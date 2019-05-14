@@ -125,8 +125,9 @@ library.component = library.component || {};
 		function chat( e ) { self.handleChat( e ); }
 	}
 	*/
-	ns.GuestAccount.prototype.handleJoinedRoom = function( conf ) {
+	ns.GuestAccount.prototype.handleJoinedRoom = function( event ) {
 		const self = this;
+		const conf = event.joined;
 		self.roomId = conf.clientId;
 		const roomConf = {
 			roomId      : self.roomId,

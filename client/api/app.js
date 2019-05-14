@@ -144,7 +144,6 @@ var friend = window.friend || {}; // already instanced stuff
 		const activate = {
 			method : 'activate',
 		};
-		console.log( 'activate', activate );
 		self._send( activate );
 	}
 	
@@ -240,7 +239,6 @@ var friend = window.friend || {}; // already instanced stuff
 			windowConf.viewConf.translations = self.app.translations;
 		}
 		
-		console.log( 'app.View.initView', self.app.isDev );
 		if ( null != self.app.isDev ) {
 			windowConf.viewConf = windowConf.viewConf || {};
 			windowConf.viewConf.isDev = self.app.isDev;
@@ -330,7 +328,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleMinimized = function( isMinimized ) {
 		const self = this;
-		console.log( 'app.View.handleMinimized ' + self.id, isMinimized );
 		self.isMinimized = isMinimized;
 	}
 	
@@ -838,7 +835,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleLibResponse = function( msg ) {
 		var self = this;
-		console.log( 'handleLibResponse', msg );
 		var callback = self.getCallback( msg.callbackId );
 		if ( !callback ) {
 			console.log( 'libraryresponse - no callback for', msg );
@@ -1094,7 +1090,6 @@ var friend = window.friend || {}; // already instanced stuff
 			error      : error,
 			data       : result,
 		};
-		console.log( 'returnCallback', event );
 		self.sendMessage( event );
 	}
 	
@@ -1211,7 +1206,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.receiveMessage = function( e ) {
 		var self = this;
-		console.log( 'Application.receiveMessage - reimplement this one to receive messages in your application', e );
 	}
 	
 	ns.Application.prototype.setCallback = function( callback ) {
