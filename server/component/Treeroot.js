@@ -73,10 +73,8 @@ ns.Treeroot = function( clientConnection, clientId ) {
 // Public
 
 //static
-ns.Treeroot.prototype.getSetup = function() {
-	return {
-		settings : {},
-	}
+ns.Treeroot.prototype.getSetup = function( conf, username ) {
+	return conf || {};
 }
 
 // Private

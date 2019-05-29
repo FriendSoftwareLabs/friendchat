@@ -204,6 +204,7 @@ ns.Account.prototype.updateClientSetting = function( update ) {
 
 ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	const self = this;
+	log( 'doFirstLoginSetup', global.config );
 	// save ui choice
 	self.saveSetting({
 		setting : 'advancedUI',
@@ -215,11 +216,15 @@ ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	
 	// add default modules for choice
 	let mods = null;
+	/*
 	if ( conf.advancedUI )
-		mods = [ 'presence', 'irc' ];
+		mods = [ 'presence', 'treeroot', 'irc' ];
 	else
 		mods = [ 'presence', 'treeroot' ];
-		
+	*/
+	
+	mods = global.config.server.defaults.defaultModules;
+	log( 'doFirstLoginSetup - mods', mods );
 	self.mods.addDefaultModules( mods, self.name );
 }
 

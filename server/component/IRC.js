@@ -48,13 +48,19 @@ ns.IRC = function( conn ) {
 // Public
 
 // static
-ns.IRC.prototype.getSetup = function( username ) {
-	const setup = {
-		settings : {
-			nick : username,
-		},
-	};
-	return setup;
+ns.IRC.prototype.getSetup = function( conf, username ) {
+	if ( !conf ) {
+		conf = {
+			settings : {
+				nick : username,
+			},
+		};
+		return conf;
+	}
+	
+	conf.settings = conf.settings || {};
+	conf.settings.nick = username;
+	return conf;
 }
 
 ns.IRC.prototype.connect = function( conf ) {

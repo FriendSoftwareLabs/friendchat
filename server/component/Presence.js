@@ -53,10 +53,8 @@ ns.Presence = function( clientConn, clientId ) {
 // Public
 
 // static
-ns.Presence.prototype.getSetup = function() {
-	return {
-		settings : {},
-	}
+ns.Presence.prototype.getSetup = function( conf, username ) {
+	return conf || {};
 }
 
 // Private

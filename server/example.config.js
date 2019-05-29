@@ -49,6 +49,9 @@ var server = {
 				advancedUI   : false,
 			},
 		},
+		defaultModules : [
+			'presence',
+		],
 		module : {
 			//Presence
 			presence : {
