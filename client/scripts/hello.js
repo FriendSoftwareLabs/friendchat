@@ -1062,8 +1062,11 @@ var hello = null;
 			if ( null == self.avatarStatus )
 				return;
 			
-			self.module.updateAvatar( self.avatarStatus );
-			self.main.updateAvatar( self.avatarStatus );
+			if ( self.module )
+				self.module.updateAvatar( self.avatarStatus );
+			
+			if ( self.main )
+				self.main.updateAvatar( self.avatarStatus );
 		}
 		
 		function clearCache() {
