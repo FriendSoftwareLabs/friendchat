@@ -234,7 +234,6 @@ var api = window.api || {};
 		if ( 300 > self.eventBuffer.length )
 			return;
 		
-		console.log( 'LogSock.buffer - trimming event buffer', self.eventBuffer.length );
 		self.eventBuffer = self.eventBuffer.slice( -200 );
 	}
 	
