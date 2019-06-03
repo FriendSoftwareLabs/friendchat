@@ -266,6 +266,12 @@ msgActions,
 				</div>
 				<%= msgActions %>
 			</div>
+			<div class="msg-state group row">
+				<div class="edit-state expand">
+				</div>
+				<div class="confirm-state fortify">
+				</div>
+			</div>
 		</div>
 	</div>
 	<div class="edit-container">
@@ -283,14 +289,25 @@ msgActions,
 -->
 <script id="msg-tmpl" type="text/html">
 <div id="<%= msgId %>" class="msg-item msg <%= selfKlass %>">
-	<div class="msg-container msg-content group row">
-		<div class="avatar blank fortify"></div>
-		<div class="str hidden"><%= original %></div>
-		<div class="message expand"><%= message %></div>
-		<div class="time fortify">
-			<%= time %>
+	<div class="group-container group row left">
+		<div class="avatar blank fortify">
 		</div>
-		<%= msgActions %>
+		<div class="msg-container expand">
+			<div class="msg-content group row">
+				<div class="str hidden"><%= original %></div>
+				<div class="message expand"><%= message %></div>
+				<div class="time fortify">
+					<%= time %>
+				</div>
+				<%= msgActions %>
+			</div>
+			<div class="msg-state group row">
+				<div class="edit-state expand">
+				</div>
+				<div class="confirm-state fortify">
+				</div>
+			</div>
+		</div>
 	</div>
 	<div class="edit-container">
 	</div>
@@ -349,6 +366,12 @@ time,
 				</div>
 				<%= msgActions %>
 			</div>
+			<div class="msg-state group row">
+				<div class="edit-state expand">
+				</div>
+				<div class="confirm-state fortify">
+				</div>
+			</div>
 		</div>
 	</div>
 	<div class="edit-container">
@@ -381,6 +404,22 @@ time,
 	<div class="message expand"><%= message %></div>>
 	<div class="time fortify">
 		<%= time %>
+	</div>
+</div>
+</script>
+
+<!-- confirm state
+id,
+time,
+-->
+<script id="confirm-state-tmpl" type="text/html">
+<div id="<%= id %>" class="group row start">
+	<div class="confirm-time fortify">
+		<%= time %>
+	</div>
+	<div class="confirm-icon LED fortify">
+		<i class="delivered Available fa fa-fw fa-arrow-circle-right"></i>
+		<i class="confirmed On fa fa-fw fa-check-circle hidden"></i>
 	</div>
 </div>
 </script>
@@ -476,17 +515,15 @@ time,
 reason,
 -->
 <script id="edit-info-tmpl" type="text/html">
-<div id="<%= editId %>" class="edited-info group row allow-wrap">
-	<div class="avatar-offset">
+<div id="<%= editId %>" class="edited-info expand group row allow-wrap">
+	<div class="edited-time fortify">
+		<%= time %>
 	</div>
 	<div class="edited-name fortify">
 		{i18n_edited_by}: <%= name %>
 	</div>
 	<div class="edited-reason expand">
 		{i18n_reason}: <%= reason %>
-	</div>
-	<div class="edited-time fortify">
-		<%= time %>
 	</div>
 </div>
 </script>

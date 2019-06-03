@@ -214,31 +214,37 @@ body[mobile] #emojii-panel-button
 	padding : 0.3em;
 }
 
+.msg-state {
+	font-weight: bold;
+	font-style: italic;
+	font-size: 80%;
+	opacity: 0.5;
+	padding-left : 0.5em;
+}
+
 .edit-reason {
 	padding : 0.2em 0;
 }
 
 .edited-info {
-	font-weight: bold;
-	font-style: italic;
-	padding-left : 0.5em;
 }
 
-.edited-info > div:not( .avatar-offset ) {
-	font-size: 80%;
-}
-
+.edited-time,
 .edited-name,
 .edited-reason {
-	opacity: 0.5;
+	
 }
 
-.edited-reason {
+.edited-name {
 	padding : 0 0.5em;
 }
 
-.edited-time {
-	opacity : 0.3;
+.confirm-state {
+	padding-left : 1em;
+}
+
+.confirm-icon {
+	padding-left : 0.5em;
 }
 
 .system-container {

@@ -645,6 +645,12 @@ inherits from EventEmitter
 	ns.IdCache.prototype.get = function( clientId ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
+			if ( 'string' != typeof( clientId )) {
+				console.trace( 'IdCache.get - invalid clientId', clientId );
+				resolve( null );
+				return;
+			}
+			
 			let id = self.ids[ clientId ];
 			if ( id ) {
 				resolve( id );
@@ -662,9 +668,6 @@ inherits from EventEmitter
 				.catch( idSad );
 			
 			function get( cId ) {
-				if ( !cId || ( 'string' != typeof( cId )))
-					console.trace( 'IdCache.get', cId );
-				
 				return self.req.request( 'get', cId );
 			}
 			

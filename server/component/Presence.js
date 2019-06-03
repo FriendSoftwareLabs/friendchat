@@ -90,7 +90,6 @@ ns.Presence.prototype.init = function() {
 
 ns.Presence.prototype.initialize = function( initConf, socketId ) {
 	const self = this;
-	log( 'initialize', initConf, 3 );
 	if ( initConf )
 		updateInit( initConf );
 	

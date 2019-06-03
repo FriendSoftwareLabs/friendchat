@@ -401,6 +401,7 @@ library.view = library.view || {};
 			'messages',
 			self.users,
 			self.userId,
+			self.contactId || null,
 			self.clientId,
 			state.workgroups,
 			self.input,

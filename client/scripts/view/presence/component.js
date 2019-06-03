@@ -1043,6 +1043,7 @@ var hello = window.hello || {};
 		containerId,
 		users,
 		userId,
+		contactId,
 		roomId,
 		workgroups,
 		input,
@@ -1054,6 +1055,7 @@ var hello = window.hello || {};
 		self.containerId = containerId;
 		self.users = users;
 		self.userId = userId;
+		self.contactId = contactId;
 		self.roomId = roomId;
 		self.workgroupId = null;
 		self.supergroupId = null;
@@ -1115,6 +1117,7 @@ var hello = window.hello || {};
 		if ( self.linkEx )
 			self.linkEx.work( msgEl );
 		
+		self.confirmEvent( 'message', msg.msgId );
 	}
 	
 	ns.MsgBuilder.prototype.editMessage = function( itemId ) {
@@ -1431,6 +1434,7 @@ var hello = window.hello || {};
 			'log'          : log,
 			'update'       : e => { self.update( e )},
 			'edit'         : e => { self.update( e, true )},
+			'confirm'      : e => self.handleConfirm( e ),
 		};
 		
 		function msg( e ) { return self.handleMsg( e ); }
@@ -1716,6 +1720,7 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleMsg = function( event ) {
 		const self = this;
+		console.log( 'MsgBuilder.handleMsg', event );
 		if ( self.exists( event.msgId ))
 			return;
 		
@@ -1737,6 +1742,7 @@ var hello = window.hello || {};
 		}
 		
 		self.addItem( el, envelope, event );
+		self.updateLastDelivered( event );
 		self.confirmEvent( 'message', event.msgId );
 		return el;
 	}
@@ -1755,13 +1761,14 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLog = function( log ) {
 		const self = this;
+		console.log( 'MsgBuilder.handleLog', log );
 		let events = log.data.events;
 		let newIds = log.data.ids;
+		let relations = log.data.relations;
 		if ( newIds )
 			self.users.addIdentities( newIds );
 		
 		self.toggleSmooth( false );
-		// wait for dom to update lol
 		self.supressConfirm = true;
 		
 		if ( 'before' === log.type )
@@ -1772,9 +1779,13 @@ var hello = window.hello || {};
 		self.supressConfirm = false;
 		let lMId = self.getLastMsgId();
 		self.confirmEvent( 'message', lMId );
+		if ( relations )
+				self.updateRelationState( relations );
+		
 		window.setTimeout( tglsmt, 1000 );
 		function tglsmt() {
 			self.toggleSmooth( true );
+			
 		}
 	}
 	
@@ -2232,7 +2243,7 @@ var hello = window.hello || {};
 			editEl = null;
 		}
 		
-		const editContEl = el.querySelector( '.edit-container' );
+		const editContEl = el.querySelector( '.edit-state' );
 		const conf = {
 			editId : eId,
 			name   : name,
@@ -2407,6 +2418,34 @@ var hello = window.hello || {};
 		return time.toLocaleDateString();
 	}
 	
+	ns.MsgBuilder.prototype.updateRelationState = function( relations ) {
+		const self = this;
+		const user = relations[ self.userId ];
+		const contact = relations[ self.contactId ];
+		console.log( 'updateRelationsState', {
+			rel     : relations,
+			user    : user,
+			contact : contact,
+		});
+		
+		if ( !relations.lastMsgId )
+			return;
+		
+		if ( contact.lastReadId )
+			lastRead( contact );
+		
+		function lastRead( c ) {
+			if ( c.lastReadFrom === self.contactId )
+				return;
+			
+			self.updateLastRead({
+				msgId        : c.lastReadId,
+				lastReadTime : c.lastReadTime,
+			});
+		}
+		
+	}
+	
 	ns.MsgBuilder.prototype.confirmEvent = function( type, eventId ) {
 		const self = this;
 		if ( self.supressConfirm )
@@ -2420,6 +2459,131 @@ var hello = window.hello || {};
 			},
 		};
 		self.send( confirm );
+	}
+	
+	ns.MsgBuilder.prototype.handleConfirm = function( event ) {
+		const self = this;
+		console.log( 'handleConfirm', {
+			userId        : self.userId,
+			event         : event,
+			lastConfirmed : self.lastConfirmed,
+			lastRead      : self.lastRead,
+		});
+		
+		if ( 'message' == event.type ) {
+			confirmMessage( event.data );
+			return;
+		}
+		
+		console.log( 'MsgBuilder.handleConfirm - unknown confirm event', event );
+		
+		function confirmMessage( state ) {
+			console.log( 'confirmMessage', state );
+			const mId = state.msgId;
+			const msgEl = document.getElementById( mId );
+			if ( !msgEl ) {
+				console.log( 'handleConfirm.confirmMessage - no el found for', state );
+				return;
+			}
+			
+			if ( state.userId === self.userId )
+				self.updateLastDelivered( state );
+			else
+				self.updateLastRead( state );
+			
+		}
+	}
+	
+	ns.MsgBuilder.prototype.updateLastRead = function( state ) {
+		const self = this;
+		console.log( 'updateLastRead', {
+			state : state,
+			userId : self.userId,
+			lastRead : self.lastRead,
+			lastDelivered : self.lastDelivered,
+		});
+		const mId = state.msgId;
+		if ( self.lastRead && ( self.lastRead !== mId ))
+			self.clearConfirmState( self.lastRead );
+		
+		self.lastRead = mId;
+		self.setConfirmState( mId, true, state.lastReadTime );
+	}
+	
+	ns.MsgBuilder.prototype.updateLastDelivered = function( state ) {
+		const self = this;
+		console.log( 'updateLastDelivered', {
+			state : state,
+			userId : self.userId,
+			lastRead : self.lastRead,
+			lastDelivered : self.lastDelivered,
+		});
+		
+		if ( state.fromId === self.contactId ) {
+			self.clearConfirmState( self.lastRead );
+			self.lastRead = null;
+			return;
+		}
+		
+		const msgId = state.msgId;
+		if ( self.lastDelivered
+			&& ( self.lastDelivered != self.lastRead )
+		) {
+			self.clearConfirmState( self.lastDelivered );
+		}
+		
+		self.lastDelivered = msgId;
+		self.setConfirmState( msgId, false );
+	}
+	
+	ns.MsgBuilder.prototype.setConfirmState = function( msgId, isConfirmed, timestamp ) {
+		const self = this;
+		console.log( 'setConfirmState', [ msgId, isConfirmed, timestamp ]);
+		const cId = self.getConfirmId( msgId );
+		const timeStr = !!timestamp ? self.getClockStamp( timestamp ) : '';
+		let el = document.getElementById( cId );
+		if ( !el )
+			el = insertEl( msgId, cId, timeStr );
+		else {
+			const timeEl = el.querySelector( '.confirm-time' );
+			timeEl.textContent = timeStr;
+		}
+		
+		const icon = el.querySelector( '.confirm-icon' );
+		const delivered = icon.querySelector( '.delivered' );
+		const confirmed = icon.querySelector( '.confirmed' );
+		delivered.classList.toggle( 'hidden', isConfirmed );
+		confirmed.classList.toggle( 'hidden', !isConfirmed );
+		
+		function insertEl( msgId, cId, time ) {
+			const conf = {
+				id   : cId,
+				time : time || '',
+			};
+			const el = self.template.getElement( 'confirm-state-tmpl', conf );
+			const msgEl = document.getElementById( msgId );
+			console.log( 'msgEl', msgEl );
+			const container = msgEl.querySelector( '.confirm-state' );
+			console.log( 'container', container );
+			container.appendChild( el );
+			return el;
+		}
+	}
+	
+	ns.MsgBuilder.prototype.clearConfirmState = function( msgId ) {
+		const self = this;
+		console.log( 'clearConfirmState', msgId );
+		const cId = self.getConfirmId( msgId );
+		const el = document.getElementById( cId );
+		if ( !el )
+			return;
+		
+		el.parentNode.removeChild( el );
+	}
+	
+	ns.MsgBuilder.prototype.getConfirmId = function( msgId ) {
+		const self = this;
+		return msgId + '-confirm';
 	}
 	
 	ns.MsgBuilder.prototype.send = function( event ) {
