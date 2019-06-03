@@ -749,8 +749,18 @@ library.contact = library.contact || {};
 		self.updateViewUsers();
 	}
 	
+	ns.PresenceRoom.prototype.updateIdentity = function( update ) {
+		const self = this;
+		const event = {
+			type : 'identity-update',
+			data : update,
+		};
+		self.toChat( event );
+		self.toLive( event );
+	}
+	
 	ns.PresenceRoom.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.live )
 			self.live.close();
 		
@@ -1607,11 +1617,8 @@ library.contact = library.contact || {};
 			data : event,
 		}
 		
-		if (( 'log' !== event.type ) 
-			&& ( 'state' !== event.type )
-			&& ( 'update' !== event.type )
-			&& ( 'request' !== event.type )
-			&& ( 'edit' !== event.type )
+		if (( 'msg' === event.type ) 
+			|| ( 'work-msg' === event.type )
 		) {
 			self.onMessage( event.data );
 		}
@@ -2030,6 +2037,17 @@ library.contact = library.contact || {};
 		
 		self.sendInit();
 		return true;
+	}
+	
+	ns.PresenceContact.prototype.updateIdentity = function( update ) {
+		const self = this;
+		const event = {
+			type : 'identity-update',
+			data : update,
+		};
+		self.toView( event );
+		self.toChat( event );
+		self.toLive( event );
 	}
 	
 	ns.PresenceContact.prototype.getTitle = function() {

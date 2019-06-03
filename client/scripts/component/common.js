@@ -724,9 +724,21 @@ inherits from EventEmitter
 		});
 	}
 	
-	ns.IdCache.prototype.update = function( idMap ) {
+	ns.IdCache.prototype.update = function( update ) {
 		const self = this;
-		console.log( 'idCache.update - NYI', idMap );
+		console.log( 'IdCache.update', update );
+		const id = update.data;
+		const cId = id.clientId;
+		const current = self.ids[ cId ];
+		if ( !current ) {
+			self.add( id );
+			return;
+		}
+		
+		if ( 'avatar' === update.type ) {
+			current.avatar = id.avatar;
+			return;
+		}
 	}
 	
 	// Pri<ate
@@ -737,7 +749,6 @@ inherits from EventEmitter
 		self.req = new library.component.RequestNode( self.conn );
 		self.conn.on( 'add', e => self.add( e ));
 		self.conn.on( 'update', e => self.update( e ));
-		
 	}
 	
 	ns.IdCache.prototype.add = function( id ) {

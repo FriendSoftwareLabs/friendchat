@@ -61,7 +61,7 @@ library.module = library.module || {};
 		throw new Error( '^^^ BaseModule.reconnect() - implement in module' );
 	}
 	
-	/*
+	/* search()
 	must return a object:
 	{
 		source : <string> - name of source,
@@ -85,6 +85,11 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.search = function( searchStr ) {
 		console.log( 'BaseModule.search() - implement in module' , self );
 		throw new Error( '^^^ BaseModule.search() - implement in module' );
+	}
+	
+	ns.BaseModule.prototype.updateAvatar = function( avatar ) {
+		const self = this;
+		//console.log( 'BaseModule.updateAvatar() - implement in module to handle', avatar );
 	}
 	
 	// Private
@@ -537,6 +542,20 @@ library.module = library.module || {};
 		self.sendModuleInit();
 	}
 	
+	ns.Presence.prototype.updateAvatar = function( avatar ) {
+		const self = this;
+		if ( !self.initialized )
+			return;
+		
+		const ava = {
+			type : 'avatar',
+			data : {
+				avatar : avatar,
+			},
+		};
+		self.toAccount( ava );
+	}
+	
 	ns.Presence.prototype.search = function( searchStr ) {
 		const self = this;
 		let filter = new library.component.Filter();
@@ -826,13 +845,8 @@ library.module = library.module || {};
 	ns.Presence.prototype.sendModuleInit = function() {
 		const self = this;
 		const authBundle = hello.getAuthBundle();
-		const id = {
-			fUserId : hello.identity.fUserId,
-			alias  : hello.identity.alias,
-			name   : hello.identity.name,
-			avatar : '',
-		};
-		
+		const id = hello.getIdConf();
+		console.log( 'Presence.sendModuleInit - id', id );
 		const init = {
 			type : 'initialize',
 			data : {
@@ -947,9 +961,6 @@ library.module = library.module || {};
 				updateAvatar();
 			
 			cId = id.clientId;
-			self.idc.update({
-				cId : id,
-			});
 			self.identity = id;
 			
 			function updateName() {
@@ -1001,6 +1012,7 @@ library.module = library.module || {};
 		self.acc.on( 'rooms', setupRooms );
 		self.acc.on( 'join', joinedRoom );
 		self.acc.on( 'close', roomClosed );
+		self.acc.on( 'identity-update', e => self.handleIdUpdate( e ));
 		
 		function initialize( e ) { self.handleAccountInit( e ); }
 		function contactInit( e ) { self.handleContactInit( e ); }
@@ -1225,6 +1237,28 @@ library.module = library.module || {};
 	ns.Presence.prototype.handleRoomClosed = function( roomId ) {
 		const self = this;
 		self.removeRoom( roomId );
+	}
+	
+	ns.Presence.prototype.handleIdUpdate = function( event ) {
+		const self = this;
+		console.log( 'Presence.handleIdUpdate', event );
+		const clientId = event.data.clientId;
+		self.idc.update( event );
+		
+		if ( clientId == self.accountId ) {
+			self.contactIds.forEach( cId => {
+				const contact = self.contacts[ cId ];
+				contact.updateIdentity( event );
+			});
+		} else {
+			const contact = self.contacts[ clientId ]
+			contact.updateIdentity( event );
+		}
+		
+		self.roomIds.forEach( rId => {
+			const room = self.rooms[ rId ];
+			room.updateIdentity( event );
+		});
 	}
 	
 	ns.Presence.prototype.checkCurrentRooms = function( list ) {

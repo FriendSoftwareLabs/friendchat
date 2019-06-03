@@ -428,6 +428,15 @@ library.rtc = library.rtc || {};
 			self.reconnect();
 	}
 	
+	ns.ModuleControl.prototype.updateAvatar = function( avatar ) {
+		const self = this;
+		mids = Object.keys( self.active );
+		mids.forEach( mId => {
+			let mod = self.active[ mId ];
+			mod.updateAvatar( avatar );
+		});
+	}
+	
 	ns.ModuleControl.prototype.getPresence = function() {
 		const self = this;
 		console.log( 'getPresence active', self.active );

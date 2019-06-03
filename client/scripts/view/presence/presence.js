@@ -267,14 +267,15 @@ library.view = library.view || {};
 
 	ns.Presence.prototype.bindConn = function() {
 		const self = this;
-		self.conn.on( 'initialize', initialize );
-		self.conn.on( 'state'     , state );
-		self.conn.on( 'online'    , online );
-		self.conn.on( 'offline'   , offline );
-		self.conn.on( 'chat'      , chat );
-		self.conn.on( 'live'      , live );
-		self.conn.on( 'persistent', persistent );
-		self.conn.on( 'title'     , title );
+		self.conn.on( 'initialize'     , initialize );
+		self.conn.on( 'state'          , state );
+		self.conn.on( 'online'         , online );
+		self.conn.on( 'offline'        , offline );
+		self.conn.on( 'chat'           , chat );
+		self.conn.on( 'live'           , live );
+		self.conn.on( 'persistent'     , persistent );
+		self.conn.on( 'title'          , title );
+		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
 		
 		function initialize( e ) { self.handleInitialize( e ); }
 		function state( e      ) { self.handleState( e ); }
@@ -676,6 +677,12 @@ library.view = library.view || {};
 		const titleEl = document.getElementById( self.titleId );
 		const nameEl = titleEl.querySelector( '.title-name' );
 		nameEl.textContent = title;
+	}
+	
+	ns.Presence.prototype.handleIdUpdate = function( update ) {
+		const self = this;
+		console.log( 'view.Presence.handleIdUpdate', update );
+		self.users.updateIdentity( update );
 	}
 	
 	// things

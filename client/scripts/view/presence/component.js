@@ -469,6 +469,16 @@ var hello = window.hello || {};
 		});
 	}
 	
+	ns.UserCtrl.prototype.updateIdentity = function( update ) {
+		const self = this;
+		console.log( 'view.Presence.UserCtrl.updateIdentity', update );
+		const id = update.data;
+		const cId = id.clientId;
+		self.identities[ cId ] = id;
+		if ( 'avatar' === update.type )
+			self.addUserCss( cId, id.avatar );
+	}
+	
 	ns.UserCtrl.prototype.updateAll = function( state ) {
 		const self = this;
 		removeOld( state.users );
@@ -993,19 +1003,19 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addUserCss = function( userId, avatar ) {
 		const self = this;
+		const container = document.getElementById( 'user-css' );
+		const styleId = self.getUserCssId( userId );
+		const klassName = self.getUserCssKlass( userId );
+		const exists = document.getElementById( styleId );
+		if ( exists ) {
+			exists.parentNode.removeChild( exists );
+		}
+		
 		if ( !avatar )
 			return;
 		
-		const container = document.getElementById( 'user-css' );
-		const klassName = self.getUserCssKlass( userId );
-		const exists = container.querySelector( '.' + klassName );
-		if ( exists ) {
-			console.log( 'addUserCss - already added', exists );
-			return;
-		}
-		
 		const cssConf = {
-			clientId  : userId,
+			styleId   : styleId,
 			klassName : klassName,
 			avatar    : avatar,
 		};
@@ -1013,9 +1023,14 @@ var hello = window.hello || {};
 		container.appendChild( cssEl );
 	}
 	
-	ns.UserCtrl.prototype.getUserCssKlass = function( clientId ) {
+	ns.UserCtrl.prototype.getUserCssKlass = function( userId ) {
 		const self = this;
-		return clientId + '-klass';
+		return userId + '-klass';
+	}
+	
+	ns.UserCtrl.prototype.getUserCssId = function( userId ) {
+		const self = this;
+		return userId + '-style';
 	}
 	
 })( library.component );

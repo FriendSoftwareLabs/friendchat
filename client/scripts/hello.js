@@ -46,6 +46,7 @@ var hello = null;
 		self.template = null;
 		self.msgAlert = null;
 		
+		self.avatarStatus = null;
 		self.forceShowLogin = false;
 		self.isOnline = false;
 		self.pushies = [];
@@ -61,6 +62,52 @@ var hello = null;
 		self.service = service;
 		if ( self.pushies && self.pushies.length )
 			self.pushies.forEach( extra => self.service.handlePushNotification( extra ));
+	}
+	
+	ns.Hello.prototype.getIdConf = function() {
+		const self = this;
+		const id = hello.identity;
+		const conf = {
+			fUserId : id.fUserId,
+			name    : id.name,
+			alias   : id.alias,
+			avatar  : self.avatarStatus,
+			email   : id.email,
+			level   : id.level,
+		}
+		
+		return conf;
+	}
+	
+	ns.Hello.prototype.getAuthBundle = function() {
+		const self = this;
+		if ( self.authBundle )
+			return self.authBundle;
+		
+		// default
+		const bundle = {
+			type :  'authid',
+			data : {
+				tokens : {
+					authId : self.app.authId,
+					userId : self.identity.fupId,
+				},
+				login   : hello.identity.alias,
+				fUserId : hello.identity.fUserId,
+			},
+		};
+		return bundle;
+	}
+	
+	ns.Hello.prototype.updateAvatar = function( avatar ) {
+		const self = this;
+		self.avatarStatus = avatar;
+		hello.identity.updateAvatar( avatar );
+		api.ApplicationStorage.set( 'avatar', avatar, setBack );
+		
+		function setBack( res ) {
+			//console.log( 'updateAvatar.setBack', res );
+		}
 	}
 	
 	ns.Hello.prototype.timeNow = function( str ) {
@@ -97,9 +144,10 @@ var hello = null;
 		const self = this;
 		self.startTiming = Date.now();
 		self.lastTiming = self.startTiming;
-		self.app.on( 'pushnotification', n => self.handlePushNotie( n ));
-		self.app.on( 'notification', n => self.handleNotie( n ));
-		self.app.on( 'app-resume', n => self.handleAppResume( n ));
+		self.app.on( 'pushnotification', e => self.handlePushNotie( e ));
+		self.app.on( 'notification', e => self.handleNotie( e ));
+		self.app.on( 'app-resume', e => self.handleAppResume( e ));
+		self.app.on( 'userupdate', e => self.handleUserUpdate( e ));
 		
 		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
 			console.log( '--- ENABLING DORMANT APPARENTLY ---', self.config );
@@ -145,7 +193,13 @@ var hello = null;
 			self.msgAlert = new api.SoundAlert( 
 				'webclient/apps/FriendChat/res/Friend_Hello.wav' );
 			
-			self.getUserInfo( userInfoBack );
+			self.getUserInfo()
+				.then( userInfoBack )
+				.catch( infoFail );
+				
+			function infoFail( err ) {
+				console.log( 'hello.init - infoFail', err );
+			}
 		}
 		
 		function userInfoBack( data ) {
@@ -160,15 +214,15 @@ var hello = null;
 			
 			hello.identity = new library.component.Identity( data );
 			self.getUserAvatar()
-				.then( avaBack )
+				.then( avaDone )
 				.catch( avaErr );
 				
-			function avaBack( avatar ) {
-				hello.identity.updateAvatar( avatar );
+			function avaDone() {
 				self.loadHostConfig( confBack );
 			}
 			
 			function avaErr( blah ) {
+				console.log( 'avaErr', blah );
 				self.loadHostConfig( confBack );
 			}
 		}
@@ -192,67 +246,147 @@ var hello = null;
 		self.preInit();
 	}
 	
-	ns.Hello.prototype.getUserInfo = function( callback ) {
+	ns.Hello.prototype.getUserInfo = function() {
 		const self = this;
-		const args = {
-			id : undefined,
-		};
-		
-		const conf = {
-			module  : 'system',
-			method  : 'userinfoget',
-			args    : args,
-			success : modBack,
-			error   : modErr,
-		};
-		
-		new api.Module( conf );
-		function modBack( res ) {
-			const data = friendUP.tool.objectify( res );
-			callback( data );
-		}
-		
-		function modErr( err ) {
-			callback( false );
-		}
+		return new Promise(( resolve, reject ) => {
+			const args = {
+				id : undefined,
+			};
+			
+			const conf = {
+				module  : 'system',
+				method  : 'userinfoget',
+				args    : args,
+				success : modBack,
+				error   : modErr,
+			};
+			
+			new api.Module( conf );
+			function modBack( res ) {
+				const data = friendUP.tool.objectify( res );
+				resolve( data );
+			}
+			
+			function modErr( err ) {
+				reject( false );
+			}
+		});
 	}
 	
 	ns.Hello.prototype.getUserAvatar = function() {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
-			const conf = {
-				module : 'system',
-				method : 'getsetting',
-				args   : {
-					setting : 'avatar',
-				},
-				success : avaBack,
-				error   : avaErr,
-			};
+			let current = null;
+			let check = null;
 			
-			new api.Module( conf );
-			function avaBack( res ) {
-				let data = null;
-				try {
-					data = JSON.parse( res );
-				} catch ( e ) {
-					console.log( 'failed to parse avatar res', res );
-				}
-				if ( !data )
-					resolve( null );
-				else
-					resolve( data.avatar || null );
+			loadCheck()
+				.then( checkBack )
+				.catch( reject );
+				
+			function checkBack( avaPart ) {
+				check = avaPart || null;
+				loadCurrent()
+					.then( currentBack )
+					.catch( reject );
 			}
 			
-			function avaErr( err ) {
-				console.log( 'avaErr', err );
-				resolve( null );
+			function currentBack( avatar ) {
+				current = avatar || null;
+				checkFreshness();
+			}
+			
+			function checkFreshness() {
+				if ( !current ) {
+					self.setAvatar( false );
+					api.ApplicationStorage.remove( 'avatar-check' );
+					resolve();
+					return;
+				}
+				
+				const currentPart = getPart( current );
+				if ( !check ) {
+					api.ApplicationStorage.set( 'avatar-check', currentPart );
+					self.setAvatar( current );
+					resolve();
+					return;
+				}
+				
+				if ( currentPart === check ) {
+					self.setAvatar( null, current );
+					resolve();
+				} else {
+					api.ApplicationStorage.set( 'avatar-check', currentPart );
+					self.setAvatar( current );
+					resolve();
+				}
+				
 			}
 		});
+		
+		function loadCurrent() {
+			return new Promise(( resolve, reject ) => {
+				const conf = {
+					module : 'system',
+					method : 'getsetting',
+					args   : {
+						setting : 'avatar',
+					},
+					success : avaBack,
+					error   : avaErr,
+				};
+				
+				new api.Module( conf );
+				function avaBack( res ) {
+					let data = null;
+					try {
+						data = JSON.parse( res );
+					} catch ( e ) {
+						console.log( 'failed to parse avatar res', res );
+					}
+					
+					if ( !data ) {
+						resolve( null );
+						return;
+					}
+					
+					if ( !data.avatar || !data.avatar.length ) {
+						resolve( null );
+						return;
+					}
+					
+					resolve( data.avatar );
+				}
+				
+				function avaErr( err ) {
+					console.log( 'avaErr', err );
+					resolve( null );
+				}
+			});
+		}
+		
+		function loadCheck() {
+			return new Promise(( resolve, reject ) => {
+				console.log( 'loadCheck' );
+				api.ApplicationStorage.get( 'avatar-check', checkBack );
+				function checkBack( checkObj ) {
+					console.log( 'checkBack', checkObj );
+					resolve( checkObj.data );
+				}
+			});
+		}
+		
+		function getPart( avatar ) {
+			if ( !avatar || !avatar.length )
+				return null;
+			
+			const part = avatar.slice( -50 );
+			console.log( 'getPart', part );
+			return part;
+		}
 	}
 	
 	ns.Hello.prototype.loadCommonFragments = function( doneBack ) {
-		var self = this;
+		const self = this;
 		let commonLoaded = false;
 		let mainLoaded = false;
 		let liveLoaded = false;
@@ -843,6 +977,69 @@ var hello = null;
 		}
 	}
 	
+	// current is a fallback for when/if cache is inconsitent
+	ns.Hello.prototype.setAvatar = function( avatar, current ) {
+		const self = this;
+		self.avatarStatus = avatar;
+		return new Promise(( resolve, reject ) => {
+			if ( false === avatar ) {
+				clearCache()
+					.then( done )
+					.catch( reject );
+				return;
+			}
+			
+			if ( null == avatar ) {
+				loadFromCache()
+					.then( done )
+					.catch( reject );
+				return;
+			}
+			
+			hello.identity.updateAvatar( avatar );
+			api.ApplicationStorage.set( 'avatar', avatar, setBack );
+			function setBack( res ) {
+				done();
+				resolve();
+			}
+			
+		});
+		
+		function done() {
+			if ( null == self.avatarStatus )
+				return;
+			
+			self.module.updateAvatar( self.avatarStatus );
+			self.main.updateAvatar( self.avatarStatus );
+		}
+		
+		function clearCache() {
+			return new Promise(( resolve, reject ) => {
+				hello.identity.updateAvatar( null );
+				api.ApplicationStorage.set( 'avatar', null, clearBack );
+				function clearBack( res ) {
+					resolve();
+				}
+			});
+		}
+		
+		function loadFromCache() {
+			return new Promise(( resolve, reject ) => {
+				api.ApplicationStorage.get( 'avatar', loadBack );
+				function loadBack( res ) {
+					if ( !res.data ) {
+						api.ApplicationStorage.set( 'avatar', current );
+						self.avatarStatus = current;
+						res.data = current;
+					}
+					
+					hello.identity.updateAvatar( res.data );
+					resolve();
+				}
+			});
+		}
+	}
+	
 	// TODO : reopen views
 	ns.Hello.prototype.show = function() {
 		var self = this;
@@ -858,26 +1055,6 @@ var hello = null;
 	ns.Hello.prototype.setAuthBundle = function( bundle ) {
 		const self = this;
 		self.authBundle = bundle;
-	}
-	
-	ns.Hello.prototype.getAuthBundle = function() {
-		const self = this;
-		if ( self.authBundle )
-			return self.authBundle;
-		
-		// default
-		const bundle = {
-			type :  'authid',
-			data : {
-				tokens : {
-					authId : self.app.authId,
-					userId : self.identity.fupId,
-				},
-				login   : hello.identity.alias,
-				fUserId : hello.identity.fUserId,
-			},
-		};
-		return bundle;
 	}
 	
 	ns.Hello.prototype.logout = function() {
@@ -1001,6 +1178,23 @@ var hello = null;
 		self.reconnect();
 	}
 	
+	ns.Hello.prototype.handleUserUpdate = function( event ) {
+		const self = this;
+		console.log( 'handleUserUpdate', event )
+		self.getUserInfo()
+			.then( infoBack )
+			.catch( fail );
+			
+		function infoBack( userInfo ) {
+			console.log( 'handleUserUpdate.infoBack', userInfo );
+			self.getUserAvatar();
+		}
+			
+		function fail( err ) {
+			console.log( 'handleUserUpdate - something went bonk', err );
+		}
+	}
+	
 })( window );
 
 
@@ -1038,6 +1232,17 @@ var hello = null;
 			data : isOnline,
 		});
 		*/
+	}
+	
+	ns.Main.prototype.updateAvatar = function( avatar ) {
+		const self = this;
+		const update = {
+			type : 'avatar',
+			data : {
+				avatar : avatar,
+			},
+		};
+		self.view.send( update );
 	}
 	
 	// Private

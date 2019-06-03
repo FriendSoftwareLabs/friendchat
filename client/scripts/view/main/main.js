@@ -1760,6 +1760,7 @@ library.view = library.view || {};
 		self.conn.on( 'message', message );
 		self.conn.on( 'msg-waiting', msgWaiting );
 		self.conn.on( 'users', users );
+		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
 		
 		self.bindLive();
 		
@@ -1874,6 +1875,11 @@ library.view = library.view || {};
 		self.roomStatus.set( state );
 		self.roomStatus.setDisplay( online );
 		self.emit( 'participants', data.online );
+	}
+	
+	ns.PresenceRoom.prototype.handleIdUpdate = function( update ) {
+		const self = this;
+		console.log( 'PresenceRoom.handleIdUpdate - NOOP', update );
 	}
 	
 	ns.PresenceRoom.prototype.bindLive = function() {
@@ -2080,6 +2086,7 @@ library.view = library.view || {};
 		self.conn.on( 'relation', relation );
 		self.conn.on( 'message', message );
 		self.conn.on( 'msg-waiting', msgWaiting );
+		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
 		
 		self.bindLive();
 		
@@ -2289,6 +2296,23 @@ library.view = library.view || {};
 			self.msgWaiting.show();
 		else
 			self.msgWaiting.hide();
+	}
+	
+	ns.PresenceContact.prototype.handleIdUpdate = function( update ) {
+		const self = this;
+		console.log( 'PresenceContact.handleIdUpdate', {
+			self   : self,
+			update : update,
+		});
+		const id = update.data;
+		if ( !id )
+			return;
+		
+		const cId = id.clientId;
+		if ( self.userId != cId )
+			self.updateIdentity( id );
+		
+		self.emit( 'identity-update', update );
 	}
 	
 	ns.PresenceContact.prototype.sendCallNotification = function() {
@@ -3288,8 +3312,7 @@ library.view = library.view || {};
 		self.connState.close();
 	}
 	
-	ns.Main.prototype.init = function()
-	{
+	ns.Main.prototype.init = function() {
 		const self = this;
 		self.bindEvents();
 		self.bindView();
@@ -3300,8 +3323,7 @@ library.view = library.view || {};
 		});
 	}
 	
-	ns.Main.prototype.bindEvents = function()
-	{
+	ns.Main.prototype.bindEvents = function() {
 		const self = this;
 		self.mainMenuContainer = document.getElementById( 'main-menu' );
 		self.mainMenuBtn = document.getElementById( 'menu-btn' );
@@ -3319,15 +3341,10 @@ library.view = library.view || {};
 		function mainMenuBtnClick( e ) { self.showMenu(); }
 	}
 	
-	ns.Main.prototype.bindView = function()
-	{
+	ns.Main.prototype.bindView = function()	{
 		const self = this;
-		//self.view.receiveMessage = receiveMessage;
-		self.view.on( 'initialize', initialize );
-		
-		function receiveMessage( e ) { self.receiveMessage( e ); }
-		function initialize( e ) { self.initialize( e ); }
-		function isOnline( e ) { self.updateIsOnline( e ); }
+		self.view.on( 'initialize', e => self.initialize( e ));
+		self.view.on( 'avatar', e => self.updateAvatar( e ));
 	}
 	
 	ns.Main.prototype.initialize = function( data ) {
@@ -3374,6 +3391,12 @@ library.view = library.view || {};
 		}
 		
 		self.notification = new library.view.Notification( notificationRootId );
+	}
+	
+	ns.Main.prototype.updateAvatar = function( event ) {
+		const self = this;
+		self.identity.avatar = event.avatar;
+		self.setAvatar();
 	}
 	
 	ns.Main.prototype.setAvatar = function() {

@@ -223,17 +223,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.bindConn = function() {
 		var self = this;
-		self.conn.on( 'ping'       , ping );
-		self.conn.on( 'identity'   , identity );
-		self.conn.on( 'identities' , identities );
-		self.conn.on( 'settings'   , settings );
-		self.conn.on( 'speaking'   , speaking );
-		self.conn.on( 'nested-app' , nestedApp );
-		self.conn.on( 'quality'    , quality );
-		self.conn.on( 'mode'       , mode );
-		self.conn.on( 'join'       , join );
-		self.conn.on( 'leave'      , leave );
-		self.conn.on( 'close'      , close );
+		self.conn.on( 'ping'           , ping );
+		self.conn.on( 'identity'       , identity );
+		self.conn.on( 'identities'     , identities );
+		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
+		self.conn.on( 'settings'       , settings );
+		self.conn.on( 'speaking'       , speaking );
+		self.conn.on( 'nested-app'     , nestedApp );
+		self.conn.on( 'quality'        , quality );
+		self.conn.on( 'mode'           , mode );
+		self.conn.on( 'join'           , join );
+		self.conn.on( 'leave'          , leave );
+		self.conn.on( 'close'          , close );
 		
 		function roomConf(   e ) { self.initialize(       e ); }
 		function identity(   e ) { self.handleIdentity(   e ); }
@@ -357,6 +358,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.identities[ idKey ] = id;
 			self.updatePeerIdentity( idKey, id );
 		}
+	}
+	
+	ns.RTC.prototype.handleIdUpdate = function( update ) {
+		const self = this;
+		console.log( 'view.Live.handleIdUpdate', update );
+		const type = update.type;
+		const id = update.data;
+		console.log( 'id', id );
+		const pId = id.clientId;
+		const conf = {
+			userId   : pId,
+			identity : id,
+		};
+		self.handleIdentity( conf );
 	}
 	
 	ns.RTC.prototype.handleSettings = function( update ) {
