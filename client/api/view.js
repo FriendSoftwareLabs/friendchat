@@ -750,11 +750,11 @@ var friend = window.friend || {};
 		var cbk = function( msg ) {
 			callback( msg.data );
 		};
-		
+
 		// The message
 		var o = {
-			type: 'view',
-			method: 'opencamera',
+			type: 'system',
+			command: 'opencamera',
 			viewId: self.id,
 			targetViewId: self.id, // TODO: This may be needed!
 			flags: flags

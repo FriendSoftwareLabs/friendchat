@@ -279,7 +279,10 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 		
 		function viewMessage( msg ) {
-			self.emit( msg.type, msg.data );
+			if( msg )
+			{
+				self.emit( msg.type, msg.data );	
+			}
 		}
 		function loaded( e ) { self.handleLoaded( e ); }
 		function ready( e ) { self.handleReady( e ); }
@@ -1214,7 +1217,7 @@ var friend = window.friend || {}; // already instanced stuff
 			}
 		}
 	}
-	
+
 	ns.Application.prototype.receiveMessage = function( e ) {
 		var self = this;
 	}

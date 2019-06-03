@@ -153,7 +153,9 @@ library.view = library.view || {};
 			}
 			cam.onclick = function( e ){
 				men.classList.remove( 'Showing' );
-				self.conn.openCamera( false, function( data ) {
+				self.conn.openCamera( { title:View.i18n('i18n_take_a_picture') }, function( data ) {
+					
+					if(!data.data) return;
 					
 					var raw = window.atob( data.data.split( ';base64,' )[1] );
 					
