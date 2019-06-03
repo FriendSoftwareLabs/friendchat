@@ -22,11 +22,18 @@
 var api = window.api || {};
 
 (function( ns, undefined ) {
-	ns.LogSock = function( host ) {
+	ns.LogSock = function( host, name ) {
 		const self = this;
-		console.log( 'LogSock', host );
+		console.log( 'LogSock', [ host, name ] );
+		self.name = name;
 		self.host = host;
 		self.port = 12321;
+		self.maxTries = 0;
+		self.connectTries = 0;
+		self.tryTimeout = 1000 * 1;
+		self.maxDelay = 1000 * 30;
+		self.online = false;
+		self.eventBuffer = [];
 		
 		self.init();
 	}
@@ -44,56 +51,159 @@ var api = window.api || {};
 		delete self.port;
 	}
 	
+	ns.LogSock.prototype.reconnect = function() {
+		const self = this;
+		console.log( 'LogSock.reconnect' );
+		if ( self.conn )
+			delete self.conn.onclose;
+		
+		self.disconnect();
+		self.setInitLog();
+		self.connectTries = 0;
+		self.connect();
+	}
+	
+	ns.LogSock.prototype.setName = function( name ) {
+		const self = this;
+		self.name = name;
+		self.sendName();
+	}
+	
 	// Private
 	
 	ns.LogSock.prototype.init = function() {
 		const self = this;
 		self.log = window.console.log;
-		window.console.log = logSock;
+		self.setInitLog();
 		self.connect();
+	}
+	
+	ns.LogSock.prototype.setInitLog = function() {
+		const self = this;
+		window.console.log = logSock;
 		
 		function logSock( a, b ) {
 			self.log( a, b );
-			self.send( a, b );
+			if ( !self.online )
+				self.buffer( a, b );
+			else
+				self.sendLog( a, b );
+			
 		}
 	}
 	
 	ns.LogSock.prototype.connect = function() {
 		const self = this;
 		const host = 'wss://' + self.host + ':' + self.port;
-		console.log( 'LogSock.connect', host );
 		let ws = null;
-		try {
-			ws = new window.WebSocket( host );
-		} catch( e ) {
-			console.log( 'LogSock.connect - failed to connect', {
-				e    : e,
-				host : host,
+		console.log( 'LogSock.connect', self.connectTries );
+		if ( null != self.reconnectTimeout )
+			return;
+		
+		if ( !!self.maxTries && ( self.connectTries >= self.maxTries )) {
+			console.log( 'LogSock.connect - ran out of reconnect tries, aborting', {
+				tries : self.connectTries,
+				max   : self.maxTries,
 			});
+			self.setOffline();
 			return;
 		}
 		
+		if ( self.connectTries == 0 ) {
+			tryConnect();
+			return;
+		}
+		
+		let delay = self.tryTimeout * self.connectTries;
+		if ( delay > self.maxDelay )
+			delay = self.maxDelay;
+		
+		console.log( 'LogSock.connect - waiting ' +  ( delay / 1000 ) + 's', self.connectTries );
+		window.setTimeout( tryConnect, delay );
+		
+		function tryConnect() {
+			self.connectTries++;
+			console.log( 'LogSock.tryConnect', host );
+			try {
+				ws = new window.WebSocket( host );
+			} catch( e ) {
+				console.log( 'LogSock.connect - failed to connect', {
+					e    : e,
+					host : host,
+				});
+				self.reconnectTimeout = window.setTimeout( reconnect, self.tryTimeout );
+				return;
+			}
+			
+			self.bindWS( ws );
+		}
+		
+		function reconnect() {
+			self.connect();
+		}
+	}
+	
+	ns.LogSock.prototype.bindWS = function( ws ) {
+		const self = this;
 		ws.onopen = onOpen;
 		ws.onclose = onClose;
 		ws.onerror = onError;
 		
 		function onOpen() {
-			self.conn = ws;
-			self.conn.onmessage = e => self.handleServerEvent( e );
+			console.log( 'LogSock.onOpen' );
+			ws.onopen = null;
+			self.setOpen( ws );
 		}
 		
 		function onClose( e ) {
+			console.log( 'LogSock.onClose' );
+			ws.onclose = null;
+			self.online = false;
 			self.cleanupWS();
+			self.connect();
 		}
 		
 		function onError( err ) {
 			console.log( 'LogSock onError', err );
+			if ( self.conn )
+				return;
+			
+			ws.onopen = null;
+			ws.onerror = null;
+			ws.onmessage = null;
 		}
+	}
+	
+	ns.LogSock.prototype.setOpen = function( ws ) {
+		const self = this;
+		if ( self.conn )
+			self.cleanupWS();
+		
+		self.conn = ws;
+		self.setOnline();
+		self.conn.onmessage = e => self.handleServerEvent( e );
 	}
 	
 	ns.LogSock.prototype.handleServerEvent = function( e ) {
 		const self = this;
 		console.log( 'LogSock.handleServerEvent', e );
+	}
+	
+	ns.LogSock.prototype.setOnline = function() {
+		const self = this;
+		self.online = true;
+		self.connectTries = 0;
+		if ( self.name )
+			self.sendName();
+		
+		console.log( 'LogSock.setOnline', self.eventBuffer.length );
+		self.eventBuffer.forEach( e => self.sendLog( e[ 0 ], e[ 1 ], e[ 2 ] ));
+		self.eventBuffer = [];
+	}
+	
+	ns.LogSock.prototype.setOffline = function() {
+		const self = this;
+		self.online = false;
 	}
 	
 	ns.LogSock.prototype.disconnect = function() {
@@ -106,32 +216,72 @@ var api = window.api || {};
 		if ( !self.conn )
 			return;
 		
-		delete self.conn.onopen;
-		delete self.conn.onclose;
-		delete self.conn.onerror;
-		delete self.conn.onmessage;
+		self.conn.onmessage = null;
+		self.conn.onopen = null;
+		self.conn.onclose = null;
+		self.conn.onerror = null;
+		
+		try {
+			self.conn.close();
+		} catch( e ) {}
+		
 		delete self.conn;
 	}
 	
-	ns.LogSock.prototype.send = function( a, b ) {
+	ns.LogSock.prototype.buffer = function( a, b ) {
 		const self = this;
-		if ( !self.conn )
+		self.eventBuffer.push([ a, b, Date.now() ]);
+		if ( 300 > self.eventBuffer.length )
 			return;
+		
+		console.log( 'LogSock.buffer - trimming event buffer', self.eventBuffer.length );
+		self.eventBuffer = self.eventBuffer.slice( -200 );
+	}
+	
+	ns.LogSock.prototype.sendLog = function( a, b, time ) {
+		const self = this;
+		if ( !self.conn || !self.online ) {
+			self.eventBuffer.push([ a, b ]);
+			return;
+		}
 		
 		const event = {
 			type : 'log',
-			data : [ a, b ],
+			data : {
+				time : time || Date.now(),
+				args : [ a, b ],
+			},
 		};
-		
+		self.send( event );
+	}
+	
+	ns.LogSock.prototype.sendName = function() {
+		const self = this;
+		const name = {
+			type : 'init',
+			data : {
+				name : self.name,
+			},
+		};
+		self.send( name );
+	}
+	
+	ns.LogSock.prototype.send = function( event ) {
+		const self = this;
 		let eventStr = null;
 		try {
 			eventStr = JSON.stringify( event );
 		} catch( e ) {
-			console.log( 'LogSock - could not stringify', a );
+			console.log( 'LogSock - json err', e );
 			return;
 		}
 		
-		self.conn.send( eventStr );
+		try {
+			self.conn.send( eventStr );
+		} catch( e ) {
+			console.log( 'LogSock - send err', e );
+			return;
+		}
 	}
 	
 })( api );

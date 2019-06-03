@@ -267,11 +267,11 @@ library.rtc = library.rtc || {};
 		}
 		
 		var request = {
-			url : '/login',
+			url  : '/login',
 			verb : 'post',
 			data : {
-				userId : hello.app.userId,
-				name : account.name,
+				userId   : hello.app.userId,
+				name     : account.name,
 				password : msg.password
 			},
 		};
@@ -1628,9 +1628,6 @@ library.rtc = library.rtc || {};
 // CONNECTION
 (function( ns, undefined ) {
 	ns.Connection = function( altHost, onState ) {
-		if ( !( this instanceof ns.Connection ))
-			return new ns.Connection( altHost, onState );
-		
 		const self = this;
 		self.altHost = altHost;
 		self.onstate = onState;
@@ -1697,13 +1694,13 @@ library.rtc = library.rtc || {};
 		if ( callback )
 			self.readyCallback = callback;
 		
-		var url = null;
+		let url = null;
 		if ( self.altHost )
 			url = self.altHost;
 		else {
-			var host = hello.config.host;
-			var port = hello.config.chat.port;
-			var protocol = hello.config.tls ? 'wss' : 'ws';
+			const host = hello.config.host;
+			const port = hello.config.chat.port;
+			const protocol = hello.config.tls ? 'wss' : 'ws';
 			url = library.tool.buildDestination( protocol, host, port );
 		}
 		
@@ -1750,6 +1747,7 @@ library.rtc = library.rtc || {};
 		self.socketEventMap = {
 			'connect'    : socketConnecting,
 			'open'       : socketOpen,
+			'auth'       : socketAuth,
 			'session'    : socketSession,
 			'close'      : socketClosed,
 			'timeout'    : socketTimeout,
@@ -1759,6 +1757,7 @@ library.rtc = library.rtc || {};
 		};
 		function socketConnecting( e ) { self.socketConnecting( e ); }
 		function socketOpen( e ) { self.socketOpen( e ); }
+		function socketAuth( e ) { self.socketAuth( e ); }
 		function socketSession( e ) { self.socketSession( e ); }
 		function socketClosed ( e ) { self.socketClosed( e ); }
 		function socketTimeout( e ) { self.socketTimeout( e ); }
@@ -1769,7 +1768,10 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleState = function( event ) {
 		const self = this;
-		var handler = self.socketEventMap[ event.type ];
+		if ( 'ping' != event.type )
+			console.log( 'Connection.handleState', event );
+		
+		const handler = self.socketEventMap[ event.type ];
 		if ( !handler ) {
 			console.log( 'unknown socket state', event );
 			return;
@@ -1783,7 +1785,7 @@ library.rtc = library.rtc || {};
 		self.onstate({
 			type : 'connect',
 			data : {
-				host     : self.host,
+				host : self.host,
 			},
 		});
 	}
@@ -1796,14 +1798,19 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
+	ns.Connection.prototype.socketAuth = function( success ) {
+		const self = this;
+		if ( !success )
+			return;
+		
+		const callback = self.readyCallback;
+		delete self.readyCallback;
+		if ( callback )
+			callback( null, success );
+	}
+	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
-		if ( self.readyCallback ) {
-			let callback = self.readyCallback;
-			delete self.readyCallback;
-			callback( null, sid );
-		}
-		
 		self.onstate({
 			type : 'session',
 			data : sid,

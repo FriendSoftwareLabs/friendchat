@@ -947,6 +947,9 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.AppEvent.prototype.appWakeup = function( event ) {
 		const self = this;
 		console.log( 'appWakeup', event );
+		if ( self.logSock )
+			self.logSock.reconnect();
+		
 		self.emit( 'app-resume', event );
 	}
 	
@@ -1013,11 +1016,20 @@ var friend = window.friend || {}; // already instanced stuff
 		});
 	}
 	
-	ns.Application.prototype.setDev = function( dumpHost ) {
+	ns.Application.prototype.setDev = function( dumpHost, name ) {
 		const self = this;
-		self.isDev = dumpHost;
-		if ( dumpHost )
-			self.initLogSock();
+		console.log( 'setDev', [ dumpHost, name ]);
+		if ( !dumpHost && name  ) {
+			if ( self.logSock )
+				self.logSock.setName( name );
+			
+			return;
+		}
+		
+		if ( dumpHost ) {
+			self.isDev = dumpHost;
+			self.initLogSock( name );
+		}
 	}
 	
 	// Private
@@ -1253,10 +1265,15 @@ var friend = window.friend || {}; // already instanced stuff
 		return str;
 	}
 	
-	ns.Application.prototype.initLogSock = function() {
+	ns.Application.prototype.initLogSock = function( name ) {
 		const self = this;
+		if ( self.logSock ) {
+			self.logSock.reconnect();
+			return;
+		}
+		
 		const host = self.isDev;
-		self.logSock = new api.LogSock( host );
+		self.logSock = new api.LogSock( host, name );
 	}
 	
 })( fupLocal );

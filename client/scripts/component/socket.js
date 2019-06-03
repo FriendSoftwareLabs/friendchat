@@ -31,7 +31,7 @@ library.component = library.component || {};
 			return new ns.Socket( conf );
 		
 		const self = this;
-		
+		console.log( 'Socket' );
 		// REQUIRED CONFIG
 		self.url = conf.url;
 		self.protocol = conf.protocol;
@@ -53,13 +53,13 @@ library.component = library.component || {};
 		self.pingTimeouts = {}; // references to timeouts for sent pings
 		self.pingMaxTime = 1000 * 10; // timeout
 		self.reconnectDelay = 200; // ms
-		self.reconnectAttempt = 1; // delay is multiplied with attempts
+		self.reconnectAttempt = 0; // delay is multiplied with attempts
 		                           //to find how long the next delay is
 		self.reconnectMaxAttempts = 7; // 0 to keep hammering
 		self.reconnectScale = {
 			min : 5,
 			max : 8,
-		}; // random in range, makes sure not all the sockets
+		}; // random in range, makes sure not all the clients
 		   // in the world reconnect at the same time
 		
 		self.init();
@@ -68,7 +68,7 @@ library.component = library.component || {};
 	// PUBLIC INTERFACE
 	
 	ns.Socket.prototype.send = function( msgObj ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : 'msg',
 			data : msgObj,
@@ -77,7 +77,8 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.reconnect = function() {
-		var self = this;
+		const self = this;
+		console.log( 'Socket.reconnect' );
 		self.allowReconnect = true;
 		self.doReconnect( true );
 	}
@@ -85,7 +86,8 @@ library.component = library.component || {};
 	// code and reason can be whatever; the socket is closed anyway,
 	// whats the server going to do? cry more lol
 	ns.Socket.prototype.close = function( code, reason ) {
-		var self = this;
+		const self = this;
+		console.log( 'Socket.close' );
 		self.unsetSession();
 		self.allowReconnect = false;
 		self.onmessage = null;
@@ -97,7 +99,7 @@ library.component = library.component || {};
 	// PRIVATES
 	
 	ns.Socket.prototype.init = function() {
-		var self = this;
+		const self = this;
 		if ( !self.onmessage || !self.onstate || !self.onend ) {
 			console.log( 'Socket - missing handlers', {
 				onmessage : self.onmessage,
@@ -123,9 +125,9 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.connect = function() {
-		var self = this;
+		const self = this;
 		if ( self.ws )
-			return;
+			self.cleanup();
 		
 		if ( !self.url || !self.url.length ) {
 			console.log( 'socket.url', self.url );
@@ -139,6 +141,8 @@ library.component = library.component || {};
 			self.ws = new window.WebSocket( self.url );
 		} catch( e ) {
 			console.log( 'connect ws ex', e );
+			self.ended();
+			return;
 		}
 		
 		self.attachHandlers();
@@ -149,7 +153,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.attachHandlers = function() {
-		var self = this;
+		const self = this;
 		if ( !self.ws ) {
 			console.log( 'Socket.attachHandlers - no ws', self.ws );
 			return false;
@@ -167,7 +171,10 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.clearHandlers = function() {
-		var self = this;
+		const self = this;
+		if ( !self.ws )
+			return;
+		
 		self.ws.onopen = null;
 		self.ws.onclose = null;
 		self.ws.onerror = null;
@@ -177,14 +184,12 @@ library.component = library.component || {};
 	ns.Socket.prototype.handleConnectTimeout = function() {
 		const self = this;
 		self.setState( 'timeout', 'ERR_CONN_TIMEOUT' );
-		self.isConnTimeout = true;
 		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.clearConnectTimeout = function() {
 		const self = this;
-		self.isConnTimeout = false;
-		if ( !self.connectTimeout )
+		if ( null == self.connectTimeout )
 			return;
 		
 		window.clearTimeout( self.connectTimeout );
@@ -192,64 +197,48 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.doReconnect = function( noDelay ) {
-		var self = this;
-		if ( self.ws ) {
-			self.cleanup();
-		}
-		
-		if ( !self.isConnTimeout && 
-			( !self.session || !self.allowReconnect )
-		){
-			console.log( 'WS reconnect aborting, disallowed for :reasons:', {
-				session : self.session,
+		const self = this;
+		console.log( 'hello.ws.doReconnect', {
+			noDelay : noDelay || null,
+			attempt : self.reconnectAttempt,
+		});
+		self.cleanup();
+		if ( !self.allowReconnect )	{
+			console.log( 'WS reconnect aborting, disallowed', {
 				allow   : self.allowReconnect,
-				timeout : self.isConnTimeout,
-			});
-			const reason = JSON.stringify({
+				atempts : self.reconnectAttempt,
 				session : self.session,
-				allow   : self.allowReconnect,
-				timeout : self.isConnTimeout,
 			});
-			console.log( reason );
+			
 			self.ended();
 			return false;
 		}
 		
-		self.clearConnectTimeout();
 		if ( noDelay ) {
+			self.clearReconnect();
 			self.reconnectAttempt = 0;
-			clearTimer();
 			reconnect();
 			return;
 		}
 		
+		if ( null != self.reconnectTimer )
+			return;
+		
 		if ( tooManyTries()) {
-			self.setState( 'reconnect', null );
+			//self.setState( 'reconnect', null );
 			return;
 		}
 		
-		var delay = calcDelay();
-		var showReconnectLogTimeLimit = 1000 * 5; // 5 seconds
-		//if ( delay > showReconnectLogTimeLimit ) {
-			let now = Date.now();
-			let reconnectTime = now + delay;
-			self.setState( 'reconnect', reconnectTime );
-		//}
-		
+		const delay = calcDelay();
+		const now = Date.now();
+		const reconnectTime = now + delay;
+		self.setState( 'reconnect', reconnectTime );
 		self.reconnectTimer = window.setTimeout( reconnect, delay );
 		
 		function reconnect() {
-			self.reconnectTimer = null;
-			self.reconnectAttempt += 1;
+			delete self.reconnectTimer;
+			self.reconnectAttempt++;
 			self.connect();
-		}
-		
-		function clearTimer() {
-			if ( !self.reconnectTimer )
-				return;
-			
-			window.clearTimeout( self.reconnectTimer );
-			self.reconnectTimer = null;
 		}
 		
 		function tooManyTries() {
@@ -263,31 +252,40 @@ library.component = library.component || {};
 		}
 		
 		function calcDelay() {
-			var delay = self.reconnectDelay;
-			var multiplier = calcMultiplier();
-			var tries = self.reconnectAttempt;
-			delay = delay * multiplier * tries;
+			let delay = self.reconnectDelay;
+			const multiplier = calcMultiplier();
+			const fails = self.reconnectAttempt + 1;
+			delay = delay * multiplier * fails;
 			delay = Math.floor( delay );
 			return delay;
 		}
 		
 		function calcMultiplier() {
-			var min = self.reconnectScale.min;
-			var max = self.reconnectScale.max;
-			var gap = max - min;
-			var scale = Math.random();
-			var point = gap * scale;
-			var multiplier = min + point;
+			const min = self.reconnectScale.min;
+			const max = self.reconnectScale.max;
+			const gap = max - min;
+			const scale = Math.random();
+			const point = gap * scale;
+			const multiplier = min + point;
 			return multiplier;
 		}
 	}
 	
+	ns.Socket.prototype.clearReconnect = function() {
+		const self = this;
+		if ( null == self.reconnectTimer )
+			return;
+		
+		window.clearTimeout( self.reconnectTimer );
+		delete self.reconnectTimer;
+	}
+	
 	ns.Socket.prototype.setState = function( type, data ) {
-		var self = this;
+		const self = this;
 		if ( !self.onstate )
 			return;
 		
-		var state = {
+		const state = {
 			type : type,
 			data : data,
 		};
@@ -295,34 +293,30 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
-		var self = this;
+		const self = this;
+		console.log( 'hello.ws.onopen' );
 		self.clearConnectTimeout();
-		self.reconnectAttempt = 0;
 		self.setState( 'open', e );
-		// waiting for authenticate challenge
+		// ..waiting for authenticate challenge
 	}
 	
 	ns.Socket.prototype.handleClose = function( e ) {
-		var self = this;
-		console.log( 'hello.ws.close', e );
-		self.cleanup();
+		const self = this;
+		console.log( 'hello.ws.onclose', e );
 		self.setState( 'close', e );
 		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.handleError = function( e ) {
-		var self = this;
-		console.log( 'hello.ws.error', e );
-		self.clearConnectTimeout();
-		self.cleanup();
+		const self = this;
+		console.log( 'hello.ws.onerror', e );
 		self.setState( 'error', e );
-		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.handleMessage = function( e ) {
-		var self = this;
-		var msg = friendUP.tool.objectify( e.data );
-		var handler = self.messageMap[ msg.type ];
+		const self = this;
+		const msg = friendUP.tool.objectify( e.data );
+		const handler = self.messageMap[ msg.type ];
 		if ( !handler ) {
 			if ( self.onmessage )
 				self.onmessage( msg.data );
@@ -333,39 +327,46 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
-		var self = this;
+		const self = this;
+		console.log( 'hello.ws.handleAuth', success );
 		if ( null == success ) {
 			self.sendAuth();
 			return;
 		}
 		
-		self.authenticated = success;
-		if ( !self.authenticated )
-			self.ended();
-		else
-			self.setReady();
-	}
-	
-	ns.Socket.prototype.handleSession = function( sessionId ) {
-		var self = this;
-		console.log( 'hello.ws.handleSession', sessionId );
-		if ( sessionId && ( self.session === sessionId )) {
-			self.setReady();
-			return;
-		}
-		
-		self.session = sessionId;
-		if ( !self.session ) {
-			self.allowReconnect = false;
+		if ( !success ) {
+			console.log( 'hello.ws.handleAuth - failed to auth', self.authBundle );
+			const err = {
+				type : 'error',
+				data : 'Authentication with server failed',
+			};
+			self.setState( err );
 			self.ended();
 			return;
 		}
 		
 		self.setReady();
+		self.setState( 'auth', success );
+	}
+	
+	ns.Socket.prototype.handleSession = function( sessionId ) {
+		const self = this;
+		console.log( 'hello.ws.handleSession', sessionId );
+		self.session = sessionId;
+		if ( !self.session ) {
+			self.ended();
+			return;
+		} else
+			self.reconnectAttempt = 0;
+		
+		if ( !self.ready )
+			self.setReady();
+		
+		self.setState( 'session', self.session );
 	}
 	
 	ns.Socket.prototype.restartSession = function() {
-		var self = this;
+		const self = this;
 		var session = {
 			type : 'session',
 			data : self.session,
@@ -375,10 +376,10 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.unsetSession = function() {
-		var self = this;
+		const self = this;
 		console.log( 'hello.ws.unsetSession' );
-		self.session = false;
-		var msg = {
+		self.session = null;
+		const msg = {
 			type : 'session',
 			data : self.session,
 		};
@@ -386,13 +387,14 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.sendAuth = function() {
-		var self = this;
+		const self = this;
+		console.log('hello.ws.sendAuth - session:', self.session );
 		if ( self.session ) {
 			self.restartSession();
 			return;
 		}
 		
-		var authMsg = {
+		const authMsg = {
 			type : 'authenticate',
 			data : self.authBundle,
 		};
@@ -400,15 +402,15 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.setReady = function() {
-		var self = this;
+		const self = this;
+		console.log( 'hello.ws.setReady' );
 		self.ready = true;
-		self.setState( 'session', self.session );
 		self.startPing();
 		self.executeSendQueue();
 	}
 	
 	ns.Socket.prototype.sendOnSocket = function( msgObj, force ) {
-		var self = this;
+		const self = this;
 		if ( !wsReady() ) {
 			queue( msgObj );
 			return;
@@ -450,7 +452,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.executeSendQueue = function() {
-		var self = this;
+		const self = this;
 		self.sendQueue.forEach( send );
 		self.sendQueue = [];
 		function send( msg ) {
@@ -459,7 +461,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.startPing = function() {
-		var self = this;
+		const self = this;
 		if ( self.pingInterval )
 			self.stopPing();
 		
@@ -468,7 +470,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.sendPing = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.pingInterval ) {
 			self.stopPing();
 			return;
@@ -492,12 +494,13 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.handlePingTimeout = function() {
-		var self = this;
+		const self = this;
+		console.log( 'hello.ws.handlePingTimeout' );
 		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.handlePong = function( timestamp ) {
-		var self = this;
+		const self = this;
 		var timeSent = timestamp;
 		var tsStr = timeSent.toString();
 		var timeoutId  = self.pingTimeouts[ tsStr ];
@@ -512,12 +515,12 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.handlePing = function( e ) {
-		var self = this;
+		const self = this;
 		self.sendPong( e );
 	}
 	
 	ns.Socket.prototype.sendPong = function( data ) {
-		var self = this;
+		const self = this;
 		var pongMsg = {
 			type : 'pong',
 			data : data,
@@ -526,7 +529,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.stopPing = function() {
-		var self = this;
+		const self = this;
 		if ( self.pingInterval )
 			window.clearInterval( self.pingInterval );
 		
@@ -546,26 +549,28 @@ library.component = library.component || {};
 	}
 	
 	ns.Socket.prototype.ended = function() {
-		var self = this;
-		if ( !self.onend )
+		const self = this;
+		const onend = self.onend;
+		delete self.onend;
+		if ( !onend )
 			return;
 		
-		var onend = self.onend;
-		delete self.onend;
 		onend();
 	}
 	
 	ns.Socket.prototype.cleanup = function() {
-		var self = this;
+		const self = this;
 		self.ready = false;
 		self.stopPing();
 		self.clearHandlers();
+		self.clearReconnect();
+		self.clearConnectTimeout();
 		self.wsClose();
 		delete self.ws;
 	}
 	
 	ns.Socket.prototype.wsClose = function( code, reason ) {
-		var self = this;
+		const self = this;
 		if ( !self.ws )
 			return;
 		

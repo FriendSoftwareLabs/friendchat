@@ -295,7 +295,7 @@ i18n_FiWiz_adv_options : More options in UI
 i18n_FiWiz_btn_simplified : Use friendly UI
 i18n_FiWiz_btn_advanced : Use advanced UI
 i18n_network_error : Network error
-i18n_network_connecting : Connecting to server
+i18n_network_connecting : Resuming session
 i18n_access_denied : Access denied
 i18n_focus_participant : Only show this participant
 i18n_change_username : Change name

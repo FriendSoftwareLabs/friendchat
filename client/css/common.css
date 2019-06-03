@@ -833,6 +833,10 @@ div.foldit-status {
 	margin-left : 0.3em;
 }
 
+#conn-state-connecting {
+	line-height: 2.5em;
+}
+
 #conn-state-rc-bar-container {
 	position     : relative;
 	margin-left  : 0.2em;

@@ -156,6 +156,10 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.onChatMessage = function( msg, silent ) {
 		var self = this;
+		console.log( 'Contact.onChatMessage', {
+			msg      : msg,
+			chatView : !!self.chatView,
+		});
 		if ( !msg.from ) {
 			self.recentMessage( msg.message, msg.from, msg.time );
 			return;
@@ -168,7 +172,11 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.whenChatClosed = function( msg, silent ) {
-		var self = this;
+		const self = this;
+		console.log( 'Contact.whenChatClosed', {
+			msg : msg,
+			settings : hello.account.settings,
+		});
 		if ( hello.account.settings.popupChat === true ) {
 			self.recentMessage( msg.message, msg.from, msg.time );
 			api.Say( 'Message received' );
@@ -203,6 +211,10 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.whenChatOpen = function( msg, silent ) {
 		var self = this;
+		console.log( 'Contact.whenChatClosed', {
+			msg           : msg,
+			chatMinimized : self.chatView.checkMinimized(),
+		});
 		self.recentMessage( msg.message, msg.from, msg.time );
 		if ( silent )
 			return;

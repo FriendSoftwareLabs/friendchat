@@ -373,7 +373,8 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.setIsLoading = function( isLoading ) {
-		var self = this;
+		const self = this;
+		console.log( 'View.setIsLoading', isLoading );
 		document.body.classList.toggle( 'Loading', isLoading );
 	}
 	

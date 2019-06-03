@@ -50,6 +50,7 @@ var hello = null;
 		self.forceShowLogin = false;
 		self.isOnline = false;
 		self.pushies = [];
+		self.resumeCallbacks = [];
 		
 		self.init();
 	}
@@ -144,9 +145,27 @@ var hello = null;
 		const self = this;
 		self.startTiming = Date.now();
 		self.lastTiming = self.startTiming;
-		self.app.on( 'pushnotification', e => self.handlePushNotie( e ));
-		self.app.on( 'notification', e => self.handleNotie( e ));
-		self.app.on( 'app-resume', e => self.handleAppResume( e ));
+		self.app.on( 'pushnotification', e => {
+			try {
+				self.handlePushNotie( e )
+			} catch( ex ) {
+				console.log( 'push-notie event ex', ex );
+			}
+		});
+		self.app.on( 'notification', e => {
+			try {
+				self.handleNotie( e )
+			} catch( ex ) {
+				console.log( 'notification event ex' );
+			}
+		});
+		self.app.on( 'app-resume', e => {
+			try {
+				self.handleAppResume( e );
+			} catch( ex ) {
+				console.log( 'app-resume event ex', ex );
+			}
+		});
 		self.app.on( 'userupdate', e => self.handleUserUpdate( e ));
 		
 		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
@@ -213,6 +232,9 @@ var hello = null;
 			}
 			
 			hello.identity = new library.component.Identity( data );
+			if ( self.config.dev )
+				self.app.setDev( null, hello.identity.alias );
+			
 			self.getUserAvatar()
 				.then( avaDone )
 				.catch( avaErr );
@@ -545,12 +567,13 @@ var hello = null;
 			self.initSystemModules( connBack );
 		
 		function connBack() {
+			console.log( 'hello.connBack' );
 			self.doLogin();
 		}
 	}
 	
 	ns.Hello.prototype.initSystemModules = function( callback ) {
-		var self = this;
+		const self = this;
 		self.timeNow( 'initSystemModules' );
 		self.conn = new library.system.Connection( null, onWSState );
 		self.items = new library.system.Items();
@@ -612,11 +635,12 @@ var hello = null;
 	
 	ns.Hello.prototype.showLoadingStatus = function( status ) {
 		const self = this;
+		console.log( 'showLoadingStatus', status );
 		if ( 'session' === status.type )
 			return;
 		
-		if ( self.showLoadingTimeout &&
-			(      'error' === status.type
+		if ( self.showLoadingTimeout
+			&& (   'error' === status.type
 				|| 'timeout' === status.type )
 		) {
 			self.showLoading();
@@ -668,7 +692,7 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.loadingClosed = function() {
-		var self = this;
+		const self = this;
 		if ( self.loading )
 			self.loading.close();
 		
@@ -690,7 +714,7 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.doGuestThings = function() {
-		var self = this;
+		const self = this;
 		if (
 			!self.config.run ||
 			!self.config.run.type ||
@@ -819,7 +843,8 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.doLogin = function() {
-		var self = this;
+		const self = this;
+		console.log( 'hello.doLogin' );
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;
@@ -831,6 +856,7 @@ var hello = null;
 		
 		self.login = new library.system.Login( null, onlogin, onclose );
 		function onlogin( account ) {
+			console.log( 'hello.doLogin - onlogin', account );
 			self.loggedIn = true;
 			self.login.close();
 			self.login = null;
@@ -855,6 +881,7 @@ var hello = null;
 	
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
+		console.log( 'doRelogin', self.account );
 		self.triedRelogin = true;
 		self.conn.reconnect( connected );
 		function connected( err, res ) {
@@ -883,7 +910,7 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.doMain = function( account ) {
-		var self = this;
+		const self = this;
 		self.main = new library.system.Main({
 			parentView : window.View,
 			account    : account,
@@ -892,7 +919,8 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.reconnect = function() {
-		var self = this;
+		const self = this;
+		console.log( 'hello.reconnect' );
 		self.conn.reconnect();
 	}
 	
@@ -914,7 +942,15 @@ var hello = null;
 		}
 		
 		if ( 'end' === state.type && !self.triedRelogin ) {
-			self.doRelogin();
+			console.log( 'hello.updateConnState - socket ended', {
+				state        : state,
+				triedRelogin : self.triedRelogin,
+			});
+			if ( !self.triedRelogin )
+				self.doRelogin();
+			else
+				self.showLoginFail();
+			
 			return;
 		}
 		
@@ -932,36 +968,53 @@ var hello = null;
 		}
 	}
 	
+	ns.Hello.prototype.showLoginFail = function() {
+		const self = this;
+		console.log( 'hello.showLoginFail - NYI' );
+	}
+	
 	ns.Hello.prototype.updateIsOnline = function( isOnline ) {
 		const self = this;
+		console.log( 'hello.updateIsOnline', {
+			isOnline : isOnline,
+			selfIs   : self.isOnline,
+		});
 		if ( isOnline === self.isOnline )
 			return;
 		
+		self.isOnline = isOnline;
 		self.app.toAllViews({
 			type : 'app-online',
 			data : isOnline,
 		});
 		
-		self.isOnline = isOnline;
 		if ( self.main )
 			self.main.setIsOnline( self.isOnline );
 		
 		if ( self.module )
 			self.module.setIsOnline( self.isOnline );
+		
+		if ( self.isOnline ) {
+			try {
+				self.doResume();
+			} catch( ex ) {
+				console.log( 'doResume ex', ex );
+			}
+		}
 	}
 	
 	// From main view
 	ns.Hello.prototype.handleConnState = function( e ) {
 		const self = this;
 		if ( 'reconnect' === e.type )
-			self.conn.reconnect();
+			self.reconnect();
 		
 		if ( 'quit' === e.type )
 			self.quit();
 	}
 	
 	ns.Hello.prototype.preLoginDisconnect = function() {
-		var self = this;
+		const self = this;
 		if ( hello.login || hello.loading ) {
 			hello.log.show();
 		}
@@ -1042,13 +1095,13 @@ var hello = null;
 	
 	// TODO : reopen views
 	ns.Hello.prototype.show = function() {
-		var self = this;
+		const self = this;
 		console.log( 'Hello.show() - NYI' );
 	}
 	
 	// TODO : close views while staying logged in
 	ns.Hello.prototype.hide = function() {
-		var self = this;
+		const self = this;
 		console.log( 'Hello.hide() - NYI' );
 	}
 	
@@ -1058,7 +1111,7 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.logout = function() {
-		var self = this;
+		const self = this;
 		self.loggedIn = false;
 		self.forceShowLogin = true;
 		self.main.logout();
@@ -1072,7 +1125,7 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.main ) {
 			self.main.close();
 			self.main = null;
@@ -1088,13 +1141,13 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.checkQuit = function() {
-		var self = this;
+		const self = this;
 		if ( !self.main && !self.login && !self.log.view && !self.loggedIn )
 			self.quit();
 	}
 	
 	ns.Hello.prototype.quit = function() {
-		var self = this;
+		const self = this;
 		if ( self.conn )
 			self.conn.close();
 		
@@ -1102,7 +1155,7 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.about = function() {
-		var self = this;
+		const self = this;
 		if ( self.aboutView )
 			return;
 		
@@ -1111,7 +1164,7 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.playMsgAlert = function() {
-		var self = this;
+		const self = this;
 		if ( !self.msgAlert )
 			return;
 		
@@ -1120,15 +1173,35 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.receiveMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'Hello.receiveMessage - NOOP', msg );
 	}
 	
 	ns.Hello.prototype.handlePushNotie = function( event ) {
 		const self = this;
+		console.log( 'hello.handlePushNotie', event );
 		if ( !event || !event.extra ) {
 			console.log( 'hello.handlePushNotie - not valid event', event );
 			return;
+		}
+		
+		if ( !event.clicked ) {
+			console.log( 'hello.handlePushNotie - not clicked', event );
+			return;
+		}
+		
+		if ( null != self.resumeTimeout || !self.isOnline ) {
+			console.log( 'hell0o.handlePushNotie - wait resume / online', {
+				resume : self.resumeTimeout,
+				online : self.isOnline,
+			});
+			self.registerOnResume( onResume );
+			return;
+			
+			function onResume() {
+				console.log( 'handlePushNotie.onResume', event );
+				self.handlePushNotie( event );
+			}
 		}
 		
 		let extra = friendUP.tool.parse( event.extra );
@@ -1148,7 +1221,6 @@ var hello = null;
 	
 	ns.Hello.prototype.handleNotie = function( event ) {
 		const self = this;
-		console.log( 'hello.handleNotie', event );
 		if ( !event || !event.extra ) {
 			console.log( 'hello.handleNotie - invalid event', event );
 			return;
@@ -1159,6 +1231,21 @@ var hello = null;
 			return;
 		}
 		
+		if ( null != self.resumeTimeout || !self.isOnline ) {
+			console.log( 'hell0o.handleNotie - wait resume', {
+				resume : self.resumeTimeout,
+				online : self.isOnline,
+			});
+			self.registerOnResume( onResume );
+			return;
+			
+			function onResume() {
+				console.log( 'handleNotie.onResume', event );
+				self.handleNotie( event );
+			}
+		}
+		
+		console.log( 'hello.handleNotie', event );
 		let extra = friendUP.tool.parse( event.extra );
 		if ( !extra ) {
 			console.log( 'hello.handleNotie - invalid extra', event );
@@ -1173,9 +1260,53 @@ var hello = null;
 	
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
-		console.log( 'Hello.handleAppResume', event );
-		//self.module.reconnect();
+		console.log( 'hello.handleAppResume', {
+			event    : event,
+			isOnline : self.isOnline,
+		});
+		if ( !self.isOnline ) {
+			console.log( 'hello.handleAppResume - already reconnecting' );
+			return;
+		}
+		
+		if ( null != self.resumeTimeout )
+			window.clearTimeout( self.resumeTimeout );
+		
+		self.resumeTimeout = window.setTimeout( resume, 1000 );
 		self.reconnect();
+		
+		self.app.toAllViews({
+			type : 'app-online',
+			data : false,
+		});
+		
+		self.main.setConnState({
+			type : 'resume',
+			data : Date.now(),
+		});
+		
+		function resume() {
+			delete self.resumeTimeout;
+			self.doResume();
+			//self.reconnect();
+		}
+	}
+	
+	ns.Hello.prototype.registerOnResume = function( fn ) {
+		const self = this;
+		console.log( 'hello.registerOnResume', fn.toString() );
+		self.resumeCallbacks.push( fn );
+	}
+	
+	ns.Hello.prototype.doResume = function() {
+		const self = this;
+		console.log( 'doResume - online?', self.isOnline );
+		if ( !self.isOnline )
+			return;
+		
+		console.log( 'hello.doResume', self.resumeCallbacks.length );
+		self.resumeCallbacks.forEach( fn => fn());
+		self.resumeCallbacks = [];
 	}
 	
 	ns.Hello.prototype.handleUserUpdate = function( event ) {
@@ -1218,6 +1349,7 @@ var hello = null;
 	
 	ns.Main.prototype.setConnState = function( state ) {
 		const self = this;
+		console.log( 'main.setConnState', state );
 		self.view.send({
 			type : 'conn-state',
 			data : state,
@@ -1493,7 +1625,7 @@ var hello = null;
 	}
 	
 	ns.Main.prototype.startLive = function() {
-		var self = this;
+		const self = this;
 		hello.rtc.createRoom( null, null );
 	}
 	
@@ -1526,7 +1658,7 @@ var hello = null;
 	}
 	
 	ns.Main.prototype.initSubViews = function() {
-		var self = this;
+		const self = this;
 		self.notification = new library.system.Notification({
 			parentView : self.view,
 		});
@@ -1544,7 +1676,7 @@ var hello = null;
 	}
 	
 	ns.Main.prototype.closeThings = function() {
-		var self = this;
+		const self = this;
 		
 		if ( hello.module ) {
 			hello.module.close();
@@ -1576,24 +1708,24 @@ var hello = null;
 	}
 	
 	ns.Main.prototype.close = function() {
-		var self = this;
+		const self = this;
 		self.logout();
 	}
 	
 	ns.Main.prototype.logout = function() {
-		var self = this;
+		const self = this;
 		self.isLogout = true;
 		self.closeThings();
 	}
 	
 	ns.Main.prototype.quit = function() {
-		var self = this;
+		const self = this;
 		self.closeThings();
 		hello.quit();
 	}
 	
 	ns.Main.prototype.receiveMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'main.receiveMessage - unhandled view message', msg );
 	}
 	

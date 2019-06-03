@@ -41,6 +41,7 @@ library.module = library.module || {};
 		self.roomIds = [];
 		self.contacts = {};
 		self.contactIds = [];
+		self.eventQueue = [];
 		self.updateMap = null;
 		self.conn = null;
 		self.view = null;
@@ -174,6 +175,39 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.initializeState = function( data ) {
 		const self = this;
 		throw new Error( 'initializeState - baseModule, implement in module' );
+	}
+	
+	ns.BaseModule.prototype.queueEvent = function( handlerName, argumentList ) {
+		const self = this;
+		const queueItem = {
+			type : handlerName,
+			data : argumentList,
+		};
+		console.log( 'BaseModule.queueEvent', queueItem );
+		self.eventQueue.push( queueItem );
+	}
+	
+	ns.BaseModule.prototype.flushQueue = function() {
+		const self = this;
+		console.log( 'flushQueue - nyi', self.eventQueue );
+		self.eventQueue.forEach( dispatch );
+		self.eventQueue = [];
+		
+		function dispatch( item ) {
+			const fnName = item.type;
+			const args = item.data;
+			const handler = self[ fnName ];
+			if ( !handler ) {
+				console.log( 'BaseModule.flushQueue - no handler found for', item );
+				return;
+			}
+			
+			console.log( 'dispatch', {
+				handler : handler,
+				args    : args,
+			});
+			handler.apply( self, args );
+		}
 	}
 	
 	ns.BaseModule.prototype.connection = function( state ) {
@@ -538,6 +572,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'Presence.reconnect' );
 		self.initialized = false;
 		self.sendModuleInit();
 	}
@@ -711,6 +746,12 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.openChat = function( conf ) {
 		const self = this;
+		console.log( 'Presence.openChat', conf );
+		if ( !self.initialized ) {
+			self.queueEvent( 'openChat', [ conf ] );
+			return;
+		}
+		
 		const item = self.getTypeItem( conf.id, conf.type );
 		if ( !item ) {
 			console.log( 'Presence.openChat - chat not found for, queueueueueing', conf );
@@ -933,6 +974,10 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
+		console.log( 'Presence.handleAccountInit', {
+			inited : self.initialized,
+			state  : !!state,
+		});
 		if ( self.initialized )
 			return;
 		
@@ -950,6 +995,7 @@ library.module = library.module || {};
 		self.setupRooms( state.rooms );
 		self.handleContactInit( state.contacts );
 		//self.setupDormant();
+		self.flushQueue();
 		
 		function updateAccount( account ) {
 			self.account = account;

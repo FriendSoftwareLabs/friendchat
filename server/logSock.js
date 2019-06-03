@@ -22,14 +22,20 @@
 'use strict';
 
 const fs = require( 'fs' );
+const util = require( 'util' );
 const fork = require( 'child_process' ).fork;
-const log = require( './component/Log' )( 'LogSokk' );
-const logEvent = require( './component/Log' )( 'log' );
+const log = require( './component/Log' )( 'LogSock' );
 const WSS = require( './component/WebSocketServer' );
 const uuid = require( './component/UuidPrefix' )();
 
 const conf = require( './component/Config' ); // not really bothering with saving the obj,
                                               // it writes itself to global.config
+
+const inspectOpts = {
+	depth      : 3,
+	showHidden : true,
+	colors     : true,
+};
 
 if ( conf.server.dev )
 	process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -37,6 +43,20 @@ if ( conf.server.dev )
 //application state
 const state = {
 	clients : {},
+	names   : [
+		'apekatt',
+		'flybåt',
+		'hengekøye',
+		'venteliste',
+		'arntstian',
+		'knekkebrød',
+		'gråfarget',
+		'smårips',
+		'tutogkjør',
+		'grevling',
+		'kniiiis',
+	],
+	counter : 0,
 };
 
 state.config = global.config.get();
@@ -60,18 +80,31 @@ async function setup() {
 
 function handleClient( conn ) {
 	const id = uuid.get( 'client' );
-	log( 'handleClient', id );
-	state.clients[ id ] = conn;
+	const client = {
+		id   : id,
+		conn : conn,
+		name : state.names[ state.counter ],
+	};
+	
+	state.clients[ id ] = client;
+	
+	log( 'handleClient, ' + client.name + ' connected' );
+	if ( state.counter == ( state.names.length - 1 ))
+		state.counter = 0;
+	else
+		state.counter++;
 	
 	conn.on( 'error', e => {});
 	conn.on( 'close', e => closeClient( id ));
-	conn.on( 'message', handleClientEvent );
+	conn.on( 'message', e => handleClientEvent( e, id ));
 	
 }
 
 function closeClient( connId ) {
-	log( 'closeClient', connId );
-	const conn = state.clients[ connId ];
+	const client = state.clients[ connId ];
+	log( 'closeClient', client.name );
+	const conn = client.conn;
+	client.conn = null;
 	delete state.clients[ connId ];
 	if ( !conn )
 		return;
@@ -81,7 +114,7 @@ function closeClient( connId ) {
 	conn.removeAllListeners( 'close' );
 }
 
-function handleClientEvent( eventStr ) {
+function handleClientEvent( eventStr, clientId ) {
 	let event = null;
 	try {
 		event = JSON.parse( eventStr );
@@ -90,9 +123,62 @@ function handleClientEvent( eventStr ) {
 		return;
 	}
 	
-	if ( 'log' === event.type ) {
-		logEvent( ...event.data );
+	const client = state.clients[ clientId ];
+	
+	if ( 'init' === event.type ) {
+		const init = event.data;
+		log( 'client init', event );
+		if ( init.name ) {
+			log( 'client ' + client.name + ' has changed name to ' + init.name );
+			client.name = init.name;
+		}
 		return;
+	}
+	
+	if ( 'log' === event.type ) {
+		logEvent( client, event.data );
+		return;
+	}
+}
+
+function logEvent( client, data ) {
+	const timeStr = getTimeString( data.time || Date.now());
+	const args = data.args;
+	if ( !args )
+		return;
+	
+	const name = client.name;
+	const logStr = args[ 0 ] || '';
+	const prefix = ' >>> ' + name + ' : ' + timeStr + ' > ' + logStr;
+	console.log( prefix );
+	console.log( util.inspect( args[ 1 ], inspectOpts ));
+	//console.log( ' ' );
+}
+
+function getTimeString( timestamp ) {
+	const now = new Date( timestamp );
+	const hours = now.getHours();
+	const minutes = now.getMinutes();
+	const seconds = now.getSeconds();
+	const millis = now.getMilliseconds();
+	return pad( hours )
+		+ ':' + pad( minutes )
+		+ ':' + pad( seconds )
+		+ ':' + pad( millis, true );
+	
+	function pad( arg, millis ) {
+		var int = parseInt( arg );
+		if ( millis ) {
+			if ( int < 10 )
+				return '00' + int;
+			if ( int < 100 )
+				return '0' + int;
+		}
+		
+		if ( int < 10 )
+			return '0' + int;
+		
+		return arg;
 	}
 }
 
