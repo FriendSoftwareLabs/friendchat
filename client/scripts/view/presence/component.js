@@ -2041,9 +2041,13 @@ var hello = window.hello || {};
 				twIds.forEach( twId => {
 					setToAll( twId, msg, targetNames );
 				});
-				targetHtmls = buildTargetEls( targetNames );
-				toFromHidden = '';
-				toFromMsg = View.i18n( 'i18n_message_to' );
+				if ( targetNames.length ) {
+					targetHtmls = buildTargetEls( targetNames );
+					toFromHidden = '';
+					toFromMsg = View.i18n( 'i18n_message_to' );
+				} else {
+					emptyTargetNames( msg );
+				}
 			}
 		}
 		
@@ -2053,6 +2057,8 @@ var hello = window.hello || {};
 				targetHtmls = buildTargetEls( targetNames );
 				toFromHidden = '';
 				toFromMsg = View.i18n( 'i18n_private_message_to' );
+			} else {
+				emptyTargetNames( msg );
 			}
 		}
 		
@@ -2193,6 +2199,13 @@ var hello = window.hello || {};
 			function wName( worg ) {
 				return '#' + worg.name;
 			}
+		}
+		
+		function emptyTargetNames( msg ) {
+			console.log( 'MsgBuilderbuildWorkMsg - empty target names' );
+			console.log( 'msg', msg );
+			console.log( 'users', self.users );
+			console.log( 'self', self );
 		}
 	}
 	

@@ -980,12 +980,14 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.handleWorgMembers = function( event ) {
 		const self = this;
+		console.log( 'UserWorkCtrl.handleWorgMembers', event );
 		const workId = event.workId;
 		const members = event.members;
-		members.forEach( member => {
-			cId = member.clientId;
+		const ids = event.identities;
+		ids.forEach( id => {
+			cId = id.clientId;
 			if ( !self.identities[ cId ])
-				self.identities[ cId ] = member;
+				self.identities[ cId ] = id;
 		});
 		
 		self.setWorkMembers( event.workId, event.members );
@@ -993,6 +995,7 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.setWorkgroups = function( conf ) {
 		const self = this;
+		console.log( 'UserWorkCtrl.setWorkgroups', conf );
 		if ( !conf || !conf.available )
 			return;
 		
@@ -1124,12 +1127,17 @@ library.view = library.view || {};
 		let mIds = Object.keys( members );
 		let remove = mIds.filter( notInIdList );
 		remove.forEach( mId => self.removeMember( mId, worgId ));
-		idList.forEach( conf => {
-			const cId = conf.clientId;
+		idList.forEach( cId => {
 			if ( members[ cId ])
 				return;
 			
 			const identity = self.identities[ cId ];
+			const conf = {
+				/* can we live without?
+				isAuthed   : true,
+				workgroups : [ worgId ],
+				*/
+			};
 			let user = new library.view.WorkUser(
 				cId,
 				conf,
@@ -1143,7 +1151,7 @@ library.view = library.view || {};
 		});
 		
 		function notInIdList( mId ) {
-			return !idList.some( id => id.clientId === mId );
+			return !idList.some( cId => cId === mId );
 		}
 		
 		function onClick( id ) {

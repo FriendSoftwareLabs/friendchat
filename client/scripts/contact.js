@@ -1045,7 +1045,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
-		console.log( 'handleInitialize', state );
 		self.users = state.users || {};
 		self.userIds = Object.keys( self.users );
 		self.peers = state.peers;
@@ -1445,17 +1444,20 @@ library.contact = library.contact || {};
 			idList.forEach( id => {
 				const cId = id.clientId;
 				self.identities[ cId ] = id;
+				
 			});
 			
-			self.workgroups.members[ worgId ] = idList;
-			if ( self.chatView )
-				self.chatView.send({
-					type : 'workgroup-members',
-					data : {
-						workId : worgId,
-						members : idList,
-					},
-				});
+			if ( !self.chatView )
+				return;
+			
+			self.chatView.send({
+				type : 'workgroup-members',
+				data : {
+					workId     : worgId,
+					members    : list,
+					identities : idList,
+				},
+			});
 		}
 	}
 	
