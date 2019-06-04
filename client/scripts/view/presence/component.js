@@ -582,6 +582,7 @@ var hello = window.hello || {};
 	) {
 		const self = this;
 		self.build();
+		self.groupList = new library.component.ListOrder( 'user-groups' );
 		self.initBaseGroups();
 		self.setWorkgroups( workgroups );
 		self.addIdentities( identities );
@@ -603,31 +604,37 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.initBaseGroups = function() {
 		const self = this;
+		self.worgPri = 4;
 		const base = [
 			{
 				clientId     : 'offline',
 				name         : View.i18n( 'i18n_offline' ),
 				sectionKlass : 'BackgroundHeavy',
+				priority     : 0
 			},
 			{
 				clientId     : 'admins',
 				name         : View.i18n( 'i18n_admins' ),
 				sectionKlass : 'Action',
+				priority     : 1
 			},
 			{
 				clientId     : 'online',
 				name         : View.i18n( 'i18n_online' ),
 				sectionKlass : 'Accept',
+				priority     : 3
 			},
 			{
 				clientId     : 'guests',
 				name         : View.i18n( 'i18n_guests' ),
 				sectionKlass : 'Warning',
+				priority     : 2
 			},
 			{
 				clientId     : 'bug',
 				name         : View.i18n( 'i18n_bug' ),
 				sectionKlass : 'Danger',
+				priority     : 0
 			},
 		];
 		
@@ -649,7 +656,7 @@ var hello = window.hello || {};
 		avaIds = Object.keys( ava );
 		avaIds.forEach( wId => {
 			let worg = ava[ wId ];
-			self.groupsAvailable[ wId ] = worg;
+			self.addWorgAvailable( worg );
 		});
 		ass.forEach( worg => self.addUserGroup( worg.clientId ));
 	}
@@ -657,19 +664,22 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.addWorgAvailable = function( worg ) {
 		const self = this;
 		const wId = worg.clientId;
+		worg.priority = worg.priority || self.worgPri;
 		self.groupsAvailable[ wId ] = worg;
 	}
 	
-	ns.UserCtrl.prototype.addUserGroup = function( groupId, beforeId, sectionKlass ) {
+	ns.UserCtrl.prototype.addUserGroup = function( groupId, sectionKlass ) {
 		const self = this;
 		if ( !groupId )
 			return;
 		
 		const wId = groupId;
-		if ( self.groups[ wId ])
+		const worg = self.groupsAvailable[ wId ];
+		if ( self.groups[ wId ]) {
+			//self.groupList.update( worg );
 			return;
+		}
 		
-		worg = self.groupsAvailable[ wId ];
 		if ( null == worg.sectionKlass )
 			worg.sectionKlass = sectionKlass || 'Available';
 		
@@ -680,34 +690,15 @@ var hello = window.hello || {};
 			self.template,
 		);
 		
+		self.groupList.add( worg );
 		self.groups[ wId ] = group;
-		if ( null == beforeId )
-			self.groupIds.push( wId );
-		else
-			self.moveGroupBefore( wId, beforeId );
-		
-		if ( 'offline' !== wId )
-			moveOfflineToBottom();
-		
-		function moveOfflineToBottom() {
-			const offline = self.groups[ 'offline' ];
-			if ( !offline )
-				return;
-			
-			self.el.appendChild( offline.el );
-		}
-	}
-	
-	ns.UserCtrl.prototype.moveGroupBefore = function( worgId, beforeId ) {
-		const self = this;
-		const wEl = document.getElementById( worgId );
-		const bEl = document.getElementById( beforeId ) || null;
-		self.el.insertBefore( wEl, bEl );
+		self.groupIds.push( wId );
 	}
 	
 	ns.UserCtrl.prototype.removeUserGroup = function( worgId ) {
 		const self = this;
-		console.log( 'removeUserGroup - NYI', worgId );
+		console.log( 'removeUserGroup', worgId );
+		self.groupList.remove( worgId );
 	}
 	
 	ns.UserCtrl.prototype.addUsers = function( users ) {

@@ -918,6 +918,7 @@ library.view = library.view || {};
 	ns.UserWorkCtrl.prototype.init = function( workgroups, users, ids, roomAvatar ) {
 		const self = this;
 		self.build();
+		self.groupList = new library.component.ListOrder( 'user-groups' );
 		self.initBaseGroups();
 		self.addIdentities( ids );
 		self.setWorkgroups( workgroups );
@@ -933,19 +934,16 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.initBaseGroups = function() {
 		const self = this;
+		self.worgPri = 2;
+		self.superPri = 1;
+		self.subPri = 4;
 		const base = [
 			{
 				clientId     : 'all_groups',
 				name         : View.i18n( 'i18n_all_groups' ),
 				sectionKlass : 'Action',
+				priority     : 3,
 			},
-			/*
-			{
-				clientId     : 'all_members',
-				name         : View.i18n( 'i18n_all_members' ),
-				sectionKlass : 'Action',
-			},
-			*/
 		];
 		
 		base.forEach( worg => {
@@ -964,7 +962,11 @@ library.view = library.view || {};
 		const remove = curr.filter( notInSubs );
 		const add = subIds.filter( notInCurr );
 		remove.forEach( wId => self.removeWorkgroup( wId ));
-		add.forEach( wId => self.addWorkGroup( wId, null, 'Available' ));
+		add.forEach( wId => {
+			const subWorg = self.groupsAvailable[ wId ];
+			subWorg.priority = self.subPri;
+			self.addWorkGroup( wId, 'Available' )
+		});
 		self.subGroups = subIds;
 		
 		self.toggleSpecials();
@@ -999,6 +1001,7 @@ library.view = library.view || {};
 		if ( !conf || !conf.available )
 			return;
 		
+		const superId = conf.superId;
 		self.workId = conf.workId;
 		self.superId = conf.superId;
 		self.addRooms( conf.rooms );
@@ -1010,11 +1013,14 @@ library.view = library.view || {};
 		const groups = conf.available;
 		const gIds = Object.keys( groups );
 		gIds.forEach( setGAvailable );
-		self.addUserGroup( conf.workId, 'all_groups', 'Accept' );
+		const uGrp = self.groupsAvailable[ self.workId ];
+		uGrp.priority = self.worgPri;
+		self.addUserGroup( self.workId, 'Accept' );
 		
-		if ( conf.superId && !( self.conf && self.conf.subsHaveSuperView )) {
-			const superId = conf.superId;
-			self.addWorkGroup( superId, self.workId, 'Action' );
+		if ( superId && !( self.conf && self.conf.subsHaveSuperView )) {
+			const superWorg = self.groupsAvailable[ superId ];
+			superWorg.priority = self.superPri;
+			self.addWorkGroup( superId, 'Action' );
 			self.setWorkMembers( superId, members[ superId ] );
 			const groupEl = document.getElementById( self.workId );
 			const el = document.getElementById( superId );
@@ -1045,7 +1051,7 @@ library.view = library.view || {};
 		});
 	}
 	
-	ns.UserWorkCtrl.prototype.addWorkGroup = function( worgId, beforeId, sectionKlass ) {
+	ns.UserWorkCtrl.prototype.addWorkGroup = function( worgId, sectionKlass ) {
 		const self = this;
 		if ( self.works[ worgId ]) {
 			console.log( 'addWorkGroup - already added', worgId );
@@ -1077,12 +1083,11 @@ library.view = library.view || {};
 			self.template,
 			onClick
 		);
+		
 		let cId = group.clientId;
 		self.works[ cId ] = group;
 		self.workIds = Object.keys( self.works );
-		
-		if ( null != beforeId )
-			self.moveGroupBefore( worgId, beforeId );
+		self.groupList.add( worg );
 		
 		function onClick( id ) {
 			const target = {
@@ -1105,6 +1110,7 @@ library.view = library.view || {};
 			return;
 		}
 		
+		self.groupList.remove( worgId );
 		group.close();
 		delete self.members[ worgId ];
 		delete self.works[ worgId ];

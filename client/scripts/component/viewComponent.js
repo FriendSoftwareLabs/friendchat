@@ -2938,9 +2938,14 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	// Public
 	
 	/* add
+		item should already be present in the DOM
+		with a id matching itemConf.clientId
+		
 		itemConf : {
 			clientId : <element id string>,
 			priority : <number - 1, 2, ..., 9 >, optional, 0 is no priority
+			time     : <int>, used for odering within a priority group,
+			           takes precedence over name
 			name     : <string>, used for ordering within a priority group
 		}
 	*/
