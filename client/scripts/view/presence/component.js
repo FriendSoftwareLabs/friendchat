@@ -1742,7 +1742,9 @@ var hello = window.hello || {};
 		}
 		
 		self.addItem( el, envelope, event );
-		self.updateLastDelivered( event );
+		if ( self.contactId )
+			self.updateLastDelivered( event );
+		
 		self.confirmEvent( 'message', event.msgId );
 		return el;
 	}
@@ -1780,7 +1782,7 @@ var hello = window.hello || {};
 		let lMId = self.getLastMsgId();
 		self.confirmEvent( 'message', lMId );
 		if ( relations )
-				self.updateRelationState( relations );
+			self.updateRelationState( relations );
 		
 		window.setTimeout( tglsmt, 1000 );
 		function tglsmt() {
@@ -2433,6 +2435,9 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.updateRelationState = function( relations ) {
 		const self = this;
+		if ( !self.contactId )
+			return;
+		
 		const user = relations[ self.userId ];
 		const contact = relations[ self.contactId ];
 		console.log( 'updateRelationsState', {
@@ -2476,13 +2481,16 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleConfirm = function( event ) {
 		const self = this;
+		if ( !self.contactId )
+			return;
+		
 		console.log( 'handleConfirm', {
 			userId        : self.userId,
+			contactId     : self.contactId,
 			event         : event,
 			lastConfirmed : self.lastConfirmed,
 			lastRead      : self.lastRead,
 		});
-		
 		if ( 'message' == event.type ) {
 			confirmMessage( event.data );
 			return;
@@ -2528,6 +2536,7 @@ var hello = window.hello || {};
 		console.log( 'updateLastDelivered', {
 			state : state,
 			userId : self.userId,
+			contactId : self.contactId,
 			lastRead : self.lastRead,
 			lastDelivered : self.lastDelivered,
 		});
