@@ -1103,26 +1103,31 @@ library.view = library.view || {};
 		const group = self.works[ worgId ];
 		if ( !group ) {
 			console.log( 'no group for', {
-				wId : worgId,
+				wId     : worgId,
 				members : self.members,
-				worgs : self.works,
+				works   : self.works,
 			});
 			return;
 		}
 		
+		self.removeMembers( worgId );
 		self.groupList.remove( worgId );
-		group.close();
-		delete self.members[ worgId ];
 		delete self.works[ worgId ];
+		group.close();
 		self.workIds = Object.keys( self.works );
 	}
 	
 	ns.UserWorkCtrl.prototype.setWorkMembers = function( worgId, idList ) {
 		const self = this;
+		console.log( 'setWorkMembers', {
+			wId  : worgId,
+			list : idList,
+		});
+		idList = idList || [];
 		let group = self.works[ worgId ];
 		let members = self.members[ worgId ];
-		if ( !members ) {
-			console.log( 'UserWrokCtrl.setWorkMembers - no members for worg', {
+		if ( !group ) {
+			console.log( 'UserWrokCtrl.setWorkMembers - no group', {
 				worgId : worgId,
 				idList : idList,
 				self : self,
@@ -1130,7 +1135,7 @@ library.view = library.view || {};
 			return;
 		}
 		
-		let mIds = Object.keys( members );
+		const mIds = Object.keys( members );
 		let remove = mIds.filter( notInIdList );
 		remove.forEach( mId => self.removeMember( mId, worgId ));
 		idList.forEach( cId => {
@@ -1186,6 +1191,17 @@ library.view = library.view || {};
 		group.detach( userId );
 		delete members[ userId ];
 		user.close();
+	}
+	
+	ns.UserWorkCtrl.prototype.removeMembers = function( worgId ) {
+		const self = this;
+		const members = self.members[ worgId ];
+		const mIds = Object.keys( members );
+		mIds.forEach( mId => {
+			self.removeMember( mId, worgId );
+		});
+		
+		delete self.members[ worgId ];
 	}
 	
 	ns.UserWorkCtrl.prototype.setUserToGroup = function( userId ) {

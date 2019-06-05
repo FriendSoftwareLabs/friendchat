@@ -81,6 +81,9 @@ var hello = window.hello || {};
 	
 	ns.UserGroup.prototype.detach = function( id ) {
 		const self = this;
+		if ( !self.items )
+			return;
+		
 		const item = self.items[ id ];
 		if ( !item ) {
 			console.log( 'UserGroup.attach - no item for id', {

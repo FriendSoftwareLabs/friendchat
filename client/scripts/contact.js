@@ -1429,9 +1429,14 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updateWorkgroupMembers = function( worgId, list ) {
 		const self = this;
+		console.log( 'PresenceRoom.updateWorkgroupMembers', {
+			wId  : worgId,
+			list : list,
+		});
 		if ( !self.workgroups || !self.workgroups.members )
 				return;
 		
+		self.workgroups.members[ worgId ] = list;
 		self.idc.getList( list )
 			.then( listBack )
 			.catch( listFail );
