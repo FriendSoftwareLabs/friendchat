@@ -191,11 +191,9 @@ library.view = library.view || {};
 
 // About
 (function( ns, undefined ) {
-	ns.About = function( onclose ) {
-		if ( !( this instanceof ns.About ))
-			return new ns.About( onclose );
-		
-		var self = this;
+	ns.About = function( about, onclose ) {
+		const self = this;
+		self.about = about;
 		self.onclose = onclose;
 		self.init();
 	}
@@ -210,7 +208,7 @@ library.view = library.view || {};
 		self.view = hello.app.createView(
 			'html/about.html',
 			windowConf,
-			null,
+			self.about,
 			null,
 			closed,
 		);

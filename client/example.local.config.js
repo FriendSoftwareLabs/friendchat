@@ -18,8 +18,9 @@
 *****************************************************************************©*/
 
 window.localconfig = {
+	about : null,
 	// master config is fetched from here,
-	// and is probably be where your friendcore is running
+	// and is probably where friendcore is running
 	host : 'friendcore_host',
 	port : '3000',
 	// main view

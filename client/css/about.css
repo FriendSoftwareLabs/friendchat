@@ -107,3 +107,43 @@
 	background-size: cover;
 }
 
+#version {
+	padding : 0.7em;
+}
+
+#version-copy {
+	margin-top : 1.3em;
+}
+
+#version-copy-input {
+	opacity: 0;
+}
+
+#version-copy-btn {
+	padding : 0 0.4em;
+	line-height: 2em;
+	display: inline-flex;
+}
+
+.infos > div {
+	line-height: 2em;
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr 6fr;
+}
+
+.description {
+	font-weight: bold;
+	text-align: right;
+	opacity: 0.8;
+	grid-column-start: 1;
+	grid-column-end: 3;
+}
+
+.value {
+	font-size: 110%;
+	grid-column-start: 2;
+	grid-column-end: 6;
+}

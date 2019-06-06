@@ -47,8 +47,7 @@ var friend = window.friend || {}; // already instanced stuff
 
 // View
 // an interface for views, new it
-(function( ns, undefined )
-{
+(function( ns, undefined ) {
 	ns.View = function(
 		htmlPath,
 		windowConf,
@@ -881,7 +880,8 @@ var friend = window.friend || {}; // already instanced stuff
 	}
 	
 	ns.AppEvent.prototype.register = function( msg ) {
-		var self = this;
+		const self = this;
+		console.log( 'register', msg );
 		window.origin = msg.origin;
 		self.domain = msg.domain;
 		self.locale = msg.locale;

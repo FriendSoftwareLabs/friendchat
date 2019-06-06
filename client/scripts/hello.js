@@ -28,9 +28,10 @@ var hello = null;
 // HELLO
 (function( ns, undefined ) {
 	ns.Hello = function( app, conf ) {
-		if ( !( this instanceof ns.Hello ))
-			return new ns.Hello( app, conf );
-		
+		console.log( 'HERRO', {
+			app  : app,
+			conf : conf,
+		});
 		const self = this;
 		self.app = app;
 		self.config = conf;
@@ -1162,7 +1163,7 @@ var hello = null;
 		if ( self.aboutView )
 			return;
 		
-		self.aboutView = new library.view.About( onclose );
+		self.aboutView = new library.view.About( self.config.about, onclose );
 		function onclose() { delete self.aboutView; }
 	}
 	
