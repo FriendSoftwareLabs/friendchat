@@ -15,8 +15,14 @@ if [ -z "$FRIEND" ]; then
 	exit 0
 fi
 
-echo "Stopping friendchat-server system service"
-sudo systemctl stop friendchat-server
+# stop if service should be restarted
+if [ $NORESTART -eq 0 ]
+then
+	echo "Stopping friendchat-server system service"
+	sudo systemctl stop friendchat-server
+else
+	echo "NORESTART - service, if it is set up, will not be restarted"
+fi
 
 # Creates destination directory if it does not exist
 FRIENDCHAT_SERVER="$FRIEND/services/FriendChat"
@@ -48,6 +54,7 @@ echo ""
 echo "Update successfully completed."
 
 
+# restart if it was stopped
 if [ $NORESTART -eq 0 ]; then
 	echo "Starting friendchat-server system service"
 	sudo systemctl start friendchat-server
