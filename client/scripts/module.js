@@ -189,7 +189,7 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.flushQueue = function() {
 		const self = this;
-		console.log( 'flushQueue - nyi', self.eventQueue );
+		console.log( 'BaseModule.flushQueue', self.eventQueue );
 		self.eventQueue.forEach( dispatch );
 		self.eventQueue = [];
 		
@@ -746,8 +746,8 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.openChat = function( conf ) {
 		const self = this;
-		console.log( 'Presence.openChat', conf );
 		if ( !self.initialized ) {
+			console.log( 'Presence.openChat - not initialize, queueueueing' );
 			self.queueEvent( 'openChat', [ conf ] );
 			return;
 		}
@@ -755,6 +755,12 @@ library.module = library.module || {};
 		const item = self.getTypeItem( conf.id, conf.type );
 		if ( !item ) {
 			console.log( 'Presence.openChat - chat not found for, queueueueueing', conf );
+			self.openChatWaiting.push( conf.id );
+			return;
+		}
+		
+		if ( !item.openChat ) {
+			console.log( 'Presence.openChat - item not ready' );
 			self.openChatWaiting.push( conf.id );
 			return;
 		}
@@ -1499,7 +1505,7 @@ library.module = library.module || {};
 	ns.Presence.prototype.openContactChat = function( contactId ) {
 		const self = this;
 		const contact = self.contacts[ contactId ];
-		if ( contact ) {
+		if ( contact && contact.openChat ) {
 			contact.openChat();
 			return;
 		}

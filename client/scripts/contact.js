@@ -2276,6 +2276,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChatView = function() {
 		const self = this;
+		console.log( 'PresenceContact.openChatView' );
 		self.openChatPending = false;
 		if ( self.chatView ) {
 			self.chatView.show();

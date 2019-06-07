@@ -1290,7 +1290,8 @@ var hello = null;
 		});
 		
 		function resume() {
-			delete self.resumeTimeout;
+			self.resumeTimeout = null;
+			console.log( 'resume', self.resumeTimeout );
 			self.doResume();
 			//self.reconnect();
 		}
@@ -1304,8 +1305,8 @@ var hello = null;
 	
 	ns.Hello.prototype.doResume = function() {
 		const self = this;
-		console.log( 'doResume - online?', self.isOnline );
-		if ( !self.isOnline )
+		console.log( 'doResume - online?', [ self.isOnline, self.resumeTimeout ]);
+		if ( !self.isOnline || ( null != self.resumeTimeout ))
 			return;
 		
 		console.log( 'hello.doResume', self.resumeCallbacks.length );
