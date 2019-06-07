@@ -472,6 +472,12 @@ var hello = window.hello || {};
 		});
 	}
 	
+	ns.UserCtrl.prototype.addIdentity = function( id ) {
+		const self = this;
+		console.log( 'addIdentity', id );
+		return self.addId( id );
+	}
+	
 	ns.UserCtrl.prototype.updateIdentity = function( update ) {
 		const self = this;
 		console.log( 'view.Presence.UserCtrl.updateIdentity', update );
@@ -542,8 +548,8 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.getAvatarKlass = function( clientId ) {
 		const self = this;
 		const user = self.get( clientId );
-		if ( user.isGuest )
-			clientId = 'guest-user';
+		if ( user && user.isGuest )
+			return clientId = 'guest-user';
 		
 		return self.getUserCssKlass( clientId );
 	}
@@ -722,10 +728,11 @@ var hello = window.hello || {};
 		const self = this;
 		const cId = id.clientId;
 		if ( self.identities[ cId ])
-			return;
+			return false;
 		
 		self.identities[ cId ] = id;
 		self.addUserCss( cId, id.avatar );
+		return true;
 	}
 	
 	ns.UserCtrl.prototype.bindConn = function() {

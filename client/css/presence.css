@@ -4,10 +4,6 @@
 	padding : 0.3em 0.6em;
 }
 
-[mobile] #room-title {
-	display: none;
-}
-
 #room-title .group-prefix,
 #room-title .title-name {
 	font-size: 130%;

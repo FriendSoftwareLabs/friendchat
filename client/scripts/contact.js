@@ -971,6 +971,8 @@ library.contact = library.contact || {};
 		
 		self.messageWaiting( false );
 		const initData = {
+			room        : self.identity,
+			roomName    : self.identity.name,
 			users       : self.users,
 			peers       : self.peers,
 			clientId    : self.clientId,
@@ -978,8 +980,6 @@ library.contact = library.contact || {};
 			isView      : self.isView,
 			config      : self.config,
 			persistent  : self.persistent,
-			roomName    : self.identity.name,
-			roomAvatar  : self.identity.avatar,
 			guestAvatar : self.guestAvatar,
 			identities  : self.identities,
 			workgroups  : self.workgroups,

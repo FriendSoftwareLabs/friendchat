@@ -29,7 +29,7 @@ library.view = library.view || {};
 		const self = this;
 		self.conn = window.View;
 		
-		self.name = null;
+		self.room = null;
 		self.ownerId = null;
 		self.userId = null;
 		self.users = null;
@@ -300,7 +300,7 @@ library.view = library.view || {};
 		self.isPrivate  = state.isPrivate;
 		self.isView     = state.isView;
 		self.persistent = state.persistent;
-		self.name       = state.roomName;
+		self.room       = state.room;
 		self.ownerId    = state.ownerId;
 		self.userId     = state.userId;
 		self.contactId  = state.contactId;
@@ -534,14 +534,30 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.setGroupTitle = function() {
 		const self = this;
+		console.log( 'setGroupTitle', self.room );
+		if ( !self.room ) {
+			console.log( 'view.Presence.setGroupTitle - no identity', self );
+			return;
+		}
+		
+		const id = self.room;
+		const added = self.users.addIdentity( id );
+		if ( !added ) {
+			console.log( 'could not add identity????', self.room );
+			return;
+		}
+		
 		if ( self.titleId )
 			self.clearTitle();
 		
 		self.titleId = friendUP.tool.uid( 'title' );
+		const avatarKlass = self.users.getAvatarKlass( id.clientId );
 		const conf = {
-			id       : self.titleId,
-			roomName : self.name,
+			id             : self.titleId,
+			roomName       : self.room.name,
+			avatarCssKlass : avatarKlass,
 		};
+		
 		self.titleEl = friend.template.getElement( 'group-title-tmpl', conf );
 		self.titleContainer.appendChild( self.titleEl );
 	}

@@ -146,12 +146,12 @@
 
 <!-- Group title
 id,
+avatarCssKlass,
 roomName,
 -->
 <script id="group-title-tmpl" type="text/html">
-<div id="<%= id %>" class="group row start">
-	<div class="group-prefix fortify">
-		#
+<div id="<%= id %>" class="group row start <%= avatarCssKlass %>">
+	<div class="avatar room fortify">
 	</div>
 	<div class="title-name expand">
 		<%= roomName %>
