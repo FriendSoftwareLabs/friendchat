@@ -368,3 +368,4 @@ i18n_app_version : App version
 i18n_git_branch : Git branch
 i18n_git_date : Commit date
 i18n_git_commit : Commit hash
+i18n_app : App

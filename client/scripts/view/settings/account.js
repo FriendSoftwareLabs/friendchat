@@ -45,7 +45,7 @@ library.view = library.view || {};
 			'inAppMenu',
 			//'onNewScreen',
 			//'minimalUI',
-			'advancedUI',
+			//'advancedUI',
 		];
 		self.displayOrder = self.validKeys;
 		self.labelMap = {

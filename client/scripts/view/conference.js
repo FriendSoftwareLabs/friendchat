@@ -58,8 +58,11 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.init = function() {
-		var self = this;
-		View.setBody();
+		const self = this;
+		window.View.setBody();
+		if ( window.View.appConf.hideLive )
+			self.toggleLiveBtns();
+		
 		self.appOnline = new library.component.AppOnline( window.View );
 		self.view = window.View;
 		self.modes = [
@@ -176,6 +179,11 @@ library.view = library.view || {};
 		function participants( e ) { self.moreParticipants( e ); }
 		function topic( e ) { self.setTopic( e ); }
 		function updateUser( e ) { self.updateUser( e ); }
+	}
+	
+	ns.Conference.prototype.toggleLiveBtns = function( show ) {
+		const self = this;
+		
 	}
 	
 	ns.Conference.prototype.initialize = function( data ) {

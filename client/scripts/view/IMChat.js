@@ -49,8 +49,11 @@ library.component = library.component || {};
 	}
 	
 	ns.IMChat.prototype.init = function() {
-		var self = this;
+		const self = this;
 		window.View.setBody(); // sets friend.template
+		if ( window.View.appConf.hideLive )
+			self.toggleLiveBtns( false );
+		
 		self.appOnline = new library.component.AppOnline( window.View );
 		
 		self.view = window.View;
@@ -124,9 +127,16 @@ library.component = library.component || {};
 		function encryptToggle( e ) { self.toggleIsEncrypting( e ); }
 	}
 	
+	ns.IMChat.prototype.toggleLiveBtns = function( show ) {
+		const self = this;
+		vBtn = document.getElementById( 'start-video' );
+		aBtn = document.getElementById( 'start-audio' );
+		vBtn.classList.toggle( 'hidden', !show );
+		aBtn.classList.toggle( 'hidden', !show );
+	}
+	
 	ns.IMChat.prototype.handleLog = function( log ) {
 		var self = this;
-		console.log( 'IMChat.handleLog', log );
 		if ( self.isWaiting )
 			self.removeWaiting();
 		

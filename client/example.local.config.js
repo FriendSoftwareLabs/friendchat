@@ -31,4 +31,5 @@ window.localconfig = {
 			height : 320,
 		},
 	},
+	hideLive : false,
 };

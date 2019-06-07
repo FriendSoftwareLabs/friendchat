@@ -131,7 +131,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			clientId : null,
 			name : null,
@@ -140,7 +140,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.doMessageIntercept = function( data ) {
-		var self = this;
+		const self = this;
 		var intercept = self.checkIntercept( data.message );
 		var didIntercept = false;
 		if ( intercept ) {
@@ -155,7 +155,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.onChatMessage = function( msg, silent ) {
-		var self = this;
+		const self = this;
 		console.log( 'Contact.onChatMessage', {
 			msg      : msg,
 			chatView : !!self.chatView,
@@ -210,7 +210,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.whenChatOpen = function( msg, silent ) {
-		var self = this;
+		const self = this;
 		console.log( 'Contact.whenChatClosed', {
 			msg           : msg,
 			chatMinimized : self.chatView.checkMinimized(),
@@ -245,7 +245,7 @@ library.contact = library.contact || {};
 	
 	// returns true if the intercept was acted on, otherwise returns false
 	ns.Contact.prototype.handleIntercept = function( msg, intercept ) {
-		var self = this;
+		const self = this;
 		var event = intercept.data;
 		var handler = self.interceptMap[ event.type ];
 		if ( !handler ) {
@@ -276,7 +276,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.getInterceptNotification = function( msg, intercept ) {
-		var self = this;
+		const self = this;
 		var message = !!msg.from ? 'Received: ' : 'Sent: ';
 		var type = 'unknown';
 		if ( intercept.data && intercept.data.type )
@@ -284,11 +284,16 @@ library.contact = library.contact || {};
 		else
 			type = intercept.type || type;
 		
-		type = self.interceptTypes[ type ] || type;
-		message += type;
+		const typeStr = self.interceptTypes[ type ] || type;
+		message += typeStr;
 		
 		if ( !self.identity && msg.from ) // no identity means this is a room
 			message += ' from ' + msg.from; // so lets give a bit more infos
+		
+		if ( hello.config.hideLive && ( 'live-invite' === type )) {
+			message += ' - live blocked by app config';
+			console.log( 'live intercept message', message );
+		}
 		
 		return {
 			level : 'warn',
@@ -299,7 +304,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.chatMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : 'message',
 			data : msg,
@@ -308,7 +313,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.handleLog = function( log ) {
-		var self = this;
+		const self = this;
 		if ( !log ) {
 			nullMessage();
 			return;
@@ -338,7 +343,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.handleNotification = function( data ) {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'notification',
 			data : data,
@@ -361,7 +366,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.messageWaiting = function( isWaiting, message, from, time ) {
-		var self = this;
+		const self = this;
 		message = message || null;
 		from = from || null;
 		time = time || Date.now();
@@ -377,7 +382,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.sendMessage = function( str ) {
-		var self = this;
+		const self = this;
 		self.send({
 			type : 'message',
 			data  : str
@@ -385,7 +390,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.sendCryptoMessage = function( data ) {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'cryptomessage',
 			data : data,
@@ -394,7 +399,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.checkIntercept = function( message ) {
-		var self = this;
+		const self = this;
 		if ( !hello.intercept )
 			throw new Error( 'intercept has not been initiated' );
 		
@@ -460,6 +465,11 @@ library.contact = library.contact || {};
 		if ( !invite )
 			throw new Error( 'Contact.startLive - no invite' );
 		
+		if ( hello.config.hideLive ) {
+			console.log( 'startLive - blocked by conf', hello.config );
+			return;
+		}
+		
 		const user = self.getParentIdentity();
 		const host = self.identity || { name : from }; // this contact is inviting you
 		hello.rtc.askClient( invite, host, user );
@@ -473,7 +483,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.addCalendarEvent = function( event, from ) {
-		var self = this;
+		const self = this;
 		if ( self.identity )
 			from = self.identity.name;
 		
@@ -486,7 +496,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.showOptions = function( e ) {
-		var self = this;
+		const self = this;
 		
 		if( self.optionsView ) {
 			return;
@@ -514,7 +524,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.updateViewTheme = function( filepath ) {
-		var self = this;
+		const self = this;
 		self.viewTheme = filepath;
 		if ( !self.chatView || !self.chatView.view )
 			return;
@@ -523,17 +533,17 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.remove = function() {
-		var self = this;
+		const self = this;
 		console.log( 'app.Contact.remove - not implemented' );
 	}
 	
 	ns.Contact.prototype.getName = function() {
-		var self = this;
+		const self = this;
 		return self.identity.name || self.clientId || self.type;
 	}
 	
 	ns.Contact.prototype.toView = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -541,7 +551,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.toChat = function( event ) {
-		var self = this;
+		const self = this;
 		if ( !self.chatView )
 			return;
 		
@@ -549,12 +559,12 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.send = function( event ) {
-		var self = this;
+		const self = this;
 		self.conn.send( event );
 	}
 	
 	ns.Contact.prototype.contactClose = function() {
-		var self = this;
+		const self = this;
 		self.release();
 		if ( self.conn )
 			self.conn.close();
@@ -636,7 +646,12 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
-		var self = this;
+		const self = this;
+		if ( hello.config.hideLive ) {
+			console.log( 'PresenceRoom.joinLive - blocked by conf', hello.config );
+			return;
+		}
+		
 		// check if room has been initialized
 		if ( self.live ) {
 			self.live.show();
@@ -703,7 +718,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.getInviteToken = function( type, callback ) {
-		var self = this;
+		const self = this;
 		type = type || 'private';
 		var reqId = null;
 		if ( callback )
@@ -794,7 +809,7 @@ library.contact = library.contact || {};
 	// Private
 	
 	ns.PresenceRoom.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.conn.on( 'initialize', init );
 		self.conn.on( 'persistent', persistent );
 		self.conn.on( 'settings', settings );
@@ -1885,7 +1900,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			clientId : self.clientId,
 			name     : self.data.name || null,
@@ -1952,7 +1967,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.liveToServer = function( event ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : 'live',
 			data : event,
@@ -2388,7 +2403,7 @@ library.contact = library.contact || {};
 		if ( !( this instanceof ns.Subscriber ))
 			return new ns.Subscriber( conf );
 		
-		var self = this;
+		const self = this;
 		self.data = conf.subscriber;
 		self.subscribe = conf.subscribe;
 		
@@ -2399,12 +2414,12 @@ library.contact = library.contact || {};
 	ns.Subscriber.prototype = Object.create( library.contact.Contact.prototype );
 	
 	ns.Subscriber.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.bindView();
 	}
 	
 	ns.Subscriber.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			clientId : self.clientId,
 			name : self.displayName,
@@ -2413,7 +2428,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Subscriber.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'allow', allow );
 		self.view.on( 'deny', deny );
 		self.view.on( 'cancel', cancel );
@@ -2526,7 +2541,7 @@ library.contact = library.contact || {};
 	// Private
 	
 	ns.TreerootContact.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.parseLastMessage();
 		self.bindView();
 		self.setupDormant();
@@ -2569,7 +2584,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			clientId  : self.clientId,
 			name      : self.displayName,
@@ -2582,7 +2597,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.setAvatar = function() {
-		var self = this;
+		const self = this;
 		self.identity.avatar = self.data.imagePath;
 	}
 	
@@ -2652,7 +2667,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		
 		// buttons
 		self.view.on( 'open-chat', startChat );
@@ -2670,12 +2685,12 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.updatePublicKey = function( pKey ) {
-		var self = this;
+		const self = this;
 		self.publicKey = pKey;
 	}
 	
 	ns.TreerootContact.prototype.addChatEncrypt = function( data ) {
-		var self = this;
+		const self = this;
 		var crypter = self.decryptMsgKey( data.key, data.id );
 		if ( !crypter )
 			return;
@@ -2687,7 +2702,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.setupChatEncrypt = function() {
-		var self = this;
+		const self = this;
 		var seed = Math.random().toString().split( '.' )[ 1 ];
 		var cryptoId = window.SHA256( friendUP.tool.uid());
 		const crypter = new library.component.FCrypto({ seed : seed });
@@ -2778,7 +2793,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.preprocessMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( msg.dec )
 			msg = self.decryptMessage( msg );
 		
@@ -2791,7 +2806,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.preprocessLog = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !msg ) {
 			self.handleLog( null );
 			return;
@@ -2804,7 +2819,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.decryptMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		var crypter = null;
 		var msgCrypter = null;
 		msg.cipherText = msg.message;
@@ -2850,7 +2865,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.getChatLog = function() {
-		var self = this;
+		const self = this;
 		var fetchLog = {
 			type : 'log',
 		}
@@ -2858,7 +2873,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.openChat = function( readyCallback ) {
-		var self = this;
+		const self = this;
 		var module = hello.module.get( self.moduleId );
 		if ( self.chatView )
 			self.chatView.close();
@@ -2886,7 +2901,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.toggleEncrypt = function( force ) {
-		var self = this;
+		const self = this;
 		if ( 'undefined' !== typeof( force ))
 			var toggle = !!force;
 		else
@@ -2898,7 +2913,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.sendChatMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.encryptMessages ) {
 			self.sendMessage( msg );
 			return;
@@ -2944,7 +2959,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.TreerootContact.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.chatView )
 			self.chatView.close();
 		
@@ -2963,7 +2978,7 @@ library.contact = library.contact || {};
 		if ( !( this instanceof ns.IrcChannel ))
 			return new ns.IrcChannel( conf );
 		
-		var self = this;
+		const self = this;
 		self.type = 'irc';
 		self.data = conf.channel;
 		self.viewTheme = conf.viewTheme;
@@ -3020,7 +3035,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.init = function() {
-		var self = this;
+		const self = this;
 		delete self.interceptMap[ 'live-invite' ];
 		
 		if ( self.data.users )
@@ -3094,7 +3109,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.bindServerEvents = function() {
-		var self = this;
+		const self = this;
 		self.conn.on( 'action', handleAction );
 		self.conn.on( 'join', userJoin );
 		self.conn.on( 'mode', modeChange );
@@ -3131,7 +3146,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.onChatMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.chatView ) {
 			self.messageWaiting( true, msg.message, msg.from );
 			return;
@@ -3141,7 +3156,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.handleAction = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.chatView ) {
 			self.messageWaiting( true, msg.message, msg.from );
 			return;
@@ -3154,7 +3169,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.setState = function( state ) {
-		var self = this;
+		const self = this;
 		self.topic = state.topic;
 		self.mode = state.mode;
 		state.users.forEach( add );
@@ -3162,7 +3177,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.modeChange = function( data ) {
-		var self = this;
+		const self = this;
 		self.mode = data.mode;
 		self.toChat({
 			type : 'mode',
@@ -3171,7 +3186,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.userModeChange = function( data ) {
-		var self = this;
+		const self = this;
 		self.toChat({
 			type : 'usermode',
 			data : data,
@@ -3179,7 +3194,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.userList = function( data ) {
-		var self = this;
+		const self = this;
 		self.toChat({
 			type : 'participants',
 			data : data,
@@ -3187,7 +3202,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.userJoin = function( user ) {
-		var self = this;
+		const self = this;
 		self.toChat({
 			type : 'join',
 			data : user,
@@ -3195,7 +3210,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.userPart = function( data ) {
-		var self = this;
+		const self = this;
 		self.toChat({
 			type : 'part',
 			data : data,
@@ -3203,7 +3218,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.userQuit = function( data ) {
-		var self = this;
+		const self = this;
 		self.toChat({
 			type : 'quit',
 			data : data,
@@ -3227,7 +3242,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.nickChange = function( update ) {
-		var self = this;
+		const self = this;
 		var nickUpdate = {
 			type : 'nick',
 			data : update,
@@ -3237,7 +3252,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.updateUser = function( update ) {
-		var self = this;
+		const self = this;
 		self.user = update;
 		var idUpdate = {
 			type : 'user',
@@ -3247,7 +3262,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.updateTopic = function( msg ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : 'topic',
 			data : msg,
@@ -3257,7 +3272,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'open-chat', toggleChannelView );
 		self.view.on( 'leave-room', leave );
 		self.view.on( 'topic', changeTopic );
@@ -3276,24 +3291,24 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.leave = function( msg ) {
-		var self = this;
+		const self = this;
 		self.send({
 			type : 'leave',
 		});
 	}
 	
 	ns.IrcChannel.prototype.changeTopic = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'channel.changeTopic - NYI', msg );
 	}
 	
 	ns.IrcChannel.prototype.changeMode = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'channel.changeMode - NYI', msg );
 	}
 	
 	ns.IrcChannel.prototype.getChannelState = function() {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'state',
 		};
@@ -3301,7 +3316,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.showChannel = function( state ) {
-		var self = this;
+		const self = this;
 		if ( self.chatView )
 			self.chatView.close();
 		
@@ -3340,13 +3355,13 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.openPrivateWindow = function( participant ) {
-		var self = this;
+		const self = this;
 		var module = hello.module.get( self.moduleId );
 		module.openPrivate( participant.name );
 	}
 	
 	ns.IrcChannel.prototype.handleHighlight = function() {
-		var self = this;
+		const self = this;
 		if ( !hello.account.settings.msgAlert )
 			return;
 		
@@ -3354,7 +3369,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.toggleSettings = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.settingsView )
 			self.settingsView.close();
 		else
@@ -3362,7 +3377,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.showSettings = function() {
-		var self = this;
+		const self = this;
 		if ( self.settingsView )
 			return;
 		
@@ -3389,7 +3404,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.setSettingsMaps = function() {
-		var self = this;
+		const self = this;
 		self.settingSaveMap = {
 			topic : setTopic,
 			mode : setMode,
@@ -3400,7 +3415,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.updateSetting = function( data ) {
-		var self = this;
+		const self = this;
 		var handler = self.settingSaveMap[ data.setting ];
 		if ( !handler ) {
 			console.log( 'channel.updateSetting - no handler for', data );
@@ -3411,7 +3426,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.setTopic = function( topic ) {
-		var self = this;
+		const self = this;
 		var topicMsg = '/topic ' + topic;
 		self.sendMessage( topicMsg );
 		
@@ -3427,7 +3442,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.setMode = function( mode ) {
-		var self = this;
+		const self = this;
 		if ( !self.settingsView )
 			return;
 		
@@ -3440,7 +3455,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcChannel.prototype.closeChannel = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.chatView )
 			self.chatView.close();
 		
@@ -3459,7 +3474,7 @@ library.contact = library.contact || {};
 		if ( !( this instanceof ns.IrcPrivMsg ))
 			return new ns.IrcPrivMsg( conf );
 		
-		var self = this;
+		const self = this;
 		self.data = conf.contact;
 		self.user = conf.user;
 		self.viewTheme = conf.viewTheme;
@@ -3474,7 +3489,7 @@ library.contact = library.contact || {};
 	ns.IrcPrivMsg.prototype = Object.create( ns.Contact.prototype );
 	
 	ns.IrcPrivMsg.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.bindView();
 		
 		self.conn.on( 'nick', updateIdentity );
@@ -3487,7 +3502,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.setIdentity = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			clientId : self.clientId,
 			name : self.data.name,
@@ -3496,7 +3511,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.updateIdentity = function( data ) {
-		var self = this;
+		const self = this;
 		if ( self.identity.name !== data.current )
 			return;
 		
@@ -3515,7 +3530,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.updateUser = function( data ) {
-		var self = this;
+		const self = this;
 		self.user.name = data.name;
 		var update = {
 			type : 'user',
@@ -3525,7 +3540,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.handleAction = function( msg ) {
-		var self = this;
+		const self = this;
 		self.onChatMessage( msg );
 		self.toChat({
 			type : 'action',
@@ -3534,7 +3549,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'open-chat', toggleChat );
 		self.view.on( 'invite-video', startVideo );
 		self.view.on( 'invite-audio', startAudio );
@@ -3553,13 +3568,13 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.remove = function() {
-		var self = this;
+		const self = this;
 		var module = hello.module.get( self.moduleId );
 		module.removePrivate( self.identity.name );
 	}
 	
 	ns.IrcPrivMsg.prototype.startChat = function() {
-		var self = this;
+		const self = this;
 		self.messageWaiting( false );
 		self.openChat( chatReady );
 		function chatReady() {
@@ -3597,7 +3612,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.handleHighlight = function() {
-		var self = this;
+		const self = this;
 		return;
 		if ( !hello.account.settings.msgAlert )
 			return;
@@ -3606,7 +3621,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.getLog = function() {
-		var self = this;
+		const self = this;
 		var askLog = {
 			type : 'log',
 		};
@@ -3614,7 +3629,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.fromChat = function( msg ) {
-		var self = this;
+		const self = this;
 		self.sendMessage( msg );
 		return;
 		/*
@@ -3625,7 +3640,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.IrcPrivMsg.prototype.sendCommand = function( msg ) {
-		var self = this;
+		const self = this;
 		module = hello.module.get( self.moduleId );
 		module.sendCommand( msg );
 	}

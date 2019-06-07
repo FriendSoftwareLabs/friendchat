@@ -28,59 +28,58 @@ var hello = window.hello || {};
 */
 (function( ns, undefined ) {
 	ns.Main.prototype.addMenu = function() {
-		var self = this;
-		var modules = {
+		const self = this;
+		const modules = {
 			type : 'folder',
 			id : 'modules',
 			name : View.i18n('i18n_modules'),
 			faIcon : 'fa-folder-o',
 		};
 		
-		var settingsItem = {
+		const settingsItem = {
 			type   : 'item',
 			id     : 'account-settings',
 			name   : View.i18n('i18n_account_settings'),
 			faIcon : 'fa-cog',
 		};
 		
-		var liveItem = {
+		const liveItem = {
 			type   : 'item',
 			id     : 'start-live',
 			name   : View.i18n('i18n_start_live_session'),
 			faIcon : 'fa-video-camera',
 		};
 		
-		var aboutItem = {
+		const aboutItem = {
 			type   : 'item',
 			id     : 'about',
 			name   : View.i18n('i18n_about'),
 			faIcon : 'fa-info',
 		};
 		
-		var logoutItem = {
+		const logoutItem = {
 			type   : 'item',
 			id     : 'logout',
 			name   : View.i18n('i18n_log_out'),
 			faIcon : 'fa-sign-out',
 		};
 		
-		var quitItem = {
+		const quitItem = {
 			type   : 'item',
 			id     : 'quit',
 			name   : View.i18n('i18n_quit'),
 			faIcon : 'fa-close',
 		};
 		
-		var menuItems = [
-			//modules,
-			liveItem,
-			settingsItem,
-			aboutItem,
-			//logoutItem,
-			quitItem,
-		];
+		const menuItems = [];
+		if ( !window.View.appConf.hideLive )
+			menuItems.push( liveItem );
 		
-		var conf = {
+		menuItems.push( settingsItem );
+		menuItems.push( aboutItem );
+		menuItems.push( quitItem );
+		
+		const conf = {
 			id              : friendUP.tool.uid( 'menu' ),
 			parentId        : 'main-menu',
 			templateManager : hello.template,

@@ -169,12 +169,14 @@ library.view = library.view || {};
 	
 	ns.TreerootContact.prototype.getMenuOptions = function() {
 		const self = this;
-		const opts = [
-			self.menuActions[ 'open-chat' ],
-			self.menuActions[ 'invite-video' ],
-			self.menuActions[ 'invite-audio' ],
-			self.menuActions[ 'remove-contact' ],
-		];
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'invite-video' ]);
+			opts.push( self.menuActions[ 'invite-audio' ]);
+		}
+		
+		opts.push( self.menuActions[ 'remove-contact' ]);
 		return opts;
 	}
 	
@@ -953,15 +955,15 @@ library.view = library.view || {};
 	
 	ns.IrcChannel.prototype.buildElement = function() {
 		const self = this;
-		var conf = {
+		const conf = {
 			clientId : self.clientId,
 			channelName : self.identity.name,
 			highlightId : self.highlight,
 			messageWaitingId : self.messageWaiting,
 			optionId : self.optionMenu,
 		};
-		var container = document.getElementById( self.containerId );
-		var element = hello.template.getElement( 'irc-channel-tmpl', conf );
+		const container = document.getElementById( self.containerId );
+		const element = hello.template.getElement( 'irc-channel-tmpl', conf );
 		container.appendChild( element );
 	}
 	
@@ -971,7 +973,9 @@ library.view = library.view || {};
 		self.conn.on( 'msg-waiting', messageWaiting );
 		
 		function highlight( msg ) { self.setHighlight( msg ); }
-		function messageWaiting( state ) { self.messageWaiting.set( state.isWaiting ? 'true' : 'false' ); }
+		function messageWaiting( state ) {
+			self.messageWaiting.set( state.isWaiting ? 'true' : 'false' );
+		}
 	}
 	
 	ns.IrcChannel.prototype.setHighlight = function( msg ) {
@@ -1051,12 +1055,14 @@ library.view = library.view || {};
 	
 	ns.IrcPrivate.prototype.getMenuOptions = function() {
 		const self = this;
-		const opts = [
-			self.menuActions[ 'open-chat' ],
-			self.menuActions[ 'invite-video' ],
-			self.menuActions[ 'invite-audio' ],
-			self.menuActions[ 'remove-chat' ],
-		];
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'invite-video' ]);
+			opts.push( self.menuActions[ 'invite-audio' ]);
+		}
+		
+		opts.push( self.menuActions[ 'remove-chat' ]);
 		return opts;
 	}
 	
@@ -1722,11 +1728,12 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.getMenuOptions = function() {
 		const self = this;
-		const opts = [
-			self.menuActions[ 'open-chat' ],
-			self.menuActions[ 'live-video' ],
-			self.menuActions[ 'live-audio' ],
-		];
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'live-video' ]);
+			opts.push( self.menuActions[ 'live-audio' ]);
+		}
 		
 		if ( self.menuSettings )
 			opts.push( self.menuActions[ 'settings' ]);
@@ -2154,11 +2161,12 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.getMenuOptions = function() {
 		const self = this;
-		const opts = [
-			self.menuActions[ 'open-chat' ],
-			self.menuActions[ 'live-video' ],
-			self.menuActions[ 'live-audio' ],
-		];
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'live-video' ]);
+			opts.push( self.menuActions[ 'live-audio' ]);
+		}
 		return opts;
 	}
 	

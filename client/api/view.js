@@ -437,7 +437,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.initialize = function( conf ) {
-		var self = this;
+		const self = this;
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
 		self.authId = conf.authId;
@@ -446,7 +446,9 @@ var friend = window.friend || {};
 		self.locale = conf.locale;
 		self.theme  = conf.theme;
 		self.themeData = conf.themeData;
-		self.config = conf.viewConf;
+		self.config = conf.viewConf || {};
+		self.appConf = self.config.appConf || {};
+		console.log( 'View.appConf', self.appConf );
 		
 		if ( self.config.isDev )
 			self.initLogSock();

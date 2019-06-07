@@ -128,7 +128,6 @@ var hello = null;
 	
 	ns.Hello.prototype.init = function() {
 		const self = this;
-		console.log( 'config', self.config );
 		if ( self.config.dev )
 			self.app.setDev( self.config.host );
 		
@@ -266,6 +265,7 @@ var hello = null;
 		library.tool.mergeObjects( self.config, hostConf );
 		self.config.appName = self.config.appName || 'Friend Chat';
 		console.log( 'hello - host config', hello.config );
+		self.app.setConfig( hello.config );
 		self.preInit();
 	}
 	
@@ -1526,6 +1526,10 @@ var hello = null;
 			name    : Application.i18n('i18n_add_chat_account'),
 			command : 'tools_add_module',
 		};
+		const settings = {
+			name    : Application.i18n('i18n_account_settings'),
+			command : 'account_account',
+		};
 		const about = {
 			name    : Application.i18n('i18n_about'),
 			command : 'file_about',
@@ -1535,36 +1539,30 @@ var hello = null;
 			command : 'file_quit',
 		};
 		
-		let fileItems = null;
+		let fileItems = [];
+		if ( !hello.config.hideLive )
+			fileItems.push( startLive );
+		
 		if ( self.advancedUI )
-			fileItems = [
-				startLive,
-				addChat,
-				about,
-			];
-		else
-			fileItems = [
-				startLive,
-				about,
-			];
+			fileItems.push( addChat );
+		
+		fileItems.push( settings );
+		fileItems.push( about );
 		
 		checkMobileBrowser();
-		// Add quit if we're not mobile
-		if( !isMobile )
+		// mobile menu has quit by default
+		if( !window.isMobile )
 		{
 			fileItems.push( quit );
 		}
 		
 		const file = {
-			name : Application.i18n('i18n_file'),
+			name : Application.i18n('i18n_app' ),
 			items : fileItems,
 		};
 		
-		// ACCOUNT
-		const settings = {
-			name    : Application.i18n('i18n_account_settings'),
-			command : 'account_account',
-		};
+		// ACCOUNTs
+		/* not enough stuff here to use it currently
 		const accItems = [
 			settings,
 		];
@@ -1572,9 +1570,10 @@ var hello = null;
 			name : Application.i18n('i18n_account_menu'),
 			items : accItems,
 		};
+		*/
 		
 		/*
-		// TOOL
+		// TOOL - advandced things, keep for ~~~~later
 		const addChat = {
 			name    : Application.i18n('i18n_add_chat_account'),
 			command : 'tools_add_module',
@@ -1594,27 +1593,14 @@ var hello = null;
 		*/
 		
 		//
-		var menuItems = [];
-		
-		self.view.detectDeviceType();
-		
-		if ( self.view.deviceType == 'DESKTOP' )
-		{
-			menuItems.push( file );
-			menuItems.push( account );
-		}
-		else
-		{
-			menuItems.push( file );
-		}
-		
+		const menuItems = [];
+		menuItems.push( file );
 		self.view.setMenuItems( menuItems );
 		
 		hello.app.on( 'file_about' , fileAbout );
 		hello.app.on( 'file_quit'  , fileQuit );
 		
 		hello.app.on( 'account_account' , accountSettings );
-		hello.app.on( 'account_logout'  , menuLogout );
 		
 		hello.app.on( 'tools_add_module' , addModule );
 		hello.app.on( 'tools_start_live' , toolStartLive );

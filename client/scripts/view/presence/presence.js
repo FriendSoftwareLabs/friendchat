@@ -42,7 +42,10 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.init = function() {
 		const self = this;
-		View.setBody();
+		window.View.setBody();
+		if ( window.View.appConf.hideLive )
+			self.toggleLiveBtns( false );
+		
 		self.buildUserList();
 		self.appOnline = new library.component.AppOnline( View );
 		
@@ -100,8 +103,6 @@ library.view = library.view || {};
 			self.toggleUserList( false );
 		}
 	}
-	
-	// ui
 	
 	ns.Presence.prototype.bindUI = function() {
 		const self = this;
@@ -236,6 +237,15 @@ library.view = library.view || {};
 				}
 			}
 		} );
+	}
+	
+	ns.Presence.prototype.toggleLiveBtns = function( show ) {
+		const self = this;
+		console.log( 'toggleLiveBtns', show );
+		vBtn = document.getElementById( 'upgrade-to-video' );
+		aBtn = document.getElementById( 'upgrade-to-audio' );
+		vBtn.classList.toggle( 'hidden', !show );
+		aBtn.classList.toggle( 'hidden', !show );
 	}
 	
 	ns.Presence.prototype.goLive = function( type ) {
