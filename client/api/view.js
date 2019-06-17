@@ -771,6 +771,110 @@ var friend = window.friend || {};
 		self.sendBase( o );
 	}
 	
+	ns.View.prototype.prepareCamera = function( targetElement, callback )
+	{
+		const self = this;
+		if( self.cameraChecked === true )
+			return;
+		
+		self.cameraChecked = true;
+		if ( 'DESKTOP' === self.deviceType )
+			setupDesktop();
+		else
+			setupMobile();
+		
+		function setupDesktop() {
+			targetElement.addEventListener( 'click', btnClick, false );
+			function btnClick( e ) {
+				self.openCamera({
+					title:View.i18n('i18n_take_a_picture')
+				}, imgBack );
+			}
+		}
+		
+		function setupMobile() {
+			// mobile device image capture is best done using a file input. we put that in place.
+			const tp = targetElement.parentNode;
+			const ne = document.createElement( 'div' );
+			ne.className = 'FileUploadWrapper';
+			ne.innerHTML = '<input id="cameraimageFI" type="file" accept="image/*" capture />';
+			
+			tp.insertBefore( ne, targetElement );
+			ne.insertBefore( targetElement, ne.firstChild );
+			
+			document.getElementById( 'cameraimageFI' )
+				.addEventListener( 'change', handleIncomingFile );
+			
+			function handleIncomingFile( evt )
+			{
+				let filereference = null;
+				if( evt && evt.target && evt.target.files )
+					filereference = evt.target.files[0]
+				
+				const reader = new FileReader();
+				reader.onload = readBack;
+				reader.readAsDataURL( filereference );
+				
+				function readBack( e ) {
+					if( !e.target && !e.target.result )
+					{
+						imgBack( false );
+					}
+					else
+					{
+						imgBack({
+							data : e.target.result
+						});
+					}
+		    	}
+			}
+		}
+		
+		function imgBack( msg ) {
+			if( !( msg && msg.data ))
+			{
+				callback({
+					result : false
+				});
+				return;
+			}
+			
+			const raw = window.atob( msg.data.split( ';base64,' )[1] );
+			const uInt8Array = new Uint8Array( raw.length );
+			for ( let i = 0; i < raw.length; ++i ) {
+				uInt8Array[ i ] = raw.charCodeAt( i );
+			}
+		
+			const bl = new Blob(
+				[ uInt8Array ],
+				{ type: 'image/png', encoding: 'utf-8' }
+			);
+			
+			// Paste the blob!
+			const p = new api.PasteHandler();
+			p.paste(
+				{ type: 'blob', blob: bl },
+				pasteBack
+			);
+			
+			callback({
+				result : true
+			});
+			
+			function pasteBack( data ) {
+				self.send({
+					type: 'drag-n-drop',
+					data: [ {
+						Type: 'File',
+						Path: data.path
+					} ]
+				} );
+			}
+			
+		};
+		
+	}
+	
 	ns.View.prototype.activate = function() {
 		var self = this;
 		var msg = {

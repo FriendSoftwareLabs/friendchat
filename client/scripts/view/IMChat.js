@@ -446,37 +446,10 @@ library.component = library.component || {};
 				men.classList.remove( 'Showing' );
 				executeAttach( e );
 			}
-			cam.onclick = function( e ){
+			
+			self.view.prepareCamera( cam, function( data ) {
 				men.classList.remove( 'Showing' );
-				self.view.openCamera( { title:View.i18n('i18n_take_a_picture') }, function( data ) {
-					
-					if(!data.data) return;
-					
-					var raw = window.atob( data.data.split( ';base64,' )[1] );
-					
-					var uInt8Array = new Uint8Array( raw.length );
-					for ( var i = 0; i < raw.length; ++i ) {
-						uInt8Array[ i ] = raw.charCodeAt( i );
-					}
-				
-					var bl = new Blob( [ uInt8Array ], { type: 'image/png', encoding: 'utf-8' } );
-					
-					// Paste the blob!
-					var p = new api.PasteHandler();
-					p.paste( { type: 'blob', blob: bl }, function( data )
-					{
-						self.view.send(	{
-							type: 'drag-n-drop',
-							data: [ {
-								Type: 'File',
-								Path: data.path
-							} ]
-						} );
-					} );
-				
-					
-				} );
-			}
+			} );
 		}
 		
 		function executeAttach( e )
