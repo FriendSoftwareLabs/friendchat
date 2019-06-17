@@ -1395,6 +1395,9 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.init = function( parentConn, workgroups ) {
 		const self = this;
+		self.settings = window.View.getSettings();
+		console.log( 'MsgBuilder.settings', self.settings );
+		
 		if ( workgroups) {
 			self.workgroupId = workgroups.workId || '';
 			self.supergroupId = workgroups.superId || '';
@@ -2442,27 +2445,25 @@ var hello = window.hello || {};
 		const user = relations[ self.userId ];
 		const contact = relations[ self.contactId ];
 		console.log( 'updateRelationsState', {
-			rel     : relations,
-			user    : user,
-			contact : contact,
+			rel      : relations,
+			user     : user,
+			contact  : contact,
+			lastRead : self.lastRead,
 		});
 		
 		if ( !relations.lastMsgId )
 			return;
 		
-		if ( contact.lastReadId )
-			lastRead( contact );
+		if ( null == contact.lastReadId )
+			return;
 		
-		function lastRead( c ) {
-			if ( c.lastReadFrom === self.contactId )
-				return;
-			
-			self.updateLastRead({
-				msgId        : c.lastReadId,
-				lastReadTime : c.lastReadTime,
-			});
-		}
+		if ( self.lastRead === contact.lastReadId )
+			return;
 		
+		self.updateLastRead({
+			msgId        : contact.lastReadId,
+			lastReadTime : contact.lastReadTime,
+		});
 	}
 	
 	ns.MsgBuilder.prototype.confirmEvent = function( type, eventId ) {
@@ -2508,11 +2509,17 @@ var hello = window.hello || {};
 				return;
 			}
 			
+			if ( state.lastReadTime )
+				self.updateLastRead( state );
+			else
+				updateLastDelivered( state );
+			
+			/*
 			if ( state.userId === self.userId )
 				self.updateLastDelivered( state );
 			else
 				self.updateLastRead( state );
-			
+			*/
 		}
 	}
 	
@@ -2524,6 +2531,9 @@ var hello = window.hello || {};
 			lastRead : self.lastRead,
 			lastDelivered : self.lastDelivered,
 		});
+		if ( state.fromId === self.contactId )
+			return;
+		
 		const mId = state.msgId;
 		if ( self.lastRead && ( self.lastRead !== mId ))
 			self.clearConfirmState( self.lastRead );
@@ -2541,12 +2551,8 @@ var hello = window.hello || {};
 			lastRead : self.lastRead,
 			lastDelivered : self.lastDelivered,
 		});
-		
-		if ( state.fromId === self.contactId ) {
-			self.clearConfirmState( self.lastRead );
-			self.lastRead = null;
+		if ( state.fromId === self.contactId )
 			return;
-		}
 		
 		const msgId = state.msgId;
 		if ( self.lastDelivered
@@ -2562,21 +2568,27 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.setConfirmState = function( msgId, isConfirmed, timestamp ) {
 		const self = this;
 		console.log( 'setConfirmState', [ msgId, isConfirmed, timestamp ]);
+		let timeStr = '';
+		if ( null != timestamp ) {
+			timeStr = self.getClockStamp( timestamp );
+			self.addConfirmExtInfo( msgId, timestamp );
+		}
+		
+		if ( !self.settings.compactChat ) {
+			self.setInlineConfirm( msgId, isConfirmed, timeStr );
+			return;
+		}
+		
 		const cId = self.getConfirmId( msgId );
-		const timeStr = !!timestamp ? self.getClockStamp( timestamp ) : '';
-		let el = document.getElementById( cId );
-		if ( !el )
-			el = insertEl( msgId, cId, timeStr );
+		let cEl = document.getElementById( cId );
+		if ( !cEl )
+			cEl = insertEl( msgId, cId, timeStr );
 		else {
-			const timeEl = el.querySelector( '.confirm-time' );
+			const timeEl = cEl.querySelector( '.confirm-time' );
 			timeEl.textContent = timeStr;
 		}
 		
-		const icon = el.querySelector( '.confirm-icon' );
-		const delivered = icon.querySelector( '.delivered' );
-		const confirmed = icon.querySelector( '.confirmed' );
-		delivered.classList.toggle( 'hidden', isConfirmed );
-		confirmed.classList.toggle( 'hidden', !isConfirmed );
+		self.toggleConfirmIcon( cEl, isConfirmed );
 		
 		function insertEl( msgId, cId, time ) {
 			const conf = {
@@ -2593,20 +2605,126 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.MsgBuilder.prototype.clearConfirmState = function( msgId ) {
+	ns.MsgBuilder.prototype.setInlineConfirm = function( msgId, isConfirmed, timeStr ) {
 		const self = this;
-		console.log( 'clearConfirmState', msgId );
-		const cId = self.getConfirmId( msgId );
-		const el = document.getElementById( cId );
-		if ( !el )
+		console.log( 'MsgBuilder.setInlineConfirm', timeStr );
+		const mEl = document.getElementById( msgId );
+		if ( !mEl )
 			return;
 		
-		el.parentNode.removeChild( el );
+		const timeEl = mEl.querySelector( '.time' );
+		const cId = self.getConfirmId( msgId );
+		let cEl = document.getElementById( cId );
+		if ( !cEl ) {
+			cEl = insertEl( msgId, cId, timeStr );
+			if ( 'DESKTOP' === window.View.deviceType )
+				cEl.addEventListener( 'click', cClick, false );
+			else
+				cEl.addEventListener( 'touchend', cClick, false );
+		}
+		
+		self.toggleConfirmIcon( cEl, isConfirmed );
+		
+		function insertEl( msgId, cId, time ) {
+			const conf = {
+				id   : cId,
+			};
+			const el = self.template.getElement( 'confirm-state-inline-tmpl', conf );
+			const msgEl = document.getElementById( msgId );
+			const container = msgEl.querySelector( '.confirm-state-inline' );
+			container.appendChild( el );
+			return el;
+		}
+		
+		function cClick( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+			console.log( 'cClick' );
+			self.toggleExtendedInfo( msgId );
+		}
+	}
+	
+	ns.MsgBuilder.prototype.clearConfirmState = function( msgId ) {
+		const self = this;
+		const msgEl = document.getElementById( msgId );
+		if ( !msgEl )
+			return;
+		
+		const cId = self.getConfirmId( msgId );
+		const cEl = document.getElementById( cId );
+		if ( cEl )
+			cEl.parentNode.removeChild( cEl );
+		
+		const exInfoEl = msgEl.querySelector( '.extended-info .confirm-info' );
+		if ( exInfoEl )
+			exInfoEl.parentNode.removeChild( exInfoEl );
+	}
+	
+	ns.MsgBuilder.prototype.addConfirmExtInfo = function( msgId, timestamp ) {
+		const self = this;
+		const msgEl = document.getElementById( msgId );
+		if ( !msgEl )
+			return;
+		
+		const extEl = msgEl.querySelector( '.extended-info' );
+		let cInfoEl = extEl.querySelector( '.confirm-info' );
+		if ( cInfoEl ) {
+			console.log( 'removing old cInfo', cInfoEl );
+			cInfoEl.parentNode.removeChild( cInfoEl );
+			cInfoEl = null;
+		}
+		
+		const dateStr = self.getDateStamp( timestamp );
+		const timeStr = self.getClockStamp( timestamp );
+		const time = dateStr + ' ' + timeStr;
+		const conf = {
+			time : time,
+		};
+		cInfoEl = self.template.getElement( 'confirm-info-tmpl', conf );
+		
+		extEl.appendChild( cInfoEl );
 	}
 	
 	ns.MsgBuilder.prototype.getConfirmId = function( msgId ) {
 		const self = this;
 		return msgId + '-confirm';
+	}
+	
+	ns.MsgBuilder.prototype.toggleConfirmIcon = function( confirmEl, isConfirmed ) {
+		const self = this;
+		const icon = confirmEl.querySelector( '.confirm-icon' );
+		const delivered = icon.querySelector( '.delivered' );
+		const confirmed = icon.querySelector( '.confirmed' );
+		delivered.classList.toggle( 'hidden', isConfirmed );
+		confirmed.classList.toggle( 'hidden', !isConfirmed );
+	}
+	
+	ns.MsgBuilder.prototype.addExtendedinfo = function( msgId, el ) {
+		const self = this;
+		console.log( 'addExtendedinfo', {
+			msgId : msgId,
+			el    : el,
+		});
+		const msgEl = document.getElementById( msgId );
+		if ( !msgEl ) {
+			console.log( 'MsgBuilder.addExtendedinfo - no msg found for msgId', msgId );
+			return;
+		}
+		
+		const extEl = msgEl.querySelector( '.extended-info' );
+		extEl.appendChild( el );
+	}
+	
+	ns.MsgBuilder.prototype.toggleExtendedInfo = function( msgId ) {
+		const self = this;
+		const msgEl = document.getElementById( msgId );
+		if ( !msgEl ) {
+			console.log( 'MsgBuilder.toggleExtendedInfo - no msg element for msgId', msgId );
+			return;
+		}
+		
+		const ext = msgEl.querySelector( '.extended-info' );
+		ext.classList.toggle( 'hidden' );
 	}
 	
 	ns.MsgBuilder.prototype.send = function( event ) {
@@ -2793,9 +2911,9 @@ var hello = window.hello || {};
 		
 		//bind
 		self.parent.addEventListener( 'wheel', checkTop, true );
-		self.parent.addEventListener( 'touchend', checkTop, true );
+		self.parent.addEventListener( 'touchend', checkTop, false );
 		function checkTop( e ) {
-			e.stopPropagation();
+			//e.stopPropagation();
 			self.checkIsScrolledUp( e );
 		}
 	}

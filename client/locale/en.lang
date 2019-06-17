@@ -369,3 +369,5 @@ i18n_git_branch : Git branch
 i18n_git_date : Commit date
 i18n_git_commit : Commit hash
 i18n_app : App
+i18n_compact_chat : Compact chat
+i18n_message_read : Message read

@@ -46,6 +46,9 @@ library.view = library.view || {};
 		if ( window.View.appConf.hideLive )
 			self.toggleLiveBtns( false );
 		
+		if ( window.View.appSettings )
+			self.compact = !!window.View.appSettings.compactChat;
+		
 		self.buildUserList();
 		self.appOnline = new library.component.AppOnline( View );
 		
@@ -277,6 +280,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleInitialize = function( conf ) {
 		const self = this;
+		console.log( 'handleInitialize', conf );
 		hello.template = friend.template;
 		friend.template.addFragments( conf.commonFragments );
 		const state = conf.state;

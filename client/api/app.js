@@ -247,6 +247,11 @@ var friend = window.friend || {}; // already instanced stuff
 			windowConf.viewConf.appConf = self.app.appConf;
 		}
 		
+		if ( null != self.app.appSettings ) {
+			windowConf.viewConf = windowConf.viewConf || {};
+			windowConf.viewConf.appSettings = self.app.appSettings;
+		}
+		
 		self.app.on( self.id, viewMessage );
 		self.app.sendMessage({
 			type   : 'view',
@@ -1018,6 +1023,12 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		console.log( 'app.setConfig', conf );
 		self.appConf = conf;
+	}
+	
+	ns.Application.prototype.setSettings = function( settings ) {
+		const self = this;
+		console.log( 'app.setSettings', settings );
+		self.appSettings = settings;
 	}
 	
 	ns.Application.prototype.setSingleInstance = function( setSingle ) {

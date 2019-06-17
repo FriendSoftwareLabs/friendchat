@@ -199,6 +199,16 @@ var friend = window.friend || {};
 	
 	// public
 	
+	ns.View.prototype.getConfig = function() {
+		const self = this;
+		return self.appConf;
+	}
+	
+	ns.View.prototype.getSettings = function() {
+		const self = this;
+		return self.appSettings;
+	}
+	
 	ns.View.prototype.addCallback = function( callback )
 	{
 		const self = this;
@@ -448,7 +458,11 @@ var friend = window.friend || {};
 		self.themeData = conf.themeData;
 		self.config = conf.viewConf || {};
 		self.appConf = self.config.appConf || {};
-		console.log( 'View.appConf', self.appConf );
+		self.appSettings = self.config.appSettings || {};
+		console.log( 'View.appThings', {
+			conf  : self.appConf,
+			setts : self.appSettings,
+		});
 		
 		if ( self.config.isDev )
 			self.initLogSock();

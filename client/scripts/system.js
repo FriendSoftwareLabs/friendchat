@@ -1149,7 +1149,7 @@ library.rtc = library.rtc || {};
 		if ( !( this instanceof ns.Account ))
 			return new ns.Account( conf );
 		
-		var self = this;
+		const self = this;
 		console.log( 'Account', conf );
 		self.availability = null;
 		self.clientId = conf.account.clientId;
@@ -1163,8 +1163,8 @@ library.rtc = library.rtc || {};
 	// Public
 	
 	ns.Account.prototype.sendReady = function( msg ) {
-		var self = this;
-		var ready = {
+		const self = this;
+		const ready = {
 			type : 'ready',
 			data : msg,
 		};
@@ -1174,7 +1174,8 @@ library.rtc = library.rtc || {};
 	// Private
 	
 	ns.Account.prototype.init = function( parentView ) {
-		var self = this;
+		const self = this;
+		hello.app.setSettings( self.settings );
 		self.conn = new library.system.Message({
 			id : 'account',
 			handler : receiveMsg,
@@ -1183,7 +1184,7 @@ library.rtc = library.rtc || {};
 		
 		self.msgMap = {
 			'settings' : showSettings,
-			'setting' : updateSetting,
+			'setting'  : updateSetting,
 		};
 		function showSettings( e ) { self.showSettings( e ); }
 		function updateSetting( e ) { self.updateSetting( e ); }
@@ -1193,6 +1194,8 @@ library.rtc = library.rtc || {};
 			'msgAlert'     : e => self.updateMsgAlert( e ),
 			'roomAlert'    : e => self.updateRoomAlert( e ),
 			'privateAlert' : e => self.updatePrivateAlert( e ),
+			'inAppMenu'    : e => self.updateInAppMenu( e ),
+			'compactChat'  : e => self.updateCompactChat( e ),
 		};
 		
 		self.view = new library.component.SubView({
@@ -1205,8 +1208,8 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Account.prototype.receiveMsg = function( msg ) {
-		var self = this;
-		var handler = self.msgMap[ msg.type ];
+		const self = this;
+		const handler = self.msgMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'Account.receiveMsg - no handler for', msg );
 			return;
@@ -1216,7 +1219,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Account.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'settings', loadSettings );
 		self.view.on( 'setting', persistSetting );
 		
@@ -1225,20 +1228,20 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Account.prototype.getSettings = function() {
-		var self = this;
-		var msg = {
+		const self = this;
+		const msg = {
 			type : 'settings',
 		};
 		self.send( msg );
 	}
 	
 	ns.Account.prototype.persistSetting = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'account.persistSetting - NYI???', data );
 	}
 	
 	ns.Account.prototype.showSettings = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'showSettings', data );
 		if ( self.settingsView )
 			return;
@@ -1281,6 +1284,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		handler( update.value );
+		hello.app.setSettings( self.settings );
 	}
 	
 	ns.Account.prototype.updatePopupChat = function( value ) {
@@ -1297,13 +1301,26 @@ library.rtc = library.rtc || {};
 		const self = this;
 		self.settings.roomAlert = value;
 	}
+	
 	ns.Account.prototype.updatePrivateAlert = function( value ) {
 		const self = this;
 		self.settings.privateAlert = value;
 	}
 	
+	ns.Account.prototype.updateCompactChat = function( value ) {
+		const self = this;
+		console.log( 'Account.updateCompactChat', value );
+		self.settings.compactChat = value;
+	}
+	
+	ns.Account.prototype.updateInAppMenu = function( value ) {
+		const self = this;
+		console.log( 'Account.updateInAppMenu', value );
+		self.settings.inAppMenu = value;
+	}
+	
 	ns.Account.prototype.load = function( account ) {
-		var self = this;
+		const self = this;
 		self.clientId = account.clientId;
 		self.name = account.name;
 		hello.modules.load();

@@ -260,17 +260,23 @@ msgActions,
 			</div>
 			<div class="msg-content group row">
 				<div class="str hidden"><%= original %></div>
-				<div class="message expand"><%= message %></div>
+				<div class="msg-things expand">
+					<div class="message"><%= message %></div>
+					<%= msgActions %>
+				</div>
 				<div class="time fortify">
 					<%= time %>
 				</div>
-				<%= msgActions %>
+				<div class="confirm-state-inline">
+				</div>
 			</div>
 			<div class="msg-state group row">
 				<div class="edit-state expand">
 				</div>
 				<div class="confirm-state fortify">
 				</div>
+			</div>
+			<div class="extended-info hidden">
 			</div>
 		</div>
 	</div>
@@ -295,17 +301,23 @@ msgActions,
 		<div class="msg-container expand">
 			<div class="msg-content group row">
 				<div class="str hidden"><%= original %></div>
-				<div class="message expand"><%= message %></div>
+				<div class="msg-things expand">
+					<div class="message"><%= message %></div>
+					<%= msgActions %>
+				</div>
 				<div class="time fortify">
 					<%= time %>
 				</div>
-				<%= msgActions %>
+				<div class="confirm-state-inline">
+				</div>
 			</div>
 			<div class="msg-state group row">
 				<div class="edit-state expand">
 				</div>
 				<div class="confirm-state fortify">
 				</div>
+			</div>
+			<div class="extended-info hidden">
 			</div>
 		</div>
 	</div>
@@ -360,17 +372,23 @@ time,
 			</div>
 			<div class="msg-content group row">
 				<div class="str hidden"><%= original %></div>
-				<div class="message expand"><%= message %></div>
+				<div class="msg-things expand">
+					<div class="message"><%= message %></div>
+					<%= msgActions %>
+				</div>
 				<div class="time fortify">
 					<%= time %>
 				</div>
-				<%= msgActions %>
+				<div class="confirm-state-inline">
+				</div>
 			</div>
 			<div class="msg-state group row">
 				<div class="edit-state expand">
 				</div>
 				<div class="confirm-state fortify">
 				</div>
+			</div>
+			<div class="extended-info hidden">
 			</div>
 		</div>
 	</div>
@@ -421,6 +439,27 @@ time,
 		<i class="delivered Available fa fa-fw fa-arrow-circle-right"></i>
 		<i class="confirmed On fa fa-fw fa-check-circle hidden"></i>
 	</div>
+</div>
+</script>
+
+<!-- confirm state inline
+id,
+-->
+<script id="confirm-state-inline-tmpl" type="text/html">
+<div id="<%= id %>" class="">
+	<div class="confirm-icon LED fortify">
+		<i class="delivered fa fa-fw fa-check"></i>
+		<i class="confirmed On fa fa-fw fa-check hidden"></i>
+	</div>
+</div>
+</script>
+
+<!-- confirm ext info
+time
+-->
+<script id="confirm-info-tmpl" type="text/html">
+<div class="confirm-info">
+	{i18n_message_read} <%= time %>
 </div>
 </script>
 
