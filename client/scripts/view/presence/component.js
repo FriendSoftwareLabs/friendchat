@@ -1965,6 +1965,9 @@ var hello = window.hello || {};
 		if ( user && user.isAdmin )
 			canEdit = true;
 		
+		if ( self.contactId && uId === self.contactId )
+			canEdit = false;
+		
 		let original = msg.message;
 		let message = null;
 		if ( self.parser )
