@@ -811,7 +811,7 @@ var friend = window.friend || {};
 			const tp = targetElement.parentNode;
 			const ne = document.createElement( 'div' );
 			ne.className = 'FileUploadWrapper';
-			ne.innerHTML = '<input id="cameraimageFI" type="file" accept="image/*" capture />';
+			ne.innerHTML = '<input id="cameraimageFI" type="file" accept="image/*" />';
 			
 			tp.insertBefore( ne, targetElement );
 			ne.insertBefore( targetElement, ne.firstChild );
