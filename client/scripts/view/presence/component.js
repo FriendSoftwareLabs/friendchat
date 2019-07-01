@@ -1180,8 +1180,9 @@ var hello = window.hello || {};
 			'BackgroundHeavy',
 			'Rounded'
 		);
-		const editIconEl = el.querySelector( '.msg-container .edit-msg' );
-		editIconEl.classList.toggle( 'hidden', true );
+		const actionsEl = el.querySelector( '.msg-container .msg-actions' );
+		if ( actionsEl )
+			actionsEl.classList.toggle( 'hidden', true );
 		
 		const sysEl = el.querySelector( '.system-container' );
 		const multiId = friendUP.tool.uid( 'edit' );
@@ -1301,7 +1302,9 @@ var hello = window.hello || {};
 		
 		function close() {
 			el.isEditing = false;
-			editIconEl.classList.toggle( 'hidden', false );
+			if ( actionsEl )
+				actionsEl.classList.toggle( 'hidden', false );
+			
 			edit.close();
 			editEl.parentNode.removeChild( editEl );
 			el.classList.remove(
