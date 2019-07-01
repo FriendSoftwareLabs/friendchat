@@ -381,7 +381,7 @@ var hello = window.hello || {};
 		identities,
 		onlineList,
 		workgroups,
-		roomAvatar,
+		room,
 		guestAvatar,
 		containerId,
 		templateManager
@@ -405,7 +405,7 @@ var hello = window.hello || {};
 			workgroups,
 			users,
 			identities,
-			roomAvatar,
+			room,
 			guestAvatar
 		);
 	}
@@ -586,7 +586,7 @@ var hello = window.hello || {};
 		workgroups,
 		users,
 		identities,
-		roomAvatar,
+		room,
 		guestAvatar
 	) {
 		const self = this;
@@ -596,7 +596,7 @@ var hello = window.hello || {};
 		self.setWorkgroups( workgroups );
 		self.addIdentities( identities );
 		self.addUsers( users );
-		self.addUserCss( self.workId, roomAvatar );
+		self.addId( room );
 		self.addUserCss( 'guest-user', guestAvatar );
 		self.addUserCss( 'default-user', guestAvatar );
 		self.bindConn();
@@ -726,9 +726,12 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addId = function( id ) {
 		const self = this;
+		if ( !id )
+			return false;
+		
 		const cId = id.clientId;
 		if ( self.identities[ cId ])
-			return false;
+			return true;
 		
 		self.identities[ cId ] = id;
 		self.addUserCss( cId, id.avatar );
@@ -1004,6 +1007,13 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addUserCss = function( userId, avatar ) {
 		const self = this;
+		console.log( 'addUserCss', userId );
+		if ( !avatar )
+			console.trace( 'addUserCss - missing avatar', {
+				uid : userId,
+				ava : avatar,
+			});
+		
 		const container = document.getElementById( 'user-css' );
 		const styleId = self.getUserCssId( userId );
 		const klassName = self.getUserCssKlass( userId );
@@ -1446,7 +1456,7 @@ var hello = window.hello || {};
 		function notie( e ) { return self.handleNotie( e ); }
 		function log( e ) { return self.handleLog( e ); }
 		
-		self.logMap = {
+		self.buildMap = {
 			'msg'          : logMsg,
 			'work-msg'     : logWorkMsg,
 			'action'       : logAction,
@@ -1735,15 +1745,13 @@ var hello = window.hello || {};
 			event   : event,
 		};
 		
-		let el = null;
-		if ( 'msg' === event.type ) {
-			el = self.buildMsg( conf );
-			envelope.lastSpeakerId = event.fromId;
+		const el = self.buildMsg( conf );
+		if ( !el ) {
+			console.log( 'could not build el for msg', event );
+			return;
 		}
-		else {
-			el = self.buildWorkMsg( conf );
-			envelope.lastSpeakerId = null;
-		}
+		
+		envelope.lastSpeakerId = event.fromId;
 		
 		self.addItem( el, envelope, event );
 		if ( self.contactId )
@@ -1809,7 +1817,7 @@ var hello = window.hello || {};
 			prevEnvelope.firstMsg = firstMsg;
 		
 		function handle( item, index ) {
-			const handler = self.logMap[ item.type ];
+			const handler = self.buildMap[ item.type ];
 			if ( !handler ) {
 				console.log( 'no handler for event', item );
 				return;
@@ -1994,230 +2002,6 @@ var hello = window.hello || {};
 		return el;
 	}
 	
-	ns.MsgBuilder.prototype.buildWorkMsg = function( conf ) {
-		const self = this;
-		const tmplId = 'work-msg-tmpl';
-		const msg = conf.event;
-		const uId = msg.fromId;
-		const fromId = self.users.getId( uId );
-		const fromUser = self.users.get( uId );
-		const selfUser = self.users.get( self.userId );
-		const mId = msg.msgId;
-		if ( !msg.targets ) {
-			console.log( 'MsgBuilder.buildWorkMsg - no targets', conf );
-			return null;
-		}
-		
-		const source = self.users.getWorkgroup( msg.source );
-		if ( !source ) {
-			console.log( 'buildWorkMsg - no source, aborting', {
-				msg  : conf.event,
-				self : self,
-			});
-			return null;
-		}
-		
-		let fromSuper = false;
-		let fromSub = false;
-		let fromThis = false;
-		if ( msg.source === self.supergroupId )
-			fromSuper = true;
-		
-		if ( msg.source === self.workgroupId )
-			fromThis = true;
-		
-		if ( !fromSuper && !fromThis )
-			fromSub = true;
-		
-		let userKlass = '';
-		let selfKlass = 'sw1';
-		let avatarType = '';
-		let toFromHidden = 'hidden';
-		let toFromNameHidden = 'hidden';
-		let toFromMsg = '';
-		let toFromName = '';
-		let name = null;
-		let canEdit = false;
-		let canForward = self.checkCanForward( msg );
-		const twIds = Object.keys( msg.targets );
-		let targetNames = [];
-		let targetHtmls = [];
-		
-		if ( fromThis ) {
-			if ( !fromUser ) {
-				
-			} else {
-				twIds.forEach( twId => {
-					setToAll( twId, msg, targetNames );
-				});
-				if ( targetNames.length ) {
-					targetHtmls = buildTargetEls( targetNames );
-					toFromHidden = '';
-					toFromMsg = View.i18n( 'i18n_message_to' );
-				} else {
-					emptyTargetNames( msg );
-				}
-			}
-		}
-		
-		if ( fromSuper ) {
-			setToUsers( self.workgroupId, msg, targetNames )
-			if ( targetNames.length ) {
-				targetHtmls = buildTargetEls( targetNames );
-				toFromHidden = '';
-				toFromMsg = View.i18n( 'i18n_private_message_to' );
-			} else {
-				emptyTargetNames( msg );
-			}
-		}
-		
-		if ( fromSuper ) {
-			userKlass = self.users.getAvatarKlass( self.supergroupId );
-			avatarType = 'room';
-			name = source.name;
-		}
-		
-		if ( fromThis ) {
-			if ( fromUser ) {
-				userKlass = self.users.getAvatarKlass( uId );
-				name = fromUser.name;
-			}
-			else {
-				avatarType = 'room';
-				userKlass = self.users.getAvatarKlass( self.workgroupId );
-				name = source.name;
-			}
-		}
-		
-		if ( fromSub ) {
-			userKlass = self.users.getAvatarKlass( msg.fromId );
-			name = msg.name; //'#' + source.name
-			toFromHidden = 'hidden';
-			toFromNameHidden = 'hidden';
-			toFromMsg = View.i18n( 'i18n_message_from' );
-			toFromName =  msg.name;
-			if ( !fromUser )
-				canEdit = true;
-		}
-		
-		if ( uId === self.userId ) {
-			selfKlass = 'sw2 isSelf';
-			canEdit = true;
-		}
-		
-		if ( fromUser && fromUser.isAdmin )
-			canEdit = true;
-		
-		let original = msg.message;
-		let message = null;
-		if ( self.parser )
-			message = self.parser.work( original );
-		else
-			message = original;
-		
-		const timeStr = self.getClockStamp( msg.time );
-		const actionsHtml = self.buildMsgActions( canEdit, canForward );
-		const msgConf = {
-			msgId            : mId,
-			userKlass        : userKlass,
-			selfKlass        : selfKlass,
-			avatarType       : avatarType,
-			name             : name,
-			toFromHidden     : toFromHidden,
-			toFromNameHidden : toFromNameHidden,
-			toFromMsg        : toFromMsg,
-			toFromName       : toFromName,
-			targets          : targetHtmls.join( '' ),
-			time             : timeStr,
-			original         : original,
-			message          : message,
-			msgActions       : actionsHtml,
-		};
-		const el = self.template.getElement( tmplId, msgConf );
-		if ( self.linkEx )
-			self.linkEx.work( el );
-		
-		return el;
-		
-		function buildTargetEls( targets ) {
-			return targets.map( target => {
-				let tarStr = target; //source + ' -> ' + target;
-				let html = self.template.get( 'work-msg-target-tmpl', { target : tarStr });
-				return html;
-			});
-		}
-		
-		function setToUsers( twId, msg, targetNames ) {
-			const worg = self.users.getWorkgroup( twId );
-			if ( !worg )
-				return;
-			
-			const targets = msg.targets[ twId ];
-			if ( !targets || !targets.length )
-				return;
-			
-			targets.forEach( uId => {
-				const user = self.users.getId( uId );
-				if ( !user )
-					return;
-				
-				targetNames.push( user.name );
-			});
-		}
-		
-		function setToAll( twId, msg, targetNames ) {
-			const worg = self.users.getWorkgroup( twId );
-			if ( !worg ) {
-				console.log( 'addTargetNames - no worg', {
-					twId  : twId,
-					users : self.users,
-				});
-				return;
-			}
-			
-			const target = msg.targets[ twId ];
-			if ( null == target.length )
-				targetNames.push( wName( worg ) );
-			else
-				setNames( worg, target );
-			
-			function setNames( worg, targets ) {
-				const wId = worg.clientId;
-				targets.forEach( uId => {
-					let user = self.users.getId( uId );
-					/*
-					if ( wId === self.workgroupId )
-						user = 
-					else
-						user = self.users.getMember( wId, uId );
-					
-					*/
-					if ( !user ) {
-						console.log( 'setNames - no user for', {
-							uid : uId,
-							w   : worg,
-						});
-						return;
-					}
-					
-					const name = wName( worg ) + '/' + user.name;
-					targetNames.push( name );
-				});
-			}
-			
-			function wName( worg ) {
-				return '#' + worg.name;
-			}
-		}
-		
-		function emptyTargetNames( msg ) {
-			console.log( 'MsgBuilderbuildWorkMsg - empty target names' );
-			console.log( 'msg', msg );
-			console.log( 'users', self.users );
-			console.log( 'self', self );
-		}
-	}
-	
 	ns.MsgBuilder.prototype.buildMsgActions = function( canEdit, canForward ) {
 		const self = this;
 		const editHidden = set( canEdit );
@@ -2250,14 +2034,16 @@ var hello = window.hello || {};
 			return;
 		}
 		
-		const editer = self.users.get( msg.editBy );
+		const editer = self.getEditer( msg );
 		const reason = msg.editReason;
 		const time = self.getClockStamp( msg.editTime );
 		let name = '';
 		if ( editer ) {
 			name = editer.name;
-		} else
+		} else {
 			console.log( 'MsgBuilder.update - could not find editer for', msg );
+			name = 'unknown';
+		}
 		
 		let editEl = el.querySelector( '.edited-info' );
 		if ( editEl ) {
@@ -2274,6 +2060,12 @@ var hello = window.hello || {};
 		};
 		editEl = self.template.getElement( 'edit-info-tmpl', conf );
 		editContEl.appendChild( editEl );
+	}
+	
+	ns.MsgBuilder.prototype.getEditer = function( msg ) {
+		const self = this;
+		const cId = msg.editBy;
+		return self.users.getId( cId );
 	}
 	
 	ns.MsgBuilder.prototype.bindItem = function( itemId ) {
