@@ -31,7 +31,6 @@ library.component = library.component || {};
 			return new ns.Socket( conf );
 		
 		const self = this;
-		console.log( 'Socket' );
 		// REQUIRED CONFIG
 		self.url = conf.url;
 		self.protocol = conf.protocol;
@@ -78,7 +77,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'Socket.reconnect' );
 		self.allowReconnect = true;
 		self.doReconnect( true );
 	}
@@ -87,7 +85,6 @@ library.component = library.component || {};
 	// whats the server going to do? cry more lol
 	ns.Socket.prototype.close = function( code, reason ) {
 		const self = this;
-		console.log( 'Socket.close' );
 		self.unsetSession();
 		self.allowReconnect = false;
 		self.onmessage = null;
@@ -198,10 +195,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.doReconnect = function( noDelay ) {
 		const self = this;
-		console.log( 'hello.ws.doReconnect', {
-			noDelay : noDelay || null,
-			attempt : self.reconnectAttempt,
-		});
 		self.cleanup();
 		if ( !self.allowReconnect )	{
 			console.log( 'WS reconnect aborting, disallowed', {
@@ -294,7 +287,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
 		const self = this;
-		console.log( 'hello.ws.onopen' );
 		self.clearConnectTimeout();
 		self.setState( 'open', e );
 		// ..waiting for authenticate challenge
@@ -302,14 +294,12 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		const self = this;
-		console.log( 'hello.ws.onclose', e );
 		self.setState( 'close', e );
 		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		const self = this;
-		console.log( 'hello.ws.onerror', e );
 		self.setState( 'error', e );
 	}
 	
@@ -328,7 +318,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
 		const self = this;
-		console.log( 'hello.ws.handleAuth', success );
 		if ( null == success ) {
 			self.sendAuth();
 			return;
@@ -351,7 +340,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		const self = this;
-		console.log( 'hello.ws.handleSession', sessionId );
 		self.session = sessionId;
 		if ( !self.session ) {
 			self.ended();
@@ -377,7 +365,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.unsetSession = function() {
 		const self = this;
-		console.log( 'hello.ws.unsetSession' );
 		self.session = null;
 		const msg = {
 			type : 'session',
@@ -388,7 +375,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.sendAuth = function() {
 		const self = this;
-		console.log('hello.ws.sendAuth - session:', self.session );
 		if ( self.session ) {
 			self.restartSession();
 			return;
@@ -403,7 +389,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.setReady = function() {
 		const self = this;
-		console.log( 'hello.ws.setReady' );
 		self.ready = true;
 		self.startPing();
 		self.executeSendQueue();
@@ -495,7 +480,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handlePingTimeout = function() {
 		const self = this;
-		console.log( 'hello.ws.handlePingTimeout' );
 		self.doReconnect();
 	}
 	

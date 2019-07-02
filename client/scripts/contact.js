@@ -156,10 +156,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.onChatMessage = function( msg, silent ) {
 		const self = this;
-		console.log( 'Contact.onChatMessage', {
-			msg      : msg,
-			chatView : !!self.chatView,
-		});
 		if ( !msg.from ) {
 			self.recentMessage( msg.message, msg.from, msg.time );
 			return;
@@ -173,10 +169,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.whenChatClosed = function( msg, silent ) {
 		const self = this;
-		console.log( 'Contact.whenChatClosed', {
-			msg : msg,
-			settings : hello.account.settings,
-		});
 		if ( hello.account.settings.popupChat === true ) {
 			self.recentMessage( msg.message, msg.from, msg.time );
 			api.Say( 'Message received' );
@@ -204,17 +196,12 @@ library.contact = library.contact || {};
 			//console.log( 'notify - no action', res );
 		}
 		function nClick( res ) {
-			//console.log( 'notifu - click', res );
 			self.startChat();
 		}
 	}
 	
 	ns.Contact.prototype.whenChatOpen = function( msg, silent ) {
 		const self = this;
-		console.log( 'Contact.whenChatClosed', {
-			msg           : msg,
-			chatMinimized : self.chatView.checkMinimized(),
-		});
 		self.recentMessage( msg.message, msg.from, msg.time );
 		if ( silent )
 			return;
@@ -238,7 +225,6 @@ library.contact = library.contact || {};
 			//console.log( 'notify - no action', res );
 		}
 		function nClick( res ) {
-			//console.log( 'notifu - click', res );
 			self.chatView.show();
 		}
 	}
@@ -292,7 +278,6 @@ library.contact = library.contact || {};
 		
 		if ( hello.config.hideLive && ( 'live-invite' === type )) {
 			message += ' - live blocked by app config';
-			console.log( 'live intercept message', message );
 		}
 		
 		return {
@@ -673,7 +658,7 @@ library.contact = library.contact || {};
 		
 		self.live = hello.rtc.createSession( conf, liveToServer, onClose );
 		if ( !self.live ) {
-			console.log( 'P.joinLive - live wasnt not created..', self );
+			console.log( 'P.joinLive - live was not created..', self );
 			return; // session wasnt created, because :reasons:
 		}
 		
@@ -1444,10 +1429,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updateWorkgroupMembers = function( worgId, list ) {
 		const self = this;
-		console.log( 'PresenceRoom.updateWorkgroupMembers', {
-			wId  : worgId,
-			list : list,
-		});
 		if ( !self.workgroups || !self.workgroups.members )
 				return;
 		
@@ -2291,7 +2272,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChatView = function() {
 		const self = this;
-		console.log( 'PresenceContact.openChatView' );
 		self.openChatPending = false;
 		if ( self.chatView ) {
 			self.chatView.show();
@@ -2642,10 +2622,6 @@ library.contact = library.contact || {};
 		}
 		
 		function sendMessage( msg ) {
-			console.log( 'dormant.contact.sendMessage - NYI', {
-				self : self,
-				msg : msg,
-			});
 			if ( !msg )
 				return true;
 			
@@ -3082,10 +3058,6 @@ library.contact = library.contact || {};
 		hello.dormant.addFun( userlist );
 		
 		function sendMessage( msg ) {
-			console.log( 'dormant.irchannel.sendMessage', {
-				self : self,
-				msg : msg,
-			});
 			if ( !msg )
 				return true; 
 			

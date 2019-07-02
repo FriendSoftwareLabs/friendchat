@@ -886,8 +886,6 @@ library.component = library.component || {};
 		var prev = self.history[( self.history.length - 1 )];
 		if ( prev !== str )
 			self.history.push( str );
-		else
-			console.log( 'duplicate', { prev : prev, str : str });
 		
 		if ( self.history.length > ( self.limit + 10 )) // lets not do a slice every time
 			self.history = self.history.slice( -self.limit ); // from 'end', aka keep newer
@@ -1993,7 +1991,6 @@ library.component = library.component || {};
 	
 	ns.ConnState.prototype.handleResume = function( event ) {
 		const self = this;
-		console.log( 'ConnState.handleResume', event );
 		self.showUI( true );
 		self.hideProgressStates();
 		self.loading.classList.toggle( 'hidden', false );
@@ -2001,7 +1998,6 @@ library.component = library.component || {};
 	
 	ns.ConnState.prototype.handleReconnect = function( event ) {
 		const self = this;
-		console.log( 'ConnState.handleReconnect', event );
 		self.showError( false );
 		self.showUI( true );
 		self.hideErrorStates();
@@ -2508,7 +2504,6 @@ library.component = library.component || {};
 	
 	ns.Search.prototype.buildRoom = function( item ) {
 		const self = this;
-		console.log( 'buildRoom', item );
 		const conf = {
 			uuid       : item.uuid,
 			name       : item.name || '',
@@ -3002,12 +2997,10 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			if ( -1 === index )
 				return false;
 			
-			console.log( 'found removeable in', prio.join(','));
 			prio.splice( index, 1 );
 			foundIn = prio;
 			return true;
 		});
-		console.log( 'remove - prio after', self.prio );
 		return !!foundIn;
 	}
 	
@@ -3046,8 +3039,6 @@ The menu will remove itself if it loses focus or a menu item is clicked
 				name : '',
 			};
 		}
-		
-		console.log( 'ListOrder.init found things', self.prio );
 	}
 	
 	ns.ListOrder.prototype.getItemIndex = function( id ) {

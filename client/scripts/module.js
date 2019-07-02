@@ -183,13 +183,11 @@ library.module = library.module || {};
 			type : handlerName,
 			data : argumentList,
 		};
-		console.log( 'BaseModule.queueEvent', queueItem );
 		self.eventQueue.push( queueItem );
 	}
 	
 	ns.BaseModule.prototype.flushQueue = function() {
 		const self = this;
-		console.log( 'BaseModule.flushQueue', self.eventQueue );
 		self.eventQueue.forEach( dispatch );
 		self.eventQueue = [];
 		
@@ -202,10 +200,6 @@ library.module = library.module || {};
 				return;
 			}
 			
-			console.log( 'dispatch', {
-				handler : handler,
-				args    : args,
-			});
 			handler.apply( self, args );
 		}
 	}
@@ -572,7 +566,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'Presence.reconnect' );
 		self.initialized = false;
 		self.sendModuleInit();
 	}
@@ -893,7 +886,6 @@ library.module = library.module || {};
 		const self = this;
 		const authBundle = hello.getAuthBundle();
 		const id = hello.getIdConf();
-		console.log( 'Presence.sendModuleInit - id', id );
 		const init = {
 			type : 'initialize',
 			data : {
@@ -980,10 +972,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
-		console.log( 'Presence.handleAccountInit', {
-			inited : self.initialized,
-			state  : !!state,
-		});
 		if ( self.initialized )
 			return;
 		
@@ -1293,7 +1281,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleIdUpdate = function( event ) {
 		const self = this;
-		console.log( 'Presence.handleIdUpdate', event );
 		const clientId = event.data.clientId;
 		self.idc.update( event );
 		
@@ -1628,7 +1615,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.setupDormant = function() {
 		const self = this;
-		console.log( 'Presence.setupDormant - enabled?', hello.dormantEnabled );
 		if ( !hello.dormant )
 			return;
 		
@@ -2255,14 +2241,12 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.setupDormant = function() {
 		const self = this;
-		console.log( 'Treeroot.setupDormant - enabled?', hello.dormantEnabled );
 		if ( !hello.dormantEnabled )
 			return;
 			
 		if ( self.dormantParentPath )
 			return;
 		
-		console.log( 'setupDormant', self );
 		let uid = self.clientId.split( '-' )[1];
 		let path = [
 			'treeroot',
@@ -3117,7 +3101,6 @@ library.module = library.module || {};
 		if ( self.dormantParentPath )
 			return;
 		
-		console.log( 'setupDormant', self );
 		let mid = self.clientId.split( '-' )[1];
 		let path = [
 			'irc',
@@ -3172,7 +3155,6 @@ library.module = library.module || {};
 		}
 		
 		function leaveChannel( args, callback ) {
-			console.log( 'dormant.irc.leaveChannel', args );
 			if ( !args || !args.length ) {
 				callback( 'ERR_INVALID_ARGS', null );
 				return;

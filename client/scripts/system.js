@@ -150,7 +150,6 @@ library.rtc = library.rtc || {};
 		
 		function handle( accounts ) {
 			if ( !accounts.length ) {
-				console.log( 'no accounts' );
 				self.autoCreate( doneBack );
 				return;
 				
@@ -368,10 +367,8 @@ library.rtc = library.rtc || {};
 	
 	ns.Login.prototype.close = function() {
 		var self = this;
-		if ( self.view ) {
-			console.log( 'login.close - found view - closing' );
+		if ( self.view )
 			self.view.close();
-		}
 		
 		if ( self.createView )
 			self.createView.close();
@@ -439,7 +436,6 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.getPresence = function() {
 		const self = this;
-		console.log( 'getPresence active', self.active );
 		let ids = Object.keys( self.active );
 		let pres = null;
 		ids.some( id => {
@@ -1080,7 +1076,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.toView = function( event ) {
 		const self = this;
-		console.log( 'toView', self.view );
 		if ( self.view )
 			self.view.send( event );
 	}
@@ -1102,8 +1097,6 @@ library.rtc = library.rtc || {};
 	ns.RtcControl.prototype.setupDormant = function() {
 		const self = this;
 		return;
-		
-		console.log( 'setupDormant', hello.dormant );
 		
 		if ( !hello.dormant )
 			return;
@@ -1129,7 +1122,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.closeDormant = function() {
 		const self = this;
-		console.log( 'closeDormant', self.session );
 		if ( !self.session )
 			return;
 		
@@ -1150,7 +1142,6 @@ library.rtc = library.rtc || {};
 			return new ns.Account( conf );
 		
 		const self = this;
-		console.log( 'Account', conf );
 		self.availability = null;
 		self.clientId = conf.account.clientId;
 		self.displayName = conf.account.name;
@@ -1242,7 +1233,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Account.prototype.showSettings = function( data ) {
 		const self = this;
-		console.log( 'showSettings', data );
 		if ( self.settingsView )
 			return;
 		
@@ -1309,13 +1299,11 @@ library.rtc = library.rtc || {};
 	
 	ns.Account.prototype.updateCompactChat = function( value ) {
 		const self = this;
-		console.log( 'Account.updateCompactChat', value );
 		self.settings.compactChat = value;
 	}
 	
 	ns.Account.prototype.updateInAppMenu = function( value ) {
 		const self = this;
-		console.log( 'Account.updateInAppMenu', value );
 		self.settings.inAppMenu = value;
 	}
 	
@@ -1785,9 +1773,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleState = function( event ) {
 		const self = this;
-		if ( 'ping' != event.type )
-			console.log( 'Connection.handleState', event );
-		
 		const handler = self.socketEventMap[ event.type ];
 		if ( !handler ) {
 			console.log( 'unknown socket state', event );
@@ -2336,7 +2321,6 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		console.log( 'RtcSession.initialize', init );
 		self.id = init.liveId;
 		const roomConf = init.liveConf;
 		const viewConf = self.conf;
@@ -2381,7 +2365,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcSession.prototype.restore = function( init ) {
 		const self = this;
-		console.log( 'RtcSession.restore', init );
 		const res = {
 			type : 'restore',
 			data : init,

@@ -24,7 +24,6 @@ var api = window.api || {};
 (function( ns, undefined ) {
 	ns.LogSock = function( host, name ) {
 		const self = this;
-		console.log( 'LogSock', [ host, name ] );
 		self.name = name;
 		self.host = host;
 		self.port = 12321;
@@ -53,7 +52,6 @@ var api = window.api || {};
 	
 	ns.LogSock.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'LogSock.reconnect' );
 		if ( self.conn )
 			delete self.conn.onclose;
 		
@@ -96,7 +94,6 @@ var api = window.api || {};
 		const self = this;
 		const host = 'wss://' + self.host + ':' + self.port;
 		let ws = null;
-		console.log( 'LogSock.connect', self.connectTries );
 		if ( null != self.reconnectTimeout )
 			return;
 		
@@ -118,12 +115,10 @@ var api = window.api || {};
 		if ( delay > self.maxDelay )
 			delay = self.maxDelay;
 		
-		console.log( 'LogSock.connect - waiting ' +  ( delay / 1000 ) + 's', self.connectTries );
 		window.setTimeout( tryConnect, delay );
 		
 		function tryConnect() {
 			self.connectTries++;
-			console.log( 'LogSock.tryConnect', host );
 			try {
 				ws = new window.WebSocket( host );
 			} catch( e ) {
@@ -150,13 +145,11 @@ var api = window.api || {};
 		ws.onerror = onError;
 		
 		function onOpen() {
-			console.log( 'LogSock.onOpen' );
 			ws.onopen = null;
 			self.setOpen( ws );
 		}
 		
 		function onClose( e ) {
-			console.log( 'LogSock.onClose' );
 			ws.onclose = null;
 			self.online = false;
 			self.cleanupWS();
@@ -164,7 +157,6 @@ var api = window.api || {};
 		}
 		
 		function onError( err ) {
-			console.log( 'LogSock onError', err );
 			if ( self.conn )
 				return;
 			
@@ -196,7 +188,6 @@ var api = window.api || {};
 		if ( self.name )
 			self.sendName();
 		
-		console.log( 'LogSock.setOnline', self.eventBuffer.length );
 		self.eventBuffer.forEach( e => self.sendLog( e[ 0 ], e[ 1 ], e[ 2 ] ));
 		self.eventBuffer = [];
 	}
@@ -288,7 +279,6 @@ var api = window.api || {};
 (function( ns, undefined ) {
 	ns.LogSockView = function() {
 		const self = this;
-		console.log( 'LogSockView', window.View );
 		if ( !window.View || !window.View.send ) {
 			console.log( 'LogSockView - are you sure this is a view?' );
 			return;

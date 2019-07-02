@@ -220,7 +220,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.toggleLiveBtns = function( show ) {
 		const self = this;
-		console.log( 'toggleLiveBtns', show );
 		vBtn = document.getElementById( 'upgrade-to-video' );
 		aBtn = document.getElementById( 'upgrade-to-audio' );
 		vBtn.classList.toggle( 'hidden', !show );
@@ -280,7 +279,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleInitialize = function( conf ) {
 		const self = this;
-		console.log( 'handleInitialize', conf );
 		hello.template = friend.template;
 		friend.template.addFragments( conf.commonFragments );
 		const state = conf.state;
@@ -346,7 +344,6 @@ library.view = library.view || {};
 					firstTime : firstMsgTime,
 				},
 			};
-			console.log( 'onFetch - logBefore', logBefore );
 			self.sendChatEvent( logBefore );
 		}
 		
@@ -529,7 +526,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.setGroupTitle = function() {
 		const self = this;
-		console.log( 'setGroupTitle', self.room );
 		if ( !self.room ) {
 			console.log( 'view.Presence.setGroupTitle - no identity', self );
 			return;
@@ -695,7 +691,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleIdUpdate = function( update ) {
 		const self = this;
-		console.log( 'view.Presence.handleIdUpdate', update );
 		self.users.updateIdentity( update );
 	}
 	
@@ -928,7 +923,6 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.init = function( workgroups, users, ids, room ) {
 		const self = this;
-		console.log( 'UWC.init - room', room );
 		self.room = room;
 		self.build();
 		self.groupList = new library.component.ListOrder( 'user-groups' );
@@ -995,7 +989,6 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.handleWorgMembers = function( event ) {
 		const self = this;
-		console.log( 'UserWorkCtrl.handleWorgMembers', event );
 		const workId = event.workId;
 		const members = event.members;
 		const ids = event.identities;
@@ -1012,7 +1005,6 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.setWorkgroups = function( conf ) {
 		const self = this;
-		console.log( 'UserWorkCtrl.setWorkgroups', conf );
 		if ( !conf || !conf.available )
 			return;
 		
@@ -1137,10 +1129,6 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.setWorkMembers = function( worgId, idList ) {
 		const self = this;
-		console.log( 'setWorkMembers', {
-			wId  : worgId,
-			list : idList,
-		});
 		idList = idList || [];
 		let group = self.works[ worgId ];
 		let members = self.members[ worgId ];
@@ -1293,7 +1281,6 @@ library.view = library.view || {};
 		
 	ns.WorkMsgBuilder.prototype.getEditer = function( msg ) {
 		const self = this;
-		console.log( 'WrokMsgBulder.getEditer', msg );
 		const uId = msg.editBy;
 		const user = self.users.getId( uId );
 		if ( user )
@@ -1308,7 +1295,6 @@ library.view = library.view || {};
 	
 	ns.WorkMsgBuilder.prototype.handleMsg = function( event ) {
 		const self = this;
-		console.log( 'MsgBuilder.handleMsg', event );
 		if ( self.exists( event.msgId ))
 			return;
 		

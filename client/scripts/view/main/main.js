@@ -2308,10 +2308,6 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.handleIdUpdate = function( update ) {
 		const self = this;
-		console.log( 'PresenceContact.handleIdUpdate', {
-			self   : self,
-			update : update,
-		});
 		const id = update.data;
 		if ( !id )
 			return;

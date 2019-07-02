@@ -28,10 +28,6 @@ var hello = null;
 // HELLO
 (function( ns, undefined ) {
 	ns.Hello = function( app, conf ) {
-		console.log( 'HERRO', {
-			app  : app,
-			conf : conf,
-		});
 		const self = this;
 		self.app = app;
 		self.config = conf;
@@ -264,7 +260,6 @@ var hello = null;
 		self.timeNow( 'honst config loaded' );
 		library.tool.mergeObjects( self.config, hostConf );
 		self.config.appName = self.config.appName || 'Friend Chat';
-		console.log( 'hello - host config', hello.config );
 		self.app.setConfig( hello.config );
 		self.preInit();
 	}
@@ -389,10 +384,8 @@ var hello = null;
 		
 		function loadCheck() {
 			return new Promise(( resolve, reject ) => {
-				console.log( 'loadCheck' );
 				api.ApplicationStorage.get( 'avatar-check', checkBack );
 				function checkBack( checkObj ) {
-					console.log( 'checkBack', checkObj );
 					resolve( checkObj.data );
 				}
 			});
@@ -403,7 +396,6 @@ var hello = null;
 				return null;
 			
 			const part = avatar.slice( -50 );
-			console.log( 'getPart', part );
 			return part;
 		}
 	}
@@ -568,7 +560,6 @@ var hello = null;
 			self.initSystemModules( connBack );
 		
 		function connBack() {
-			console.log( 'hello.connBack' );
 			self.doLogin();
 		}
 	}
@@ -636,7 +627,6 @@ var hello = null;
 	
 	ns.Hello.prototype.showLoadingStatus = function( status ) {
 		const self = this;
-		console.log( 'showLoadingStatus', status );
 		if ( 'session' === status.type )
 			return;
 		
@@ -776,6 +766,7 @@ var hello = null;
 		if ( 'live-host' === conf.type ) {
 			console.log( 'live-host - NYI', conf )
 			return;
+			
 			self.loggedIn = true;
 			var identity = {
 				name :  library.tool.getName(),
@@ -845,7 +836,6 @@ var hello = null;
 	
 	ns.Hello.prototype.doLogin = function() {
 		const self = this;
-		console.log( 'hello.doLogin' );
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;
@@ -857,7 +847,6 @@ var hello = null;
 		
 		self.login = new library.system.Login( null, onlogin, onclose );
 		function onlogin( account ) {
-			console.log( 'hello.doLogin - onlogin', account );
 			self.loggedIn = true;
 			self.login.close();
 			self.login = null;
@@ -882,7 +871,6 @@ var hello = null;
 	
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
-		console.log( 'doRelogin', self.account );
 		self.triedRelogin = true;
 		self.conn.reconnect( connected );
 		function connected( err, res ) {
@@ -921,7 +909,6 @@ var hello = null;
 	
 	ns.Hello.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'hello.reconnect' );
 		self.conn.reconnect();
 	}
 	
@@ -943,10 +930,6 @@ var hello = null;
 		}
 		
 		if ( 'end' === state.type && !self.triedRelogin ) {
-			console.log( 'hello.updateConnState - socket ended', {
-				state        : state,
-				triedRelogin : self.triedRelogin,
-			});
 			if ( !self.triedRelogin )
 				self.doRelogin();
 			else
@@ -976,10 +959,6 @@ var hello = null;
 	
 	ns.Hello.prototype.updateIsOnline = function( isOnline ) {
 		const self = this;
-		console.log( 'hello.updateIsOnline', {
-			isOnline : isOnline,
-			selfIs   : self.isOnline,
-		});
 		if ( isOnline === self.isOnline )
 			return;
 		
@@ -1183,27 +1162,21 @@ var hello = null;
 	
 	ns.Hello.prototype.handlePushNotie = function( event ) {
 		const self = this;
-		console.log( 'hello.handlePushNotie', event );
 		if ( !event || !event.extra ) {
 			console.log( 'hello.handlePushNotie - not valid event', event );
 			return;
 		}
 		
 		if ( !event.clicked ) {
-			console.log( 'hello.handlePushNotie - not clicked', event );
+			console.log( 'hello.handlePushNotie - not clicked, discarding', event );
 			return;
 		}
 		
 		if ( null != self.resumeTimeout || !self.isOnline ) {
-			console.log( 'hell0o.handlePushNotie - wait resume / online', {
-				resume : self.resumeTimeout,
-				online : self.isOnline,
-			});
 			self.registerOnResume( onResume );
 			return;
 			
 			function onResume() {
-				console.log( 'handlePushNotie.onResume', event );
 				self.handlePushNotie( event );
 			}
 		}
@@ -1236,10 +1209,6 @@ var hello = null;
 		}
 		
 		if ( null != self.resumeTimeout || !self.isOnline ) {
-			console.log( 'hell0o.handleNotie - wait resume', {
-				resume : self.resumeTimeout,
-				online : self.isOnline,
-			});
 			self.registerOnResume( onResume );
 			return;
 			
@@ -1249,7 +1218,6 @@ var hello = null;
 			}
 		}
 		
-		console.log( 'hello.handleNotie', event );
 		let extra = friendUP.tool.parse( event.extra );
 		if ( !extra ) {
 			console.log( 'hello.handleNotie - invalid extra', event );
@@ -1264,10 +1232,6 @@ var hello = null;
 	
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
-		console.log( 'hello.handleAppResume', {
-			event    : event,
-			isOnline : self.isOnline,
-		});
 		if ( !self.isOnline ) {
 			console.log( 'hello.handleAppResume - already reconnecting' );
 			return;
@@ -1291,32 +1255,26 @@ var hello = null;
 		
 		function resume() {
 			self.resumeTimeout = null;
-			console.log( 'resume', self.resumeTimeout );
 			self.doResume();
-			//self.reconnect();
 		}
 	}
 	
 	ns.Hello.prototype.registerOnResume = function( fn ) {
 		const self = this;
-		console.log( 'hello.registerOnResume', fn.toString() );
 		self.resumeCallbacks.push( fn );
 	}
 	
 	ns.Hello.prototype.doResume = function() {
 		const self = this;
-		console.log( 'doResume - online?', [ self.isOnline, self.resumeTimeout ]);
 		if ( !self.isOnline || ( null != self.resumeTimeout ))
 			return;
 		
-		console.log( 'hello.doResume', self.resumeCallbacks.length );
 		self.resumeCallbacks.forEach( fn => fn());
 		self.resumeCallbacks = [];
 	}
 	
 	ns.Hello.prototype.handleUserUpdate = function( event ) {
 		const self = this;
-		console.log( 'handleUserUpdate', event )
 		self.getUserInfo()
 			.then( infoBack )
 			.catch( fail );
@@ -1354,7 +1312,6 @@ var hello = null;
 	
 	ns.Main.prototype.setConnState = function( state ) {
 		const self = this;
-		console.log( 'main.setConnState', state );
 		self.view.send({
 			type : 'conn-state',
 			data : state,

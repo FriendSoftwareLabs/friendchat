@@ -185,7 +185,6 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		
 		self.deviceType = type.toUpperCase();
-		console.log( 'deviceType set to', type );
 	}
 	
 	// DESKTOP
@@ -890,7 +889,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.register = function( msg ) {
 		const self = this;
-		console.log( 'register', msg );
 		window.origin = msg.origin;
 		self.domain = msg.domain;
 		self.locale = msg.locale;
@@ -958,7 +956,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.appWakeup = function( event ) {
 		const self = this;
-		console.log( 'appWakeup', event );
 		if ( self.logSock )
 			self.logSock.reconnect();
 		
@@ -1021,13 +1018,11 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.setConfig = function( conf ) {
 		const self = this;
-		console.log( 'app.setConfig', conf );
 		self.appConf = conf;
 	}
 	
 	ns.Application.prototype.setSettings = function( settings ) {
 		const self = this;
-		console.log( 'app.setSettings', settings );
 		self.appSettings = settings;
 	}
 	
@@ -1042,7 +1037,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.setDev = function( dumpHost, name ) {
 		const self = this;
-		console.log( 'setDev', [ dumpHost, name ]);
 		if ( !dumpHost && name  ) {
 			if ( self.logSock )
 				self.logSock.setName( name );
@@ -1594,7 +1588,6 @@ window.Application = new fupLocal.Application();
 			data       : data,
 			error      : err,
 		};
-		console.log( 'Dormant.sendBack', msg );
 		self.send( msg );
 	}
 	
@@ -2126,7 +2119,7 @@ api.DoorFun.prototype.init = function() {
 	// get the original url from a tiny url, returns a promise
 	ns.TinyURL.prototype.expand = function( tinyUrl ) {
 		const self = this;
-		console.log( 'expand', tinyURL );
+		console.log( 'expand - NYI', tinyURL );
 		
 	}
 	

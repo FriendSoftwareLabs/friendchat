@@ -474,13 +474,11 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addIdentity = function( id ) {
 		const self = this;
-		console.log( 'addIdentity', id );
 		return self.addId( id );
 	}
 	
 	ns.UserCtrl.prototype.updateIdentity = function( update ) {
 		const self = this;
-		console.log( 'view.Presence.UserCtrl.updateIdentity', update );
 		const id = update.data;
 		const cId = id.clientId;
 		self.identities[ cId ] = id;
@@ -706,7 +704,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.removeUserGroup = function( worgId ) {
 		const self = this;
-		console.log( 'removeUserGroup', worgId );
 		self.groupList.remove( worgId );
 	}
 	
@@ -1007,9 +1004,8 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addUserCss = function( userId, avatar ) {
 		const self = this;
-		console.log( 'addUserCss', userId );
 		if ( !avatar )
-			console.trace( 'addUserCss - missing avatar', {
+			console.log( 'addUserCss - missing avatar', {
 				uid : userId,
 				ava : avatar,
 			});
@@ -1409,7 +1405,6 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.init = function( parentConn, workgroups ) {
 		const self = this;
 		self.settings = window.View.getSettings();
-		console.log( 'MsgBuilder.settings', self.settings );
 		
 		if ( workgroups) {
 			self.workgroupId = workgroups.workId || '';
@@ -1737,7 +1732,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleMsg = function( event ) {
 		const self = this;
-		console.log( 'MsgBuilder.handleMsg', event );
 		if ( self.exists( event.msgId ))
 			return;
 		
@@ -1778,7 +1772,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLog = function( log ) {
 		const self = this;
-		console.log( 'MsgBuilder.handleLog', log );
 		let events = log.data.events;
 		let newIds = log.data.ids;
 		let relations = log.data.relations;
@@ -1872,16 +1865,6 @@ var hello = window.hello || {};
 				lastSpeakerId = event.fromId;
 			else
 				lastSpeakerId = null;
-			
-			/*
-			if ( index === lastIndex ) {
-				console.log( 'index === lastIndex - set firstMsg on envelope', {
-					envelope : envelope,
-					firstMsg : event,
-				});
-				envelope.firstMsg = firstMsg;
-			}
-			*/
 			
 			prevEnvelope = envelope;
 		}
@@ -2242,12 +2225,6 @@ var hello = window.hello || {};
 		
 		const user = relations[ self.userId ];
 		const contact = relations[ self.contactId ];
-		console.log( 'updateRelationsState', {
-			rel      : relations,
-			user     : user,
-			contact  : contact,
-			lastRead : self.lastRead,
-		});
 		
 		if ( !relations.lastMsgId )
 			return;
@@ -2284,13 +2261,7 @@ var hello = window.hello || {};
 		if ( !self.contactId )
 			return;
 		
-		console.log( 'handleConfirm', {
-			userId        : self.userId,
-			contactId     : self.contactId,
-			event         : event,
-			lastConfirmed : self.lastConfirmed,
-			lastRead      : self.lastRead,
-		});
+		
 		if ( 'message' == event.type ) {
 			confirmMessage( event.data );
 			return;
@@ -2299,7 +2270,6 @@ var hello = window.hello || {};
 		console.log( 'MsgBuilder.handleConfirm - unknown confirm event', event );
 		
 		function confirmMessage( state ) {
-			console.log( 'confirmMessage', state );
 			const mId = state.msgId;
 			const msgEl = document.getElementById( mId );
 			if ( !msgEl ) {
@@ -2323,12 +2293,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.updateLastRead = function( state ) {
 		const self = this;
-		console.log( 'updateLastRead', {
-			state : state,
-			userId : self.userId,
-			lastRead : self.lastRead,
-			lastDelivered : self.lastDelivered,
-		});
 		if ( state.fromId === self.contactId )
 			return;
 		
@@ -2342,13 +2306,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.updateLastDelivered = function( state ) {
 		const self = this;
-		console.log( 'updateLastDelivered', {
-			state : state,
-			userId : self.userId,
-			contactId : self.contactId,
-			lastRead : self.lastRead,
-			lastDelivered : self.lastDelivered,
-		});
 		if ( state.fromId === self.contactId )
 			return;
 		
@@ -2365,7 +2322,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.setConfirmState = function( msgId, isConfirmed, timestamp ) {
 		const self = this;
-		console.log( 'setConfirmState', [ msgId, isConfirmed, timestamp ]);
 		let timeStr = '';
 		if ( null != timestamp ) {
 			timeStr = self.getClockStamp( timestamp );
@@ -2395,9 +2351,7 @@ var hello = window.hello || {};
 			};
 			const el = self.template.getElement( 'confirm-state-tmpl', conf );
 			const msgEl = document.getElementById( msgId );
-			console.log( 'msgEl', msgEl );
 			const container = msgEl.querySelector( '.confirm-state' );
-			console.log( 'container', container );
 			container.appendChild( el );
 			return el;
 		}
@@ -2405,7 +2359,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.setInlineConfirm = function( msgId, isConfirmed, timeStr ) {
 		const self = this;
-		console.log( 'MsgBuilder.setInlineConfirm', timeStr );
 		const mEl = document.getElementById( msgId );
 		if ( !mEl )
 			return;
@@ -2437,7 +2390,6 @@ var hello = window.hello || {};
 		function cClick( e ) {
 			e.stopPropagation();
 			e.preventDefault();
-			console.log( 'cClick' );
 			self.toggleExtendedInfo( msgId );
 		}
 	}
@@ -2467,7 +2419,6 @@ var hello = window.hello || {};
 		const extEl = msgEl.querySelector( '.extended-info' );
 		let cInfoEl = extEl.querySelector( '.confirm-info' );
 		if ( cInfoEl ) {
-			console.log( 'removing old cInfo', cInfoEl );
 			cInfoEl.parentNode.removeChild( cInfoEl );
 			cInfoEl = null;
 		}
@@ -2499,10 +2450,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.addExtendedinfo = function( msgId, el ) {
 		const self = this;
-		console.log( 'addExtendedinfo', {
-			msgId : msgId,
-			el    : el,
-		});
 		const msgEl = document.getElementById( msgId );
 		if ( !msgEl ) {
 			console.log( 'MsgBuilder.addExtendedinfo - no msg found for msgId', msgId );

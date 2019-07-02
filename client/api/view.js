@@ -384,7 +384,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.setIsLoading = function( isLoading ) {
 		const self = this;
-		console.log( 'View.setIsLoading', isLoading );
 		document.body.classList.toggle( 'Loading', isLoading );
 	}
 	
@@ -459,11 +458,6 @@ var friend = window.friend || {};
 		self.config = conf.viewConf || {};
 		self.appConf = self.config.appConf || {};
 		self.appSettings = self.config.appSettings || {};
-		console.log( 'View.appThings', {
-			conf  : self.appConf,
-			setts : self.appSettings,
-		});
-		
 		if ( self.config.isDev )
 			self.initLogSock();
 		
@@ -518,7 +512,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.initLogSock = function() {
 		const self = this;
-		console.log( 'view.initLogSock', api.LogSockView );
 	}
 	
 	ns.View.prototype.handleKeyDown = function( e ) {
@@ -657,7 +650,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.register = function() {
 		const self = this;
-		console.log( 'register?', arguments );
 	}
 	
 	// DESKTOP
@@ -670,7 +662,6 @@ var friend = window.friend || {};
 			return;
 		
 		self.deviceType = type.toUpperCase();
-		console.log( 'deviceType set to', type );
 	}
 	
 	// DESKTOP
@@ -928,7 +919,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.handleViewFlag = function( e ) {
 		const self = this;
-		console.log( 'handleViewFlag', e );
 	}
 	
 	ns.View.prototype.handleViewTheme = function( msg ) {

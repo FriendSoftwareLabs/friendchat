@@ -706,7 +706,7 @@ library.view = library.view || {};
 			api.ApplicationStorage.set( 'live-settings', settings, saveBack );
 			self.settingsQueue = null;
 			function saveBack( res ) {
-				console.log( 'storeLocalSetting.saveBack', res );
+				//
 			}
 		}
 	}
@@ -965,7 +965,6 @@ library.view = library.view || {};
 		var self = this;
 		self.view.showFiledialog( data, selected );
 		function selected( res ) {
-			console.log( 'selectFile - selected', res );
 			var selected = {
 				type : 'selectfile',
 				data : res,
@@ -1526,7 +1525,6 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.AddImage ))
 			return new ns.AddImage( conf );
 		
-		console.log( 'camshot', conf );
 		var self = this;
 		self.onimage = conf.onimage;
 		self.onclose = conf.onclose;
@@ -1565,7 +1563,6 @@ library.view = library.view || {};
 	
 	ns.AddImage.prototype.viewClosed = function() {
 		var self = this;
-		console.log( 'view closed' );
 		const onclose = self.onclose;
 		delete self.onclose;
 		if ( onclose )
@@ -1707,7 +1704,6 @@ library.view = library.view || {};
 		
 		self.view.on( 'accept', accept );
 		function accept( e ) {
-			console.log( 'app.cryptwarning - onaccept', e );
 			self.onaccept( e );
 		}
 		function closed( e ) { self.closed() }

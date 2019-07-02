@@ -1058,7 +1058,6 @@ var hello = window.hello || {};
 	
 	ns.RecentItem.prototype.handleLiveState = function( state ) {
 		const self = this;
-		console.log( 'ReventItem.handleLiveState', state );
 		self.callStatus.setUserLive( state.user );
 		self.callStatus.setContactLive( state.peer );
 		

@@ -371,7 +371,6 @@ library.component = library.component || {};
 			data : item,
 		};
 		var res = hello.intercept.buildJSON( event );
-		console.log( 'Droppings.handleCalendar', res );
 		self.toChat( res.intercept );
 	}
 	
@@ -381,7 +380,6 @@ library.component = library.component || {};
 			type : 'nested-app',
 			data : item,
 		};
-		console.log( 'handleExec', app );
 		self.toView( app );
 	}
 	

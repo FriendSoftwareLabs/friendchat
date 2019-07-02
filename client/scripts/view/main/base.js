@@ -161,7 +161,6 @@ library.view = library.view || {};
 			return;
 		}
 		
-		console.log( 'main.BaseContact.updateAvatar - updating to ', self.identity.avatar );
 		const ava = self.identity.avatar || '';
 		avatarEl.style[ 'background-image' ] = "url('" + ava + "')";
 	}

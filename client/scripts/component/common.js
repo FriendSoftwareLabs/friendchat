@@ -729,7 +729,6 @@ inherits from EventEmitter
 	
 	ns.IdCache.prototype.update = function( update ) {
 		const self = this;
-		console.log( 'IdCache.update', update );
 		const id = update.data;
 		const cId = id.clientId;
 		const current = self.ids[ cId ];
@@ -783,7 +782,6 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setUserLive = function( isLive ) {
 		const self = this;
-		console.log( 'setUSerLive', [ self.userLive, isLive ]);
 		if ( self.userLive === isLive )
 			return;
 		
@@ -793,7 +791,6 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setContactLive = function( isLive ) {
 		const self = this;
-		console.log( 'setContactLive', [ self.contactLive, isLive ]);
 		if ( self.contactLive === isLive )
 			return;
 		
@@ -846,7 +843,6 @@ inherits from EventEmitter
 		function outClick( e ) {
 			e.preventDefault();
 			e.stopPropagation();
-			console.log( 'outClick', e );
 			self.emit( 'show' );
 		}
 		
@@ -898,7 +894,6 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setIncoming = function( notify ) {
 		const self = this;
-		console.log( 'setIncoming', notify );
 		if ( notify )
 			self.emit( 'notify', true );
 		
@@ -909,7 +904,6 @@ inherits from EventEmitter
 	
 	ns.CallStatus.prototype.setOutgoing = function() {
 		const self = this;
-		console.log( 'setOutGoing' );
 		self.setStatus( 'Available' );
 		self.out.classList.toggle( 'hidden', false );
 		self.current = self.out;
@@ -924,10 +918,7 @@ inherits from EventEmitter
 		const self = this;
 		self.el.classList.toggle( 'hidden', false );
 		return;
-		console.log( 'setStatus', {
-			current : self.statusKlass,
-			status  : status,
-		});
+		
 		self.status.classList.toggle( 'hidden', false );
 		if ( self.statusKlass === status )
 			return;
