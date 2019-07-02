@@ -1,0 +1,613 @@
+body {
+}
+
+#content {
+    height: 100%;
+}
+
+#active-modules {
+    position: relative;
+    overflow: auto;
+}
+
+.availability-container {
+    position: relative;
+    text-align:left;
+}
+
+.availability-container .availability {
+    width: 100%;
+}
+
+.availability-container .availability .button-container {
+    flex: 0 0 auto;
+}
+
+.availability-container .availability .status-string {
+    padding-left: 1em;
+}
+
+.availability-container .availability-options {
+    display:none;
+}
+
+.availability-container .availability-options.show {
+    display : block;
+    position : absolute;
+    z-index : 999;
+}
+
+.availability-container .status {
+    line-height:2em;
+    height: 2em;
+    padding-left: 2.5em;
+    padding-right: 1em;
+    background-position: center left 0.6em;
+    background-repeat: no-repeat;
+}
+
+#notifications {
+    
+}
+
+.log-notify {
+    padding : 0 0.3em;
+}
+
+.log-notify .icon {
+    width : 2em;
+    height: 2em;
+}
+
+.log-notify .container {
+    position: relative;
+    height : 2em;
+}
+
+.log-notify .output {
+    position: absolute;
+    width : 100%;
+    height: 2em;
+    top : 0;
+    right : 0;
+    bottom : 0;
+    left : 0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.log-notify .message {
+    padding : 0 0.4em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow : ellipsis;
+    line-height: 2em;
+}
+
+.log-notify .message .log-info {
+    
+}
+
+.log-notify .unread-num {
+    padding : 0 0.3em;
+}
+
+/* Assist UI */
+
+#assist-ui {
+    padding : 0.6em 0.5em;
+}
+
+#assist-ui .button > i {
+    font-size: 180%;
+    margin-right : 0.3em;
+}
+
+#assist-ui .button {
+    display     : flex !important;
+    font-weight : bold;
+    padding     : 0.6em 0.4em;
+    line-height : 1.6em;
+    margin      : 0;
+}
+
+#assist-ui .Select {
+    font-weight: bold;
+}
+
+#assist-select {
+    padding-bottom : 0.8em;
+}
+
+#assist-select > select,
+#assist-status-from > select {
+    width : 100%;
+}
+
+#assist-status {
+    padding-top : 0.8em;
+}
+
+#assist-status-height-dummy {
+    height : 2em;
+}
+
+#assist-status-new {
+    
+}
+
+#assist-status-from {
+    margin-left : 0.5em;
+}
+
+#assist-select-from {
+    
+}
+
+.assist-select-type .assist-select-col {
+    margin-left : 0.2em;
+}
+
+.assist-select-type .assist-select-col:first-child {
+    margin-left : 0em;
+}
+
+.assist-selected {
+    padding : 0.3em;
+}
+
+.assist-option {
+    line-height : 1.8em;
+}
+
+/* Queries */
+
+.query-pass-reset {
+    padding : 0.5em 0;
+}
+
+.query-pass-reset .button {
+    margin-left : 1em;
+}
+
+.query-retry-countdown {
+    margin : 1em;
+    background-color: #444;
+    padding : 1px;
+}
+
+.query-retry-bar {
+    height: 0.3em;
+}
+
+/* MAIN */
+
+#online-status {
+    position: absolute;
+    top : 0;
+    left : 0;
+    right : 0;
+    bottom : 0;
+}
+
+.info-icon {
+    margin : 0 0.5em;
+}
+
+#main-menu {
+    position         : absolute;
+    top              : 0;
+    right            : 0;
+    bottom           : 0;
+    left             : 0;
+    background-color : rgba( 0, 0, 0, 0.5 );
+}
+
+/* top bar: avatar, search, menu */
+
+#self-avatar
+{
+    height: 3em;
+    width : 3em;
+    border-radius: 100%;
+    background-position: center;
+    background-size: cover;
+    margin-left : 0.5em;
+}
+
+#self-avatar.default-avatar {
+    background-size: unset;
+    background-repeat: no-repeat;
+    background-color: #333;
+}
+
+#search-results {
+    position: absolute;
+    top    : 0;
+    right  : 0;
+    bottom : 0;
+    left   : 0;
+    z-index: 999;
+}
+
+/* Gui tabs */
+
+.tab-bar
+{
+    width: 100%;
+    height: 50px;
+    position: relative;
+}
+
+.tab-bar:after
+{
+    clear: both;
+}
+
+.tab-bar .tab-item
+{
+    float: left;
+    width: 33.3%;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    transition: background-color,color 0.25s,0.25s;
+}
+html body .tab-bar .tab-item.Button.IconButton
+{
+    margin: 0;
+    padding: 0;
+	border-radius: 0;
+}
+
+/* Todo: Use theme color here */
+.tab-bar .tab-item.active
+{
+    color: #008DD4;
+}
+
+/* Conversations welcome box */
+
+#welcome-box {
+    position : relative;
+}
+
+#conversations .Box ul, #conversations .Box li
+{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#conversations .Box .fa-remove:before
+{
+    display: block;
+    width: 24px;
+    height: 24px;
+    text-align: center;
+    line-height: 24px;
+    opacity: 0.6;
+    transition: opacity 0.25s;
+}
+#conversations .Box .fa-remove:hover:before
+{
+    opacity: 1;
+}
+
+#conversations .Box li
+{
+    padding: 0 0 10px 20px;
+}
+
+#conversations .welcome-box strong.welcome
+{
+    font-size: 140%;
+}
+
+/* Done conversations welcome box */
+
+#conversations .Box li:before
+{
+    margin: 0 10px 0 0;
+}
+
+/* Pages */
+
+.page-item
+{
+    position : absolute;
+    top      : 0;
+    left     : 0;
+    right    : 0;
+    bottom   : 0;
+    overflow : auto;
+    transition : opacity 0.3s;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.page-item.active
+{
+    pointer-events: all;
+    opacity: 1;
+}
+
+.page-item.conversations
+{
+    /*background-color: green;*/
+}
+
+.page-item.conferences
+{
+    /*background-color: red;*/
+}
+
+.page-item.contacts
+{
+    /*background-color: blue;*/
+}
+
+/* MODULE */
+
+.module {
+    padding-bottom: 2px;
+}
+
+.module-head {
+    overflow : hidden;
+}
+
+.module-head .actions {
+    margin-right : 4px;
+}
+
+.module-title {
+    line-height   : 2em;
+    font-size     : 120%;
+    font-weight   : bold;
+    padding       : 0 0.3em;
+    white-space   : nowrap;
+    overflow      : hidden;
+    text-overflow : ellipsis;
+}
+
+.module-actions {
+    height          :100%;
+    justify-content : flex-end;
+}
+
+.module-actions > div {
+
+}
+
+.module-info {
+    
+}
+
+
+/* CONTACTCs */
+
+.contacts {
+}
+
+.active {
+    
+}
+
+.inactive-header {
+    height      : 2em;
+    line-height : 2em;
+}
+
+.inactive-header .inactive-title {
+    padding : 0 0.5em;
+}
+
+.inactive-title,
+.inactive-stats {
+    opacity: 0.7;
+}
+
+.inactive {
+    
+}
+
+
+/* CONTACT */
+.contacts .contact,
+.contacts .subscription {
+    position: relative;
+    padding-left:0.7em;
+    line-height: 1.8em;
+}
+
+.treeroot.contact {
+}
+
+.contact .contact-height-dummy {
+    height: 2.2em;
+}
+
+.contacts .contact-name,
+.subscription .description {
+    flex: 1 1 auto;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.room .name,
+.contact .name {
+    margin-left : 1em;
+}
+
+.contacts .contact-status,
+.contacts .contact-status > div {
+    padding-right : 0.1em;
+}
+
+/* subscription */
+
+.subscription {
+    padding-right: 0.5em;
+}
+
+.subscription .description .name {
+    font-weight: bold;
+}
+
+.subscription .subscribee {
+    
+}
+.subscription .subscriber {
+    
+}
+
+.subscription .actions-container {
+    display : flex;
+    outline: none;
+}
+
+.hide-btn-inline {
+    opacity: 0;
+}
+
+/* Rececnt conversations */
+
+#recent-convos {
+    height : 100%;
+}
+
+.recent-info {
+    padding  : 0 0.5em;
+    overflow : hidden;
+}
+
+#hello .recent-item {
+    padding-top : 0.4em;
+    padding-bottom : 0.2em;
+    padding-left : 0.7em;
+}
+
+.avatar {
+    position: relative;
+    height : 2.5em;
+    width  : 2.5em;
+    border-radius       : 100%;
+    background-position : center;
+    background-size     : cover;
+}
+
+
+.room .avatar,
+.recent-room .avatar {
+    border-radius       : 2px;
+}
+
+
+.recent-item .recent-info {
+    overflow: hidden;
+}
+
+.recent-item .more-state {
+    max-height: 1.9em;
+}
+
+.recent-item .name {
+    font-size     : 110%;
+    font-weight   : bold;
+    white-space   : nowrap;
+    text-overflow : ellipsis;
+    overflow      : hidden;
+}
+
+.recent-item .last-msg-time {
+    font-size  : 90%;
+    font-style : italic;
+    opacity    : 0.8;
+}
+
+.recent-item .last-event-icon {
+    opacity: 0.5;
+}
+
+.recent-item .min-height-dummy {
+    line-height: 2em;
+}
+
+.recent-item .last-msg-name {
+    max-width     : 7em;
+    line-height   : 2em;
+    overflow      : hidden;
+    text-overflow : ellipsis;
+    font-weight   : bold;
+    white-space   : nowrap;
+    margin-left   : 0.2em;
+}
+
+.recent-item .last-message {
+    margin-left   : 0.3em;
+    line-height   : 2em;
+    overflow      : hidden;
+    text-overflow : ellipsis;
+    white-space   : nowrap;
+}
+
+.recent-item .more-state > div {
+    margin-left : 0.3em;
+}
+
+/*
+
+*/
+
+.room-name-form {
+    
+}
+
+.room-name-form .input-wrap {
+    margin-right : 0.3em;
+}
+
+/*
+ CALL
+*/
+
+.presence-call {
+    border-radius: 3em;
+    padding : 0.3em;
+}
+
+#hello .call-status {
+    border-radius: 3em;
+    padding : 0.4em;
+    margin-right : 0.3em;
+}
+
+.call-incoming {
+    
+}
+
+#hello .accept-video,
+#hello .accept-audio {
+    padding : 0.4em;
+}
+
+#hello .accept-video {
+    border-top-left-radius: 3em;
+    border-bottom-left-radius: 3em;
+    margin : unset;
+}
+
+#hello .accept-audio {
+    border-top-right-radius: 3em;
+    border-bottom-right-radius: 3em;
+}
+
+.call-outgoing {
+    
+}
+
+.call-live {
+    
+}

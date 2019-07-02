@@ -23,59 +23,91 @@ var library = window.library || {};
 library.component = library.component || {};
 
 (function( ns, undefined ) {
-	ns.GuestRoom = function( conn, permissions, onclose ) {
+	ns.GuestAccount = function( conn, permissions, onclose ) {
 		const self = this;
 		self.conn = conn;
 		self.permissions = permissions;
 		self.onclose = onclose;
 		
 		self.roomId = null;
-		self.identities = {};
+		self.room = null;
 		
 		self.init();
 	}
 	
 	// Public
 	
-	ns.GuestRoom.prototype.close = function() {
+	ns.GuestAccount.prototype.close = function() {
 		const self = this;
-		self.releaseConn();
+		if ( self.conn )
+			self.conn.close();
+		
 		delete self.conn;
 		delete self.onclose;
 	}
 	
 	// Private
 	
-	ns.GuestRoom.prototype.init = function() {
+	ns.GuestAccount.prototype.init = function() {
 		const self = this;
 		self.conn.on( 'ready', ready );
-		self.conn.on( 'initialize', init );
-		self.conn.on( 'join', joinedRoom );
+		self.conn.on( 'account', account );
 		
 		function ready( e ) { self.handleConnReady( e ); }
-		function init( e ) { self.handleInit( e ); }
-		function joinedRoom( e ) { self.handleJoinedRoom( e ); }
+		function account( e ) { self.handleAccount( e ); }
 	}
 	
-	ns.GuestRoom.prototype.handleConnReady = function( e ) {
+	ns.GuestAccount.prototype.handleConnReady = function( e ) {
 		const self = this;
-		console.log( 'handleConnReady', e );
 		const init = {
 			type : 'initialize',
 		};
 		self.send( init );
 	}
 	
-	ns.GuestRoom.prototype.handleInit = function( data ) {
+	ns.GuestAccount.prototype.handleAccount = function( loginEvent ) {
 		const self = this;
+		const accId = loginEvent.data;
+		self.accountId = accId;
+		self.acc = new library.component.EventNode( accId, self.conn, accSink );
+		self.acc.on( 'initialize', initialize );
+		self.acc.on( 'join', joinedRoom );
+		
+		const init = {
+			type : 'initialize',
+			data : null,
+		};
+		self.send( init );
+		
+		function accSink() { console.log( 'GuestAccount.accSink', arguments ); }
+		function initialize( e ) { self.handleInit( e ); }
+		function joinedRoom( e ) { self.handleJoinedRoom( e ); }
+	}
+	
+	/*
+	ns.GuestAccount.prototype.handleInit = function( data ) {
+		const self = this;
+		console.log( 'GuestAccount.handleInit', data );
 		const acc = data.account;
 		self.userId = acc.clientId;
 	}
+	*/
 	
-	ns.GuestRoom.prototype.handleJoinedRoom = function( room ) {
+	ns.GuestAccount.prototype.handleInit = function( state ) {
 		const self = this;
+		if ( self.account )
+			return;
+		
+		self.account = state.account;
+		self.idc = new library.component.IdCache( self.acc );
+	}
+	/*
+	ns.GuestAccount.prototype.handleJoinedRoom = function( room ) {
+		const self = this;
+		console.log( 'GuestAccount.handleJoinedRoom', room );
 		self.roomId = room.clientId;
-		self.room = new library.component.EventNode( self.roomId, self.conn, extraRoomEvent );
+		self.roomName = room.name;
+		self.room = new library.component.GuestRoom( self.roomId, self.conn, extraRoomEvent );
 		self.room.on( 'initialize', init );
 		self.room.on( 'identity', identity );
 		self.room.on( 'live', live );
@@ -89,19 +121,96 @@ library.component = library.component || {};
 		function extraRoomEvent( e ) { self.handleRoomEvent( e ); }
 		function init( e ) { self.handleRoomInit( e ); }
 		function identity( e ) { self.updateIdentity( e ); }
-		function live( e ) { self.handleLiveEvent( e ); }
-		function chat( e ) { self.handleChatEvent( e ); }
+		function live( e ) { self.handleLive( e ); }
+		function chat( e ) { self.handleChat( e ); }
 	}
-	
-	ns.GuestRoom.prototype.handleRoomEvent = function( e ) {
+	*/
+	ns.GuestAccount.prototype.handleJoinedRoom = function( event ) {
 		const self = this;
-		console.log( 'unhandled room event', e );
+		const conf = event.joined;
+		self.roomId = conf.clientId;
+		const roomConf = {
+			roomId      : self.roomId,
+			identity    : conf,
+			permissions : self.permissions,
+			idCache     : self.idc,
+		};
+		self.room = new library.component.GuestRoom( roomConf, self.acc );
 	}
 	
-	ns.GuestRoom.prototype.handleRoomInit = function( state ) {
+	ns.GuestAccount.prototype.send = function( event ) {
+		const self = this;
+		if ( !self.acc )
+			return;
+		
+		self.acc.send( event );
+	}
+	
+})( library.component );
+
+
+(function( ns, undefined ) {
+	ns.GuestRoom = function( conf, accConn ) {
+		const self = this;
+		self.id = conf.roomId;
+		self.identity = conf.identity;
+		self.permissions = conf.permissions;
+		self.idc = conf.idCache;
+		
+		self.conn = null;
+		self.identities = {};
+		
+		self.init( accConn );
+	}
+	
+	// Public
+	
+	ns.GuestRoom.prototype.close = function() {
+		const self = this;
+		if ( self.conn )
+			self.conn.close();
+		
+		delete self.conn;
+	}
+	
+	// Private
+	
+	ns.GuestRoom.prototype.send = function( event ) {
+		const self = this;
+		if ( !self.conn )
+			return;
+		
+		self.conn.send( event );
+	}
+	
+	ns.GuestRoom.prototype.init = function( accConn ) {
+		const self = this;
+		self.conn = new library.component.EventNode( self.id, accConn, roomSink );
+		self.conn.on( 'initialize', init );
+		self.conn.on( 'identity', identity );
+		self.conn.on( 'live', live );
+		self.conn.on( 'chat', chat );
+		
+		const initEvent = {
+			type : 'initialize',
+		};
+		self.send( initEvent );
+		
+		function roomSink() {
+			console.log( 'GuestRoom event sink', arguments );
+		}
+		
+		function init( e ) { self.handleInit( e ); }
+		function identity( e ) { self.updateIdentity( e ); }
+		function live( e ) { self.handleLive( e ); }
+		function chat( e ) { self.handleChat( e ); }
+		
+	}
+	
+	ns.GuestRoom.prototype.handleInit = function( state ) {
 		const self = this;
 		self.users = state.users;
-		self.identities = state.identities;
+		self.identities = state.identities || {};
 		const perms = self.permissions || {
 			send : {
 				audio : true,
@@ -114,9 +223,12 @@ library.component = library.component || {};
 		};
 		
 		const conf = {
-			roomId      : self.roomId,
+			roomId      : self.id,
+			roomName    : self.identity.name,
 			isGuest     : true,
 			permissions : perms,
+			isStream    : state.settings.isStream,
+			guestAvatar : state.guestAvatar,
 		};
 		self.live = new library.rtc.RtcSession( conf, liveEvent, onclose );
 		self.live.on( 'chat', chat );
@@ -125,7 +237,7 @@ library.component = library.component || {};
 			type : 'live-join',
 			data : null,
 		};
-		self.sendToRoom( joinLive );
+		self.send( joinLive );
 		
 		function liveEvent( e, d ) {
 			self.handleLiveToRoom({
@@ -156,10 +268,10 @@ library.component = library.component || {};
 			type : 'identity',
 			data : data,
 		};
-		self.handleLiveEvent( uptd );
+		self.handleLive( uptd );
 	}
 	
-	ns.GuestRoom.prototype.handleLiveEvent = function( event ) {
+	ns.GuestRoom.prototype.handleLive = function( event ) {
 		const self = this;
 		if ( 'ping' === event.type ) {
 			if ( !self.live )
@@ -187,9 +299,9 @@ library.component = library.component || {};
 			self.live.send( event );
 	}
 	
-	ns.GuestRoom.prototype.handleChatEvent = function( event ) {
+	ns.GuestRoom.prototype.handleChat = function( event ) {
 		const self = this;
-		//console.log( 'handleChatEvent', event );
+		//console.log( 'handleChat', event );
 		const chat = {
 			type : 'chat',
 			data : event,
@@ -203,7 +315,7 @@ library.component = library.component || {};
 			type : 'live',
 			data : event,
 		};
-		self.sendToRoom( live );
+		self.send( live );
 	}
 	
 	ns.GuestRoom.prototype.handleLiveChat = function( event ) {
@@ -213,7 +325,7 @@ library.component = library.component || {};
 			type : 'chat',
 			data : event,
 		};
-		self.sendToRoom( chat );
+		self.send( chat );
 	}
 	
 	ns.GuestRoom.prototype.handleLiveName = function( name ) {
@@ -233,30 +345,7 @@ library.component = library.component || {};
 			type : 'identity',
 			data : id,
 		};
-		self.sendToRoom( idUpdate );
-	}
-	
-	ns.GuestRoom.prototype.sendToRoom = function( event ) {
-		const self = this;
-		self.room.send( event );
-		//self.send( toRoom );
-	}
-	
-	ns.GuestRoom.prototype.send = function( event ) {
-		const self = this;
-		if ( !self.conn )
-			return;
-		
-		self.conn.send( event );
-	}
-	
-	ns.GuestRoom.prototype.releaseConn = function() {
-		const self = this;
-		if ( !self.conn )
-			return;
-		
-		self.conn.release( 'join' );
-		self.conn.release( self.roomId );
+		self.send( idUpdate );
 	}
 	
 })( library.component );

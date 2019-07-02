@@ -1,7 +1,8 @@
 i18n_share : Share
 i18n_share_links : Share links with someone who is not using FriendUP, so they can join your live session.
+i18n_share_file : Share a file
 i18n_public : Public
-i18n_a_public_link : A public link can be used an unlimited number of times, by anyone, until removed.
+i18n_a_public_link : A public link can be used an unlimited number of times, by anyone, until invalidated.
 i18n_create_email : Create email
 i18n_copy_to_clipboard : Copy to clipboard
 i18n_make_the_session_private : Make the session private and invalidates the link
@@ -18,15 +19,18 @@ i18n_done : Done
 i18n_channel_settings : Channel settings
 i18n_irc_settings : IRC settings
 i18n_join : join
-i18n_treeroot_settings : Treeroot settings
+i18n_treeroot_settings : Friend Community settings
+i18n_workgroups : Workgroups
+i18n_user_limit : User limit
 i18n_a : A
-i18n_friendup : FriendUP
+i18n_friendup : Friend
 i18n_communication_tool : communication tool
 i18n_friend_chat : Friend Chat
 i18n_made_by : made by
 i18n_sokken : sokken
 i18n_used_under_creative : used under Creative Commons ( attribution )
 i18n_about : About
+i18n_about_short : About
 i18n_legal : Legal
 i18n_add_an_image : Add an image
 i18n_confirm : Confirm
@@ -46,6 +50,7 @@ i18n_video : Video
 i18n_error : Error
 i18n_closed : Closed
 i18n_select_input_source : Select input source
+i18n_audio_video_settings : Audio/Video Settings
 i18n_these_are_the_media : These are the media input sources your browser has access to.
 i18n_show_available : Show available
 i18n_ignore : Ignore
@@ -94,6 +99,7 @@ i18n_no_presence_login : No Presence login found. Do you wish to create a new ac
 i18n_create_new : Create new
 i18n_use_existing : Use existing
 i18n_create_a_new_presence_account : Create a new Presence account. Login is a suggestion, you may change it.
+i18n_your_message : Your message..
 i18n_admins : Admins
 i18n_online : Online
 i18n_guests : Guests
@@ -192,13 +198,13 @@ i18n_mute : Mute Audio
 i18n_pause : Pause Video
 i18n_remove : Remove
 i18n_updating : < updating >
-i18n_browser_compatibility : Browser compatibility
+i18n_browser_check : Browser check
 i18n_checking : checking...
 i18n_ice_servers : ICE servers
 i18n_video_input : Video input
 i18n_audio_input : Audio input
 i18n_no_devices_detected : No devices detected
-i18n_devices_detected_unavailable : Devices detected, but unavailable. Check your browser settings
+i18n_devices_detected_unavailable : Devices detected, but unavailable.
 i18n_no_selection : < no selection >
 i18n_not_available : not available
 i18n_connection  : Connection
@@ -230,7 +236,7 @@ i18n_media_not_available : Media not available - check your browser settings to 
 i18n_create_new_account : Create new account
 i18n_has_invited_you_to_live : has invited you to a live session.
 i18n_friend_chat_log : Friend Chat - Log
-i18n_live_session : Live session
+i18n_live_session : Live
 i18n_console : Console
 i18n_add_image : Add image
 i18n_share_invite_link : Share invite link
@@ -254,6 +260,7 @@ i18n_err_devices_blocked : Device access denied by browser
 i18n_err_no_devices_found : No devices were found
 i18n_err_gum_not_allowed : Media access denied
 i18n_err_gum_no_media : No media available
+i18n_err_https_required : A secure (HTTPS) connection is required
 i18n_sending_types : You will send..
 i18n_receive_types : You will receive..
 i18n_menu_send_audio : Send audio
@@ -288,7 +295,7 @@ i18n_FiWiz_adv_options : More options in UI
 i18n_FiWiz_btn_simplified : Use friendly UI
 i18n_FiWiz_btn_advanced : Use advanced UI
 i18n_network_error : Network error
-i18n_network_connecting : Connecting to server
+i18n_network_connecting : Resuming session
 i18n_access_denied : Access denied
 i18n_focus_participant : Only show this participant
 i18n_change_username : Change name
@@ -297,3 +304,70 @@ i18n_set_name : Set
 i18n_displayed_name_may_change_or_later : This will be your displayed name, you may change it here or during the session
 i18n_join_video_audio : Join with video and audio
 i18n_join_audio_only : Join with audio only
+i18n_presentation_mode : Presentation mode
+i18n_select_session : Select session
+i18n_multiple_sessions_select_invite_to : You have multiple live sessions, select one to invite to.
+i18n_create_new_session : Create a new session
+i18n_is_stream : Use for streaming
+i18n_is_classroom : Use as classroom
+i18n_stream_users_list : Users
+i18n_stream_session : Stream
+i18n_now_chatting_in : Now chatting in
+i18n_stream_state_source_connecting : Source connecting
+i18n_stream_state_stream_connecting : Connecting to stream
+i18n_discard_changes : Cancel
+i18n_save_changes : Save changes
+i18n_save : Save
+i18n_searching : Searching..
+i18n_email : Email
+i18n_contacts : Contacts
+i18n_conference_rooms : Conference rooms
+i18n_conference_members : Members
+i18n_workgroup_contacts : Workgroup Contacts
+i18n_community_contacts : Community Contacts
+i18n_open_chat : Open chat
+i18n_go_live_audio : Go live, audio
+i18n_go_live_video : Go live, video
+i18n_invite_to_video : Invite to video chat
+i18n_invite_to_audio : Invite to voice chat
+i18n_invite_to_room : Invite to Room
+i18n_recent_conversations : Latest activity
+i18n_remove_contact : Remove contact
+i18n_leave_room : Leave room
+i18n_remove_chat : Remove chat
+i18n_hide_from_list : Hide from list
+i18n_add_contact : Add contact
+i18n_remove_module : Remove module
+i18n_invalidate : Invalidate
+i18n_are_you_sure : Are you sure?
+i18n_confirm_invalidate_explain : Invalidating a public link makes it unusable to anyone it has already been given to or on any website it has been posted.
+i18n_invalidate_link : Invalidate link
+i18n_keep_link : Keep link
+i18n_room_name : Room name
+i18n_today : Today
+i18n_yesterday : Yesterday
+i18n_group_chat : Group chat
+i18n_private_chat : Private chat
+i18n_incoming_call : Incoming call
+i18n_take_a_picture : Take a picture
+i18n_choose_a_file : Choose a file
+i18n_send : Send
+i18n_room_msg_beep : Room msg beep
+i18n_private_msg_beep : Private msg beep
+i18n_reason_for_edit : Reason for edit
+i18n_edited_by : Edited by
+i18n_reason : Reason
+i18n_all_groups : All groups
+i18n_all_members : All members
+i18n_message_to : sent to
+i18n_message_from : sent by
+i18n_private_message_to : privately to
+i18n_missed_call : Missed call
+i18n_version : Version
+i18n_app_version : App version 
+i18n_git_branch : Git branch
+i18n_git_date : Commit date
+i18n_git_commit : Commit hash
+i18n_app : App
+i18n_compact_chat : Compact chat
+i18n_message_read : Message read

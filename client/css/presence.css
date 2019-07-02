@@ -1,4 +1,38 @@
+#head {
+	height: unset;
+	min-height: 3.5em;
+	padding : 0.3em 0.6em;
+}
 
+#room-title .group-prefix,
+#room-title .title-name {
+	font-size: 130%;
+	font-weight: bold;
+}
+
+#room-title .avatar {
+	width         : 2.4em;
+	height        : 2.4em;
+	margin-right  : 0.5em;
+	margin-bottom : 0.2em;
+}
+
+#live-status-container {
+	margin : 0 1em;
+}
+
+#foot {
+	height: unset;
+}
+
+body[mobile] #emojii-panel-button
+{
+	display: none !important;
+}
+
+.user-group {
+	margin-bottom : 0.3em;
+}
 
 .section-head {
 	font-weight: bold;
@@ -16,12 +50,13 @@
 	max-height : 100%;
 	width : 100%;
 	overflow : auto;
+	padding-bottom: 0.5em;
 }
 
 .log-fetch {
 	padding : 0em 1em;
 	padding-top : 1em;
-	height: 3em
+	height : 3em;
 }
 
 .log-fetch-msg,
@@ -34,7 +69,7 @@
 }
 
 .time-envelope {
-	padding : 0 0.5em;
+	padding : 0;
 }
 
 .time-envelope .envelope-date,
@@ -47,39 +82,116 @@
 }
 
 .msg-item {
-	
+	padding : 0.2em 0.6em;
 }
 
+.avatar-offset,
 .msg-item .avatar {
-	width  : 3em;
-	height : 3em;
+	margin-top : 0.2em;
+	width  : 2.4em;
+	height : 2.4em;
+}
+.avatar-offset {
+	height: 0;
+}
+
+.avatar {
+	position            : relative;
+	border-radius       : 100%;
+	background-position : center;
+	background-size     : cover;
+	background-repeat   : no-repeat;
+}
+
+.avatar.room {
 	border-radius : 3px;
-	background-position: center;
-	background-size: cover;
-	background-repeat: no-repeat;
+}
+
+.msg-item .msg-container {
+	padding-left : 0.5em;
+}
+
+.msg-item .avatar.blank {
+	height: 0em;
 }
 
 .msg-item .content {
-	padding-left : 0.5em;
+	padding-left : 1em;
 }
 
 .msg,
 .msg-group {
-	padding: 0.2em 0em;
+	line-height: 1.3em;
 }
 
 .msg-group {
-	margin-top: 0.3em;
+	margin-top: 0.5em;
 }
 
+.work-msg .name,
 .msg-group .name {
+	font-weight : bold;
+	font-size: 110%;
+}
+
+.msg-container {
+	
+}
+
+.work-msg .work-to-from {
+	font-style: italic;
+}
+
+.work-msg .work-to-from-name {
+	margin-left : 0.4em;
 	font-weight: bold;
+	opacity: 0.8;
+}
+
+.work-targets {
+	padding-left: 0.5em;
+	font-weight: bold;
+	opacity: 0.8;
+}
+
+.msg-content {
+	position: relative;
+}
+
+.msg-things {
+	position: relative;
+}
+
+.msg-item .msg-actions {
+	position    : absolute;
+	top         : 0;
+	right       : 0;
+	line-height : 1.3em;
+	display     : none;
+}
+
+.msg-item:hover .msg-actions {
+	display: flex;
+}
+
+.msg-item .msg-actions .pre-grad {
+	width : 2em;
+	height: 100%;
+}
+
+.msg-container .edit-msg {
+	
 }
 
 .time {
-	padding-left : 0.5em;
-	text-align: right;
-	opacity: 0.3;
+	padding    : 0 0 0 0.5em;
+	text-align : right;
+	opacity    : 0.3;
+}
+
+.msg:hover,
+.msg-group:hover {
+	background-color : rgba( 0, 0, 0, 0.02 );
 }
 
 .msg-group:hover .time,
@@ -91,23 +203,164 @@
 	margin-bottom : 0.2em;
 }
 
-.str {
-	margin-left : 0.5em;
-	word-break: break-word;
+.msg-item .extended-info {
+	font-size : 80%;
+	opacity   : 0.8;
+}
+
+.extended-info .confirm-info {
+	margin : 0.2em 0;
+}
+
+.message {
+	line-height : 1.7em;
+	word-break  : break-word;
+	white-space : pre-wrap;
+}
+
+.editing {
+	margin  : 0.3em;
+	padding : 0.3em;
+}
+
+.msg-state {
+	font-weight: bold;
+	font-style: italic;
+	font-size: 80%;
+	opacity: 0.7;
+	padding-left : 0.5em;
+}
+
+.edit-reason {
+	padding : 0.2em 0;
+}
+
+.edited-info {
+}
+
+.edited-time,
+.edited-name,
+.edited-reason {
+	
+}
+
+.edited-name {
+	padding : 0 0.5em;
+}
+
+.confirm-state {
+	padding-left : 1em;
+}
+
+.confirm-icon {
+	padding-left : 0.4em;
+}
+
+.confirm-state-inline {
+	opacity: 0.9;
+}
+
+.confirm-state-inline .delivered {
+	opacity: 0.6;
+}
+
+.system-container {
+	
+}
+
+.msg-box {
+	margin-top : 0.8em;
+}
+
+.msg-box .actions {
+	padding : 0.5em 0;
+}
+
+.msg-box .actions > * {
+	padding-left : 0.3em;
+}
+
+.msg-target-targets {
+	padding : 0.4em 0em;
+}
+
+.msg-target {
+	border-radius : 0.3em;
+	margin-right : 0.3em;
+	margin-top : 0.2em;
+	padding : 0 0.3em;
+	line-height: 2em;
+}
+
+.msg-target .target-cancel {
+	opacity: 0.5;
+}
+
+.msg-target .target-cancel:hover {
+	opacity: 1;
 }
 
 #users-container {
+	position   : relative;
+	transition : width 0.15s;
+	width      : 12em;
+}
+
+[mobile] #users-container {
+	position   : absolute;
+	transition : unset;
+	width      : 100%;
+ 	right      : 0;
+ 	top        : 0;
+ 	bottom     : 0;
+}
+
+[mobile] #users-cover {
+	background: rgba(0,0,0,0.5);
+	transition: opacity 0.15s;
+	opacity: 1;
+}
+
+[mobile] #users-content {
 	width : 12em;
-	transition : width 0.2s;
-	overflow: visible;
+	transition: width 0.15s;
 }
 
 #users-container.users-hide {
-	width : 0em;
-	transition : width 0.2s;
+	width      : 0;
+	overflow   : hidden;
+	transition : width 0.15s;
 }
 
-#users-position { position: relative; }
+[mobile] #users-container.users-hide {
+	transition       : width 0s;
+	transition-delay : 0.15s;
+	overflow         : unset;
+}
+
+[mobile] #users-container.users-hide #users-cover {
+	transition : opacity 0.15s;
+	opacity    : 0;
+}
+
+[mobile] #users-container.users-hide #users-content {
+	transition : width 0.15s;
+	width      : 0;
+}
+
+[mobile] #users-close {
+	height : 1.8em;
+	margin-right : 1em;
+}
+
+[mobile] #users-title {
+	font-weight: bold;
+}
+
+#users-position {
+	position : relative;
+}
+
 #user-groups {
 	position: absolute;
 	top: 0;
@@ -135,6 +388,11 @@
 
 #typing-hint {
 	padding : 0 0.2em;
+}
+
+html body div > .textarea-wrap textarea {
+	border: 0;
+	border-radius: 0;
 }
 
 .blink-icon > i {
@@ -171,4 +429,44 @@
 
 .emojii-item:hover {
 	opacity: 1;
+}
+
+#main
+{
+	overflow-x: hidden;
+}
+
+#attachment-menu
+{
+	transition: transform 0.25s;
+	transform: scale3d(1,0,1);
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	left: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.85);
+	color: white;
+	text-align: center;
+	box-sizing: border-box;
+	padding: 10px;
+	z-index: 3;
+}
+
+#attachment-menu button
+{
+	width: 100%;
+	display: block;
+	margin: 0 0 10px 0;
+}
+
+html > body > div #attachment-menu button
+{
+	color: white;
+}
+
+#attachment-menu.Showing
+{
+	transform: scale3d(1,1,1);
+	
 }

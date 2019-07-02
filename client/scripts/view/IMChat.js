@@ -1,5 +1,3 @@
-'use strict';
-
 /*©agpl*************************************************************************
 *                                                                              *
 * This file is part of FRIEND UNIFYING PLATFORM.                               *
@@ -18,6 +16,8 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.        *
 *                                                                              *
 *****************************************************************************©*/
+
+'use strict';
 
 var library = window.library || {};
 var friendUP = window.friendUP || {};
@@ -49,8 +49,11 @@ library.component = library.component || {};
 	}
 	
 	ns.IMChat.prototype.init = function() {
-		var self = this;
+		const self = this;
 		window.View.setBody(); // sets friend.template
+		if ( window.View.appConf.hideLive )
+			self.toggleLiveBtns( false );
+		
 		self.appOnline = new library.component.AppOnline( window.View );
 		
 		self.view = window.View;
@@ -87,6 +90,12 @@ library.component = library.component || {};
 		self.view.sendMessage({
 			type : 'loaded',
 		});
+		
+		// Timeout for loading messages
+		setTimeout( function()
+		{
+			self.messages.classList.add( 'SmoothScrolling' );
+		}, 50 );
 	};
 	
 	ns.IMChat.prototype.bindView = function() {
@@ -118,13 +127,23 @@ library.component = library.component || {};
 		function encryptToggle( e ) { self.toggleIsEncrypting( e ); }
 	}
 	
+	ns.IMChat.prototype.toggleLiveBtns = function( show ) {
+		const self = this;
+		vBtn = document.getElementById( 'start-video' );
+		aBtn = document.getElementById( 'start-audio' );
+		vBtn.classList.toggle( 'hidden', !show );
+		aBtn.classList.toggle( 'hidden', !show );
+	}
+	
 	ns.IMChat.prototype.handleLog = function( log ) {
 		var self = this;
 		if ( self.isWaiting )
 			self.removeWaiting();
 		
-		if ( !log )
+		if ( !log ) {
+			self.toggleSmoothScroll( true );
 			return;
+		}
 		
 		if ( !logIsHistory( log ))
 			return;
@@ -157,6 +176,10 @@ library.component = library.component || {};
 		
 		if ( self.isWaiting )
 			self.removeWaiting();
+		
+		// self sent
+		if ( !data.from )
+			self.hideMessagePlaceholder();
 		
 		if ( self.voiceSynthActive && data.from )
 			api.Say( data.message );
@@ -218,6 +241,14 @@ library.component = library.component || {};
 		waitingElement.parentNode.removeChild( waitingElement );
 	}
 	
+	ns.IMChat.prototype.toggleSmoothScroll = function( setSmooth ) {
+		const self = this;
+		if ( !self.messages )
+			return;
+		
+		self.messages.classList.toggle( 'SmoothScrolling', setSmooth );
+	}
+	
 	ns.IMChat.prototype.initialize = function( data ) {
 		var self = this;
 		self.contact = data.state.contact;
@@ -242,15 +273,15 @@ library.component = library.component || {};
 		
 		// msgBuilder
 		var msgConf = {
-			user : self.user,
-			contact : self.contact,
-			parser : self.parser,
-			template : friend.template,
-			linkExpand : self.linkExpand,
-			messageTmpl : 'IM-msg-tmpl',
-			actionTmpl : 'IM-action-tmpl',
+			user             : self.user,
+			contact          : self.contact,
+			parser           : self.parser,
+			template         : friend.template,
+			linkExpand       : self.linkExpand,
+			messageTmpl      : 'IM-msg-tmpl',
+			actionTmpl       : 'IM-action-tmpl',
 			notificationTmpl : 'chat-notie-tmpl',
-			logClass : 'LogText',
+			logClass         : 'LogText',
 		}
 		self.msgBuilder = new library.component.MsgBuilder( msgConf );
 		
@@ -275,12 +306,13 @@ library.component = library.component || {};
 		// stuff
 		self.setChattingWith();
 		self.setAvatarCss();
+		//self.toggleSmoothScroll( false );
 		
 		self.view.sendMessage({
 			type : 'ready',
 		});
 		
-		if ( 'VR' !== window.View.deviceType )
+		if ( 'DESKTOP' !== window.View.deviceType )
 			self.setFocus( true );
 	}
 	
@@ -310,13 +342,13 @@ library.component = library.component || {};
 	
 	ns.IMChat.prototype.handleDrop = function( e ) {
 		var self = this;
-		console.log( 'handleDrop', e );
+		console.log( 'handleDrop - NYI', e );
 		
 	}
 	
 	ns.IMChat.prototype.handleFileShared = function( msg ) {
 		var self = this;
-		console.log( 'file shared', msg );
+		console.log( 'file shared - NYI', msg );
 	}
 	
 	ns.IMChat.prototype.toggleCanMultilineBtn = function( canMultiline ) {
@@ -344,12 +376,16 @@ library.component = library.component || {};
 	ns.IMChat.prototype.bindEvents = function() {
 		var self = this;
 		self.form = document.getElementById( 'input-form' );
+		const attachBtn = document.getElementById( 'attachment' );
+		const submitBtn = document.getElementById( 'chat-submit' );
 		self.toggleMultilineBtn = document.getElementById( 'leeloodallasmultiline' );
 		self.toggleVoiceBtn = document.getElementById( 'toggle-voice' );
 		const startVideoBtn = document.getElementById( 'start-video' );
 		const startAudioBtn = document.getElementById( 'start-audio' );
 		self.encryptBtn = document.getElementById( 'toggle-encrypt' );
 		
+		attachBtn.addEventListener( 'click', attach, false );
+		submitBtn.addEventListener( 'click', submit, false );
 		self.form.addEventListener( 'submit', submit, false );
 		self.toggleMultilineBtn.addEventListener( 'click', toggleMultiline, false );
 		self.toggleVoiceBtn.addEventListener( 'click', toggleVoice, false );
@@ -357,11 +393,73 @@ library.component = library.component || {};
 		startAudioBtn.addEventListener( 'click', startAudio, false );
 		self.encryptBtn.addEventListener( 'click', toggleEncrypt, false );
 		
+		// Handle paste if it isn't a file
+		window.addEventListener( 'paste', function( evt )
+		{
+			var pastedItems = (evt.clipboardData || evt.originalEvent.clipboardData).items;
+			for( var i in pastedItems ) {
+				var item = pastedItems[i];
+				if( item.kind === 'file' ) {
+					var p = new api.PasteHandler();
+					p.paste( evt, function( res ) {
+						if( res.response == true ) {
+							self.view.send(	{
+								type: 'drag-n-drop',
+								data: [ {
+									Type: 'File',
+									Path: res.path
+								} ]
+							} );
+						}
+					} );
+					evt.preventDefault();
+					evt.stopPropagation();
+					break;
+				}
+			}
+		} );
+		
 		function submit( e ) {
 			e.preventDefault();
 			e.stopPropagation();
 			self.input.submit();
 		}
+		
+		function attach( e ) {
+			var men = ge( 'attachment-menu' );
+			
+			var can = men.querySelector( '.Cancel' );
+			var cam = men.querySelector( '.Camera' );
+			var upl = men.querySelector( '.Upload' );
+			can.onclick = function(){
+				console.log( 'Here: ', men );
+				men.classList.remove( 'Showing' );
+			}
+			
+			if( men.classList.contains( 'Showing' ) ) {
+				men.classList.remove( 'Showing' );
+			}
+			else {
+				men.classList.add( 'Showing' );
+			}
+			upl.onclick = function( e ){
+				men.classList.remove( 'Showing' );
+				executeAttach( e );
+			}
+			
+			self.view.prepareCamera( cam, function( data ) {
+				men.classList.remove( 'Showing' );
+			} );
+		}
+		
+		function executeAttach( e )
+		{
+			self.send( {
+				type: 'attach',
+				data: false
+			} );
+		};
+		
 		function toggleMultiline( e ) { self.input.toggleMultiline(); }
 		function toggleVoice( e ) { self.toggleVoice( e ); }
 		function startVideo( e ) { self.startLive( 'video' ); }
@@ -370,6 +468,8 @@ library.component = library.component || {};
 	}
 	
 	ns.IMChat.prototype.handleFocus = function( isFocus ) {
+		if( View.deviceType != 'DESKTOP' )
+			return;
 		var self= this;
 		if ( !self.input )
 			return;
@@ -383,6 +483,8 @@ library.component = library.component || {};
 	}
 	
 	ns.IMChat.prototype.setFocus = function() {
+		if( View.deviceType != 'DESKTOP' )
+			return;
 		var self = this;
 		if ( !self.input )
 			return;
@@ -392,12 +494,15 @@ library.component = library.component || {};
 	
 	ns.IMChat.prototype.handleSubmit = function( message ) {
 		var self = this;
-		if ( !message.length ) {
+		if ( !message || !message.length ) {
 			done();
 			return;
 		}
 		
 		self.inputHistory.add( message );
+		if ( self.isChatMessage( message ))
+			self.toggleMessagePlaceholder( message );
+		
 		var msg = {
 			type : 'message',
 			data : message,
@@ -408,6 +513,17 @@ library.component = library.component || {};
 		function done() {
 			self.input.setValue( '' );
 		}
+	}
+	
+	// implement for each thingie, IRC, Treeroot etc
+	ns.IMChat.prototype.isChatMessage = function( msg ) {
+		const self = this;
+		return true;
+	}
+	
+	ns.IMChat.prototype.hideMessagePlaceholder = function( event ) {
+		const self = this;
+		self.toggleMessagePlaceholder();
 	}
 	
 	ns.IMChat.prototype.toggleMessagePlaceholder = function( msg ) {
@@ -502,8 +618,53 @@ library.component = library.component || {};
 	
 })( library.view );
 
+
+(function( ns, undefined ) {
+	ns.TreerootChat = function( conf ) {
+		const self = this;
+		library.view.IMChat.call( self, conf );
+	}
+	
+	ns.TreerootChat.prototype = Object.create( library.view.IMChat.prototype );
+	
+	ns.TreerootChat.prototype.isChatMessage = function( msg ) {
+		const self = this;
+		return true;
+	}
+	
+})( library.view );
+
+
+(function( ns, undefined ) {
+	ns.IRCChat = function( conf ) {
+		const self = this;
+		library.view.IMChat.call( self, conf );
+	}
+	
+	ns.IRCChat.prototype = Object.create( library.view.IMChat.prototype );
+	
+	ns.IRCChat.prototype.isChatMessage = function( msg ) {
+		const self = this;
+		if ( '/' === msg[ 0 ])
+			return false;
+		
+		return true;
+	}
+})( library.view );
+
+
 // wait for view to call run
 window.View.run = run;
 function run( conf ) {
-	window.chat = new library.view.IMChat( conf );
+	if ( !conf || !conf.chatType )
+		throw new Error( 'conf || conf.chatType is missing RABBLE RABBLE RABBLE' );
+	
+	let Chat = null;
+	if ( 'irc' === conf.chatType )
+		Chat = library.view.IRCChat;
+	
+	if ( 'treeroot' === conf.chatType )
+		Chat = library.view.TreerootChat;
+	
+	window.chat = new Chat( conf );
 }

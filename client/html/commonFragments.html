@@ -1,54 +1,160 @@
+<!-- search input
+-->
+<script id="search-input-tmpl" type="text/html">
+<div class="search-input-content">
+	<div class="input-wrap expand">
+		<input type="text" placeholder="Find..">
+	</div>
+	<div class="input-action center-child">
+		<i class="fa fa-fw fa-search"></i>
+	</div>
+</div>
+</script>
+
+<!-- search container
+searchingId,
+resultsId,
+-->
+<script id="search-results-tmpl" type="text/html">
+<div class="search-results bar column">
+    <div id="<%= resultsId %>" class="search-results-content expand">
+    </div>
+</div>
+</script>
+
+<!-- search result pool
+uuid,
+name,
+type,
+-->
+<script id="search-result-pool-tmpl" type="text/html">
+<div id="<%= uuid %>" class="search-result-pool BorderBottom">
+    <div class=name>
+        <%= name %><%= type %>
+    </div>
+    <div class="content">
+    </div>
+</div>
+</script>
+
+<!-- search result contact
+uuid,
+avatar,
+name,
+email,
+emialHidden,
+subHidden,
+menuHidden,
+-->
+<script id="search-result-contact-tmpl" type="text/html">
+<div id="<%= uuid %>" class="search-result-contact group row">
+    <div class="avatar fortify"
+        style="background-image:url(&#39;<%= avatar %>&#39;)"
+    >
+        <div class="search-result-subscribe button center-child <%= subHidden %>">
+            <i class="fa fa-fw fa-plus"></i>
+        </div>
+    </div>
+    <div class="item-info expand">
+        <div class="name">
+            <%= name %>
+        </div>
+        <div class="email <%= emailHidden %>">
+            {i18n_email}: <%= email %>
+        </div>
+    </div>
+    <div class="item-menu flat-btn fortify center-child <%= menuHidden%>">
+        <i class="fa fa-fw fa-ellipsis-v"></i>
+    </div>
+</div>
+</script>
+
+<!-- search result room
+uuid,
+name,
+avatar,
+iconHidden,
+-->
+<script id="search-result-room-tmpl" type="text/html">
+<div id="<%= uuid %>" class="search-result-room group row">
+    <div class="avatar fortify center-child"
+    	style="background-image:url(&#39;<%= avatar %>&#39;)"
+    >
+        <i class="fa fa-fw fa-users <%= iconHidden %>"></i>
+    </div>
+    <div class="item-info expand">
+        <div class="name">
+            <%= name %>
+        </div>
+    </div>
+    <div class="item-menu flat-btn fortify center-child">
+        <i class="fa fa-fw fa-ellipsis-v"></i>
+    </div>
+</div>
+</script>
+
+<!-- peer audio visualizer
+id,
+canvasId,
+width,
+heigth,
+-->
+<script id="peer-av-tmpl" type="text/html">
+<div id="<%= id %>" class="av-visualizer">
+	<canvas id="<%= canvasId %>" width="<%= width%>"" height="<%= height %>">
+	</canvas>
+</div>
+</script>
+
 <!-- CONN STATE
 	
 -->
 <script id="conn-state-tmpl" type="text/html">
 <div id="conn-state" class="">
-	<div id="conn-state-oops" class="hidden">
-		<div class="conn-state-title group row start Danger">
+	<div id="conn-state-head" class="">
+		<div id="conn-state-error-head" class="conn-state-head group row start Danger hidden">
 			<i class="fa fa-fw fa-exclamation-triangle"></i>
 			{i18n_network_error}
 		</div>
-		<div class="paddddd">
-			<div id="conn-state-reconnect" class="group row hidden">
-				<button id="conn-state-reconnect-btn" class="button" type="button">
-					<i class="fa fa-fw fa-bolt"></i>
-					{i18n_reconnect}
-				</button>
-				<div id="conn-state-rc-bar-container" class="expand LED">
-					<div id="conn-state-rc-bar" class="On">
-					</div>
-				</div>
-			</div>
-			<div id="conn-state-denied" class="group row hidden">
-				{i18n_access_denied}
-				<button id="conn-state-quit-btn" class="button" type="button">
-					<i class="fa fa-fw fa-close"></i>
-					{i18n_quit}
-				</button>
-			</div>
-			<div id="conn-state-error" class="hidden">
-				<div id="conn-state-error-msg">
-					
-				</div>
-			</div>
-		</div>
-	</div>
-	<div id="conn-state-progress">
-		<div class="conn-state-title group row start">
+		<div id="conn-state-progress-head" class="conn-state-head group row start Available">
 			<i class="fa fa-fw fa-plug"></i>
 			{i18n_network_connecting}
 		</div>
-		<div class="paddddd">
-			<div id="conn-state-loading" class="group row start hidden">
-				<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-				<div>
-					{i18n_loading}
-				</div>
+	</div>
+	<div id="conn-state-oops" class="paddddd hidden">
+		<div id="conn-state-denied" class="group row hidden">
+			{i18n_access_denied}
+			<button id="conn-state-quit-btn" class="button" type="button">
+				<i class="fa fa-fw fa-close"></i>
+				{i18n_quit}
+			</button>
+		</div>
+		<div id="conn-state-error" class="hidden">
+			<div id="conn-state-error-msg">
+				
 			</div>
-			<div id="conn-state-connecting" class="group row start hidden">
-				<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-				<div>
-					{i18n_connecting}
+		</div>
+	</div>
+	<div id="conn-state-yay" class="paddddd">
+		<div id="conn-state-loading" class="group row start hidden">
+			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<div>
+				{i18n_loading}
+			</div>
+		</div>
+		<div id="conn-state-connecting" class="group row start hidden">
+			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+			<div>
+				{i18n_connecting}
+			</div>
+		</div>
+		<div id="conn-state-reconnect" class="group row hidden">
+			<button id="conn-state-reconnect-btn" class="button" type="button">
+				<i class="fa fa-fw fa-bolt"></i>
+				{i18n_reconnect}
+			</button>
+			<div id="conn-state-rc-bar-container" class="expand LED">
+				<div id="conn-state-rc-bar" class="On">
 				</div>
 			</div>
 		</div>
@@ -222,7 +328,7 @@ name,
 					title="{i18n_make_the_session_private}"
 				>
 					<i class="fa fa-fw fa-close"></i>
-					{i18n_remove}
+					{i18n_invalidate}
 				</button>
 			</div>
 			<button id="share-set-public"
@@ -266,6 +372,28 @@ name,
 	<button id="share-close" class="button danger center-child">
 		<i class="fa fa-fw fa-close"></i>
 	</button>
+	<div id="share-confirm-invalidate-container" class="center-child hidden">
+		<div id="share-confirm-invalidate-content" class="BackgroundDefault group column">
+			<div id="share-confirm-invalidate-drama" class="">
+			</div>
+			<div class="description">
+				{i18n_are_you_sure}
+			</div>
+			<div class="description">
+				{i18n_confirm_invalidate_explain}
+			</div>
+			<div id="share-confirm-invalidate-btns" class="group row">
+				<button id="share-confirm-cancel" class="">
+					<i class="fa fa-fw fa-chain"></i>
+					{i18n_keep_link}
+				</button>
+				<button id="share-confirm-invalidate" class="danger">
+					<i class="fa fa-fw fa-chain-broken"></i>
+					{i18n_invalidate_link}
+				</button>
+			</div>
+		</div>
+	</div>
 </div>
 </script>
 
@@ -301,7 +429,7 @@ contentId,
 -->
 <script id="menu-container-tmpl" type="text/html">
 <div id="<%= id %>" class="menu BackgroundDefault">
-	<div class="menu-navigation group row start">
+	<div class="PaddingSmall menu-navigation group row start">
 		<button class="button disable menu-nav-top fortify">
 			<i class="fa fa-fw fa-angle-double-left"></i>
 		</button>
@@ -373,7 +501,12 @@ faIcon,
 -->
 <script id="multiline-input-tmpl" type="text/html">
 <div class="textarea-wrap">
-	<textarea name="chat-input" id="chat-input" autocomplete="off"></textarea>
+	<textarea
+		name="chat-input"
+		id="chat-input"
+		autocomplete="off"
+		placeholder="{i18n_your_message}"
+	></textarea>
 </div>
 </script>
 
@@ -385,24 +518,20 @@ content
 -->
 <script id="link-expand-tmpl" type="text/html">
 <div class="link-expand">
-	<div class="link-expand-ui group row start">
+	<div class="link-expand-ui group row start BackgroundHeavy">
 		<div class="pre-icon center-child fortify">
 			<i class="fa fa-fw fa-link"></i>
 		</div>
 		<div class="raw-link expand">
 			&nbsp;
 			<div>
-				<a href="<%= href %>" target="_blank">
+				<a class="link-expand-direct-url" href="<%= href %>" target="_blank" title="<%= href %>">
 					<%= file %>
 				</a>
 			</div>
 		</div>
-		<a class="button fortify center-child" href="<%= href %>" download>
-			<i class="fa fa-fw fa-download"></i>
-		</a>
 	</div>
 	<div class="link-expand-content">
-		<%= content %>
 	</div>
 </div>
 </script>
@@ -411,9 +540,11 @@ content
 src
 -->
 <script id="image-expand-tmpl" type="text/html">
-<div class="link-expand-image" alt="<%= src %>"
-	style="background-image : url( <%= src %> )">
-</div>
+<a href="<%= src %>" target="_blank">
+	<div class="link-expand-image"
+		style="background-image : url(<%= src%>)"
+	></div>
+</a>
 </script>
 
 <!-- audio-expand-tmpl
@@ -676,7 +807,7 @@ status,
 -->
 <script id="settings-plaintext-tmpl" type="text/html">
 <form id="<%= setting %>-container" class="setting plaintext group row">
-	<div class="label fortify">
+	<div class="TextLeft label fortify">
 		<%= label %>:
 	</div>
 	<div class="input expand group row">
@@ -697,7 +828,7 @@ status,
 -->
 <script id="settings-number-tmpl" type="text/html">
 <form id="<%= setting %>-container" class="setting number group row start">
-	<div class="label fortify">
+	<div class="TextLeft label fortify">
 		<%= label %>:
 	</div>
 	<div class="input expand group row">
@@ -718,7 +849,7 @@ status,
 -->
 <script id="settings-securetext-tmpl" type="text/html">
 <form id="<%= setting %>-container" class="setting securetext group row left">
-	<div class="label fortify">
+	<div class="TextLeft label fortify">
 		<%= label %>:
 	</div>
 	<div class="input expand group row">
@@ -748,7 +879,7 @@ status,
 -->
 <script id="settings-singlecheck-tmpl" type="text/html">
 <form id="<%= setting %>-container" class="setting singlecheck group row left">
-	<div class="label">
+	<div class="TextLeft label">
 		<%= label %>:
 	</div>
 	<div class="input expand group row">
@@ -771,7 +902,7 @@ status
 -->
 <script id="settings-checkbox-tmpl" type="text/html">
 <form id="<%= setting %>-container" class="setting multicheck group row left">
-	<div class="label">
+	<div class="TextLeft label">
 		<%= label %>:
 	</div>
 	<div class="input expand group row">
@@ -809,7 +940,7 @@ status,
 -->
 <script id="settings-textarea-tmpl" type="text/html">
 <form id="<%= setting %>-container" class="setting textarea group row left">
-	<div class="label fortify">
+	<div class="TextLeft label fortify">
 		<%= label %>:
 	</div>
 	<div class="input expand group row">
@@ -830,7 +961,7 @@ status,
 -->
 <script id="settings-fileselect-tmpl" type="text/html">
 <form id="<%= setting %>-container" class="setting file-select group row left">
-	<div class="label fortify">
+	<div class="TextLeft label fortify">
 		<%= label %>:
 	</div>
 	<div class="input expand group row">
@@ -857,7 +988,7 @@ value,
 <form id="<%= setting %>-container" class="setting group row">
 	<div class="expand">
 		<div class="group row">
-			<div class="label fortify">
+			<div class="TextLeft label fortify">
 				<%= label %>
 			</div>
 			<div class="input expand group row">
@@ -876,7 +1007,7 @@ value,
 			</div>
 		</div>
 		<div class="group row">
-			<div class="label fortify">
+			<div class="TextLeft label fortify">
 				confirm
 			</div>
 			<div class="input expand group row">
@@ -929,46 +1060,46 @@ figureClass,
 
 
 <!-- STATUS INDICATOR LED
-indicatorClass
+ledShapeClass
 -->
 <script id ="status-indicator-led-tmpl" type="text/html">
-<div class="status-indicator led-status LED <%= indicatorClass %>">
-	<div class="Off">
+<div class="status-indicator led-status LED <%= ledShapeClass %>">
+	<div class="">
 	</div>
 </div>
 </script>
 
 <!-- STATUS INDICATOR ICON
-indicatorClass
+faClass
 -->
 <script id="status-indicator-icon-tmpl" type="text/html">
 <div class="status-indicator icon-status center-child LED">
-	<i class="fa fa-fw <%= indicatorClass %>">
+	<i class="fa fa-fw <%= faClass %>">
 	</i>
 </div>
 </script>
 
 <!-- STATUS DISPLAY LED
-indicatorClass
+ledShapeClass
 -->
 <script id ="status-display-led-tmpl" type="text/html">
 <div class="status-display group row">
-	<div class="led-status LED <%= indicatorClass %>">
-		<div class="Off">
+	<div class="led-status LED <%= ledShapeClass %>">
+		<div class="center-child">
+			<div class="display-area">
+			</div>
 		</div>
-	</div>
-	<div class="display-area">
 	</div>
 </div>
 </script>
 
 <!-- STATUS DISPLAY ICON
-indicatorClass
+faClass
 -->
 <script id="status-display-icon-tmpl" type="text/html">
 <div class="status-display group row">
 	<div class="icon-status center-child LED">
-		<i class="fa fa-fw <%= indicatorClass %>">
+		<i class="fa fa-fw <%= faClass %>">
 		</i>
 	</div>
 	<div class="display-area">

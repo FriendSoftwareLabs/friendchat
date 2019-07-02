@@ -15,13 +15,19 @@ Prepend with .im-chat or .conference classes to specify for view type
 */
 
 #head {
-	padding : 0em 0.5em;
-	height : 3em;
+	padding  : 0em 0.5em;
+	height   : 3em;
+	overflow : hidden;
 }
 
 #topic,
 #chatting-with {
-	font-size: 120%;
+	font-size : 120%;
+}
+
+[mobile] #chatting-with
+{
+	display: none;
 }
 
 #main {}
@@ -31,7 +37,7 @@ Prepend with .im-chat or .conference classes to specify for view type
 }
 
 .msg,
-.action { padding:0em 0.3em 0.3em 0.3em; }
+.action { padding : 0em 0.3em 0.3em 0.3em; }
 
 /*
 .msg.self { background-color: #DBE1E7; }
@@ -40,13 +46,11 @@ Prepend with .im-chat or .conference classes to specify for view type
 
 .msg-icon {
 	min-height : 1.7em;
-	width : 2em;
+	width      : 2em;
 }
 
 .msg .name { font-weight: bold; }
-.msg .time {
-	text-align : right;
-}
+.msg .time { text-align : right; }
 
 /*
 #hello .msg.action {
@@ -76,10 +80,6 @@ Prepend with .im-chat or .conference classes to specify for view type
 
 #hello .msg.hajlajt.action {
 	color : #f36bf3;
-}
-
-#hello .light-text {
-	color : rgba( 0, 0, 0, 0.4 );
 }
 
 #hello .msg.log {
@@ -116,7 +116,7 @@ Prepend with .im-chat or .conference classes to specify for view type
 
 #foot {}
 
-#input-form .actions {
+#chat-submit {
 	width : 3em;
 }
 
@@ -124,15 +124,25 @@ Prepend with .im-chat or .conference classes to specify for view type
 	background-repeat   : no-repeat;
 	background-position : center;
 	background-size     : cover;
-	border-radius       : 15%;
+	border-radius       : 100%;
 }
 
 
 /* IM specific */
 
+.im-chat .ZebraList > div, .im-chat .BackgroundLists > div {
+	padding: 10px;
+}
+
+html body .im-chat .textarea-wrap > textarea {
+	margin-top: -1px;
+	border: 0;
+	border-radius: 0;
+}
+
 .im-chat .avatar {
-	height: 3em;
-	width: 3em;
+	height: 2.4em;
+	width: 2.4em;
 }
 
 .im-chat .avatar .img {
@@ -176,7 +186,6 @@ Prepend with .im-chat or .conference classes to specify for view type
 #participants-info { height: 2.5em; }
 
 .participant {
-	margin-bottom : 0.1em;
 }
 
 .participant .mode { line-height: 2em }

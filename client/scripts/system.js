@@ -150,7 +150,6 @@ library.rtc = library.rtc || {};
 		
 		function handle( accounts ) {
 			if ( !accounts.length ) {
-				console.log( 'no accounts' );
 				self.autoCreate( doneBack );
 				return;
 				
@@ -164,9 +163,7 @@ library.rtc = library.rtc || {};
 				}
 			}
 			
-			accounts.forEach( add )
-			function add( account ) { self.add( account ); }
-			
+			accounts.forEach( acc => self.add( acc ));
 			if ( doAutoLogin( accounts ))
 				return;
 			
@@ -185,9 +182,6 @@ library.rtc = library.rtc || {};
 					return false;
 				
 				var account = accounts[ 0 ];
-				if ( !account.skipPass )
-					return false;
-				
 				self.login( account );
 				return true;
 			}
@@ -232,7 +226,6 @@ library.rtc = library.rtc || {};
 		var self = this;
 		var data = {
 			name : hello.identity.alias,
-			skipPass : true,
 		};
 		
 		self.createAccount( data );
@@ -273,11 +266,11 @@ library.rtc = library.rtc || {};
 		}
 		
 		var request = {
-			url : '/login',
+			url  : '/login',
 			verb : 'post',
 			data : {
-				userId : hello.app.userId,
-				name : account.name,
+				userId   : hello.app.userId,
+				name     : account.name,
 				password : msg.password
 			},
 		};
@@ -374,10 +367,8 @@ library.rtc = library.rtc || {};
 	
 	ns.Login.prototype.close = function() {
 		var self = this;
-		if ( self.view ) {
-			console.log( 'login.close - found view - closing' );
+		if ( self.view )
 			self.view.close();
-		}
 		
 		if ( self.createView )
 			self.createView.close();
@@ -394,7 +385,7 @@ library.rtc = library.rtc || {};
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 })( library.system );
@@ -422,48 +413,87 @@ library.rtc = library.rtc || {};
 	ns.ModuleControl.prototype.reconnect = function() {
 		const self = this;
 		mids = Object.keys( self.active );
-		mids.forEach( callReconnect );
-		function callReconnect( mId ) {
+		mids.forEach( mId => {
 			let mod = self.active[ mId ];
 			mod.reconnect();
-		}
+		});
 	}
 	
 	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
-		console.log( 'moduleCtrl.setIsOnline', isOnline );
+		if ( isOnline )
+			self.reconnect();
+	}
+	
+	ns.ModuleControl.prototype.updateAvatar = function( avatar ) {
+		const self = this;
+		mids = Object.keys( self.active );
+		mids.forEach( mId => {
+			let mod = self.active[ mId ];
+			mod.updateAvatar( avatar );
+		});
+	}
+	
+	ns.ModuleControl.prototype.getPresence = function() {
+		const self = this;
+		let ids = Object.keys( self.active );
+		let pres = null;
+		ids.some( id => {
+			let mod = self.active[ id ];
+			if ( 'presence' === mod.type ) {
+				pres = mod;
+				return true;
+			}
+			
+			return false;
+		});
+		return pres;
 	}
 	
 	// Private
 	
 	ns.ModuleControl.prototype.init = function() {
-		var self = this;
-		self.availableModules = setAvailable( hello.config.modules );
+		const self = this;
 		self.moduleMap =  {
 			treeroot : library.module.Treeroot,
-			irc : library.module.IRC,
+			irc      : library.module.IRC,
 			presence : library.module.Presence,
+			//telegram : library.module.Telegram,
 		};
+		self.availableModules = setAvailable( hello.config.modules );
 		
-		self.conn = new library.system.Message({
-			id : 'module',
-			handler : receiveMessage,
-		});
+		self.conn = new library.component.EventNode(
+			'module',
+			hello.conn,
+			eventSink
+		);
 		
+		self.conn.on( 'add', add );
+		self.conn.on( 'remove', remove );
+		self.conn.on( 'create', create );
+		
+		function eventSink( type, data ) {
+			console.log( 'ModuleControl - eventSink', {
+				type : type,
+				data : data,
+			});
+		}
+		
+		/*
 		self.connMap = {
 			'add' : add,
 			'remove' : remove,
 			'create' : create,
 		};
+		*/
 		
-		function receiveMessage( msg ) { self.receiveMessage( msg ); }
-		function add( msg ) { self.add( msg ); }
-		function remove( msg ) { self.handleRemove( msg ); }
+		function add( e ) { self.add( e ); }
+		function remove( e ) { self.handleRemove( e ); }
 		function create( e ) { self.createResult( e ); }
 		
 		self.view = new library.component.SubView({
 			parent : self.parentView,
-			type : 'module'
+			type   : 'module',
 		});
 		self.bindView();
 		
@@ -471,24 +501,16 @@ library.rtc = library.rtc || {};
 			var available = {};
 			var modKeys = Object.keys( modules );
 			modKeys.forEach( set );
+			return available;
+			
 			function set( key ) {
+				if ( !self.moduleMap[ key ])
+					return;
+				
 				var mod = modules[ key ];
 				available[ mod.type ] = mod.name;
 			}
-			return available;
 		}
-	}
-	
-	ns.ModuleControl.prototype.receiveMessage = function( msg ) {
-		var self = this;
-		var handler = self.connMap[ msg.type ];
-		
-		if ( !handler ) {
-			console.log( 'ModuleControl - no handler for', msg );
-			return;
-		}
-		
-		handler( msg.data );
 	}
 	
 	ns.ModuleControl.prototype.bindView = function() {
@@ -532,6 +554,7 @@ library.rtc = library.rtc || {};
 		
 		var mod = new Module( conf );
 		self.active[ mod.clientId ] = mod;
+		hello.items.addSource( mod.clientId, mod );
 		var viewConf = {
 			identity : mod.identity,
 			module : mod.module,
@@ -554,7 +577,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.handleNoModule = function() {
 		var self = this;
-		console.log( 'handleNoModule' );
+		console.log( 'handleNoModule - NYI' );
 		
 		return;
 		
@@ -568,7 +591,7 @@ library.rtc = library.rtc || {};
 			type : 'treeroot',
 			name : 'Treeroot',
 		};
-		self.view.sendMessage({
+		self.view.send({
 			type : 'askaddmodule',
 			data : description,
 		});
@@ -680,7 +703,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.addToView = function( module ) {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'add',
 			data : module
 		});
@@ -688,7 +711,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.updateInView = function(  module ) {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'update',
 			data : module
 		});
@@ -697,12 +720,12 @@ library.rtc = library.rtc || {};
 	ns.ModuleControl.prototype.handleRemove = function( moduleId ) {
 		var self = this;
 		var module = self.active[ moduleId ];
-		
 		if ( !module ) {
 			console.log( 'invalid module id ');
 			return;
 		}
 		
+		hello.items.removeSource( moduleId );
 		module.close();
 		delete self.active[ moduleId ];
 		self.removeFromView( moduleId );
@@ -710,7 +733,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.removeFromView = function( id ) {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'remove',
 			data : id
 		});
@@ -743,24 +766,28 @@ library.rtc = library.rtc || {};
 
 // RTCCONTROL
 (function( ns, undefined ) {
-	ns.RtcControl = function() {
-		if ( !( this instanceof ns.RtcControl ))
-			return new ns.RtcControl();
-		
-		var self = this;
-		self.session = null;
+	ns.RtcControl = function( viewConn ) {
+		const self = this;
+		self.sessions = {};
+		self.sessionIds = [];
 		self.roomRequests = {};
 		
-		self.init();
+		self.init( viewConn );
 	}
 	
 	// Public
 	
+	ns.RtcControl.prototype.hasSession = function() {
+		const self = this;
+		return !!self.sessionIds.length;
+	}
+	
 	ns.RtcControl.prototype.joinLive = function( conf, eventSink, onclose ) {
 		const self = this;
 		const sessionConf = {
-			invite      : null,
-			user        : conf.identity,
+			roomId      : conf.roomId     ,
+			invite      : null            ,
+			user        : conf.identity   ,
 			permissions : conf.permissions,
 			constraints : conf.constraints,
 		};
@@ -768,17 +795,62 @@ library.rtc = library.rtc || {};
 		self.createSession( sessionConf, eventSink, onclose );
 	}
 	
-	ns.RtcControl.prototype.invite = function( contact ) {
+	ns.RtcControl.prototype.invite = function( contacts, permissions ) {
 		const self = this;
-		self.service.invite( contact );
+		const userConf = {
+			contacts    : contacts,
+			permissions : permissions,
+		};
+		
+		let roomId = null;
+		let groups = self.getGroupLive();
+		if ( !groups.length ) {
+			self.createRoom( contacts, permissions );
+			return;
+		}
+		
+		if ( 1 === groups.length ) {
+			roomId = groups[ 0 ];
+			doInvite( roomId );
+		} else {
+			askSpecifyRoom( groups );
+		}
+		
+		function askSpecifyRoom() {
+			let roomMetas = groups.map( buildMeta );
+			let conf = {
+				sessions : roomMetas,
+				onselect : onSelect,
+			};
+			let select = new library.view.SpecifySession( conf );
+			function onSelect( roomId ) {
+				select.close();
+				
+				if ( !roomId )
+					self.createRoom( contacts, permissions );
+				else
+					doInvite( roomId );
+			}
+		}
+		
+		function doInvite( roomId ) {
+			hello.service.invite( userConf, roomId );
+		}
+		
+		function buildMeta( sId ) {
+			let session = self.sessions[ sId ];
+			let meta = hello.service.getRoomInfo( sId );
+			meta.created = session.created;
+			return meta;
+		}
 	}
 	
-	ns.RtcControl.prototype.createRoom = function( contacts, selfie, permissions ) {
+	ns.RtcControl.prototype.createRoom = function( contacts, permissions ) {
 		var self = this;
 		var sessionConf = {
+			roomId      : null,
 			invite      : null,
 			isHost      : true,
-			user        : selfie,
 			contacts    : contacts,
 			permissions : permissions,
 		};
@@ -791,10 +863,10 @@ library.rtc = library.rtc || {};
 			return;
 		
 		const inviteHost = invite.host.split( '/' )[ 0 ];
-		const localHost = self.service.getHost();
+		const localHost = hello.service.getHost();
 		api.Say( 'Live invite received', { i : invite, 'if' : inviteFrom, s : selfie });
 		const message = inviteFrom.name
-				+ ' ' + Application.i18n('i18n_has_invited_you_to_live');
+				+ ' ' + Application.i18n( 'i18n_has_invited_you_to_live' );
 		const conf = {
 			message       : message,
 			activeSession : !!self.session,
@@ -877,17 +949,37 @@ library.rtc = library.rtc || {};
 		self.getRoom( 'join', sessionConf );
 	}
 	
-	// Presence module calls this and provides an interface
-	ns.RtcControl.prototype.setServiceProvider = function( provider ) {
-		var self = this;
-		self.service = provider;
+	ns.RtcControl.prototype.leave = function() {
+		const self = this;
+		self.closeSession();
+	}
+	
+	ns.RtcControl.prototype.close = function() {
+		const self = this;
+		if ( self.view )
+			self.view.close();
+		
+		delete self.view;
 	}
 	
 	// private
 	
-	ns.RtcControl.prototype.init = function() {
+	ns.RtcControl.prototype.init = function( viewConn ) {
 		var self = this;
+		self.bindView( viewConn );
+	}
+	
+	ns.RtcControl.prototype.getGroupLive = function() {
+		const self = this;
+		let groupSessions = self.sessionIds.filter( sId => {
+			let sess = self.sessions[ sId ];
+			if ( !sess || sess.isPrivate )
+				return false;
+			
+			return true;
+		});
 		
+		return groupSessions;
 	}
 	
 	ns.RtcControl.prototype.askHost = function( contacts, selfie ) {
@@ -905,18 +997,16 @@ library.rtc = library.rtc || {};
 			type : action,
 			data : sessionConf,
 		};
-		self.service.getRoom( roomReq );
+		hello.service.createRoom( roomReq );
 	}
 	
 	ns.RtcControl.prototype.createSession = function( conf, eventSink, onclose ) {
-		var self = this;
-		if ( self.session ) {
-			const session = self.session;
-			self.session = null;
-			session.close();
-		}
+		const self = this;
+		const sId = conf.roomId;
+		if ( self.sessions[ sId ] )
+			self.closeSession( sId );
 		
-		conf.user = conf.user || self.service.getIdentity();
+		conf.user = conf.user || hello.service.getIdentity();
 		conf.permissions = conf.permissions || {
 			send : {
 				audio : true,
@@ -928,27 +1018,118 @@ library.rtc = library.rtc || {};
 			},
 		};
 		
-		self.session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
-		return self.session;
+		let session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
+		self.sessions[ sId ] = session;
+		self.sessionIds.push( sId );
+		const sess = {
+			type : 'add',
+			data : {
+				id   : session.roomId,
+				conf : session.conf,
+			},
+		};
+		self.toView( sess );
+		return session;
 		
 		function sessionClosed() {
-			self.session = null;
+			self.closeSession( sId );
 		}
 	}
 	
-	ns.RtcControl.prototype.getSession = function() {
+	ns.RtcControl.prototype.getSession = function( sId ) {
 		var self = this;
-		return self.session;
+		return self.sessions[ sId ] || null;
 	}
 	
-	ns.RtcControl.prototype.closeSession = function() {
-		var self = this;
+	ns.RtcControl.prototype.closeSession = function( sId ) {
+		const self = this;
+		let session = self.sessions[ sId ];
+		if ( !session ) {
+			console.log( 'RtcControl.closeSession - no session found for', {
+				sId      : sId,
+				sessions : self.sessions,
+			});
+			return;
+		}
+		
+		delete self.sessions[ sId ];
+		self.sessionIds = Object.keys( self.sessions );
+		
+		const remove = {
+			type : 'remove',
+			data : sId,
+		};
+		self.toView( remove );
+		
+		session.close();
+	}
+	
+	ns.RtcControl.prototype.bindView = function( viewConn ) {
+		const self = this;
+		self.view = new library.component.EventNode( 'rtc', viewConn, viewSink );
+		self.view.on( 'show', e => self.showSession( e ));
+		
+		function viewSink( ...args ) {
+			console.log( 'RtcControl.viewSink', args );
+		}
+	}
+	
+	ns.RtcControl.prototype.toView = function( event ) {
+		const self = this;
+		if ( self.view )
+			self.view.send( event );
+	}
+	
+	ns.RtcControl.prototype.showSession = function( sId ) {
+		const self = this;
+		const session = self.sessions[ sId ];
+		if ( !session ) {
+			console.log( 'RtcControl.showSession - no session for', {
+				sId      : sId,
+				sessions : self.sessions,
+			});
+			return;
+		}
+		
+		session.show();
+	}
+	
+	ns.RtcControl.prototype.setupDormant = function() {
+		const self = this;
+		return;
+		
+		if ( !hello.dormant )
+			return;
+		
+		const path = 'Live';
+		self.door = new api.DoorDir({
+			title : 'Live',
+			path  : 'Live/',
+		}, '' );
+		
+		const closeFn = new api.DoorFun({
+			title   : 'Close',
+			execute : close,
+		}, self.door.fullPath );
+		
+		hello.dormant.addDir( self.door );
+		hello.dormant.addFun( closeFn );
+		
+		function close() {
+			self.leave();
+		}
+	}
+	
+	ns.RtcControl.prototype.closeDormant = function() {
+		const self = this;
 		if ( !self.session )
 			return;
 		
-		var sess = self.session;
-		self.session = null;
-		sess.close();
+		if ( !self.door )
+			return;
+		
+		hello.dormant.remove( self.door );
+		self.door = null;
 	}
 	
 })( library.system );
@@ -960,11 +1141,10 @@ library.rtc = library.rtc || {};
 		if ( !( this instanceof ns.Account ))
 			return new ns.Account( conf );
 		
-		var self = this;
+		const self = this;
 		self.availability = null;
 		self.clientId = conf.account.clientId;
 		self.displayName = conf.account.name;
-		self.skipPass = conf.account.skipPass;
 		self.settings = conf.account.settings || {};
 		self.conn = null;
 		
@@ -974,8 +1154,8 @@ library.rtc = library.rtc || {};
 	// Public
 	
 	ns.Account.prototype.sendReady = function( msg ) {
-		var self = this;
-		var ready = {
+		const self = this;
+		const ready = {
 			type : 'ready',
 			data : msg,
 		};
@@ -985,7 +1165,8 @@ library.rtc = library.rtc || {};
 	// Private
 	
 	ns.Account.prototype.init = function( parentView ) {
-		var self = this;
+		const self = this;
+		hello.app.setSettings( self.settings );
 		self.conn = new library.system.Message({
 			id : 'account',
 			handler : receiveMsg,
@@ -994,18 +1175,19 @@ library.rtc = library.rtc || {};
 		
 		self.msgMap = {
 			'settings' : showSettings,
-			'setting' : updateSetting,
+			'setting'  : updateSetting,
 		};
 		function showSettings( e ) { self.showSettings( e ); }
 		function updateSetting( e ) { self.updateSetting( e ); }
 		
 		self.updateMap = {
-			'popupChat' : updatePopupChat,
-			'msgAlert'  : updateMsgAlert,
+			'popupChat'    : e => self.updatePopupChat( e ),
+			'msgAlert'     : e => self.updateMsgAlert( e ),
+			'roomAlert'    : e => self.updateRoomAlert( e ),
+			'privateAlert' : e => self.updatePrivateAlert( e ),
+			'inAppMenu'    : e => self.updateInAppMenu( e ),
+			'compactChat'  : e => self.updateCompactChat( e ),
 		};
-		
-		function updatePopupChat( e ) { self.updatePopupChat( e ); }
-		function updateMsgAlert( e ) { self.updateMsgAlert( e ); }
 		
 		self.view = new library.component.SubView({
 			parent : parentView,
@@ -1017,8 +1199,8 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Account.prototype.receiveMsg = function( msg ) {
-		var self = this;
-		var handler = self.msgMap[ msg.type ];
+		const self = this;
+		const handler = self.msgMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'Account.receiveMsg - no handler for', msg );
 			return;
@@ -1028,7 +1210,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Account.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'settings', loadSettings );
 		self.view.on( 'setting', persistSetting );
 		
@@ -1037,20 +1219,20 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Account.prototype.getSettings = function() {
-		var self = this;
-		var msg = {
+		const self = this;
+		const msg = {
 			type : 'settings',
 		};
 		self.send( msg );
 	}
 	
 	ns.Account.prototype.persistSetting = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'account.persistSetting - NYI???', data );
 	}
 	
 	ns.Account.prototype.showSettings = function( data ) {
-		var self = this;
+		const self = this;
 		if ( self.settingsView )
 			return;
 		
@@ -1092,6 +1274,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		handler( update.value );
+		hello.app.setSettings( self.settings );
 	}
 	
 	ns.Account.prototype.updatePopupChat = function( value ) {
@@ -1104,8 +1287,28 @@ library.rtc = library.rtc || {};
 		self.settings.msgAlert = value;
 	}
 	
+	ns.Account.prototype.updateRoomAlert = function( value ) {
+		const self = this;
+		self.settings.roomAlert = value;
+	}
+	
+	ns.Account.prototype.updatePrivateAlert = function( value ) {
+		const self = this;
+		self.settings.privateAlert = value;
+	}
+	
+	ns.Account.prototype.updateCompactChat = function( value ) {
+		const self = this;
+		self.settings.compactChat = value;
+	}
+	
+	ns.Account.prototype.updateInAppMenu = function( value ) {
+		const self = this;
+		self.settings.inAppMenu = value;
+	}
+	
 	ns.Account.prototype.load = function( account ) {
-		var self = this;
+		const self = this;
 		self.clientId = account.clientId;
 		self.name = account.name;
 		hello.modules.load();
@@ -1176,7 +1379,7 @@ library.rtc = library.rtc || {};
 	ns.Notification.prototype.toggleLogView = function( bool ) {
 		var self = this;
 		var isNowOpen = hello.log.toggle();
-		self.view.sendMessage({
+		self.view.send({
 			type : 'toggle',
 			data : isNowOpen.toString(),
 		});
@@ -1184,7 +1387,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Notification.prototype.set = function( msg ) {
 		var self = this;
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 	ns.Notification.prototype.close = function() {
@@ -1192,7 +1395,13 @@ library.rtc = library.rtc || {};
 		if ( self.handlerId && hello.log )
 			hello.log.weDidntListen( self.handlerId );
 		else
-			console.log( 'app.Notification.close - missing the things, oops?', { id : self.handlerId, log : hello.log });
+			console.log(
+				'app.Notification.close - missing the things, oops?',
+				{
+					id : self.handlerId,
+					log : hello.log
+				}
+			);
 		
 		self.view.close();
 	}
@@ -1361,7 +1570,7 @@ library.rtc = library.rtc || {};
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 	ns.Log.prototype.buildNotification = function( msg, alertLevel, timestamp ) {
@@ -1424,9 +1633,6 @@ library.rtc = library.rtc || {};
 // CONNECTION
 (function( ns, undefined ) {
 	ns.Connection = function( altHost, onState ) {
-		if ( !( this instanceof ns.Connection ))
-			return new ns.Connection( altHost, onState );
-		
 		const self = this;
 		self.altHost = altHost;
 		self.onstate = onState;
@@ -1442,8 +1648,37 @@ library.rtc = library.rtc || {};
 	
 	// Public
 	
-	ns.Connection.prototype.send = function( msg ) {
+	ns.Connection.prototype.on = function( type, callback ) {
 		var self = this;
+		if ( !type || !callback ) {
+			console.log( 'connection.on: missing arguments',
+				{ type : type, callback : callback });
+			return false;
+		}
+		
+		if ( self.subscriber[ type ] ) {
+			console.log( 'subscriber type already exists - call .off( type ) to remove the previous one ', {
+				type : type,
+				subs : self.subscriber });
+			throw new Error( 'error, see log ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
+		}
+		
+		self.subscriber[ type ] = callback;
+	}
+	
+	ns.Connection.prototype.off = function( type ) {
+		var self = this;
+		if ( !type || !self.subscriber[ type ] ) {
+			console.log( 'connection.off - invalid subscriber', type );
+			return;
+		}
+		
+		delete self.subscriber[ type ];
+	}
+	ns.Connection.prototype.release = ns.Connection.prototype.off;
+	
+	ns.Connection.prototype.send = function( msg ) {
+		const self = this;
 		if ( !msg || !self.socket )
 			return false;
 		
@@ -1464,13 +1699,13 @@ library.rtc = library.rtc || {};
 		if ( callback )
 			self.readyCallback = callback;
 		
-		var url = null;
+		let url = null;
 		if ( self.altHost )
 			url = self.altHost;
 		else {
-			var host = hello.config.host;
-			var port = hello.config.chat.port;
-			var protocol = hello.config.tls ? 'wss' : 'ws';
+			const host = hello.config.host;
+			const port = hello.config.chat.port;
+			const protocol = hello.config.tls ? 'wss' : 'ws';
 			url = library.tool.buildDestination( protocol, host, port );
 		}
 		
@@ -1517,16 +1752,20 @@ library.rtc = library.rtc || {};
 		self.socketEventMap = {
 			'connect'    : socketConnecting,
 			'open'       : socketOpen,
+			'auth'       : socketAuth,
 			'session'    : socketSession,
 			'close'      : socketClosed,
+			'timeout'    : socketTimeout,
 			'error'      : socketError,
 			'ping'       : socketPing,
 			'reconnect'  : socketReconnect,
 		};
 		function socketConnecting( e ) { self.socketConnecting( e ); }
 		function socketOpen( e ) { self.socketOpen( e ); }
+		function socketAuth( e ) { self.socketAuth( e ); }
 		function socketSession( e ) { self.socketSession( e ); }
 		function socketClosed ( e ) { self.socketClosed( e ); }
+		function socketTimeout( e ) { self.socketTimeout( e ); }
 		function socketError ( e ) { self.socketError( e ); }
 		function socketPing ( e ) { self.socketPing( e ); }
 		function socketReconnect( e ) { self.socketReconnecting( e ); }
@@ -1534,7 +1773,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleState = function( event ) {
 		const self = this;
-		var handler = self.socketEventMap[ event.type ];
+		const handler = self.socketEventMap[ event.type ];
 		if ( !handler ) {
 			console.log( 'unknown socket state', event );
 			return;
@@ -1548,7 +1787,7 @@ library.rtc = library.rtc || {};
 		self.onstate({
 			type : 'connect',
 			data : {
-				host     : self.host,
+				host : self.host,
 			},
 		});
 	}
@@ -1561,14 +1800,19 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
+	ns.Connection.prototype.socketAuth = function( success ) {
+		const self = this;
+		if ( !success )
+			return;
+		
+		const callback = self.readyCallback;
+		delete self.readyCallback;
+		if ( callback )
+			callback( null, success );
+	}
+	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
-		if ( self.readyCallback ) {
-			let callback = self.readyCallback;
-			delete self.readyCallback;
-			callback( null, sid );
-		}
-		
 		self.onstate({
 			type : 'session',
 			data : sid,
@@ -1584,12 +1828,20 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
+	ns.Connection.prototype.socketTimeout = function( e ) {
+		const self = this;
+		self.onstate({
+			type : 'error',
+			data : 'Connect attempt timed out: ' + self.host,
+		});
+	}
+	
 	ns.Connection.prototype.socketError = function( err ) {
 		const self = this;
 		hello.log.notify( 'Socket error' );
 		self.onstate({
 			type : 'error',
-			data : 'WebSocket error for ' + self.host,
+			data : 'Connection error to: ' + self.host,
 		});
 	}
 	
@@ -1647,34 +1899,6 @@ library.rtc = library.rtc || {};
 		handler( event.data );
 	}
 	
-	ns.Connection.prototype.on = function( type, callback ) {
-		var self = this;
-		if ( !type || !callback ) {
-			console.log( 'connection.on: missing arguments',
-				{ type : type, callback : callback });
-			return false;
-		}
-		
-		if ( self.subscriber[ type ] ) {
-			console.log( 'subscriber type already exists - call .off( type ) to remove the previous one ', {
-				type : type,
-				subs : self.subscriber });
-			throw new Error( 'error, see log ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
-		}
-		
-		self.subscriber[ type ] = callback;
-	}
-	
-	ns.Connection.prototype.off = function( type ) {
-		var self = this;
-		if ( !type || !self.subscriber[ type ] ) {
-			console.log( 'connection.off - invalid subscriber', type );
-			return;
-		}
-		
-		delete self.subscriber[ type ];
-	}
-	
 })( library.system );
 
 
@@ -1703,7 +1927,7 @@ library.rtc = library.rtc || {};
 		var self = this;
 		var wrap = {
 			type : self.parentId || self.id,
-			data : msg
+			data : msg,
 		};
 		
 		hello.conn.send( wrap );
@@ -1712,11 +1936,11 @@ library.rtc = library.rtc || {};
 	ns.Message.prototype.message = function( data ) {
 		var self = this;
 		if ( !data ) {
-			console.log( 'Message - empty message', msg );
+			console.log( 'Message - empty message', data );
 			return;
 		}
 		
-		this.handler( data );
+		self.handler( data );
 	}
 	
 	ns.Message.prototype.close = function() {
@@ -1980,7 +2204,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Confirm.prototype.loaded = function( msg ) {
 		var self = this;
-		self.view.sendMessage({
+		self.view.send({
 			type : 'initialize',
 			data : self.config,
 		});
@@ -2009,10 +2233,12 @@ library.rtc = library.rtc || {};
 		
 		self.id = null; // set by initialize / open event
 		self.roomId = conf.roomId;
+		self.isPrivate = conf.isPrivate;
 		self.conf = conf;
 		self.onclose = onclose;
 		self.sessionclose = sessionClose;
 		
+		self.created = Date.now();
 		self.contacts = {};
 		self.server = null;
 		self.view = null;
@@ -2028,6 +2254,14 @@ library.rtc = library.rtc || {};
 	
 	// from EventEmitter: on(), once(), off() and release();
 	
+	ns.RtcSession.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.show();
+	}
+	
 	//
 	ns.RtcSession.prototype.send = function( event ) {
 		var self = this;
@@ -2036,7 +2270,12 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		self.view.sendMessage( event );
+		self.view.send( event );
+	}
+	
+	ns.RtcSession.prototype.setTitle = function( name ) {
+		const self = this;
+		self.view.setTitle( name );
 	}
 	
 	ns.RtcSession.prototype.close = function() {
@@ -2057,6 +2296,10 @@ library.rtc = library.rtc || {};
 			self.shareView = null;
 		}
 		
+		delete self.conf;
+		delete self.isPrivate;
+		delete self.roomId;
+		
 		if ( sessionclose )
 			sessionclose();
 		
@@ -2073,21 +2316,33 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcSession.prototype.initialize = function( init ) {
 		const self = this;
+		if ( self.view ) {
+			self.restore( init );
+			return;
+		}
+		
 		self.id = init.liveId;
-		const liveConf = init.liveConf;
-		const conf = self.conf;
-		const viewConf = {
-			userId     : liveConf.userId,
-			peerList   : liveConf.peerList,
-			isGuest    : conf.isGuest || false,
-			identities : init.identities,
-			rtcConf    : {
-				ICE         : liveConf.ICE,
-				permissions : conf.permissions,
-				quality     : liveConf.quality,
+		const roomConf = init.liveConf;
+		const viewConf = self.conf;
+		const liveConf = {
+			userId      : roomConf.userId,
+			peerList    : roomConf.peerList,
+			isGuest     : viewConf.isGuest || false,
+			guestAvatar : viewConf.guestAvatar,
+			identities  : init.identities,
+			roomName    : viewConf.roomName,
+			isPrivate   : viewConf.isPrivate,
+			logTail     : roomConf.logTail,
+			rtcConf     : {
+				ICE         : roomConf.ICE,
+				permissions : viewConf.permissions,
+				quality     : roomConf.quality,
+				mode        : roomConf.mode,
+				sourceId    : roomConf.sourceId,
 			},
 		};
 		self.view = new library.view.Live(
+			liveConf,
 			viewConf,
 			eventSink,
 			onClose
@@ -2108,19 +2363,30 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
+	ns.RtcSession.prototype.restore = function( init ) {
+		const self = this;
+		const res = {
+			type : 'restore',
+			data : init,
+		};
+		self.send( res );
+	}
+	
 })( library.rtc );
 
+
+//
 (function( ns, undefined ) {
-	ns.Dormant = function() {
-		if ( !( this instanceof ns.Dormant ))
-			return new ns.Dormant();
-		
+	ns.Dormant = function( allowRead, allowWrite ) {
 		if ( !friend.Dormant ) {
 			console.log( 'Dormant not defined' );
 			return false;
 		}
 		
 		var self = this;
+		self.allowRead = allowRead;
+		self.allowWrite = allowWrite;
+		
 		self.init();
 	}
 	
@@ -2136,6 +2402,18 @@ library.rtc = library.rtc || {};
 		self.door.addFun( item );
 	}
 	
+	ns.Dormant.prototype.remove = function( item ) {
+		const self = this;
+		self.door.remove( item );
+	}
+	
+	ns.Dormant.prototype.close = function() {
+		const self = this;
+		delete self.allowRead;
+		delete self.allowWrite;
+		self.door.close();
+	}
+	
 	// Private
 	
 	ns.Dormant.prototype.init = function() {
@@ -2147,46 +2425,340 @@ library.rtc = library.rtc || {};
 		self.door = new api.Door( conf );
 		self.dormant.add( self.door );
 		self.setBase();
-		
 	}
 	
 	ns.Dormant.prototype.setBase = function() {
 		var self = this;
-		const funDir = new api.DoorDir({
+		
+		const fDir = new api.DoorDir({
 			title : 'Functions',
 			path  : 'Functions/',
 		}, '' );
 		
-		const getIdentityDoor = new api.DoorFun({
+		/*
+		const modDir = new api.DoorDir({
+			title : 'Modules',
+			path  : 'Modules/',
+		}, '' );
+		
+		const getIdentityFun = new api.DoorFun({
 			title   : 'GetIdentity',
 			execute : getIdentity,
-		}, funDir.fullPath );
+		}, fDir.fullPath );
 		
-		self.addDir( funDir );
-		self.addFun( getIdentityDoor );
+		const startLiveFun = new api.DoorFun({
+			title   : 'StartLive',
+			execute : startLive,
+		}, fDir.fullPath );
 		
+		const openLiveFun = new api.DoorFun({
+			title   : 'OpenLive',
+			execute : openLive,
+		}, fDir.fullPath );
+		
+		const closeLiveFun = new api.DoorFun({
+			title   : 'CloseLive',
+			execute : closeLive,
+		}, fDir.fullPath );
+		
+		*/
+		
+		const quitFun = new api.DoorFun({
+			title   : 'Quit',
+			execute : quit,
+		}, fDir.fullPath );
+		
+		/*
+		self.addFun( getIdentityFun );
+		self.addFun( startLiveFun );
+		self.addFun( openLiveFun );
+		self.addFun( closeLiveFun );
+		*/
+		
+		self.addDir( fDir );
+		//self.addDir( modDir );
+		self.addFun( quitFun );
+		
+		/*
 		function getIdentity() {
-			console.log( 'dormant fun getIdentity' );
 			return hello.identity;
 		}
 		
-		/*
-		self.door.addDir({
-			MetaType: 'Directory',
-			Title: 'functions',
-			Icon: 'Directory',
-			Path: 'functions/',
-			Position: 'left',
-			Module: 'files',
-			Command: 'dormant',
-			Filesize: 4096,
-			Flags: '',
-			Type: 'Dormant',
-			Dormant: '',
-		});
+		function startLive() {
+			if ( !hello.main ) {
+				return 'ERR_NOT_LOGGED_IN';
+			}
+			
+			hello.main.joinLive();
+		}
+		
+		function openLive( args ) {
+			console.log( 'openLive', args );
+			if ( !hello.main )
+				return;
+			
+			let pres = hello.module.getPresence();
+			if ( !pres )
+				return;
+			
+			console.log( 'hasPresecne', pres );
+			pres.openLive( args[ 0 ] || 'fnetRoom' );
+		}
+		
+		function closeLive() {
+			if ( !hello.rtc ) {
+				return true;
+			}
+			
+			hello.rtc.leave();
+		}
+		
 		*/
+		
+		function quit() {
+			hello.quit();
+		}
 	}
 	
 })( library.system );
 
-
+/*
+Searchable collection(s) of users, rooms and other odds and ends
+*/
+(function( ns, undefined ) {
+	ns.Items = function() {
+		const self = this;
+		self.sources = {};
+		self.sourceIds = [];
+		
+		self.searches = {};
+		self.listeners = {};
+		
+		self.init();
+	}
+	
+	// Public
+	
+	ns.Items.prototype.close = function() {
+		const self = this;
+	}
+	
+	// TODO : constraints - list of source ids and/or scopes
+	ns.Items.prototype.search = function(
+		listenId,
+		searchEvent,
+	) {
+		const self = this;
+		const searchId = searchEvent.id;
+		const needle = searchEvent.str;
+		const constraints = searchEvent.constraints;
+		
+		self.searches[ searchId ] = {
+			id       : searchId,
+			results  : [],
+			listenId : listenId,
+		};
+		const search = self.searches[ searchId ];
+		self.sourceIds.forEach( sId => {
+			let source = self.sources[ sId ];
+			let res = source.search( needle );
+			res.results.forEach( future => {
+				let poolMeta = {
+					sourceId : sId,
+					source   : res.source,
+					done     : false,
+					future   : future,
+				};
+				search.results.push( poolMeta );
+				future
+					.then( poolBack )
+					.catch( poolErr );
+				
+				function poolBack( res ) {
+					let pool = res.pool;
+					poolMeta.type = res.type;
+					poolMeta.actions = res.actions || [];
+					poolMeta.done = true;
+					delete poolMeta.future;
+					self.sendResult( searchId, poolMeta, pool );
+				}
+				
+				function poolErr( err ) {
+					console.log( 'Items.search - pool error', err );
+					poolMeta.type = '';
+					poolMeta.actions = [];
+					poolMeta.done = true;
+					delete poolMeta.future;
+					self.sendResult( searchId, poolMeta, [] );
+				}
+			});
+		});
+	}
+	
+	ns.Items.prototype.startListen = function( parentConn ) {
+		const self = this;
+		const listenId = friendUP.tool.uid();
+		const conn = new library.component.EventNode( 'search', parentConn, eventSink );
+		
+		self.listeners[ listenId ] = conn;
+		conn.on( 'search', e => self.search( listenId, e ));
+		conn.on( 'action', e => self.handleAction( listenId, e ));
+		
+		return listenId;
+		
+		function eventSink( type, event ) {
+			console.log( 'Items.listen - unhandled event', {
+				type  : type,
+				event : event,
+			});
+		}
+	}
+	
+	ns.Items.prototype.stopListen = function( listenId ) {
+		const self = this;
+		const conn = self.listeners[ listenId ];
+		if ( !conn )
+			return;
+		
+		delete self.listeners[ listenId ];
+		conn.release( 'search' );
+	}
+	
+	ns.Items.prototype.addSource = function( id, source ) {
+		const self = this;
+		self.sources[ id ] = source;
+		self.sourceIds = Object.keys( self.sources );
+	}
+	
+	ns.Items.prototype.removeSource = function( id ) {
+		const self = this;
+		delete self.sources[ id ];
+		self.sourceIds = Object.keys( self.sources );
+	}
+	
+	// Private
+	
+	ns.Items.prototype.init = function() {
+		const self = this;
+		self.actionMap = {
+			'add-relation'    : addRelation,
+			'remove-relation' : removeRelation,
+			'open-chat'       : openChat,
+			'live-audio'      : liveAudio,
+			'live-video'      : liveVideo,
+			'invite-video'    : inviteVideo,
+			'invite-audio'    : inviteAudio,
+		};
+		
+		function addRelation( s, e, l ) { self.handleAddRelation( s, e, l ); }
+		function removeRelation( s, e, l ) { self.handleRemoveRelation( s, e, l ); }
+		function openChat( s, e, l ) { self.handleOpenChat( s, e, l ); }
+		function liveAudio( s, e, l ) { self.handleLiveAudio( s, e, l ); }
+		function liveVideo( s, e, l ) { self.handleLiveVideo( s, e, l ); }
+		function inviteVideo( s, e, l ) { self.handleInviteVideo( s, e, l ); }
+		function inviteAudio( s, e, l ) { self.handleInviteAudio( s, e, l ); }
+	}
+	
+	ns.Items.prototype.handleAction = function( listenId, action ) {
+		const self = this;
+		const handler = self.actionMap[ action.type ];
+		const sub = action.data;
+		const source = self.sources[ sub.sourceId ];
+		if ( !handler || !source )
+			return;
+		
+		handler( source, sub, listenId );
+	}
+	
+	ns.Items.prototype.handleAddRelation = function( source, sub, listenId ) {
+		const self = this;
+		source.addRelation( sub )
+			.then( ok )
+			.catch( failed );
+			
+		function ok() {
+			updateView( true );
+		}
+		
+		function failed() {
+			updateView( false );
+		}
+		
+		function updateView( success ) {
+			const update = {
+				type : 'add_relation',
+				data : {
+					uuid    : sub.uuid,
+					success : success,
+				},
+			};
+			
+			const conn = self.listeners[ listenId ];
+			if ( !conn )
+				return;
+			
+			conn.send( update );
+		}
+	}
+	
+	ns.Items.prototype.handleRemoveRelation = function( source, sub ) {
+		const self = this;
+		source.removeRelation( sub );
+	}
+	
+	ns.Items.prototype.handleOpenChat = function( source, sub ) {
+		const self = this;
+		source.openChat( sub );
+	}
+	
+	ns.Items.prototype.handleLiveAudio = function( source, sub ) {
+		const self = this;
+		source.goLiveAudio( sub );
+	}
+	
+	ns.Items.prototype.handleLiveVideo = function( source, sub ) {
+		const self = this;
+		source.goLiveVideo( sub );
+	}
+	
+	ns.Items.prototype.handleInviteVideo = function( source, sub ) {
+		const self = this;
+		source.inviteToLive( sub, 'video' );
+	}
+	
+	ns.Items.prototype.handleInviteAudio = function( source, sub ) {
+		const self = this;
+		source.inviteToLive( sub, 'audio' );
+	}
+	
+	ns.Items.prototype.sendResult = function( searchId, meta, resultSet ) {
+		const self = this;
+		const search = self.searches[ searchId ];
+		const conn = self.listeners[ search.listenId ];
+		if ( !conn )
+			return;
+		
+		const total = search.results.length;
+		let resultNum = search.results
+			.filter( pool => pool.done )
+			.length;
+		
+		let result = {
+			type : 'result',
+			data : {
+				id      : searchId,
+				current : resultNum,
+				total   : total,
+				data    : {
+					sourceId : meta.sourceId,
+					source   : meta.source,
+					type     : meta.type,
+					actions  : meta.actions,
+					result   : resultSet,
+				},
+			},
+		};
+		conn.send( result );
+	}
+	
+})( library.system );

@@ -42,12 +42,16 @@ var server = {
 		account : {
 			skipPass : true,
 			settings : {
-				popupChat  : true,
-				inAppMenu  : false,
-				msgAlert   : true,
-				advancedUI : true,
+				inAppMenu    : false,
+				popupChat    : false,
+				roomAlert    : true,
+				privateAlert : true,
+				advancedUI   : false,
 			},
 		},
+		defaultModules : [
+			'presence',
+		],
 		module : {
 			//Presence
 			presence : {
@@ -85,6 +89,9 @@ var server = {
 					realName : '-',
 				},
 			},
+			telegram : {
+				foo : 'bar',
+			}
 		},
 	},
 };
@@ -126,6 +133,10 @@ var shared = {
 		irc : {
 			type : 'irc',
 			name : 'IRC',
+		},
+		telegram : {
+			type : 'telegram',
+			name : 'Telegram',
 		},
 	},
 };

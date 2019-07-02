@@ -84,6 +84,7 @@ library.view = library.view || {};
 			
 			function build( user ) {
 				user.elementId = friendUP.tool.uid( 'user' );
+				user.displayName = user.displayName || user.name;
 				var element = friend.template.getElement( 'treeroot-user-tmpl', user );
 				container.appendChild( element );
 				return element.id;
@@ -103,8 +104,10 @@ library.view = library.view || {};
 		}
 		
 		function byDisplayName( a, b ) {
-			var aName = a.displayName.toUpperCase();
-			var bName = b.displayName.toUpperCase();
+			let aName = a.displayName || a.name;
+			let bName = b.displayName || a.name;
+			aName = aName.toUpperCase();
+			bName = bName.toUpperCase();
 			if ( aName > bName )
 				return 1
 			if ( aName < bName )

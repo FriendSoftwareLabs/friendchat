@@ -49,7 +49,36 @@ library.view = library.view || {};
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( event );
+		self.view.send( event );
+	}
+	
+	ns.PresenceChat.prototype.setTitle = function( title ) {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.roomTitle = title;
+		self.view.setTitle( self.getTitle());
+		self.send({
+			type : 'title',
+			data : title,
+		});
+	}
+	
+	ns.PresenceChat.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.PresenceChat.prototype.checkMinimized = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.isMinimized;
 	}
 	
 	ns.PresenceChat.prototype.close = function() {
@@ -73,6 +102,7 @@ library.view = library.view || {};
 		function toView( e ) {
 			// lets not
 		}
+		
 		function toChat( link ) {
 			const chat = {
 				type : 'msg',
@@ -84,16 +114,23 @@ library.view = library.view || {};
 		}
 		
 		const filePath = 'html/presence.html';
+		self.roomTitle = self.state.roomName;
+		self.isPrivate = self.state.isPrivate;
+		
+		let viewWidth = 700;
+		if ( self.state.isPrivate )
+			viewWidth = 500;
+		
 		const windowConf = {
-			title  : self.state.roomName,
-			width  : 700,
+			title  : self.getTitle(),
+			width  : viewWidth,
 			height : 450,
 		};
 		
 		const initData = {
-			state     : self.state,
-			fragments : hello.commonFragments,
-			emojii    : hello.config.emojii,
+			state           : self.state,
+			commonFragments : hello.commonFragments,
+			emojii          : hello.config.emojii,
 		};
 		
 		self.view = new api.View(
@@ -114,17 +151,49 @@ library.view = library.view || {};
 			if ( self.onclose )
 				self.onclose();
 		}
+		
+		self.view.on( 'attach', attach );
+		function attach() {
+			var o = {
+				triggerFunction( items )
+				{
+					for( var a = 0; a < items.length; a++ )
+					{
+						( function( item ){
+							var f = new api.File( item.Path );
+							f.expose( function( link )
+							{
+								toChat( link );
+							} );
+						} )( items[ a ] );
+					}
+				},
+				path: 'Mountlist:',
+				type: 'load',
+				title: Application.i18n( 'i18n_share_file' )
+			};
+			new api.Filedialog( o );
+		}
+	}
+	
+	ns.PresenceChat.prototype.getTitle = function() {
+		const self = this;
+		let roomTitle;
+		if ( self.isPrivate )
+			roomTitle = self.roomTitle + ' - ' + Application.i18n( 'i18n_private_chat' );
+		else
+			roomTitle = '#' + self.roomTitle + ' - ' + Application.i18n( 'i18n_group_chat' );
+		
+		return roomTitle;
 	}
 	
 })( library.view );
 
 // About
 (function( ns, undefined ) {
-	ns.About = function( onclose ) {
-		if ( !( this instanceof ns.About ))
-			return new ns.About( onclose );
-		
-		var self = this;
+	ns.About = function( about, onclose ) {
+		const self = this;
+		self.about = about;
 		self.onclose = onclose;
 		self.init();
 	}
@@ -132,16 +201,16 @@ library.view = library.view || {};
 	ns.About.prototype.init = function() {
 		var self = this;
 		const windowConf = {
-			title : hello.config.appName + ' - About',
-			width : 400,
+			title  : ( Application.i18n( 'i18n_about_short' ) + ' ' + ( hello.config.appName ? hello.config.appName : 'Friend Chat' ) ) || 'Friend Chat - About',
+			width  : 400,
 			height : 400,
 		};
 		self.view = hello.app.createView(
 			'html/about.html',
 			windowConf,
+			self.about,
 			null,
-			null,
-			closed
+			closed,
 		);
 		
 		function closed() {
@@ -166,11 +235,12 @@ library.view = library.view || {};
 
 // Loading
 (function( ns, undefined ) {
-	ns.Loading = function( onclose ) {
+	ns.Loading = function( onreconnect, onclose ) {
 		if ( !( this instanceof ns.Loading ))
-			return new ns.Loading( onclose );
+			return new ns.Loading( onreconnect, onclose );
 		
 		var self = this;
+		self.onreconnect = onreconnect;
 		self.onclose = onclose;
 		
 		self.init();
@@ -179,7 +249,7 @@ library.view = library.view || {};
 	ns.Loading.prototype.init = function() {
 		const self = this;
 		const winConf = {
-			title : hello.config.appName,
+			title : hello.config.appName || 'Friend Chat',
 			width : 400,
 			height : 200,
 		};
@@ -195,9 +265,23 @@ library.view = library.view || {};
 			closed
 		);
 		
+		self.view.on( 'conn-state', reconnect );
+		
 		function closed( e ) {
 			self.view = null;
 			self.onclose();
+		}
+		
+		function reconnect( e ) {
+			if ( 'reconnect' !== e.type ) {
+				console.log( 'app.view.Loading.reconnect - invalid event', e );
+				return;
+			}
+			
+			if ( !self.onreconnect )
+				return;
+			
+			self.onreconnect( e );
 		}
 	}
 	
@@ -210,11 +294,13 @@ library.view = library.view || {};
 			type : 'conn-state',
 			data : state,
 		}
-		self.view.sendMessage( event );
+		self.view.send( event );
 	}
 	
 	ns.Loading.prototype.close = function() {
-		var self = this;
+		const self = this;
+		delete self.onreconnect;
+		delete self.onclose;
 		if ( !self.view )
 			return;
 		
@@ -227,11 +313,9 @@ library.view = library.view || {};
 
 // IMChat
 (function( ns, undefined ) {
-	ns.IMChat = function( conf ) {
-		if ( !( this instanceof ns.IMChat ))
-			return new ns.IMChat( conf );
-		
-		var self = this;
+	ns.IMChat = function( chatType, conf ) {
+		const self = this;
+		self.chatType = chatType,
 		self.state = conf.state;
 		self.viewConf = conf.viewConf || {};
 		self.onready = conf.onready;
@@ -246,21 +330,42 @@ library.view = library.view || {};
 		self.init();
 	}
 	
+	// Public
+	
 	ns.IMChat.prototype.setTitle = function( title ) {
 		var self = this;
 		self.view.setTitle( title );
 	}
 	
+	ns.IMChat.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.IMChat.prototype.checkMinimized = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.isMinimized;
+	}
+	
+	// Private
+	
 	ns.IMChat.prototype.init = function() {
 		var self = this;
-		
+		self.viewConf.runConf = self.viewConf.runConf || {};
+		self.viewConf.runConf.chatType = self.chatType;
 		// drag and drop handler
 		var dropConf = {
 			toView : toView,
 			toChat : toChat,
 		};
 		self.drop = new library.component.Droppings( dropConf );
-		function toView( e ) { self.sendMessage( e ); }
+		function toView( e ) { self.send( e ); }
 		function toChat( e ) { self.onmessage( e ); }
 		const windowConf = {
 			title    : 'Chatting with ' + self.state.contact.name,
@@ -298,12 +403,34 @@ library.view = library.view || {};
 		self.view.on( 'start-live', self.onlive );
 		self.view.on( 'drag-n-drop', handleDropped );
 		self.view.on( 'encrypt', self.onencrypt );
+		self.view.on( 'attach', attach );
 		
 		function exit( msg ) { self.close(); }
 		function handleDropped( e ) { self.drop.handle( e ); }
 		function handleHighlight( e ) {
 			if ( self.onhighlight )
 				self.onhighlight( e );
+		}
+		function attach() {
+			var o = {
+				triggerFunction( items )
+				{
+					for( var a = 0; a < items.length; a++ )
+					{
+						( function( item ){
+							var f = new api.File( item.Path );
+							f.expose( function( link )
+							{
+								self.onmessage( link );
+							} );
+						} )( items[ a ] );
+					}
+				},
+				path: 'Mountlist:',
+				type: 'load',
+				title: Application.i18n( 'i18n_share_file' )
+			};
+			new api.Filedialog( o );
 		}
 	}
 	
@@ -323,7 +450,7 @@ library.view = library.view || {};
 			type : 'showencrypt',
 			data : isAvailable,
 		};
-		self.sendMessage( show );
+		self.send( show );
 	}
 	
 	ns.IMChat.prototype.toggleEncrypt = function( isOn ) {
@@ -332,7 +459,7 @@ library.view = library.view || {};
 			type : 'encrypt',
 			data : isOn,
 		};
-		self.sendMessage( toggle );
+		self.send( toggle );
 	}
 	
 	ns.IMChat.prototype.on = function( event, handler ) {
@@ -345,12 +472,12 @@ library.view = library.view || {};
 		console.log( 'appView.IMChat.off - NYI', { e: event });
 	}
 	
-	ns.IMChat.prototype.sendMessage = function( msg ) {
+	ns.IMChat.prototype.send = function( msg ) {
 		self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 	ns.IMChat.prototype.closed = function() {
@@ -369,7 +496,7 @@ library.view = library.view || {};
 
 // LIVE
 (function( ns, undefined ) {
-	ns.Live = function( liveConf, onEvent, onClose ) {
+	ns.Live = function( liveConf, viewConf, onEvent, onClose ) {
 		if ( !( this instanceof ns.Live ))
 			return new ns.Live( liveConf, onEvent, onClose );
 		
@@ -378,10 +505,51 @@ library.view = library.view || {};
 		self.onevent = onEvent,
 		self.onclose = onClose;
 		
-		self.init();
+		self.init( viewConf );
 	}
 	
-	ns.Live.prototype.init = function() {
+	// Public
+	
+	ns.Live.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.Live.prototype.setTitle = function( title ) {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.roomTitle = title;
+		self.view.setTitle( self.getTitle());
+		self.send({
+			type : 'title',
+			data : title,
+		});
+	}
+	
+	ns.Live.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.Live.prototype.checkMinimized = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.isMinimized;
+	}
+	
+	// Private
+	
+	ns.Live.prototype.init = function( conf ) {
 		var self = this;
 		var dropConf = {
 			toView : toView,
@@ -389,7 +557,7 @@ library.view = library.view || {};
 		};
 		self.drop = new library.component.Droppings( dropConf );
 		function toView( e ) {
-			self.sendMessage( e );
+			self.send( e );
 		}
 		function toChat( link ) {
 			const chat = {
@@ -403,7 +571,6 @@ library.view = library.view || {};
 		
 		api.ApplicationStorage.get( 'live-settings', loadBack );
 		function loadBack( res ) {
-			console.log( 'live-settings back', res );
 			const localSettings = res.data || {};
 			if ( !localSettings.preferedDevices )
 				loadOldDevices( localSettings );
@@ -414,7 +581,6 @@ library.view = library.view || {};
 		function loadOldDevices( localSettings ) {
 			api.ApplicationStorage.get( 'prefered-devices', devBack );
 			function devBack( res ) {
-				console.log( 'loadOldDevices - res', res );
 				let devs = res.data;
 				localSettings.preferedDevices = devs;
 				initLive( localSettings );
@@ -422,16 +588,20 @@ library.view = library.view || {};
 		}
 		
 		function initLive( localSettings ) {
-			console.log( 'initLive - localSettings', localSettings );
 			let width = 850;
 			let height = 500;
-			if ( isVoiceOnly() ) {
+			if ( !conf.isStream && isVoiceOnly() ) {
 				width = 450;
 				height = 350;
 			}
 			
+			self.roomTitle = conf.roomName;
+			self.isPrivate = conf.isPrivate
+			self.isStream = conf.isStream;
+			const title = self.getTitle();
+			
 			const windowConf = {
-				title              : Application.i18n( 'i18n_live_session' ),
+				title              : title,
 				width              : width,
 				height             : height,
 				fullscreenenabled  : true,
@@ -439,13 +609,18 @@ library.view = library.view || {};
 			
 			self.liveConf.localSettings = localSettings;
 			const viewConf = {
-				fragments : hello.commonFragments,
-				emojii    : hello.config.emojii,
-				liveConf  : self.liveConf,
+				liveFragments : hello.liveCommonFragments,
+				fragments     : hello.commonFragments,
+				emojii        : hello.config.emojii,
+				liveConf      : self.liveConf,
 			};
 			
+			let template = conf.isStream
+				? 'html/stream.html'
+				: 'html/live.html';
+			
 			self.view = hello.app.createView(
-				'html/live.html',
+				template,
 				windowConf,
 				viewConf,
 				self.onevent,
@@ -477,6 +652,21 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.Live.prototype.getTitle = function() {
+		const self = this;
+		let roomTitle;
+		let postFix = self.isStream
+			? Application.i18n( 'i18n_stream_session' )
+			: Application.i18n( 'i18n_live_session' );
+		
+		if ( self.isPrivate )
+			roomTitle = self.roomTitle + ' - ' + postFix;
+		else
+			roomTitle = '#' + self.roomTitle + ' - ' + postFix;
+		
+		return roomTitle;
+	}
+	
 	ns.Live.prototype.bindView = function() {
 		var self = this;
 		self.view.on( 'local-setting', localSetting );
@@ -491,11 +681,6 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.storeLocalSetting = function( data ) {
 		const self = this;
-		console.log( 'storeLocalSetting', {
-			data : data,
-			sQueue : self.settingsQueue,
-		});
-		
 		if ( self.settingsQueue ) {
 			self.settingsQueue.push( data );
 			return;
@@ -505,7 +690,6 @@ library.view = library.view || {};
 		self.settingsQueue.push( data );
 		api.ApplicationStorage.get( 'live-settings', getBack );
 		function getBack( res ) {
-			console.log( 'storeLocalSetting.getBack', res );
 			settings = res.data || {};
 			updateFromQueue( settings );
 		}
@@ -514,7 +698,6 @@ library.view = library.view || {};
 			self.settingsQueue.forEach( update );
 			save( settings );
 			function update( data ) {
-				console.log( 'update', data );
 				settings[ data.setting ] = data.value;
 			}
 		}
@@ -523,18 +706,19 @@ library.view = library.view || {};
 			api.ApplicationStorage.set( 'live-settings', settings, saveBack );
 			self.settingsQueue = null;
 			function saveBack( res ) {
-				console.log( 'storeLocalSetting.saveBack', res );
+				//
 			}
 		}
 	}
 	
-	ns.Live.prototype.sendMessage = function( msg ) {
+	ns.Live.prototype.send = function( msg ) {
 		var self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
+	ns.Live.prototype.sendMessage = ns.Live.prototype.send;
 	
 	ns.Live.prototype.closed = function() {
 		const self = this;
@@ -632,10 +816,10 @@ library.view = library.view || {};
 			self.view.off( event );
 	}
 	
-	ns.FormView.prototype.sendMessage = function( msg ) {
+	ns.FormView.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 })( library.view );
@@ -695,7 +879,7 @@ library.view = library.view || {};
 	ns.ComponentForm.prototype.toView = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.ComponentForm.prototype.exit = function() {
@@ -779,15 +963,13 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.selectFile = function( data ) {
 		var self = this;
-		console.log( 'selectFile', data );
 		self.view.showFiledialog( data, selected );
 		function selected( res ) {
-			console.log( 'selectFile - selected', res );
 			var selected = {
 				type : 'selectfile',
 				data : res,
 			};
-			self.sendMessage( selected );
+			self.send( selected );
 		}
 	}
 	
@@ -837,7 +1019,7 @@ library.view = library.view || {};
 			type : 'saved',
 			data : data,
 		};
-		self.sendMessage( wrap );
+		self.send( wrap );
 	}
 	
 	ns.Settings.prototype.isDone = function() {
@@ -860,12 +1042,12 @@ library.view = library.view || {};
 		self.view = null;
 	}
 	
-	ns.Settings.prototype.sendMessage = function( msg ) {
+	ns.Settings.prototype.send = function( msg ) {
 		var self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 })( library.view );
@@ -943,12 +1125,12 @@ library.view = library.view || {};
 		self.onmessage( msg );
 	}
 	
-	ns.Console.prototype.sendMessage = function( msg ) {
+	ns.Console.prototype.send = function( msg ) {
 		var self = this;
 		if ( !self.view )
 			return;
 		
-		self.view.sendMessage( msg );
+		self.view.send( msg );
 	}
 	
 	ns.Console.prototype.close = function() {
@@ -989,6 +1171,26 @@ library.view = library.view || {};
 		self.init();
 	}
 	
+	// Public
+	
+	ns.Conference.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.Conference.prototype.checkMinimized = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.isMinimized;
+	}
+	
+	// Private
+	
 	ns.Conference.prototype.init = function() {
 		var self = this;
 		var dropConf = {
@@ -996,7 +1198,7 @@ library.view = library.view || {};
 			toChat : toChat,
 		};
 		self.drop = new library.component.Droppings( dropConf );
-		function toView( e ) { self.sendMessage( e ); }
+		function toView( e ) { self.send( e ); }
 		function toChat( e ) { self.onmessage( e ); }
 		
 		const windowConf = {
@@ -1019,6 +1221,29 @@ library.view = library.view || {};
 			null,
 			onclose
 		);
+		
+		self.view.on( 'attach', attach );
+		function attach() {
+			var o = {
+				triggerFunction( items )
+				{
+					for( var a = 0; a < items.length; a++ )
+					{
+						( function( item ){
+							var f = new api.File( item.Path );
+							f.expose( function( link )
+							{
+								toChat( link );
+							} );
+						} )( items[ a ] );
+					}
+				},
+				path: 'Mountlist:',
+				type: 'load',
+				title: Application.i18n( 'i18n_share_file' )
+			};
+			new api.Filedialog( o );
+		}
 		
 		self.view.onready = self.readyBack;
 		
@@ -1053,10 +1278,10 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.Conference.prototype.sendMessage = function( msg ) {
+	ns.Conference.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.Conference.prototype.viewClosed = function( event ) {
@@ -1113,10 +1338,10 @@ library.view = library.view || {};
 		self.close();
 	}
 	
-	ns.RtcAsk.prototype.sendMessage = function( msg ) {
+	ns.RtcAsk.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.RtcAsk.prototype.closed = function() {
@@ -1135,6 +1360,65 @@ library.view = library.view || {};
 })( library.view );
 
 
+// SPECIFY SESSION
+(function( ns, undefined ) {
+	ns.SpecifySession = function( conf ) {
+		const self = this;
+		self.onselect = conf.onselect;
+		
+		self.init( conf.sessions );
+	}
+	
+	// Public
+	
+	ns.SpecifySession.prototype.close = function() {
+		const self = this;
+		let view = self.view;
+		delete self.view;
+		if ( view ) 
+			view.close();
+		
+		delete self.onselect;
+	}
+	
+	// Private
+	
+	ns.SpecifySession.prototype.init = function( sessions ) {
+		const self = this;
+		const filePath = 'html/specifySession.html';
+		const windowConf = {
+			title  : Application.i18n( 'i18n_select_session' ),
+			width  : 300,
+			height : 350,
+		};
+		const initData = {
+			fragments : null,
+			sessions  : sessions,
+		};
+		self.view = hello.app.createView(
+			filePath,
+			windowConf,
+			initData,
+			null,
+			closed
+		);
+		
+		self.view.on( 'select', select );
+		self.view.on( 'close', closed );
+		function select( roomId ) {
+			if ( !self.onselect )
+				return;
+			
+			self.onselect( roomId );
+		}
+		
+		function closed() {
+			self.close();
+		}
+	}
+})( library.view );
+
+
 // TREEROOT USERS VIEW
 (function( ns, undefined ) {
 	ns.TreerootUsers = function( conf ) {
@@ -1148,6 +1432,28 @@ library.view = library.view || {};
 		
 		self.init();
 	}
+	
+	// Public
+	
+	ns.TreerootUsers.prototype.close = function() {
+		var self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.close();
+		self.view = null;
+	}
+	
+	ns.TreerootUsers.prototype.setUserList = function( userlist ) {
+		var self = this;
+		var msg = {
+			type : 'userlist',
+			data : userlist,
+		};
+		self.toView( msg );
+	}
+	
+	// Private
 	
 	ns.TreerootUsers.prototype.init = function() {
 		var self = this;
@@ -1181,27 +1487,15 @@ library.view = library.view || {};
 	
 	ns.TreerootUsers.prototype.subscribe = function( data ) {
 		var self = this;
-		console.log( 'subscribe', data );
 		self.onsubscribe( data );
 	}
 	
 	ns.TreerootUsers.prototype.done = function() {
 		var self = this;
-		console.log( 'done' );
 		const onclose = self.onclose;
 		delete self.onclose;
 		if ( onclose )
 			onclose();
-	}
-	
-	ns.TreerootUsers.prototype.setUserList = function( userlist ) {
-		var self = this;
-		console.log( 'setUserList', { ul : userlist, sul : self.userlist });
-		var msg = {
-			type : 'userlist',
-			data : userlist,
-		};
-		self.toView( msg );
 	}
 	
 	ns.TreerootUsers.prototype.remove = function( sub ) {
@@ -1213,15 +1507,6 @@ library.view = library.view || {};
 		self.toView( msg );
 	}
 	
-	ns.TreerootUsers.prototype.close = function() {
-		var self = this;
-		if ( !self.view )
-			return;
-		
-		self.view.close();
-		self.view = null;
-	}
-	
 	ns.TreerootUsers.prototype.response = function( msg ) {
 		var self = this;
 		console.log( 'treerootUSers.response', msg );
@@ -1230,7 +1515,7 @@ library.view = library.view || {};
 	ns.TreerootUsers.prototype.toView = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 })( library.view );
@@ -1240,7 +1525,6 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.AddImage ))
 			return new ns.AddImage( conf );
 		
-		console.log( 'camshot', conf );
 		var self = this;
 		self.onimage = conf.onimage;
 		self.onclose = conf.onclose;
@@ -1279,7 +1563,6 @@ library.view = library.view || {};
 	
 	ns.AddImage.prototype.viewClosed = function() {
 		var self = this;
-		console.log( 'view closed' );
 		const onclose = self.onclose;
 		delete self.onclose;
 		if ( onclose )
@@ -1336,7 +1619,6 @@ library.view = library.view || {};
 	
 	ns.ShareInvite.prototype.sendEmail = function( msg ) {
 		var self = this;
-		console.log( 'shareInvite.sendEmail', msg );
 		var modConf = {
 			module : 'system',
 			method : 'systemmail',
@@ -1348,12 +1630,9 @@ library.view = library.view || {};
 			success : success,
 			error : error,
 		};
-		console.log( "sendEmail, conf", modConf );
 		var mod = new api.Module( modConf );
 		
 		function success( data ) {
-			console.log( 'sendEmail.success', data );
-			
 			if ( data === 'end of the line' )
 				data = false;
 			
@@ -1370,14 +1649,14 @@ library.view = library.view || {};
 				type : 'email',
 				data : data,
 			};
-			self.sendMessage( msg );
+			self.send( msg );
 		}
 	}
 	
-	ns.ShareInvite.prototype.sendMessage = function( msg ) {
+	ns.ShareInvite.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.ShareInvite.prototype.onClose = function() {
@@ -1397,10 +1676,6 @@ library.view = library.view || {};
 // Treeroot crypto warning
 (function( ns, undefined ) {
 	ns.CryptoWarning = function( conf ) {
-		if ( !( this instanceof ns.CryptoWarning ))
-			return new ns.CryptoWarning( conf );
-		
-		console.log( 'CryptoWarning', conf );
 		var self = this;
 		self.initBundle = conf.initBundle;
 		self.onaccept = conf.onaccept;
@@ -1429,7 +1704,6 @@ library.view = library.view || {};
 		
 		self.view.on( 'accept', accept );
 		function accept( e ) {
-			console.log( 'app.cryptwarning - onaccept', e );
 			self.onaccept( e );
 		}
 		function closed( e ) { self.closed() }
@@ -1437,7 +1711,6 @@ library.view = library.view || {};
 	
 	ns.CryptoWarning.prototype.closed = function() {
 		var self = this;
-		console.log( 'CryptoWarning view closed' );
 		self.view = null;
 		var onclose = self.onclose;
 		delete self.onclose;
@@ -1451,7 +1724,7 @@ library.view = library.view || {};
 	ns.CryptoWarning.prototype.send = function( msg ) {
 		var self = this;
 		if ( self.view )
-			self.view.sendMessage( msg );
+			self.view.send( msg );
 	}
 	
 	ns.CryptoWarning.prototype.cleanup = function() {
@@ -1499,7 +1772,6 @@ library.view = library.view || {};
 		self.view.on( 'done', done );
 		
 		function done( res ) {
-			console.log( 'appview.FirstWizard.on done', res );
 			self.callback( res );
 		}
 		function closed() { console.log( 'firstWiz - closed' ); }

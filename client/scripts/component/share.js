@@ -75,6 +75,9 @@ library.component = library.component || {};
 		self.pubEmail = document.getElementById( 'share-public-to-email' );
 		self.pubUnset = document.getElementById( 'share-unset-public');
 		self.pubSet = document.getElementById( 'share-set-public' );
+		self.pubConfirmContainer = document.getElementById( 'share-confirm-invalidate-container' );
+		self.pubConfirm = document.getElementById( 'share-confirm-invalidate' );
+		self.pubCancel = document.getElementById( 'share-confirm-cancel' );
 		
 		self.emailInput = document.getElementById( 'share-email-input' );
 		self.emailBtn = document.getElementById( 'share-email-btn' );
@@ -82,9 +85,11 @@ library.component = library.component || {};
 		self.inviteBtn.addEventListener( 'click', getInvite, false );
 		
 		self.pubSet.addEventListener( 'click', setPublic, false );
-		self.pubUnset.addEventListener( 'click', revokePublic, false );
+		self.pubUnset.addEventListener( 'click', removePublic, false );
 		self.pubCopy.addEventListener( 'click', copyPublic, false );
 		self.pubEmail.addEventListener( 'click', createPublicEmail, false );
+		self.pubConfirm.addEventListener( 'click', revokePublic, false );
+		self.pubCancel.addEventListener( 'click', keepPublic, false );
 		
 		self.emailBtn.addEventListener( 'click', getEmailLink, false );
 		
@@ -99,9 +104,18 @@ library.component = library.component || {};
 			self.setPublic();
 		}
 		
-		function revokePublic( e ) {
+		function removePublic( e ) {
 			e.stopPropagation();
+			self.pubConfirmContainer.classList.toggle( 'hidden', false );
+		}
+		
+		function revokePublic( e ) {
+			self.pubConfirmContainer.classList.toggle( 'hidden', true );
 			self.revoke( 'public' );
+		}
+		
+		function keepPublic( e ) {
+			self.pubConfirmContainer.classList.toggle( 'hidden', true );
 		}
 		
 		function copyPublic( e ) {

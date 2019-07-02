@@ -25,11 +25,12 @@ var querystring = require( 'querystring' );
 var xmlAway = require( 'xml2js' );
 var util = require( 'util' );
 var uuid = require( './UuidPrefix' )( 'treeroot' );
+var events = require( './Emitter' );
 
 var ns = {};
 
 ns.Treeroot = function( clientConnection, clientId ) {
-	var self = this;
+	const self = this;
 	self.log = require( './Log' )( 'Treeroot' );
 	self.type = 'treeroot';
 	self.client = clientConnection;
@@ -52,7 +53,8 @@ ns.Treeroot = function( clientConnection, clientId ) {
 	self.initReady = false;
 	self.cryptOngoing = false;
 	self.recoveryKey = null;
-	self.tryPass = null;
+	self.tryDBPass = null;
+	self.tryUserPass = null;
 	self.validLogin = false;
 	self.reqLoopActive = false;
 	self.reqLoopInterval = null;
@@ -71,10 +73,8 @@ ns.Treeroot = function( clientConnection, clientId ) {
 // Public
 
 //static
-ns.Treeroot.prototype.getSetup = function() {
-	return {
-		settings : {},
-	}
+ns.Treeroot.prototype.getSetup = function( conf, username ) {
+	return conf || {};
 }
 
 // Private
@@ -95,7 +95,7 @@ ns.Treeroot.prototype.getMessagesPath = '/components/chat/messages/';
 ns.Treeroot.prototype.postMessagePath = '/components/chat/post/';
 
 ns.Treeroot.prototype.init = function() {
-	var self = this;
+	const self = this;
 	self.source = 'hello-' + self.clientId.split( '-' )[ 1 ];
 	
 	self.client.on( 'connect', connect );
@@ -106,8 +106,7 @@ ns.Treeroot.prototype.init = function() {
 	self.client.on( 'settings', getSettings );
 	self.client.on( 'setting', updateSetting );
 	self.client.on( 'register', registerAccount );
-	self.client.on( 'userlist', getUserList );
-	self.client.on( 'subscription', subscription );
+	self.client.on( 'subscription', onSubscription );
 	self.client.on( 'pass-reset', resetPassphrase );
 	self.client.on( 'stop', stop );
 	self.client.on( 'kill', kill );
@@ -120,11 +119,17 @@ ns.Treeroot.prototype.init = function() {
 	function getSettings( e, socketId ) { self.getSettings( socketId ); }
 	function updateSetting( e, socketId ) { self.updateSetting( e ); }
 	function registerAccount( e, socketId ) { self.register( e, socketId ); }
-	function getUserList( e, socketId ) { self.getUserList( e, socketId ); }
-	function subscription( e ) { self.subscription( e ); }
+	function onSubscription( e ) { self.subscription( e ); }
+	
 	function resetPassphrase( e, socketId ) { self.resetPassphrase( e, socketId ); }
 	function stop( e ) { self.log( 'treeroot stop event - this isnt evenn a real handler!?', self.conf ); }
 	function kill( callback ) { self.kill( callback ); }
+	
+	self.requests = new events.RequestNode( self.client, null );
+	self.requests.on( 'user-list', getUserList );
+	self.requests.on( 'search-available', searchAvailable );
+	function getUserList( e ) { return self.getUserList( e ); }
+	function searchAvailable( e ) { return self.handleSearchAvailable( e ); }
 	
 	//
 	self.settingsUpdateMap = {
@@ -151,31 +156,47 @@ ns.Treeroot.prototype.init = function() {
 	
 	//
 	self.keyExEventMap = {
-		'uniqueid'     : uniqueId,
-		'publickey'    : publicKey,
-		'signtemppass' : signTempPass,
+		'uniqueid'       : uniqueId,
+		'publickey'      : publicKey,
+		'signtemppass'   : signTempPass,
+		'password-retry' : retryPassword,
 	};
 	
 	function uniqueId( e, socketId ) { self.sendUniqueId( socketId ); }
 	function publicKey( e, socketId ) { self.handleClientPublicKey( e, socketId ); }
 	function signTempPass( e, socketId ) { self.sendSignedPass( e, socketId ); }
+	function retryPassword( e, socketId ) { self.retryDBPassword( e, socketId ); }
 	
 	//
 	self.contactEvents = {
 		'log'           : log,
 		'message'       : message,
+		'subscription'  : subscription,
 		'cryptomessage' : cryptoMessage,
 	};
 	
 	function log( clientId, data, socketId ) { self.getLog( clientId, socketId ); }
 	function message( clientId, data, socketId ) { self.postMessage( clientId, data ); }
-	function cryptoMessage( clientId, data, socketId ) {
-		self.postCryptoMessage( clientId, data );
+	function subscription( clientId, data, socketId ) { self.subscription( data ); }
+	function cryptoMessage( clientId, data, socketId ) { self.postCryptoMessage( clientId, data ); }
+	
+	self.subscriptionMap = {
+		'subscribe' : subscribeTo,
+		'unsubscribe' : unsubscribe,
+		'allow' : allow,
+		'deny' : deny,
+		'cancel' : cancel
 	}
+	
+	function subscribeTo( e ) { self.subscribe( e ); }
+	function unsubscribe( e ) { self.unsubscribe( e ); }
+	function allow( e ) { self.allowSubscription( e ); }
+	function deny( e ) { self.denySubscription( e ); }
+	function cancel( e ) { self.cancelSubscription( e ); }
 }
 
 ns.Treeroot.prototype.connect = function( conf ) {
-	var self = this;
+	const self = this;
 	if ( conf && conf.mod )
 		conf = conf.mod;
 	
@@ -214,7 +235,7 @@ ns.Treeroot.prototype.connect = function( conf ) {
 }
 
 ns.Treeroot.prototype.hostError = function( message ) {
-	var self = this;
+	const self = this;
 	var data = {
 		host : self.conf.host,
 		message : message || '',
@@ -223,7 +244,7 @@ ns.Treeroot.prototype.hostError = function( message ) {
 }
 
 ns.Treeroot.prototype.identityError = function( message ) {
-	var self = this;
+	const self = this;
 	var data = {
 		identity : self.conf.login,
 		message : message || '',
@@ -232,7 +253,7 @@ ns.Treeroot.prototype.identityError = function( message ) {
 }
 
 ns.Treeroot.prototype.planReconnect = function() {
-	var self = this;
+	const self = this;
 	if ( self.reconnectTimeout ) {
 		self.log( 'alredy planning reconnect', self.reconnectTimeout );
 		return;
@@ -248,7 +269,7 @@ ns.Treeroot.prototype.planReconnect = function() {
 }
 
 ns.Treeroot.prototype.clearReconnect = function() {
-	var self = this;
+	const self = this;
 	if ( !self.reconnectTimeout )
 		return;
 	
@@ -257,7 +278,8 @@ ns.Treeroot.prototype.clearReconnect = function() {
 }
 
 ns.Treeroot.prototype.reconnect = function( conf ) {
-	var self = this;
+	const self = this;
+	self.setNotLoggedIn();
 	if ( !self.conf.host || !self.conf.login ) {
 		self.disconnect();
 		return;
@@ -272,7 +294,7 @@ ns.Treeroot.prototype.reconnect = function( conf ) {
 }
 
 ns.Treeroot.prototype.disconnect = function( callback ) {
-	var self = this;
+	const self = this;
 	self.clearReconnect();
 	self.kill( killed );
 	function killed() {
@@ -281,8 +303,20 @@ ns.Treeroot.prototype.disconnect = function( callback ) {
 	}
 }
 
-ns.Treeroot.prototype.setConf = function( data ) {
+ns.Treeroot.prototype.kill = function( callback ) {
 	var self = this;
+	self.sessionId = null;
+	self.initReady = false;
+	self.stop( stopped );
+	
+	function stopped() {
+		if( callback )
+			callback( true );
+	}
+}
+
+ns.Treeroot.prototype.setConf = function( data ) {
+	const self = this;
 	self.conf = self.conf || {};
 	self.conf.host = data.host || self.conf.host || '';
 	self.conf.port = data.port || self.conf.port || '';
@@ -303,7 +337,7 @@ ns.Treeroot.prototype.setConf = function( data ) {
 }
 
 ns.Treeroot.prototype.cleanHost = function( string ) {
-	var self = this;
+	const self = this;
 	var source = string || self.conf.host;
 	if ( !source ) {
 		self.log( 'no host', {
@@ -324,7 +358,7 @@ ns.Treeroot.prototype.cleanHost = function( string ) {
 }
 
 ns.Treeroot.prototype.updateLogFn = function() {
-	var self = this;
+	const self = this;
 	var treeStr = 'Treeroot';
 	if ( self.conf.host )
 		treeStr += '-' + self.conf.host;
@@ -335,7 +369,7 @@ ns.Treeroot.prototype.updateLogFn = function() {
 }
 
 ns.Treeroot.prototype.handleClientInit = function( socketId ) {
-	var self = this;
+	const self = this;
 	if ( !self.conf.login ) {
 		self.client.emitState();
 		return;
@@ -350,7 +384,7 @@ ns.Treeroot.prototype.handleClientInit = function( socketId ) {
 }
 
 ns.Treeroot.prototype.getUniqueId = function( callback ) {
-	var self = this;
+	const self = this;
 	var postData = {
 		'Username' : self.conf.login,
 		'Source' : self.source,
@@ -381,10 +415,8 @@ ns.Treeroot.prototype.getUniqueId = function( callback ) {
 }
 
 ns.Treeroot.prototype.initKeyExchange = function() {
-	var self = this;
-	//self.log( 'initKeyExchange', self.uniqueId );
+	const self = this;
 	self.sessionId = null;
-	self.validLogin = false;
 	if ( self.cryptoQueue.length )
 		self.executeCryptoQueue();
 	else
@@ -392,15 +424,13 @@ ns.Treeroot.prototype.initKeyExchange = function() {
 }
 
 ns.Treeroot.prototype.queueCrypto = function( socketId ) {
-	var self = this;
-	//self.log( 'queueCrypto', socketId );
+	const self = this;
 	self.cryptoQueue = self.cryptoQueue || [];
 	self.cryptoQueue.push( socketId );
 }
 
 ns.Treeroot.prototype.executeCryptoQueue = function() {
-	var self = this;
-	//self.log( 'executeCryptoQueue', self.cryptoQueue );
+	const self = this;
 	self.cryptoQueue.forEach( sendCryptoInit );
 	self.cryptoQueue = [];
 	
@@ -410,8 +440,7 @@ ns.Treeroot.prototype.executeCryptoQueue = function() {
 }
 
 ns.Treeroot.prototype.handleKeyExchange = function( msg, socketId ) {
-	var self = this;
-	//self.log( 'handleKeyEx', msg );
+	const self = this;
 	if ( msg.type == 'err' ) {
 		self.handleKeyExClientError( msg.data );
 		return;
@@ -434,35 +463,71 @@ ns.Treeroot.prototype.handleKeyExchange = function( msg, socketId ) {
 
 ns.Treeroot.prototype.handleKeyExClientError = function( err ) {
 	var self = this;
-	if ( err.type == 'signtemppass' ) {
-		self.log( 'keyExClientError - signtemppass, resetting pass', err );
+	self.log( 'handleKeyExClientError', err );
+	if ( 'decrypt-temppass' === err.type ) {
+		self.log( 'keyExClientError - decrpyt temppass, resetting pass', err );
 		self.resetCrypto();
+		return;
+	}
+	
+	if ( 'sign-temppass' === err.type ) {
+		self.log( 'keyExClientError - signtemppass, reconnecting', err );
+		self.reconnect();
+		return;
 	}
 	
 }
 
 ns.Treeroot.prototype.sendUniqueId = function( socketId ) {
-	var self = this;
+	const self = this;
 	if ( !self.uniqueId ) {
 		self.queueCrypto( socketId );
 		return;
 	}
 	
-	var msg = {
+	self.cryptoSetupState = {
+		user           : self.conf.login,
+		uniqueId       : null,
+		dbPass         : null,
+		userPass       : null,
+		publicKey      : null,
+		recoveryKey    : null,
+		serverTempPass : null,
+	};
+	
+	self.tryDBPass = self.conf.password;
+	const msg = {
 		type : 'uniqueid',
 		data : {
 			uniqueId : self.uniqueId,
-			hashedPass : self.conf.password,
+			hashedPass : self.tryDBPass,
 		},
 	};
 	
 	self.clientKeyEx( msg, socketId );
+	self.cryptoSetupState.uniqueId = self.uniqueId;
+	self.cryptoSetupState.dbPass = self.tryDBPass;
 }
 
 ns.Treeroot.prototype.handleClientPublicKey = function( data, socketId ) {
-	var self = this;
+	const self = this;
+	if ( !!self.cryptOngoing )
+		return;
+	
 	self.cryptOngoing = socketId;
-	self.tryPass = data.hashedPass;
+	if ( !self.cryptoSetupState )
+		self.cryptoSetupState = {};
+	
+	if ( data.hashedPass !== self.cryptoSetupState.dbPass )
+		self.cryptoSetupState.userPass = data.hashedPass;
+	
+	self.cryptoSetupState.publicKey = data.publicKey;
+	self.cryptoSetupState.recoveryKey = data.recoveryKey;
+	self.cryptoSetupState.keys = data.keys;
+	
+	if ( self.tryDBPass !== data.hashedPass )
+		self.tryUserPass = data.hashedPass;
+	
 	self.recoveryKey = data.recoveryKey || null;
 	self.sendPublicKey( data.publicKey, data.recoveryKey, pubKeyReply );
 	function pubKeyReply( tempPass ) {
@@ -477,7 +542,7 @@ ns.Treeroot.prototype.handleClientPublicKey = function( data, socketId ) {
 }
 
 ns.Treeroot.prototype.sendPublicKey = function( pubKey, recoveryKey, callback ) {
-	var self = this;
+	const self = this;
 	if ( !self.uniqueId ) {
 		self.log( 'sendPublicKey - uniqueId oppsie', { uid : self.uniqueId, u : self.conf });
 		return;
@@ -511,6 +576,16 @@ ns.Treeroot.prototype.sendPublicKey = function( pubKey, recoveryKey, callback ) 
 
 ns.Treeroot.prototype.clientSignPass = function( tempPass, socketId ) {
 	var self = this;
+	if ( !self.cryptoSetupState ) {
+		try {
+			throw Error( 'clientSignPass - no cryptoSetupState' );
+		} catch( err ) {
+			self.log( 'trace for thing', err );
+		}
+		return;
+	} else
+		self.cryptoSetupState.serverTempPass = tempPass;
+	
 	var signPassEvent = {
 		type : 'signtemppass',
 		data : tempPass,
@@ -518,24 +593,26 @@ ns.Treeroot.prototype.clientSignPass = function( tempPass, socketId ) {
 	self.clientKeyEx( signPassEvent, socketId );
 }
 
-ns.Treeroot.prototype.sendSignedPass = function( signature, socketId ) {
+ns.Treeroot.prototype.sendSignedPass = function( data, socketId ) {
 	var self = this;
+	const signature = data.signed;
+	self.cryptoSetupState.signedPass = signature;
+	self.cryptoSetupState.clearText = data.clearText;
 	var postData = {
-		'Source' : self.source,
-		'UniqueID' : self.uniqueId,
+		'Source'    : self.source,
+		'UniqueID'  : self.uniqueId,
 		'Signature' : signature,
 	};
 	
 	var req = {
-		type : 'request',
-		path : self.authPath,
-		data : postData,
+		type     : 'request',
+		path     : self.authPath,
+		data     : postData,
 		callback : response,
 	};
 	
-	//self.log( 'sendSignedPass', signature );
 	self.queueRequest( req );
-	function response( res ) {
+	function response( res, req, xml ) {
 		if ( !res ) {
 			self.log( 'sendSignedPass - incomplete result, disconnecting' );
 			self.setConnectionError( 'host', { host : self.conf.host } );
@@ -543,9 +620,12 @@ ns.Treeroot.prototype.sendSignedPass = function( signature, socketId ) {
 		}
 		
 		if ( !res.sessionid ) {
-			self.log( 'sendSignedPass - failed, response', res );
+			self.log( 'sendSignedPass - failed, response', {
+				res : res,
+				req : req,
+				xml : xml,
+			});
 			self.keyExchangeFailed();
-			
 			return;
 		}
 		
@@ -556,9 +636,21 @@ ns.Treeroot.prototype.sendSignedPass = function( signature, socketId ) {
 
 ns.Treeroot.prototype.keyExchangeComplete = function( sessionId, socketId ) {
 	var self = this;
-	self.updatePassword( self.tryPass, passBack );
+	//self.log( 'keyExComplete', self.cryptoSetupState, 4 );
+	self.cryptoSetupState = null;
+	if ( self.tryUserPass )
+		self.updatePassword( self.tryUserPass, passBack );
+	else {
+		self.tryDBPass = null;
+		completeSetup();
+	}
+	
 	function passBack( success ) {
-		self.tryPass = null;
+		self.tryUserPass = null;
+		completeSetup();
+	}
+	
+	function completeSetup() {
 		self.validLogin = true;
 		self.cryptOngoing = null;
 		self.sessionId = sessionId;
@@ -566,6 +658,11 @@ ns.Treeroot.prototype.keyExchangeComplete = function( sessionId, socketId ) {
 	}
 	
 	function accountBack( success ) {
+		if ( !success ) {
+			self.reconnect();
+			return;
+		}
+		
 		self.connectionStatus( 'online' );
 		self.executeCryptoQueue();
 		self.startContactUpdate();
@@ -575,6 +672,13 @@ ns.Treeroot.prototype.keyExchangeComplete = function( sessionId, socketId ) {
 
 ns.Treeroot.prototype.keyExchangeFailed = function() {
 	var self = this;
+	self.log( 'keyExFail', self.cryptoSetupState, 4 );
+	self.cryptoSetupState = null;
+	if ( self.tryDBPass ) {
+		self.askRetry();
+		return;
+	}
+	
 	self.resetCrypto( resetDone );
 	function resetDone() {
 		self.getUniqueId( uidBack );
@@ -584,26 +688,50 @@ ns.Treeroot.prototype.keyExchangeFailed = function() {
 		if ( !success )
 			return;
 		
+		self.cryptOngoing = null;
 		self.sendUniqueId();
 	}
 }
 
+ns.Treeroot.prototype.askRetry = function() {
+	const self = this;
+	self.setConnectionError();
+	const event = {
+		type : 'password-old-failed',
+		data : { time : Date.now() },
+	};
+	self.clientKeyEx( event );
+}
+
+ns.Treeroot.prototype.retryDBPassword = function( response, socketId ) {
+	const self = this;
+	if ( !response )
+		return;
+	
+	if ( response.retry )
+		self.reconnect();
+	else
+		self.resetCrypto();
+}
+
+
 ns.Treeroot.prototype.resetCrypto = function( callback ) {
 	var self = this;
-	self.tryPass = null;
+	self.tryDBPass = null;
+	self.tryUserPass = null;
 	self.updatePassword( '', passBack );
 	function passBack( success ) {
 		if ( !success ) {
 			self.log( 'failed to reset password in DB??', update );
 		}
 		
-		self.conf.settings.password = '';
+		self.conf.password = '';
 		self.reconnect();
 	}
 }
 
 ns.Treeroot.prototype.initializeClient = function( socketId ) {
-	var self = this;
+	const self = this;
 	self.client.emitState( socketId );
 	var connState = self.client.getState();
 	if ( !connState || connState.type != 'online' ) {
@@ -619,15 +747,21 @@ ns.Treeroot.prototype.initializeClient = function( socketId ) {
 	var contactIds = self.contacts.getClientIdList();
 	contactIds.forEach( addToState );
 	function addToState( id ) {
-		var contact = self.contacts.get( id );
-		var contactState = self.contactState[ contact.serviceId ];
-		if ( contactState.encId ) {
+		let contact = self.contacts.get( id );
+		let cState = self.contactState[ contact.serviceId ];
+		if ( cState.encId ) {
 			contact.enc = {
-				id : contactState.encId,
-				key : contactState.encKey,
-			}
+				id  : cState.encId,
+				key : cState.encKey,
+			};
 		}
-		state.contacts.push( contact );
+		let data = {
+			contact : contact,
+			cState  : {
+				lastMessage : cState.lastMessage,
+			},
+		};
+		state.contacts.push( data );
 	}
 	
 	var subIds = self.subscriptions.getClientIdList();
@@ -645,8 +779,7 @@ ns.Treeroot.prototype.initializeClient = function( socketId ) {
 }
 
 ns.Treeroot.prototype.clientKeyEx = function( msg, socketId ) {
-	var self = this;
-	//self.log( 'sendKeyEx', msg );
+	const self = this;
 	var keyExEvent = {
 		type : 'keyexchange',
 		data : msg,
@@ -655,21 +788,22 @@ ns.Treeroot.prototype.clientKeyEx = function( msg, socketId ) {
 }
 
 ns.Treeroot.prototype.toClient = function( msg, socketId ) {
-	var self = this;
+	const self = this;
 	self.client.send( msg, socketId );
 }
 
 ns.Treeroot.prototype.toClientContact = function( msg, clientId, socketId ) {
-	var self = this;
+	const self = this;
 	var wrap = {
 		type : clientId,
 		data : msg,
 	};
-	self.client.send( msg, socketId, clientId );
+	self.toClient( wrap, socketId );
+	//self.client.send( msg, socketId, clientId );
 }
 
 ns.Treeroot.prototype.toContactHandler = function( clientId, msg, socketId ) {
-	var self = this;
+	const self = this;
 	var contact = self.contacts.get( clientId );
 	if( !contact ) {
 		self.log( 'no contact for: ', msg );
@@ -686,7 +820,7 @@ ns.Treeroot.prototype.toContactHandler = function( clientId, msg, socketId ) {
 }
 
 ns.Treeroot.prototype.getSettings = function( socketId ) {
-	var self = this;
+	const self = this;
 	var msg = {
 		type : 'settings',
 		data : self.conf,
@@ -695,7 +829,7 @@ ns.Treeroot.prototype.getSettings = function( socketId ) {
 }
 
 ns.Treeroot.prototype.updateSetting = function( pair ) {
-	var self = this;
+	const self = this;
 	var handler = self.settingsUpdateMap[ pair.setting ];
 	if ( !handler ) {
 		self.log( 'updateSetting - no handler for ', pair );
@@ -706,7 +840,7 @@ ns.Treeroot.prototype.updateSetting = function( pair ) {
 }
 
 ns.Treeroot.prototype.updateHost = function( value ) {
-	var self = this;
+	const self = this;
 	var newHost = self.cleanHost( value );
 	self.doPersist( 'host', newHost, persistBack );
 	function persistBack( hostUpdate ) {
@@ -722,7 +856,7 @@ ns.Treeroot.prototype.updateHost = function( value ) {
 }
 
 ns.Treeroot.prototype.updateLogin = function( value, callback ) {
-	var self = this;
+	const self = this;
 	self.doPersist( 'login', value, persistBack );
 	function persistBack( update ) {
 		self.updateClientSetting( update );
@@ -741,7 +875,7 @@ ns.Treeroot.prototype.updateLogin = function( value, callback ) {
 }
 
 ns.Treeroot.prototype.updatePassword = function( value, callback ) {
-	var self = this;
+	const self = this;
 	self.doPersist( 'password', value, persistBack );
 	function persistBack( update ) {
 		if ( !update.success ) {
@@ -761,7 +895,7 @@ ns.Treeroot.prototype.updatePassword = function( value, callback ) {
 }
 
 ns.Treeroot.prototype.updateMsgCrypto = function( bool ) {
-	var self = this;
+	const self = this;
 	self.doPersist( 'msgCrypto', bool, persistBack );
 	function persistBack( update ) {
 		self.updateClientSetting( update );
@@ -773,7 +907,7 @@ ns.Treeroot.prototype.updateMsgCrypto = function( bool ) {
 }
 
 ns.Treeroot.prototype.updateCryptoAccepted = function( bool ) {
-	var self = this;
+	const self = this;
 	self.doPersist( 'cryptoAccepted', bool, persistBack );
 	function persistBack( update ) {
 		self.updateClientSetting( update );
@@ -785,7 +919,7 @@ ns.Treeroot.prototype.updateCryptoAccepted = function( bool ) {
 }
 
 ns.Treeroot.prototype.updateMsgAlert = function( bool ) {
-	var self = this;
+	const self = this;
 	self.doPersist( 'msgAlert', bool, persistBack );
 	function persistBack( update ) {
 		self.updateClientSetting( update );
@@ -797,7 +931,7 @@ ns.Treeroot.prototype.updateMsgAlert = function( bool ) {
 }
 
 ns.Treeroot.prototype.updateLogLimit = function( number ) {
-	var self = this;
+	const self = this;
 	self.doPersist( 'logLimit', number, persistBack );
 	function persistBack( update ) {
 		self.updateClientSetting( update );
@@ -809,7 +943,7 @@ ns.Treeroot.prototype.updateLogLimit = function( number ) {
 }
 
 ns.Treeroot.prototype.updateOnlyOneClient = function( bool ) {
-	var self = this;
+	const self = this;
 	self.doPersist( 'onlyOneClient', bool, persistBack );
 	function persistBack( update ) {
 		self.updateClientSetting( update );
@@ -821,7 +955,7 @@ ns.Treeroot.prototype.updateOnlyOneClient = function( bool ) {
 }
 
 ns.Treeroot.prototype.doPersist = function( setting, value, callback ) {
-	var self = this;
+	const self = this;
 	var update = {
 		setting : setting,
 		value : value,
@@ -837,7 +971,7 @@ ns.Treeroot.prototype.doPersist = function( setting, value, callback ) {
 }
 
 ns.Treeroot.prototype.updateClientSetting = function( update ) {
-	var self = this;
+	const self = this;
 	var wrap = {
 		type : 'setting',
 		data : {
@@ -849,13 +983,13 @@ ns.Treeroot.prototype.updateClientSetting = function( update ) {
 }
 
 ns.Treeroot.prototype.connectionStatus = function( state, data ) {
-	var self = this;
+	const self = this;
 	data = data || {};
 	self.client.setState( state, data );
 }
 
 ns.Treeroot.prototype.setConnectionError = function( type, data ) {
-	var self = this;
+	const self = this;
 	type = type || 'error';
 	data = data || {
 		message : self.conf.host + ' - unspecified error',
@@ -871,7 +1005,7 @@ ns.Treeroot.prototype.setConnectionError = function( type, data ) {
 
 // .stop also sets Offline >.>
 ns.Treeroot.prototype.setConnectionOffline = function( data ) {
-	var self = this;
+	const self = this;
 	data = data || {
 		message : self.conf.host + ' offline',
 		time : Date.now(),
@@ -879,20 +1013,8 @@ ns.Treeroot.prototype.setConnectionOffline = function( data ) {
 	self.connectionStatus( 'offline', data );
 }
 
-ns.Treeroot.prototype.kill = function( callback ) {
-	var self = this;
-	self.sessionId = null;
-	self.initReady = false;
-	self.stop( stopped );
-	
-	function stopped() {
-		if( callback )
-			callback( true );
-	}
-}
-
 ns.Treeroot.prototype.stop = function( callback ) {
-	var self = this;
+	const self = this;
 	self.clearRequestTimeouts();
 	self.stopContactUpdate();
 	self.stopMessageUpdate();
@@ -921,7 +1043,7 @@ ns.Treeroot.prototype.stop = function( callback ) {
 
 // TODO turn this into a 'clear passwords and stuff' function
 ns.Treeroot.prototype.logout = function( callback ) {
-	var self = this;
+	const self = this;
 	if ( callback )
 		callback( true );
 	return; // there is no logout in the api, apparently..
@@ -946,8 +1068,7 @@ ns.Treeroot.prototype.logout = function( callback ) {
 
 
 ns.Treeroot.prototype.unloadContacts = function() {
-	var self = this;
-	self.log( 'unloadContacts', self.contactState );
+	const self = this;
 	removeContacts();
 	removeSubscriptions();
 	self.contactState = {};
@@ -970,7 +1091,7 @@ ns.Treeroot.prototype.unloadContacts = function() {
 }
 
 ns.Treeroot.prototype.startContactUpdate = function() {
-	var self = this;
+	const self = this;
 	self.updateContacts();
 	self.startLongpollContacts();
 	
@@ -992,7 +1113,7 @@ ns.Treeroot.prototype.startContactUpdate = function() {
 }
 
 ns.Treeroot.prototype.stopContactUpdate = function() {
-	var self = this;
+	const self = this;
 	self.stopLongpollContacts();
 	return;
 	
@@ -1004,7 +1125,7 @@ ns.Treeroot.prototype.stopContactUpdate = function() {
 }
 
 ns.Treeroot.prototype.startMessageUpdates = function( contactId ) {
-	var self = this;
+	const self = this;
 	return;
 	var contact = self.contacts.get( contactId );
 	if ( !contact ) {
@@ -1050,7 +1171,6 @@ ns.Treeroot.prototype.startMessageLongPoll = function( contactId ) {
 	function doLongpoll() {
 		self.longpollMessages( contactId, null, longBack );
 		function longBack( res ) {
-			//self.log( 'longBack', res );
 			if ( res )
 				self.messagesToClient( res, contactId );
 			
@@ -1088,7 +1208,7 @@ ns.Treeroot.prototype.doMessageUpdate = function( contactId ) {
 }
 
 ns.Treeroot.prototype.stopMessageUpdate = function( serviceId ) {
-	var self = this;
+	const self = this;
 	if ( serviceId )
 		stopChatUpdate( serviceId )
 	else {
@@ -1122,65 +1242,92 @@ ns.Treeroot.prototype.stopMessageLongpoll = function( contactId ) {
 	cState.longpoll = false;
 }
 
-ns.Treeroot.prototype.getUserList = function( data, socketId ) {
+ns.Treeroot.prototype.getUserList = function( event, socketId ) {
 	var self = this;
-	self.fetchContact( null, usersBack );
-	function usersBack( res ) {
-		if ( res.response != 'ok' ) {
-			self.log( 'getUserList - failed', res );
-			return;
+	return new Promise(( resolve, reject ) => {
+		self.fetchContact( null, usersBack );
+		function usersBack( res ) {
+			let users = [];
+			if ( res.response != 'ok' ) {
+				self.log( 'getUserList - failed', res );
+				send( null, users );
+				return;
+			}
+			
+			users = res.items.Contacts;
+			users = users.filter( isNotContactSubOrSelf );
+			var userList = users.map( buildUserObj );
+			send( null, userList );
+			
+			function send( err, list ) {
+				if ( err )
+					reject( err );
+				else
+					resolve( list );
+			}
+			
+			function isNotContactSubOrSelf( user ) {
+				var contact = self.contacts.get( user.ID );
+				var sub = self.subscriptions.get( user.ID );
+				
+				if ( contact )
+					return false;
+				
+				if ( sub )
+					return false;
+				
+				if ( user.ID === self.account.id )
+					return false;
+				
+				return true;
+			}
+			
+			function buildUserObj( user ) {
+				let name = user.DisplayName || user.Username;
+				var userObj = {
+					id       : user.ID,
+					name     : name,
+					email    : user.Email,
+					alias    : user.Username,
+				};
+				
+				//userObj.displayName = userObj.name || userObj.username;
+				return userObj;
+			}
 		}
-		
-		var users = res.items.Contacts;
-		users = users.filter( isNotContactSubOrSelf );
-		var userList = users.map( buildUserObj );
-		var msg = {
-			type : 'userlist',
-			data : userList,
-		};
-		self.toClient( msg, socketId );
-		
-		function isNotContactSubOrSelf( user ) {
-			var contact = self.contacts.get( user.ID );
-			var sub = self.subscriptions.get( user.ID );
-			
-			if ( contact )
-				return false;
-			
-			if ( sub )
-				return false;
-			
-			if ( user.ID === self.account.id )
-				return false;
-			
+	});
+}
+
+ns.Treeroot.prototype.handleSearchAvailable = async function( searchStr ) {
+	const self = this;
+	const filterRX = new RegExp( searchStr, 'i' );
+	let pool = await self.getUserList();
+	if ( !pool || !pool.length )
+		return [];
+	
+	const list = pool.filter( item => {
+		if ( item.name.match( filterRX ))
 			return true;
-		}
 		
-		function buildUserObj( user ) {
-			let name = user.DisplayName || user.Username;
-			var userObj = {
-				id       : user.ID,
-				email    : user.Email,
-				username : user.Username,
-				name     : name,
-			};
-			
-			userObj.displayName = userObj.name || userObj.username;
-			return userObj;
-		}
-	}
+		if ( item.email && item.email.match( filterRX ))
+			return true;
+		
+		if ( item.alias && item.alias.match( filterRX ))
+			return true;
+		
+		return false;
+	});
+	
+	return list.map( user => {
+		return {
+			id   : user.id,
+			name : user.name,
+		};
+	});
 }
 
 ns.Treeroot.prototype.addContact = function( relation ) {
-	var self = this;
-	/*
-	self.log( 'addContact', {
-		relation : relation,
-		sids     : self.contacts.sids,
-		cids     : self.contacts.cids,
-		cState   : Object.keys( self.contactState ),
-	}, 3 );
-	*/
+	const self = this;
 	var contactState = self.contactState[ relation.ID ];
 	var contact = self.contacts.get( relation.ID );
 	if ( contactState || contact ) {
@@ -1231,13 +1378,22 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		self.toContactHandler( contact.clientId, data, socketId );
 	}
 	
-	var action = {
+	if ( relation.LastMessageData )
+		cState.lastMessage = self.buildMessage(
+			relation.LastMessageData,
+			relation.ID,
+		);
+	
+	const add = {
 		type : 'add',
 		data : {
-			contact : contact
-		}
+			contact : contact,
+			cState  : {
+				lastMessage : cState.lastMessage,
+			},
+		},
 	};
-	self.contactEvent( action );
+	self.contactEvent( add );
 	
 	return contact.serviceId;
 	
@@ -1245,9 +1401,9 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		var contact = relation;
 		contact.serviceId = relation.ID;
 		contact.publicKey = relation.PublicKey;
-		//contact.clientId = uuid.v4() + '-' + contact.serviceId ;
 		contact.clientId = 'treeroot-' + self.clientId.split( '-')[ 1 ] + '-' + contact.serviceId ;
 		contact.displayName = relation.Name || relation.Username;
+		contact.email = relation.Email;
 		contact.online = !!relation.IsOnline;
 		let imgObj = relation.ProfileImage;
 		let imgPath = '';
@@ -1256,12 +1412,13 @@ ns.Treeroot.prototype.addContact = function( relation ) {
 		
 		contact.imagePath = imgPath;
 		contact.unreadMessages = relation.UnSeenMessages;
+		
 		return contact;
 	}
 }
 
 ns.Treeroot.prototype.addSubscription = function( request ) {
-	var self = this;
+	const self = this;
 	var sub = self.subscriptions.get( request.ID );
 	if( sub ) // subscription already added
 		return;
@@ -1287,7 +1444,7 @@ ns.Treeroot.prototype.addSubscription = function( request ) {
 }
 
 ns.Treeroot.prototype.removeContact = function( serviceId ) {
-	var self = this;
+	const self = this;
 	var contact = self.contacts.get( serviceId );
 	if ( !contact )
 		return;
@@ -1311,7 +1468,7 @@ ns.Treeroot.prototype.removeContact = function( serviceId ) {
 }
 
 ns.Treeroot.prototype.removeSubscription = function( serviceId ) {
-	var self = this;
+	const self = this;
 	var sub = self.subscriptions.get( serviceId );
 	
 	if( !sub )
@@ -1329,7 +1486,7 @@ ns.Treeroot.prototype.removeSubscription = function( serviceId ) {
 }
 
 ns.Treeroot.prototype.contactEvent = function( action ) {
-	var self = this;
+	const self = this;
 	var wrap = {
 		type : 'contact',
 		data : action,
@@ -1338,7 +1495,7 @@ ns.Treeroot.prototype.contactEvent = function( action ) {
 }
 
 ns.Treeroot.prototype.subscriptionEvent = function( action ) {
-	var self = this;
+	const self = this;
 	var wrap = {
 		type : 'subscription',
 		data : action,
@@ -1347,7 +1504,7 @@ ns.Treeroot.prototype.subscriptionEvent = function( action ) {
 }
 
 ns.Treeroot.prototype.getLog = function( clientId, socketId ) {
-	var self = this;
+	const self = this;
 	var contact = self.contacts.get( clientId );
 	if ( !contact ) {
 		self.log( 'no contact for clientId', clientId )
@@ -1364,6 +1521,7 @@ ns.Treeroot.prototype.getLog = function( clientId, socketId ) {
 		}
 		
 		self.messagesToClient( messages, cId, 'log', socketId );
+		sendNullMessage();
 	}
 	
 	function sendNullMessage() {
@@ -1381,7 +1539,7 @@ ns.Treeroot.prototype.getLog = function( clientId, socketId ) {
 }
 
 ns.Treeroot.prototype.postMessage = function( clientId, message ) {
-	var self = this;
+	const self = this;
 	var contact = self.contacts.get( clientId );
 	var cId = contact.serviceId;
 	var postData = {
@@ -1409,7 +1567,7 @@ ns.Treeroot.prototype.postMessage = function( clientId, message ) {
 }
 
 ns.Treeroot.prototype.postCryptoMessage = function( clientId, data ) {
-	var self = this;
+	const self = this;
 	var contact = self.contacts.get( clientId );
 	var cId = contact.serviceId;
 	
@@ -1450,7 +1608,7 @@ ns.Treeroot.prototype.postCryptoMessage = function( clientId, data ) {
 }
 
 ns.Treeroot.prototype.postResponse = function( serviceId, data, req ) {
-	var self = this;
+	const self = this;
 	return;
 	var cId = serviceId;
 	const lmId = parseInt( data.data, 10 );
@@ -1468,7 +1626,7 @@ ns.Treeroot.prototype.getNewMessages = function(
 	lastMessageId,
 	callback )
 {
-	var self = this;
+	const self = this;
 	var contact = self.contacts.get( contactId );
 	if ( !contact ) {
 		self.log( 'no contact: ', contactId );
@@ -1532,7 +1690,7 @@ ns.Treeroot.prototype.getMessages = function(
 	limit,
 	callback
 ) {
-	var self = this;
+	const self = this;
 	var contact = self.contacts.get( contactId );
 	if ( !contact ) {
 		self.log( 'no contact for id: ', contactId );
@@ -1610,7 +1768,7 @@ ns.Treeroot.prototype.longpollMessages = function(
 }
 
 ns.Treeroot.prototype.handleMessages = function( data, contactId ) {
-	var self = this;
+	const self = this;
 	if ( !data || !data.items )
 		return null;
 	
@@ -1622,7 +1780,7 @@ ns.Treeroot.prototype.handleMessages = function( data, contactId ) {
 }
 
 ns.Treeroot.prototype.setupChatEncrypt = function( encId, encKey, contactId ) {
-	var self = this;
+	const self = this;
 	if ( !encId || !encKey )
 		return;
 	
@@ -1648,7 +1806,6 @@ ns.Treeroot.prototype.setupChatEncrypt = function( encId, encKey, contactId ) {
 			key : encKey,
 		},
 	};
-	//self.log( 'setupChatEncrypt', enc.data );
 	self.toClientContact( enc, contact.clientId );
 }
 
@@ -1688,51 +1845,67 @@ ns.Treeroot.prototype.messagesToClient = function(
 		self.log( 'wtf, no contact for: ', contactId );
 		return;
 	}
-	const cState = self.contactState[ contactId ];
 	
-	messages.forEach( push );
+	messages = messages.map( msg => {
+		let built = self.buildMessage( msg, contactId, type );
+		return built;
+	});
+	messages.forEach( toClient );
 	self.startMessageUpdates( contactId );
-	
-	function push( data ) {
-		if ( data.Message === undefined )
+	function toClient( msg ) {
+		if ( !msg )
 			return;
-		
-		let lastMessageId = cState.lastMessageId || 0;
-		if ( 'log' !== type ) {
-			if ( data.ID <= lastMessageId )
-				return;
-			
-			cState.lastMessageId = data.ID;
-		}
-		
-		
-		//self.log( 'data date', data.Date );
-		let timestamp = null;
-		if ( data.TimeCreated )
-			timestamp = data.TimeCreated * 1000;
-		else
-			timestamp = Date.parse( data.Date );
-		
-		var from = contact.serviceId == data.PosterID ? contact.clientId : null;
-		var msgId = 'mid-' + data.ID;
-		var msg = {
-			type : 'message',
-			data : {
-				mid : msgId,
-				from :  from,
-				message : data.Message,
-				time : timestamp,
-			},
-		};
-		
-		if ( data.IsCrypto )
-			msg.data = addCrypto( msg.data, data, cState );
-		
-		if ( type )
-			msg =  wrapIn( type, msg );
 		
 		self.toClientContact( msg, contact.clientId, socketId );
 	}
+}
+
+ns.Treeroot.prototype.buildMessage = function( data, contactId, type ) {
+	const self = this;
+	if ( data.Message === undefined )
+		return null;
+	
+	const contact = self.contacts.get( contactId );
+	const cState = self.contactState[ contactId ];
+	if ( !contact || !cState ) {
+		console.log( 'contact', contact );
+		return null;
+	}
+	
+	let lastMessageId = cState.lastMessageId || 0;
+	if ( 'log' !== type ) {
+		if ( data.ID <= lastMessageId )
+			return null;
+		
+		cState.lastMessageId = data.ID;
+	}
+	
+	let timestamp = null;
+	if ( data.TimeCreated )
+		timestamp = data.TimeCreated * 1000;
+	else
+		timestamp = Date.parse( data.Date );
+	
+	var from = contact.serviceId == data.PosterID ? contact.clientId : null;
+	var msgId = 'mid-' + data.ID;
+	var msg = {
+		type : 'message',
+		data : {
+			mid     : msgId,
+			from    : from,
+			message : data.Message,
+			time    : timestamp,
+		},
+	};
+	
+	if ( data.IsCrypto )
+		msg.data = addCrypto( msg.data, data, cState );
+	
+	if ( type )
+		msg =  wrapIn( type, msg );
+	
+	cState.lastMessage = msg;
+	return msg;
 	
 	function wrapIn( type, msg ) {
 		var wrap = {
@@ -1765,7 +1938,7 @@ ns.Treeroot.prototype.messagesToClient = function(
 }
 
 ns.Treeroot.prototype.fetchContact = function( contactId, callback ) {
-	var self = this;
+	const self = this;
 	var postData = {};
 	
 	if ( contactId )
@@ -1788,7 +1961,7 @@ ns.Treeroot.prototype.fetchContact = function( contactId, callback ) {
 }
 
 ns.Treeroot.prototype.fetchContacts = function( callback ) {
-	var self = this;
+	const self = this;
 	var postData = {
 	};
 	
@@ -1839,7 +2012,7 @@ ns.Treeroot.prototype.startLongpollContacts = function() {
 		if ( !self.isPollingContacts )
 			return;
 		
-		self.longpollContacts( self.lastActivity, longBack );
+		self.longpollContacts( longBack );
 		function longBack( res ) {
 			self.lastActivity = null;
 			if ( !self.isPollingContacts )
@@ -1859,17 +2032,20 @@ ns.Treeroot.prototype.startLongpollContacts = function() {
 	}
 }
 
-ns.Treeroot.prototype.longpollContacts = function( lastActivity, callback ) {
+ns.Treeroot.prototype.longpollContacts = function( callback ) {
 	const self = this;
 	if ( self.contactsLongpollSent )
 		return;
 	
 	self.contactsLongpollSent = true;
 	const postData = {
-		'LastActivity' : lastActivity || ( Math.floor( Date.now() / 1000 )),
-		'Test'         : true,
-		'Loop'         : self.longpollContactsTimeout,
+		'LastActivity'   : self.lastActivity || ( Math.floor( Date.now() / 1000 )),
+		'Test'           : true,
+		'Loop'           : self.longpollContactsTimeout,
 	};
+	
+	if ( self.lastActivityId )
+		postData[ 'LastActivityID' ] = self.lastActivityId;
 	
 	var req = {
 		path     : self.relationsPath,
@@ -1889,34 +2065,33 @@ ns.Treeroot.prototype.stopLongpollContacts = function() {
 	self.isPollingContacts = false;
 }
 
-ns.Treeroot.prototype.handleContactsUpdate = function( items ) {
+ns.Treeroot.prototype.handleContactsUpdate = function( event ) {
 	const self = this;
-	let meta = items.TypeActivity;
-	let rels = self.getArr( items.Relations );
-	let subs = self.getArr( items.Requests );
-	if ( meta )
-		meta = parse( meta );
+	self.lastActivityId = event.LastActivityID;
+	let items = event.LastActivityData;
+	let rels = event.Relations;
+	let subs = event.Requests;
+	if ( !items )
+		items = getLegacyMeta( event.TypeActivity );
 	
-	if ( meta && meta.type ) {
+	if ( !items || !items.length )
+		return;
+	
+	items.forEach( handleEvent );
+	self.checkContacts( rels, subs );
+	
+	function handleEvent( meta ) {
+		if ( !meta || !meta.type )
+			return;
+		
 		if ( 'Relation' === meta.type ) {
 			rels = checkRelationRemoved( rels, meta.id );
 		}
 		
 		if ( 'Message' === meta.type ) {
-			if ( !rels[ 0 ] ) {
-				self.log( 'handleContactsUpdate, type Message - missing rels', {
-					rels   : rels,
-					meta  : meta,
-					items : items,
-				});
-			} else
-				self.handleHasNewMessage( rels[ 0 ], meta );
-				
-			return;
+			self.handleHasNewMessage( rels, meta );
 		}
 	}
-	
-	self.checkContacts( rels, subs );
 	
 	function checkRelationRemoved( rels, id ) {
 		rels = rels.filter( notRemoved );
@@ -1931,13 +2106,21 @@ ns.Treeroot.prototype.handleContactsUpdate = function( items ) {
 		}
 	}
 	
+	function getLegacyMeta( str ) {
+		let meta = parse( str );
+		if ( !meta )
+			return [];
+		
+		return [ meta ];
+	}
+	
 	function parse( type ) {
 		let res = null;
 		if ( !type )
 			return null;
 		
 		try {
-			res = JSON.parse( type )
+			res = JSON.parse( type );
 		} catch( e ) {
 			return null;
 		}
@@ -1952,17 +2135,19 @@ ns.Treeroot.prototype.handleRelationRemoved = function( rel, uid ) {
 	self.removeSubscription( uid );
 }
 
-ns.Treeroot.prototype.handleHasNewMessage = function( rel, meta ) {
+ns.Treeroot.prototype.handleHasNewMessage = function( rels, meta ) {
 	const self = this;
-	const sId = meta.id;
+	const rel = rels[ 0 ];
+	const cId = meta.id;
+	const cState = self.contactState[ cId ];
 	if ( null == rel.LastMessage ) {
 		self.log( 'handleHasMessage - LastMessage is not defined', rel );
 		return;
 	}
 	
-	const lmId = parseInt( rel.LastMessage, 10 );
+	const lmId = parseInt( cState.lastMessageId, 10 );
 	self.getNewMessages(
-		sId,
+		cId,
 		lmId,
 		messagesBack
 	);
@@ -1973,12 +2158,12 @@ ns.Treeroot.prototype.handleHasNewMessage = function( rel, meta ) {
 			return;
 		}
 		
-		self.messagesToClient( messages, sId );
+		self.messagesToClient( messages, cId );
 	}
 }
 
 ns.Treeroot.prototype.fetchContactImages = function( imageIds, callback ) {
-	var self = this;
+	const self = this;
 	var postData = {
 		'Images' : imageIds,
 	};
@@ -2002,33 +2187,20 @@ ns.Treeroot.prototype.fetchContactImages = function( imageIds, callback ) {
 }
 
 ns.Treeroot.prototype.subscription = function( sub ) {
-	var self = this;
-	self.subscriptionMap = self.subScriptionMap || {
-		'subscribe' : subscribe,
-		'unsubscribe' : unsubscribe,
-		'allow' : allow,
-		'deny' : deny,
-		'cancel' : cancel
-	}
-	
-	if ( !self.subscriptionMap[ sub.type ]) {
+	const self = this;
+	const handler = self.subscriptionMap[ sub.type ];
+	if ( !handler ) {
 		self.log( 'subscription type unknow', sub );
 		return;
 	}
 	
-	self.subscriptionMap[ sub.type ]( sub );
-	function subscribe( sub ) { self.subscribe( sub.id, sub.idType ); }
-	function unsubscribe( sub ) { self.unsubscribe( sub.clientId ); }
-	function allow( sub ) { self.allowSubscription( sub.clientId ); }
-	function deny( sub ) { self.denySubscription( sub.clientId ); }
-	function cancel( sub ) { self.cancelSubscription( sub.clientId ); }
+	handler( sub.data );
 }
-
 
 // TODO ( maybe? )
 // simple subscription check instead of doing a full contacts update
 ns.Treeroot.prototype.checkSubscriptionWaiting = function( callback ) {
-	var self = this;
+	const self = this;
 	var postData = {};
 	
 	self.queueRequest({
@@ -2044,7 +2216,7 @@ ns.Treeroot.prototype.checkSubscriptionWaiting = function( callback ) {
 }
 
 ns.Treeroot.prototype.unsubscribe = function( clientId ) {
-	var self = this;
+	const self = this;
 	var contact = self.contacts.get( clientId );
 	if ( !contact ) {
 		self.log( 'unsubscribe, invalid contact', clientId );
@@ -2066,44 +2238,50 @@ ns.Treeroot.prototype.unsubscribe = function( clientId ) {
 	}
 }
 
-ns.Treeroot.prototype.subscribe = function( id, idType ) {
-	var self = this;
-	var idTypes = [
+ns.Treeroot.prototype.subscribe = function( sub ) {
+	const self = this;
+	const idTypes = [
 		'ContactID',
 		'ContactEmail',
 		'ContactNumber', // phone number
-		'ContactUsername'
+		'ContactUsername',
 	];
 	
-	var typeIndex = idTypes.indexOf( idType );
+	const typeIndex = idTypes.indexOf( sub.idType );
 	if ( typeIndex == -1 ) {
-		self.log( 'subscribe: invalid id type', idType );
+		self.log( 'subscribe: invalid id type', sub.idType );
 		return;
 	}
 	
-	var postData = {};
-	postData[ idTypes[ typeIndex ]] = id;
+	const postData = {};
+	postData[ idTypes[ typeIndex ]] = sub.id;
 	
 	self.subscriptionRequest( postData, subBack );
 	function subBack( result ) {
-		if ( !result ) {
-			self.log( 'sub failed', result );
-			return;
-		}
+		let ok = false;
+		if ( result && result.response && 'ok' === result.response )
+			ok = true;
 		
-		//self.updateContacts();
+		const subConfirm = {
+			type : 'confirm',
+			data : {
+				reqId    : sub.reqId,
+				response : ok,
+			},
+		};
+		self.subscriptionEvent( subConfirm );
 	}
 }
 
 ns.Treeroot.prototype.allowSubscription = function( clientId ) {
-	var self = this;
-	var contact = self.subscriptions.get( clientId );
+	const self = this;
+	const contact = self.subscriptions.get( clientId );
 	if ( !contact ) {
 		self.log( 'allowSubscription, invalid contact', clientId );
 		return;
 	}
 	
-	var postData = {
+	const postData = {
 		AllowID : contact.serviceId
 	};
 	
@@ -2120,7 +2298,7 @@ ns.Treeroot.prototype.allowSubscription = function( clientId ) {
 }
 
 ns.Treeroot.prototype.denySubscription = function( clientId ) {
-	var self = this;
+	const self = this;
 	var contact = self.subscriptions.get( clientId );
 	if ( !contact ) {
 		self.log( 'denySubscription, invalid contact', clientId );
@@ -2143,7 +2321,7 @@ ns.Treeroot.prototype.denySubscription = function( clientId ) {
 }
 
 ns.Treeroot.prototype.cancelSubscription = function( clientId ) {
-	var self = this;
+	const self = this;
 	var contact = self.subscriptions.get( clientId );
 	var postData = {
 		CancelID : contact.serviceId
@@ -2162,7 +2340,7 @@ ns.Treeroot.prototype.cancelSubscription = function( clientId ) {
 }
 
 ns.Treeroot.prototype.subscriptionRequest = function( postData, callback ) {
-	var self = this;
+	const self = this;
 	self.queueRequest({
 		type : 'request',
 		path : self.subscriptionPath,
@@ -2172,7 +2350,7 @@ ns.Treeroot.prototype.subscriptionRequest = function( postData, callback ) {
 }
 
 ns.Treeroot.prototype.updateContacts = function() {
-	var self = this;
+	const self = this;
 	if ( self.isUpdatingContacts )
 		return;
 	
@@ -2349,13 +2527,6 @@ ns.Treeroot.prototype.checkContacts = function( relations, requests ) {
 				return;
 			}
 			
-			/*
-			self.log( 'online change: '
-				+ relation.Username
-				+ ' - '
-				+ ( !!isOnline ).toString());
-			*/
-			
 			contact.online = isOnline;
 			var online = isOnline ? 'online' : 'offline';
 			var presence = {
@@ -2452,7 +2623,6 @@ ns.Treeroot.prototype.checkHasMessage = function( relation, serviceId, done ) {
 	} else
 		lastMsgId = rlm;
 	
-	//self.log( 'checkContacts - hasMessage', lastMsgId );
 	self.getNewMessages(
 		serviceId,
 		lastMsgId,
@@ -2465,7 +2635,6 @@ ns.Treeroot.prototype.checkHasMessage = function( relation, serviceId, done ) {
 			return;
 		}
 		
-		//self.log( 'checkContacts - hasMessage messageBack', messages );
 		let resTime = Date.now();
 		let runTimeMS = resTime - reqTime;
 		self.messagesToClient( messages, serviceId );
@@ -2474,7 +2643,7 @@ ns.Treeroot.prototype.checkHasMessage = function( relation, serviceId, done ) {
 }
 
 ns.Treeroot.prototype.getAccountInfo = function( callback ) {
-	var self = this;
+	const self = this;
 	// session gets added to postData in request dispatch
 	// auth without user / pass returns user id if you have a valid session
 	var postData = {
@@ -2506,6 +2675,7 @@ ns.Treeroot.prototype.getAccountInfo = function( callback ) {
 		}
 		
 		var acc = res.items.Contacts[ 0 ];
+		self.account = {};
 		self.account.name = acc.Name || acc.DisplayName || acc.Username || acc.Email;
 		self.account.id = acc.ID;
 		self.account.avatarId = parseInt( acc.ImageID, 10 );
@@ -2545,8 +2715,18 @@ ns.Treeroot.prototype.getAccountInfo = function( callback ) {
 	}
 }
 
+ns.Treeroot.prototype.setNotLoggedIn = function() {
+	const self = this;
+	self.account = null;
+	const unset = {
+		type : 'account',
+		data : null,
+	};
+	self.toClient( unset );
+}
+
 ns.Treeroot.prototype.resetPassphrase = function( e, socketId ) {
-	var self = this;
+	const self = this;
 	var postData = {
 		Email : self.conf.login,
 	};
@@ -2575,7 +2755,7 @@ ns.Treeroot.prototype.resetPassphrase = function( e, socketId ) {
 }
 
 ns.Treeroot.prototype.register = function( data, socketId ) {
-	var self = this;
+	const self = this;
 	var required = [
 		'Email',
 		'Username',
@@ -2609,7 +2789,6 @@ ns.Treeroot.prototype.register = function( data, socketId ) {
 	self.queueRequest( req, true );
 	function response( res ) {
 		if ( res.response != 'ok' ) {
-			self.log( 'register failed', data );
 			regFailed( res.reason );
 			self.setConnectionError( 'info-missing', self.conf );
 			return
@@ -2652,7 +2831,7 @@ ns.Treeroot.prototype.register = function( data, socketId ) {
 }
 
 ns.Treeroot.prototype.activate = function( data, socketId ) {
-	var self = this;
+	const self = this;
 	var postData = {
 		Email : data.Email,
 		UserType : '0',
@@ -2711,7 +2890,7 @@ ns.Treeroot.prototype.activate = function( data, socketId ) {
 }
 
 ns.Treeroot.prototype.tryRegisterDataLogin = function( data ) {
-	var self = this;
+	const self = this;
 	log ( 'tryRegisterdataLogiun - NYI', data );
 	return;
 	
@@ -2722,7 +2901,7 @@ ns.Treeroot.prototype.tryRegisterDataLogin = function( data ) {
 }
 
 ns.Treeroot.prototype.getPostOptions = function( path, dataLength ) {
-	var self = this;
+	const self = this;
 	return {
 		hostname : self.conf.host,
 		port : 443,
@@ -2734,7 +2913,7 @@ ns.Treeroot.prototype.getPostOptions = function( path, dataLength ) {
 }
 
 ns.Treeroot.prototype.queueRequest = function( request, infront ) {
-	var self = this;
+	const self = this;
 	if ( !request )
 		throw new Error( 'queueRequest called with no request' );
 	
@@ -2758,7 +2937,7 @@ ns.Treeroot.prototype.queueRequest = function( request, infront ) {
 }
 
 ns.Treeroot.prototype.nextRequest = function() {
-	var self = this;
+	const self = this;
 	if ( self.requestQueue.length )
 		return self.requestQueue.shift();
 	if( self.updateQueue.length ) {
@@ -2771,7 +2950,7 @@ ns.Treeroot.prototype.nextRequest = function() {
 }
 
 ns.Treeroot.prototype.clearRequestQueue = function() {
-	var self = this;
+	const self = this;
 	self.requestQueue.forEach( returnRequest );
 	self.updateQueue.forEach( returnRequest );
 	self.requestQueue = [];
@@ -2795,7 +2974,7 @@ ns.Treeroot.prototype.clearRequestTimeouts = function() {
 }
 
 ns.Treeroot.prototype.startRequestLoop = function() {
-	var self = this;
+	const self = this;
 	if ( self.reqLoopInterval ) {
 		clearInterval( self.reqLoopInterval );
 		self.reqLoopInterval = null;
@@ -2826,7 +3005,7 @@ ns.Treeroot.prototype.startRequestLoop = function() {
 }
 
 ns.Treeroot.prototype.stopRequestLoop = function() {
-	var self = this;
+	const self = this;
 	if ( self.reqLoopInterval ) {
 		clearInterval( self.reqLoopInterval );
 		self.reqLoopInterval = null;
@@ -2837,7 +3016,7 @@ ns.Treeroot.prototype.stopRequestLoop = function() {
 }
 
 ns.Treeroot.prototype.doRequestStep = function() {
-	var self = this;
+	const self = this;
 	var request = self.nextRequest();
 	if ( !request )
 		return;
@@ -2922,13 +3101,12 @@ ns.Treeroot.prototype.clearLongpolls = function() {
 }
 
 ns.Treeroot.prototype.sendRequest = function( request, done ) {
-	var self = this;
+	const self = this;
 	var path = self.apiPath + request.path;
 	var data = request.data || {};
 	if ( self.sessionId )
 		data[ 'SessionID' ] = self.sessionId;
 	
-	//self.log( 'sendRequest', request );
 	var query = querystring.stringify( data );
 	var options = self.getPostOptions( path, query.length );
 	var req = https.request( options, requestBack );
@@ -2965,7 +3143,7 @@ ns.Treeroot.prototype.sendRequest = function( request, done ) {
 }
 
 ns.Treeroot.prototype.handleRequestError = function( errCode, request ) {
-	var self = this;
+	const self = this;
 	if ( self.shouldRetry( request ) )
 		self.requeueRequest( request, 'ERR_HOST_' + errCode );
 	else
@@ -2973,7 +3151,7 @@ ns.Treeroot.prototype.handleRequestError = function( errCode, request ) {
 }
 
 ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
-	var self = this;
+	const self = this;
 	self.delouse( xml, dataBack );
 	function dataBack( data ) {
 		if ( !data ) {
@@ -3012,6 +3190,12 @@ ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
 		// nothing to list
 		if ( '0002' === data.code ) {
 			done( false );
+			return;
+		}
+		
+		// Wrong username or password
+		if ( '0003' === data.code ) {
+			done( data );
 			return;
 		}
 		
@@ -3092,7 +3276,7 @@ ns.Treeroot.prototype.requeueRequest = function( req, errCode ) {
 }
 
 ns.Treeroot.prototype.getArr = function( data ) {
-	var self = this;
+	const self = this;
 	if ( !data )
 		return [];
 	
@@ -3103,7 +3287,7 @@ ns.Treeroot.prototype.getArr = function( data ) {
 }
 
 ns.Treeroot.prototype.delouse = function( xml, callback ) {
-	var self = this;
+	const self = this;
 	// first, lets pretend its json
 	let json = self.objectify( xml );
 	if ( json ) {
@@ -3148,7 +3332,7 @@ ns.Treeroot.prototype.delouse = function( xml, callback ) {
 }
 
 ns.Treeroot.prototype.objectify = function( str ) {
-	var self = this;
+	const self = this;
 	if ( 'string' !== typeof( str ))
 		return str;
 	
@@ -3161,7 +3345,7 @@ ns.Treeroot.prototype.objectify = function( str ) {
 }
 
 ns.Treeroot.prototype.stringify = function( obj ) {
-	var self = this;
+	const self = this;
 	if ( 'object' !== typeof( obj ))
 		return obj;
 	
@@ -3173,7 +3357,7 @@ ns.Treeroot.prototype.stringify = function( obj ) {
 }
 
 ns.Treeroot.prototype.getPostHeader = function( length ) {
-	var self = this;
+	const self = this;
 	return {
 		'Content-Type' : 'application/x-www-form-urlencoded',
 		'Content-Length' : length
@@ -3181,7 +3365,7 @@ ns.Treeroot.prototype.getPostHeader = function( length ) {
 }
 
 ns.Treeroot.prototype.getNow = function() {
-	var self = this;
+	const self = this;
 	// 1970-01-13 21:02:09
 	var now = new Date();
 	var dateString = '';

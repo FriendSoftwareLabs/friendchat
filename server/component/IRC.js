@@ -48,13 +48,19 @@ ns.IRC = function( conn ) {
 // Public
 
 // static
-ns.IRC.prototype.getSetup = function( username ) {
-	const setup = {
-		settings : {
-			nick : username,
-		},
-	};
-	return setup;
+ns.IRC.prototype.getSetup = function( conf, username ) {
+	if ( !conf ) {
+		conf = {
+			settings : {
+				nick : username,
+			},
+		};
+		return conf;
+	}
+	
+	conf.settings = conf.settings || {};
+	conf.settings.nick = username;
+	return conf;
 }
 
 ns.IRC.prototype.connect = function( conf ) {
@@ -158,7 +164,6 @@ ns.IrcClient = function( client, conf ) {
 		return new ns.IrcClient( client, conf );
 	
 	var self = this;
-	console.log( 'irc conf', conf );
 	self.clientId = conf.clientId;
 	self.client = client;
 	self.conf = conf;
@@ -196,13 +201,13 @@ ns.IrcClient.prototype.init = function() {
 	self.setMessageMap(); // things from the client
 	self.setCommandMap(); // things from the server
 	
-	var logId = self.client.on(   'log'     , getLog );
-	var msgId = self.client.on(   'message' , handleMessage );
-	var cmdId = self.client.on(   'command' , handleCommand );
-	var rawId = self.client.on(   'raw'     , handleRaw );
-	var privId = self.client.on(  'private' , handlePrivate );
-	var settsId = self.client.on( 'settings', getSettings );
-	var settId = self.client.on(  'setting' , updateSetting );
+	var logId   = self.client.on( 'log'     , getLog        );
+	var msgId   = self.client.on( 'message' , handleMessage );
+	var cmdId   = self.client.on( 'command' , handleCommand );
+	var rawId   = self.client.on( 'raw'     , handleRaw     );
+	var privId  = self.client.on( 'private' , handlePrivate );
+	var settsId = self.client.on( 'settings', getSettings   );
+	var settId  = self.client.on( 'setting' , updateSetting );
 	self.clientListenerId = [];
 	self.clientListenerId.push( logId );
 	self.clientListenerId.push( msgId );
@@ -1789,10 +1794,33 @@ ns.IrcClient.prototype.handleMessage = function( msg ) {
 ns.IrcClient.prototype.parseCommand = function( msg, source ) {
 	var self = this;
 	var str = makeString( msg );
-	if ( !str )
-		discard( msg );
+	if ( !str ) {
+		clog( 'parseCommand - could not make string', msg );
+		return;
+	}
 	
 	msg = str;
+	
+	if ( !msg.length ) {
+		discard( msg );
+		return;
+	}
+	
+	let cmds = self.cmd.check( msg, source );
+	if ( !cmds ) {
+		clog( 'parseCommand - could not make command', msg );
+		return;
+	}
+	
+	clog( 'parseCommand - cmds', cmds, 4 );
+	cmds.forEach( cmd => {
+		self.send( cmd.message );
+		if ( cmd.type === 'privmsg' )
+			copyToSelf( cmd );
+	});
+	//self.send( cmd.message );
+	
+	
 	
 	function makeString( str ) {
 		try {
@@ -1801,26 +1829,6 @@ ns.IrcClient.prototype.parseCommand = function( msg, source ) {
 			clog( 'could not string', msg );
 			return null;
 		}
-	}
-	
-	if ( !msg.length ) {
-		discard( msg );
-		return;
-	}
-	
-	var cmd = self.cmd.check( msg, source );
-	if ( !cmd ) {
-		discard( msg );
-		return;
-	}
-	
-	self.send( cmd.message );
-	
-	if ( cmd.type === 'privmsg' )
-		copyToSelf( cmd );
-	
-	function discard( msg ) {
-		//clog( 'command - invalid command, in some way', msg );
 	}
 	
 	function copyToSelf( msg ) {
@@ -2166,7 +2174,6 @@ ns.Channel = function( conn, conf ) {
 		return new ns.Channel( conf );
 	
 	var self = this;
-	self.conn = conn;
 	self.clientId = conf.clientId;
 	self.name = conf.name;
 	self.server = conf.toServer;
@@ -2181,7 +2188,7 @@ ns.Channel = function( conn, conf ) {
 	
 	self.logTrimTimer = null;
 	
-	self.init();
+	self.init( conn );
 }
 
 // Public
@@ -2236,26 +2243,58 @@ ns.Channel.prototype.modeMap = {
 
 ns.Channel.prototype.modeOrder = [ 'm', 'v' ];
 
-ns.Channel.prototype.init = function() {
+ns.Channel.prototype.init = function( parentConn ) {
 	var self = this;
-	self.client = new events.EventNode( self.clientId, self.conn, unknownEvent, self.clientId );
-	delete self.conn;
+	self.client = new events.EventNode( self.clientId, parentConn, unknownEvent );
 	self.client.on( 'message', message );
 	self.client.on( 'log', getLog );
 	self.client.on( 'leave', leave );
 	self.client.on( 'state', getState );
+	self.client.on( 'request', request );
 	
-	function message(  e, cid ) {   self.message( e, cid ); }
-	function getLog(   e, cid ) {    self.getLog( e, cid ); }
-	function cmdTopic( e, cid ) {  self.cmdTopic( e, cid ); }
-	function leave(    e, cid ) {     self.leave( e, cid ); }
-	function getState( e, cid ) { self.sendState( e, cid ); }
+	function message(  e, cid ) { self.message(       e, cid ); }
+	function getLog(   e, cid ) { self.getLog(        e, cid ); }
+	function cmdTopic( e, cid ) { self.cmdTopic(      e, cid ); }
+	function leave(    e, cid ) { self.leave(         e, cid ); }
+	function getState( e, cid ) { self.sendState(     e, cid ); }
+	function request(  e, cid ) { self.handleRequest( e, cid ); }
 	
 	var timeout = 1000 * 60 * 10; // 10 minutes
 	self.logTrimTimer = setInterval( trimLog, timeout );
 	function trimLog() { self.trimLog(); }
 	
 	function unknownEvent( e ) { tlog( 'unknownEvent', e ); }
+}
+
+ns.Channel.prototype.handleRequest = function( event, cid ) {
+	const self = this;
+	const reqId = event.type;
+	const req = event.data;
+	let err = null;
+	let res = {
+		foo : 'bar',
+	};
+	
+	if ( 'userlist' === req.type )
+		res = self.compileUserlist();
+	
+	self.toClient({
+		type : 'request',
+		data : {
+			type : reqId,
+			data : {
+				err : err,
+				res : res,
+			},
+		},
+	});
+}
+
+ns.Channel.prototype.compileUserlist = function() {
+	const self = this;
+	let uids = Object.keys( self.users );
+	let list = uids.map( u => self.users[ u ].name );
+	return list;
 }
 
 ns.Channel.prototype.getState = function() {
@@ -2313,6 +2352,7 @@ ns.Channel.prototype.message = function( msg ) {
 
 ns.Channel.prototype.getLog = function( msg, cid ) {
 	var self = this;
+	tlog( 'getLog', self.log );
 	self.log.forEach( send );
 	function send( msg ) {
 		var wrap = {
@@ -2657,7 +2697,7 @@ ns.Private.prototype.close = function() {
 
 ns.Private.prototype.init = function() {
 	var self = this;
-	self.client = new events.EventNode( self.clientId, self.clientConn, unknownEvent, self.clientId );
+	self.client = new events.EventNode( self.clientId, self.clientConn, unknownEvent );
 	delete self.clientConn;
 	self.client.on( 'message', sendMessage );
 	self.client.on( 'log', sendLog );
@@ -2970,7 +3010,8 @@ ns.CmdChecker.prototype.init = function() {
 		cmd.push( ':' + args.join( '\x20' )); // topic goes after :
 		
 		var message = cmd.join( '\x20' );
-		return self.buildMeta( 'topic', cmd[ 1 ], message );
+		let meta = self.buildMeta( 'topic', cmd[ 1 ], message );
+		return [ meta ];
 	}
 	
 	function buildJoin( args ) {
@@ -2979,33 +3020,34 @@ ns.CmdChecker.prototype.init = function() {
 		
 		var message = args.join( '\x20' );
 		var meta = self.buildMeta( 'join', null, message );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildPrivMsg( args ) {
 		var target = args[ 1 ];
 		var body = args.slice( 2 );
 		var raw = body.join( ' ' );
-		var message = 'PRIVMSG ' + target + ' :' + raw;
-		var meta = self.buildMeta( 'privmsg', target, message );
-		meta.raw = raw;
-		return meta;
+		let raws = raw.split( '\n' );
+		let metas = raws.map( raw => {
+			var message = 'PRIVMSG ' + target + ' :' + raw;
+			var meta = self.buildMeta( 'privmsg', target, message );
+			meta.raw = raw;
+			return meta;
+		});
+		return metas;
 	}
 	
 	function buildNickMsg( args ) {
 		var msg = 'NICK ' + args[ 1 ];
 		var meta = self.buildMeta( 'nick', null, msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildAwayMsg( args ) {
 		args.shift(); // discard the command
-		if ( !args.length )
-			return 'AWAY';
-		
 		var message = 'AWAY :' + args.join( ' ' );
 		var meta = self.buildMeta( 'away', null, message );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildPartMsg( args, source ) {
@@ -3014,13 +3056,13 @@ ns.CmdChecker.prototype.init = function() {
 		
 		var msg = args.join( ' ' );
 		var meta = self.buildMeta( 'part', args[ 1 ], msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildQuitMsg( args ) {
 		var msg = args.join( ' ' );
 		var meta = self.buildMeta( 'quit', null, msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildActionMsg( args, source ) {
@@ -3030,7 +3072,7 @@ ns.CmdChecker.prototype.init = function() {
 		var message = 'PRIVMSG ' + source + ' :' + raw;
 		var meta = self.buildMeta( 'privmsg', source, message );
 		meta.raw = raw
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildModeMsg( args, source ) {
@@ -3040,7 +3082,7 @@ ns.CmdChecker.prototype.init = function() {
 		var target = args[ 1 ];
 		var msg = args.join( ' ' );
 		var meta = self.buildMeta( 'mode', target, msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildModeO( args, source ) {
@@ -3053,7 +3095,8 @@ ns.CmdChecker.prototype.init = function() {
 		if ( source && !self.isChannel( args[ 1 ]) )
 			args = self.setTarget( args, source );
 		
-		return buildModeMsg( args );
+		let mode = buildModeMsg( args );
+		return mode;
 	}
 	
 	function buildModeV( args, source ) {
@@ -3066,7 +3109,7 @@ ns.CmdChecker.prototype.init = function() {
 		const target = args[ 1 ];
 		const msg = args.join( ' ' );
 		const meta = self.buildMeta( 'kick', target, msg );
-		return meta;
+		return [ meta ];
 	}
 	
 	function buildBanMsg( args, source ) {

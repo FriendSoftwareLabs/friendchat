@@ -25,30 +25,36 @@ library.view = library.view || {};
 
 (function( ns, undefined ) {
 	ns.About = function() {
-		var self = this;
+		const self = this;
 		self.mouseIsOver = false;
 		self.currOp = 0;
 		this.init();
 	}
 	
 	ns.About.prototype.init = function() {
-		var self = this;
+		const self = this;
 		View.setBody();
+		View.on( 'initialize', e => self.handleInit( e ));
 		
 		self.height = document.body.clientHeight;
 		self.bg = document.getElementById( 'bg' );
 		self.content = document.getElementById( 'content' );
 		self.about = document.getElementById( 'about' );
+		self.version = document.getElementById( 'version' );
 		self.legal = document.getElementById( 'legal' );
-		var menuAbout = document.getElementById( 'about-menu' );
-		var menuLegal = document.getElementById( 'legal-menu' );
+		const aboutBtn = document.getElementById( 'about-menu' );
+		const versionBtn = document.getElementById( 'version-menu' );
+		const legalBtn = document.getElementById( 'legal-menu' );
 		
 		window.addEventListener( 'resize', viewResize, false );
 		document.addEventListener( 'mousemove', mouseMove, false );
 		document.addEventListener( 'mouseleave', mouseLeave, false );
 		content.addEventListener( 'click', toggleBg, false );
-		menuAbout.addEventListener( 'click', showAbout, false );
-		menuLegal.addEventListener( 'click', showLegal, false );
+		aboutBtn.addEventListener( 'click', showAbout, false );
+		versionBtn.addEventListener( 'click', showVersion, false );
+		legalBtn.addEventListener( 'click', showLegal, false );
+		
+		View.loaded();
 		
 		function viewResize( e ) { self.handleResize( e ); }
 		function mouseMove( e ) { self.handleMouseMove( e ); }
@@ -59,23 +65,98 @@ library.view = library.view || {};
 		}
 		
 		function showAbout( e ) { self.showAbout( e ); }
+		function showVersion( e ) { self.showVersion( e ); }
 		function showLegal( e ) { self.showLegal( e ); }
 	}
 	
+	ns.About.prototype.handleInit = function( info ) {
+		const self = this;
+		console.log( 'About.handleInit', info );
+		const hasInfo = !!info;
+		info = info || {
+			version : 'no version info available',
+			branch  : 'make sure local.config.js in app dir',
+			date    : 'has "about : null" set',
+			commit  : 'then run updateAll.sh from git dir'
+		};
+		info = check( info );
+		const el = friend.template.getElement( 'version-tmpl', info );
+		self.version.appendChild( el );
+		
+		if ( !hasInfo )
+			return;
+		
+		const copy = document.getElementById( 'version-copy' );
+		copy.classList.toggle( 'hidden', false );
+		
+		const input = document.getElementById( 'version-copy-input' );
+		const btn = document.getElementById( 'version-copy-btn' );
+		const infoStr = JSON.stringify( info );
+		input.value = infoStr;
+		btn.addEventListener( 'click', toClippy, false );
+		
+		function check( info ) {
+			info.version = info.version || 'unknown';
+			info.branch = info.branch || 'unknown';
+			info.date = info.date || 'unknown';
+			info.commit = info.commit || 'unknown';
+			return info;
+		}
+		
+		function toClippy( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			const strLen = input.value.length;
+			input.focus();
+			input.setSelectionRange( 0, strLen );
+			let success = false;
+			try {
+				success = document.execCommand( 'copy' );
+			} catch( ex ) {
+				console.log( 'view.About.toClippy - fail', ex );
+				return;
+			}
+			
+			btn.classList.toggle( 'Accept', true );
+		}
+		
+		function formatStr( info ) {
+			let str = '';
+			str += 'version: ' + info.version + '\r\n';
+			str += ' branch: ' + info.branch + '\r\n';
+			str += ' date: ' + info.date + '\r\n';
+			str += ' commit: ' + info.commit;
+			return str;
+		}
+	}
+	
 	ns.About.prototype.showAbout = function( e ) {
-		var self = this;
-		self.legal.classList.toggle( 'hidden', true );
+		const self = this;
+		self.hideAll();
 		self.about.classList.toggle( 'hidden', false );
 	}
 	
+	ns.About.prototype.showVersion = function( e ) {
+		const self = this;
+		self.hideAll();
+		self.version.classList.toggle( 'hidden', false );
+	}
+	
 	ns.About.prototype.showLegal = function( e ) {
-		var self = this;
-		self.about.classList.toggle( 'hidden', true );
+		const self = this;
+		self.hideAll();
 		self.legal.classList.toggle( 'hidden', false );
 	}
 	
+	ns.About.prototype.hideAll = function() {
+		const self = this;
+		self.about.classList.toggle( 'hidden', true );
+		self.version.classList.toggle( 'hidden', true );
+		self.legal.classList.toggle( 'hidden', true );
+	}
+	
 	ns.About.prototype.handleResize = function( e ) {
-		var self = this;
+		const self = this;
 		self.height = document.body.clientHeight;
 	}
 	
@@ -83,7 +164,7 @@ library.view = library.view || {};
 		const self = this;
 		const h = self.height;
 		const y = e.clientY;
-		const rel = y / h;
+		const rel = 1 - ( y / h );
 		self.bg.style.opacity = rel;
 	}
 	

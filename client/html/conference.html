@@ -2,7 +2,8 @@
 <html>
 	<head>
 		<script src="
-			../scripts/component/tool.js;
+			/webclient/js/utils/events.js;
+			webclient/apps/FriendChat/scripts/component/tool.js;
 			webclient/apps/FriendChat/api/view.js;
 			webclient/apps/FriendChat/scripts/component/parser.js;
 			webclient/apps/FriendChat/scripts/component/drop.js;
@@ -27,7 +28,7 @@
 -->
 <script id="body-tmpl" type="text/html">
 <div id="hello" class="conference bar column BackgroundDefault">
-	<div id="head" class="BorderBottom fortify group row">
+	<div id="head" class="PaddingSmall BorderBottom fortify group row">
 		<div id="mode" class="fortify"></div>
 		<div id="topic" class="expand"></div>
 		<div class="actions fortify group row">
@@ -50,11 +51,22 @@
 		</div>
 	</div>
 	<div id="main" class="main expand group row cover">
-		<div id="message-container" class="expand BorderRight">
-			<div id="messages" class="SelectableText BackgroundLists">
+		<div id="attachment-menu">
+			<button class="IconButton IconSmall fa-camera Camera">
+				{i18n_take_a_picture}
+			</button>
+			<button class="IconButton IconSmall fa-upload Upload">
+				{i18n_choose_a_file}
+			</button>
+			<button class="IconButton IconSmall fa-remove Cancel">
+				{i18n_cancel}
+			</button>
+		</div>
+		<div id="message-container" class="expand">
+			<div id="messages" class="SelectableText BackgroundLists SmoothScrolling">
 			</div>
 		</div>
-		<div id="participants-container" class="fortify group column cover">
+		<div id="participants-container" class="BackgroundHeavy fortify group column cover">
 			<div id="participants-info" class="fortify group row">
 				<div class="info expand MouseDefault">
 					<i class="fa fa-fw fa-at"></i>
@@ -74,15 +86,16 @@
 			</div>
 		</div>
 	</div>
-	<div id="foot">
+	<div id="foot" class="fortify">
 		<form id="input-form" action="" class="bar row cover">
+			<div id="attachment" class="button flat fortify center-child">
+				<i class="fa fa-fw fa-paperclip"></i>
+			</div>
 			<div id="input-container" class="expand BorderTop">
 				<!-- input component goes here -->
 			</div>
-			<div class="actions fortify">
-				<button type="submit" class="button flat">
-					<i class="fa fa-fw fa-paper-plane"></i>
-				</button>
+			<div id="chat-submit" class="button flat fortify center-child">
+				<i class="fa fa-fw fa-paper-plane"></i>
 			</div>
 		</form>
 	</div>

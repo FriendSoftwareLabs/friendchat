@@ -38,33 +38,39 @@ library.view = library.view || {};
 	ns.Account.prototype.setup = function() {
 		var self = this;
 		self.validKeys = [
-			'skipPass',
+			//'skipPass',
 			'popupChat',
-			'msgAlert',
+			'roomAlert',
+			'privateAlert',
 			'inAppMenu',
-			'onNewScreen',
-			'minimalUI',
-			'advancedUI',
+			//'onNewScreen',
+			//'minimalUI',
+			//'advancedUI',
+			'compactChat',
 		];
 		self.displayOrder = self.validKeys;
 		self.labelMap = {
-			'skipPass'    : View.i18n( 'i18n_autologin' ),
-			'popupChat'   : View.i18n( 'i18n_pop_up_new_chat' ),
-			'msgAlert'    : View.i18n( 'i18n_message_beep' ),
-			'inAppMenu'   : View.i18n( 'i18n_in_app_menu' ),
-			'onNewScreen' : View.i18n( 'i18n_open_on_new_screen' ),
-			'minimalUI'   : View.i18n( 'i18n_minimal_ui' ),
-			'advancedUI'  : View.i18n( 'i18n_advanced_ui' ),
+			'skipPass'     : View.i18n( 'i18n_autologin' ),
+			'popupChat'    : View.i18n( 'i18n_pop_up_new_chat' ),
+			'roomAlert'    : View.i18n( 'i18n_room_msg_beep' ),
+			'privateAlert' : View.i18n( 'i18n_private_msg_beep' ),
+			'inAppMenu'    : View.i18n( 'i18n_in_app_menu' ),
+			'onNewScreen'  : View.i18n( 'i18n_open_on_new_screen' ),
+			'minimalUI'    : View.i18n( 'i18n_minimal_ui' ),
+			'advancedUI'   : View.i18n( 'i18n_advanced_ui' ),
+			'compactChat'  : View.i18n( 'i18n_compact_chat' ),
 		};
 		self.defaultMap = {};
 		self.buildMap = {
-			'skipPass'    : singleCheck,
-			'popupChat'   : singleCheck,
-			'msgAlert'    : singleCheck,
-			'inAppMenu'   : singleCheck,
-			'onNewScreen' : singleCheck,
-			'minimalUI'   : singleCheck,
-			'advancedUI'  : singleCheck,
+			'skipPass'     : singleCheck,
+			'popupChat'    : singleCheck,
+			'roomAlert'    : singleCheck,
+			'privateAlert' : singleCheck,
+			'inAppMenu'    : singleCheck,
+			'onNewScreen'  : singleCheck,
+			'minimalUI'    : singleCheck,
+			'advancedUI'   : singleCheck,
+			'compactChat'  : singleCheck,
 		};
 		
 		function singleCheck( setting ) { self.singleCheck( setting ); }

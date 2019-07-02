@@ -96,7 +96,14 @@ ns.ChatSockets.prototype.send = function( msg, socketId ) {
 
 ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
 	var self = this;
-	var userId = msg.data.userId;
+	var userId = self.socketToUserId[ socketId ];
+	if ( !userId ) {
+		let err = new Error();
+		self.logUserIdErr( socketId, err.stack );
+		done();
+		return;
+	}
+	
 	var dbAccount = new DbAccount( self.state.db, userId );
 	dbAccount.on( 'ready', dbReady );
 	dbAccount.on( 'error', dbError );
@@ -129,6 +136,7 @@ ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
 
 ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
 	var self = this;
+	log( 'createAccount', msg );
 	var dbAccount = null;
 	var ret = {
 		status : 403,
@@ -136,14 +144,21 @@ ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
 	};
 	var args = msg.data;
 	
-	if ( !args.name || !args.userId ) {
+	if ( !args.name ) {
 		ret.message = 'invalid input';
 		done();
 		return;
 	}
 	
-	args.password = args.password || '';
-	dbAccount = new DbAccount( self.state.db, args.userId );
+	const userId = self.socketToUserId[ socketId ];
+	if ( !userId ) {
+		let err = new Error();
+		self.logUserIdErr( socketId, err.stack );
+		done();
+		return;
+	}
+	
+	dbAccount = new DbAccount( self.state.db, userId );
 	dbAccount.once('ready', dbReady );
 	
 	function dbReady() {
@@ -194,19 +209,27 @@ ns.ChatSockets.prototype.removeAccount = function( msg, socketId ) {
 	};
 	msg.response = ret;
 	
-	if ( !args.name || !args.userId ) {
+	if ( !args.name ) {
 		ret.message = 'missing input';
 		done();
 		return;
 	}
 	
-	dbAccount = new DbAccount( self.state.db, args.userId );
-	dbAccount.once( 'ready', dbReady );
-	function dbReady() {
-		dbAccount.checkPassword( args.name, args.password, passBack );
+	const userId = self.socketToUserId[ socketId ];
+	if ( !userId ) {
+		let err = new Error();
+		self.logUserIdErr( socketId, err.stack );
+		done();
+		return;
 	}
 	
-	function passBack( clientId ) {
+	dbAccount = new DbAccount( self.state.db, userId );
+	dbAccount.once( 'ready', dbReady );
+	function dbReady() {
+		dbAccount.getAccountId( args.name, idBack );
+	}
+	
+	function idBack( clientId ) {
 		if( !clientId ) {
 			ret.message = "wrong password, probably";
 			done();
@@ -241,9 +264,9 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 	var self = this;
 	var args = msg.data;
 	var dbAccount = null;
-	args.password = args.password || null;
+	args.password = null; // pasword deprecated
 	
-	if ( !args.name || !args.userId ) {
+	if ( !args.name ) {
 		msg.response = {
 			status : 400,
 			message : 'missing arguments',
@@ -252,7 +275,15 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 		return;
 	}
 	
-	dbAccount = new DbAccount( self.state.db, args.userId );
+	const userId = self.socketToUserId[ socketId ];
+	if ( !userId ) {
+		let err = new Error();
+		self.logUserIdErr( socketId, err.stack );
+		done();
+		return;
+	}
+	
+	dbAccount = new DbAccount( self.state.db, userId );
 	dbAccount.on( 'ready', dbReady );
 	dbAccount.on( 'error', dbError );
 	function dbError( err ){
@@ -266,9 +297,10 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 	}
 	
 	function dbReady() {
-		dbAccount.checkPassword( args.name, args.password, passBack );
+		dbAccount.getAccountId( args.name, idBack );
 	}
-	function passBack( accountId ) {
+	
+	function idBack( accountId ) {
 		if ( !accountId ) {
 			msg.response = {
 				status : 403,
@@ -375,6 +407,15 @@ ns.ChatSockets.prototype.getParent = function( id ) {
 	if ( !account )
 		return null;
 	return account;
+}
+
+ns.ChatSockets.prototype.logUserIdErr = function( socketId, stack ) {
+	const self = this;
+	log( 'accountLogin - no userId for socket', {
+		socketId : socketId,
+		idMap    : self.socketToUserId,
+		stack    : stack,
+	});
 }
 
 module.exports = ns.ChatSockets;

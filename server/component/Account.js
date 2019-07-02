@@ -125,7 +125,7 @@ ns.Account.prototype.receiveMsg = function( msg, sessionId ) {
 	if ( !msg ) // if a handler is found for the event, it gets eaten and null is returned
 		return;
 	
-	log( 'receiveMsg - unknown event', msg );
+	//log( 'receiveMsg - unknown event', msg, 4 );
 }
 
 ns.Account.prototype.keepAlive = function( data, sessionId ) {
@@ -148,10 +148,10 @@ ns.Account.prototype.accountMsg = function( msg, sessionId ) {
 	handler( msg.data, sessionId );
 }
 
-ns.Account.prototype.clientReady = function( data, sessionId ) {
+ns.Account.prototype.clientReady = function( firstLoginConf, sessionId ) {
 	var self = this;
-	if ( null != data )
-		self.doFirstLoginSetup( data );
+	if ( null != firstLoginConf )
+		self.doFirstLoginSetup( firstLoginConf );
 	else
 		self.mods.initializeClient( sessionId );
 }
@@ -204,6 +204,7 @@ ns.Account.prototype.updateClientSetting = function( update ) {
 
 ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	const self = this;
+	log( 'doFirstLoginSetup', global.config );
 	// save ui choice
 	self.saveSetting({
 		setting : 'advancedUI',
@@ -215,11 +216,15 @@ ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	
 	// add default modules for choice
 	let mods = null;
+	/*
 	if ( conf.advancedUI )
-		mods = [ 'presence', 'irc' ];
+		mods = [ 'presence', 'treeroot', 'irc' ];
 	else
 		mods = [ 'presence', 'treeroot' ];
-		
+	*/
+	
+	mods = global.config.server.defaults.defaultModules;
+	log( 'doFirstLoginSetup - mods', mods );
 	self.mods.addDefaultModules( mods, self.name );
 }
 

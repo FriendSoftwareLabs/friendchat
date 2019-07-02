@@ -2,7 +2,8 @@
 <html>
 	<head>
 		<script src="
-			../scripts/component/tool.js;
+			/webclient/js/utils/events.js;
+			webclient/apps/FriendChat/scripts/component/tool.js;
 			webclient/apps/FriendChat/api/view.js;
 			webclient/apps/FriendChat/scripts/view/about.js
 		" type="text/javascript"></script>
@@ -43,6 +44,8 @@
 				{i18n_sokken}
 			</div>
 		</div>
+		<div id="version" class="hidden">
+		</div>
 		<div id="legal" class="hidden">
 			<div id="license">
 				License use
@@ -74,14 +77,68 @@
 				{i18n_about}
 			</div>
 		</div>
+		<div id="version-menu" class="menu-item MousePointer group row">
+			<div class="icon-wrap center-child">
+				<i class="fa fa-fw fa-file-text-o"></i>
+			</div>
+			<div class="menu-text">
+				{i18n_version}
+			</div>
+		</div>
 		<div id="legal-menu" class="menu-item MousePointer group row">
-			<div clasS="icon-wrap center-child">
+			<div class="icon-wrap center-child">
 				<i class="fa fa-fw fa-institution"></i>
 			</div>
 			<div class="menu--text">
 				{i18n_legal}
 			</div>
 		</div>
+	</div>
+</div>
+</script>
+
+<!-- version
+version,
+date,
+branch,
+commit
+-->
+<script id="version-tmpl" type="text/html">
+<div>
+	<div id="version-info" class="infos grid">
+		<div class="description">
+			{i18n_app_version}:
+		</div>
+		<div class="value">
+			<%= version %>
+		</div>
+		<div class="description">
+			{i18n_git_branch}:
+		</div>
+		<div class="value">
+			<%= branch %>
+		</div>
+		<div class="description">
+			{i18n_git_date}:
+		</div>
+		<div class="value">
+			<%= date %>
+		</div>
+		<div class="description">
+			{i18n_git_commit}:
+		</div>
+		<div class="value">
+			<%= commit %>
+		</div>
+	</div>
+	<div id="version-copy" class="hidden">
+		<div id="version-copy-btn" class="menu-item MousePointer group row">
+			<i class="fa fa-fw fa-clipboard"></i>
+			<div>
+				{i18n_copy_to_clipboard}
+			</div>
+		</div>
+		<input id="version-copy-input" type="text" name="" class="">
 	</div>
 </div>
 </script>

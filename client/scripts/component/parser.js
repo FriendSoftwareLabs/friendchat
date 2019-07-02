@@ -79,8 +79,13 @@ library.component.parse = library.component.parse || {};
 		
 		// do the actual thing
 		var parts = str.match( /(\S+|\s+)/g );
-		var result =  parts.map( parse );
-		result = result.join( '' );
+		var result = '';
+		if( parts )
+		{
+			result = parts.map( parse );
+			result = result.join( '' );
+		}
+		
 		
 		// markdown ?
 		if ( window.marked ) {

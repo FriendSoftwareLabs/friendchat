@@ -23,7 +23,7 @@ window.emojii_conf = {
 	':D' : 'emo-grin',
 	':lol:' : 'emo-laugh',
 	';)' : 'emo-wink',
-	'8)' : 'emo-cool',
+	'B)' : 'emo-cool',
 	':33' : 'emo-blow-kiss',
 	':hearts:' : 'emo-hearts',
 	':?' : 'emo-confused',

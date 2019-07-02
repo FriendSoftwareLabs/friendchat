@@ -58,8 +58,11 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.init = function() {
-		var self = this;
-		View.setBody();
+		const self = this;
+		window.View.setBody();
+		if ( window.View.appConf.hideLive )
+			self.toggleLiveBtns();
+		
 		self.appOnline = new library.component.AppOnline( window.View );
 		self.view = window.View;
 		self.modes = [
@@ -130,6 +133,12 @@ library.view = library.view || {};
 		if ( 'MOBILE' === window.View.deviceType )
 			self.showhideToggle( false );
 		
+		// Timeout for loading messages
+		setTimeout( function()
+		{
+			self.messages.classList.add( 'SmoothScrolling' );
+		}, 50 );
+		
 		self.send({
 			type : 'loaded',
 		});
@@ -170,6 +179,11 @@ library.view = library.view || {};
 		function participants( e ) { self.moreParticipants( e ); }
 		function topic( e ) { self.setTopic( e ); }
 		function updateUser( e ) { self.updateUser( e ); }
+	}
+	
+	ns.Conference.prototype.toggleLiveBtns = function( show ) {
+		const self = this;
+		
 	}
 	
 	ns.Conference.prototype.initialize = function( data ) {
@@ -246,8 +260,10 @@ library.view = library.view || {};
 		self.send({ type : 'ready' });
 		self.doFlourish = true;
 		
-		if ( 'VR' !== window.View.deviceType )
+		if ( 'DESKTOP' == window.View.deviceType )
+		{
 			self.input.focus();
+		}
 	}
 	
 	ns.Conference.prototype.handleLog = function( log ) {
@@ -301,7 +317,7 @@ library.view = library.view || {};
 		self.addParticipant( user );
 		var conf = {
 			type : 'join',
-			message : user.name + ' ' + View.i18n('i18n_has_joined'),
+			message : user.name + ' ' + View.i18n( 'i18n_has_joined' ),
 			time : user.time,
 		};
 		self.systemMsg( conf );
@@ -317,7 +333,7 @@ library.view = library.view || {};
 		self.removeParticipant( data.who );
 		var conf = {
 			type    : 'part',
-			message : data.who + ' ' + View.i18n('i18n_left'),
+			message : data.who + ' ' + View.i18n( 'i18n_left' ),
 			time    : data.time,
 		}
 		self.systemMsg( conf );
@@ -333,7 +349,7 @@ library.view = library.view || {};
 		self.removeParticipant( data.who );
 		var conf = {
 			type    : 'quit',
-			message : data.who + ' ' + View.i18n('i18n_has_quit') + ' ' + data.message + ' ).',
+			message : data.who + ' ' + View.i18n( 'i18n_has_quit' ) + ' ' + data.message + ' ).',
 			time    : data.time,
 		};
 		self.systemMsg( conf );
@@ -344,13 +360,13 @@ library.view = library.view || {};
 		self.removeParticipant( event.victim );
 		let victim = event.victim;
 		if ( victim === self.user.name ) {
-			victim = View.i18n('i18n_you');
+			victim = View.i18n( 'i18n_you' );
 			self.clearUserList();
 		}
 		
 		const conf = {
 			type    : 'kick',
-			message : event.victim + ' ' + View.i18n('i18n_was_kicked_by') + ' ' + event.kicker,
+			message : event.victim + ' ' + View.i18n( 'i18n_was_kicked_by' ) + ' ' + event.kicker,
 			time    : event.time,
 		};
 		self.systemMsg( conf );
@@ -361,7 +377,7 @@ library.view = library.view || {};
 		self.removeParticipant( event.victim );
 		const conf = {
 			type    : 'ban',
-			message : event.banner + ' ' + View.i18n('i18n_sets_mode') + ' ' + event.mode + ' ' + event.victim,
+			message : event.banner + ' ' + View.i18n( 'i18n_sets_mode' ) + ' ' + event.mode + ' ' + event.victim,
 			time    : event.time,
 		}
 		self.systemMsg( conf );
@@ -532,12 +548,16 @@ library.view = library.view || {};
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.showHideBtn = document.getElementById( 'showhide-btn' );
 		self.inputForm = document.getElementById( 'input-form' );
+		const submitBtn = document.getElementById( 'chat-submit' );
+		const attachBtn = document.getElementById( 'attachment' );
 		
-		window.addEventListener( 'resize', windowResize, false );
+		//window.addEventListener( 'resize', windowResize, false );
 		
 		self.settingsBtn.addEventListener( 'click', showSettings, false );
 		self.showHideBtn.addEventListener( 'click', showhideToggle, false );
 		self.inputForm.addEventListener( 'submit', inputSubmit, false );
+		submitBtn.addEventListener( 'click', inputSubmit, false );
+		attachBtn.addEventListener( 'click', attach, false );
 		
 		function windowResize( e ) {
 			self.handleWindowResize( e );
@@ -557,6 +577,67 @@ library.view = library.view || {};
 			e.preventDefault();
 			self.input.submit();
 		}
+		
+		function attach( e ) {
+			var men = ge( 'attachment-menu' );
+			
+			var can = men.querySelector( '.Cancel' );
+			var cam = men.querySelector( '.Camera' );
+			var upl = men.querySelector( '.Upload' );
+			can.onclick = function(){
+				console.log( 'Here: ', men );
+				men.classList.remove( 'Showing' );
+			}
+			
+			if( men.classList.contains( 'Showing' ) ) {
+				men.classList.remove( 'Showing' );
+			}
+			else {
+				men.classList.add( 'Showing' );
+			}
+			upl.onclick = function( e ){
+				men.classList.remove( 'Showing' );
+				executeAttach( e );
+			}
+			
+			self.view.prepareCamera( cam, function( data ) {
+				men.classList.remove( 'Showing' );
+			} );
+		}
+		
+		function executeAttach( e )
+		{
+			self.send( {
+				type: 'attach',
+				data: false
+			} );
+		};
+		
+		// Handle paste if it isn't a file
+		window.addEventListener( 'paste', function( evt )
+		{
+			var pastedItems = (evt.clipboardData || evt.originalEvent.clipboardData).items;
+			for( var i in pastedItems ) {
+				var item = pastedItems[i];
+				if( item.kind === 'file' ) {
+					var p = new api.PasteHandler();
+					p.paste( evt, function( res ) {
+						if( res.response == true ) {
+							self.view.send(	{
+								type: 'drag-n-drop',
+								data: [ {
+									Type: 'File',
+									Path: res.path
+								} ]
+							} );
+						}
+					} );
+					evt.preventDefault();
+					evt.stopPropagation();
+					break;
+				}
+			}
+		} );
 	}
 	
 	ns.Conference.prototype.handleWindowResize = function( e ) {
@@ -578,6 +659,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.reflow = function() {
+		const self = this;
 		var messages = document.getElementById( 'message-container' );
 		var contacts = document.getElementById( 'participants-container' );
 		window.View.triggerReflow( messages );
@@ -597,10 +679,8 @@ library.view = library.view || {};
 		var container = document.getElementById( 'participants-container', force );
 		if ( null == force ) {
 			container.classList.toggle( 'hide' );
-			self.showHideBtn.classList.toggle( 'danger' );
 		} else {
 			container.classList.toggle( 'hide', !force );
-			self.showHideBtn.classList.toggle( 'danger', !force );
 		}
 	}
 	

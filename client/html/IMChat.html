@@ -2,11 +2,13 @@
 <html>
 	<head>
 		<script src="
-			../scripts/component/tool.js;
+			/webclient/js/utils/events.js;
+			webclient/apps/FriendChat/scripts/component/tool.js;
 			webclient/apps/FriendChat/api/view.js;
 			webclient/apps/FriendChat/scripts/component/parser.js;
 			webclient/apps/FriendChat/scripts/component/voice.js;
 			webclient/apps/FriendChat/scripts/component/drop.js;
+			webclient/apps/FriendChat/scripts/component/common.js;
 			webclient/apps/FriendChat/scripts/component/viewComponent.js;
 			webclient/apps/FriendChat/scripts/view/IMChat.js
 		" type="text/javascript"></script>
@@ -17,9 +19,8 @@
 			webclient/apps/FriendChat/css/linkExpand.css;
 			webclient/apps/FriendChat/css/chatTheme.css;
 			webclient/apps/FriendChat/css/IMChat.css
-		" type=" text/css">
+		" type="text/css">
 		
-		<!--<meta name="viewport" content="width=device-width,user-scalable=no">-->
 	</head>
 	<body>
 		
@@ -29,15 +30,15 @@
 
 -->
 <script id="body-tmpl" type="text/html">
-<div id="hello" class=" im-chat bar column BackgroundDefault">
+<div id="hello" class="im-chat bar column fortify BackgroundDefault">
 	<div id="head" class="group row BorderBottom">
-		<div id="chatting-with" class="expand">
+		<div id="chatting-with" class="expand Ellipsis">
 		</div>
 		<div class="actions fortify">
 			<button
 				id="leeloodallasmultiline"
 				type="button"
-				class="button"
+				class="IconButton button"
 				title="{i18n_toggle_multiline_input}"
 			>
 				<i class="fa fa-fw fa-align-left"></i>
@@ -45,7 +46,7 @@
 			<button
 				id="toggle-voice"
 				type="button"
-				class="button"
+				class="IconButton button"
 				title="{i18n_messages_will_be}"
 			>
 				<i class="fa fa-fw fa-tty"></i>
@@ -53,30 +54,41 @@
 			<button
 				id="start-video"
 				type="button"
-				class="button"
+				class="IconButton button"
 			>
 				<i class="fa fa-fw fa-video-camera"></i>
 			</button>
 			<button
 				id="start-audio"
 				type="button"
-				class="button"
+				class="IconButton button"
 			>
 				<i class="fa fa-fw fa-microphone"></i>
 			</button>
 			<button
 				id="toggle-encrypt"
 				type="button"
-				class="button hidden"
+				class="IconButton button hidden"
 				title="{i18n_encrypt_the_message}"
 			>
 				<i class="fa fa-fw fa-lock"></i>
 			</button>
 		</div>
 	</div>
-	<div id="main" class="bar column">
+	<div id="main" class="bar column expand">
+		<div id="attachment-menu">
+			<button class="IconButton IconSmall fa-camera Camera">
+				{i18n_take_a_picture}
+			</button>
+			<button class="IconButton IconSmall fa-upload Upload">
+				{i18n_choose_a_file}
+			</button>
+			<button class="IconButton IconSmall fa-remove Cancel">
+				{i18n_cancel}
+			</button>
+		</div>
 		<div id="message-container" class="expand">
-			<div id="messages" class="SelectableText BackgroundLists">
+			<div id="messages" class="SelectableText">
 				<div id="waiting" class="sw2 group row">
 					<div id="waiting-message" class="expand">
 						{i18n_checking_for_chat_log}
@@ -85,21 +97,23 @@
 				</div>
 			</div>
 		</div>
-		<div id="message-confirm" class="fortify bar row hidden">
+		<div id="message-confirm" class="fortify bar row hidden BackgroundHeavy">
 			<i class="fa fa-spinner fa-pulse fortify"></i>
-			<div id="message-ph" class="light-text expand">
+			<div id="message-ph" class="expand">
 			</div>
 		</div>
 	</div>
-	<div id="foot" class="">
+	<div id="foot" class="fortify">
 		<form id="input-form" action="" class="bar row cover">
+			<div id="attachment" class="button flat fortify center-child">
+				<i class="fa fa-fw fa-paperclip"></i>
+			</div>
 			<div id="input-container" class="expand BorderTop">
 				<!-- multiline input stuff goes here -->
 			</div>
-			<div class="actions fortify">
-				<button type="submit" class="button flat">
-					<i class="fa fa-fw fa-paper-plane"></i>
-				</button>
+			<div id="chat-submit" class="button flat fortify center-child">
+				<i class="fa fa-fw fa-paper-plane"></i>
+			</div>
 			</div>
 		</form>
 	</div>

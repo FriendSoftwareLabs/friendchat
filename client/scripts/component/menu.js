@@ -179,6 +179,7 @@ library.component = library.component || {};
 	ns.Menu.prototype.close = function() {
 		const self = this;
 		console.log( 'menu.close', self );
+		self.release();
 	}
 	
 	// private
@@ -605,8 +606,11 @@ library.component = library.component || {};
 	ns.Menu.prototype.toggleItem = function( id, enable ) {
 		var self = this;
 		var item = self.getItem( id );
-		var el = document.getElementById( item.elId );
-		el.classList.toggle( 'hidden', !enable );
+		if( item )
+		{
+			var el = document.getElementById( item.elId );
+			el.classList.toggle( 'hidden', !enable );
+		}
 	}
 	
 	ns.Menu.prototype.toggleToggle = function( id, isOn ) {
@@ -625,7 +629,8 @@ library.component = library.component || {};
 		var item = self.items[ id ];
 		if ( !item ) {
 			console.log( 'Menu.getItem - no item for id', { id : id, items : self.items });
-			throw new Error( 'Menu.getItem failed, here is your stack trance, sir.');
+			//throw new Error( 'Menu.getItem failed, here is your stack trance, sir.');
+			return false;
 		}
 		return item;
 	}

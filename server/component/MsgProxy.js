@@ -45,6 +45,15 @@ ns.MsgProxy.prototype.receiveMsg = function( msg, socketId ) {
 
 ns.MsgProxy.prototype.send = function( msg, socketId, altId ) {
 	var self = this;
+	if ( !msg.data ) {
+		try {
+			throw new Error( 'null data' );
+		} catch( err ) {
+			log( 'null data', msg, 3 );
+			log( 'null data trace', err.stack || err );
+		}
+	}
+	
 	if ( !self.sendMsg )
 		return;
 	

@@ -23,6 +23,7 @@
 const Presence = require( './Presence' );
 const Treeroot = require( './Treeroot' );
 const IRC = require( './IRC' );
+const Telegram = require( './Telegram' );
 
 const log = require( './Log' )( 'ModCtrl' );
 const modLog = require( './Log' )( 'ModuleProxy' );
@@ -35,7 +36,7 @@ ns.ModCtrl = function( conf ) {
 	if ( !( this instanceof ns.ModCtrl ))
 		return new ns.ModCtrl( conf );
 	
-	var self = this;
+	const self = this;
 	self.db = conf.db;
 	self.accountId = conf.accountId;
 	self.allowAdvanced = conf.allowAdvanced;
@@ -49,13 +50,13 @@ ns.ModCtrl = function( conf ) {
 // Public
 
 ns.ModCtrl.prototype.initializeModules = function() {
-	var self = this;
+	const self = this;
 	self.load( modsBack );
 	function modsBack( modules ) {
 		modules = self.sortModules( modules );
 		var hasPresenceModule = modules.some( isPresence );
 		if ( !hasPresenceModule ) {
-			var pres = {
+			const pres = {
 				type     : 'presence',
 				settings : {
 					
@@ -71,7 +72,7 @@ ns.ModCtrl.prototype.initializeModules = function() {
 }
 
 ns.ModCtrl.prototype.initializeClient = function( sessionId ) {
-	var self = this;
+	const self = this;
 	self.load( modsBack );
 	function modsBack( modules ) {
 		modules = self.sortModules( modules );
@@ -95,7 +96,9 @@ ns.ModCtrl.prototype.initializeClient = function( sessionId ) {
 ns.ModCtrl.prototype.addDefaultModules = function( modules, defaultUsername ) {
 	const self = this;
 	let modConfs = modules.map( buildConf );
+	log( 'modConfs', modConfs );
 	modConfs = modConfs.filter( mod => null != mod );
+	modConfs = self.sortModules( modConfs );
 	modConfs.forEach( create );
 	
 	function buildConf( mod ) {
@@ -103,23 +106,21 @@ ns.ModCtrl.prototype.addDefaultModules = function( modules, defaultUsername ) {
 		if ( !MOD )
 			return null;
 		
-		let conf = MOD.prototype.getSetup( defaultUsername );
+		let conf = self.getModuleDefaultConf( mod );
+		conf = MOD.prototype.getSetup( conf, defaultUsername );
 		conf.type = mod;
+		conf.settings = conf.settings || {};
 		return conf;
 	}
 	
 	function create( modConf ) {
+		log( 'create', modConf );
 		self.create( modConf )
-	}
-	
-	function createBack( res ) {
-		log( 'mod created', res );
 	}
 }
 
 ns.ModCtrl.prototype.receiveMsg = function( e, sid ) {
-	var self = this;
-	//log( 'receiveMessage', e, 3 );
+	const self = this;
 	var mod = self.modules[ e.type ];
 	if ( mod ) {
 		mod.receiveMsg( e.data, sid );
@@ -132,12 +133,12 @@ ns.ModCtrl.prototype.receiveMsg = function( e, sid ) {
 		return null;
 	}
 	
-	log( 'receiveMessage - unknown event', e );
+	//log( 'receiveMessage - unknown event', e );
 	return e;
 }
 
 ns.ModCtrl.prototype.close = function() {
-	var self = this;
+	const self = this;
 	killRunning();
 	
 	delete self.accountId;
@@ -155,12 +156,13 @@ ns.ModCtrl.prototype.close = function() {
 // Pirvate
 
 ns.ModCtrl.prototype.init = function() {
-	var self = this;
+	const self = this;
 	// these ( Presence, Tree.., etc ) are loaded/require at the top ^^^
 	self.available = {
 		'presence' : Presence,
 		'treeroot' : Treeroot,
 		'irc'      : IRC,
+		'telegram' : Telegram,
 	};
 	
 	self.eventMap = {
@@ -173,7 +175,7 @@ ns.ModCtrl.prototype.init = function() {
 }
 
 ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
-	var self = this;
+	const self = this;
 	var dbSet = new DbModule( self.db, self.accountId );
 	var dbGet = null;
 	
@@ -220,10 +222,10 @@ ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
 
 ns.ModCtrl.prototype.sortModules = function( modList ) {
 	const self = this;
-	modList.sort( presenceFirst );
 	if ( !self.allowAdvanced )
 		modList = getSimpleList( modList );
 	
+	modList.sort( presenceFirst );
 	return modList;
 	
 	function presenceFirst( a, b ) {
@@ -240,10 +242,12 @@ ns.ModCtrl.prototype.sortModules = function( modList ) {
 		let simpleList = [];
 		let hasTreeroot = false;
 		let treerootConf = self.getModuleDefaultConf( 'treeroot' );
+		log( 'treerootconf', treerootConf );
 		mods.forEach( isAllowed );
 		return simpleList;
 		
 		function isAllowed( mod ) {
+			log( 'isAllowed', mod );
 			if ( 'presence' === mod.type ) {
 				simpleList.push( mod );
 				return;
@@ -265,7 +269,7 @@ ns.ModCtrl.prototype.sortModules = function( modList ) {
 }
 
 ns.ModCtrl.prototype.add = function( module ) {
-	var self = this;
+	const self = this;
 	self.start( module );
 	var addEvent = {
 		type : 'module',
@@ -278,7 +282,7 @@ ns.ModCtrl.prototype.add = function( module ) {
 }
 
 ns.ModCtrl.prototype.remove = function( moduleId ) {
-	var self = this;
+	const self = this;
 	var module = self.modules[ moduleId ];
 	if ( !module ) {
 		log( 'ModCtrl.remove - no such module', {
@@ -327,7 +331,7 @@ ns.ModCtrl.prototype.remove = function( moduleId ) {
 }
 
 ns.ModCtrl.prototype.load = function( callback ) {
-	var self = this;
+	const self = this;
 	var dbModule = new DbModule( self.db, self.accountId );
 	dbModule.once( 'ready', dbReady );
 	function dbReady() { dbModule.get( modsBack ); }
@@ -338,7 +342,7 @@ ns.ModCtrl.prototype.load = function( callback ) {
 }
 
 ns.ModCtrl.prototype.start = function( mod ) {
-	var self = this;
+	const self = this;
 	var clientId = mod.clientId;
 	var conn = self.modules[ clientId ];
 	if ( conn ) {
@@ -383,7 +387,7 @@ ns.ModCtrl.prototype.start = function( mod ) {
 }
 
 ns.ModCtrl.prototype.stop = function( moduleId ) {
-	var self = this;
+	const self = this;
 	var _module = self.modules[ moduleId ];
 	if ( !_module.kill ) {
 		log( 'module has no end, cannot', _module );
@@ -401,7 +405,7 @@ ns.ModCtrl.prototype.getModuleDefaultConf = function( modType ) {
 
 
 ns.ModCtrl.prototype.persistSetting = function( moduleId, pair, callback ) {
-	var self = this;
+	const self = this;
 	var dbModule = new DbModule( self.db, self.accountId, moduleId );
 	dbModule.once( 'ready', dbReady );
 	function dbReady( err ) {
@@ -431,7 +435,7 @@ ns.ModCtrl.prototype.persistSetting = function( moduleId, pair, callback ) {
 }
 
 ns.ModCtrl.prototype.getSettings = function( moduleId, callback ) {
-	var self = this;
+	const self = this;
 	var dbModule = new DbModule( self.db, self.accountId, moduleId );
 	dbModule.once( 'ready', dbReady );
 	function dbReady() {
@@ -451,7 +455,7 @@ ns.ModCtrl.prototype.getSettings = function( moduleId, callback ) {
 }
 
 ns.ModCtrl.prototype.sendMod = function( msg, sid ) {
-	var self = this;
+	const self = this;
 	var wrap = {
 		type : 'module',
 		data : msg,
@@ -460,7 +464,7 @@ ns.ModCtrl.prototype.sendMod = function( msg, sid ) {
 }
 
 ns.ModCtrl.prototype.send = function( data, sid ) {
-	var self = this;
+	const self = this;
 	if ( !self.onsend )
 		return;
 	
@@ -474,7 +478,7 @@ ns.ModuleProxy = function( conf ) {
 		return new ns.ModuleProxy( conf );
 	
 	MsgProxy.call( this, conf );
-	var self = this;
+	const self = this;
 	self.moduleId = conf.moduleId;
 	self.persistModuleSetting = conf.persistSetting;
 	self.getModuleSettings = conf.getSettings;
@@ -495,7 +499,7 @@ util.inherits( ns.ModuleProxy, MsgProxy );
 
 // Emits a 'connection' event to the client
 ns.ModuleProxy.prototype.setState = function( type, data ) {
-	var self = this;
+	const self = this;
 	if ( !type ) {
 		self.emitState();
 		return;
@@ -513,13 +517,13 @@ ns.ModuleProxy.prototype.setState = function( type, data ) {
 }
 
 ns.ModuleProxy.prototype.getState = function() {
-	var self = this;
+	const self = this;
 	return self.state;
 }
 
 // set a value in the db
 ns.ModuleProxy.prototype.persistSetting = function( msg, callback ) {
-	var self = this;
+	const self = this;
 	if ( !self.persistModuleSetting ) {
 		callback( null );
 		return;
@@ -542,7 +546,7 @@ ns.ModuleProxy.prototype.persistSetting = function( msg, callback ) {
 
 // read settings from db
 ns.ModuleProxy.prototype.getSettings = function( callback ) {
-	var self = this;
+	const self = this;
 	if ( !self.getModuleSettings ) {
 		callback( null );
 		return;
@@ -552,20 +556,20 @@ ns.ModuleProxy.prototype.getSettings = function( callback ) {
 }
 
 ns.ModuleProxy.prototype.close = function() {
-	var self = this;
+	const self = this;
 	self.release();
 }
 
 // Pirvate ( calling these means you are doing it wrong )
 
 ns.ModuleProxy.prototype.moduleProxyInit = function() {
-	var self = this;
+	const self = this;
 }
 
 
 
 ns.ModuleProxy.prototype.emitState = function( sessionId ) {
-	var self = this;
+	const self = this;
 	var stateEvent = {
 		type : 'connection',
 		data : self.state,
@@ -574,12 +578,12 @@ ns.ModuleProxy.prototype.emitState = function( sessionId ) {
 }
 
 ns.ModuleProxy.prototype.connect = function( conf ) {
-	var self = this;
+	const self = this;
 	self.emit( 'connect', conf );
 }
 
 ns.ModuleProxy.prototype.kill = function( callback ) {
-	var self = this;
+	const self = this;
 	delete self.toClient;
 	delete self.persistModuleSetting;
 	delete self.getModuleSettings;
@@ -608,12 +612,12 @@ ns.ModuleProxy.prototype.kill = function( callback ) {
 }
 
 ns.ModuleProxy.prototype.handle = function( event, data ) {
-	var self = this;
+	const self = this;
 	self.emit( event, data );
 }
 
 ns.ModuleProxy.prototype.queuePersist = function( msg, callback ) {
-	var self = this;
+	const self = this;
 	var data = {
 		msg : msg,
 		callback : callback,
@@ -622,7 +626,7 @@ ns.ModuleProxy.prototype.queuePersist = function( msg, callback ) {
 }
 
 ns.ModuleProxy.prototype.checkPersistQueue = function() {
-	var self = this;
+	const self = this;
 	if ( !self.persistQueue.length )
 		return;
 	

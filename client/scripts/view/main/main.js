@@ -1,5 +1,3 @@
-'use strict';
-
 /*©agpl*************************************************************************
 *                                                                              *
 * This file is part of FRIEND UNIFYING PLATFORM.                               *
@@ -19,6 +17,7 @@
 *                                                                              *
 *****************************************************************************©*/
 
+'use strict';
 var library = window.library || {};
 var friendUP = window.friendUP || {};
 var hello = window.hello || {};
@@ -31,7 +30,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Subscriber ))
 			return new ns.Subscriber( conf );
 		
-		var self = this;
+		const self = this;
 		self.type = 'subscription';
 		self.data = conf.subscriber;
 		self.isReceived = conf.subscriber.isRecieved; // TODO received / recieved - spelling
@@ -43,8 +42,13 @@ library.view = library.view || {};
 	
 	ns.Subscriber.prototype = Object.create( library.view.BaseContact.prototype );
 	
+	// Public
+	
+	
+	// Private
+	
 	ns.Subscriber.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.bindEvents();
 	}
 	
@@ -54,7 +58,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var tmplId = self.isReceived ? 'subscription-tmpl' : 'subscribee-tmpl';
 		var tmplConf = {
 			clientId : self.clientId,
@@ -66,7 +70,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( self.clientId );
 		
 		var acceptBtn = element.querySelector( '.subscriber .allowSub' );
@@ -86,31 +90,31 @@ library.view = library.view || {};
 	}
 	
 	ns.Subscriber.prototype.acceptSub = function( e ) {
-		var self = this;
-		self.view.sendMessage({
+		const self = this;
+		self.conn.send({
 			type : 'allow',
 		});
 		self.showSpinner();
 	}
 	
 	ns.Subscriber.prototype.denySub = function( e ) {
-		var self = this;
-		self.view.sendMessage({
+		const self = this;
+		self.conn.send({
 			type : 'deny',
 		});
 		self.showSpinner();
 	}
 	
 	ns.Subscriber.prototype.cancelSub = function( e ) {
-		var self = this;
-		self.view.sendMessage({
+		const self = this;
+		self.conn.send({
 			type : 'cancel'
 		});
 		self.showSpinner();
 	}
 	
 	ns.Subscriber.prototype.showSpinner = function() {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( self.clientId );
 		var actions = element.querySelector( '.actions-container' );
 		var spinner = element.querySelector( '.action-pending' );
@@ -127,10 +131,11 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.TreerootContact ))
 			return new ns.TreerootContact( conf );
 		
-		var self = this;
+		const self = this;
 		self.data = conf.contact;
 		self.online = conf.contact.online;
-		self.messageWaiting = friendUP.tool.uid( 'msgWaiting' ); // id is later replaced by the component
+		// id is later replaced by the component
+		self.messageWaiting = friendUP.tool.uid( 'msgWaiting' );
 		self.presence = friendUP.tool.uid( 'presence' );
 		self.unreadMessages = 0;
 		
@@ -162,8 +167,21 @@ library.view = library.view || {};
 	
 	// Private
 	
+	ns.TreerootContact.prototype.getMenuOptions = function() {
+		const self = this;
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'invite-video' ]);
+			opts.push( self.menuActions[ 'invite-audio' ]);
+		}
+		
+		opts.push( self.menuActions[ 'remove-contact' ]);
+		return opts;
+	}
+	
 	ns.TreerootContact.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.messageWaiting = new library.component.StatusDisplay({
 			containerId : self.messageWaiting,
 			type        : 'icon',
@@ -171,33 +189,43 @@ library.view = library.view || {};
 			statusMap   : {
 				'false'   : 'Off',
 				'true'    : 'Notify',
-				'offline' : 'Available',
 			},
 			display : '',
 		});
-		if ( self.data.unreadMessages ) {
-			self.unreadMessages = self.data.unreadMessages;
-			self.messageWaiting.setDisplay( self.data.unreadMessages );
-			self.messageWaiting.set( 'offline' );
-		}
 		
 		self.presence = new library.component.StatusIndicator({
 			containerId : self.presence,
-			type : 'icon',
-			cssClass : 'fa-user',
+			type      : 'icon',
+			cssClass  : 'fa-user',
 			statusMap : {
 				offline : 'Off',
-				online : 'On'
+				online  : 'On'
 			}
 		});
 		self.presence.set( self.online ? 'online' : 'offline' );
 		
 		self.bindEvents();
 		self.bindView();
+		
+		if ( !!self.data.unreadMessages )
+			window.setTimeout( msgWaiting, 250 );
+		
+		function msgWaiting() {
+			const state = {
+				unread : self.data.unreadMessages,
+			};
+			if ( self.lastMessage ) {
+				const lm = self.lastMessage.data;
+				state.message = lm.message;
+				state.from = !!lm.from;
+				state.time = lm.time;
+			}
+			self.handleMessageWaiting( state );
+		}
 	}
 	
 	ns.TreerootContact.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var conf = {
 			clientId         : self.clientId,
 			avatar           : self.identity.avatar,
@@ -214,51 +242,56 @@ library.view = library.view || {};
 	
 	ns.TreerootContact.prototype.bindEvents = function() {
 		const self = this;
-		const element = document.getElementById( self.clientId );
-		const chatBtn = element.querySelector( '.actions .chat' );
-		const videoBtn = element.querySelector( '.actions .video' );
-		const audioBtn = element.querySelector( '.actions .audio' );
-		const removeBtn = element.querySelector( '.actions  .remove' );
-		
-		chatBtn.addEventListener( 'click', openChat, false );
-		videoBtn.addEventListener( 'click', startVideo, false );
-		audioBtn.addEventListener( 'click', startVoice, false );
-		removeBtn.addEventListener( 'click', remove, false );
-		
-		function openChat( e ) { self.openChat( e ); }
-		function startVideo( e ) { self.startVideo(); }
-		function startVoice( e ) { self.startVoice(); }
-		function remove( e ) { self.remove( e ); }
 	}
 	
 	ns.TreerootContact.prototype.showSettings = function() {
-		var self = this;
+		const self = this;
 		console.log( 'view.treerootcontact.showSettings - NYI' );
 	}
 	
 	ns.TreerootContact.prototype.bindView = function() {
-		var self = this;
-		self.view.on( 'presence', presence );
-		self.view.on( 'messagewaiting', messageWaiting );
+		const self = this;
+		self.conn.on( 'presence', presence );
+		self.conn.on( 'message', message );
+		self.conn.on( 'msg-waiting', messageWaiting );
 		
 		function presence( state ) {
 			self.presence.set( state );
 		}
 		
-		function messageWaiting( isWaiting ) {
-			if ( 'false' === isWaiting )
-				self.unreadMessages = 0;
-			else
-				self.unreadMessages += 1;
+		function message( msg ) {
+			self.lastMessage = msg;
+			self.emit( 'message', msg );
+		}
+		
+		function messageWaiting( state ) {
+			self.handleMessageWaiting( state );
+		}
+	}
+	
+	ns.TreerootContact.prototype.handleMessageWaiting = function( state ) {
+		const self = this;
+			let isWaiting;
+			if ( state.unread ) {
+				isWaiting = !!state.unread;
+				self.unreadMessages = state.unread;
+			} else {
+				isWaiting = !!state.isWaiting;
+				if ( isWaiting )
+					self.unreadMessages += 1;
+				else
+					self.unreadMessages = 0;
+			}
 			
-			self.messageWaiting.set( isWaiting );
+			self.messageWaiting.set( isWaiting ? 'true' : 'false' );
 			let num = '';
 			if ( 2 <= self.unreadMessages )
 				num = self.unreadMessages.toString();
 			
 			self.messageWaiting.setDisplay( num );
-			self.emit( 'msg-waiting', self.unreadMessages );
-		}
+			state.isWaiting = isWaiting;
+			state.unread = self.unreadMessages;
+			self.emit( 'msg-waiting', state );
 	}
 	
 })( library.view );
@@ -267,10 +300,7 @@ library.view = library.view || {};
 // TREEROOT module
 (function( ns, undefined ) {
 	ns.Treeroot = function( conf ) {
-		if ( !( this instanceof ns.Treeroot ))
-			return new ns.Treeroot( conf );
-		
-		var self = this;
+		const self = this;
 		self.activeId = friendUP.tool.uid( 'active' );
 		self.inactiveFolditId = friendUP.tool.uid( 'inactiveFoldit' );
 		self.inactiveId = friendUP.tool.uid( 'inactive' );
@@ -290,7 +320,7 @@ library.view = library.view || {};
 	ns.Treeroot.prototype = Object.create( library.view.BaseModule.prototype );
 	
 	ns.Treeroot.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.infoMap = self.infoMap || {};
 		self.infoMap[ 'offline' ] = serverOffline;
 		self.infoMap[ 'reconnecting' ] = reconnecting;
@@ -316,44 +346,50 @@ library.view = library.view || {};
 		
 		self.bind();
 		self.bindView();
-		self.bindEvents();
 		//self.showInitializing();
 	}
 	
-	ns.Treeroot.prototype.buildElement = function() {
-		var self = this;
-		var tmplId = 'treeroot-module-tmpl';
-		var title = self.getTitleString();
-		var conf = {
-			clientId : self.clientId,
-			folditId : self.contactsFoldit,
-			moduleTitle : title,
-			connectionStateId : self.connectionState,
-			optionId : self.optionMenu,
-			contactsId : self.contactsId,
-			activeId : self.activeId,
+	ns.Treeroot.prototype.buildRoomsElement = function() {
+		const self = this;
+		self.roomsId = null;
+		self.roomsFoldit = null;
+		self.roomsConnState = null;
+		self.roomItemsId = null;
+	}
+	
+	ns.Treeroot.prototype.buildContactsElement = function() {
+		const self = this;
+		const tmplId = 'treeroot-module-tmpl';
+		const title = self.getTitleString();
+		const conf = {
+			clientId         : self.contactsId,
+			folditId         : self.contactsFoldit,
+			moduleTitle      : title,
+			connStateId      : self.contactsConnState,
+			itemsId          : self.contactItemsId,
+			activeId         : self.activeId,
 			inactiveFolditId : self.inactiveFolditId,
-			inactiveId : self.inactiveId,
+			inactiveId       : self.inactiveId,
 		};
-		var element = hello.template.getElement( tmplId, conf );
-		var container = document.getElementById( self.containerId );
+		const element = hello.template.getElement( tmplId, conf );
+		const container = document.getElementById( self.containers.contact );
 		container.appendChild( element );
 	}
 	
-	ns.Treeroot.prototype.setCss = function() {
-		var self = this;
+	ns.Treeroot.prototype.setLogoCss = function() {
+		const self = this;
 		var logoPath = 'https://treeroot.org/upload/images-master/logo.png';
 		var conf = {
 			logoPath : logoPath,
 		};
-		self.addCss( conf, 'image-logo-css-tmpl' );
+		self.insertLogoCss( 'image-logo-css-tmpl', conf, self.contactsId );
 	}
 	
 	ns.Treeroot.prototype.initFoldit = function() {
-		var self = this;
+		const self = this;
 		self.contactsFoldit = new library.component.Foldit({
 			folderId : self.contactsFoldit,
-			foldeeId : self.contactsId,
+			foldeeId : self.contactItemsId,
 		});
 		
 		self.inactiveFoldit = new library.component.Foldit({
@@ -363,8 +399,16 @@ library.view = library.view || {};
 		});
 	}
 	
+	ns.Treeroot.prototype.setServerMessageBox = function() {
+		const self = this;
+		const conf = {
+			containerId : self.activeId,
+		};
+		self.serverMessage = new library.component.InfoBox( conf );
+	}
+	
 	ns.Treeroot.prototype.serverOffline = function( data ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'module-offline' ),
 		};
@@ -384,7 +428,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.reconnecting = function( msg ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'reconnecting' ),
 		};
@@ -403,9 +447,8 @@ library.view = library.view || {};
 		}
 	}
 	
-	
 	ns.Treeroot.prototype.moduleInfoMissing = function( data ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'login-missing' ),
 		};
@@ -422,7 +465,7 @@ library.view = library.view || {};
 			accountBtn.addEventListener( 'click', createAccount, false );
 			
 			function scienceAccount( e ) { self.scienceRegister(); }
-			function showSettings( e ) { self.optionSettings(); }
+			function showSettings( e ) { self.handleAction( 'settings' ); }
 			function createAccount( e ) { self.showCreateAccount(); }
 		}
 	}
@@ -468,7 +511,7 @@ library.view = library.view || {};
 		}
 		
 		function updateCurrent( el, data ) {
-			console.log( 'updateCurrent', el );
+			
 			
 		}
 		
@@ -522,23 +565,23 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.scienceRegister = function() {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'scienceregister',
 		};
-		self.view.sendMessage( msg );
+		self.mod.send( msg );
 	}
 	
 	ns.Treeroot.prototype.showCreateAccount = function() {
-		var self = this;
+		const self = this;
 		var registerEvent = {
 			type : 'register',
 		};
-		self.view.sendMessage( registerEvent );
+		self.mod.send( registerEvent );
 	}
 	
 	ns.Treeroot.prototype.saveSetting = function( type, value ) {
-		var self = this;
+		const self = this;
 		var update = {
 			setting : type,
 			value : value,
@@ -551,39 +594,41 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.bind = function() {
-		var self = this;
-		var element = document.getElementById( self.clientId );
+		const self = this;
+		var element = document.getElementById( self.contactsId );
 		self.inactiveContainer = element.querySelector( '.inactive-container' );
 		self.inactiveStats = self.inactiveContainer.querySelector( '.inactive-stats' );
 	}
 	
 	ns.Treeroot.prototype.bindView = function() {
-		var self = this;
-		self.view.on( 'account', updateAccount );
-		self.view.on( 'contact', handleContact );
-		self.view.on( 'subscriber', addSubscriber );
+		const self = this;
+		self.mod.on( 'account', updateAccount );
+		self.mod.on( 'contact', handleContact );
+		self.mod.on( 'subscriber', addSubscriber );
+		self.mod.on( 'remove', removeTheThing );
 		
-		function updateModule( msg ) { self.updateModule( msg ); }
+		//function updateModule( msg ) { self.updateModule( msg ); }
 		function updateAccount( msg ) { self.updateAccount( msg ); }
 		function handleContact( msg ) { self.handleContact( msg ); }
-		function handleContact( msg ) { self.handleContact( msg ); }
 		function addSubscriber( msg ) { self.addSubscriber( msg ); }
+		function removeTheThing( e ) { self.removeContact( e ); }
 	}
 	
 	ns.Treeroot.prototype.updateAccount = function( account ) {
-		var self = this;
+		const self = this;
 		self.identity = account;
 		self.identity.name = self.identity.name || '---';
 		self.updateTitle();
 	}
 	
 	ns.Treeroot.prototype.addContact = function( data ) {
-		var self = this;
+		const self = this;
 		self.serverMessage.hide();
 		var conf = {
-			contact : data,
+			contact     : data,
 			containerId : self.inactiveId,
-			parentView : window.View,
+			conn        : window.View,
+			menuActions : self.menuActions,
 		};
 		var contact = new library.view.TreerootContact( conf );
 		self.contacts[ contact.clientId ] = contact;
@@ -592,12 +637,13 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.addSubscriber = function( subData ) {
-		var self = this;
+		const self = this;
 		self.serverMessage.hide();
 		var conf = {
-			subscriber : subData,
+			subscriber  : subData,
 			containerId : self.activeId,
-			parentView : window.View,
+			conn        : window.View,
+			menuActions : self.menuActions,
 		};
 		var subscriber = new library.view.Subscriber( conf );
 		self.contacts[ subscriber.clientId ] = subscriber;
@@ -608,7 +654,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.handleContact = function( msg ) {
-		var self = this;
+		const self = this;
 		var handler = self.contactMap[ msg.type ];
 		if ( !handler ) {
 			console.log( 'view.module.handleContact - no handler for', msg );
@@ -619,7 +665,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.contactPresence = function( data ) {
-		var self = this;
+		const self = this;
 		var contact = self.contacts[ data.clientId ];
 		if ( !contact ) {
 			console.log( 'view.module.contactPresence - no contact found for', data );
@@ -631,7 +677,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortContact = function( contact ) {
-		var self = this;
+		const self = this;
 		var clientId = contact.clientId;
 		var presence = contact.presence.get();
 		if ( 'offline' !== presence ) {
@@ -673,7 +719,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortOnline = function() {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( self.activeId );
 		var beforeElement = getBeforeElement();
 		
@@ -704,7 +750,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortInactive = function() {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( self.inactiveId );
 		self.inactiveIds.forEach( reorder );
 		function reorder( clientId ) {
@@ -715,7 +761,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortSubs = function() {
-		var self = this;
+		const self = this;
 		var actives = document.getElementById( self.activeId );
 		var hidden = document.getElementById( self.inactiveId );
 		self.sortContactIds( self.subIds );
@@ -731,7 +777,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.sortContactIds = function( idArr ) {
-		var self = this;
+		const self = this;
 		idArr.sort( byName );
 		function byName( a, b ) {
 			var ca = self.contacts[ a ].identity.name.toUpperCase();
@@ -745,7 +791,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.updateCount = function() {
-		var self = this;
+		const self = this;
 		var max = Object.keys( self.contacts ).length;
 		var num = self.inactiveIds.length;
 		num = num + self.subIds.length;
@@ -754,7 +800,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.removeContact = function( clientId ) {
-		var self = this;
+		const self = this;
 		var contact = self.contacts[ clientId ];
 		if ( !contact ) {
 			console.log( 'no contact for clientId', clientId );
@@ -794,31 +840,32 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.updateSettings = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'view.treeroot.updateSettings - NYI', msg );
 	}
 	
-	ns.Treeroot.prototype.bindEvents = function() {
-		var self = this;
-		var element = document.getElementById( self.clientId );
-		var subscribeButton = element.querySelector( '.actions .subscribe');
+	ns.Treeroot.prototype.getMenuOptions = function( type ) {
+		const self = this;
+		const opts = [
+			self.menuActions[ 'settings' ],
+			self.menuActions[ 'reconnect' ],
+			self.menuActions[ 'remove-module' ],
+		];
 		
-		subscribeButton.addEventListener( 'click', subscribe, false );
-		
-		function subscribe( e ) { self.subscribe( e ); }
+		return opts;
 	}
 	
 	ns.Treeroot.prototype.subscribe = function( e ) {
-		var self = this;
+		const self = this;
 		e.preventDefault();
 		e.stopPropagation();
-		self.view.sendMessage({
+		self.mod.send({
 			type : 'subscribe',
 		});
 	}
 	
 	ns.Treeroot.prototype.queryPassReset = function( data ) {
-		var self = this;
+		const self = this;
 		var tmplConf = {
 			id      : friendUP.tool.uid( 'query-pass-reset' ),
 			message : data.message,
@@ -852,11 +899,16 @@ library.view = library.view || {};
 	}
 	
 	ns.Treeroot.prototype.getName = function() {
-		var self = this;
+		const self = this;
 		var host = self.module.host.split( '.' )[ 0 ];
 		var name = self.module.displayName || host || self.type;
 		name = friendUP.tool.ucfirst( name );
 		return name;
+	}
+	
+	ns.Treeroot.prototype.close = function() {
+		const self = this;
+		self.closeBaseModule();
 	}
 	
 })( library.view );
@@ -868,7 +920,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.IrcChannel ))
 			return new ns.IrcChannel( conf );
 		
-		var self = this;
+		const self = this;
 		self.data = conf.channel;
 		self.topic = '';
 		self.mode = {};
@@ -886,7 +938,7 @@ library.view = library.view || {};
 	ns.IrcChannel.prototype = Object.create( library.view.BaseContact.prototype );
 	
 	ns.IrcChannel.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.messageWaiting = new library.component.StatusIndicator({
 			containerId : self.messageWaiting,
 			type : 'icon',
@@ -902,61 +954,48 @@ library.view = library.view || {};
 	}
 	
 	ns.IrcChannel.prototype.buildElement = function() {
-		var self = this;
-		var conf = {
+		const self = this;
+		const conf = {
 			clientId : self.clientId,
 			channelName : self.identity.name,
 			highlightId : self.highlight,
 			messageWaitingId : self.messageWaiting,
 			optionId : self.optionMenu,
 		};
-		var container = document.getElementById( self.containerId );
-		var element = hello.template.getElement( 'irc-channel-tmpl', conf );
+		const container = document.getElementById( self.containerId );
+		const element = hello.template.getElement( 'irc-channel-tmpl', conf );
 		container.appendChild( element );
 	}
 	
 	ns.IrcChannel.prototype.bindView = function() {
-		var self = this;
-		self.view.on( 'highlight', highlight );
-		self.view.on( 'messagewaiting', messageWaiting );
+		const self = this;
+		self.conn.on( 'highlight', highlight );
+		self.conn.on( 'msg-waiting', messageWaiting );
 		
 		function highlight( msg ) { self.setHighlight( msg ); }
-		function messageWaiting( isWaiting ) { self.messageWaiting.set( isWaiting ); }
+		function messageWaiting( state ) {
+			self.messageWaiting.set( state.isWaiting ? 'true' : 'false' );
+		}
 	}
 	
 	ns.IrcChannel.prototype.setHighlight = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'view.IrcChannel.setHighlight - NYI', msg );
 	}
 	
 	ns.IrcChannel.prototype.bindEvents = function() {
-		var self = this;
-		var container = document.getElementById( self.clientId );
-		var toggleChatBtn = container.querySelector( '.actions-container button.chat' );
-		var leaveChatBtn = container.querySelector( '.actions-container button.leave' );
-		
-		toggleChatBtn.addEventListener( 'click', toggleChat, false );
-		leaveChatBtn.addEventListener( 'click', leaveChat, false );
-		
-		function toggleChat( e ) { self.toggleChat(); }
-		function leaveChat( e ) { self.leaveChat(); }
+	
 	}
 	
-	ns.IrcChannel.prototype.onDoubleClick = function() {
-		var self = this;
-		self.toggleChat();
+	ns.IrcChannel.prototype.getMenuOptions = function() {
+		const self = this;
+		const opts = [
+			self.menuActions[ 'open-chat' ],
+			self.menuActions[ 'leave-room' ],
+		];
+		return opts;
 	}
-	
-	ns.IrcChannel.prototype.toggleChat = function( e ) {
-		var self = this;
-		self.send({ type : 'channel' });
-	}
-	
-	ns.IrcChannel.prototype.leaveChat = function( e ) {
-		var self = this;
-		self.send({ type : 'leave' });
-	}
-	
+
 })( library.view );
 
 // IRC PRIVATE
@@ -966,7 +1005,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.IrcPrivate ))
 			return new ns.IrcPrivate( conf );
 		
-		var self = this;
+		const self = this;
 		self.data = conf.contact;
 		self.messageWaiting = friendUP.tool.uid( 'message-waiting' );
 		
@@ -982,7 +1021,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.IrcPrivate.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.messageWaiting = new library.component.StatusIndicator({
 			containerId : self.messageWaiting,
 			type : 'icon',
@@ -998,7 +1037,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IrcPrivate.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var tmplId = 'irc-private-tmpl';
 		var conf = {
 			clientId : self.clientId,
@@ -1012,34 +1051,37 @@ library.view = library.view || {};
 	
 	ns.IrcPrivate.prototype.bindEvents = function() {
 		const self = this;
-		const element = document.getElementById( self.clientId );
-		const video = element.querySelector( '.actions .video' );
-		const audio = element.querySelector( '.actions .audio' );
-		const chatBtn = element.querySelector( '.actions .chat' );
-		const removeBtn = element.querySelector( '.actions .remove' );
+	}
+	
+	ns.IrcPrivate.prototype.getMenuOptions = function() {
+		const self = this;
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'invite-video' ]);
+			opts.push( self.menuActions[ 'invite-audio' ]);
+		}
 		
-		video.addEventListener( 'click', startVideo, false );
-		audio.addEventListener( 'click', startVoice, false );
-		chatBtn.addEventListener( 'click', toggleChatView, false );
-		removeBtn.addEventListener( 'click', removePriv, false );
-		
-		function startVideo( e ) { self.startVideo(); }
-		function startVoice( e ) { self.startVoice(); }
-		function toggleChatView( e ) { self.openChat(); }
-		function removePriv( e ) { self.remove(); }
+		opts.push( self.menuActions[ 'remove-chat' ]);
+		return opts;
 	}
 	
 	ns.IrcPrivate.prototype.bindView = function() {
-		var self = this;
-		self.view.on( 'messagewaiting', messageWaiting );
-		self.view.on( 'highlight', handleHighlight );
+		const self = this;
+		self.conn.on( 'msg-waiting', messageWaiting );
+		self.conn.on( 'highlight', handleHighlight );
 		
-		function messageWaiting( isWaiting ) {
-			self.messageWaiting.set( isWaiting );
+		function messageWaiting( state ) {
+			let isWaiting = state.isWaiting;
+			self.messageWaiting.set( isWaiting ? 'true' : 'false' );
 			let num = 'true' === isWaiting ? 1 : 0;
-			self.emit( 'msg-waiting', num );
+			state.unread = num;
+			self.emit( 'msg-waiting', state );
 		}
-		function handleHighlight( msg ) { console.log( 'view.ircPriv - highlight - NYI', msg ); }
+		
+		function handleHighlight( msg ) {
+			console.log( 'view.ircPriv - highlight - NYI', msg );
+		}
 	}
 	
 })( library.view );
@@ -1047,77 +1089,88 @@ library.view = library.view || {};
 // IRC
 (function( ns, undefined ) {
 	ns.IRC = function( conf ) {
-		if ( !( this instanceof ns.IRC ))
-			return new ns.IRC( conf );
+		const self = this;
+		library.view.BaseModule.call( self, conf );
 		
-		library.view.BaseModule.call( this, conf );
-		
-		var self = this;
 		self.init();
 	}
 	
 	ns.IRC.prototype = Object.create( library.view.BaseModule.prototype );
 	
 	ns.IRC.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.identity = {
 			name : self.module.settings.nick,
 		};
 		
 		self.connectionMap = {
-			'error' : cleanupClient,
+			'error'   : cleanupClient,
 			'offline' : cleanupClient,
 		};
 		
 		function cleanupClient( msg ) { self.cleanupClient( msg ); }
 		
-		self.bindView();
-		self.bindEvents();
+		self.bindModuleEvents();
 	}
 	
-	ns.IRC.prototype.buildElement = function() {
-		var self = this;
+	ns.IRC.prototype.buildRoomsElement = function() {
+		const self = this;
 		var tmplId = 'irc-module-tmpl';
 		var title = self.getTitleString();
 		var conf = {
-			clientId          : self.clientId,
-			folditId          : self.contactsFoldit,
-			moduleTitle       : title,
-			connectionStateId : self.connectionState,
-			optionId          : self.optionMenu,
-			contactsId        : self.contactsId,
+			clientId    : self.roomsId,
+			folditId    : self.roomsFoldit,
+			moduleTitle : title,
+			connStateId : self.roomsConnState,
+			itemsId     : self.roomItemsId,
 		};
 		
 		var element = hello.template.getElement( tmplId, conf );
-		var container = document.getElementById( self.containerId );
+		var container = document.getElementById( self.containers.conference );
 		container.appendChild( element );
 	}
 	
-	ns.IRC.prototype.cleanupClient = function() {
-		var self = this;
+	ns.IRC.prototype.buildContactsElement = function() {
+		const self = this;
+		self.contactsId = null;
+		self.contactsFoldit = null;
+		self.contactsConnState = null;
+		self.contactItemsId = null;
 	}
 	
-	ns.IRC.prototype.bindView = function() {
-		var self = this;
-		self.view.on( 'private', handlePrivate );
-		self.view.on( 'join', handleJoin );
-		self.view.on( 'leave', handleLeave );
-		self.view.on( 'setting', handleSetting );
+	ns.IRC.prototype.setLogoCss = function() {
+		const self = this;
+		const tmplId = 'fa-icon-logo-css-tmpl';
+		// template conf
+		const conf = {
+		};
+		self.insertLogoCss( tmplId, conf, self.roomsId );
+		//self.insertLogoCss( tmplId, conf, self.contactsId );
+	}
+	
+	ns.IRC.prototype.bindModuleEvents = function() {
+		const self = this;
+		self.mod.on( 'private', handlePrivate );
+		self.mod.on( 'join', handleJoin );
+		self.mod.on( 'leave', handleLeave );
+		self.mod.on( 'setting', handleSetting );
+		self.mod.on( 'remove', handleRemove );
 		
 		function handlePrivate( e ) { self.addPrivate( e ); }
 		function handleJoin( e ) { self.joinChannel( e ); }
 		function handleLeave( e ) { self.leaveChannel( e ); }
-		function handleRemove( e ) { self.removePriv( e ); }
 		function handleSetting( e ) { self.updateSetting( e ); }
+		function handleRemove( e ) { self.removePrivate( e ); }
 		
 	}
 	
 	ns.IRC.prototype.addPrivate = function( data ) {
-		var self = this;
+		const self = this;
 		var conf = {
-			containerId : self.contactsId,
-			parentView : window.View,
-			contact : data,
+			menuActison : self.menuActions,
+			containerId : self.roomItemsId,
+			conn        : window.View,
+			contact     : data,
 		};
 		var priv = new library.view.IrcPrivate( conf );
 		self.contacts[ priv.clientId ] = priv;
@@ -1125,18 +1178,19 @@ library.view = library.view || {};
 	}
 	
 	ns.IRC.prototype.joinChannel = function( data ) {
-		var self = this;
+		const self = this;
 		var conf = {
-			containerId : self.contactsId,
-			parentView : window.View,
-			channel : data,
+			menuActions : self.menuActions,
+			containerId : self.roomItemsId,
+			conn        : window.View,
+			channel     : data,
 		};
 		var channel = new library.view.IrcChannel( conf );
 		self.contacts[ channel.clientId ] = channel;
 	}
 	
 	ns.IRC.prototype.leaveChannel = function( clientId ) {
-		var self = this;
+		const self = this;
 		var channel = self.contacts[ clientId ];
 		if ( !channel ) {
 			return;
@@ -1146,8 +1200,18 @@ library.view = library.view || {};
 		delete self.contacts[ clientId ];
 	}
 	
+	ns.IRC.prototype.removePrivate = function( clientId ) {
+		const self = this;
+		const priv = self.contacts[ clientId ];
+		if ( !priv )
+			return;
+		
+		priv.close();
+		delete self.contacts[ clientId ];
+	}
+	
 	ns.IRC.prototype.updateSetting = function( data ) {
-		var self = this;
+		const self = this;
 		if ( data.setting != 'displayName' )
 			return;
 		
@@ -1156,35 +1220,32 @@ library.view = library.view || {};
 		title.innerHTML = data.value;
 	}
 	
-	ns.IRC.prototype.bindEvents = function() {
-		var self = this;
-		var element = document.getElementById( self.clientId );
-		var consoleBtn = element.querySelector( '.console' );
+	ns.IRC.prototype.getMenuOptions = function() {
+		const self = this;
+		const opts = [
+			self.menuActions[ 'console' ],
+			self.menuActions[ 'settings' ],
+			self.menuActions[ 'reconnect' ],
+			self.menuActions[ 'remove-module' ],
+		];
 		
-		consoleBtn.addEventListener( 'click', toggleConsole, false );
-		
-		function toggleConsole( e ) { self.toggleConsole( e ); }
+		return opts;
 	}
 	
-	ns.IRC.prototype.toggleConsole = function( e ) {
-		var self = this;
-		e.preventDefault();
-		e.stopPropagation();
-		self.send({
-			type : 'console',
-		});
+	ns.IRC.prototype.close = function() {
+		const self = this;
+		self.closeBaseModule();
 	}
+	
 	
 })( library.view );
 
 // Presence
 (function( ns, undefined ) {
 	ns.Presence = function( conf ) {
-		if ( !( this instanceof ns.Presence ))
-			return new ns.Presence( conf );
+		const self = this;
+		self.userId = conf.userId;
 		
-		var self = this;
-		self.createRoomId = friendUP.tool.uid( 'create' );
 		library.view.BaseModule.call( self, conf );
 		self.init();
 	}
@@ -1195,7 +1256,10 @@ library.view = library.view || {};
 	
 	// Pirvate
 	ns.Presence.prototype.init = function() {
-		var self = this;
+		const self = this;
+		self.roomOrder = new library.component.ListOrder( self.roomItemsId );
+		self.contactOrder = new library.component.ListOrder( self.contactItemsId );
+		
 		self.queryMap[ 'account-ask' ] = askForAccount;
 		self.queryMap[ 'account-create' ] = createAccount;
 		self.queryMap[ 'login-invalid' ] = loginInvalid;
@@ -1204,118 +1268,208 @@ library.view = library.view || {};
 		function createAccount( e ) { self.createAccount( e ); }
 		function loginInvalid( e ) { self.loginInvalid( e ); }
 		
-		self.bindView();
-		self.bindUI();
+		self.bindModuleEvents();
 	}
 	
-	ns.Presence.prototype.bindView = function() {
-		var self = this;
-		self.view.on( 'join', joinedRoom );
-		self.view.on( 'leave', leftRoom );
-		
-		function joinedRoom( e ) { self.handleRoomJoin( e ); }
-		function leftRoom( e ) { self.handleRoomLeave( e ); }
-	}
-	
-	ns.Presence.prototype.handleRoomJoin = function( conf ) {
-		var self = this;
-		var roomConf = {
-			containerId : self.contactsId,
-			parentView  : window.View,
-			room        : conf,
-		};
-		var room = new library.view.PresenceRoom( roomConf );
-		self.contacts[ room.clientId ] = room;
-	}
-	
-	ns.Presence.prototype.handleRoomLeave = function( roomId ) {
-		var self = this;
-		console.log( 'handleRoomLeave', roomId );
-		
-	}
-	
-	ns.Presence.prototype.buildElement = function() {
-		var self = this;
-		const tmplId = 'presence-module-tmpl';
+	ns.Presence.prototype.buildRoomsElement = function() {
+		const self = this;
+		const tmplId = 'presence-rooms-tmpl';
 		const conf = {
-			clientId     : self.clientId,
-			folditId     : self.contactsFoldit,
-			title        : self.getTitleString(),
-			connStateId  : self.connectionState,
-			createRoomId : self.createRoomId,
-			optionId     : self.optionMenu,
-			contactsId   : self.contactsId,
+			roomsId      : self.roomsId,
+			folditId     : self.roomsFoldit,
+			title        : self.getTitleString( 'conference' ),
+			connStateId  : self.roomsConnState,
+			itemsId      : self.roomItemsId,
 		};
-		var el = hello.template.getElement( tmplId, conf );
-		var container = document.getElementById( self.containerId );
+		const el = hello.template.getElement( tmplId, conf );
+		const container = document.getElementById( self.containers.conference );
 		container.appendChild( el );
 	}
 	
-	ns.Presence.prototype.bindUI = function() {
+	ns.Presence.prototype.buildContactsElement = function() {
 		const self = this;
-		const createBtn = document.getElementById( self.createRoomId );
-		createBtn.addEventListener( 'click', createClick, false );
+		const tmplId = 'presence-rooms-tmpl';
+		const conf = {
+			roomsId      : self.contactsId,
+			folditId     : self.contactsFoldit,
+			title        : self.getTitleString( 'contact' ),
+			connStateId  : self.contactsConnState,
+			itemsId      : self.contactItemsId,
+		};
+		const el = hello.template.getElement( tmplId, conf );
+		const container = document.getElementById( self.containers.contact );
+		container.appendChild( el );
+	}
+	
+	ns.Presence.prototype.setLogoCss = function() {
+		const self = this;
+		const tmplId = 'fa-icon-logo-css-tmpl';
+		// template conf
+		const conf = {
+		};
+		self.insertLogoCss( tmplId, conf, self.roomsId );
+		self.insertLogoCss( tmplId, conf, self.contactsId );
+	}
+	
+	ns.Presence.prototype.getTitleString = function( type ) {
+		const self = this;
+		if ( 'conference' === type )
+			return window.View.i18n( 'i18n_conference_rooms' );//'Conference rooms';
+		else
+			return window.View.i18n( 'i18n_workgroup_contacts' );//'Workgroup contacts';
+	}
+	
+	ns.Presence.prototype.bindModuleEvents = function() {
+		const self = this;
+		self.mod.on( 'user-id', userId );
+		self.mod.on( 'room-join', joinedRoom );
+		self.mod.on( 'room-remove', leftRoom );
+		self.mod.on( 'contact-list', contactList );
+		self.mod.on( 'contact-add', contactAdd );
+		self.mod.on( 'contact-remove', contactRemove );
 		
-		function createClick( e ) {
-			e.stopPropagation();
-			e.preventDefault();
-			self.send({
-				type : 'create',
-			});
+		function userId( e ) { self.userId = e; }
+		function joinedRoom( e ) { self.handleRoomJoin( e ); }
+		function leftRoom( e ) { self.handleRoomLeave( e ); }
+		function contactList( e ) { self.handleContactList( e ); }
+		function contactAdd( e ) { self.handleContactAdd( e ); }
+		function contactRemove( e ) { self.handleContactRemove( e ); }
+	}
+	
+	ns.Presence.prototype.updateTitle = function() {
+		const self = this;
+		update( self.roomsId, 'conference' );
+		update( self.contactsId, 'contact' );
+		
+		function update( id, type ) {
+			let el = document.getElementById( id );
+			if ( !el )
+				return;
+			
+			let title = self.getTitleString( type );
+			let titleEl = el.querySelector( '.module-title' );
+			titleEl.textContent = title;
 		}
 	}
 	
-	ns.Presence.prototype.addMenu = function() {
-		var self = this;
-		var roomId = friendUP.tool.uid( 'room' );
-		var roomItem = {
-			type   : 'item',
-			id     : roomId,
-			name   : View.i18n('i18n_create_room'),
-			faIcon : 'fa-users',
+	ns.Presence.prototype.handleRoomJoin = function( conf ) {
+		const self = this;
+		if ( conf.isPrivate ) {
+			self.handleContactJoin( conf );
+			return;
 		}
 		
-		var settingsId = friendUP.tool.uid( 'settings' );
-		var settingsItem = {
-			type   : 'item',
-			id     : settingsId,
-			name   : View.i18n('i18n_settings'),
-			faIcon : 'fa-cog',
+		const cId = conf.clientId;
+		if ( self.rooms[ cId ]) {
+			return;
+		}
+		
+		const roomConf = {
+			menuActions : self.menuActions,
+			containerId : self.roomItemsId,
+			conn        : window.View,
+			userId      : self.userId,
+			room        : conf,
 		};
 		
-		var reconnectId = friendUP.tool.uid( 'reconnect' );
-		var reconnectItem = {
-			type   : 'item',
-			id     : reconnectId,
-			name   : View.i18n('i18n_reconnect'),
-			faIcon : 'fa-refresh',
+		let PThing = library.view.PresenceRoom;
+		if ( conf.isView )
+			PThing = library.view.PresenceView;
+		
+		const room = new PThing( roomConf );
+		self.rooms[ cId ] = room;
+		self.emit( 'add', room );
+		self.roomOrder.add( conf );
+	}
+	
+	ns.Presence.prototype.handleRoomLeave = function( roomId ) {
+		const self = this;
+		self.roomOrder.remove( roomId );
+		self.emit( 'remove', roomId );
+		const room = self.rooms[ roomId ];
+		if ( !room ) {
+			return;
+		}
+		
+		delete self.rooms[ roomId ];
+		room.close();
+	}
+	
+	ns.Presence.prototype.handleContactList = function( list ) {
+		const self = this;
+		if ( !list || !list.length )
+			return;
+		
+		list.forEach( item => {
+			self.addContact( item );
+		});
+	}
+	
+	ns.Presence.prototype.handleContactAdd = function( contact ) {
+		const self = this;
+		self.addContact( contact );
+		
+	}
+	
+	ns.Presence.prototype.handleContactRemove = function( clientId ) {
+		const self = this;
+		const contact = self.contacts[ clientId ];
+		if ( !contact )
+			return;
+		
+		delete self.contacts[ clientId ];
+		self.contactIds = Object.keys( self.contacts );
+		contact.close();
+	}
+	
+	ns.Presence.prototype.addContact = function( conf ) {
+		const self = this;
+		const cId = conf.clientId;
+		if ( cId === self.userId ) {
+			console.log( 'Presence.addContact - is self, not adding' );
+			return;
+		}
+		
+		if ( self.contacts[ cId ]) {
+			console.log( 'Presence.addContact - already added', cId );
+			return;
+		}
+		
+		const contactConf = {
+			menuActions : self.menuActions,
+			containerId : self.contactItemsId,
+			userId      : self.userId,
+			contact     : conf,
 		};
+		const contact = new library.view.PresenceContact( contactConf, window.View );
+		self.contacts[ cId ] = contact;
+		self.contactIds.push( cId );
+		self.emit( 'add', contact );
+		self.contactOrder.add( conf.identity );
+	}
+	
+	ns.Presence.prototype.handleContactJoin = function( conf ) {
+		const self = this;
+		console.log( 'handleContactJoin - NYI', conf );
+	}
+	
+	ns.Presence.prototype.getMenuOptions = function( type ) {
+		const self = this;
+		let opts = [
+			self.menuActions[ 'reconnect' ],
+		];
 		
-		self.menuId = friendUP.tool.uid( 'menu' );
-		var liveFolder = {
-			type   : 'folder',
-			id     : self.menuId,
-			name   : 'Presence',
-			faIcon : 'fa-user-circle',
-			items  : [
-				roomItem,
-				//settingsItem,
-				reconnectItem,
-			],
-		};
+		if ( 'conference' === type )
+			opts.push( self.menuActions[ 'create-room' ]);
 		
-		main.menu.add( liveFolder, 'modules' );
-		main.menu.on( roomId, createRoom );
-		main.menu.on( settingsId, showSettings );
-		main.menu.on( reconnectId, reconnect );
+		if ( 'contact' === type )
+			;
 		
-		function createRoom( e ) { self.send({ type : 'create' }); }
-		function showSettings( e ) { self.optionSettings(); }
-		function reconnect( e ) { self.optionReconnect(); }
+		return opts;
 	}
 	
 	ns.Presence.prototype.askForAccount = function( event ) {
-		var self = this;
+		const self = this;
 		const createId = friendUP.tool.uid( 'create' );
 		const haveId = friendUP.tool.uid( 'have' );
 		var conf = {
@@ -1339,7 +1493,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Presence.prototype.createAccount = function( event ) {
-		var self = this;
+		const self = this;
 		var el = hello.template.getElement( 'presence-create-account-tmpl', conf );
 		self.serverMessage.show( el );
 		bind( el );
@@ -1366,22 +1520,31 @@ library.view = library.view || {};
 	}
 	
 	ns.Presence.prototype.loginInvalid = function( event ) {
-		var self = this;
+		const self = this;
 		console.log( 'loginInvalid', event );
+	}
+	
+	ns.Presence.prototype.close = function() {
+		const self = this;
+		self.closeBaseModule();
 	}
 	
 })( library.view );
 
+
 (function( ns, undefined ) {
 	ns.PresenceRoom = function( conf ) {
-		var self = this;
+		const self = this;
+		self.type = 'room';
 		self.data = conf.room;
-		self.userId = conf.room.userId;
+		self.userId = conf.userId;
 		self.roomStatus = friendUP.tool.uid( 'room-status' );
 		self.liveStatus = friendUP.tool.uid( 'live-status' );
 		self.msgWaiting = friendUP.tool.uid( 'msg-waiting' );
 		self.livePeers = [];
 		self.isLive = false;
+		
+		self.unreadMessages = 0;
 		
 		ns.BaseContact.call( self, conf );
 		self.init();
@@ -1389,61 +1552,40 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype = Object.create( ns.BaseContact.prototype );
 	
+	// Public
+	
+	ns.PresenceRoom.prototype.showLive = function() {
+		const self = this;
+		const show = {
+			type : 'live-show',
+		};
+		self.send( show );
+	}
+	
+	// Private
+	
 	ns.PresenceRoom.prototype.init = function() {
-		var self = this;
+		const self = this;
 		if ( !self.identity.name ) {
 			self.unnamed = true;
 			self.identity.name = '[ temporary room ]';
 			self.updateName();
 		}
 		
-		const roomConf = {
-			containerId : self.roomStatus,
-			type        : 'icon',
-			cssClass    : 'fa-users',
-			statusMap   : {
-				'empty' : 'Off',
-				'users' : 'Available',
-			},
-			display : '- / -',
-		};
-		self.roomStatus = new library.component.StatusDisplay( roomConf );
-		
-		const liveConf = {
-			containerId : self.liveStatus,
-			type      : 'icon',
-			cssClass  : 'fa-video-camera',
-			statusMap : {
-				'empty'  : 'Off',
-				'others' : 'Available',
-				'timeout': 'Notify',
-				'user'   : 'On',
-			},
-			display : '-',
-		};
-		self.liveStatus = new library.component.StatusDisplay( liveConf );
-		
-		const msgConf = {
-			containerId : self.msgWaiting,
-			type : 'icon',
-			cssClass : 'fa-comment',
-			statusMap : {
-				'false' : 'Off',
-				'true' : 'Notify'
-			},
-		};
-		self.msgWaiting = new library.component.StatusIndicator( msgConf );
-		
+		self.buildRoomStatus();
+		self.buildLiveStatus();
+		self.buildMsgWaiting();
 		self.bindUI();
 		self.bindView();
 	}
 	
 	ns.PresenceRoom.prototype.buildElement = function() {
-		var self = this;
+		const self = this;
 		var tmplId = 'presence-room-tmpl';
 		var conf = {
 			clientId     : self.clientId,
 			name         : self.identity.name,
+			avatar       : self.identity.avatar || '',
 			roomStatusId : self.roomStatus,
 			liveStatusId : self.liveStatus,
 			msgWaitingId : self.msgWaiting,
@@ -1453,27 +1595,65 @@ library.view = library.view || {};
 		container.appendChild( el );
 	}
 	
+	ns.PresenceRoom.prototype.buildRoomStatus = function() {
+		const self = this;
+		const roomConf = {
+			containerId : self.roomStatus,
+			type        : 'icon',
+			cssClass    : 'fa-users',
+			statusMap   : {
+				'empty' : 'Off',
+				'users' : 'Available',
+			},
+			display : '--',
+		};
+		self.roomStatus = new library.component.StatusDisplay( roomConf );
+	}
+	
+	ns.PresenceRoom.prototype.buildLiveStatus = function() {
+		const self = this;
+		const liveConf = {
+			containerId : self.liveStatus,
+			type      : 'icon',
+			cssClass  : 'fa-video-camera',
+			statusMap : {
+				'empty'  : 'Off',
+				'others' : 'Available',
+				'timeout': 'Notify',
+				'user'   : 'DangerText',
+			},
+			display : '-',
+		};
+		self.liveStatus = new library.component.StatusDisplay( liveConf );
+		self.liveStatus.on( 'click', () => self.showLive());
+		self.liveStatus.hide();
+	}
+	
+	ns.PresenceRoom.prototype.buildMsgWaiting = function() {
+		const self = this;
+		const msgConf = {
+			containerId : self.msgWaiting,
+			type        : 'led',
+			cssClass    : 'led-unread-status',
+			statusMap   : {
+				'false'   : 'Off',
+				'true'    : 'Notify'
+			},
+			display     : '',
+		};
+		self.msgWaiting = new library.component.StatusDisplay( msgConf );
+		self.msgWaiting.hide();
+	}
+	
 	ns.PresenceRoom.prototype.bindUI = function() {
-		var self = this;
-		var el = document.getElementById( self.clientId );
-		var aEl = el.querySelector( '.actions-container .actions' );
-		var videoBtn = aEl.querySelector( '.live-video' );
-		var audioBtn = aEl.querySelector( '.live-audio' );
-		var chatBtn = aEl.querySelector( '.chat' );
-		self.renameBtn = aEl.querySelector( '.rename' );
-		var leaveBtn = aEl.querySelector( '.leave' );
+		const self = this;
+		const el = document.getElementById( self.clientId );
 		
 		self.showSetNameBtn = el.querySelector( '.show-set-name' );
 		self.setNameForm = el.querySelector( '.room-name-form' );
-		self.nameEl = el.querySelector( '.contact-name' );
+		self.nameEl = el.querySelector( '.name' );
 		const hideSetNameBtn = self.setNameForm.querySelector( '.hide-set-name' );
 		self.setNameInput = self.setNameForm.querySelector( 'input' );
-		
-		videoBtn.addEventListener( 'click', videoClick, false );
-		audioBtn.addEventListener( 'click', audioClick, false );
-		chatBtn.addEventListener( 'click', chatClick, false );
-		self.renameBtn.addEventListener( 'click', renameClick, false );
-		leaveBtn.addEventListener( 'click', leaveClick, false );
 		
 		self.showSetNameBtn.addEventListener( 'click', showSetName, false );
 		hideSetNameBtn.addEventListener( 'click', hideSetName, false );
@@ -1494,11 +1674,20 @@ library.view = library.view || {};
 			self.openChat();
 		}
 		
-		function renameClick( e ) {
-			self.showRename();
+		function settingsClick( e ) {
+			const openSettings = {
+				type : 'settings',
+				data : {
+					tab : 'chat',
+				},
+			};
+			self.send( openSettings );
 		}
 		
 		function leaveClick( e ) {
+			if ( !self.isAuthed && self.isPersistent )
+				return;
+			
 			self.send({ type : 'leave' });
 		}
 		
@@ -1537,90 +1726,175 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.PresenceRoom.prototype.showRename = function() {
+	ns.PresenceRoom.prototype.getMenuOptions = function() {
 		const self = this;
-		self.setNameInput.value = self.identity.name;
-		self.toggleShowSetName( true );
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'live-video' ]);
+			opts.push( self.menuActions[ 'live-audio' ]);
+		}
+		
+		if ( self.menuSettings )
+			opts.push( self.menuActions[ 'settings' ]);
+		
+		if ( self.isOwner || self.isAuthed )
+			opts.push( self.menuActions[ 'leave-room' ]);
+		
+		return opts;
 	}
 	
 	ns.PresenceRoom.prototype.toggleShowSetName = function( show ) {
 		const self = this;
+		if ( !self.setNameForm )
+			return;
+		
 		if ( self.showSetNameBtn )
 			self.showSetNameBtn.classList.toggle( 'hidden', show );
 		
 		self.nameEl.classList.toggle( 'hidden', show );
 		self.setNameForm.classList.toggle( 'hidden', !show );
+		if ( show )
+			self.setNameInput.focus();
 	}
 	
 	ns.PresenceRoom.prototype.bindView = function() {
-		var self = this;
-		self.view.on( 'persistent', persistent );
-		self.view.on( 'messagewaiting', msgWaiting );
-		self.view.on( 'owner', owner );
-		self.view.on( 'users', users );
+		const self = this;
+		self.conn.on( 'init', init );
+		self.conn.on( 'auth', auth );
+		self.conn.on( 'persistent', persistent );
+		self.conn.on( 'relation', relation );
+		self.conn.on( 'message', message );
+		self.conn.on( 'msg-waiting', msgWaiting );
+		self.conn.on( 'users', users );
+		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
 		
 		self.bindLive();
 		
+		function init( e ) { self.handleInit( e ); }
+		function auth( e ) { self.handleIsAuthed( e ); }
 		function persistent( e ) { self.handlePersistent( e ); }
+		function relation( e ) { self.handleRelation( e ); }
+		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
-		function owner( e ) { self.handleOwner( e ); }
 		function users( e ) { self.updateRoomStatus( e ); }
+	}
+	
+	ns.PresenceRoom.prototype.handleInit = function( event ) {
+		const self = this;
+		self.isOwner = event.isOwner;
+		self.isAdmin = event.isAdmin;
+		self.handlePersistent( event );
+		self.handleIsAuthed( event.isAuthed );
+		self.toggleSettings(( self.isOwner || self.isAdmin ) && self.isPersistent );
 	}
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
 		const self = this;
 		self.isPersistent = event.persistent;
-		if ( event.persistent ) {
-			updateUIElements();
-			self.identity.name = event.name;
-			self.updateName();
-		} else {
-			self.showSetNameBtn.classList.toggle( 'hidden', false );
+		if ( !self.isPersistent ) {
+			if (( self.isOwner || self.isAdmin ) && self.showSetNameBtn )
+				self.showSetNameBtn.classList.toggle( 'hidden', false );
+			return;
 		}
 		
-		function updateUIElements() {
-			self.toggleShowSetName( false );
-			if ( self.isOwner )
-				self.renameBtn.classList.toggle( 'hidden', false );
-			
-			if ( self.showSetNameBtn ) {
-				self.showSetNameBtn.parentNode.removeChild( self.showSetNameBtn );
-				self.showSetNameBtn = null;
-			}
-		}
+		self.removeNameThings();
+		if ( self.isOwner || self.isAdmin )
+			self.toggleSettings( true );
+	}
+	
+	ns.PresenceRoom.prototype.handleIsAuthed = function( isAuthed ) {
+		const self = this;
+		self.isAuthed = isAuthed || false;
+	}
+	
+	ns.PresenceRoom.prototype.removeNameThings = function() {
+		const self = this;
+		self.toggleShowSetName( false );
+		if ( self.showSetNameBtn )
+			self.showSetNameBtn.parentNode.removeChild( self.showSetNameBtn );
+		
+		if ( self.setNameForm )
+			self.setNameForm.parentNode.removeChild( self.setNameForm );
+		
+		delete self.showSetNameBtn;
+		delete self.setNameForm;
+	}
+	
+	ns.PresenceRoom.prototype.handleRelation = function( relation ) {
+		const self = this;
+		self.lastMessage = relation.lastMessage;
+		self.unreadMessages = relation.unreadMessages;
+		self.setMsgWaiting( self.unreadMessages || 0 );
+		self.emit( 'relation', relation );
+	}
+	
+	ns.PresenceRoom.prototype.handleMessage = function( msg ) {
+		const self = this;
+		self.emit( 'message', msg );
 	}
 	
 	ns.PresenceRoom.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
-		self.msgWaiting.set( state );
+		if ( null != state.unreadMessages ) {
+			self.unreadMessages = state.unreadMessages;
+			state.isWaiting = true;
+		}
+		else {
+			if ( state.isWaiting )
+				self.unreadMessages++;
+			else
+				self.unreadMessages = 0;
+			
+			state.unreadMessages = self.unreadMessages;
+		}
+		
+		self.emit( 'msg-waiting', state );
+		self.setMsgWaiting( self.unreadMessages );
 	}
 	
-	ns.PresenceRoom.prototype.handleOwner = function( isOwner ) {
+	ns.PresenceRoom.prototype.setMsgWaiting = function( unread ) {
 		const self = this;
-		self.isOwner = isOwner;
-		const show = !( self.isOwner && self.isPersistent );
-		self.renameBtn.classList.toggle( 'hidden', show );
+		const isWaiting = !!unread;
+		const state = isWaiting ? 'true' : 'false';
+		self.msgWaiting.set( state );
+		self.msgWaiting.setDisplay( unread );
+		if ( isWaiting )
+			self.msgWaiting.show();
+		else
+			self.msgWaiting.hide();
+	}
+	
+	ns.PresenceRoom.prototype.toggleSettings = function( show ) {
+		const self = this;
+		self.menuSettings = show;
 	}
 	
 	ns.PresenceRoom.prototype.updateRoomStatus = function( data ) {
 		const self = this;
 		let state = 'empty';
-		if ( 0 !== data.online )
-			state = 'users';
-		
-		//let display = [ data.online, data.users ];
-		//display = display.join( ' / ' );
 		let online = '-';
-		if ( 0 !== data.online )
+		if ( 0 !== data.online ) {
+			state = 'users';
 			online = data.online;
+		}
 		
 		self.roomStatus.set( state );
 		self.roomStatus.setDisplay( online );
+		self.emit( 'participants', data.online );
+	}
+	
+	ns.PresenceRoom.prototype.handleIdUpdate = function( update ) {
+		const self = this;
+		console.log( 'PresenceRoom.handleIdUpdate - NOOP', update );
 	}
 	
 	ns.PresenceRoom.prototype.bindLive = function() {
 		const self = this;
-		self.live = new library.component.EventNode( 'live', self.view );
+		self.live = new library.component.EventNode(
+			'live',
+			self.conn
+		);
 		self.live.on( 'user-join', userJoin );
 		self.live.on( 'user-leave', userLeave );
 		self.live.on( 'peers', peers );
@@ -1628,34 +1902,31 @@ library.view = library.view || {};
 		self.live.on( 'leave', leave );
 		
 		function userJoin( accId ) {
-			self.isLive = true;
-			self.updateLiveDisplay();
+			self.addToPeers( self.userId );
+			self.updateLiveDisplay( true );
 		}
 		
 		function userLeave( accId ) {
-			self.isLive = false;
-			self.updateLiveDisplay();
+			self.removeFromPeers( self.userId );
+			self.updateLiveDisplay( false );
 		}
 		
 		function peers( peers ) {
 			self.livePeers = peers;
+			const isInPeerList = self.checkIsInPeerList( self.userId );
+			self.userIsLive = isInPeerList ? true : false;
 			self.updateLiveDisplay();
 		}
 		
 		function join( peer ) {
 			const peerId = peer.peerId;
-			const pix = self.livePeers.indexOf( peerId );
-			if ( -1 === pix )
-				self.livePeers.push( peerId );
-			
+			self.addToPeers( peerId );
 			self.updateLiveDisplay();
 		}
 		
 		function leave( peer ) {
 			const peerId = peer.peerId;
-			self.livePeers = self.livePeers
-				.filter( isNotLeaver );
-				
+			self.removeFromPeers( peerId );
 			self.updateLiveDisplay();
 			
 			function isNotLeaver( pid ) {
@@ -1664,35 +1935,422 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.PresenceRoom.prototype.updateLiveDisplay = function() {
+	ns.PresenceRoom.prototype.updateLiveDisplay = function( isLive ) {
 		const self = this;
-		setDisplay();
-		const isInPeerList = !( -1 == self.livePeers.indexOf( self.userId ));
-		if ( isInPeerList && self.isLive ) {
+		const isInPeers = self.checkIsInPeerList( self.userId );
+		const num = self.livePeers.length;
+		setDisplay( num );
+		if (( null != isLive ) && ( isLive !== self.userIsLive )) {
+			self.userIsLive = isLive;
 			setStatus( 'user' );
+			self.emit( 'live-user', isLive );
 			return;
 		}
 		
-		if ( isInPeerList ) {
+		if ( isInPeers && !self.userIsLive ) {
 			setStatus( 'timeout' );
 			return;
 		}
 		
-		if ( self.livePeers.length )
-			setStatus( 'others' );
-		else
-			setStatus( 'empty' );
+		if ( !isInPeers ) {
+			if ( num ) {
+				self.emit( 'live', true );
+				setStatus( 'others' );
+			}
+			else {
+				self.emit( 'live', false );
+				setStatus( 'empty' );
+			}
+		}
 		
 		function setStatus( type ) {
 			self.liveStatus.set( type );
 		}
-		function setDisplay() {
-			var num = self.livePeers.length;
-			if ( 0 == num )
-				num = '-';
-			
-			self.liveStatus.setDisplay( num );
+		
+		function setDisplay( num ) {
+			if ( !num ) {
+				self.liveStatus.hide();
+				self.liveStatus.setDisplay( '' );
+			}
+			else {
+				self.liveStatus.setDisplay( num );
+				self.liveStatus.show();
+			}
 		}
+	}
+	
+	ns.PresenceRoom.prototype.addToPeers = function( accId ) {
+		const self = this;
+		const isIn = self.checkIsInPeerList( accId );
+		if ( isIn )
+			return;
+		
+		self.livePeers.push( accId );
+	}
+	
+	ns.PresenceRoom.prototype.removeFromPeers = function( accId ) {
+		const self = this;
+		const index = self.livePeers.indexOf( accId );
+		if ( -1 === index )
+			return;
+		
+		self.livePeers.splice( index, 1 );
+	}
+	
+	ns.PresenceRoom.prototype.checkIsInPeerList = function( accId ) {
+		const self = this;
+		const index = self.livePeers.indexOf( accId );
+		const isInPeerList = !( -1 === index );
+		return isInPeerList;
+	}
+	
+})( library.view );
+
+(function( ns, undefined ) {
+	ns.PresenceView = function( conf, conn ) {
+		const self = this;
+		library.view.PresenceRoom.call( self, conf, conn );
+	}
+	
+	ns.PresenceView.prototype = Object.create( library.view.PresenceRoom.prototype );
+	
+	ns.PresenceView.prototype.bindLive = function() {}
+	ns.PresenceView.prototype.buildLiveStatus = function() {}
+	
+	ns.PresenceView.prototype.getMenuOptions = function() {
+		const self = this;
+		const opts = [
+			self.menuActions[ 'open-chat' ],
+		];
+		
+		return opts;
+	}
+	
+})( library.view );
+
+
+// PresenceContact
+(function( ns, undefiend ) {
+	ns.PresenceContact = function( conf, conn ) {
+		const self = this;
+		self.type = 'contact';
+		self.data = conf.contact;
+		self.userId = conf.userId;
+		self.userLive = false;
+		self.contactLive = false;
+		self.isOnline = false;
+		
+		library.view.BaseContact.call( self, conf, conn );
+		
+		self.init( conf.contact );
+	}
+	
+	ns.PresenceContact.prototype = Object.create( library.view.BaseContact.prototype );
+	
+	// Public
+	
+	ns.PresenceContact.prototype.showLive = function() {
+		const self = this;
+		const show = {
+			type : 'live-show',
+		};
+		self.send( show );
+	}
+	
+	ns.PresenceContact.prototype.getOnline = function() {
+		const self = this;
+		return self.identity.isOnline;
+	}
+	
+	// Private
+	
+	ns.PresenceContact.prototype.buildElement = function() {
+		const self = this;
+		self.onlineStatus = friendUP.tool.uid( 'status' );
+		self.liveStatus = friendUP.tool.uid( 'live' );
+		self.msgWaiting = friendUP.tool.uid( 'msg' );
+		const tmplId = 'presence-contact-tmpl';
+		const conf = {
+			clientId     : self.clientId,
+			avatarSrc    : self.identity.avatar,
+			statusId     : self.onlineStatus,
+			name         : self.identity.name,
+			liveStatusId : self.liveStatus,
+			msgWaitingId : self.msgWaiting,
+		};
+		const container = document.getElementById( self.containerId );
+		const el = hello.template.getElement( tmplId, conf );
+		container.appendChild( el );
+	}
+	
+	ns.PresenceContact.prototype.init = function( contact ) {
+		const self = this;
+		self.buildStatus();
+		self.buildLive();
+		self.buildMsgWaiting();
+		
+		self.conn.on( 'online', isOnline );
+		self.conn.on( 'relation', relation );
+		self.conn.on( 'message', message );
+		self.conn.on( 'msg-waiting', msgWaiting );
+		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
+		
+		self.bindLive();
+		
+		function isOnline( e ) { self.handleOnline( e ); }
+		function relation( e ) { self.handleRelation( e ); }
+		function message( e ) { self.handleMessage( e ); }
+		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
+		
+		self.handleOnline( self.identity.isOnline );
+		
+		if ( !contact.relation )
+			return;
+		
+		window.setTimeout( () => self.handleRelation( contact.relation ), 1 );
+		
+	}
+	
+	ns.PresenceContact.prototype.buildStatus = function() {
+		const self = this;
+		self.onlineStatus = new library.component.StatusIndicator({
+			containerId : self.onlineStatus,
+			type        : 'led',
+			cssClass    : 'led-online-status PadBorder',
+			statusMap   : {
+				offline   : 'Off',
+				online    : 'On',
+			},
+		});
+		self.handleOnline();
+	}
+	
+	ns.PresenceContact.prototype.buildLive = function() {
+		const self = this;
+		self.liveStatus = new library.component.CallStatus( self.liveStatus, true );
+		self.liveStatus.on( 'video', () => self.startVideo());
+		self.liveStatus.on( 'audio', () => self.startVoice());
+		self.liveStatus.on( 'notify', () => self.sendCallNotification());
+		self.liveStatus.on( 'show', () => self.showLive());
+		/*
+		self.liveStatus = new library.component.StatusCall({
+			containerId : self.liveStatus,
+			statusMap : {
+				'empty'  : 'Off',
+				'other'  : 'Available',
+				'timeout': 'Notify',
+				'user'   : 'On',
+			},
+		});
+		*/
+	}
+	
+	ns.PresenceContact.prototype.buildMsgWaiting = function() {
+		const self = this;
+		self.msgWaiting = new library.component.StatusDisplay({
+			containerId : self.msgWaiting,
+			type        : 'led',
+			cssClass    : 'led-unread-status',
+			statusMap   : {
+				'false'   : 'Off',
+				'true'    : 'Notify',
+			},
+			display : '',
+		});
+	}
+	
+	ns.PresenceContact.prototype.getMenuOptions = function() {
+		const self = this;
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'live-video' ]);
+			opts.push( self.menuActions[ 'live-audio' ]);
+		}
+		return opts;
+	}
+	
+	ns.PresenceContact.prototype.bindLive = function() {
+		const self = this;
+		self.live = new library.component.EventNode(
+			'live',
+			self.conn
+		);
+		self.live.on( 'user-join', userJoin );
+		self.live.on( 'user-leave', userLeave );
+		self.live.on( 'peers', peers );
+		self.live.on( 'join', join );
+		self.live.on( 'leave', leave );
+		
+		function userJoin( accId ) {
+			self.isLive = true;
+			if ( self.liveState ) {
+				self.liveState.missed = false;
+				self.liveState.user = true;
+			}
+			else
+				self.liveState = {
+					user   : true,
+					missed : false,
+				};
+			
+			self.liveStatus.setUserLive( self.liveState );
+			self.emit( 'live-state', self.liveState );
+		}
+		
+		function userLeave( accId ) {
+			self.isLive = false;
+			if ( !self.liveState )
+				return;
+			
+			self.liveState.user = false;
+			self.liveStatus.setUserLive( false );
+			self.emit( 'live-state', self.liveState );
+			if ( !self.liveState.peer )
+				self.liveState = null;
+		}
+		
+		function peers( peers ) {
+			self.livePeers = peers;
+		}
+		
+		function join( peer ) {
+			const peerId = peer.peerId;
+			if ( peerId !== self.clientId )
+				return;
+			
+			if ( self.liveState ) {
+				self.liveState.peer = true;
+			}
+			else
+				self.liveState = {
+					peer   : true,
+					missed : true,
+				};
+			
+			self.liveStatus.setContactLive( true );
+			self.emit( 'live-state', self.liveState );
+		}
+		
+		function leave( peer ) {
+			const peerId = peer.peerId;
+			if ( peerId !== self.clientId )
+				return;
+			
+			if ( !self.liveState )
+				return;
+			
+			self.liveState.peer = false;
+			self.liveStatus.setContactLive( false );
+			self.emit( 'live-state', self.liveState );
+			if ( !self.liveState.user )
+				self.liveState = null;
+		}
+	}
+	
+	ns.PresenceContact.prototype.handleOnline = function( isOnline ) {
+		const self = this;
+		isOnline = !!isOnline;
+		self.isOnline = isOnline;
+		self.emit( 'online', isOnline );
+		if ( isOnline ) {
+			self.onlineStatus.set( 'online' );
+			self.onlineStatus.show();
+		} else {
+			self.onlineStatus.set( 'offline' );
+			self.onlineStatus.hide();
+		}
+	}
+	
+	ns.PresenceContact.prototype.handleRelation = function( relation ) {
+		const self = this;
+		self.unreadMessages = relation.unreadMessages;
+		self.lastMessage = relation.lastMessage;
+		self.setMsgWaiting( self.unreadMessages || 0 );
+		self.emit( 'relation', relation );
+	}
+	
+	ns.PresenceContact.prototype.handleMessage = function( msg ) {
+		const self = this;
+		self.emit( 'message', msg );
+	}
+	
+	ns.PresenceContact.prototype.handleMsgWaiting = function( state ) {
+		const self = this;
+		if ( null != state.unreadMessages ) {
+			self.unreadMessages = state.unreadMessages;
+			state.isWaiting = true;
+		}
+		else {
+			if ( state.isWaiting )
+				self.unreadMessages++;
+			else
+				self.unreadMessages = 0;
+			
+			state.unreadMessages = self.unreadMessages;
+		}
+		
+		self.emit( 'msg-waiting', state );
+		self.setMsgWaiting( self.unreadMessages );
+	}
+	
+	ns.PresenceContact.prototype.setMsgWaiting = function( unread ) {
+		const self = this;
+		const isWaiting = !!unread;
+		const state = isWaiting ? 'true' : 'false';
+		self.msgWaiting.set( state );
+		self.msgWaiting.setDisplay( unread );
+		if ( isWaiting )
+			self.msgWaiting.show();
+		else
+			self.msgWaiting.hide();
+	}
+	
+	ns.PresenceContact.prototype.handleIdUpdate = function( update ) {
+		const self = this;
+		const id = update.data;
+		if ( !id )
+			return;
+		
+		const cId = id.clientId;
+		if ( self.userId != cId )
+			self.updateIdentity( id );
+		
+		self.emit( 'identity-update', update );
+	}
+	
+	ns.PresenceContact.prototype.sendCallNotification = function() {
+		const self = this;
+		const notie = {
+			type : 'call-notification',
+			data : null,
+		};
+		self.send( notie );
+	}
+	
+})( library.view );
+
+
+// TElegram
+(function( ns, undefined ) {
+	ns.Telegram = function( conf ) {
+		if ( !( this instanceof ns.Telegram ))
+			return new ns.Telegram( conf );
+		
+		const self = this;
+		library.view.BaseModule.call( self, conf );
+		
+		self.init();
+	}
+	
+	ns.Telegram.prototype = Object.create( library.view.BaseModule.prototype );
+	
+	// Public
+	
+	// Private
+	
+	ns.Telegram.prototype.init = function() {
+		const self = this;
 	}
 	
 })( library.view );
@@ -1704,14 +2362,14 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Account ))
 			return new ns.Account();
 		
-		var self = this;
+		const self = this;
 		self.view = null;
 		
 		self.init();
 	}
 	
 	ns.Account.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.view = new library.component.SubView({
 			parent : window.View,
 			type : 'account',
@@ -1721,7 +2379,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Account.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'update', update );
 		self.view.on( 'availability', setAvailability );
 		
@@ -1730,18 +2388,18 @@ library.view = library.view || {};
 	}
 	
 	ns.Account.prototype.update = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'view.Account.update - NYI', data );
 	}
 	
 	ns.Account.prototype.setAvailability = function( state ) {
-		var self = this;
+		const self = this;
 		console.log( 'view.Account.setAvaliability - NYI', state );
 	}
 	
 	ns.Account.prototype.showSettings = function() {
-		var self = this;
-		self.view.sendMessage({
+		const self = this;
+		self.view.send({
 			type : 'settings',
 		});
 	}
@@ -1750,13 +2408,9 @@ library.view = library.view || {};
 
 // MODULECONTROL sub view
 (function( ns, undefined ) {
-	ns.ModuleControl = function( assist ) {
-		if ( !( this instanceof ns.ModuleControl ))
-			return new ns.ModuleControl( assist );
-		
-		var self = this;
-		self.assist = assist;
-		self.parentView = window.View;
+	ns.ModuleControl = function( recent ) {
+		const self = this;
+		self.recent = recent;
 		self.type = 'module';
 		self.view = null;
 		self.containerId = 'active-modules';
@@ -1768,28 +2422,50 @@ library.view = library.view || {};
 		self.init();
 	}
 	
+	// Public
+	
+	ns.ModuleControl.prototype.create = function( module ) {
+		const self = this;
+		var msg = {
+			type : 'create',
+		};
+		
+		if ( module )
+			msg.data = module;
+		
+		self.send( msg );
+	}
+	
+	// Private
+	
 	ns.ModuleControl.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.moduleTypeMap = {
 			treeroot : library.view.Treeroot,
 			irc      : library.view.IRC,
 			presence : library.view.Presence,
+			telegram : library.view.Telegram,
 		};
 		
-		self.guide = new library.component.InfoBox({
-			containerId : 'active-modules',
-			element : null,
-		});
+		self.setGuide();
 		
 		self.view = new library.component.SubView({
-			parent : self.parentView,
+			parent : window.View,
 			type : self.type,
 		});
 		self.bindView();
 	}
 	
+	ns.ModuleControl.prototype.setGuide = function() {
+		const self = this;
+		self.guide = new library.component.InfoBox({
+			containerId : 'active-modules',
+			element     : null,
+		});
+	}
+	
 	ns.ModuleControl.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'add', add );
 		self.view.on( 'remove', remove );
 		self.view.on( 'showguide', showguide );
@@ -1806,16 +2482,26 @@ library.view = library.view || {};
 		self.addModule( data );
 	}
 	
+	ns.ModuleControl.prototype.getContainerId = function( moduleType ) {
+		const self = this;
+		return {
+			conference : 'active-modules',
+			contact    : 'active-modules',
+		};
+	}
+	
 	ns.ModuleControl.prototype.addModule = function( data ) {
 		const self = this;
 		if ( data.module.type == self.askAddType || !self.askAddType )
 			self.guide.hide();
 		
+		// TODO: Check for module options and gui options
+		const containers = self.getContainerId( data.module.type );
 		const conf = {
-			module : data.module,
-			identity : data.identity,
-			containerId : 'active-modules',
-			parentView : window.View
+			module     : data.module,
+			identity   : data.identity,
+			containers : containers,
+			parentView : window.View,
 		};
 		let Constructor = self.moduleTypeMap[ data.module.type ];
 		if ( !Constructor ) {
@@ -1823,21 +2509,22 @@ library.view = library.view || {};
 			Constructor = library.view.BaseModule;
 		}
 		
-		const module = Constructor( conf );
+		const module = new Constructor( conf );
 		self.active[ module.id ] = module;
-		if ( self.assist )
-			self.assist.register( module );
+		if ( self.recent )
+			self.recent.registerModule( module );
+		
 	}
 	
 	ns.ModuleControl.prototype.remove = function( clientId ) {
-		var self = this;
+		const self = this;
 		var module = self.active[ clientId ];
 		
 		if ( !module )
 			throw new Error( 'view.ModuleControl.remove - invalid clinetId ' + clientId );
 		
-		if ( self.assist )
-			self.assist.release( clientId );
+		if( self.recent )
+			self.recent.releaseModule( clientId );
 		
 		module.close();
 		delete self.active[ clientId ];
@@ -1852,7 +2539,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.askAddModule = function( data ) {
-		var self = this;
+		const self = this;
 		self.askAddType = data.type;
 		var tmplConf = {
 			id : friendUP.tool.uid( 'ask-add-mod' ),
@@ -1893,7 +2580,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ModuleControl.prototype.showGuide = function() {
-		var self = this;
+		const self = this;
 		var guideConf = {
 			title : 'Ohnoes!',
 			explanation : 'No chat network added ',
@@ -1903,21 +2590,9 @@ library.view = library.view || {};
 		self.guide.show( element );
 	}
 	
-	ns.ModuleControl.prototype.create = function( module ) {
-		var self = this;
-		var msg = {
-			type : 'create',
-		};
-		
-		if ( module )
-			msg.data = module;
-		
-		self.send( msg );
-	}
-	
 	ns.ModuleControl.prototype.send = function( msg ) {
-		var self = this;
-		self.view.sendMessage( msg );
+		const self = this;
+		self.view.send( msg );
 	}
 })( library.view );
 
@@ -1928,7 +2603,7 @@ library.view = library.view || {};
 		if( !( this instanceof ns.Notification))
 			return new ns.Notification( containerId );
 		
-		var self = this;
+		const self = this;
 		self.type = 'notification';
 		self.containerId = containerId;
 		self.output = friendUP.tool.uid( 'notification-output' );
@@ -1939,7 +2614,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.buildHtml();
 		self.view = new library.component.SubView({
 			parent : window.View,
@@ -1953,7 +2628,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.buildHtml = function() {
-		var self = this;
+		const self = this;
 		var conf = {
 			outputId : self.output,
 			unreadId : self.unread,
@@ -1966,7 +2641,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'clear', clear );
 		self.view.on( 'toggle', setLogOpen );
 		self.view.on( 'info', info );
@@ -1987,61 +2662,61 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.clear = function() {
-		var self = this;
+		const self = this;
 		self.setEmpty();
 		self.clearUnread();
 	}
 	
 	ns.Notification.prototype.setLogOpen = function( isOpen ) {
-		var self = this;
+		const self = this;
 		self.logIsOpen = isOpen === 'true' ? true : false;
 		if ( self.logIsOpen )
 			self.clearUnread();
 	}
 	
 	ns.Notification.prototype.setInfo = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setPositive = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setNotify = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setAlert = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setWaiting = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setRunForTheHills = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( msg );
 		data.tmplId = '';
 		self.set( data );
 	}
 	
 	ns.Notification.prototype.setEmpty = function() {
-		var self = this;
+		const self = this;
 		var data = self.getGeneric( '-' );
 		self.set( data, false );
 		self.clearUnread();
@@ -2058,7 +2733,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.set = function( msg, doIncrement ) { // doIncrement defaults to true
-		var self = this;
+		const self = this;
 		var increment = ( typeof( doIncrement ) != 'undefined' ) ? doIncrement : true;
 		var tmplId = msg.tmplId || 'notification-message-tmpl';
 		var html = hello.template.get( tmplId, msg.conf );
@@ -2071,15 +2746,15 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( self.containerId );
 		container.addEventListener( 'click', click, false );
 		function click( e ) { self.toggle(); }
 	}
 	
 	ns.Notification.prototype.toggle = function() {
-		var self = this;
-		self.view.sendMessage({
+		const self = this;
+		self.view.send({
 			type : 'toggle',
 		});
 		
@@ -2087,7 +2762,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.setUnread = function() {
-		var self = this;
+		const self = this;
 		if ( self.logIsOpen )
 			return;
 		
@@ -2097,7 +2772,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Notification.prototype.clearUnread = function() {
-		var self = this;
+		const self = this;
 		self.output.classList.toggle( 'unread', false );
 		self.unread.innerHTML = ' ';
 	}
@@ -2121,7 +2796,7 @@ library.view = library.view || {};
 	
 	// Public
 	
-	ns.AssistUI.prototype.register = function( module ) {
+	ns.AssistUI.prototype.registerModule = function( module ) {
 		const self = this;
 		let mId = module.id;
 		if ( self.modules[ mId ]) {
@@ -2129,9 +2804,14 @@ library.view = library.view || {};
 			throw new Error( 'see above ^^^' );
 		}
 		
-		self.modules[ mId ] = module;
-		module.on( 'add', add );
-		module.on( 'remove', remove );
+		self.modules[ mId ] = {
+			addId    : null,
+			removeId : null,
+			module   : module,
+		};
+		const mod = self.modules[ mId ];
+		mod.addId = module.on( 'add', add );
+		mod.removeId = module.on( 'remove', remove );
 		
 		function add( contact, modName ) {
 			self.addContactFor( mId, contact, modName );
@@ -2142,15 +2822,16 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.AssistUI.prototype.release = function( modId ) {
+	ns.AssistUI.prototype.releaseModule = function( modId ) {
 		const self = this;
-		const module = self.modules[ modId ];
-		if ( !module )
+		const mod = self.modules[ modId ];
+		if ( !mod )
 			return;
 		
-		module.release( 'add' );
-		module.release( 'remove' );
 		delete self.modules[ modId ];
+		const module = mod.module;
+		module.off( mod.addId );
+		module.off( mod.removeId );
 	}
 	
 	ns.AssistUI.prototype.close = function() {
@@ -2504,10 +3185,6 @@ library.view = library.view || {};
 	
 	ns.AssistUI.prototype.setMsgWaiting = function( cId, unread ) {
 		const self = this;
-		console.log( 'setMsgWaiting - NYI', {
-			cid : cId,
-			wat : waiting,
-		});
 	}
 	
 	ns.AssistUI.prototype.addToUnread = function( cId, unread ) {
@@ -2622,7 +3299,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Main ))
 			return new ns.Main();
 		
-		var self = this;
+		const self = this;
 		self.view = window.View;
 		self.optionMenu = 'option-menu';
 		self.notification = null;
@@ -2639,23 +3316,21 @@ library.view = library.view || {};
 		self.connState.close();
 	}
 	
-	ns.Main.prototype.init = function()
-	{
-		var self = this;
+	ns.Main.prototype.init = function() {
+		const self = this;
 		self.bindEvents();
 		self.bindView();
 		self.setTemplate();
 		
-		self.view.sendMessage({
+		self.view.send({
 			type : 'loaded',
 		});
 	}
 	
-	ns.Main.prototype.bindEvents = function()
-	{
-		var self = this;
+	ns.Main.prototype.bindEvents = function() {
+		const self = this;
 		self.mainMenuContainer = document.getElementById( 'main-menu' );
-		self.mainMenuBtn = document.getElementById( 'main-menu-btn' );
+		self.mainMenuBtn = document.getElementById( 'menu-btn' );
 		
 		self.mainMenuContainer.addEventListener( 'click', mainMenuBgClick, true );
 		self.mainMenuBtn.addEventListener( 'click', mainMenuBtnClick, false );
@@ -2670,47 +3345,79 @@ library.view = library.view || {};
 		function mainMenuBtnClick( e ) { self.showMenu(); }
 	}
 	
-	ns.Main.prototype.bindView = function()
-	{
-		var self = this;
-		self.view.receiveMessage = receiveMessage;
-		self.view.on( 'initialize', initialize );
-		
-		function receiveMessage( e ) { self.receiveMessage( e ); }
-		function initialize( e ) { self.initialize( e ); }
-		function isOnline( e ) { self.updateIsOnline( e ); }
+	ns.Main.prototype.bindView = function()	{
+		const self = this;
+		self.view.on( 'initialize', e => self.initialize( e ));
+		self.view.on( 'avatar', e => self.updateAvatar( e ));
 	}
 	
 	ns.Main.prototype.initialize = function( data ) {
 		const self = this;
+		self.recentHistory = data.recentHistory || [];
+		self.identity = data.identity;
+		self.setAvatar();
+		
 		let settings = data.account.settings;
 		hello.template.addFragments( data.fragments );
+		hello.template.addFragments( data.mainFragments );
 		
 		self.addMenu();
 		
+		// See if we have a simple gui? Then init.
+		if( self.initSimple )
+			self.initSimple( settings );
+		else
+			self.initMain( settings );
+		
+		self.connState = new library.component.ConnState(
+			'online-status',
+			self.view,
+			hello.template
+		);
+		
+		self.account = new library.view.Account();
+		self.module = new library.view.ModuleControl(
+			self.recent || null
+		);
+		
+		self.view.send({
+			type : 'ready',
+		});
+	}
+	
+	ns.Main.prototype.initMain = function( settings ) {
+		const self = this;
 		let notificationRootId = 'notifications-foot';
+		
 		if ( settings.inAppMenu ) {
 			self.enableInAppMenu();
 			notificationRootId = 'notifications-head';
 		}
 		
-		if ( settings.minimalUI )
-			self.assist = null;
-		else
-			self.assist = new library.view.AssistUI( 'assist-ui-container' );
-		
-		self.connState = new library.component.ConnState( 'online-status', self.view, hello.template );
 		self.notification = new library.view.Notification( notificationRootId );
-		self.account = new library.view.Account();
-		self.module = new library.view.ModuleControl( self.assist || null );
+	}
+	
+	ns.Main.prototype.updateAvatar = function( event ) {
+		const self = this;
+		self.identity.avatar = event.avatar;
+		self.setAvatar();
+	}
+	
+	ns.Main.prototype.setAvatar = function() {
+		const self = this;
+		const ava = document.getElementById( 'self-avatar' );
+		if ( !ava )
+			return;
 		
-		self.view.sendMessage({
-			type : 'ready',
-		});
+		if ( !self.identity || !self.identity.avatar )
+			return;
+		
+		ava.classList.toggle( 'default-avatar', false );
+		ava.style = "background-image : url(" + self.identity.avatar + " )";
 	}
 	
 	ns.Main.prototype.addMenu = function() {
-		var self = this;
+		const self = this;
 		var modules = {
 			type   : 'folder',
 			id     : 'modules',
@@ -2783,7 +3490,7 @@ library.view = library.view || {};
 		self.menu = new library.component.Menu( conf );
 		function onNoListener( e ) { console.log( 'menu - no listener for event', e ); }
 		function onHide( e ) { self.mainMenuContainer.classList.toggle( 'hidden', true ); }
-		function onClose( e ) { console.log( 'menu was.. closed?' ); }
+		function onClose( e ) {}
 		
 		self.menu.on( 'start-live', handleStartLive );
 		self.menu.on( 'account-add-chat', handleAddChat );
@@ -2792,28 +3499,28 @@ library.view = library.view || {};
 		self.menu.on( 'logout', handleLogout );
 		self.menu.on( 'quit', handleQuit );
 		
-		function handleStartLive( e ) { self.view.sendMessage({ type : 'live' }); }
+		function handleStartLive( e ) { self.view.send({ type : 'live' }); }
 		function handleAddChat( e ) { self.module.create(); }
 		function handleAccountSettings( e ) { self.account.showSettings(); }
-		function handleAbout( e ) { self.view.sendMessage({ type : 'about' }); }
-		function handleLogout( e ) { self.view.sendMessage({ type : 'logout' }); }
-		function handleQuit( e ) { self.view.sendMessage({ type : 'quit' }); }
+		function handleAbout( e ) { self.view.send({ type : 'about' }); }
+		function handleLogout( e ) { self.view.send({ type : 'logout' }); }
+		function handleQuit( e ) { self.view.send({ type : 'quit' }); }
 	}
 	
 	ns.Main.prototype.showMenu = function( folderId ) {
-		var self = this;
+		const self = this;
 		self.mainMenuContainer.classList.toggle( 'hidden', false );
 		self.menu.show( folderId );
 	}
 	
 	ns.Main.prototype.hideMenu = function() {
-		var self = this;
+		const self = this;
 		self.mainMenuContainer.classList.toggle( 'hidden', true );
 		self.menu.hide();
 	}
 	
 	ns.Main.prototype.enableInAppMenu = function() {
-		var self = this;
+		const self = this;
 		var foot = document.getElementById( 'foot' );
 		var head = document.getElementById( 'head' );
 		foot.classList.add( 'hidden' );
@@ -2822,16 +3529,16 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.setTemplate = function()
 	{
-		var self = this;
+		const self = this;
 		var fragments = document.getElementById( 'fragments' );
 		var fragStr = fragments.innerHTML;
 		fragStr = View.i18nReplaceInString( fragStr );
 		hello.template = new friendUP.gui.TemplateManager( fragStr );
 	}
 	
-	ns.Main.prototype.receiveMessage = function( msg )
-	{
-		var self = this;
+	ns.Main.prototype.receiveMessage = function( msg ) {
+		const self = this;
+		
 	}
 	
 })( library.view );
