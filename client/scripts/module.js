@@ -1290,8 +1290,9 @@ library.module = library.module || {};
 				contact.updateIdentity( event );
 			});
 		} else {
-			const contact = self.contacts[ clientId ]
-			contact.updateIdentity( event );
+			const contact = self.contacts[ clientId ];
+			if ( contact && contact.updateIdentity )
+				contact.updateIdentity( event );
 		}
 		
 		self.roomIds.forEach( rId => {
