@@ -175,53 +175,6 @@ var friend = window.friend || {}; // already instanced stuff
 		self.app.sendMessage( filedialog );
 	}
 	
-	// DESKTOP
-	// MOBILE
-	// VR
-	ns.View.prototype.setDeviceType = function( type ) {
-		const self = this;
-		self.deviceType = type;
-		if ( !type || 'string' === typeof( type ))
-			return;
-		
-		self.deviceType = type.toUpperCase();
-	}
-	
-	// DESKTOP
-	// MOBILE
-	// VR
-	ns.View.prototype.detectDeviceType = function() {
-		const self = this;
-		let type = 'DESKTOP'; // default
-		const test = [
-			'VR',
-			'Mobile',
-		]; // priority list
-		const rxBody = test.join( '|' );
-		const rx = new RegExp( '(' + rxBody + ')', 'g' );
-		const ua = window.navigator.userAgent;
-		const match = ua.match( rx );
-		if ( match )
-			type = get( test, match );
-		
-		type = type.toUpperCase();
-		self.setDeviceType( type );
-		
-		function get( test, match ) {
-			let type = '';
-			test.some( is );
-			return type;
-			
-			function is( value ) {
-				if ( -1 === match.indexOf( value ))
-					return false;
-				
-				type = value;
-				return true;
-			}
-		}
-	}
-	
 	// Private
 	
 	ns.View.prototype.initView = function() {
@@ -231,25 +184,21 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( self.app.screen )
 			windowConf.screen = self.app.screen.id;
 		
-		if ( self.app.translations ) {
-			windowConf.viewConf = windowConf.viewConf || {};
-			windowConf.viewConf.translations = self.app.translations;
-		}
+		const viewConf = windowConf.viewConf || {};
+		windowConf.viewConf = viewConf;
+		viewConf.deviceType = self.app.deviceType;
 		
-		if ( null != self.app.isDev ) {
-			windowConf.viewConf = windowConf.viewConf || {};
-			windowConf.viewConf.isDev = self.app.isDev;
-		}
+		if ( self.app.translations )
+			viewConf.translations = self.app.translations;
 		
-		if ( null != self.app.appConf ) {
-			windowConf.viewConf = windowConf.viewConf || {};
-			windowConf.viewConf.appConf = self.app.appConf;
-		}
+		if ( null != self.app.isDev )
+			viewConf.isDev = self.app.isDev;
 		
-		if ( null != self.app.appSettings ) {
-			windowConf.viewConf = windowConf.viewConf || {};
-			windowConf.viewConf.appSettings = self.app.appSettings;
-		}
+		if ( null != self.app.appConf )
+			viewConf.appConf = self.app.appConf;
+		
+		if ( null != self.app.appSettings )
+			viewConf.appSettings = self.app.appSettings;
 		
 		self.app.on( self.id, viewMessage );
 		self.app.sendMessage({
@@ -967,9 +916,8 @@ var friend = window.friend || {}; // already instanced stuff
 		setBase( msg.base || msg.domain );
 		self.run( msg.args );
 		
-		function setBase( basePath )
-		{
-			var base = document.createElement( 'base' );
+		function setBase( basePath ) {
+			const base = document.createElement( 'base' );
 			base.href = basePath;
 			document.head.appendChild( base );
 		}
@@ -992,6 +940,10 @@ var friend = window.friend || {}; // already instanced stuff
 		self.authId = null; // ^^^
 		self.callbacks = {};
 		self.views = {};
+		
+		self.deviceType = null;
+		
+		self.init();
 	}
 	
 	ns.Application.prototype = Object.create( fupLocal.AppEvent.prototype );
@@ -1281,6 +1233,62 @@ var friend = window.friend || {}; // already instanced stuff
 			}
 		}
 		return str;
+	}
+	
+	ns.Application.prototype.init = function() {
+		const self = this;
+		self.detectDeviceType();
+		console.log( 'Application.init - device type', self.deviceType );
+	}
+	
+	// DESKTOP
+	// MOBILE
+	// VR
+	ns.Application.prototype.setDeviceType = function( type ) {
+		const self = this;
+		self.deviceType = type;
+		if ( !type || 'string' === typeof( type ))
+			return;
+		
+		self.deviceType = type.toUpperCase();
+	}
+	
+	// DESKTOP
+	// MOBILE
+	// VR
+	ns.Application.prototype.detectDeviceType = function() {
+		const self = this;
+		let type = 'DESKTOP'; // default
+		let found = null;
+		const test = [
+			'VR',
+			'Mobile',
+		]; // detect, by priority
+		const rxBody = test.join( '|' );
+		const rx = new RegExp( '(' + rxBody + ')', 'g' );
+		const ua = window.navigator.userAgent;
+		const match = ua.match( rx );
+		if ( match )
+			found = get( test, match );
+		
+		if ( null != found )
+			type = type.toUpperCase();
+		
+		self.setDeviceType( type );
+		
+		function get( test, match ) {
+			let type = null;
+			test.some( is );
+			return type;
+			
+			function is( value ) {
+				if ( -1 === match.indexOf( value ))
+					return false;
+				
+				type = value;
+				return true;
+			}
+		}
 	}
 	
 	ns.Application.prototype.initLogSock = function( name ) {

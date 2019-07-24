@@ -138,83 +138,50 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.run = function( fupConf ) {
+		console.log( 'run' );
 		const self = this;
+		self.app.setSingleInstance( true );
+		self.listenSystemEvents();
 		self.startTiming = Date.now();
 		self.lastTiming = self.startTiming;
-		self.app.on( 'pushnotification', e => {
-			try {
-				self.handlePushNotie( e )
-			} catch( ex ) {
-				console.log( 'push-notie event ex', ex );
-			}
-		});
-		self.app.on( 'notification', e => {
-			try {
-				self.handleNotie( e )
-			} catch( ex ) {
-				console.log( 'notification event ex' );
-			}
-		});
-		self.app.on( 'app-resume', e => {
-			try {
-				self.handleAppResume( e );
-			} catch( ex ) {
-				console.log( 'app-resume event ex', ex );
-			}
-		});
-		self.app.on( 'userupdate', e => self.handleUserUpdate( e ));
+		self.showLoadingTimeout = window.setTimeout( showLoading, 1000 );
+		function showLoading() {
+			self.timeNow( 'show loading' );
+			self.showLoadingTimeout = null;
+			self.showLoading();
+		}
 		
-		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
-			console.log( '--- ENABLING DORMANT APPARENTLY ---', self.config );
-			self.dormantEnabled = true;
-			
-			if ( self.config.iWouldLikeOtherAppsToReadMyLogsBecausePrivacyIsOverrated )
-				self.dormantAllowRead = true;
-			if ( self.config.letOtherAppsSpamMyContactsWithGenuineOffersThatAreNotScams )
-				self.dormantAllowWrite = true;
+		if ( !self.config ) {
+			self.showLoadingStatus({
+				type : 'error',
+				data : Application.i18n( 'i18n_local_config_not_found' ),
+			});
+			return;
 		}
 		
 		if ( fupConf )
 			self.config.run = fupConf;
 		
-		self.app.setSingleInstance( true );
-		self.loadCommonFragments( fragmentsLoaded );
-		function fragmentsLoaded() {
+		self.config.emojii = window.emojii_conf;
+		self.config.protocol = document.location.protocol + '//';
+		
+		self.msgAlert = new api.SoundAlert( 
+			'webclient/apps/FriendChat/res/Friend_Hello.wav' );
+		
+		self.loadCommonFragments()
+			.then( fragsLoaded )
+			.catch( e => error( 'ERR_LOAD_FRAGMENTS' ));
+		
+		function fragsLoaded() {
 			self.timeNow( 'fragmentsLoaded' );
-			init();
+			getUser();
 		}
 		
-		function init() {
-			self.config.emojii = window.emojii_conf;
-			self.config.protocol = document.location.protocol + '//';
-			
-			self.timeNow( 'init start, set showloading timeout' );
-			self.showLoadingTimeout = window.setTimeout( showLoading, 1000 );
-			function showLoading() {
-				self.timeNow( 'show loading' );
-				self.showLoadingTimeout = null;
-				self.showLoading();
-			}
-			
-			if ( !self.config ) {
-				self.showLoadingStatus({
-					type : 'error',
-					data : Application.i18n( 'i18n_local_config_not_found' ),
-				});
-				return;
-			}
-			
-			//self.msgAlert = new api.SoundAlert( 'webclient/apps/FriendChat/res/NewMessage.ogg' );
-			self.msgAlert = new api.SoundAlert( 
-				'webclient/apps/FriendChat/res/Friend_Hello.wav' );
-			
+		function getUser() {
+			self.timeNow( 'getUser start' );
 			self.getUserInfo()
 				.then( userInfoBack )
-				.catch( infoFail );
-				
-			function infoFail( err ) {
-				console.log( 'hello.init - infoFail', err );
-			}
+				.catch( e => error( 'ERR_LOAD_USERINFO' ));
 		}
 		
 		function userInfoBack( data ) {
@@ -231,37 +198,80 @@ var hello = null;
 			if ( self.config.dev )
 				self.app.setDev( null, hello.identity.alias );
 			
-			self.getUserAvatar()
-				.then( avaDone )
-				.catch( avaErr );
-				
-			function avaDone() {
-				self.loadHostConfig( confBack );
-			}
-			
-			function avaErr( blah ) {
-				console.log( 'avaErr', blah );
-				self.loadHostConfig( confBack );
-			}
+			if ( 'API' === self.identity.level )
+				self.runGuest();
+			else
+				self.runUser();
 		}
 		
-		function confBack( err, hostConf ) {
-			self.hostConfigLoaded( err, hostConf );
+		function error( err ) {
+			self.showError( err );
 		}
 	}
 	
-	ns.Hello.prototype.hostConfigLoaded = function( err, hostConf ) {
+	ns.Hello.prototype.runUser = function() {
 		const self = this;
-		if ( err ) {
-			console.log( 'hostConfigLoaded - err', err );
-			return;
+		console.log( 'runUser' );
+		self.getUserAvatar()
+			.then( avaDone )
+			.catch( avaDone );
+			
+		function avaDone( blah ) {
+			console.log( 'avaDone - err?', blah );
+			self.loadHostConfig()
+				.then( confBack )
+				.catch( confErr );
 		}
 		
+		function confBack( hostConf ) {
+			self.finalizeConfig( hostConf );
+			self.initDormant();
+			self.initSystemModules( connBack );
+		}
+		
+		function confErr( err ) {
+			console.log( 'confErr', err );
+		}
+		
+		function connBack() {
+			self.doLogin();
+		}
+	}
+	
+	ns.Hello.prototype.runGuest = function() {
+		const self = this;
+		console.log( 'runGuest' );
+		self.closeLoading();
+		self.doGuestThings();
+	}
+	
+	ns.Hello.prototype.initDormant = function() {
+		const self = this;
+		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
+			console.log( '--- ENABLING DORMANT APPARENTLY ---', self.config );
+			self.dormantEnabled = true;
+			
+			if ( self.config.iWouldLikeOtherAppsToReadMyLogsBecausePrivacyIsOverrated )
+				self.dormantAllowRead = true;
+			if ( self.config.letOtherAppsSpamMyContactsWithGenuineOffersThatAreNotScams )
+				self.dormantAllowWrite = true;
+		}
+	}
+	
+	ns.Hello.prototype.listenSystemEvents = function() {
+		const self = this;
+		self.app.on( 'pushnotification', e => self.handlePushNotie( e ));
+		self.app.on( 'notification', e => self.handleNotie( e ));
+		self.app.on( 'app-resume', e => self.handleAppResume( e ));
+		self.app.on( 'userupdate', e => self.handleUserUpdate( e ));
+	}
+	
+	ns.Hello.prototype.finalizeConfig = function( hostConf ) {
+		const self = this;
 		self.timeNow( 'honst config loaded' );
 		library.tool.mergeObjects( self.config, hostConf );
 		self.config.appName = self.config.appName || 'Friend Chat';
 		self.app.setConfig( hello.config );
-		self.preInit();
 	}
 	
 	ns.Hello.prototype.getUserInfo = function() {
@@ -400,167 +410,155 @@ var hello = null;
 		}
 	}
 	
-	ns.Hello.prototype.loadCommonFragments = function( doneBack ) {
+	ns.Hello.prototype.loadCommonFragments = function() {
 		const self = this;
-		let commonLoaded = false;
-		let mainLoaded = false;
-		let liveLoaded = false;
-		self.app.loadFile( 'Progdir:html/commonFragments.html', commonOmNoms );
-		self.app.loadFile( 'Progdir:html/mainCommonFragments.html', moinmonOmNoms );
-		self.app.loadFile( 'Progdir:html/liveCommonFragments.html', liveOmNomNoms );
-		
-		function commonOmNoms( fileContent ) {
-			fileContent = Application.i18nReplaceInString( fileContent );
-			hello.commonFragments = fileContent;
-			if ( mainLoaded && liveLoaded )
-				doneBack();
-			else 
-				commonLoaded = true;
-		}
-		
-		function moinmonOmNoms( content ) {
-			content = Application.i18nReplaceInString( content );
-			hello.mainCommonFragments = content;
-			if ( commonLoaded && liveLoaded )
-				doneBack();
-			else
-				mainLoaded = true;
-		}
-		
-		function liveOmNomNoms( content ) {
-			content = Application.i18nReplaceInString( content );
-			hello.liveCommonFragments = content;
-			if ( commonLoaded && mainLoaded )
-				doneBack();
-			else
-				liveLoaded = true;
-		}
+		return new Promise(( resolve, reject ) => {
+			let commonLoaded = false;
+			let mainLoaded = false;
+			let liveLoaded = false;
+			self.app.loadFile( 'Progdir:html/commonFragments.html', commonOmNoms );
+			self.app.loadFile( 'Progdir:html/mainCommonFragments.html', moinmonOmNoms );
+			self.app.loadFile( 'Progdir:html/liveCommonFragments.html', liveOmNomNoms );
+			
+			function commonOmNoms( fileContent ) {
+				fileContent = Application.i18nReplaceInString( fileContent );
+				hello.commonFragments = fileContent;
+				if ( mainLoaded && liveLoaded )
+					resolve();
+				else 
+					commonLoaded = true;
+			}
+			
+			function moinmonOmNoms( content ) {
+				content = Application.i18nReplaceInString( content );
+				hello.mainCommonFragments = content;
+				if ( commonLoaded && liveLoaded )
+					resolve();
+				else
+					mainLoaded = true;
+			}
+			
+			function liveOmNomNoms( content ) {
+				content = Application.i18nReplaceInString( content );
+				hello.liveCommonFragments = content;
+				if ( commonLoaded && mainLoaded )
+					resolve();
+				else
+					liveLoaded = true;
+			}
+		});
 	}
 	
 	ns.Hello.prototype.loadHostConfig = function( doneBack ) {
 		const self = this;
-		const url = library.tool.buildDestination(
-			self.config.protocol,
-			self.config.host,
-			self.config.port
-		);
+		return new Promise(( resolve, reject ) => {
+			load( resolve, reject );
+		});
 		
-		if ( self.loadTimeout ) {
-			window.clearTimeout( self.loadTimeout );
-			self.loadTimeout = null;
-		}
-		
-		if ( self.hostConfRequest ) {
-			self.hostConfRequest.abort(); // XMLHTTPRequest
-			self.hostConfRequest = null;
-		}
-		
-		if ( self.loadRequestDelay ) {
-			window.clearTimeout( self.loadRequestDelay );
-			self.loadRequestDelay = null;
-		}
-		
-		load( success, loadErr );
-		self.loadTimeout = window.setTimeout( loadingTimeout, 1000 * 15 );
-		
-		function load( success, loadErr ) {
-			if ( self.loading )
+		function load( resolve, reject ) {
+			const url = library.tool.buildDestination(
+				self.config.protocol,
+				self.config.host,
+				self.config.port
+			);
+			
+			if ( self.loadTimeout ) {
+				window.clearTimeout( self.loadTimeout );
+				self.loadTimeout = null;
+			}
+			
+			if ( self.hostConfRequest ) {
+				self.hostConfRequest.abort(); // XMLHTTPRequest
+				self.hostConfRequest = null;
+			}
+			
+			if ( self.loadRequestDelay ) {
+				window.clearTimeout( self.loadRequestDelay );
+				self.loadRequestDelay = null;
+			}
+			
+			load( success, loadErr );
+			self.loadTimeout = window.setTimeout( loadingTimeout, 1000 * 15 );
+			
+			function load( success, loadErr ) {
+				if ( self.loading )
+					self.showLoadingStatus({
+						type : 'load',
+						data : Date.now(),
+					});
+				
+				const conf = {
+					verb    : 'get',
+					url     : url,
+					data    : null,
+					success : success,
+					error   : loadErr,
+				};
+				self.hostConfRequest = library.tool.asyncRequest( conf );
+			}
+			
+			function loadingTimeout() {
+				console.log( 'loading host config timed out', self.hostConfRequest );
+				try {
+					self.hostConfRequest.abort();
+				} catch( e ) {
+					console.log( 'loadingTimeout - exp while aborting request', e );
+				}
+				
+				self.hostConfRequest = null;
+				let delay = 1000 * 5;
+				let reconnectTime = Date.now() + delay;
 				self.showLoadingStatus({
-					type : 'load',
-					data : Date.now(),
+					type : 'wait-reconnect',
+					data : {
+						time : reconnectTime,
+					},
 				});
-			
-			const conf = {
-				verb    : 'get',
-				url     : url,
-				data    : null,
-				success : success,
-				error   : loadErr,
-			};
-			self.hostConfRequest = library.tool.asyncRequest( conf );
-		}
-		
-		function loadingTimeout() {
-			console.log( 'loading host config timed out', self.hostConfRequest );
-			try {
-				self.hostConfRequest.abort();
-			} catch( e ) {
-				console.log( 'loadingTimeout - exp while aborting request', e );
+				
+				self.loadRequestDelay = window.setTimeout( retryLoad, delay );
+				function retryLoad() {
+					load( resolve, reject );
+				}
 			}
 			
-			self.hostConfRequest = null;
-			
-			self.showLoadingStatus({
-				type : 'error',
-				data : 'Loading host config timed out: ' + url,
-			});
-			
-			let delay = 1000 * 15;
-			let reconnectTime = Date.now() + delay;
-			self.showLoadingStatus({
-				type : 'wait-reconnect',
-				data : {
-					time : reconnectTime,
-				},
-			});
-			
-			self.loadRequestDelay = window.setTimeout( retryLoad, delay );
-			function retryLoad() {
-				self.loadHostConfig( doneBack );
-			}
-		}
-		
-		function success( response ) {
-			hasLoadRes();
-			if ( !response ) {
-				self.showLoadingStatus({
-					type : 'error',
-					data : Application.i18n( 'i18n_host_config_failed' ) + ' ' + url,
-				});
-				return;
+			function success( response ) {
+				hasLoadRes();
+				if ( !response ) {
+					const errMsg = Application.i18n( 'i18n_host_config_failed' ) + ' ' + url;
+					self.showError( errMsg );
+					reject( 'ERR_HOST_CONFIG_NO_RESPONSE' );
+					return;
+				}
+				
+				var hostConf = library.tool.objectify( response );
+				if ( !hostConf ) {
+					const errMsg = Application.i18n( 'i18n_host_config_failed_invalid' )
+						+ ' ' + url;
+					
+					self.showError( errMsg );
+					reject( 'ERR_HOST_CONFIG_INVALID' );
+					return;
+				}
+				
+				resolve( hostConf );
 			}
 			
-			var hostConf = library.tool.objectify( response );
-			if ( !hostConf ) {
-				self.showLoadingStatus({
-					type : 'error',
-					data : Application.i18n( 'i18n_host_config_failed_invalid' ) + ' ' + url,
-				});
-				return;
+			function loadErr( err ) {
+				hasLoadRes();
+				err = err || 'ERR_LOAD_HOST_CONF';
+				console.log( 'loadErr', err );
+				const errMsg = Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url;
+				self.showError( errMsg );
+				reject( err );
 			}
 			
-			doneBack( null, hostConf );
-		}
-		
-		function loadErr( err ) {
-			hasLoadRes();
-			err = err || 'ERR_LOAD_HOST_CONF';
-			console.log( 'loadErr', err );
-			self.showLoadingStatus({
-				type : 'error',
-				data : Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url,
-			});
-			doneBack( err, null );
-		}
-		
-		function hasLoadRes() {
-			if ( !self.loadTimeout )
-				return;
-			
-			window.clearTimeout( self.loadTimeout );
-			self.loadTimeout = null;
-		}
-	}
-	
-	ns.Hello.prototype.preInit = function() {
-		const self = this;
-		if ( 'API' === self.identity.level )
-			self.doGuestThings();
-		else
-			self.initSystemModules( connBack );
-		
-		function connBack() {
-			self.doLogin();
+			function hasLoadRes() {
+				if ( !self.loadTimeout )
+					return;
+				
+				window.clearTimeout( self.loadTimeout );
+				self.loadTimeout = null;
+			}
 		}
 	}
 	
@@ -598,6 +596,18 @@ var hello = null;
 		function onWSState( e ) { self.updateConnState( e ); }
 	}
 	
+	ns.Hello.prototype.showError = function( err ) {
+		const self = this;
+		if ( !self.loading )
+			return;
+		
+		const error = {
+			type : 'error',
+			data : err,
+		};
+		self.showLoadingStatus( error );
+	}
+	
 	ns.Hello.prototype.showLoading = function() {
 		const self = this;
 		if ( self.showLoadingTimeout ) {
@@ -614,9 +624,16 @@ var hello = null;
 		}
 		
 		function reconnect( e ) {
-			self.loadHostConfig( loadBack );
-			function loadBack( err , res ) {
-				self.hostConfigLoaded( err , res );
+			self.loadHostConfig()
+				.then( loadOk )
+				.catch( loadErr );
+			
+			function loadOk( res ) {
+				self.finalizeConfig( res );
+			}
+			
+			function loadErr( err ) {
+				console.log( 'showLoading, reconnect - failed to load host config', err );
 			}
 		}
 		
@@ -650,7 +667,7 @@ var hello = null;
 	
 	ns.Hello.prototype.closeLoading = function( callback ) {
 		const self = this;
-		self.timeNow( 'closeLoading' );
+		self.timeNow( 'closeLoading', self.showLoadingTimeout );
 		if ( self.showLoadingTimeout ) {
 			window.clearTimeout( self.showLoadingTimeout );
 			self.showLoadingTimeout = null;
@@ -706,6 +723,7 @@ var hello = null;
 	
 	ns.Hello.prototype.doGuestThings = function() {
 		const self = this;
+		console.log( 'doGuestThings', self.config.run );
 		if (
 			!self.config.run ||
 			!self.config.run.type ||
@@ -715,7 +733,6 @@ var hello = null;
 			throw new Error( 'see log ^^^' );
 		}
 		
-		self.closeLoading();
 		const conf = self.config.run;
 		if ( 'live-invite' === conf.type ) {
 			const randomName = library.tool.getName();
@@ -914,6 +931,7 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
+		console.log( 'updateConnState', state );
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
 		if (   'error' === state.type
@@ -1506,12 +1524,11 @@ var hello = null;
 		fileItems.push( settings );
 		fileItems.push( about );
 		
-		checkMobileBrowser();
+		//checkMobileBrowser();
 		// mobile menu has quit by default
-		if( !window.isMobile )
-		{
+		console.log( 'window.Application', window.Application );
+		if( 'DESKTOP' === window.Application.deviceType )
 			fileItems.push( quit );
-		}
 		
 		const file = {
 			name : Application.i18n('i18n_app' ),
@@ -1683,6 +1700,7 @@ hello = new window.Hello( window.Application, window.localconfig );
 
 // Mobile check from the Friend API --------------------------------------------
 
+/*
 function checkMobile()
 {
 	var check = false;
@@ -1759,4 +1777,4 @@ function checkMobileBrowser()
 	return window.isMobile;
 }
 
-
+*/

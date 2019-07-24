@@ -447,6 +447,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.initialize = function( conf ) {
 		const self = this;
+		console.log( 'View.initialize - viewConf', conf.viewConf );
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
 		self.authId = conf.authId;
@@ -458,10 +459,10 @@ var friend = window.friend || {};
 		self.config = conf.viewConf || {};
 		self.appConf = self.config.appConf || {};
 		self.appSettings = self.config.appSettings || {};
+		self.deviceType = self.config.deviceType || 'ERR_CONF_OH_SHIT';
 		if ( self.config.isDev )
 			self.initLogSock();
 		
-		self.detectDeviceType();
 		self.setBaseCss( baseCssLoaded );
 		if ( self.config )
 			self.handleConf();
@@ -650,53 +651,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.register = function() {
 		const self = this;
-	}
-	
-	// DESKTOP
-	// MOBILE
-	// VR
-	ns.View.prototype.setDeviceType = function( type ) {
-		var self = this;
-		self.deviceType = type;
-		if ( !type || 'string' === typeof( type ))
-			return;
-		
-		self.deviceType = type.toUpperCase();
-	}
-	
-	// DESKTOP
-	// MOBILE
-	// VR
-	ns.View.prototype.detectDeviceType = function() {
-		const self = this;
-		let type = 'DESKTOP'; // default
-		const test = [
-			'VR',
-			'Mobile',
-		]; // priority list
-		const rxBody = test.join( '|' );
-		const rx = new RegExp( '(' + rxBody + ')', 'g' );
-		const ua = window.navigator.userAgent;
-		const match = ua.match( rx );
-		if ( match )
-			type = get( test, match );
-		
-		type = type.toUpperCase();
-		self.setDeviceType( type );
-		
-		function get( test, match ) {
-			let type = '';
-			test.some( is );
-			return type;
-			
-			function is( value ) {
-				if ( -1 === match.indexOf( value ))
-					return false;
-				
-				type = value;
-				return true;
-			}
-		}
 	}
 	
 	ns.View.prototype.queueInputFocusCheck = function( e ) {
