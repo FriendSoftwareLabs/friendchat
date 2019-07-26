@@ -948,7 +948,7 @@ library.view = library.view || {};
 			{
 				clientId     : 'all_groups',
 				name         : View.i18n( 'i18n_all_groups' ),
-				sectionKlass : 'Action',
+				sectionKlass : 'Action clickie',
 				priority     : 3,
 			},
 		];
@@ -972,7 +972,7 @@ library.view = library.view || {};
 		add.forEach( wId => {
 			const subWorg = self.groupsAvailable[ wId ];
 			subWorg.priority = self.subPri;
-			self.addWorkGroup( wId, 'Available' )
+			self.addWorkGroup( wId, 'Available' );
 		});
 		self.subGroups = subIds;
 		
@@ -1080,7 +1080,7 @@ library.view = library.view || {};
 		if ( null == worg.sectionKlass )
 			worg.sectionKlass = sectionKlass || 'Available';
 		
-		worg.sectionKlass = worg.sectionKlass + ' MousePointer';
+		worg.sectionKlass = worg.sectionKlass + ' MousePointer clickie';
 		
 		if ( !self.members[ worgId ])
 			self.members[ worgId ] = {};

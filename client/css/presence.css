@@ -35,11 +35,15 @@ body[mobile] #emojii-panel-button
 }
 
 .section-head {
-	font-weight: bold;
-	font-size: 90%;
-	opacity: 0.7;
-	text-align: center;
-	line-height: 2em;
+	font-weight : bold;
+	font-size   : 90%;
+	opacity     : 0.85;
+	text-align  : center;
+	line-height : 2em;
+}
+
+.section-head.clickie:hover {
+	opacity : 1;
 }
 
 #message-container { position : relative }
