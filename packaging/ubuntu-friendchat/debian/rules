@@ -4,10 +4,10 @@ clean:
 	#make clean
 
 build:
-	cd ../../ && make setup release
+	cd ../../ && make
 
 binary:
-	cd ../../ && make installforpackage-friendcore-ubuntu
+	cd ../../ && make installforpackage-friendchat-ubuntu
 	dh_makeshlibs
 	dh_gencontrol
 	dh_builddeb
