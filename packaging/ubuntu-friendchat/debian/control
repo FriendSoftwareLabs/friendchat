@@ -1,0 +1,12 @@
+Source: friendup-friendchat
+Section: devel
+Priority: optional
+Maintainer: Pawel Stefanski <ps@friendup.cloud>
+Build-Depends: build-essential, debhelper (>= 9)
+
+Package: friendup-friendchat
+Architecture: any
+Depends: nodejs,
+         friendup-workspace
+Description: Friend Unifying Platform - FriendChat
+ Private cloud solution. More details: https://friendup.cloud

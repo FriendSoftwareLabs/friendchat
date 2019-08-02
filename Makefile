@@ -33,11 +33,11 @@ installforpackage-friendchat-debian:
 # Ubuntu packages
 #
 
-deb-ubuntu-friendcore:
+deb-ubuntu-friendchat:
 	@echo "Make package"
 	cd packaging/ubuntu-friendchat && dpkg-buildpackage -b -uc
 
-installforpackage-friendcore-ubuntu:
+installforpackage-friendchat-ubuntu:
 	@echo "Make install for package"
 	mkdir -p $(FRIEND_FRIENDCORE_DEB_UBUNTU_TGT_PATH)
 	cp packaging/debian-friendchat/debian/postinst $(PWD)/packaging/debian-friendchat/debian/friendup-friendchat/DEBIAN/
