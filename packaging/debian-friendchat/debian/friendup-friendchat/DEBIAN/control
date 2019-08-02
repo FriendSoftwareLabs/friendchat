@@ -1,0 +1,10 @@
+Package: friendup-friendchat
+Version: 1.0
+Architecture: amd64
+Maintainer: Pawel Stefanski <ps@friendup.cloud>
+Installed-Size: 12371
+Depends: nodejs, friendup-workspace
+Section: devel
+Priority: optional
+Description: Friend Unifying Platform - FriendChat
+ Private cloud solution. More details: https://friendup.cloud

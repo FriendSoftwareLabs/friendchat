@@ -1,0 +1,2 @@
+cd /opt/friendup/installation_files/
+./install_package.sh
