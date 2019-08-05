@@ -737,6 +737,13 @@ var friend = window.friend || {};
 			return;
 		
 		self.cameraChecked = true;
+		
+		
+		const imagetools = document.createElement('script');
+		imagetools.src = '/webclient/3rdparty/load-image.all.min.js'
+		document.getElementsByTagName('head')[0].appendChild( imagetools );
+		
+		
 		if ( 'DESKTOP' === self.deviceType )
 			setupDesktop();
 		else
@@ -766,26 +773,24 @@ var friend = window.friend || {};
 			
 			function handleIncomingFile( evt )
 			{
-				let filereference = null;
 				if( evt && evt.target && evt.target.files )
-					filereference = evt.target.files[0]
-				
-				const reader = new FileReader();
-				reader.onload = readBack;
-				reader.readAsDataURL( filereference );
-				
-				function readBack( e ) {
-					if( !e.target && !e.target.result )
-					{
-						imgBack( false );
-					}
-					else
-					{
-						imgBack({
-							data : e.target.result
-						});
-					}
-		    	}
+				{
+					window.loadImage(
+						evt.target.files[0],
+						function(returnedcanvas,meta) {
+							var imagedata = returnedcanvas.toDataURL('image/jpeg', 0.9);
+							imgBack({
+								data : imagedata
+							});
+						},
+						{ maxWidth: 1920, maxHeight: 1920, canvas:true, orientation: true }
+					);
+					
+				}
+				else
+				{
+					imgBack( false );
+				}
 			}
 		}
 		
@@ -797,16 +802,16 @@ var friend = window.friend || {};
 				});
 				return;
 			}
-			
+
 			const raw = window.atob( msg.data.split( ';base64,' )[1] );
 			const uInt8Array = new Uint8Array( raw.length );
 			for ( let i = 0; i < raw.length; ++i ) {
 				uInt8Array[ i ] = raw.charCodeAt( i );
 			}
-		
+			
 			const bl = new Blob(
 				[ uInt8Array ],
-				{ type: 'image/png', encoding: 'utf-8' }
+				{ type: 'image/jpeg', encoding: 'utf-8' }
 			);
 			
 			// Paste the blob!
@@ -829,7 +834,6 @@ var friend = window.friend || {};
 					} ]
 				} );
 			}
-			
 		};
 		
 	}
@@ -1123,6 +1127,7 @@ window.View = new api.View();
 			var updateurl = '/system.library/file/dir?wr=1'
 			updateurl += '&path=' + encodeURIComponent( 'Home:Downloads' );
 			updateurl += '&authid=' + encodeURIComponent( View.authId );
+			updateurl += '&cachekiller=' + ( new Date() ).getTime();
 			
 			var wholePath = 'Home:Downloads/';
 			
@@ -1233,7 +1238,7 @@ window.View = new api.View();
 		// Support blob format
 		if( evt.type && evt.type == 'blob' )
 		{
-			evt.blob.name = 'cameraimage.png';
+			evt.blob.name = 'cameraimage.jpg';
 			evt.clipboardData = { items: [ { 
 				kind: 'file', 
 				getAsFile()
