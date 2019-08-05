@@ -1272,7 +1272,7 @@ var friend = window.friend || {}; // already instanced stuff
 			found = get( test, match );
 		
 		if ( null != found )
-			type = type.toUpperCase();
+			type = found.toUpperCase();
 		
 		self.setDeviceType( type );
 		
