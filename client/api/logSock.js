@@ -67,6 +67,11 @@ var api = window.api || {};
 		self.sendName();
 	}
 	
+	ns.LogSock.prototype.handleViewLog = function( args, viewName ) {
+		const self = this;
+		self.sendLog( args[ 0 ], args[ 1 ], args[ 2 ], viewName );
+	}
+	
 	// Private
 	
 	ns.LogSock.prototype.init = function() {
@@ -188,7 +193,7 @@ var api = window.api || {};
 		if ( self.name )
 			self.sendName();
 		
-		self.eventBuffer.forEach( e => self.sendLog( e[ 0 ], e[ 1 ], e[ 2 ] ));
+		self.eventBuffer.forEach( e => self.sendLog( e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] ));
 		self.eventBuffer = [];
 	}
 	
@@ -228,18 +233,21 @@ var api = window.api || {};
 		self.eventBuffer = self.eventBuffer.slice( -200 );
 	}
 	
-	ns.LogSock.prototype.sendLog = function( a, b, time ) {
+	ns.LogSock.prototype.sendLog = function( a, b, time, viewName ) {
 		const self = this;
+		time = time || Date.now();
+		viewName = viewName || null;
 		if ( !self.conn || !self.online ) {
-			self.eventBuffer.push([ a, b ]);
+			self.eventBuffer.push([ a, b, time, viewName ]);
 			return;
 		}
 		
 		const event = {
 			type : 'log',
 			data : {
-				time : time || Date.now(),
-				args : [ a, b ],
+				time     : time,
+				viewName : viewName,
+				args     : [ a, b ],
 			},
 		};
 		self.send( event );
@@ -284,6 +292,8 @@ var api = window.api || {};
 			return;
 		}
 		
+		self.log = null;
+		
 		self.init();
 	}
 	
@@ -295,6 +305,18 @@ var api = window.api || {};
 	
 	ns.LogSockView.prototype.init = function() {
 		const self = this;
+		self.log = console.log;
+		console.log = logSock;
+		
+		function logSock( a, b ) {
+			self.log( a, b );
+			self.sendLog([ a, b, Date.now() ]);
+		}
+	}
+	
+	ns.LogSockView.prototype.sendLog = function( args ) {
+		const self = this;
+		window.View.sendTypeEvent( 'log-sock', args );
 	}
 	
 })( api );

@@ -66,6 +66,8 @@ var friend = window.friend || {}; // already instanced stuff
 		self.eventQueue = [];
 		self.app = window.Application;
 		
+		self.viewName = self.id;
+		
 		self.initView();
 	}
 	
@@ -84,6 +86,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.setTitle = function( title ) {
 		const self = this;
+		self.title = title;
 		self.setFlag( 'title', title );
 	}
 	
@@ -179,6 +182,14 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.initView = function() {
 		const self = this;
+		if ( self.path ) {
+			const filename = self.path
+				.split( '/' )
+				.slice( -1 )[ 0 ];
+			
+			self.viewName = filename.split( '.' )[ 0 ];
+		}
+		
 		var windowConf = self.windowConf;
 		var callbackId = self.app.setCallback( viewCreate )
 		if ( self.app.screen )
@@ -200,7 +211,7 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( null != self.app.appSettings )
 			viewConf.appSettings = self.app.appSettings;
 		
-		self.app.on( self.id, viewMessage );
+		self.app.on( self.id, viewEvent );
 		self.app.sendMessage({
 			type   : 'view',
 			viewId : self.id,
@@ -234,15 +245,27 @@ var friend = window.friend || {}; // already instanced stuff
 			console.log( 'view.init.viewCreate - no filepath or content!?', conf );
 		}
 		
-		function viewMessage( msg ) {
-			if( msg )
-			{
-				self.emit( msg.type, msg.data );	
-			}
-		}
+		function viewEvent( e ) { self.handleViewEvent( e ); }
 		function loaded( e ) { self.handleLoaded( e ); }
 		function ready( e ) { self.handleReady( e ); }
 		function mini( e ) { self.handleMinimized( e ); }
+	}
+	
+	ns.View.prototype.handleViewEvent = function( event ) {
+		const self = this;
+		if ( !event )
+			return;
+		
+		if ( 'app' === event.type ) {
+			const msg = event.data;
+			self.emit( msg.type, msg.data );
+		}
+		
+		if ( 'log-sock' === event.type ) {
+			const args = event.data;
+			self.app.handleViewLog( args, self.viewName );
+		}
+		
 	}
 	
 	ns.View.prototype.setContentUrl = function( htmlPath ) {
@@ -342,9 +365,9 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		var wrap = {
+		const wrap = {
 			method : 'sendMessage',
-			data : event
+			data   : event
 		};
 		
 		self._send( wrap );
@@ -1001,6 +1024,14 @@ var friend = window.friend || {}; // already instanced stuff
 			self.isDev = dumpHost;
 			self.initLogSock( name );
 		}
+	}
+	
+	ns.Application.prototype.handleViewLog = function( args, viewName ) {
+		const self = this;
+		if ( !self.logSock )
+			return;
+		
+		self.logSock.handleViewLog( args, viewName );
 	}
 	
 	// Private

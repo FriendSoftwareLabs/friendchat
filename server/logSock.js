@@ -143,13 +143,18 @@ function handleClientEvent( eventStr, clientId ) {
 
 function logEvent( client, data ) {
 	const timeStr = getTimeString( data.time || Date.now());
+	const viewName = data.viewName || null;
 	const args = data.args;
 	if ( !args )
 		return;
 	
 	const name = client.name;
 	const logStr = args[ 0 ] || '';
-	const prefix = ' >>> ' + name + ' : ' + timeStr + ' > ' + logStr;
+	let prefix = ' >>> ' + name + ' : ' + timeStr;
+	if ( viewName )
+		prefix += ' >> ' + viewName;
+	
+	prefix += ' > ' + logStr;
 	console.log( prefix );
 	console.log( util.inspect( args[ 1 ], inspectOpts ));
 	//console.log( ' ' );
