@@ -19,13 +19,25 @@
 
 chrome.runtime.onConnect.addListener( connection );
 function connection( port ) {
-	console.log( 'background.connection' );
 	port.onMessage.addListener( onMessage );
 	
-	function onMessage( e ) {
-		console.log( 'background.onMessage', e );
+	function onMessage( msg ) {
+		console.log( 'background.onMessage', msg );
+		let event = null;
+		try {
+			event = JSON.parse( msg );
+		} catch( ex ) {}
+		
+		let sources = null;
+		if ( !event || !event.data )
+			sources = [ 'screen', 'window' ];
+		else {
+			const data = event.data;
+			sources = data.sources;
+		}
+		
 		chrome.desktopCapture.chooseDesktopMedia(
-			[ 'window', 'screen' ],
+			sources,
 			port.sender.tab,
 			onSource
 		);
@@ -57,4 +69,10 @@ function installed( e ) {
 			file : 'content.js',
 		});
 	}
+}
+
+chrome.runtime.onUpdateAvailable.addListener( hasUpdate );
+function hasUpdate( e ) {
+	console.log( 'hasUpdate', e );
+	chrome.runtime.reload();
 }

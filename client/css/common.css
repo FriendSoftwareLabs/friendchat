@@ -29,20 +29,6 @@ friend grey: #808080;
 	font-size: 120%;
 }
 
-/*
-html body .flat-btn {
-	background-color : rgba( 127, 127, 128, 0 );
-	opacity          : 0.8;
-	transition       : all 0.2s;
-}
-
-html body .flat-btn:hover {
-	background-color : rgba( 127, 128, 128, 0.15 );
-	opacity          : 1;
-	transition       : all 0.2s;
-}
-*/
-
 * { box-sizing: border-box; }
 
 a { color : rgb( 41, 98, 126 ); }
@@ -106,11 +92,14 @@ body i.fa {
 }
 */
 
+/*
 .btn { background-color : rgb( 59, 129, 194 ); }
 .btn:hover { background-color : rgba( 94, 198, 237, 1 ); }
 
 .btn,
 .btn:hover,
+
+*/
 .button,
 .button:hover {
 	transition : all 0.2s;
@@ -129,7 +118,6 @@ body i.fa {
 	flex-wrap: wrap;
 }
 
-.button-row > .btn,
 .button-row > .button {
 	margin-right : 0;
 	margin-left : 0.3em;
@@ -265,6 +253,7 @@ body i.fa {
 .group.column,
 .bar.column { flex-direction : column; }
 
+.bar.row,
 .bar.column { align-items : stretch; }
 
 .group.tighten,
@@ -292,10 +281,13 @@ body i.fa {
 .bar.allow-wrap { flex-wrap : wrap; }
 
 .group > .expand,
-.bar > .expand { flex : 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.bar > .expand { flex : 1 1 auto; }
 
 .group > .fortify,
 .bar > .fortify { flex : 0 0 auto; }
+
+.group > .center,
+.bar > .center { align-self : center; }
 
 .center-child {
 	display : flex !important;
@@ -323,6 +315,12 @@ body i.fa {
 	top : 0;
 	left: 50%;
 	transform : translateX( -50% );
+}
+
+/* grid */
+
+.grid-row {
+	display: inline-grid;
 }
 
 /* common */

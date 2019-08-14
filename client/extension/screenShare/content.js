@@ -97,11 +97,13 @@ ScreenShare.prototype.handleIsReady = function( e, reqId ) {
 	self.sendToWeb( isReady );
 }
 
-ScreenShare.prototype.handleGetSource = function( e, reqId ) {
+ScreenShare.prototype.handleGetSource = function( opts, reqId ) {
 	const self = this;
+	console.log( 'handleGetSource', opts );
 	self.sourceReq = reqId;
 	const getSource = {
 		type : 'getSource',
+		data : opts,
 	};
 	self.sendToBackground( getSource );
 }
@@ -150,7 +152,8 @@ ScreenShare.prototype.sendToBackground = function( event ) {
 	if ( !event )
 		return;
 	
-	self.port.postMessage( event );
+	const str = JSON.stringify( event );
+	self.port.postMessage( str );
 }
 
 window.screenShare = new ScreenShare();

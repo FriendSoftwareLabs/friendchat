@@ -241,7 +241,6 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.StreamUserList = function( conf ) {
 		const self = this;
-		console.log( 'StreamUserList', conf );
 		self.userId = conf.userId;
 		self.connected = {};
 		
@@ -257,7 +256,6 @@ library.component = library.component || {};
 	// Overriding .add from UIList
 	ns.StreamUserList.prototype.add = function( element ) {
 		const self = this;
-		console.log( 'StreamUserList.add', element );
 		const clientId = self.doAdd( element );
 		if ( !clientId )
 			return;
@@ -275,11 +273,6 @@ library.component = library.component || {};
 	
 	ns.StreamUserList.prototype.updateConnected = function( clientId, isConnected ) {
 		const self = this;
-		console.log( 'updateConnected', [
-			clientId,
-			isConnected,
-		]);
-		
 		self.connected[ clientId ] = isConnected;
 		self.updateHead();
 	}
@@ -300,10 +293,6 @@ library.component = library.component || {};
 			.filter( id => !!self.connected[ id ])
 			.length;
 		
-		console.log( 'connected', {
-			total : total,
-			ready : ready,
-		});
 		
 		let allReady = total === ready;
 		self.headIcon.classList.toggle( 'danger', !allReady );
@@ -565,46 +554,20 @@ library.component = library.component || {};
 		if ( !self.ctx )
 			return;
 		
-		self.ctx.clearRect( 0, 0, self.cW, self.cH );
+		self.ctx.clearRect( 0, 0, self.cW, self.cH + 1 );
 	}
-	
-	/*
-	ns.AudioVisualizer.prototype.connectSource = function() {
-		const self = this;
-		console.log( 'connectSource' );
-		if ( !self.source )
-			throw new Error( 'AudioVisualizer.connectSource - \
-				no source, called after .close?' );
-		
-		self.bufferId = self.source.on( '')
-	}
-	
-	ns.AudioVisualizer.prototype.disconnectSource = function() {
-		const self = this;
-		console.log( 'releaseSource', self.source );
-		if ( !self.source )
-			return;
-		
-		if ( self.bufferId )
-			self.source.off( self.bufferId );
-		
-		if ( self.volumeId )
-			self.source.off( self.volumeId );
-		
-	}
-	*/
 	
 })( library.view );
 
 
 // MiniChat
 ( function( ns, undefined ) {
-	ns.LiveChat = function( conf, templateManager, tease ) {
+	ns.LiveChat = function( conf, templateManager ) {
 		const self = this;
 		self.userId = conf.userId;
 		self.identities = conf.identities;
 		self.guestAvatar = conf.guestAvatar;
-		self.tease = tease || null;
+		self.tease = conf.chatTease || null;
 		
 		self.conn = null;
 		
@@ -621,12 +584,12 @@ library.component = library.component || {};
 		delete self.conn;
 		delete self.userId;
 		delete self.identities;
+		delete self.tease;
 		delete self.el;
 	}
 	
 	ns.LiveChat.prototype.show = function() {
 		const self = this;
-		console.log( 'LiveChat.show' );
 		self.isVisible = true;
 		self.bottomScroll.update();
 		if ( window.View.deviceType && ( 'VR' !== window.View.deviceType ))
@@ -635,7 +598,6 @@ library.component = library.component || {};
 	
 	ns.LiveChat.prototype.hide = function() {
 		const self = this;
-		console.log( 'LiveChat.hide' );
 		self.isVisible = false;
 		//self.input.blur();
 	}
@@ -751,7 +713,7 @@ library.component = library.component || {};
 	}
 	
 	ns.LiveChat.prototype.handleMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		self.say( msg.message );
 		self.addMessage( msg );
 	}
@@ -964,6 +926,10 @@ library.component = library.component || {};
 	
 	ns.ChatTease.prototype.showMessage = function( message, from ) {
 		const self = this;
+		self.showMessageNum();
+		return;
+		
+		/*
 		console.log( 'showMessage', [
 			message,
 			from,
@@ -978,10 +944,23 @@ library.component = library.component || {};
 		self.teaseUnread++;
 		self.teaseNum.textContent = '(' + self.teaseUnread + ')';
 		self.el.classList.toggle( 'hidden', false );
+		*/
+	}
+	
+	ns.ChatTease.prototype.setActive = function( active ) {
+		const self = this;
+		if ( self.active === active )
+			return;
+		
+		self.active = active;
+		self.updateActive();
 	}
 	
 	ns.ChatTease.prototype.clear = function() {
 		const self = this;
+		self.clearMessageNum();
+		return;
+		
 		self.teaseUnread = 0;
 		self.teaseNum.textContent = '';
 		self.teaseContainer.innerHTML = '';
@@ -996,19 +975,53 @@ library.component = library.component || {};
 		self.el = templateManager.getElement( 'tease-chat-tmpl', {});
 		container.appendChild( self.el );
 		
-		self.teaseContainer = document.getElementById( 'tease-chat-content' );
+		//self.teaseContainer = document.getElementById( 'tease-chat-content' );
 		self.teaseNum = document.getElementById( 'tease-chat-num' );
-		self.showChatBtn = document.getElementById( 'tease-chat-goto-chat' );
-		self.clearBtn = document.getElementById( 'tease-chat-clear' );
+		//self.showChatBtn = document.getElementById( 'tease-chat-goto-chat' );
+		//self.clearBtn = document.getElementById( 'tease-chat-clear' );
 		
-		self.showChatBtn.addEventListener( 'click', showChatClick, false );
-		self.clearBtn.addEventListener( 'click', clearClick, false );
+		self.el.addEventListener( 'click', showChatClick, false );
+		//self.showChatBtn.addEventListener( 'click', showChatClick, false );
+		//self.clearBtn.addEventListener( 'click', clearClick, false );
 		
 		function showChatClick( e ) {
 			self.clear();
 			self.emit( 'show-chat', Date.now());
 		}
 		function clearClick( e ) { self.clear(); }
+	}
+	
+	ns.ChatTease.prototype.showMessageNum = function() {
+		const self = this;
+		self.teaseUnread++;
+		self.teaseNum.textContent = '(' + self.teaseUnread + ')';
+		self.updateActive();
+	}
+	
+	ns.ChatTease.prototype.clearMessageNum = function() {
+		const self = this;
+		self.teaseUnread = 0;
+		self.teaseNum.textContent = '';
+		self.updateActive();
+	}
+	
+	ns.ChatTease.prototype.updateActive = function() {
+		const self = this;
+		if ( self.active ) {
+			glow( true );
+			return;
+		}
+		
+		if ( !!self.teaseUnread ) {
+			glow( true );
+			return;
+		}
+		
+		glow( false );
+		
+		function glow( show ) {
+			self.el.classList.toggle( 'available', show );
+		}
 	}
 	
 })( library.component );
@@ -1025,7 +1038,6 @@ library.component = library.component || {};
 	
 	ns.StreamStateUI.prototype.close = function() {
 		const self = this;
-		console.log( 'StreamStateUI.close' );
 		if ( self.el )
 			self.el.parentNode.removeChild( self.el );
 		
@@ -1046,7 +1058,6 @@ library.component = library.component || {};
 	
 	ns.StreamStateUI.prototype.update = function( state ) {
 		const self = this;
-		console.log( 'StreamStateUI.update', state );
 		let handler = self.states[ state.type ];
 		if ( !handler ) {
 			console.log( 'StreamStateUI.update - unknown state event', state );
@@ -1060,7 +1071,6 @@ library.component = library.component || {};
 	
 	ns.StreamStateUI.prototype.init = function( containerId ) {
 		const self = this;
-		console.log( 'StreamStateUI.init', self );
 		const container = document.getElementById( containerId );
 		const conf = {
 			
@@ -1084,7 +1094,6 @@ library.component = library.component || {};
 	
 	ns.StreamStateUI.prototype.updateSource = function( ready ) {
 		const self = this;
-		console.log( 'updateSource', ready );
 		let sourceWait = self.source.querySelector( 'i.state-waiting' );
 		let sourceOk = self.source.querySelector( 'i.state-ready' );
 		
@@ -1097,7 +1106,6 @@ library.component = library.component || {};
 	
 	ns.StreamStateUI.prototype.updateStream = function( ready ) {
 		const self = this;
-		console.log( 'updateStream', ready );
 		let streamWait = self.stream.querySelector( 'i.state-waiting' );
 		let streamOk = self.stream.querySelector( 'i.state-ready' );
 		self.toggle( streamWait, !ready );

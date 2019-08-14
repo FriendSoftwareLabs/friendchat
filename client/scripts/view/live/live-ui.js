@@ -29,11 +29,14 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.UI = function( conn, liveConf, localSettings, live ) {
 		const self = this;
+		library.component.EventEmitter.call( self );
+		
 		self.conn = conn;
 		self.localSettings = localSettings;
 		self.guestAvatar = liveConf.guestAvatar;
 		self.rtc = null;
-		self.peerContainerId = 'peers';
+		self.peerGridId = 'peer-grid';
+		self.peerListId = 'peer-list';
 		self.peers = {};
 		self.peerIds = [];
 		self.peerGridOrder = [];
@@ -58,6 +61,8 @@ library.component = library.component || {};
 		
 		self.init();
 	}
+	
+	ns.UI.prototype = Object.create( library.component.EventEmitter.prototype );
 	
 	// Public
 	
@@ -99,7 +104,7 @@ library.component = library.component || {};
 		*/
 		
 		let audioConf = {
-			containerId : 'lists-container',
+			containerId : self.peerListId,
 			id          : 'audio-list',
 			label       : View.i18n( 'i18n_list_voice' ),
 			faIcon      : 'fa-microphone',
@@ -127,132 +132,75 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.addUIPane = function( id, conf ) {
-		var self = this;
-		var Pane = self.uiPaneMap[ id ];
+		const self = this;
+		const Pane = self.uiPaneMap[ id ];
 		if ( !Pane ) {
 			console.log( 'no ui pane for id', { id : id, map : self.uiPaneMap });
 			throw new Error( 'no ui pane found for id: ' + id );
 			return;
 		}
 		
-		var paneConf = {
+		const paneConf = {
 			id           : id,
 			parentId     : 'live-ui-panes',
-			onpanetoggle : onToggle,
-			onpaneclose  : onClose,
 			conf         : conf,
 		};
-		var pane = new Pane( paneConf );
-		self.uiPanes[ pane.id ] = pane;
+		const pane = new Pane( paneConf );
+		const pId = pane.id;
+		self.uiPanes[ pId ] = pane;
+		pane.on( 'visible', onVisible );
+		pane.on( 'close', onClose );
+		
 		return pane;
 		
-		function onToggle( setVisible ) {
-			self.toggleUIPanes( setVisible );
+		function onVisible( isVisible ) {
+			self.toggleUIPanes( isVisible );
 		}
 		
-		function onClose() { self.removeUIPane( pane.id ); }
+		function onClose() {
+			self.removeUIPane( pId );
+		}
 	}
 	
 	ns.UI.prototype.bindEvents = function() {
 		const self = this;
-		self.peerContainer = document.getElementById( self.peerContainerId );
+		self.gridContainer = document.getElementById( self.peerGridId );
+		self.listContainer = document.getElementById( self.peerListId );
 		
 		// ui
+		self.cover = document.getElementById( 'init-cover' );
 		self.live = document.getElementById( 'live' );
 		self.waiting = document.getElementById( 'waiting-for-container' );
 		self.waitingFritz = document.getElementById( 'waiting-for-peers-fritz' );
 		self.waitingDots = document.getElementById( 'waiting-for-peers-dots' );
 		self.ui = document.getElementById( 'live-ui' );
-		self.uiMenuBtn = document.getElementById( 'show-menu-btn' );
-		self.uiPeerGridBtn = document.getElementById( 'toggle-peer-grid-btn' );
-		self.uiPaneContainer = document.getElementById( 'live-ui-panes' );
+		self.menuBtn = document.getElementById( 'show-menu-btn' );
+		self.screenShareBtn = document.getElementById( 'share-screen-btn');
+		self.audioBtn = document.getElementById( 'audio-toggle-btn' );
+		self.hangupBtn = document.getElementById( 'hangup-btn' );
+		self.videoBtn = document.getElementById( 'video-toggle-btn' );
+		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.teaseChat = document.getElementById( 'tease-chat-container' );
+		
+		self.uiPaneContainer = document.getElementById( 'live-ui-panes' );
 		self.liveContent = document.getElementById( 'live-content' );
 		self.lists = document.getElementById( 'lists-container' );
 		
-		// Different classes from the quick access button menu
-		var liveButtons = [ 
-			'text-chat', 'screen-share', 'audio-toggle', 'hangup', 
-			'video-toggle', 'people', 'settings' 
-		];
-		var uiButtons = document.getElementById( 'live-button-bar' );
-		for( var a = 0; a < liveButtons.length; a++ )
-		{
-			var test = uiButtons.querySelector( '.' + liveButtons[ a ] );
-			if( test )
-			{
-				var bStr = liveButtons[ a ].split( '-' ).join( '' );
-				uiButtons[ bStr ] = test;
-			}
-		}
+		self.menuBtn.addEventListener( 'click', menuClick, false );
+		self.screenShareBtn.addEventListener( 'click', screenShareClick, false );
+		self.hangupBtn.addEventListener( 'click', hangupClick, false );
 		
-		// Make a reference
-		self.uiButtons = uiButtons;
+		function menuClick( e ) { self.showMenu(); }
+		function screenShareClick( e ) { self.emit( 'share-screen' ); }
+		function hangupClick( e ) { self.emit( 'close' ); }
 		
-		// Just hang up!
-		uiButtons.hangup.onclick = function(){ 
-			window.live.rtc.close();
-		};
-		
-		// Toggle text chat
-		uiButtons.textchat.onclick = function(){ 
-			if ( !self.chatUI )
-				return;	
-			self.chatUI.toggle();
-		}
-		
-		// Start screen sharing 
-		uiButtons.screenshare.onclick = function(){
-			
-			// Try to toggle screen share
-			if( self.peers.selfie.peer.screenShareAvailable )
-			{
-				self.peers.selfie.peer.toggleShareScreen();
-			}
-			// Or install the extension
-			else
-			{
-				self.peers.selfie.peer.openScreenExtInstall();
-			}
-			self.peers.selfie.peer.screenshareEl = uiButtons.screenshare;
-		};
-		
-		// Toggle audio
-		uiButtons.audiotoggle.onclick = function( e ) {
-			var mbtn = self.peers.selfie.muteBtn;
-			mbtn.click();
-						
-			if( !mbtn.classList.contains( 'danger' ) )
-			{
-				uiButtons.audiotoggle.classList.remove( 'muted' );
-			}
-			else 
-			{
-				uiButtons.audiotoggle.classList.add( 'muted' );
-			}
-		};
-		
-		// Toggle video
-		uiButtons.videotoggle.onclick = function( e ) {
-			var info = self.peers.selfie.peer.permissions.send;
-			if( !info.video )
-				uiButtons.videotoggle.classList.remove( 'muted' );
-			else uiButtons.videotoggle.classList.add( 'muted' );
-			self.peers.selfie.peer.toggleSendVideo( e )
-		};
-		
-		// Show settings
-		uiButtons.settings.onclick = function( e ) {
-			self.peers.selfie.peer.showSourceSelect();
-		}
+		// other things
 		
 		document.addEventListener( 'mousemove', mouseMoved, false );
 		document.addEventListener( 'mouseleave', catchLeave, false );
 		document.addEventListener( 'mouseenter', catchEnter, false );
 		
 		self.ui.addEventListener( 'transitionend', uiTransitionEnd, false );
-		self.uiMenuBtn.addEventListener( 'click', menuClick, false );
-		self.uiPeerGridBtn.addEventListener( 'click', peerGridClick, false );
 		
 		function uiTransitionEnd( e ) {
 			self.uiTransitionEnd( e );
@@ -261,8 +209,6 @@ library.component = library.component || {};
 		function catchEnter( e ) { self.handleViewOver( true ); }
 		function catchLeave( e ) { self.handleViewOver( false ); }
 		
-		function menuClick( e ) { self.showMenu(); }
-		function peerGridClick( e ) { self.togglePeerGrid(); }
 		function mouseMoved( e ) {
 			// one time check to see if pointer is over view on startup
 			//self.toggleUI( true );
@@ -277,7 +223,7 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.uiTransitionEnd = function( e ) {
-		var self = this;
+		const self = this;
 		if ( !( 'live-ui' === e.target.id ) || !( 'opacity' === e.propertyName ))
 			return;
 		
@@ -286,27 +232,22 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.handleViewOver = function( isOver ) {
-		var self = this;
+		const self = this;
 		isOver = self.uiVisible || isOver;
 		self.toggleUI( isOver );
 	}
 	
 	ns.UI.prototype.showMenu = function() {
-		var self = this;
-		self.menuUI.show();
-	}
-	
-	ns.UI.prototype.togglePeerGrid = function() {
-		var self = this;
-		console.log( 'togglePeerGrid - NYI ~~justlayoutthings~~' );
+		const self = this;
+		self.menuUI.toggle();
 	}
 	
 	ns.UI.prototype.toggleUI = function( show, skipAnim ) {
-		var self = this;
-		if ( self.panesVisible )
-			show = false;
+		const self = this;
+		if ( !!self.panesVisible )
+			show = true;
 		
-		var setVisible = null;
+		let setVisible = false;
 		if ( null != show )
 			setVisible = show;
 		else
@@ -315,12 +256,11 @@ library.component = library.component || {};
 		if ( setVisible || skipAnim )
 			self.ui.classList.toggle( 'hidden', !setVisible );
 		
-		//self.ui.classList.toggle( 'is-visible', setVisible );
 		self.live.classList.toggle( 'show-ui', setVisible );
 	}
 	
 	ns.UI.prototype.toggleUIPanes = function( setVisible ) {
-		var self = this;
+		const self = this;
 		if ( setVisible )
 			self.panesVisible++;
 		else
@@ -331,8 +271,11 @@ library.component = library.component || {};
 		if ( self.panesVisible > 1 )
 			return;
 		
-		self.toggleUI( !setVisible, true );
-		self.uiPaneContainer.classList.toggle( 'hidden', !setVisible );
+		self.toggleUI();
+		
+		const showPanes = !!self.panesVisible;
+		self.ui.classList.toggle( 'show-panes', showPanes );
+		self.uiPaneContainer.classList.toggle( 'hidden', !showPanes );
 	}
 	
 	ns.UI.prototype.getUIPane = function( id ) {
@@ -353,8 +296,8 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.removeUIPane = function( id ) {
-		var self = this;
-		var pane = self.getUIPane( id )
+		const self = this;
+		const pane = self.getUIPane( id )
 		if ( !pane )
 			return;
 		
@@ -394,7 +337,7 @@ library.component = library.component || {};
 		var appId = friendUP.tool.uid( 'nested-app' );
 		var conf = {
 			id : appId,
-			containerId : self.peerContainerId,
+			containerId : self.peerGridId,
 			app : appData,
 			onclose : onclose,
 		};
@@ -432,7 +375,12 @@ library.component = library.component || {};
 		
 		let viewPeer =  null;
 		if ( pid === 'selfie' ) {
-			viewPeer = new library.view.Selfie( conf );
+			viewPeer = new library.view.Selfie(
+				conf,
+				self.audioBtn,
+				self.videoBtn,
+				self.screenShareBtn
+			);
 			peer.on( 'room-quality', handleRoomQuality );
 			peer.on( 'popped', togglePopped );
 			peer.on( 'voice-only', voiceOnly );
@@ -441,6 +389,7 @@ library.component = library.component || {};
 			conf.onmenu = onMenuClick;
 			viewPeer = new library.view.Peer( conf );
 		}
+		
 		peer.on( 'video', updateHasVideo );
 		
 		// add to ui
@@ -464,7 +413,7 @@ library.component = library.component || {};
 		}
 		
 		function addToGrid( peer ) {
-			self.peerContainer.appendChild( viewPeer.el );
+			self.gridContainer.appendChild( viewPeer.el );
 			viewPeer.el.classList.toggle( 'in-grid', true );
 			self.peerGridOrder.push( viewPeer.id );
 			self.updateGridClass();
@@ -553,9 +502,14 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateWaiting = function() {
 		const self = this;
-		let pids = Object.keys( self.peers );
-		let hideWaiting = pids.length > 1;
+		const pids = Object.keys( self.peers );
+		const hideWaiting = pids.length > 1;
+		const onlyVoice = self.isVoiceOnly;
 		self.waiting.classList.toggle( 'hidden', hideWaiting );
+		self.waiting.classList.toggle( 'expand', !onlyVoice );
+		self.waiting.classList.toggle( 'fortify', onlyVoice );
+		self.waitingFritz.classList.toggle( 'hidden', onlyVoice );
+		self.waitingDots.classList.toggle( 'hidden', !onlyVoice );
 	}
 	
 	ns.UI.prototype.updateMenu = function() {
@@ -570,7 +524,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateGridClass = function() {
 		const self = this;
-		const container = document.getElementById( self.peerContainerId );
+		const container = document.getElementById( self.peerGridId );
 		const selfie = self.peers[ 'selfie' ];
 		if ( !selfie )
 			return;
@@ -637,20 +591,14 @@ library.component = library.component || {};
 	ns.UI.prototype.handleVoiceOnly = function( isVoiceOnly ) {
 		const self = this;
 		self.isVoiceOnly = isVoiceOnly;
-		updateWaiting();
-		self.teaseChat.classList.toggle( 'hidden', isVoiceOnly );
-		self.liveContent.classList.toggle( 'expand', !isVoiceOnly );
-		self.liveContent.classList.toggle( 'fortify', isVoiceOnly );
-		self.lists.classList.toggle( 'expand', isVoiceOnly );
-		self.lists.classList.toggle( 'fortify', !isVoiceOnly );
+		self.updateWaiting();
+		self.videoBtn.classList.toggle( 'inverted', isVoiceOnly );
+		self.gridContainer.classList.toggle( 'hidden', isVoiceOnly );
+		self.listContainer.classList.toggle( 'expand', isVoiceOnly );
+		self.listContainer.classList.toggle( 'fortify', !isVoiceOnly );
 		self.audioList.show( isVoiceOnly );
 		
 		self.updateVoiceListMode();
-		
-		function updateWaiting() {
-			self.waitingFritz.classList.toggle( 'hidden', self.isVoiceOnly );
-			self.waitingDots.classList.toggle( 'hidden', !self.isVoiceOnly );
-		}
 	}
 	
 	ns.UI.prototype.updateVoiceListMode = function() {
@@ -711,7 +659,7 @@ library.component = library.component || {};
 			self.audioList.remove( pid );
 			self.peerGridOrder.push( pid );
 			peer.setIsInList( false );
-			self.peerContainer.appendChild( peer.el );
+			self.gridContainer.appendChild( peer.el );
 			if ( 'selfie' === peer.id )
 				self.updateSelfieState();
 			
@@ -841,7 +789,7 @@ library.component = library.component || {};
 		function applyPosition( peerId ) {
 			var peer = self.peers[ peerId ];
 			var peerElement = document.getElementById( peerId );
-			self.peerContainer.appendChild( peerElement );
+			self.gridContainer.appendChild( peerElement );
 			peer.restart();
 		}
 	}
@@ -857,8 +805,8 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.onPeerClickCatch = function( peerId ) {
-		var self = this;
-		self.toggleUIMode();
+		const self = this;
+		//self.toggleUIMode();
 	}
 	
 	ns.UI.prototype.toggleUIMode = function() {
@@ -941,13 +889,6 @@ library.component = library.component || {};
 			faIcon : 'fa-laptop',
 			toggle : false,
 			close  : true,
-		};
-		const screenShareExt = {
-			type    : 'item',
-			id      : 'screen-share-ext',
-			name    : View.i18n( 'i18n_get_screenshare_ext' ),
-			faIcon  : 'fa-download',
-			disable : true,
 		};
 		const source = {
 			type   : 'item',
@@ -1091,8 +1032,7 @@ library.component = library.component || {};
 			quality,
 			restart,
 			fullscreen,
-			screenShare,
-			screenShareExt,
+			//screenShare,
 			presentation,
 			source,
 			popped,
@@ -1211,7 +1151,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateModeSpeaker = function() {
 		const self = this;
-		const container = document.getElementById( self.peerContainerId );
+		const container = document.getElementById( self.peerGridId );
 		const modeSpeaker = ( !!self.modeSpeaker && !!self.currentSpeaker );
 		const speaker = self.peers[ self.currentSpeaker ];
 		if ( speaker && speaker.isInList )
@@ -1292,16 +1232,58 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.UI.prototype.addInitChecks = function( conf ) {
+		const self = this;
+		const id = 'init-checks';
+		const Pane = self.uiPaneMap[ id ];
+		const paneConf = {
+			id       : id,
+			parentId : 'init-cover',
+			conf     : conf,
+		};
+		const pane = new Pane( paneConf );
+		const pId = pane.id;
+		pane.on( 'close', onClose );
+		
+		return pane;
+		
+		function onClose() {
+			if ( self.cover ) {
+				self.cover.parentNode.removeChild( self.cover );
+				delete self.cover;
+			}
+		}
+	}
+	
 	ns.UI.prototype.addChat = function( userId, identities, conn ) {
 		const self = this;
+		self.chatTease = new library.component.ChatTease(
+			'tease-chat-container',
+			hello.template
+		);
+		self.chatTease.on( 'show-chat', showChat );
+		function showChat( e ) {
+			if ( !self.chatUI )
+				return;
+			
+			const chatOpen = self.chatUI.toggle();
+			self.chatTease.setActive( chatOpen );
+		}
+		
 		const conf = {
 			conn        : conn,
 			userId      : userId,
 			identities  : identities,
 			guestAvatar : self.guestAvatar,
+			chatTease   : self.chatTease,
 		};
 		self.chatUI = self.addUIPane( 'chat', conf );
+		self.chatUI.on( 'visible', onVisible );
 		return self.chatUI;
+		
+		function onVisible( isVisible ) {
+			self.chatTease.setActive( isVisible );
+		}
 	}
 	
 	ns.UI.prototype.addShare = function( conn ) {
@@ -1313,13 +1295,29 @@ library.component = library.component || {};
 		return self.shareUI;
 	}
 	
-	ns.UI.prototype.addSettings = function( onsave ) {
+	ns.UI.prototype.addSettings = function( conf ) {
 		const self = this;
-		const conf = {
-			onsave : onsave,
-		};
-		self.settingsUI = self.addUIPane( 'settings', conf );
+		if ( !self.settingsBtn ) {
+			console.log( 'UI.addSettings - settingsBtn missing, abort' );
+			return;
+		}
+		
+		self.settingsBtn.addEventListener( 'click', settingsClick, false );
+		self.settingsUI = self.addUIPane( 'source-select', conf );
+		self.settingsUI.on( 'visible', onVisible );
 		return self.settingsUI;
+		
+		function settingsClick( e ) {
+			const isOpen = self.settingsUI.getOpen();
+			if ( isOpen )
+				self.settingsUI.hide();
+			else
+				self.emit( 'settings' ); 
+		}
+		
+		function onVisible( isVisible ) {
+			self.settingsBtn.classList.toggle( 'available', isVisible );
+		}
 	}
 	
 	ns.UI.prototype.addExtConnPane = function( onshare ) {
@@ -1337,12 +1335,12 @@ library.component = library.component || {};
 		self.peerIds.forEach( setLevel );
 		function setLevel( peerId ) {
 			var peer = self.peers[ peerId ];
-			peer.applyQualityLevel( level );
+			peer.updateQualityLevel( level );
 		}
 	}
 	
 	ns.UI.prototype.close = function() {
-		var self = this;
+		const self = this;
 		delete self.conn;
 		if( self.menu && self.menu.close )
 			self.menu.close();
@@ -1355,10 +1353,7 @@ library.component = library.component || {};
 // PEER
 (function( ns, undefined ) {
 	ns.Peer = function( conf ) {
-		if ( !( this instanceof ns.Peer ))
-			return new ns.Peer( conf );
-		
-		var self = this;
+		const self = this;
 		self.id = conf.peer.id;
 		self.peer = conf.peer;
 		self.menu = conf.menu;
@@ -1372,8 +1367,6 @@ library.component = library.component || {};
 		
 		self.stream = null;
 		
-		self.muteBtn = null;
-		self.blindBtn = null;
 		self.localBlind = false;
 		self.remoteBlind = false;
 		
@@ -1383,7 +1376,7 @@ library.component = library.component || {};
 		
 		self.sayMessages = false;
 		
-		self.useCoverMode = true;
+		self.isLowQMode = false;
 		
 		self.uiVisible = true;
 		self.showStack = [];
@@ -1430,7 +1423,7 @@ library.component = library.component || {};
 		self.bindUI();
 		self.bindPeerCommon();
 		self.bindPeer();
-		self.applyQualityLevel();
+		self.updateQualityLevel();
 		self.setupMenu();
 		self.initSelf();
 		if ( self.peer.identity )
@@ -1518,14 +1511,14 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.initSelf = function() {
-		var self = this;
-		var streamState = {
+		const self = this;
+		const streamState = {
 			type : 'stream',
 			data : {
 				type : 'waiting',
 			},
 		};
-		self.updateState( streamState );
+		self.updateRTC( streamState );
 	}
 	
 	ns.Peer.prototype.restart = function() {
@@ -1539,11 +1532,11 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.buildView = function() {
-		var self = this;
-		var avatarUrl =  window.encodeURI( self.peer.avatar );
-		var conf = {
+		const self = this;
+		const avatarUrl =  window.encodeURI( self.peer.getAvatar());
+		const conf = {
 			peerId : self.id,
-			name : self.peer.name || '',
+			name : self.peer.getName() || '',
 			avatar : avatarUrl || '',
 		};
 		self.el = hello.template.getElement( 'peer-tmpl', conf );
@@ -1551,19 +1544,19 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.bindUI = function() {
-		var self = this;
+		const self = this;
 		// states
 		self.rtcState = new library.view.RTCState({ peerId : self.id });
 		
 		// ui
-		self.menuBtn = self.ui.querySelector( '.show-peer-menu' );
+		self.menuBtn = self.ui.querySelector( '.peer-options' );
 		self.sayStateBtn = self.ui.querySelector( '.say-state' );
 		self.streamState = self.ui.querySelector( '.stream-state' );
 		self.remoteMuteState = self.ui.querySelector( '.remote-mute' );
 		self.remoteBlindState = self.ui.querySelector( 'remote-blind' );
 		
 		self.menuBtn.addEventListener( 'click', peerMenuClick, false );
-		function peerMenuClick( e ) { self.onmenu(); }
+		function peerMenuClick( e ) { self.showPeerActions(); }
 		
 		// closing
 		self.closing = self.ui.querySelector( '.closing' );
@@ -1590,6 +1583,7 @@ library.component = library.component || {};
 		self.nameBar = self.el.querySelector( '.name-bar' );
 		self.uiView = self.ui.querySelector( '.ui-view' );
 		self.name = self.nameBar.querySelector( '.name' );
+		self.infoName = self.el.querySelector( '.main-rtc .name' );
 		self.clickCatch = self.el.querySelector( '.click-catch' );
 		self.muteState = self.ui.querySelector( '.muted' );
 		self.blindState = self.ui.querySelector( '.blinded' );
@@ -1693,6 +1687,11 @@ library.component = library.component || {};
 		var self = this;
 		var index = self.showStack.indexOf( type );
 		return -1 !== index;
+	}
+	
+	ns.Peer.prototype.showPeerActions = function() {
+		const self = this;
+		self.onmenu();
 	}
 	
 	ns.Peer.prototype.toggleOptions = function() {
@@ -2004,8 +2003,10 @@ library.component = library.component || {};
 		self.peer.on( 'mute'            , isMuted );
 		self.peer.on( 'blind'           , isBlinded );
 		self.peer.on( 'is-focus'        , isFocus );
-		self.peer.on( 'screenmode'      , screenMode );
+		self.peer.on( 'screen-mode'     , screenMode );
+		self.peer.on( 'screen-share'    , screenShare );
 		self.peer.on( 'local-quality'   , localQuality );
+		
 		
 		function handleMedia( e ) { self.handleMedia( e ); }
 		function handleTrack( e, f ) { self.handleTrack( e, f ); }
@@ -2019,8 +2020,9 @@ library.component = library.component || {};
 		function isMuted( e ) { self.handleSelfMute( e ); }
 		function isBlinded( e ) { self.handleSelfBlind( e ); }
 		function isFocus( e ) { self.handleIsFocus( e ); }
-		function screenMode( e ) { self.updateScreenMode( e ); }
-		function localQuality( e ) { self.applyQualityLevel( e ); }
+		function screenMode( e ) { self.handleScreenMode( e ); }
+		function screenShare( e ) { self.handleScreenShare( e ); }
+		function localQuality( e ) { self.updateQualityLevel( e ); }
 	}
 	
 	ns.Peer.prototype.bindPeer = function() {
@@ -2028,12 +2030,12 @@ library.component = library.component || {};
 		self.peer.on( 'meta'   , handleMeta );
 		self.peer.on( 'muted'  , remoteMute );
 		self.peer.on( 'blinded', remoteBlind );
-		self.peer.on( 'state'  , updateState );
+		self.peer.on( 'state'    , updateRTC );
 		
 		function handleMeta( e ) { self.handleMeta( e ); }
 		function remoteMute( e ) { self.toggleRemoteMute( e ); }
 		function remoteBlind( e ) { self.toggleRemoteBlind( e ); }
-		function updateState( e ) { self.updateState( e ); }
+		function updateRTC( e ) { self.updateRTC( e ); }
 	}
 	
 	ns.Peer.prototype.handleMeta = function( meta ) {
@@ -2057,32 +2059,32 @@ library.component = library.component || {};
 		if ( !media )
 			return;
 		
+		const mId = media.id;
 		if ( !self.stream )
-			self.setStream( media.id );
+			self.setStream( mId );
 		
 		self.stream.pause();
-		let srcObj = self.stream.srcObject;
-		if ( srcObj ) {
-			self.stream.pause();
-			clear( srcObj );
+		let currMedia = self.stream.srcObject;
+		if ( !currMedia ) {
+			self.stream.srcObject = media;
 			self.stream.load();
-			self.stream.srcObject = null;
+			return;
 		}
 		
+		if ( currMedia.id == mId ) {
+			self.stream.load();
+			return;
+		}
+		
+		const currTracks = currMedia.getTracks();
+		currTracks.forEach( t => {
+			currMedia.removeTrack( t );
+		});
+		self.stream.load();
 		self.stream.srcObject = media;
 		//self.bindStream();
 		//self.updateAudioSink();
 		self.stream.load();
-		
-		function clear( media ) {
-			let tracks = media.getTracks();
-			tracks.forEach( stop );
-			
-			function stop( track ) {
-				track.stop();
-				media.removeTrack( track );
-			}
-		}
 	}
 	
 	ns.Peer.prototype.bindStream = function() {
@@ -2170,10 +2172,10 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.handleLegacyStream = function( conf ) {
-		var self = this;
+		const self = this;
 		self.isVideo = conf.isVideo;
 		self.isAudio = conf.isAudio;
-		var src = window.URL.createObjectURL( conf.stream );
+		const src = window.URL.createObjectURL( conf.stream );
 		self.setStream( conf.stream.id, src );
 		//self.stream.src = src;
 		//self.updateStream();
@@ -2252,30 +2254,29 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.doResize = function() {
-		var self = this;
-		var container = document.getElementById( self.id ).querySelector( '.stream-container' );
-		var width = container.scrollWidth;
-		var height = container.scrollHeight;
-		var containerAspect = width / height;
+		const self = this;
+		const container = document.getElementById( self.id )
+			.querySelector( '.stream-container' );
+		
+		toggle( 'video-border', self.isLowQMode );
+		if ( self.isLowQMode && !self.isPopped ) {
+			toggle( 'width', false );
+			toggle( 'height', false );
+			return;
+		}
+		
+		const width = container.scrollWidth;
+		const height = container.scrollHeight;
+		const containerAspect = width / height;
 		if ( containerAspect < self.videoAspect )
 			toggleUseWidth( true );
 		else
 			toggleUseWidth( false );
 			
 		function toggleUseWidth( useWidth ) {
-			if ( !self.stream )
-				return;
-			
-			toggle( 'video-border', !self.useCoverMode );
-			self.toggleElementClass( self.avatar, 'fade', !self.useCoverMode );
-			
-			if ( !self.useCoverMode && !self.isPopped ) {
-				toggle( 'width', false );
-				toggle( 'height', false );
-				return;
-			}
-			
-			if ( 'contain' === self.peer.screenMode ) {
+			if ( 'contain' === self.screenMode
+				|| self.screenShare
+			) {
 				useWidth = !useWidth;
 				self.hideAvatar();
 			} else
@@ -2283,10 +2284,13 @@ library.component = library.component || {};
 			
 			toggle( 'width', useWidth );
 			toggle( 'height', !useWidth );
+		}
+		
+		function toggle( classStr, set ) {
+			if ( !self.stream )
+				return;
 			
-			function toggle( classStr, set ) {
-				self.stream.classList.toggle( classStr, set );
-			}
+			self.stream.classList.toggle( classStr, set );
 		}
 	}
 	
@@ -2301,7 +2305,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.reflow = function() {
-		var self = this;
+		const self = this;
 		if ( !self.stream )
 			return;
 		
@@ -2312,6 +2316,7 @@ library.component = library.component || {};
 			self.volume.start();
 		*/
 	}
+	
 	
 	ns.Peer.prototype.setStream = function( id, src ) {
 		const self = this;
@@ -2527,18 +2532,26 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.Peer.prototype.updateScreenMode = function() {
+	ns.Peer.prototype.handleScreenMode = function( screenMode ) {
 		const self = this;
+		self.screenMode = screenMode;
 		self.doResize();
 	}
 	
-	ns.Peer.prototype.updateState = function( state ) {
-		var self = this;
-		self.rtcState.set( state );
+	ns.Peer.prototype.handleScreenShare = function( isActive ) {
+		const self = this;
+		self.screenShare = isActive;
+		self.updateQualityLevel();
+		self.doResize();
+	}
+	
+	ns.Peer.prototype.updateRTC = function( event ) {
+		const self = this;
+		self.rtcState.update( event );
 	}
 	
 	ns.Peer.prototype.updateIdentity = function( identity ) {
-		var self = this;
+		const self = this;
 		identity = identity || self.identity;
 		var id = identity;
 		if ( !id ) {
@@ -2549,6 +2562,9 @@ library.component = library.component || {};
 		const name = id.liveName || id.name;
 		if ( name && name.length ) {
 			self.name.innerText = name;
+			if ( self.infoName )
+				self.infoName.innerText = name;
+			
 			self.listName.innerText = name;
 			self.menu.update( self.menuId, name );
 		}
@@ -2577,27 +2593,36 @@ library.component = library.component || {};
 		self.releaseStream();
 	}
 	
-	ns.Peer.prototype.applyQualityLevel = function( level ) {
+	ns.Peer.prototype.updateQualityLevel = function( level ) {
 		const self = this;
 		self.currentQuality = level || self.currentQuality;
-		self.useCoverMode = 'low' === self.currentQuality ? false : true;
-		const isLow = ( 'low' === self.currentQuality );
+		let isLow = false;
+		if ( 'low' === self.currentQuality )
+			isLow = true;
+		if ( self.screenShare )
+			isLow = false;
+		
+		if ( isLow === self.isLowQMode )
+			return;
+		
+		self.isLowQMode = isLow;
+		self.toggleElementClass( self.avatar, 'fade', isLow );
 		self.el.classList.toggle( 'quality-low', isLow );
 		
 		self.reflow();
 	}
 	
 	ns.Peer.prototype.setButtonIcon = function( btn, remove, add ) {
-		var self = this;
-		var i = btn.querySelector( 'i' );
+		const self = this;
+		const i = btn.querySelector( 'i' );
 		i.classList.toggle( remove, false );
 		i.classList.toggle( add, true );
 	}
 	
 	ns.Peer.prototype.toggleUIIndicator = function( indicatorClass, isOn ) {
-		var self = this;
-		var peerElement = document.getElementById( self.id );
-		var uiElement = peerElement.querySelector( indicatorClass );
+		const self = this;
+		const peerElement = document.getElementById( self.id );
+		const uiElement = peerElement.querySelector( indicatorClass );
 		uiElement.classList.toggle( 'hidden', !isOn );
 	}
 	
@@ -2687,11 +2712,11 @@ library.component = library.component || {};
 	}
 	
 	ns.Countdown.prototype.init = function() {
-		var self = this;
+		const self = this;
 		// build
-		var cw = self.containerEl.clientWidth;
-		var ch = self.containerEl.clientHeight;
-		var wh = Math.min( cw, ch );
+		const cw = self.containerEl.clientWidth;
+		const ch = self.containerEl.clientHeight;
+		const wh = Math.min( cw, ch );
 		if ( !wh ) {
 			console.log( 'canvas is hidden.. no, its FINE, forget it.' );
 			self.finished();
@@ -2699,16 +2724,16 @@ library.component = library.component || {};
 		}
 		
 		self.id = friendUP.tool.uid( 'countdown' );
-		var conf = {
+		const conf = {
 			id : self.id,
 			sq : wh,
 		};
-		var element = hello.template.getElement( 'countdown-tmpl', conf );
+		const element = hello.template.getElement( 'countdown-tmpl', conf );
 		self.containerEl.appendChild( element );
 		
 		//bind
 		self.canvas = element.querySelector( 'canvas' );
-		var closeBtn = element.querySelector( '.countdown-close-now' );
+		const closeBtn = element.querySelector( '.countdown-close-now' );
 		closeBtn.addEventListener( 'click', closeNow, false );
 		
 		
@@ -2806,12 +2831,17 @@ library.component = library.component || {};
 
 // selfie
 (function( ns, undefined ) {
-	ns.Selfie = function( conf ) {
-		if ( !( this instanceof ns.Selfie ))
-			return new ns.Selfie( conf );
-		
-		var self = this;
+	ns.Selfie = function(
+		conf,
+		audioBtn,
+		videoBtn,
+		screenshareBtn
+	) {
+		const self = this;
 		self.onclean = conf.onclean;
+		self.audioBtn = audioBtn;
+		self.videoBtn = videoBtn;
+		self.screenshareBtn = screenshareBtn;
 		self.selectedStreamQuality = 'normal';
 		
 		self.isPopped = true;
@@ -2860,20 +2890,42 @@ library.component = library.component || {};
 	}
 	
 	ns.Selfie.prototype.initSelf = function() {
-		var self = this;
+		const self = this;
+		self.audioBtn.addEventListener( 'click', audioClick, false );
+		self.videoBtn.addEventListener( 'click', videoClick, false );
+		
+		function audioClick( e ) {
+			self.handleAudioClick();
+		}
+		function videoClick( e ) {
+			self.handleVideoClick();
+		}
+	}
+	
+	ns.Selfie.prototype.handleAudioClick = function() {
+		const self = this;
+		self.peer.toggleMute();
+	}
+	
+	ns.Selfie.prototype.handleVideoClick = function() {
+		const self = this;
+		if ( self.isVideo )
+			self.peer.toggleBlind();
+		else
+			self.peer.toggleVideo();
 	}
 	
 	ns.Selfie.prototype.setupMenu = function() {
-		var self = this;
+		const self = this;
 		//self.muteId = 'mute';
 		//self.blindId = 'blind';
 	}
 	
 	ns.Selfie.prototype.buildView = function() {
-		var self = this;
-		var avatarUrl = window.encodeURI( self.peer.avatar );
-		var tmplConf = {
-			name : self.peer.name,
+		const self = this;
+		const avatarUrl = window.encodeURI( self.peer.avatar );
+		const tmplConf = {
+			name   : self.peer.name,
 			avatar : avatarUrl || '',
 		};
 		self.el = hello.template.getElement( 'selfie-tmpl', tmplConf );
@@ -2886,20 +2938,20 @@ library.component = library.component || {};
 		self.poppedMuteBtn = document.getElementById( 'popped-mute-self' );
 		self.unpopBtn = document.getElementById( 'popped-unpop' );
 		
-		self.poppedMuteBtn.addEventListener( 'click', muteBtnClick, false );
+		self.poppedMuteBtn.addEventListener( 'click', audioBtnClick, false );
 		self.unpopBtn.addEventListener( 'click', unpopClick, false );
 		function unpopClick( e ) {
 			self.peer.emit( 'popped', self.isPopped );
 		}
 		
 		// ui
-		self.muteBtn = document.getElementById( 'mute-self' );
+		//self.audioBtn = document.getElementById( 'mute-self' );
 		self.nameBar = self.ui.querySelector( '.ui-buttons .name-bar' );
 		self.durationBar = document.getElementById( 'session-duration' );
 		self.durationTime = self.durationBar.querySelector( '.time' );
 		
-		self.muteBtn.addEventListener( 'click', muteBtnClick, false );
-		function muteBtnClick( e ) { self.peer.toggleMute(); }
+		//self.audioBtn.addEventListener( 'click', audioBtnClick, false );
+		function audioBtnClick( e ) { self.peer.toggleMute(); }
 		
 		// options
 		function dragClick( e ) { self.enableDragMode(); }
@@ -2916,7 +2968,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Selfie.prototype.startDurationTimer = function() {
-		var self = this;
+		const self = this;
 		self.startTime = Date.now();
 		self.isDurationTimer = true;
 		self.toggleDurationUpdate();
@@ -3121,17 +3173,34 @@ library.component = library.component || {};
 		self.AVGraph.setSource( volumeSrc );
 	}
 	
+	ns.Selfie.prototype.handleScreenShare = function( isActive ) {
+		const self = this;
+		self.screenShare = isActive;
+		self.updateQualityLevel();
+		if ( !self.screenshareBtn )
+			return;
+		
+		self.screenshareBtn.classList.toggle( 'available', isActive );
+	}
+	
 	ns.Selfie.prototype.handleSelfMute = function( isMuted ) {
-		var self = this;
+		const self = this;
 		self.menu.setState( 'mute', isMuted );
-		self.muteBtn.classList.toggle( 'danger', isMuted );
+		self.audioBtn.classList.toggle( 'inverted', isMuted );
+		self.audioBtn.classList.toggle( 'danger', isMuted );
 		self.poppedMuteBtn.classList.toggle( 'danger', isMuted );
 		self.toggleMuteState( isMuted );
 	}
 	
 	ns.Selfie.prototype.handleSelfBlind = function( isBlinded ) {
-		var self = this;
+		const self = this;
 		self.menu.setState( 'blind', isBlinded );
+		self.videoBtn.classList.toggle( 'inverted', isBlinded );
+		self.videoBtn.classList.toggle( 'danger', isBlinded );
+		//const active = self.videoBtn.querySelector( '.camera-on' );
+		//const blind = self.videoBtn.querySelector( '.camera-off' );
+		//active.classList.toggle( 'hidden', isBlinded );
+		//blind.classList.toggle( 'hidden', !isBlinded );
 		self.localBlind = isBlinded;
 		self.toggleBlindState( isBlinded );
 		self.toggleStream();
@@ -3139,9 +3208,21 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.peerClose = ns.Selfie.prototype.close;
 	ns.Selfie.prototype.close = function() {
-		var self = this;
-		self.menu.off( self.screenModeId );
+		const self = this;
+		if ( self.menu )
+			self.menu.off( self.screenModeId );
+		
+		if ( self.audioBtn )
+			self.audioBtn.cloneNode( true );
+		
+		if ( self.videoBtn )
+			self.videoBtn.closeNode( true );
+		
+		delete self.audioBtn;
+		delete self.videoBtn;
+		delete self.screenshareBtn;
 		delete self.onclean;
+		
 		self.peerClose();
 	}
 	
@@ -3202,15 +3283,15 @@ library.component = library.component || {};
 	
 	// PUBLIC
 	
-	ns.RTCState.prototype.set = function( state ) {
+	ns.RTCState.prototype.update = function( event ) {
 		const self = this;
-		const handler = self.typeMap[ state.type ];
+		const handler = self.typeMap[ event.type ];
 		if ( !handler ) {
-			console.log( 'unknown state type', state );
+			console.log( 'unknown event type', event );
 			return;
 		}
 		
-		handler( state.data );
+		handler( event.data );
 	}
 	
 	ns.RTCState.prototype.show = function() {
@@ -3236,20 +3317,26 @@ library.component = library.component || {};
 	}
 	
 	ns.RTCState.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.typeMap = {
 			rtc    : handleRTC,
 			stream : handleStream,
 			error  : handleError,
+			stats  : handleStats,
 		};
 		
 		function handleRTC( e ) { self.handleRTCState( e ); }
 		function handleStream( e ) { self.handleStreamState( e ); }
 		function handleError( e ) { self.handleError( e ); }
+		function handleStats( e ) { self.handleStats( e ); }
 		
-		self.bind();
+		try {
+			self.bind();
+		} catch( ex ) {
+			console.log( 'bind ex', ex );
+		}
 		
-		var rtcPingBar = self.mainState
+		const rtcPingBar = self.mainState
 			.querySelector( '\
 				.main-rtc-state \
 				.state-latency \
@@ -3270,16 +3357,27 @@ library.component = library.component || {};
 		
 		self.mainState = self.main.querySelector( '.main-rtc-status' );
 		//self.miniState = self.mini.querySelector( '.mini-rtc-state' );
-		self.rtcState = self.mainState
-			.querySelector( '.main-rtc-state .state-value' );
-		self.rtcRouting = self.mainState
-			.querySelector( '.main-rtc-state .state-routing .state-value' );
-		self.streamState = self.mainState
-			.querySelector( '.main-stream-state .state-value' );
-		self.streamAudio = self.mainState
-			.querySelector( '.main-stream-state .state-audio .state-value' );
-		self.streamVideo = self.mainState
-			.querySelector( '.main-stream-state .state-video .state-value' );
+		const rtcState = self.mainState.querySelector( '.main-rtc-state' );
+		self.rtcState = rtcState.querySelector( '.state-primary .state-value' );
+		self.rtcRouting = rtcState.querySelector( '.state-routing .state-value' );
+		self.rtcReceiving = rtcState.querySelector( '.state-receiving .state-value' );
+		self.rtcReceived = rtcState.querySelector( '.state-received-total .state-value' );
+		self.rtcBandwidth = rtcState.querySelector( '.state-max-bandwith .state-value' );
+		
+		const streamState = self.mainState.querySelector( '.main-stream-state' );
+		self.streamState = streamState.querySelector( '.state-primary .state-value' );
+		self.audio = streamState.querySelector( '.state-audio' );
+		self.audioTrack = self.audio.querySelector( '.state-audio-track .state-value' );
+		self.audioCodec = self.audio.querySelector( '.state-audio-codec .state-value' );
+		self.audioInput = self.audio.querySelector( '.state-audio-input .state-value' );
+		self.audioLost = self.audio.querySelector( '.state-audio-lost .state-value' );
+		
+		self.video = streamState.querySelector( '.state-video' );
+		self.videoTrack = self.video.querySelector( '.state-video-track .state-value' );
+		self.videoCodec = self.video.querySelector( '.state-video-codec .state-value' );
+		self.videoSize = self.video.querySelector( '.state-video-size .state-value' );
+		self.videoLost = self.video.querySelector( '.state-video-lost .state-value' );
+		
 		self.stateError = self.mainState
 			.querySelector( '.main-state-error .state-value' );
 		
@@ -3312,8 +3410,8 @@ library.component = library.component || {};
 	}
 	
 	ns.RTCState.prototype.setSpinner = function( type, level ) {
-		var self = this;
-		var prev = self.currentSpinner;
+		const self = this;
+		const prev = self.currentSpinner;
 		level = self.getLevel( level );
 		self.spinMap[ type ] = level;
 		level = getMaxLevel();
@@ -3356,11 +3454,13 @@ library.component = library.component || {};
 	}
 	
 	ns.RTCState.prototype.handleRTCState = function( event ) {
-		var self = this;
+		const self = this;
+		/*
 		if ( 'ping' === event.type ) {
 			self.rtcPing.set( event.data );
 			return;
 		}
+		*/
 		
 		if ( 'routing' === event.type ) {
 			self.rtcRouting.textContent = event.data.data;
@@ -3372,8 +3472,78 @@ library.component = library.component || {};
 		
 	}
 	
+	ns.RTCState.prototype.handleStats = function( data ) {
+		const self = this;
+		const trans = data.transport;
+		if ( trans.receiveRate ) {
+			const KBs = Math.round( trans.receiveRate / 1024 );
+			self.rtcReceiving.textContent =  KBs + ' KB/s';
+		}
+		
+		if ( trans.bytesReceived ) {
+			const total = ( trans.bytesReceived / 1024 / 1024 ).toFixed( 1 );
+			self.rtcReceived.textContent =  total + ' MB';
+		}
+		
+		if ( null != trans.ping ) {
+			if ( self.rtcPing )
+				self.rtcPing.set( trans.ping );
+		}
+		
+		if ( trans.pair ) {
+			const bandWidth = trans.pair.availableOutgoingBitrate || 0;
+			const maxKBit = ( bandWidth / 8 / 1024 ).toFixed( 1 );
+			self.rtcBandwidth.textContent = maxKBit + ' KBytes';
+		}
+		
+		const inn = data.inbound;
+		if ( !inn )
+			return;
+		
+		const audio = inn.audio;
+		const video = inn.video;
+		if ( audio )
+			setAudio( audio );
+		
+		if ( video )
+			setVideo( video );
+		
+		function setAudio( a ) {
+			const codec = a.codec;
+			if ( null != codec )
+				self.audioCodec.textContent = codec.mimeType.split( '/' )[ 1 ];
+			
+			const t = a.track;
+			if ( null != t ) {
+				const volume = ( t.energyRate * 1.0 )
+					.toFixed( 3 );
+				
+				self.audioInput.textContent = volume;
+			}
+			
+			const pLoss = a.packetLoss || 0;
+			self.audioLost.textContent = pLoss;
+		}
+		
+		function setVideo( v ) {
+			const codec = v.codec;
+			if ( null != codec )
+				self.videoCodec.textContent = codec.mimeType.split( '/' )[ 1 ];
+			
+			const t = v.track;
+			if ( null != t ) {
+				const h = t.frameHeight;
+				const w = t.frameWidth;
+				self.videoSize.textContent = w + 'x' + h;
+			}
+			
+			const pLoss = v.packetLoss || 0;
+			self.videoLost.textContent = pLoss;
+		}
+	}
+	
 	ns.RTCState.prototype.handleStreamState = function( data ) {
-		var self = this;
+		const self = this;
 		if ( data.tracks )
 			setAudioVideo( data.tracks );
 		
@@ -3381,22 +3551,22 @@ library.component = library.component || {};
 			updateConstraints( data.constraints );
 		
 		self.streamState.textContent = data.type;
-		var spinLevel = self.getLevel( data.type );
+		const spinLevel = self.getLevel( data.type );
 		self.setSpinner( 'stream', spinLevel );
 		
 		function setAudioVideo( tracks ) {
 			if ( tracks.audio )
-				self.streamAudio.textContent = tracks.audio.toString();
+				self.audioTrack.textContent = tracks.audio.toString();
 			if ( tracks.video )
-				self.streamVideo.textContent = tracks.video.toString();
+				self.videoTrack.textContent = tracks.video.toString();
 		}
 		
 		function updateConstraints( data ) {
 			if ( !data.audio )
-				self.streamAudio.textContent = View.i18n('i18n_not_available');
+				self.audioTrack.textContent = View.i18n('i18n_not_available');
 			
 			if ( !data.video )
-				self.streamVideo.textContent = View.i18n('i18n_not_available');
+				self.videoTrack.textContent = View.i18n('i18n_not_available');
 		}
 	}
 	
@@ -3435,7 +3605,7 @@ library.component = library.component || {};
 	
 	ns.PingBar.prototype.set = function( pingTime ) {
 		var self = this;
-		if ( !pingTime ) {
+		if ( null == pingTime ) {
 			if ( self.showBars )
 				self.toggleBar( false );
 			
@@ -3486,8 +3656,8 @@ library.component = library.component || {};
 	}
 	
 	ns.PingBar.prototype.setBars = function( pingTime ) {
-		var self = this;
-		var barNum = self.calcBarNum( pingTime );
+		const self = this;
+		const barNum = self.calcBarNum( pingTime );
 		Array.prototype.forEach.call( self.bumps, show );
 		function show( el, index ) {
 			if ( index < ( barNum ))

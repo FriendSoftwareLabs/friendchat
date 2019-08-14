@@ -45,33 +45,14 @@ library.component = library.component || {};
 	ns.Init.prototype.init = function() {
 		const self = this;
 		self.appOnline = new library.component.AppOnline( window.View );
-		/*
-		self.conn = new library.component.EventNode(
-			null,
-			null,
-			eventSink,
-			onSend
-		);
-		self.view.receiveMessage = handleFromApp;
 		
-		function onSend( e ) { self.view.sendMessage( e ); }
-		function handleFromApp( e ) {
-			self.conn.handle( e );
-		}
-		function eventSink( t, d ) { console.log( 'live event sink', {
-				t : t,
-				d : d,
-			});
-		}
-		*/
-		//
-		var fragments = document.getElementById( 'fragments' );
-		var fragStr = fragments.innerHTML;
+		const fragments = document.getElementById( 'fragments' );
+		let fragStr = fragments.innerHTML;
 		fragStr = View.i18nReplaceInString( fragStr );
 		hello.template = new friendUP.gui.TemplateManager( fragStr );
 		
 		//
-		var dropConf = {
+		const dropConf = {
 			targetId : 'hello',
 			ondrop   : onDrop,
 		};
@@ -89,10 +70,12 @@ library.component = library.component || {};
 		function focus( e ) {}
 		function initialize( e ) { self.initialize( e ); }
 		function restore( e ) { self.handleRestore( e ); }
-		function closeView( e ) { self.closeAllTheThings( e ); }
+		function closeView( e ) {
+			self.closeAllTheThings( e );
+		}
 		
 		//
-		var loaded = {
+		const loaded = {
 			type : 'loaded',
 			data : 'pølse',
 		};
@@ -133,7 +116,9 @@ library.component = library.component || {};
 			self.conn.send({ type : 'ready' });
 		}
 		
-		function onclose() { self.closeAllTheThings(); }
+		function onclose() {
+			self.closeAllTheThings();
+		}
 	}
 	
 	ns.Init.prototype.handleRestore = function( init ) {
@@ -146,6 +131,7 @@ library.component = library.component || {};
 	
 	ns.Init.prototype.closeAllTheThings = function() {
 		const self = this;
+		console.trace( 'Live.closeAllTheThings' );
 		if ( self.rtc )
 			self.rtc.close();
 		

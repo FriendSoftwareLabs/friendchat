@@ -1617,6 +1617,19 @@ library.contact = library.contact || {};
 		if ( !self.live )
 			return;
 		
+		if ( 'join' === event.type ) {
+			const peer = event.data;
+			console.log( 'peer.join  - peer', peer );
+			self.idc.get( peer.peerId )
+				.then( id => {
+					peer.identity = id;
+					self.live.send( event );
+				})
+				.catch( e => {});
+			
+			return;
+		}
+		
 		self.live.send( event );
 	}
 	
@@ -1974,6 +1987,7 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.handleCloseLive = function( liveId ) {
 		const self = this;
 		// close the things
+		console.log( 'handleCloseLive', liveId );
 		if ( !liveId ) {
 			clearView();
 			close();

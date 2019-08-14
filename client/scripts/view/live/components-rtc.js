@@ -30,7 +30,7 @@ library.rtc = library.rtc || {};
 		if ( !( this instanceof ns.SourceSelect ))
 			return new ns.SourceSelect( conf );
 		
-		var self = this;
+		const self = this;
 		self.view = conf.view;
 		self.onselect = conf.onselect;
 		self.selfie = conf.selfie;
@@ -42,24 +42,24 @@ library.rtc = library.rtc || {};
 	// pub
 	
 	ns.SourceSelect.prototype.show = function( currentDevices ) {
-		var self = this;
+		const self = this;
 		self.ui.show();
 		self.ui.showDevices( currentDevices );
 	}
 	
 	ns.SourceSelect.prototype.showGUMError = function( data ) {
-		var self = this;
+		const self = this;
 		self.ui.show();
 		self.ui.showGetUserMediaError( data );
 	}
 	
 	ns.SourceSelect.prototype.getSelected = function() {
-		var self = this;
+		const self = this;
 		return self.ui.getSelected();
 	}
 	
 	ns.SourceSelect.prototype.close = function() {
-		var self = this;
+		const self = this;
 		self.ui.close();
 		delete self.ui;
 		delete self.permissions;
@@ -70,12 +70,12 @@ library.rtc = library.rtc || {};
 	// priv
 	
 	ns.SourceSelect.prototype.init = function() {
-		var self = this;
+		const self = this;
 		var uiConf = {
 			permissions : self.permissions,
 			onselect : onselect,
 		};
-		self.ui = self.view.addUIPane( 'source-select', uiConf );
+		self.ui = self.view.addSettings( uiConf );
 		//self.ui.show();
 		
 		function onselect( devices ) {
@@ -92,7 +92,7 @@ library.rtc = library.rtc || {};
 		if ( !( this instanceof ns.MediaDevices ))
 			return new ns.MediaDevices();
 		
-		var self = this;
+		const self = this;
 		self.init();
 	}
 	
@@ -102,15 +102,15 @@ library.rtc = library.rtc || {};
 	[ device, ]
 	*/
 	ns.MediaDevices.prototype.get = function() {
-		var self = this;
+		const self = this;
 		return self.enumerate();
 	}
 	
 	/*
 	{
-		audioinput : { deviceId : device, }
+		audioinput  : { deviceId : device, }
 		audiooutput : { deviceId : device, }
-		videoinput : { deviceId : device, }
+		videoinput  : { deviceId : device, }
 		
 		!important : in case of no permission / blocked devices, only one device will
 		be returned for audio and video each. This is because they all have the same 
@@ -119,37 +119,42 @@ library.rtc = library.rtc || {};
 	}
 	*/
 	ns.MediaDevices.prototype.getByType = function() {
-		var self = this;
+		const self = this;
 		return self.enumerate( parseToType );
 		
 		function parseToType( arr ) {
-			let devObj = {
-				audioinput : {},
+			const devices = {
+				audioinput  : {},
 				audiooutput : {},
-				videoinput : {},
+				videoinput  : {},
 			};
 			
-			var audioNum = 1;
-			var videoNum = 1;
+			let audioNum = 1;
+			let videoNum = 1;
 			
 			arr.forEach( sort );
-			return devObj;
+			return devices;
 			
 			function sort( dev ) {
-				if ( !devObj[ dev.kind ] ) {
-					console.log( 'unknown device kind found', dev )
+				const kind = dev.kind;
+				if ( !devices[ kind ]) {
+					console.log( 'unknown device kind found', dev );
 					return;
 				}
 				
-				var lb = dev.kind.substr( 0, 1 ).toUpperCase() + dev.kind.substr( 1, dev.kind.length - 1 );
-				if( dev.kind == 'audioinput' )
-					lb += ' ' + audioNum++;
-				else if( dev.kind == 'videoinput' )
-					lb += ' ' + videoNum++;
+				setLabelExtra( kind, dev );
+				devices[ kind ][ dev.deviceId ] = dev;
 				
-				dev.labelOverride = lb;
-				
-				devObj[ dev.kind ][ dev.deviceId ] = dev;
+				function setLabelExtra( kind, dev ) {
+					let labelExtra = '';
+					if( 'audioinput' === kind )
+						labelExtra = 'Audio input ' + audioNum++;
+					
+					if( 'videoinput' === kind )
+						labelExtra = 'Video input ' + videoNum++;
+					
+					dev.labelExtra = labelExtra;
+				}
 			}
 		}
 	}
@@ -185,7 +190,7 @@ library.rtc = library.rtc || {};
 	
 	
 	ns.MediaDevices.prototype.init = function() {
-		var self = this;
+		const self = this;
 		//console.log( 'media sources init' );
 	}
 	
@@ -244,7 +249,7 @@ library.rtc = library.rtc || {};
 		if ( !self.source )
 			return;
 		
-		self.source.onVolume = onVolume;
+		self.onVId = self.source.on( 'volume', onVolume );
 		
 		function onVolume( current, overTime ) {
 			self.handleVolume( current, overTime );
@@ -329,7 +334,7 @@ library.rtc = library.rtc || {};
 	ns.IsSpeaking.prototype.releaseSource = function() {
 		const self = this;
 		if ( self.source )
-			self.source.onVolume = null;
+			self.source.release( self.onVId );
 		
 		delete self.source;
 	}
@@ -338,11 +343,10 @@ library.rtc = library.rtc || {};
 
 // Volume
 (function( ns, undefined ) {
-	ns.Volume = function( mediaStream, onVolume, onBuffer ) {
+	ns.Volume = function( mediaStream ) {
 		const self = this;
+		library.component.EventEmitter.call( self );
 		self.stream = mediaStream;
-		self.onVolume = onVolume;
-		self.onBuffer = onBuffer;
 		
 		self.actx = null;
 		self.volume = 0;
@@ -358,6 +362,9 @@ library.rtc = library.rtc || {};
 		self.init();
 	}
 	
+	ns.Volume.prototype =
+		Object.create( library.component.EventEmitter.prototype );
+	
 	// Public
 	
 	ns.Volume.prototype.start = function() {
@@ -371,25 +378,15 @@ library.rtc = library.rtc || {};
 			if ( !self.loop )
 				return;
 			
+			self.analyser.getByteTimeDomainData( self.timeBuffer );
 			setBuffer();
 			setVolume();
 			self.animFrame = window.requestAnimationFrame( update );
 			
 			function setBuffer() {
-				self.analyser.getByteTimeDomainData( self.timeBuffer );
-				if ( self.onBuffer )
-				{
-					setTimeout( emitBuffer, 0 );
-				}
-				
+				setTimeout( emitBuffer, 0 );
 				function emitBuffer() {
-					try
-					{
-						self.onBuffer( self.timeBuffer, self.volumeHistory );
-					}
-					catch( e )
-					{
-					}
+					self.emit( 'buffer', self.timeBuffer, self.volumeHistory );
 				}
 			}
 			
@@ -401,18 +398,17 @@ library.rtc = library.rtc || {};
 				let i = ( buf.length );
 				for( ; i-- ; ) {
 					let val = buf[ i ];
-					val = Math.abs( val - 128.0 );
+					val = Math.abs( val - 128 );
 					if ( max < val )
 						max = val;
 				}
 				
 				updateAverageVolume( max );
 				self.volume = max;
-				if ( self.onVolume )
-					setTimeout( emitVolume, 0 );
+				setTimeout( emitVolume, 0 );
 				
 				function emitVolume() {
-					self.onVolume( self.volumeAverage, self.averageOverTime );
+					self.emit( 'volume', self.volumeAverage, self.averageOverTime );
 				}
 			}
 			
@@ -427,10 +423,11 @@ library.rtc = library.rtc || {};
 				for( ; i-- ; )
 					total += vh[ i ];
 				
-				self.volumeAverage = Math.floor( total / vh.length );
+				const avg = ( total * 1.0 ) / vh.length;
+				self.volumeAverage = Math.ceil( avg );
 				self.averageOverTime.shift();
 				self.averageOverTime.push( self.volumeAverage );
-				self.votIndex++;
+				//self.votIndex++;
 			}
 		}
 	}
@@ -445,7 +442,8 @@ library.rtc = library.rtc || {};
 		self.animFrame = null;
 	}
 	
-	ns.Volume.prototype.release = function() {
+	ns.Volume.prototype.eventRelease = ns.Volume.prototype.release;
+	ns.Volume.prototype.release = function( eventId ) {
 		const self = this;
 		if ( self.actx )
 			self.actx.close();
@@ -455,6 +453,7 @@ library.rtc = library.rtc || {};
 		
 		delete self.actx;
 		delete self.source;
+		self.eventRelease( eventId );
 	}
 	
 	ns.Volume.prototype.close = function() {
@@ -462,8 +461,6 @@ library.rtc = library.rtc || {};
 		self.loop = false;
 		self.release();
 		
-		delete self.onVolume;
-		delete self.onBuffer;
 		delete self.analyser;
 		delete self.stream;
 	}
@@ -481,8 +478,6 @@ library.rtc = library.rtc || {};
 		self.timeBuffer = new Uint8Array( bufLen );
 		
 		self.source.connect( self.analyser );
-		//self.scriptBuf = new UIntArray(  ); 
-		
 		self.start();
 	}
 	
@@ -490,70 +485,72 @@ library.rtc = library.rtc || {};
 
 
 // AudioInputDetect
+/*
+	CONSTRUCTOR RETURNS A PROMISE
+*/
 (function( ns, undefined ) {
-	ns.AudioInputDetect = function( mediaStream, callback ) {
-		if ( !( this instanceof ns.AudioInputDetect ))
-			return new ns.AudioInputDetect( mediaStream, callback );
-		
-		var self = this;
+	ns.AudioInputDetect = function( mediaStream ) {
+		const self = this;
 		self.mediaStream = mediaStream;
-		self.callback = callback;
+		self.maxTryTime = 5000 * 3;
+		self.sampleInterval = 100;
 		
-		self.timeout = 5000 * 3;
-		self.step = 100;
-		
-		self.init();
+		return self.check();
 	}
 	
-	ns.AudioInputDetect.prototype.init = function() {
-		var self = this;
-		if ( !self.mediaStream ) {
-			self.done( 'No stream, mate..' );
-			return;
-		}
-		
-		var aTracks = self.mediaStream.getAudioTracks();
-		if ( !aTracks || !aTracks.length ) {
-			self.done( 'No audio track found' );
-			return;
-		}
-		
-		new window.Promise( detectAudio )
-			.then( success )
-			.catch( fail );
+	// Pricate
+	
+	ns.AudioInputDetect.prototype.check = function() {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			if ( !self.mediaStream ) {
+				reject( 'No stream, mate..' );
+				return;
+			}
+			
+			var aTracks = self.mediaStream.getAudioTracks();
+			if ( !aTracks || !aTracks.length ) {
+				reject( 'No audio track found in stream' );
+				return;
+			}
+			
+			new window.Promise( detectAudio )
+				.then( resolve )
+				.catch( reject );
+		});
 		
 		function detectAudio( resolve, reject ) {
 			if ( !window.AudioContext ) {
 				console.log( 'AudioInputDetect - no window.AudioContext, returning',
 					window.AudioContext );
-				resolve();
+				reject( 'ERR_NO_AUDIOCONTEXT' );
 				return;
 			}
 			
 			self.actx = new window.AudioContext();
-			var source = self.actx.createMediaStreamSource( self.mediaStream );
-			var analyser=  self.actx.createAnalyser();
+			const source = self.actx.createMediaStreamSource( self.mediaStream );
+			const analyser =  self.actx.createAnalyser();
 			source.connect( analyser );
 			analyser.fftSize = 64;
 			analyser.minDecibels = -200;
-			var buffLen = analyser.frequencyBinCount;
+			const buffLen = analyser.frequencyBinCount;
 			
-			var interval = window.setInterval( check, self.step );
-			var timeout = window.setTimeout( timeoutHit, self.timeout );
+			self.interval = window.setInterval( check, self.sampleInterval );
+			self.timeout = window.setTimeout( timeoutHit, self.maxTryTime );
 			
 			function check() {
-				if ( !interval )
+				if ( null == self.interval )
 					return;
 				
-				var sample =  new Uint8Array( buffLen );
+				const sample =  new Uint8Array( buffLen );
 				analyser.getByteTimeDomainData( sample );
 				if ( !sample || !sample.length ) {
-					resolve();
+					//resolve();
 					return;
 				}
 				
 				const baseline = sample[ 0 ];
-				var hasInput = null;
+				let hasInput = false;
 				if ( !sample.some ) { // f.e. older chrome and samsung internet
 									  // does not have .some here
 					hasInput = window.Array.prototype.some.call( sample, notFlat );
@@ -566,11 +563,8 @@ library.rtc = library.rtc || {};
 					return;
 				}
 				
-				window.clearInterval( interval );
-				window.clearTimeout( timeout );
-				interval = null;
-				timeout = null;
-				resolve();
+				clear();
+				resolve( true );
 				
 				function notFlat( value ) {
 					return !!( baseline !== value );
@@ -578,41 +572,32 @@ library.rtc = library.rtc || {};
 			}
 			
 			function timeoutHit() {
-				if ( !timeout )
+				if ( null == self.timeout )
 					return;
 				
-				if ( interval ) {
-					clearInterval( interval );
-					interval = null;
+				clear();
+				resolve( false );
+			}
+			
+			function clear() {
+				if ( null != self.actx ) {
+					try {
+						self.actx.close();
+					} catch( ex ) {}
 				}
 				
-				reject( 'No audio input detected' );
+				if ( null != self.interval )
+					window.clearInterval( self.interval );
+				
+				if ( null != self.timeout )
+					window.clearTimeout( self.timeout );
+				
+				delete self.actx;
+				delete self.mediaStream;
+				delete self.interval;
+				delete self.timeout;
 			}
 		}
-		
-		function success() {
-			self.done();
-		}
-		
-		function fail( err ) {
-			self.done( err );
-		}
-	}
-	
-	ns.AudioInputDetect.prototype.done = function( err ) {
-		var self = this;
-		if ( self.actx )
-			self.actx.close();
-		
-		delete self.actx;
-		
-		if ( !self.callback )
-			return;
-		
-		var callback = self.callback;
-		delete self.callback;
-		delete self.mediaStream;
-		callback( err );
 	}
 	
 })( library.rtc );
@@ -629,51 +614,73 @@ library.rtc = library.rtc || {};
 		self.init();
 	}
 	
-	ns.ScreenShare.prototype.getSourceId = function( callback ) {
+	ns.ScreenShare.prototype.getSourceId = function() {
 		const self = this;
-		const getSource = {
-			type : 'getSource'
-		};
-		self.sendToExt( getSource, sourceBack );
-		function sourceBack( res ) {
-			callback( res );
-		}
+		return new Promise(( resolve, reject ) => {
+			const getSource = {
+				type : 'getSource',
+				data : {
+					sources : [ 'screen', 'window' ],
+				},
+			};
+			self.sendToExt( getSource, sourceBack );
+			function sourceBack( res ) {
+				resolve( res );
+			}
+		});
 	}
 	
-	ns.ScreenShare.prototype.connect = function( callback ) {
+	ns.ScreenShare.prototype.connect = function() {
 		const self = this;
-		self.connectCallback = callback;
-		self.initInterval = setInterval( sendInit, 2000 );
-		function sendInit() {
-			if ( !self.initInterval )
-				return;
+		return new Promise(( resolve, reject ) => {
+			self.connectCallback = connectBack;
+			self.initInterval = window.setInterval( sendInit, 1500 );
+			function sendInit() {
+				if ( !self.initInterval )
+					return;
+				
+				self.sendInit();
+			}
 			
-			self.sendInit();
-		}
+			function connectBack( err, res ) {
+				if ( self.initInterval ) {
+					window.clearInterval( self.initInterval );
+					delete self.initInterval;
+				} else
+					return;
+				
+				if ( err )
+					reject( err );
+				else
+					resolve( res );
+			}
+		});
 	}
 	
-	ns.ScreenShare.prototype.checkIsAvailable = function( callback ) {
+	ns.ScreenShare.prototype.checkIsAvailable = function() {
 		const self = this;
-		const checkAvailable = {
-			type : 'ready',
-		};
-		self.sendToExt( checkAvailable, checkBack );
-		self.availableTimeout = setTimeout( checkTimeout, 2000 );
-		function checkBack( res ) {
-			if ( !self.availableTimeout )
-				return;
+		return new Promise(( resolve, reject ) => {
+			const checkAvailable = {
+				type : 'ready',
+			};
+			self.sendToExt( checkAvailable, checkBack );
+			self.availableTimeout = setTimeout( checkTimeout, 2000 );
+			function checkBack( res ) {
+				if ( !self.availableTimeout )
+					return;
+				
+				clearTimeout( self.availableTimeout );
+				delete self.availableTimeout;
+				
+				resolve( res );
+			}
 			
-			clearTimeout( self.availableTimeout );
-			delete self.availableTimeout;
-			
-			callback( null, res );
-		}
-		
-		function checkTimeout() {
-			console.log( 'no reply from ext' );
-			delete self.availableTimeout;
-			callback( null, false );
-		}
+			function checkTimeout() {
+				console.log( 'no reply from ext' );
+				delete self.availableTimeout;
+				resolve( false );
+			}
+		});
 	}
 	
 	// private
@@ -709,11 +716,6 @@ library.rtc = library.rtc || {};
 		};
 		self.sendToExt( init, initBack );
 		function initBack( res ) {
-			if ( self.initInterval ) {
-				clearInterval( self.initInterval );
-				delete self.initInterval;
-			}
-			
 			if ( !self.connectCallback )
 				return;
 			
@@ -757,24 +759,43 @@ library.rtc = library.rtc || {};
 
 // SESSION
 (function( ns, undefined ) {
-	ns.Session = function( conf ) {
+	ns.Session = function(
+		type,
+		isHost,
+		signal,
+		media,
+		rtcConf,
+		opts,
+		peerName
+	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		self.type = conf.type;
+		opts = opts || {};
+		self.type = type;
 		self.id = 'webrtc-' + self.type;
-		self.isHost = conf.isHost || false;
-		self.rtc = conf.rtc;
-		self.signal = conf.signal;
-		self.modifySDP = conf.modifySDP || null;
-		self.peerId = conf.peerId || null;
-		self.bundlePolicy = conf.bundlePolicy || null;
+		self.isHost = isHost || false;
+		self.signal = signal;
+		self.media = media;
+		self.rtc = rtcConf;
+		self.useDefaultCodec = opts.useDefaultCodec;
+		self.modifySDP = opts.modifySDP || null;
+		self.peerId = opts.peerId || null;
+		self.bundlePolicy = opts.bundlePolicy || null;
+		self.peerName = peerName || '';
+		self.log( 'Session', type );
 		
 		// peer connection, holder of streams
 		self.conn = null;
-		self.senders = [];
-		self.useOnTrack = false;
-		self.useOnStream = false;
+		self.state = 'nominal';
+		self.senders = {};
+		self.waiters = {
+			add    : {},
+			remove : {},
+		};
+		self.remoteTracks = {};
+		//self.useOnTrack = false;
+		//self.useOnStream = false;
 		
 		self.iceCandidates = [];
 		self.negotiationWaiting = false;
@@ -783,6 +804,10 @@ library.rtc = library.rtc || {};
 		self.denyNegotiation = false;
 		
 		self.iceTimeoutMs = 1000 * 6;
+		
+		self.statsRate = 1000 * 2;
+		self.statsInterval = null;
+		self.statsCache = {};
 		
 		// data channels
 		self.channels = {};
@@ -797,16 +822,122 @@ library.rtc = library.rtc || {};
 	
 	// Public
 	
+	ns.Session.prototype.addTrack = function( kind ) {
+		const self = this;
+		const track = self.getSourceTrack( kind );
+		if ( !self.checkReady()) {
+			self.queueAdd( kind );
+			return;
+		}
+		
+		if ( !track )
+			return 'ERR_NO_SOURCE_TRACK';
+		
+		if ( !self.conn )
+			return 'ERR_NO_CONN';
+		
+		if ( self.senders[ kind ])
+			return self.replaceTrack( kind );
+		
+		self.log( 'addTrack', track );
+		const sender = self.conn.addTrack( track );
+		self.senders[ kind ] = sender;
+	}
+	
+	ns.Session.prototype.replaceTrack = function( kind ) {
+		const self = this;
+		if ( !self.checkReady()) {
+			self.queueAdd( kind );
+			return;
+		}
+		
+		const track = self.getSourceTrack( kind );
+		self.log( 'Session.replaceTrack', track );
+		if ( !track )
+			return 'ERR_NO_SOURCE_TRACK';
+		
+		if ( !self.conn )
+			return 'ERR_NO_CONN';
+		
+		let sender = self.senders[ kind ];
+		self.log( 'Session.replaceTrack - things', {
+			track  : track,
+			kind   : kind,
+			sender : sender,
+			ss     : self.senders,
+		});
+		if ( !sender )
+			return 'ERR_NO_SENDER_OF_KIND';
+		
+		sender.replaceTrack( track )
+			.then( ok )
+			.catch( fail );
+		
+		function ok( e ) {
+			self.log( 'Session.replaceTrack - ok', e );
+		}
+		
+		function fail( err ) {
+			self.log( 'Session.replaceTrack - fail', err );
+		}
+	}
+	
+	ns.Session.prototype.renegotiateTrack = function( kind ) {
+		const self = this;
+		self.log( 'Session.renegotiateTrack', kind );
+		if ( !self.checkReady()) {
+			self.queueRenegotiate( kind );
+			return;
+		}
+		
+		self.queueAdd( kind );
+		self.removeTrack( kind );
+		
+		/*
+		//self.addTrack( track );
+		window.setTimeout( reAdd, 1000 );
+		
+		function reAdd() {
+			self.log( 'reAdd' );
+			self.addTrack( track );
+		}
+		*/
+	}
+	
+	ns.Session.prototype.removeTrack = function( kind ) {
+		const self = this;
+		if ( !self.checkReady()) {
+			self.queueRemove( kind );
+			return;
+		}
+		
+		if ( !self.conn )
+			return 'ERR_NO_CONN';
+		
+		const sender = self.senders[ kind ];
+		if ( !sender ) {
+			self.log( 'Session.removeTrack - no sender' );
+			self.checkWaiters();
+			return;
+		}
+		
+		self.log( 'Session.removeTrack', sender );
+		self.conn.removeTrack( sender );
+		delete self.senders[ kind ];
+	}
+	
 	ns.Session.prototype.addStream = function( stream ) {
-		var self = this;
+		const self = this;
 		self.log( 'Session.addStream', {
 			stream : stream,
-			conn : self.conn, 
+			conn   : self.conn, 
 		});
 		
 		if ( !self.conn ) {
-			self.log( 'addStream - OMG NO CONN DUDE; CHILL',
-				{ conn : self.conn, stream : stream });
+			self.log( 'addStream - OMG NO CONN DUDE; CHILL', {
+				conn   : self.conn,
+				stream : stream,
+			});
 			return;
 		}
 		
@@ -827,21 +958,14 @@ library.rtc = library.rtc || {};
 		done();
 		
 		function add( track ) {
-			/*
-			if (( track.kind !== self.type ) && ( 'stream' !== self.type )) {
-				self.log( '.addStream - dropped track for *reasons*',
-					{ t : self.type, k : track.kind });
-				return;
-			}
-			*/
-			
-			var sender = self.conn.addTrack( track, stream );
+			const sender = self.conn.addTrack( track, stream );
+			const params = sender.getParameters();
 			self.senders.push( sender );
 		}
 		
 		function legacyAddStream( stream ) {
 			self.log( 'Session.legacyAddStream', stream );
-			var localStreams = self.conn.getLocalStreams();
+			const localStreams = self.conn.getLocalStreams();
 			if ( localStreams && localStreams.length ) {
 				self.log( 'legacyAddStream - hasStream', {
 					conn : self.conn,
@@ -868,6 +992,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.createDataChannel = function( deviceId, opts ) {
 		const self = this;
+		console.trace( 'Session.createDataChannel' );
 		if ( !deviceId )
 			throw new Error( 'rtc.createDataChannel - no device id' );
 		
@@ -875,7 +1000,6 @@ library.rtc = library.rtc || {};
 		const conn = self.conn.createDataChannel( deviceId, opts );
 		const channel = self.setDataChannel( conn );
 		return channel;
-		
 	}
 	
 	ns.Session.prototype.closeDataChannel = function( deviceId ) {
@@ -903,6 +1027,34 @@ library.rtc = library.rtc || {};
 		return state;
 	}
 	
+	/* accepts:
+		'fast'
+		undefined
+	*/
+	ns.Session.prototype.setStatsRate = function( rate ) {
+		const self = this;
+		if ( 'fast' === rate )
+			self.statsRate = 250;
+		else
+			self.statsRate = 1000 * 2;
+	}
+	
+	ns.Session.prototype.setDefaultCodec = function( useDefault ) {
+		const self = this;
+		self.log( 'setDefaultCodec', {
+			use : useDefault,
+			curr : self.useDefaultCodec,
+		});
+		if ( !!useDefault === self.useDefaultCodec )
+			return;
+		
+		self.useDefaultCodec = !!useDefault;
+		if ( !self.senders.video )
+			return;
+		
+		self.renegotiateTrack( 'video' );
+	}
+	
 	ns.Session.prototype.close = function() {
 		const self = this;
 		self.log( 'session.close' );
@@ -911,6 +1063,7 @@ library.rtc = library.rtc || {};
 		
 		delete self.negotiationNeededWaiting;
 		
+		self.stopStats();
 		self.removeTracks();
 		self.setState( 'closed' );
 		self.release(); // event listeners
@@ -918,6 +1071,7 @@ library.rtc = library.rtc || {};
 		closeRTC();
 		closeSignal();
 		
+		delete self.media;
 		delete self.modifySDP;
 		delete self.rtc;
 		delete self.type;
@@ -948,6 +1102,7 @@ library.rtc = library.rtc || {};
 			
 			delete self.signal;
 		}
+		
 	}
 	
 	// Private
@@ -955,11 +1110,11 @@ library.rtc = library.rtc || {};
 	ns.Session.prototype.stateTypeMap = {
 		'routing'             : 'routing',
 		'nominal'             : 'nominal',
-		'host-negotiation'    : 'waiting',
-		'client-negotiation'  : 'waiting',
+		'host-negotiation'    : 'connecting',
+		'client-negotiation'  : 'connecting',
 		'negotiation-waiting' : 'waiting',
-		'ICE-gathering'       : 'waiting',
-		'ICE-checking'        : 'waiting',
+		'ICE-gathering'       : 'connecting',
+		'ICE-checking'        : 'connecting',
 		'ICE-disconnected'    : 'waiting',
 		'ICE-failed'          : 'error',
 		'closed'              : 'closed',
@@ -967,8 +1122,8 @@ library.rtc = library.rtc || {};
 	};
 	
 	ns.Session.prototype.init = function() {
-		var self = this;
-		self.log( 'init', self.isHost );
+		const self = this;
+		self.log( 'init - isHost', self.isHost );
 		self.signal = new library.component.EventNode(
 			self.id,
 			self.signal,
@@ -1020,8 +1175,7 @@ library.rtc = library.rtc || {};
 		self.conn.onremovestream = streamRemoved;
 		self.conn.onsignalingstatechange = signalStateChange;
 		
-		self.log( 'conn', self.conn );
-		self.log( 'conn.addTrack', self.conn.addTrack );
+		self.startStats();
 		
 		function connStateChange( e ) { self.connectionStateChange( e ); }
 		function streamAdded( e ) { self.streamAdded( e ); }
@@ -1037,59 +1191,282 @@ library.rtc = library.rtc || {};
 		function peerIdentity( e ) { self.log( 'NYI - peerIdentity event', e ); }
 		function streamRemoved( e ) { self.streamRemoved( e ); }
 		function signalStateChange( e ) { self.signalStateChange( e ); }
+	}
+	
+	ns.Session.prototype.getSourceTrack = function( kind ) {
+		const self = this;
+		let track = null;
+		if ( 'audio' === kind )
+			track = self.media.getAudioTracks()[ 0 ];
+		if ( 'video' === kind )
+			track = self.media.getVideoTracks()[ 0 ];
 		
-		//self.startStatSpam();
+		return track || null;
 	}
 	
 	ns.Session.prototype.renegotiate = function() {
-		var self = this;
+		const self = this;
 		//return;
 		self.log( 'Session.renegotiate - isHost', self.isHost );
 		self.tryNegotiation();
 	}
 	
-	ns.Session.prototype.startStatSpam = function() {
-		var self = this;
-		if ( !self.spam )
+	ns.Session.prototype.startStats = function() {
+		const self = this;
+		if ( !self.conn.getStats ) {
+			self.log( 'Session - getStats not supported' );
 			return;
+		}
 		
-		self.statInterval = window.setInterval( readStats, 20000 );
-		function readStats() {
-			if ( !self.conn ) {
-				window.clearInterval( self.statInterval );
-				return;
-			}
-			
-			if ( !self.conn.getStats ) {
-				console.log( 'rtc conn does not have .stats();')
-				return;
-			}
-			
-			self.conn.getStats()
-				.then( success )
-				.catch( error );
-				
-			function success( stats ) {
-				console.log( 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', stats );
-				//let res = stats.result();
-				stats.forEach( showAndTell );
-				function showAndTell( statItem ) {
-					console.log( '--', statItem );
-					/*
-					let names = statItem.names();
-					names.forEach( showStat );
-					function showStat( name ) {
-						console.log( name, statItem.stat( name ));
-					}
-					*/
-				}
-			}
-			function error( err ) { console.log( 'stats error', err ); }
+		self.statsInterval = window.setInterval( emitStats, self.statsRate );
+		function emitStats() {
+			self.emitStats();
 		}
 	}
 	
+	ns.Session.prototype.emitStats = function() {
+		const self = this;
+		if ( !self.conn ) {
+			done( 'ERR_NO_CONN' );
+			return;
+		}
+		
+		if ( 'nominal' !== self.state ) {
+			self.log( 'Session.emitStats - not ready', self.state );
+			return;
+		}
+		
+		self.conn.getStats()
+			.then( success )
+			.catch( error );
+		
+		function success( stats ) {
+			const byType = {};
+			const byId = {};
+			stats.forEach( item => { 
+				const type = item.type;
+				const id = item.id;
+				if ( !byType[ type ])
+					byType[ type ] = [];
+				
+				byType[ type ].push( item );
+				byId[ id ] = item;
+			});
+			/*
+			self.log( 'stats', {
+				byType : byType,
+				byId   : byId,
+			});
+			*/
+			const res = {};
+			const inn = byType[ 'inbound-rtp' ];
+			const out = byType[ 'outbound-rtp' ];
+			res.inbound = buildInnieStats( inn, byId );
+			//res.outbound = buildOutieStats( out, byId );
+			res.transport = buildTransport( byType, byId );
+			res.raw = {
+				byId   : byId,
+				byType : byType,
+			};
+			done( null, res );
+		}
+		
+		function buildInnieStats( rtps, things ) {
+			if ( !rtps || !things )
+				return null;
+			
+			const res = {};
+			rtps.forEach( rtp => {
+				const id = rtp.id;
+				const track = things[ rtp.trackId ];
+				if ( !track )
+					return;
+				
+				const trackId = track.trackIdentifier;
+				const kind = track.kind;
+				if ( self.remoteTracks[ kind ] !== trackId )
+					return;
+				
+				const cache = self.statsCache[ kind ];
+				if ( cache && cache.id !== trackId ) {
+					self.statsCache[ kind ] = null;
+					return;
+				}
+				
+				/*
+				self.log( 'innie', {
+					rtp   : rtp,
+					track : track,
+				});
+				*/
+				const type = rtp.mediaType;
+				const codec = things[ rtp.codecId ];
+				rtp.track = track;
+				rtp.codec = codec;
+				if ( 'audio' == type )
+					setAudioDeltas( rtp );
+				if ( 'video' == type )
+					setVideoDeltas( rtp );
+				
+				res[ type ] = rtp;
+			});
+			return res;
+			
+			function setAudioDeltas( a ) {
+				const c = self.statsCache.audio;
+				const t = a.track;
+				if ( c ) {
+					t.audioEnergy = t.totalAudioEnergy * 10000;
+					t.volumeLevel = +( t.audioLevel * 100 ).toFixed( 2 );
+					const time = a.timestamp;
+					const bps = getRate( c.time, time, c.bytesReceived, a.bytesReceived );
+					const pps = getRate( c.time, time, c.packetsReceived, a.packetsReceived );
+					const lps = getRate( c.time, time, c.packetsLost, a.packetsLost );
+					const eps = getRate( c.time, time, c.audioEnergy, t.audioEnergy );
+					a.byteRate = bps;
+					a.packetRate = pps;
+					a.packetLoss = lps;
+					t.energyRate = eps;
+				}
+				
+				self.statsCache.audio = {
+					id              : t.trackIdentifier,
+					time            : a.timestamp,
+					bytesReceived   : a.bytesReceived,
+					packetsReceived : a.packetsReceived,
+					packetsLost     : a.packetsLost,
+					audioEnergy     : t.audioEnergy,
+				};
+			}
+			
+			function setVideoDeltas( v ) {
+				const c = self.statsCache.video;
+				const t = v.track;
+				if ( c ) {
+					const time = v.timestamp;
+					const bps = getRate( c.time, time, c.bytesReceived, v.bytesReceived );
+					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived );
+					const lps = getRate( c.time, time, c.packetsLost, v.packetsLost );
+					v.byteRate = bps;
+					v.packetRate = pps;
+					v.packetLoss = lps;
+				}
+				
+				self.statsCache.video = {
+					id              : t.id,
+					time            : v.timestamp,
+					bytesReceived   : v.bytesReceived,
+					packetsReceived : v.packetsReceived,
+					packetsLost     : v.packetsLost,
+				};
+			}
+		}
+		
+		function buildTransport( byType, byId ) {
+			const t = byType.transport[ 0 ];
+			const p = byId[ t.selectedCandidatePairId ];
+			const local = byId[ p.localCandidateId ];
+			const remote = byId[ p.remoteCandidateId ];
+			t.pair = p;
+			t.local = local;
+			t.remote = remote;
+			const c = self.statsCache.transport;
+			if ( c ) {
+				const time = t.timestamp;
+				const sent = t.bytesSent;
+				const recv = t.bytesReceived;
+				t.sendRate = getRate( c.time, time, c.sent, sent );
+				t.receiveRate = getRate( c.time, time, c.recv, recv );
+				t.ping = Math.round(( p.totalRoundTripTime / p.responsesReceived ) * 1000 );
+			}
+			
+			self.statsCache.transport = {
+				id   : t.id,
+				sent : t.bytesSent,
+				recv : t.bytesReceived,
+				time : t.timestamp,
+			};
+			
+			return t;
+		}
+		
+		function getRate( t1, t2, b1, b2 ) {
+			if ( null == t1
+				|| null == t2
+				|| null == b1
+				|| null == b2
+			) {
+				return null;
+			}
+			
+			const dt = t2 - t1;
+			const db = b2 - b1;
+			
+			// things per second
+			const scale = 1000.0 / dt;
+			const tps = +( 1.0 * db * scale ).toFixed( 4 );
+			/*
+			self.log( 'rate', {
+				t1 : t1,
+				t2 : t2,
+				b1 : b1,
+				b2 : b2,
+				dt : dt,
+				db : db,
+				scale : scale,
+				tps : tps,
+			});
+			*/
+			//self.log( 'tps', tps );
+			return tps;
+		}
+		
+		function error( err ) {
+			self.log( 'error', err );
+			let str = null;
+			try {
+				str = err.message;
+			} catch( e ) {}
+			done( 'ERR_STATS_FAILED', str || err );
+		}
+		
+		function done( err , res ) {
+			if ( err ) {
+				emitError( err, res );
+				return;
+			}
+			
+			//self.log( 'stats', res );
+			const event = {
+				type : 'stats',
+				data : res,
+			};
+			self.emit( 'stats', event );
+		}
+		
+		function emitError( type, data ) {
+			const err = {
+				type : 'error',
+				data : {
+					type : type,
+					data : data,
+				},
+			};
+			self.emit( 'stats', err );
+		}
+	}
+	
+	ns.Session.prototype.stopStats = function() {
+		const self = this;
+		if ( null == self.statsInterval )
+			return;
+		
+		window.clearInterval( self.statsInterval );
+		self.statsInterval = null;
+	}
+	
 	ns.Session.prototype.connectionStateChange = function( e ) {
-		var self = this;
+		const self = this;
 		self.log( 'connectionStateChange', e );
 		self.setState();
 	}
@@ -1128,7 +1505,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.iceConnectionStateChange = function( e ) {
-		var self = this;
+		const self = this;
 		self.log( 'iceConnectionStateChange', {
 			iceConnState   : self.conn.iceConnectionState,
 			iceGatherState : self.conn.iceGatheringState,
@@ -1137,13 +1514,13 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.iceGatheringStateChange = function( e ) {
-		var self = this;
+		const self = this;
 		self.log( 'iceGatheringState', self.conn.iceGatheringState );
 		self.setState();
 	}
 	
 	ns.Session.prototype.negotiationNeeded = function( e ) {
-		var self = this;
+		const self = this;
 		self.log( 'negotiationNeeded', self.conn.signalingState );
 		self.negotiationIsNeeded = true;
 		if ( self.negotiationNeededWaiting )
@@ -1162,7 +1539,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.tryNegotiation = function() {
-		var self = this;
+		const self = this;
 		self.log( 'tryNegotiation' );
 		if ( self.switchingTracks ) {
 			self.log( 'tryNegotiation - switcingTracks' );
@@ -1193,7 +1570,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.requestNegotiation = function() {
-		var self = this;
+		const self = this;
 		if ( self.negotiationDeniedTimeout ) {
 			self.log( 'requestNegotiation - cancel, on denied timeout' );
 			return;
@@ -1211,13 +1588,13 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.negotiationAccepted = function() {
-		var self = this;
+		const self = this;
 		self.log( 'negotiation accepted, creating offer' );
 		self.createOffer();
 	}
 	
 	ns.Session.prototype.negotiationDenied = function() {
-		var self = this;
+		const self = this;
 		self.log( 'negotiation denied - retrying in a bit' );
 		if ( self.negotiationDeniedTimeout ) {
 			self.log( 'negotiationDenied - on timeout, abort' );
@@ -1232,7 +1609,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.createOffer = function() {
-		var self = this;
+		const self = this;
 		self.log( 'createOffer', self.conn.signalingState );
 		self.negotiationWaiting = false;
 		
@@ -1246,7 +1623,7 @@ library.rtc = library.rtc || {};
 			.then( offerReady )
 			.catch( offErr );
 		function offerReady( offer ) {
-			var sdp = null;
+			let sdp = null;
 			if ( self.modifySDP )
 				sdp = self.modifySDP( offer );
 			else
@@ -1261,8 +1638,16 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.setLocalDescription = function( desc ) {
-		var self = this;
-		self.log( 'setLocalDescription' );
+		const self = this;
+		self.log( 'setLocalDescription - useDefaultCodec?', self.useDefaultCodec );
+		if ( !self.useDefaultCodec ) {
+			try {
+				self.reorderCodecs( desc );
+			} catch( ex ) {
+				self.log( 'ex', ex );
+			}
+		}
+		
 		self.logSDP( desc, 'local' );
 		self.conn.setLocalDescription( desc )
 			.then( sendDesc )
@@ -1276,8 +1661,88 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
+	ns.Session.prototype.reorderCodecs = function( desc ) {
+		const self = this;
+		const lines = desc.sdp.split( '\n' );
+		const mVideoRX = RegExp( 'm=video[^A-Z]+(\\s[\\/A-Z]+\\s)([\\s0-9]+)', '' );
+		const codecRX = RegExp( 'a=rtpmap:([0-9]+)\\s(.*)\\/' );
+		let mVideo = null;
+		let mVideoLine = null;
+		let mVideoProtocol = null;
+		let mVideoCodecs = null;
+		const codecIds = [];
+		lines.some( findMVideo );
+		findCodec( 'H264', lines );
+		findCodec( 'VP9', lines );
+		
+		/*
+		self.log( 'the things', {
+			mVideo : mVideo,
+			mVideoLine : mVideoLine,
+			mVideoProtocol : mVideoProtocol,
+			mVideoCodecs : mVideoCodecs,
+			codecIds : codecIds,
+		});
+		*/
+		
+		if ( !codecIds.length ) {
+			self.log( 'Session.reordercodec - no relevant codecs found' );
+			return 
+		}
+		
+		mVideoCodecs = reorder( mVideoCodecs, codecIds );
+		const pre = mVideo.split( mVideoProtocol )[ 0 ];
+		mVideo = [ pre, mVideoProtocol, mVideoCodecs ].join( '' );
+		lines[ mVideoLine ] = mVideo;
+		desc.sdp = lines.join( '\n' );
+		
+		function findMVideo( line, index ) {
+			if ( !line )
+				return false;
+			
+			const match = line.match( mVideoRX );
+			if ( null == match )
+				return false;
+			
+			mVideo = line;
+			mVideoLine = index;
+			mVideoProtocol = match[ 1 ];
+			mVideoCodecs = match[ 2 ];
+			return true;
+		}
+		
+		function findCodec( str, lines ) {
+			lines.forEach( line => {
+				if ( !line )
+					return;
+				
+				const match = line.match( codecRX );
+				if ( !match )
+					return;
+				
+				const codec = match[ 2 ];
+				if ( str !== codec.toUpperCase())
+					return;
+				
+				const codecId = match[ 1 ];
+				codecIds.push( codecId );
+			});
+		}
+		
+		function reorder( current, toFront ) {
+			let cIds = current.split( ' ' );
+			cIds = cIds.filter( cId => {
+				return !toFront.some( fId => fId === cId );
+			});
+			
+			const reordered = toFront.concat( cIds );
+			return reordered.join( ' ' );
+		}
+		
+	}
+	
 	ns.Session.prototype.toggleSDPActivePassive = function( sdpObj ) {
-		var self = this;
+		const self = this;
 		self.log( 'toggleSDPActivePassive', sdpObj );
 		var sdp = sdpObj.sdp;
 		var match = sdp.match( /(a=setup:(active))|(a=setup:(passive))/ );
@@ -1299,9 +1764,9 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
-	ns.Session.prototype.logSDP = function( sdp, type ) {
-		var self = this;
-		if ( 'local' !== type  ) {
+	ns.Session.prototype.logSDP = function( sdp, side ) {
+		const self = this;
+		if ( 'local' !== side  ) {
 			var localSdp = self.conn.localDescription;
 			if ( localSdp && !!localSdp.type )
 				self.logSDP( localSdp, 'local' );
@@ -1310,21 +1775,38 @@ library.rtc = library.rtc || {};
 		if ( !sdp || !sdp.sdp )
 			return;
 		
-		var match = sdp.sdp.match( /a=setup:.*/ );
+		/*
+		var match = sdp.sdp.match( /a=setup:.*    / );
 		var asetup = '';
 		if ( match )
 			asetup = match[ 0 ];
+		*/
 		
+		let tracks = getTracks( sdp.sdp );
 		self.log( 'SDP', { 
-			'type'         : type,
+			'side'         : side,
 			'signal state' : self.conn.signalingState,
-			'a=setup:'     : asetup,
-			'sdp'          : sdp,
+			//'a=setup:'     : asetup,
+			'sdp'          : sdp.sdp,
+			'type'         : sdp.type,
+			'tracks'       : tracks,
 		});
+		
+		function getTracks( sdp ) {
+			const tracks = [];
+			const aM = sdp.match( /(.*m=audio.*)/ );
+			const vM = sdp.match( /(.*m=video.*)/ );
+			if ( aM )
+				tracks.push( aM[ 0 ]);
+			if ( vM )
+				tracks.push( vM[ 0 ]);
+			
+			return tracks;
+		}
 	}
 	
 	ns.Session.prototype.sendDescription = function() {
-		var self = this;
+		const self = this;
 		self.log( 'sendDescription', self.conn.signalingState );
 		if ( self.inOfferProcess ) {
 			self.log( 'inOfferProcess.true - not sending SDP', self.conn.signalingState );
@@ -1343,7 +1825,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.sdpReceived = function( sdp ) {
-		var self = this;
+		const self = this;
 		self.log( 'sdpReceived', sdp );
 		if ( sdp.type === 'offer' ) {
 			self.handleRemoteOffer( sdp );
@@ -1359,7 +1841,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.handleRemoteOffer = function( sdp ) {
-		var self = this;
+		const self = this;
 		self.logSDP( sdp, 'remote offer' );
 		
 		if (
@@ -1397,8 +1879,8 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.handleRemoteAnswer = function( sdp ) {
-		var self = this;
-		var state = self.conn.signalingState;
+		const self = this;
+		const state = self.conn.signalingState;
 		self.logSDP( sdp, 'remote answer' );
 		if (
 			!(( state === 'have-local-offer' )
@@ -1412,16 +1894,17 @@ library.rtc = library.rtc || {};
 		}
 		
 		self.inOfferProcess = false;
-		var remoteAnswer = new window.RTCSessionDescription( sdp );
+		const remoteAnswer = new window.RTCSessionDescription( sdp );
 		self.conn.setRemoteDescription( remoteAnswer )
 			.then( yep )
 			.catch( nope );
-			
+		
 		function yep( res ) {
 			self.log( 'handleRemoteAnswer - remote answer set', res );
 			self.emitRouting();
 			if ( self.isHost )
 				self.denyNegotiation = false;
+			
 		}
 		
 		function nope( err ) {
@@ -1436,12 +1919,11 @@ library.rtc = library.rtc || {};
 			} else {
 				self.emit( 'error', err );
 			}
-			
 		}
 	}
 	
 	ns.Session.prototype.rollbackSignalingState = function() {
-		var self = this;
+		const self = this;
 		var opt = {
 			type : 'rollback',
 			sdp : null,
@@ -1454,16 +1936,16 @@ library.rtc = library.rtc || {};
 			.catch( oopsie );
 		
 		function goodie() {
-			console.log( 'rollback done' );
+			self.log( 'rollback done' );
 		}
 		
 		function oopsie( err ) {
-			console.log( 'trollback failed', err );
+			self.log( 'trollback failed', err );
 		}
 	}
 	
 	ns.Session.prototype.createAnswer = function() {
-		var self = this;
+		const self = this;
 		self.log( 'createAnwer' );
 		self.conn.createAnswer()
 			.then( success )
@@ -1486,7 +1968,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.iceCandidateReceived = function( candidate ) {
-		var self = this;
+		const self = this;
 		self.log( 'iceCandidateReceived', candidate );
 		if ( !candidate ) {
 			self.log( 'iceCandidateReceived - null candidate\
@@ -1508,7 +1990,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.handleNegotiate = function( data ) {
-		var self = this;
+		const self = this;
 		self.log( 'handleNegotiate', data );
 		if ( data === 'request' ) {
 			self.answerNegotiation();
@@ -1529,7 +2011,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.answerNegotiation = function() {
-		var self = this;
+		const self = this;
 		if ( allowNegotiation() )
 			accept();
 		else
@@ -1578,19 +2060,37 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.trackAdded = function( data ) {
-		var self = this;
+		const self = this;
 		self.log( 'trackAdded', data );
+		self.log( 'trackAdded', data );
+		/*
 		if ( self.useOnStream )
 			return;
-		
+		*/
 		const track = data.track;
-		self.useOnTrack = true;
+		//self.useOnTrack = true;
 		self.log( 'emitTrack', { type : self.type, track : track });
-		self.emit( 'track', track );
+		const tId = track.id;
+		const type = track.kind;
+		self.remoteTracks[ type ] = tId;
+		self.emit( 'track-add', track );
+		track.onended = onEnded;
+		track.addEventListener( 'ended', onEnded );
+		
+		function onEnded( e ) {
+			self.log( 'track ended', {
+				track : track,
+				e     : e,
+			});
+			self.emit( 'track-remove', type );
+		}
 	}
 	
 	ns.Session.prototype.streamAdded = function( e ) {
-		var self = this;
+		const self = this;
+		self.log( 'streamAdded - deprecated', e );
+				
+		/*
 		self.log( 'streamAdded', e );
 		if ( self.useOnTrack )
 			return;
@@ -1615,6 +2115,7 @@ library.rtc = library.rtc || {};
 			self.useOnStream = true;
 			self.emitStream( stream );
 		}
+		*/
 	}
 	
 	ns.Session.prototype.emitStream = function( stream ) {
@@ -1626,7 +2127,7 @@ library.rtc = library.rtc || {};
 	ns.Session.prototype.emitRouting = function() {
 		const self = this;
 		const routing = self.getRouting();
-		self.setState( 'routing', routing );
+		self.emitState( 'routing', routing );
 	}
 	
 	ns.Session.prototype.getRouting = function() {
@@ -1750,7 +2251,8 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.streamRemoved = function( stream ) {
-		var self = this;
+		const self = this;
+		self.log( 'streamRemoved', stream );
 		var local = self.conn.getLocalStreams();
 		var remote = self.conn.getRemoteStreams();
 		self.log( 'streamRemoved', {
@@ -1761,7 +2263,7 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.noStream = function() {
-		var self = this;
+		const self = this;
 		self.log( 'conn.noStream' );
 		self.emit( 'nostream' );
 	}
@@ -1792,9 +2294,9 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.signalStateChange = function( e ) {
-		var self = this;
-		self.setState();
+		const self = this;
 		self.log( 'signalStateChange', self.conn.signalingState );
+		self.setState();
 		if ( 'stable' !== self.conn.signalingState ) {
 			return;
 		}
@@ -1804,15 +2306,15 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.getState = function() {
-		var self = this;
-		var iceConn = nominalize( self.conn.iceConnectionState, 'ICE' );
-		var iceGather = nominalize( self.conn.iceGatheringState, 'ICE' );
-		var signal = nominalize( self.conn.signalingState, 'conn' );
+		const self = this;
+		const iceConn = nominalize( self.conn.iceConnectionState, 'ICE' );
+		const iceGather = nominalize( self.conn.iceGatheringState, 'ICE' );
+		const signal = nominalize( self.conn.signalingState, 'conn' );
 		
 		self.log( 'getState', {
-			iceConn : self.conn.iceConnectionState,
+			iceConn   : self.conn.iceConnectionState,
 			iceGather : self.conn.iceGatheringState,
-			signal : self.conn.signalingState,
+			signal    : self.conn.signalingState,
 		});
 		
 		if ( 'nominal' !== iceConn )
@@ -1839,6 +2341,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.setState = function( state, data ) {
 		const self = this;
+		self.log( 'setState', state );
 		if ( !self.conn )
 			state = 'closed';
 		
@@ -1858,11 +2361,23 @@ library.rtc = library.rtc || {};
 			type = 'waiting';
 		}
 		
+		if ( self.state === type )
+			return;
+		
+		self.state = type;
+		self.emitState( type, data );
+		if ( 'nominal' === self.state )
+			self.checkWaiters();
+		//self.emit( 'state', stateEvent );
+	}
+	
+	ns.Session.prototype.emitState = function( type, data ) {
+		const self = this;
 		data = data || null;
-		var stateEvent = {
+		const stateEvent = {
 			type : type,
 			data : {
-				state : state,
+				state : type,
 				data : data,
 			},
 		};
@@ -1870,19 +2385,79 @@ library.rtc = library.rtc || {};
 		self.emit( 'state', stateEvent );
 	}
 	
+	ns.Session.prototype.checkReady = function() {
+		const self = this;
+		const isReady = ( 'nominal' === self.state );
+		self.log( 'checkReady', isReady );
+		return isReady;
+	}
+	
+	ns.Session.prototype.checkWaiters = function() {
+		const self = this;
+		self.log( 'checkWaiters', {
+			state   : self.state,
+			waiters : self.waiters,
+		});
+		
+		const rm = self.waiters.remove;
+		if ( rm.audio || rm.video ) {
+			if ( rm.audio ) {
+				rm.audio = false;
+				self.removeTrack( 'audio' );
+			}
+			if ( rm.video ) {
+				rm.video = false;
+				self.removeTrack( 'video' );
+			}
+			
+			return;
+		}
+		
+		const add = self.waiters.add;
+		if ( add.audio ) {
+			add.audio = false;
+			self.addTrack( 'audio' );
+		}
+		if ( add.video ) {
+			add.video = false;
+			self.addTrack( 'video' );
+		}
+	}
+	
+	ns.Session.prototype.queueAdd = function( kind ) {
+		const self = this;
+		self.log( 'sess.queueAdd', kind );
+		self.waiters.add[ kind ] = true;
+	}
+	
+	ns.Session.prototype.queueRenegotiate = function( kind ) {
+		const self = this;
+		self.log( 'queueRenegottiate', kind  );
+		self.queueRemove( kind );
+		self.queueAdd( kind );
+	}
+	
+	ns.Session.prototype.queueRemove = function( kind ) {
+		const self = this;
+		self.log( 'Sess.queueRemove', kind );
+		self.waiters.remove[ kind ] = true;
+	}
+	
 	ns.Session.prototype.removeTracks = function() {
-		var self = this;
+		const self = this;
 		self.log( 'removeTracks', self.senders );
-		self.senders.forEach( remove );
-		self.senders = [];
-		function remove( sender ) {
+		const ids = Object.keys( self.senders );
+		ids.forEach( remove );
+		self.senders = {};
+		function remove( sId ) {
+			const sender = self.senders[ sId ];
 			self.log( 'removeing tracks', sender );
 			self.conn.removeTrack( sender );
 		}
 	}
 	
 	ns.Session.prototype.clearConn = function() {
-		var self = this;
+		const self = this;
 		if ( !self.conn )
 			return;
 		
@@ -1903,18 +2478,21 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.log = function( string, value ) {
-		var self = this;
+		const self = this;
 		if ( !self.spam )
 			return;
+		
+		if ( self.peerName )
+			string = self.peerName + ': ' + string;
 		
 		if ( self.isHost )
 			string = 'rtc.host : ' + string;
 		else
 			string = 'rtc.client : ' + string;
 		
-		var time = new window.Date();
-		var sec = time.getSeconds();
-		var ms = time.getMilliseconds();
+		const time = new window.Date();
+		let sec = time.getSeconds();
+		let ms = time.getMilliseconds();
 		sec = pad( sec, 2 );
 		ms = pad( ms, 3 );
 		string = ':' + sec + '.' + ms + ' ' + string;
@@ -1923,18 +2501,18 @@ library.rtc = library.rtc || {};
 		function pad( str, len ) {
 			str = str.toString();
 			len = len || 2;
-			var pd = 3 - str.length;
+			const pd = 3 - str.length;
 			if ( !pd )
 				return str;
 			
-			var arr = new Array( pd );
+			const arr = new Array( pd );
 			arr.push( str );
 			return arr.join( '0' );
 		}
 	}
 	
 	ns.Session.prototype.err = function( source, e ) {
-		var self = this;
+		const self = this;
 		console.log( source, {
 			error : e,
 			host : self.isHost.toString(),
@@ -2084,25 +2662,24 @@ library.rtc = library.rtc || {};
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
-		
 		self.permissions = permissions || {
 			audio : true,
 			video : true,
 		};
 		self.preferedDevices = preferedDevices || {};
-		self.quality = quality;
 		self.devices = deviceSource;
 		if ( !self.devices )
 			throw new Error( 'Media - no device source' );
 		
 		self.mediaConf = {};
 		self.currentDevices = {};
+		self.lastAvailable = null;
 		self.isScreenSharing = false;
 		self.setupRunning = false;
 		self.recycle = false;
 		self.giveUp = false;
 		
-		self.init();
+		self.init( quality );
 	}
 	
 	ns.Media.prototype = Object.create( library.component.EventEmitter.prototype );
@@ -2115,6 +2692,7 @@ library.rtc = library.rtc || {};
 		
 		delete self.permissions;
 		delete self.preferedDevices;
+		delete self.lastAvailable;
 		delete self.quality;
 		delete self.deviceSource;
 	}
@@ -2125,49 +2703,20 @@ library.rtc = library.rtc || {};
 		if ( null != permissions )
 			self.permissions = permissions;
 		
-		if ( null != preferedDevices )
-			self.preferedDevices = preferedDevices;
-		
+		self.updatePreferedDevices( preferedDevices );
 		let send = self.permissions.send;
 		if ( !send || ( !send.audio && !send.video )) {
-			self.clear();
+			self.updateMedia();
 			return;
 		}
 		
 		self.devices.getByType()
-		.then( devsBack )
-		.catch( deviceError );
+			.then( devsBack )
+			.catch( deviceError );
 		
 		function devsBack( available ) {
-			var kinds = {};
-			
-			// Force labels with label overrides!
-			for( var a in available )
-			{
-				for( var a2 in available[a] )
-				{
-					var knd = false;
-					for( var b in available[a][a2] )
-					{
-						if( b == 'kind' )
-						{
-							var str = available[a][a2][b];
-							if( !kinds[ str ] )
-							{
-								kinds[ str ] = 1;
-							}
-							knd = str.substr( 0, 1 ).toUpperCase() + str.substr( 1, str.length - 1 ) + ' ' + kinds[ str ]++;
-						}
-					}
-					for( var b in available[a][a2] )
-					{
-						if( b == 'label' )
-						{
-							available[a][a2][b + 'Override'] = knd;
-						}
-					}
-				}
-			}
+			const kinds = {};
+			self.lastAvailable = available;
 			setupConf( available );
 		}
 		
@@ -2177,10 +2726,27 @@ library.rtc = library.rtc || {};
 		}
 		
 		function setupConf( availableDevices ) {
+			const send = self.permissions.send;
 			let conf = {
-				audio : send.audio,
-				video : send.video,
+				audio : !!send.audio,
+				video : !!send.video,
 			};
+			
+			let current = null;
+			if ( self.media ) {
+				current = self.media.getTracks();
+				current.forEach( t => {
+					const ts = t.getSettings();
+					const type = t.kind;
+					const devType = type + 'input';
+					const pref = self.preferedDevices[ devType ];
+					if ( null == pref )
+						delete conf[ type ];
+					
+					if ( ts.deviceId === pref.deviceId )
+						delete conf[ type ];
+				});
+			}
 			
 			// add quality constraints
 			if ( conf.audio )
@@ -2192,13 +2758,18 @@ library.rtc = library.rtc || {};
 			conf = self.setDevice( 'audio', availableDevices, conf );
 			conf = self.setDevice( 'video', availableDevices, conf );
 			
+			if ( !conf.audio && !conf.video ) {
+				self.updateMedia();
+				return;
+			}
+			
 			self.getMedia( conf )
 				.then( mediaBack )
 				.catch( mediaError );
 			
 			function mediaBack( media ) {
 				self.setCurrentDevices( media );
-				self.setMedia( media );
+				self.updateMedia( media );
 			}
 			
 			function mediaError( err ) {
@@ -2210,39 +2781,51 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.shareScreen = function( screenId ) {
 		const self = this;
-		let shareMedia = new window.MediaStream();
+		const shareMedia = new window.MediaStream();
 		getScreen( screenId );
-
+		
 		function getScreen( screenId ) {
-			let conf = {
+			const shareConf = self.mediaConf.share || {};
+			const mandatory = {
+				chromeMediaSource   : 'desktop',
+				chromeMediaSourceId : screenId,
+			};
+			if ( shareConf.frameRate )
+				mandatory.maxFrameRate = shareConf.frameRate;
+			
+			const conf = {
 				audio : false,
 				video : {
-					mandatory : {
-						chromeMediaSource : 'desktop',
-						chromeMediaSourceId : screenId,
-					},
+					mandatory : mandatory,
 				},
 			};
 			self.getMedia( conf, true )
 				.then( screenBack )
 				.catch( screenFail );
-				
+			
 			function screenBack( media ) {
-				let tracks = media.getVideoTracks();
-				shareMedia.addTrack( tracks[ 0 ]);
+				const track = media.getVideoTracks()[ 0 ];
+				//self.shareSourceId = screenId;
+				self.shareVTrackId = track.id;
+				shareMedia.addTrack( track );
 				addAudio();
 			}
 			
 			function screenFail( err ) {
-				console.log()
+				console.log( 'Media.shareScreen - share track failed', err );
 			}
 		}
 		
 		function addAudio() {
+			if ( !needAudio()) {
+				self.updateMedia( shareMedia );
+				return;
+			}
+			
 			self.devices.getByType()
 				.then( devsBack )
 				.catch( devsFail );
-				
+			
 			function devsFail( err ) {
 				console.log( 'Media.shareScreen - addAudio devsFail', err );
 				self.emitError( 'ERR_GET_DEVICES' );
@@ -2254,6 +2837,8 @@ library.rtc = library.rtc || {};
 					video : false,
 				};
 				conf = self.setDevice( 'audio', available, conf );
+				
+				self.clearMedia();
 				self.getMedia( conf )
 					.then( audioBack )
 					.catch( audioFail );
@@ -2261,7 +2846,7 @@ library.rtc = library.rtc || {};
 				function audioBack( media ) {
 					let tracks = media.getAudioTracks();
 					shareMedia.addTrack( tracks[ 0 ]);
-					self.setMedia( shareMedia );
+					self.updateMedia( shareMedia );
 				}
 				
 				function audioFail( err ) {
@@ -2269,6 +2854,21 @@ library.rtc = library.rtc || {};
 					self.emitError( 'ERR_MEDIA_FAILED' );
 				}
 			}
+		}
+		
+		function needAudio() {
+			const send = self.permissions.send;
+			if ( !send.audio )
+				return false;
+			
+			if ( !self.media )
+				return true;
+			
+			const aT = self.media.getAudioTracks()[ 0 ];
+			if ( !aT )
+				return true;
+			else
+				return false;
 		}
 	}
 	
@@ -2298,43 +2898,59 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.setQuality = function( quality ) {
 		const self = this;
-		// defaults
-		quality = quality || {};
-		quality.level = quality.level || 'normal';
-		quality.scale = quality.scale || 1;
-		
-		// sameness check
-		self.quality = self.quality || {};
-		if (( self.quality.level === quality.level ) &&
-			( self.quality.scale === quality.scale )
-		) {
-			return null;
-		}
-		
-		self.quality.level = quality.level;
-		self.quality.scale = quality.scale;
-		self.setVideoQuality();
-		return self.quality;
+		return new Promise(( resolve, reject ) => {
+			// defaults
+			quality = quality || {};
+			quality.level = quality.level || 'normal';
+			quality.scale = quality.scale || 1;
+			
+			// sameness check
+			self.quality = self.quality || {};
+			if (( self.quality.level === quality.level ) &&
+				( self.quality.scale === quality.scale )
+			) {
+				resolve( null );
+				return;
+			}
+			
+			self.quality.level = quality.level;
+			self.quality.scale = quality.scale;
+			self.setVideoQuality();
+			self.setShareQuality();
+			self.reconstrainTracks()
+				.then( constrainOk )
+				.catch( constrainFail );
+			
+			function constrainOk() {
+				resolve( self.quality );
+			}
+			
+			function constrainFail( err ) {
+				console.log( 'Media.setQuality - constrainFail', err );
+				reject( self.quality );
+			}
+		});
 	}
 	
 	ns.Media.prototype.clear = function() {
 		const self = this;
-		self.cleanup();
+		self.clearMedia();
 		self.emit( 'media', null );
 		
 	}
 	
 	// Private
 	
-	ns.Media.prototype.init = function() {
+	ns.Media.prototype.init = function( quality ) {
 		const self = this;
+		self.media = new window.MediaStream();
 		// lowest quality first or things will break
 		self.videoQualityKeys = [ 'width', 'height', 'frameRate' ];
 		self.videoQualityMap = {
 			'low'     : [ 256, 144, 4 ],
-			'medium'  : [ 640, 360, 24 ],
-			'normal'  : [ 1280, 720, 24 ],
-			'default' : [],
+			'medium'  : [ 640, 480, 24 ],
+			'normal'  : [ 1280, 720, 30 ],
+			'default' : [ 1920, 1080, 60 ],
 		};
 		
 		self.opusQualityKeys = [ 'maxcodecaudiobandwidth', 'maxaveragebitrate', 'usedtx' ];
@@ -2345,9 +2961,21 @@ library.rtc = library.rtc || {};
 			'default' : [ '48000', '32', null ],
 		};
 		
+		self.shareQualityKeys = [ 'frameRate' ];
+		self.shareQualityMap = {
+			'low'     : [ 1 ],
+			'medium'  : [ 5 ],
+			'normal'  : [ 30 ],
+			'default' : [ 60 ],
+		};
+		
 		self.mediaConf.audio = {
 			"echoCancellation" : true,
 		};
+		
+		self.setQuality( quality )
+			.then( ok => {})
+			.catch( err => {});
 	}
 	
 	ns.Media.prototype.emitError = function( err ) {
@@ -2359,8 +2987,9 @@ library.rtc = library.rtc || {};
 		const self = this;
 		const level = self.quality.level;
 		const scale = self.quality.scale;
-		let arr = self.videoQualityMap[ level ];
-		if ( !arr || !arr.length ) {
+		const arr = self.videoQualityMap[ level ];
+		const defaults = self.videoQualityMap[ 'default' ];
+		if ( !arr ) {
 			console.log( 'setVideoQuality - invalid level or missing in map', {
 				level     : level,
 				available : self.videoQualityMap,
@@ -2369,18 +2998,106 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		let video = {};
+		const video = {};
 		self.videoQualityKeys.forEach( add );
+		self.mediaConf.video = video;
+		
 		function add( key, index ) {
-			let value = arr[ index ];
-			if ( 'frameRate' !== key )
-				value = value * scale;
+			const value = arr[ index ];
+			const def = defaults[ index ];
+			if ( 'frameRate' === key ) {
+				video.frameRate = {
+					ideal : value || def,
+					max   : value || def,
+				};
+			}
 			
-			if ( null != value )
-				video[ key ] = value;
+			if ( 'width' === key ) {
+				video.width = {
+					ideal : value || def,
+				}
+			}
+			
+			if ( 'height' === key ) {
+				video.height = {
+					ideal : value || def,
+				}
+			}
+		}
+	}
+	
+	ns.Media.prototype.setShareQuality = function() {
+		const self = this;
+		const level = self.quality.level;
+		let arr = self.shareQualityMap[ level ];
+		if ( !arr )
+			return;
+		
+		const share = {};
+		self.shareQualityKeys.forEach(( key, index ) => {
+			let value = arr[ index ];
+			if ( null == value )
+				value = 60;
+			
+			share[ key ] = value;
+		});
+		self.mediaConf.share = share;
+	}
+	
+	ns.Media.prototype.reconstrainTracks = function() {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			if ( !self.media ) {
+				console.log( 'no media, lets reject' );
+				reject( 'ERR_NO_MEDIA' );
+				return;
+			}
+			
+			const vTracks = self.media.getVideoTracks();
+			Promise.all( vTracks.map( constrain ))
+				.then( resolve )
+				.catch( reject );
+		});
+		
+		function constrain( track ) {
+			if ( self.shareVTrackId
+				&& track.id === self.shareVTrackId
+			) {
+				return constrainScreenShare( track );
+			} else
+				return constrainUserMedia( track );
 		}
 		
-		self.mediaConf.video = video;
+		function constrainScreenShare( track ) {
+			const q = self.shareQualityMap[ self.quality.level ];
+			const frameRate = q[ 0 ] || 120;
+			const conf = {
+			};
+			
+			conf.frameRate = {
+				ideal : frameRate,
+				max   : frameRate,
+			};
+			return track.applyConstraints( conf );
+		}
+		
+		function constrainUserMedia( track ) {
+			const conf = self.mediaConf.video;
+			return track.applyConstraints( conf );
+		}
+	}
+	
+	ns.Media.prototype.updatePreferedDevices = function( prefDev ) {
+		const self = this;
+		if ( null == prefDev )
+			return;
+		
+		if ( prefDev.audioinput )
+			self.preferedDevices.audioinput = prefDev.audioinput;
+		
+		if ( prefDev.videoinput )
+			self.preferedDevices.videoinput = prefDev.videoinput;
+		
 	}
 	
 	ns.Media.prototype.setDevice = function( type, available, conf ) {
@@ -2389,34 +3106,26 @@ library.rtc = library.rtc || {};
 			return conf;
 		
 		const deviceType = type + 'input';
-		let deviceId = self.preferedDevices[ deviceType ];
-		if ( !deviceId ) {
-			console.log( 'Media.setDevice', {
-				type : type,
-				avai : available,
-				pref : self.preferedDevices,
-				curr : self.currentDevices,
-			});
-			deviceId = self.currentDevices[ deviceType ];
-		}
+		let device = self.preferedDevices[ deviceType ];
+		if ( !device )
+			device = self.currentDevices[ deviceType ];
 		
-		if ( !deviceId )
+		if ( !device )
 			return conf;
 		
-		let device = available[ deviceType ][ deviceId ];
-		if ( !device )
+		let aDev = available[ deviceType ][ device.deviceId ];
+		if ( !aDev )
 			return conf;
 		
 		if ( 'boolean' === typeof( conf[ type ]))
 			conf[ type ] = {};
 		
-		conf[ type ].deviceId = device.deviceId;
+		conf[ type ].deviceId = aDev.deviceId;
 		return conf;
 	}
 	
 	ns.Media.prototype.getMedia = function( conf, noFallback ) {
 		const self = this;
-		self.cleanup();
 		return new Promise(( resolve, reject ) => {
 			window.navigator.mediaDevices.getUserMedia( conf )
 				.then( success )
@@ -2445,12 +3154,6 @@ library.rtc = library.rtc || {};
 			}
 			
 			function mediaCreated( media, conf ) {
-				console.log( 'mediaCreated', {
-					tracks : media.getTracks(),
-					conf   : conf,
-				});
-				
-				
 				self.simpleConf = false;
 				self.giveUp = false;
 				resolve( media );
@@ -2482,17 +3185,91 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.setCurrentDevices = function( media ) {
 		const self = this;
-		let aT = media.getAudioTracks()[ 0 ];
-		let vT = media.getVideoTracks()[ 0 ];
-		self.currentDevices.audioinput = aT ? aT.deviceId : false;
-		self.currentDevices.videoinput = vT ? vT.deviceId : false;
+		const aT = media.getAudioTracks()[ 0 ];
+		const vT = media.getVideoTracks()[ 0 ];
+		if ( aT ) {
+			const aTS = aT.getSettings();
+			self.currentDevices.audioinput = {
+				deviceId : aTS.deviceId,
+				label    : aT.label,
+			};
+		}
+		
+		if ( vT ) {
+			const vTS = vT.getSettings();
+			self.currentDevices.videoinput = {
+				deviceId : vTS.deviceId,
+				label    : vT.label,
+			};
+		}
 	}
 	
-	ns.Media.prototype.setMedia = function( media ) {
+	ns.Media.prototype.updateMedia = function( fresh ) {
 		const self = this;
-		self.media = media;
-		self.bindTracks();
-		self.emit( 'media', media );
+		const send = self.permissions.send;
+		const currT = self.media.getTracks();
+		let freshT = [];
+		if ( fresh )
+			freshT = fresh.getTracks();
+		
+		currT.forEach( t => {
+			const kind = t.kind;
+			if ( !send[ kind ])
+				self.removeTrack( kind );
+		});
+		
+		freshT.forEach( t => {
+			self.addTrack( t );
+		});
+		
+		self.emit( 'media', self.media );
+	}
+	
+	ns.Media.prototype.clearMedia = function() {
+		const self = this;
+		if ( !self.media )
+			return;
+		
+		self.removeTrack( 'audio' );
+		self.removeTrack( 'video' );
+		/*
+		let tracks = self.media.getTracks();
+		tracks.forEach( track => {
+			track.stop();
+			self.releaseTrack( track );
+			self.media.removeTrack( track );
+		});
+		*/
+		self.media = null;
+	}
+	
+	ns.Media.prototype.addTrack = function( track ) {
+		const self = this;
+		const kind = track.kind;
+		const curr = self.media.getTracks();
+		curr.forEach( currTrack => {
+			if ( kind != currTrack.kind )
+				return;
+			
+			self.removeTrack( kind );
+		});
+		self.media.addTrack( track );
+		self.bindTrack( track );
+	}
+	
+	ns.Media.prototype.removeTrack = function( kind ) {
+		const self = this;
+		let track = null;
+		if ( 'audio' == kind )
+			track = self.media.getAudioTracks()[ 0 ];
+		if ( 'video' == kind )
+			track = self.media.getVideoTracks()[ 0 ];
+		
+		if ( !track )
+			return;
+		
+		self.releaseTrack( track );
+		self.media.removeTrack( track );
 	}
 	
 	ns.Media.prototype.bindTracks = function() {
@@ -2502,31 +3279,30 @@ library.rtc = library.rtc || {};
 		
 		const tracks = self.media.getTracks();
 		tracks.forEach( track => {
-			track.onended = onEnded;
-			function onEnded() {
-				track.onended = null;
-				self.emit( 'track-ended', {
-					id    : track.id,
-					kind  : track.kind,
-					label : track.labelOverride
-				});
-			}
+			self.bindTrack( track );
 		});
 	}
 	
-	ns.Media.prototype.cleanup = function() {
+	ns.Media.prototype.bindTrack = function( track ) {
 		const self = this;
-		if ( !self.media )
-			return;
+		track.onended = onEnded;
 		
-		let tracks = self.media.getTracks();
-		tracks.forEach( track => {
+		function onEnded() {
 			track.onended = null;
-			self.media.removeTrack( track );
+			self.emit( 'track-ended', {
+				id    : track.id,
+				kind  : track.kind,
+				label : track.label  || track.labelExtra,
+			});
+		}
+	}
+	
+	ns.Media.prototype.releaseTrack = function( track ) {
+		const self = this;
+		track.onended = null;
+		try {
 			track.stop();
-		});
-		
-		self.media = null;
+		} catch( e ) {}
 	}
 	
 })( library.rtc );

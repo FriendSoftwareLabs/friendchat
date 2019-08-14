@@ -5,6 +5,7 @@
 			/webclient/js/utils/events.js;
 			webclient/apps/FriendChat/scripts/component/tool.js;
 			webclient/apps/FriendChat/dependencies/adapterjs/adapter-latest.js;
+			webclient/apps/FriendChat/api/logSock.js;
 			webclient/apps/FriendChat/api/view.js;
 			webclient/apps/FriendChat/api/compatability.js;
 			webclient/apps/FriendChat/scripts/component/parser.js;
@@ -36,41 +37,66 @@
 	</head>
 	<body id="hello" class="">
 		<div id="live" class="group row cover MouseDefault">
-			<div id="live-content" class="flex-reset expand">
-				<div>
-					<div id="peer-container" class="">
-						<div id="waiting-for-container" class="abs-cover center-child">
-							<div id="waiting-for-peers-fritz">
-								<!--
-								<div id="waiting-for-peers-spinner">
-								</div>
-								-->
-							</div>
-							<div id="waiting-for-peers-dots" class="hidden">
-								<div class="waiting-dot center-child">
-									<i class="fa fa-fw fa-user"></i>
-								</div>
-								<div class="waiting-dot center-child">
-									<i class="fa fa-fw fa-user"></i>
-								</div>
-								<div class="waiting-dot center-child">
-									<i class="fa fa-fw fa-user"></i>
-								</div>
-							</div>
+			<div id="live-content" class="expand column bar cover">
+				<div id="peer-container" class="expand bar row">
+					<div id="waiting-for-container" class="expand bar row">
+						<div id="waiting-for-peers-fritz" class="expand center">
 						</div>
-						<div id="peers" class="group row allow-wrap grid1">
-							<!-- selfie and peer fragments go here -->
+						<div id="waiting-for-peers-dots" class="center hidden">
+							<div class="waiting-dot center-child">
+								<i class="fa fa-fw fa-user"></i>
+							</div>
+							<div class="waiting-dot center-child">
+								<i class="fa fa-fw fa-user"></i>
+							</div>
+							<div class="waiting-dot center-child">
+								<i class="fa fa-fw fa-user"></i>
+							</div>
 						</div>
 					</div>
-					<div id="live-ui" class="item-row group row std-bg">
-						<div id="show-menu-btn" class="btn fortify">
-							<i class="fa fa-fw fa-bars"></i>
+					<div id="peer-grid" class="expand group row allow-wrap grid1">
+						<!-- peer views in grid mode -->
+					</div>
+					<div id="peer-list" class="fortify">
+						<!-- peers in audio only mode -->
+					</div>
+				</div>
+				<div id="live-ui" class="bar column">
+					<div id="live-ui-panes" class="expand hidden">
+					</div>
+					<div id="ui-bottom-bar" class="fortify group row grad-bg-up">
+						<div id="ui-left" class="group row start item-row">
+							<div id="show-menu-btn" class="btn fortify">
+								<i class="fa fa-fw fa-bars"></i>
+							</div>
+							<div id="share-screen-btn" class="btn fortify">
+								<i class="fa fa-fw fa-television"></i>
+							</div>
+							<div id="tease-chat-container" class="fortify">
+								<!-- tease chat -->
+							</div>
 						</div>
-						<div id="toggle-peer-grid-btn" class="btn fortify hidden">
-							<i class="fa fa-fw fa-users"></i>
+						<div id="ui-middle" class="group row center">
+							<div id="audio-toggle-btn" class="btn round-bg fortify">
+								<i class="fa fa-fw fa-microphone"></i>
+							</div>
+							<div id="hangup-btn" class="btn round-bg danger fortify">
+								<i class="fa fa-fw fa-phone"></i>
+							</div>
+							<div id="video-toggle-btn" class="btn round-bg fortify">
+								<i class="fa fa-fw fa-video-camera"></i>
+							</div>
 						</div>
-						<div id="tease-chat-container" class="fortify">
-							<!-- tease chat -->
+						<div id="ui-right" class="group row end item-row">
+							<div id="share-btn" class="btn fortify hidden">
+								<i class="fa fa-fw fa-share-alt"></i>
+							</div>
+							<div id="settings-btn" class="btn fortify">
+								<i class="fa fa-fw fa-ellipsis-v"></i>
+							</div>
+						</div>
+						<div id="ui-menu-anchor" class="hidden">
+							<!-- menu goes here -->
 						</div>
 					</div>
 				</div>
@@ -78,32 +104,11 @@
 			<div id="lists-container" class="group row cover fortify">
 				<!-- lists go here -->
 			</div>
-			<div id="live-ui-panes" class="abs-cover hidden">
-				<!-- UI panes go here -->
+			
+			<div id="init-cover" class="abs-cover">
+				<!-- init checks go here -->
 			</div>
 			<div id="connecting-peers" class="hidden">
-			</div>
-		</div>
-		<div id="live-button-bar" class="BackgroundHeavier">
-			<div class="live-group-left">
-				<div class="live-image-button text-chat">
-				</div>
-				<div class="live-image-button screen-share inactive">
-				</div>
-			</div>
-			<div class="live-group-middle">
-				<div class="live-image-button audio-toggle">
-				</div>
-				<div class="live-image-button hangup">
-				</div>
-				<div class="live-image-button video-toggle">
-				</div>
-			</div>
-			<div class="live-group-right">
-				<!--<div class="live-image-button people">
-				</div>-->
-				<div class="live-image-button settings">
-				</div>
 			</div>
 		</div>
 		<div id="fragments" class="hidden">
@@ -131,10 +136,10 @@ avatar,
 				<i class="fa fa-fw fa-volume-up"></i>
 			</div>
 			<div class="state list-mute-remote hidden">
-				<i class="fa fa-fw fa-microphone-slash"></i>
+				<i class="fa fa-fw fa-microphone"></i>
 			</div>
 			<div class="state list-mute-local blink-red hidden">
-				<i class="fa fa-fw fa-microphone-slash"></i>
+				<i class="fa fa-fw fa-microphone"></i>
 			</div>
 			<div class="state list-rtc-state hidden">
 			</div>
@@ -146,7 +151,7 @@ avatar,
 	<div id="popped-ui" class="fortify std-bg">
 		<div class="btn-row group row">
 			<div id="popped-mute-self" class="btn" title="Mute yourself">
-				<i class="fa fa-fw fa-microphone-slash"></i>
+				<i class="fa fa-fw fa-microphone"></i>
 			</div>
 			<div id="popped-unpop" class="btn" title="Show yourself in grid">
 				<i class="fa fa-fw fa-search-plus"></i>
@@ -154,16 +159,37 @@ avatar,
 		</div>
 	</div>
 	<div class="grid-ui abs-cover bar column">
-		<div class="ui-view expand">
-			<div class="stream-state std-bg group row center">
-				<div class="state muted blink-red hidden" title="You have muted your audio">
-					<i class="fa fa-fw fa-microphone-slash"></i>
+		<div class="ui-peer-top fortify group row start">
+			<div class="ui-peer-info fortify group row start grad-bg-down">
+				<div id="session-duration" class="fortify group row">
+					<div class="std-icon">
+						<i class="fa fa-fw fa-clock-o fortify"></i>
+					</div>
+					<div class="time fortify">
+						--:--:--
+					</div>
 				</div>
-				<div class="state blinded blink-red hidden" title="You have paused your video">
-					<i class="fa fa-fw fa-eye-slash"></i>
+				<div class="stream-state group row center">
+					<div class="state muted hidden" title="You have muted your audio">
+						<i class="fa fa-fw fa-microphone"></i>
+					</div>
+					<div class="state blinded hidden" title="You have paused your video">
+						<i class="fa fa-fw fa-video-camera"></i>
+					</div>
+				</div>
+				<div class="name-bar fortify">
+					<div class="name">
+						<%= name %>
+					</div>
+				</div>
+				<div id="selfie-volume" class="volume-indicator-container fortify hidden">
 				</div>
 			</div>
-			<div class="dragger center-child std-bg dropzone Accelerated hidden" draggable="true" title="Drag to reposition">
+		</div>
+		<div class="ui-view expand">
+			<div class="dragger center-child std-bg dropzone Accelerated hidden"
+				draggable="true"
+				title="Drag to reposition">
 				<div class="drag-hint center-child">
 					<i class="fa fa-fw fa-hand-rock-o draggable"></i>
 					<i class="fa fa-fw fa-arrows dragee hidden"></i>
@@ -185,26 +211,6 @@ avatar,
 				</div>
 			</div>
 		</div>
-		<div class="ui-peer-info std-bg fortify group row cover">
-			<div class="fortify">
-				<div id="mute-self" class="btn" title="Mute yourself">
-					<i class="fa fa-fw fa-microphone-slash"></i>
-				</div>
-			</div>
-			<div class="name-bar expand">
-				<div class="name">
-					<%= name %>
-				</div>
-			</div>
-			<div id="selfie-volume" class="volume-indicator-container fortify">
-			</div>
-			<div id="session-duration" class="fortify group row">
-				<div class="time expand">
-					--:--:--
-				</div>
-				<i class="fa fa-fw fa-clock-o fortify"></i>
-			</div>
-		</div>
 	</div>
 </div>
 </script>
@@ -222,20 +228,25 @@ avatar,
 		<!--
 			// Peer video element is inserted here when a remote stream is received
 		-->
-		<div class="main-rtc">
+		<div class="main-rtc center-child">
 			<div class="main-rtc-content bar column">
-				<div class="main-rtc-spinner">
-					<div class="super-green hidden">
-						<i class="fa fa-fw fa-circle-o"></i>
+				<div class="main-rtc-title group row start">
+					<div class="main-rtc-spinner">
+						<div class="super-green hidden">
+							<i class="fa fa-fw fa-info-circle"></i>
+						</div>
+						<div class="spinning">
+							<i class="fa fa-fw fa-exclamation-triangle"></i>
+						</div>
+						<div class="error blink-red hidden">
+							<i class="fa fa-fw fa-exclamation-triangle"></i>
+						</div>
+						<div class="closed hidden">
+							<i class="fa fa-fw fa-power-off"></i>
+						</div>
 					</div>
-					<div class="spinning">
-						<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-					</div>
-					<div class="error blink-red hidden">
-						<i class="fa fa-fw fa-warning"></i>
-					</div>
-					<div class="closed hidden">
-						<i class="fa fa-fw fa-power-off"></i>
+					<div class="name">
+						<%= name %>
 					</div>
 				</div>
 				<div class="main-rtc-status">
@@ -247,20 +258,44 @@ avatar,
 							<div class="state-value expand">
 							</div>
 						</div>
-						<div class="state-additional">
-							<div class="state-routing group row">
-								<div class="state-label fortify">
-									{i18n_routing}:
+						<div class="group row allow-wrap">
+							<div class="fortify state-additional">
+								<div class="state-routing group row">
+									<div class="state-label fortify">
+										{i18n_routing}:
+									</div>
+									<div class="state-value expand">
+									</div>
 								</div>
-								<div class="state-value expand">
-									
+								<div class="state-latency group row">
+									<div class="state-label fortify">
+										{i18n_latency}:
+									</div>
+									<div class="state-value expand">
+									</div>
 								</div>
 							</div>
-							<div class="state-latency group row">
-								<div class="state-label fortify">
-									{i18n_latency}:
+							<div class="fortify state-additional">
+								<div class="state-receiving group row">
+									<div class="state-label fortify">
+										{i18n_receiving}:
+									</div>
+									<div class="state-value expand">
+									</div>
 								</div>
-								<div class="state-value expand">
+								<div class="state-received-total group row">
+									<div class="state-label fortify">
+										{i18n_received_total}:
+									</div>
+									<div class="state-value expand">
+									</div>
+								</div>
+								<div class="state-max-bandwith group row">
+									<div class="state-label fortify">
+										{i18n_max_bandwidth_out}:
+									</div>
+									<div class="state-value expand">
+									</div>
 								</div>
 							</div>
 						</div>
@@ -273,21 +308,73 @@ avatar,
 							<div class="state-value expand">
 							</div>
 						</div>
-						<div class="state-additional">
-							<div class="state-audio group row">
-								<div class="state-label fortify">
-									{i18n_audio}:
+						<div class="group row allow-wrap">
+							<div class="fortify state-additional state-audio">
+								<div class="state-audio-track group row">
+									<div class="state-label fortify">
+										{i18n_audio}:
+									</div>
+									<div class="state-value expand">
+										
+									</div>
 								</div>
-								<div class="state-value expand">
-									
+								<div class="state-audio-codec group row">
+									<div class="state-label fortify">
+										{i18n_codec}:
+									</div>
+									<div class="state-value expand">
+										
+									</div>
+								</div>
+								<div class="state-audio-input group row">
+									<div class="state-label fortify">
+										{i18n_audio_input}:
+									</div>
+									<div class="state-value expand">
+										
+									</div>
+								</div>
+								<div class="state-audio-lost group row">
+									<div class="state-label fortify">
+										{i18n_packets_lost}:
+									</div>
+									<div class="state-value expand">
+										
+									</div>
 								</div>
 							</div>
-							<div class="state-video group row">
-								<div class="state-label fortify">
-									{i18n_video}:
+							<div class="fortify state-additional state-video">
+								<div class="state-video-track group row">
+									<div class="state-label fortify">
+										{i18n_video}:
+									</div>
+									<div class="state-value expand">
+										
+									</div>
 								</div>
-								<div class="state-value expand">
-									
+								<div class="state-video-codec group row">
+									<div class="state-label fortify">
+										{i18n_codec}:
+									</div>
+									<div class="state-value expand">
+										
+									</div>
+								</div>
+								<div class="state-video-size group row">
+									<div class="state-label fortify">
+										{i18n_video_size}:
+									</div>
+									<div class="state-value expand">
+										
+									</div>
+								</div>
+								<div class="state-video-lost group row">
+									<div class="state-label fortify">
+										{i18n_packets_lost}:
+									</div>
+									<div class="state-value expand">
+										
+									</div>
 								</div>
 							</div>
 						</div>
@@ -311,10 +398,10 @@ avatar,
 				<i class="fa fa-fw fa-volume-up"></i>
 			</div>
 			<div class="state list-mute-remote hidden">
-				<i class="fa fa-fw fa-microphone-slash"></i>
+				<i class="fa fa-fw fa-microphone"></i>
 			</div>
 			<div class="state list-mute-local blink-red hidden">
-				<i class="fa fa-fw fa-microphone-slash"></i>
+				<i class="fa fa-fw fa-microphone"></i>
 			</div>
 			<div class="state list-rtc-state hidden">
 			</div>
@@ -326,24 +413,51 @@ avatar,
 	<div class="click-catch abs-cover">
 	</div>
 	<div class="grid-ui abs-cover bar column">
-		<div class="ui-view expand">
-			<div class="stream-state std-bg group row center">
-				<div class="state say-state hidden" title="Read out chat messages from this participant">
-					<i class="fa fa-fw fa-volume-up"></i>
+		<div class="ui-peer-top fortify group row start">
+			<div class="ui-peer-info fortify group row start grad-bg-down">
+				<div class="btn peer-options" title="Actions for this participant">
+					<i class="fa fa-fw fa-ellipsis-v"></i>
 				</div>
-				<div class="state muted blink-red hidden" title="You have muted this participant">
-					<i class="fa fa-fw fa-microphone-slash"></i>
+				<div class="mini-rtc fortify group row">
+					<div class="mini-rtc-state hidden">
+					</div>
+					<div class="mini-rtc-spinner">
+						<div class="btn super-green hidden">
+							<i class="fa fa-fw fa-info-circle"></i>
+						</div>
+						<div class="btn spinning">
+							<i class="fa fa-fw fa-exclamation-triangle"></i>
+						</div>
+						<div class="btn error btn blink-red hidden">
+							<i class="fa fa-fw fa-exclamation-triangle"></i>
+						</div>
+					</div>
 				</div>
-				<div class="state remote-mute  hidden" title="This participant has muted their audio">
-					<i class="fa fa-fw fa-microphone-slash"></i>
+				<div class="stream-state fortify group row center">
+					<div class="state say-state hidden" title="Read out chat messages from this participant">
+						<i class="fa fa-fw fa-volume-up"></i>
+					</div>
+					<div class="state muted blink-red hidden" title="You have muted this participant">
+						<i class="fa fa-fw fa-microphone"></i>
+					</div>
+					<div class="state remote-mute  hidden" title="This participant has muted their audio">
+						<i class="fa fa-fw fa-microphone"></i>
+					</div>
+					<div class="state blinded blink-red  hidden" title="You have blocked video from this participant">
+						<i class="fa fa-fw fa-video-camera"></i>
+					</div>
+					<div class="state remote-blind  hidden" title="This participant has paused their video">
+						<i class="fa fa-fw fa-video-camera"></i>
+					</div>
 				</div>
-				<div class="state blinded blink-red  hidden" title="You have blocked video from this participant">
-					<i class="fa fa-fw fa-eye-slash"></i>
-				</div>
-				<div class="state remote-blind  hidden" title="This participant has paused their video">
-					<i class="fa fa-fw fa-eye-slash"></i>
+				<div class="name-bar fortify">
+					<div class="name">
+						<%= name %>
+					</div>
 				</div>
 			</div>
+		</div>
+		<div class="ui-view expand">
 			<div class="dragger center-child std-bg dropzone Accelerated hidden" draggable="true" title="Drag to reposition">
 				<div class="drag-hint center-child">
 					<i class="fa fa-fw fa-hand-rock-o draggable"></i>
@@ -364,33 +478,6 @@ avatar,
 					</div>
 					<div class="closing-label">
 						{i18n_closed}
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="ui-peer-info std-bg group row start fortify">
-			<div class="fortify">
-				<div class="btn show-peer-menu" title="Actions for this participant">
-					<i class="fa fa-fw fa-user"></i>
-				</div>
-			</div>
-			<div class="name-bar expand">
-				<div class="name">
-					<%= name %>
-				</div>
-			</div>
-			<div class="mini-rtc fortify group row">
-				<div class="mini-rtc-state hidden">
-				</div>
-				<div class="mini-rtc-spinner">
-					<div class="super-green hidden">
-						<i class="fa fa-fw fa-circle-o"></i>
-					</div>
-					<div class="spinning">
-						<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-					</div>
-					<div class="error btn blink-red hidden">
-						<i class="fa fa-fw fa-warning"></i>
 					</div>
 				</div>
 			</div>
@@ -462,20 +549,28 @@ current,
 
 -->
 <script id="select-source-tmpl" type="text/html">
-<div id="source-select" class="solid-bg">
-	<div id="source-body">
-		<div id="source-head"class="group bar start left">
-			<div id="source-back" class="center-child fortify">
-				<i class="fa fa-fw fa-reply"></i>
-			</div>
-			<div id="source-title" class="expand">
-				{i18n_audio_video_settings}
-			</div>
+<div id="source-select" class="std-bg bar column start">
+	<div id="source-head"class="fortify group row">
+		<div id="source-title" class="expand Padding">
+			{i18n_audio_video_settings}
 		</div>
-		<div id="source-status">
-			<div id="source-explain">
-				{i18n_these_are_the_media}
+		<div id="source-back" class="btn center-child fortify hidden">
+			<i class="fa fa-fw fa-close"></i>
+		</div>
+	</div>
+	<div id="source-preview" class="expand">
+		<div id="source-preview-reset" class="center-child">
+			<div id="source-preview-hint" class="LED">
+				<div>
+					{i18n_camera_preview}
+				</div>
+				<i id="source-no-preview-i" class="fa fa-fw fa-eye On"></i>
 			</div>
+			<video id="source-preview-video" src="" playinline autoplay="autoplay" class="">
+		</div>
+	</div>
+	<div id="source-inputs" class="fortify">
+		<div id="source-status">
 			<div id="source-error" class="hidden">
 				<div class="error-message">
 				</div>
@@ -492,73 +587,66 @@ current,
 			</div>
 		</div>
 		<div id="source-input">
-			<div id="audiooutput-container" class="group row">
-				<div class="select-message">
-					{i18n_available_speakers}
-				</div>
+			<div id="audiooutput-container" class="hidden">
 				<div id="audiooutput-error" class="error-message hidden">
 				</div>
-				<div class="expand">
-					<div id="audiooutput-select">
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i class="fa fa-fw fa-volume-up"></i>
+					</div>
+					<div id="audiooutput-select" class="expand">
 					</div>
 				</div>
 				<video id="audiooutput-test" class="hidden" playinline>
 			</div>
-			<div id="audioinput-container" class="group row">
-				<div class="expand">
-					<div class="select-message">
-						{i18n_available_audio_sources}
-					</div>
-					<div id="audioinput-checking" class="group row hidden">
-						<div class="std-icon fortify">
-							<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-						</div>
-						<div class="checking-message expand">
-							{i18n_checking_input_source}
-						</div>
-					</div>
-					<div id="audioinput-error" class="error-message hidden">
-					</div>
-					<div id="audioinput-select">
-					</div>
+			<div id="audioinput-container" class="">
+				<div id="audioinput-error" class="error-message hidden">
 				</div>
-				<div id="source-select-av-container" class="fortify BackgroundHeaviest Rounded BordersDefault">
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i id="audioinput-icon"
+							class="fa fa-fw fa-microphone">
+						</i>
+						<i id="audioinput-checking"
+							class="fa fa-fw fa-circle-o-notch fa-spin hidden">
+						</i>
+					</div>
+					<div id="audioinput-select" class="expand">
+					</div>
+					<div id="source-select-av-container" class="fortify">
+					</div>
 				</div>
 			</div>
-			<div id="videoinput-container" class="group row">
-				<div class="select-message">
-					{i18n_available_video_sources}
-				</div>
+			<div id="videoinput-container" class="">
 				<div id="videoinput-error" class="error-message hidden">
 				</div>
-				<div class="expand">
-					<div id="videoinput-select">
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i class="fa fa-fw fa-video-camera"></i>
+					</div>
+					<div id="videoinput-select" class="expand">
 					</div>
 				</div>
 			</div>
 		</div>
-		<div id="source-input-preview">
-			<div id="source-preview">
-				<div class="preview-hint">
-					Preview
-				</div>
-				<div class="preview-show">
-					<i id="source-select-no-preview" class="fa fa-fw fa-close"></i>
-					<video id="source-select-preview" src="" playinline autoplay="autoplay">
-				</div>
+		<div id="source-select-buttons" class="group row end btn-row">
+			<div id="apply-select"
+				class="btn text"
+				title="Apply current selection">
+				<i class="fa fa-fw fa-check"></i>
+				{i18n_save}
 			</div>
-		</div>
-		<div id="source-input-buttons">
-			<div id="source-select-buttons">
-				<button class="button danger discard-select" title="Discard any changes and close">
-					{i18n_cancel}
-				</button>
-				<button class="button accept apply-select" title="Apply current selection">
-					{i18n_save}
-				</button>
-				<button class="button refresh-select" title="Check for changes in available devices">
-					{i18n_refresh}
-				</button>
+			<div id="discard-select"
+				class="btn text danger"
+				title="Discard any changes and close">
+				<i class="fa fa-fw fa-close"></i>
+				{i18n_cancel}
+			</div>
+			<div id="refresh-select"
+				class="btn text hidden"
+				title="Check for changes in available devices">
+				<i class="fa fa-fw fa-cube"></i>
+				{i18n_refresh}
 			</div>
 		</div>
 	</div>
@@ -945,7 +1033,7 @@ contentId,
 		<div class="menu-nav-current expand">
 			curr menu folder here
 		</div>
-		<div class="btn danger menu-nav-close danger fortify">
+		<div class="btn menu-nav-close fortify">
 			<i class="fa fa-fw fa-close"></i>
 		</div>
 	</div>
@@ -1008,7 +1096,7 @@ faIcon,
 <script id="chat-pane-tmpl" type="text/html">
 <div id="chat-pane" class="std-bg abs-cover">
 	<!-- chat thingie goes here -->
-	<div id="chat-pane-close" class="btn danger center-child">
+	<div id="chat-pane-close" class="btn center-child">
 		<i class="fa fa-fw fa-close"></i>
 	</div>
 </div>
@@ -1048,18 +1136,19 @@ faIcon,
 	
 -->
 <script id="tease-chat-tmpl" type="text/html">
-<div id="tease-chat" class="group row btn-row hidden">
+<div id="tease-chat" class="btn text group row btn-row"><!--
 	<div id="tease-chat-content" class="expand">
 	</div>
-	<div id="tease-chat-num" class="std-icon fortify">
-	</div>
+	--><i class="fa fa-fw fa-comment-o"></i>
+	<div id="tease-chat-num" class="fortify">
+	</div><!--
 	<div id="tease-chat-goto-chat" class="btn fortify">
 		<i class="fa fa-fw fa-keyboard-o"></i>
 	</div>
 	<div id="tease-chat-clear" class="btn danger fortify">
 		<i class="fa fa-fw fa-close"></i>
 	</div>
-</div>
+--></div>
 </script>
 
 <!-- chat-tease

@@ -83,6 +83,8 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.addChat = function( conf, conn ) {
 		const self = this;
+		self.chatTease = new library.component.ChatTease( 'tease-chat-container', hello.template );
+		
 		const chatConf = {
 			containerId : 'chat-container',
 			conn        : conn,
@@ -92,7 +94,7 @@ library.component = library.component || {};
 			roomName    : conf.roomName,
 			logTail     : conf.logTail,
 		};
-		self.chat = new library.component.LiveChat( chatConf, hello.template );
+		self.chat = new library.component.LiveChat( chatConf, hello.template, self.chatTease );
 		return self.chat;
 	}
 	

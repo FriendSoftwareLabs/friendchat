@@ -460,10 +460,12 @@ var friend = window.friend || {};
 		self.appConf = self.config.appConf || {};
 		self.appSettings = self.config.appSettings || {};
 		self.deviceType = self.config.deviceType || 'ERR_CONF_OH_SHIT';
+		
 		if ( self.config.isDev )
 			self.initLogSock();
 		
 		self.setBaseCss( baseCssLoaded );
+		
 		if ( self.config )
 			self.handleConf();
 		

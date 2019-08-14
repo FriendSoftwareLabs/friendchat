@@ -1307,7 +1307,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			done( null, media );
 			
 			function updateDevice( track, type ) {
-				self.currentDevices[ type ] = track.labelOverride;
+				self.currentDevices[ type ] = track.labelExtra;
 			}
 		}
 		

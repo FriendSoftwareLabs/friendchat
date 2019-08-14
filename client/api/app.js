@@ -989,6 +989,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.setDev = function( dumpHost, name ) {
 		const self = this;
+		console.log( 'setDev - device type', self.deviceType );
 		if ( !dumpHost && name  ) {
 			if ( self.logSock )
 				self.logSock.setName( name );
