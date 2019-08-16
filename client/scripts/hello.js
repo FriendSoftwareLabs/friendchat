@@ -1221,10 +1221,8 @@ var hello = null;
 			return;
 		}
 		
-		if ( !event.clicked ) {
-			console.log( 'hello.handleNotie - not clicked', event );
+		if ( !event.clicked )
 			return;
-		}
 		
 		if ( null != self.resumeTimeout || !self.isOnline ) {
 			self.registerOnResume( onResume );

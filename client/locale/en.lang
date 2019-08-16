@@ -371,6 +371,9 @@ i18n_git_commit : Commit hash
 i18n_app : App
 i18n_compact_chat : Compact chat
 i18n_message_read : Message read
+i18n_invite_user : Invite user
+i18n_invite_to : Invite to
+i18n_has_invited_you_to : has invited you to
 i18n_camera_preview : Camera preview
 i18n_receiving : Receiving
 i18n_received_total : Received total
@@ -378,3 +381,6 @@ i18n_max_bandwidth_out : Max bandwidth out
 i18n_codec : Codec
 i18n_packets_lost : Packets lost
 i18n_video_size : Video size
+i18n_you_have_no_eligible_contacts : You have no eligible contacts
+i18n_the_person_of_interest_must_be_online_to_receive_the_invite : The person of interest must be online to receive the invite
+i18n_only_online_user_are_listed : Only online users are listed

@@ -1,0 +1,75 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<script src="
+			/webclient/js/utils/events.js;
+			webclient/apps/FriendChat/scripts/component/common.js;
+			webclient/apps/FriendChat/scripts/component/tool.js;
+			webclient/apps/FriendChat/api/view.js;
+			webclient/apps/FriendChat/scripts/component/viewComponent.js;
+			webclient/apps/FriendChat/scripts/view/presenceInviter.js
+		" type="text/javascript"></script>
+		
+		<link rel="stylesheet" href="
+			../css/common.css;
+			webclient/apps/FriendChat/css/presenceInviter.css
+		" type="text/css">
+	</head>
+	<body id="" class="">
+		<div id="fragments">
+		
+<!-- body
+
+-->
+<script id="body-tmpl" type="text/html">
+<div id="hello" class="bar column cover BackgroundDefault">
+	<div id="head" class="fortify">
+		<div id="title" class="group row start">
+			{i18n_invite_to}
+			<div id="room-name">
+			</div>
+		</div>
+		<div id="note">
+			{i18n_only_online_user_are_listed}
+		</div>
+	</div>
+	<div id="filter" class="pad-iso fortify">
+	</div>
+	<div id="list" class="expand Zebralist">
+		<div id="no-items" class="pad hidden">
+			<div>
+				{i18n_you_have_no_eligible_contacts}
+			</div>
+			<div>
+				{i18n_the_person_of_interest_must_be_online_to_receive_the_invite}
+			</div>
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- user
+clientId
+avatarSrc
+name
+-->
+<script id="list-user-tmpl" type="text/html">
+<div id="<%= clientId %>" class="contact group row">
+	<div class="avatar fortify"
+		style="background-image:url(&#39;<%= avatarSrc %>&#39;)"
+	>
+	</div>
+	<div class="name expand">
+		<%= name %>
+	</div>
+	<div class="inviter fortify">
+		<button class="inv-btn IconButton">
+			<i class="fa fa-fw fa-plus"></i>
+		</button>
+	</div>
+</div>
+</script>
+
+		</div>
+	</body>
+<html>

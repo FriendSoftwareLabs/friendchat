@@ -613,6 +613,11 @@ var hello = window.hello || {};
 		if ( !mod )
 			return;
 		
+		if ( 'query' === source.type ) {
+			self.addQuery( moduleId, source );
+			return;
+		}
+		
 		let Item = null;
 		if ( 'room' === source.type )
 			Item = library.view.RecentRoom;
@@ -643,6 +648,33 @@ var hello = window.hello || {};
 		function onActive( isActive ) {
 			self.updateIsActive( iId, isActive );
 		}
+	}
+	
+	ns.Recent.prototype.addQuery = function( modId, source ) {
+		const self = this;
+		console.log( 'addQuery', source );
+		const mod = self.modules[ modId ];
+		if ( !mod )
+			return;
+		
+		const sId = source.id;
+		const iId = friendUP.tool.uid( 'query' );
+		const item = new library.view.QueryItem(
+			'recent-active',
+			iId,
+			source.queryMsg,
+			source.avatar,
+			source.typeKlass,
+			source,
+		);
+		mod.items[ sId ] = item;
+		self.items[ iId ] = item;
+		const priConf = {
+			clientId : iId,
+			priority : 1,
+			time     : Date.now(),
+		};
+		self.itemOrder.add( priConf );
 	}
 	
 	ns.Recent.prototype.updateIsActive = function( itemId, isActive ) {
@@ -694,17 +726,17 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.Recent.prototype.handleItemRemove = function( moduleId, contactId ) {
+	ns.Recent.prototype.handleItemRemove = function( moduleId, sourceId ) {
 		const self = this;
 		const mod = self.modules[ moduleId ];
 		if ( !mod )
 			return;
 		
-		const item = mod.items[ contactId ];
+		const item = mod.items[ sourceId ];
 		if ( !item )
 			return;
 		
-		delete mod.items[ contactId ];
+		delete mod.items[ sourceId ];
 		delete self.items[ item.id ];
 		self.removeFromItemOrder( item.id );
 		

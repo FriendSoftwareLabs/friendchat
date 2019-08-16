@@ -727,12 +727,23 @@ var hello = window.hello || {};
 			return false;
 		
 		const cId = id.clientId;
-		if ( self.identities[ cId ])
+		if ( self.identities[ cId ]) {
+			update( id );
 			return true;
+		}
 		
 		self.identities[ cId ] = id;
 		self.addUserCss( cId, id.avatar );
 		return true;
+		
+		function update( id ) {
+			const cId = id.clientId;
+			const curr = self.identities[ cId ];
+			curr.isOnline = id.isOnline;
+			curr.avatar = id.avatar;
+			curr.isAdmin = id.isAdmin;
+			curr.isGuest = id.isGuest;
+		}
 	}
 	
 	ns.UserCtrl.prototype.bindConn = function() {
@@ -852,6 +863,8 @@ var hello = window.hello || {};
 		);
 		self.users[ uid ] = userItem;
 		self.addUserCss( userItem.id, userItem.avatar );
+		if ( id.isOnline )
+			self.handleOnline( id );
 		
 		self.setUserToGroup( uid );
 	}

@@ -4,19 +4,19 @@ statusString,
 -->
 <script id="availability-base-tmpl" type="text/html">
 <div class="availability-container">
-    <div id="<%= id %>" class="availability flex-row">
-        <div class="button-container">
-            <button class="button">
-                <div class="button-image status">
-                </div>
-            </button>
-        </div>
-        <div class="status-string">
-            <%= statusString %>
-        </div>
-    </div>
-    <div class="availability-options dropdown">
-    </div>
+	<div id="<%= id %>" class="availability flex-row">
+		<div class="button-container">
+			<button class="button">
+				<div class="button-image status">
+				</div>
+			</button>
+		</div>
+		<div class="status-string">
+			<%= statusString %>
+		</div>
+	</div>
+	<div class="availability-options dropdown">
+	</div>
 </div>
 </script>
 
@@ -27,12 +27,12 @@ statusString,
 fa-icon,
 -->
 <script id="availability-option-tmpl" type="text/html">
-    <div id="<%= id %>-option" class="availability-option bar row">
-        <i class="fa fa-fw <%= fa-icon%>"></i>
-        <div class="status">
-            <%= statusString %>
-        </div>
-    </div>
+	<div id="<%= id %>-option" class="availability-option bar row">
+		<i class="fa fa-fw <%= fa-icon%>"></i>
+		<div class="status">
+			<%= statusString %>
+		</div>
+	</div>
 </script>
 
 
@@ -42,16 +42,16 @@ unreadId,
 -->
 <script id="notification-tmpl" type="text/html">
 <div class="log-notify group row expand MousePointer">
-    <div class="icon fortify center-child">
-        <i class="fa fa-fw fa-file-text-o"></i>
-    </div>
-    <div class="container expand">
-        <div id="<%= outputId %>" class="output">
-        </div>
-    </div>
-    <div id="<%= unreadId %>" class="unread-num fortify">
-        &nbsp;
-    </div>
+	<div class="icon fortify center-child">
+		<i class="fa fa-fw fa-file-text-o"></i>
+	</div>
+	<div class="container expand">
+		<div id="<%= outputId %>" class="output">
+		</div>
+	</div>
+	<div id="<%= unreadId %>" class="unread-num fortify">
+		&nbsp;
+	</div>
 </div>
 </script>
 
@@ -61,7 +61,7 @@ message,
 -->
 <script id="notification-message-tmpl" type="text/html">
 <div class="message LogText">
-    <%= message %>
+	<%= message %>
 </div>
 </script>
 
@@ -70,12 +70,12 @@ id
 -->
 <script id="module-initializing-tmpl" type="text/html">
 <div id="<%= id %>" class="Box group row center">
-    <div class="info-icon center-child">
-        <i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-    </div>
-    <div class="Message">
-        {i18n_the_module_is_initializing}
-    </div>
+	<div class="info-icon center-child">
+		<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+	</div>
+	<div class="Message">
+		{i18n_the_module_is_initializing}
+	</div>
 </div>
 </script>
 
@@ -85,12 +85,12 @@ message,
 -->
 <script id="module-message-tmpl" type="text/html">
 <div id="<%= id %>" class="Box group row center">
-    <div class="info-icon center-child">
-        <i class="fa fa-fw fa-info-circle"></i>
-    </div>
-    <div class="Message">
-        <%= message %>
-    </div>
+	<div class="info-icon center-child">
+		<i class="fa fa-fw fa-info-circle"></i>
+	</div>
+	<div class="Message">
+		<%= message %>
+	</div>
 </div>
 </script>
 
@@ -100,12 +100,12 @@ title,
 -->
 <script id="rtc-state-tmpl" type="text/html">
 <div id="<%= id %>" class="rtc-session group row">
-    <div class="LED DangerText fortify">
-        <i class="fa fa-fw fa-video-camera"></i>
-    </div>
-    <div class="title left expand">
-        <%= title %>
-    </div>
+	<div class="LED DangerText fortify">
+		<i class="fa fa-fw fa-video-camera"></i>
+	</div>
+	<div class="title left expand">
+		<%= title %>
+	</div>
 </div>
 </script>
 
@@ -114,8 +114,8 @@ id,
 -->
 <script id="mini-menu-tmpl" type="text/html">
 <div id="<%= id %>" class="mini-menu">
-    <div tabindex="0" class="mini-menu-content StandardBoxShadow ZebraList Interactive BackgroundDefault">
-    </div>
+	<div tabindex="0" class="mini-menu-content StandardBoxShadow ZebraList Interactive BackgroundDefault">
+	</div>
 </div>
 </script>
 
@@ -125,10 +125,10 @@ faIcon,
 -->
 <script id="mini-menu-option-tmpl" type="text/html">
 <div class="mini-menu-option group row start">
-    <i class="fa fa-fw <%= faIcon %>"></i>
-    <div class="name">
-        <%= name %>
-    </div>
+	<i class="fa fa-fw <%= faIcon %>"></i>
+	<div class="name">
+		<%= name %>
+	</div>
 </div>
 </script>
 
@@ -136,47 +136,47 @@ faIcon,
 -->
 <script id="recent-convos-tmpl" type="text/html">
 <div id="recent-convos" class="module bar column">
-    <div class="module-head fortify">
-        <div class="module-title">
-            {i18n_recent_conversations}
-        </div>
-    </div>
-    <div id="recent-splash" class="">
-        <div class="Padding welcome-box" id="welcome-box">
-            <div class="Padding Borders Box">
-                <span id="welcome-box-close" class="MousePointer IconSmall FloatRight fa-remove">
-                </span>
-                <p>
-                    <strong class="welcome">Welcome to Friend Chat!</strong>
-                </p>
-                <p>
-                    You are now using the video chat and collaboration tool
-                    for the Friend Workspace. Please spend some moments
-                    to look around.
-                </p>
-                <p>
-                    The icon tab bar below will take you to the following sections.
-                </p>
-                <ul>
-                    <li class="IconSmall fa-comment">Your ongoing conversations</li>
-                    <li class="IconSmall fa-group">Conference rooms</li>
-                    <li class="IconSmall fa-address-book">Your contacts</li>
-                </ul>
-                <p>
-                    The search bar on the top will allow you to find new or existing
-                    contacts.
-                </p>
-            </div>
-        </div>
-        <div id="no-recent-convos" class="Padding hidden">
-            <div class="Padding Box">
-                <p>There are no recent conversations</p>
-            </div>
-        </div>
-    </div>
-    <div id="recent-active" class="ZebraList Interactive expand SmoothScrolling"></div>
-    <div id="recent-inactive" class="hidden">
-    </div>
+	<div class="module-head fortify">
+		<div class="module-title">
+			{i18n_recent_conversations}
+		</div>
+	</div>
+	<div id="recent-splash" class="">
+		<div class="Padding welcome-box" id="welcome-box">
+			<div class="Padding Borders Box">
+				<span id="welcome-box-close" class="MousePointer IconSmall FloatRight fa-remove">
+				</span>
+				<p>
+					<strong class="welcome">Welcome to Friend Chat!</strong>
+				</p>
+				<p>
+					You are now using the video chat and collaboration tool
+					for the Friend Workspace. Please spend some moments
+					to look around.
+				</p>
+				<p>
+					The icon tab bar below will take you to the following sections.
+				</p>
+				<ul>
+					<li class="IconSmall fa-comment">Your ongoing conversations</li>
+					<li class="IconSmall fa-group">Conference rooms</li>
+					<li class="IconSmall fa-address-book">Your contacts</li>
+				</ul>
+				<p>
+					The search bar on the top will allow you to find new or existing
+					contacts.
+				</p>
+			</div>
+		</div>
+		<div id="no-recent-convos" class="Padding hidden">
+			<div class="Padding Box">
+				<p>There are no recent conversations</p>
+			</div>
+		</div>
+	</div>
+	<div id="recent-active" class="ZebraList Interactive expand SmoothScrolling"></div>
+	<div id="recent-inactive" class="hidden">
+	</div>
 </div>
 </script>
 
@@ -192,42 +192,42 @@ callStatusId
 -->
 <script id="recent-item-tmpl" type="text/html">
 <div id="<%= id %>" class="recent-item group row">
-    <div class="avatar fortify"
-        style="background-image:url(&#39;<%= avatar %>&#39;)"
-    >
-        <div id="<%= statusId %>" class="avatar-status">
-        </div>
-    </div>
-    <div class="recent-info expand">
-        <div class="name-bar group row">
-            <div class="name">
-                <%= name %>
-            </div>
-            <div class="last-msg-time fortify">
-                <%= lastMsgTime %>
-            </div>
-        </div>
-        <div class="recent-state group row">
-            <div class="last-event-icon fortify">
-                <i class="fa fa-fw <%= lastEventIcon %>"></i>
-            </div>
-            <div class="last-message expand">
-                <%= lastMsg %>
-            </div><!--
-            <div class="min-height-dummy">
-                &puncsp;
-            </div>
-            --><div class="more-state fortify">
-                <div id="<%= unreadId %>" class="unread-num">
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="<%= callStatusId %>">
-    </div><!--
-    <div class="item-menu Button IconButton fortify center-child">
-        <i class="fa fa-fw fa-ellipsis-v"></i>
-    </div>-->
+	<div class="avatar fortify"
+		style="background-image:url(&#39;<%= avatar %>&#39;)"
+	>
+		<div id="<%= statusId %>" class="avatar-status">
+		</div>
+	</div>
+	<div class="recent-info expand">
+		<div class="name-bar group row">
+			<div class="name">
+				<%= name %>
+			</div>
+			<div class="last-msg-time fortify">
+				<%= lastMsgTime %>
+			</div>
+		</div>
+		<div class="recent-state group row">
+			<div class="last-event-icon fortify">
+				<i class="fa fa-fw <%= lastEventIcon %>"></i>
+			</div>
+			<div class="last-message expand">
+				<%= lastMsg %>
+			</div><!--
+			<div class="min-height-dummy">
+				&puncsp;
+			</div>
+			--><div class="more-state fortify">
+				<div id="<%= unreadId %>" class="unread-num">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="<%= callStatusId %>">
+	</div><!--
+	<div class="item-menu Button IconButton fortify center-child">
+		<i class="fa fa-fw fa-ellipsis-v"></i>
+	</div>-->
 </div>
 </script>
 
@@ -245,45 +245,69 @@ unreadId,
 -->
 <script id="recent-room-tmpl" type="text/html">
 <div id="<%= id %>" class="recent-item recent-room group row">
-    <div class="avatar fortify center-child"
-        style="background-image:url(&#39;<%= avatar %>&#39;)"
-    >
-        <i class="fa fa-fw fa-users <%= iconHidden %>"></i>
-        <div id="<%= statusId %>" class=avatar-status></div>
-    </div>
-    <div class="recent-info expand">
-        <div class="name-bar group row">
-            <div class="name">
-                <%= name %>
-            </div>
-            <div class="last-msg-time fortify">
-                <%= lastMsgTime %>
-            </div>
-        </div>
-        <div class="recent-state group row">
-            <div class="last-event-icon fortify">
-                <i class="fa fa-fw <%= lastEventIcon %>"></i>
-            </div>
-            <div class="last-msg-name fortify">
-                <%= lastName %>
-            </div>
-            <div class="last-message expand">
-                <%= lastMsg %>
-            </div><!--
-            <div class="min-height-dummy">
-                &puncsp;
-            </div>
-         --><div class="more-state group row fortify">
-                <div id="<%= liveId %>" class="unread-num">
-                </div>
-                <div id="<%= unreadId %>" class="unread-num">
-                </div>
-            </div>
-        </div>
-    </div><!--
-    <div class="item-menu Button IconButton fortify center-child">
-        <i class="fa fa-fw fa-ellipsis-v"></i>
-    </div>-->
+	<div class="avatar fortify center-child"
+		style="background-image:url(&#39;<%= avatar %>&#39;)"
+	>
+		<i class="fa fa-fw fa-users <%= iconHidden %>"></i>
+		<div id="<%= statusId %>" class=avatar-status></div>
+	</div>
+	<div class="recent-info expand">
+		<div class="name-bar group row">
+			<div class="name">
+				<%= name %>
+			</div>
+			<div class="last-msg-time fortify">
+				<%= lastMsgTime %>
+			</div>
+		</div>
+		<div class="recent-state group row">
+			<div class="last-event-icon fortify">
+				<i class="fa fa-fw <%= lastEventIcon %>"></i>
+			</div>
+			<div class="last-msg-name fortify">
+				<%= lastName %>
+			</div>
+			<div class="last-message expand">
+				<%= lastMsg %>
+			</div><!--
+			<div class="min-height-dummy">
+				&puncsp;
+			</div>
+		 --><div class="more-state group row fortify">
+				<div id="<%= liveId %>" class="unread-num">
+				</div>
+				<div id="<%= unreadId %>" class="unread-num">
+				</div>
+			</div>
+		</div>
+	</div><!--
+	<div class="item-menu Button IconButton fortify center-child">
+		<i class="fa fa-fw fa-ellipsis-v"></i>
+	</div>-->
+</div>
+</script>
+
+<!-- query item
+id,
+typeKlass,
+avatar,
+queryMsg,
+-->
+<script id="query-item-tmpl" type="text/html">
+<div id="<%= id %>" class="query-item <%= typeKlass %> group row">
+	<div class="avatar fortify" style="background-image:url(&#39;<%= avatar %>&#39;)">
+	</div>
+	<div class="query-msg expand">
+		<%= queryMsg %>
+	</div>
+	<div class="response-container group row fortify">
+		<button type="button" class="button accept" title="Graciously accept">
+			<i class="fa fa-fw fa-check"></i>
+		</button>
+		<button type="button" class="button danger reject" tittle="Politely decline">
+			<i class="fa fa-fw fa-close"></i>
+		</button>
+	</div>
 </div>
 </script>
 
@@ -297,44 +321,44 @@ activeId,
 inactiveId,
 -->
 <script id="treeroot-module-tmpl" type="text/html">
-    <div id="<%= clientId %>" class="module bar column BorderBottom">
-        <div id="<%= folditId %>" class="module-head group row fortify MousePointer">
-            <div class="module-logo fortify">
-                <div class="logo">
-                </div>
-            </div>
-            <div class="module-title expand">
-                <%= moduleTitle %>
-            </div>
-            <div class="actions group row fortify">
-                <div class="foldit-status">
-                </div>
-                <div id="<%= connStateId %>">
-                </div>
-                <div class="item-menu Button IconButton" title="">
-                    <i class="fa fa-fw fa-ellipsis-v"></i>
-                </div>
-            </div>
-        </div>
-        <div id="<%= itemsId %>" class="contacts bar column">
-            <div id="<%= activeId %>" class="active ZebraList Interactive">
-            </div>
-            <div class="inactive-container hidden">
-                <div id="<%= inactiveFolditId %>" class="inactive-header group row">
-                    <div class="foldit-status fortify">
-                    </div>
-                    <div class="inactive-title fortify">
-                        {i18n_offline}:
-                    </div>
-                    <div class="inactive-stats expand">
-                        - / -
-                    </div>
-                </div>
-                <div id="<%= inactiveId %>" class="inactive ZebraList Interactive">
-                </div>
-            </div>
-        </div>
-    </div>
+	<div id="<%= clientId %>" class="module bar column BorderBottom">
+		<div id="<%= folditId %>" class="module-head group row fortify MousePointer">
+			<div class="module-logo fortify">
+				<div class="logo">
+				</div>
+			</div>
+			<div class="module-title expand">
+				<%= moduleTitle %>
+			</div>
+			<div class="actions group row fortify">
+				<div class="foldit-status">
+				</div>
+				<div id="<%= connStateId %>">
+				</div>
+				<div class="item-menu Button IconButton" title="">
+					<i class="fa fa-fw fa-ellipsis-v"></i>
+				</div>
+			</div>
+		</div>
+		<div id="<%= itemsId %>" class="contacts bar column">
+			<div id="<%= activeId %>" class="active ZebraList Interactive">
+			</div>
+			<div class="inactive-container hidden">
+				<div id="<%= inactiveFolditId %>" class="inactive-header group row">
+					<div class="foldit-status fortify">
+					</div>
+					<div class="inactive-title fortify">
+						{i18n_offline}:
+					</div>
+					<div class="inactive-stats expand">
+						- / -
+					</div>
+				</div>
+				<div id="<%= inactiveId %>" class="inactive ZebraList Interactive">
+				</div>
+			</div>
+		</div>
+	</div>
 </script>
 
 <!-- TREEROOT CONTACT
@@ -346,24 +370,24 @@ presenceId,
 optionMenuId,
 -->
 <script id="treeroot-contact-tmpl" type="text/html">
-    <div id="<%= clientId %>" class="treeroot contact group row MousePointer">
-        <div class="contact-height-dummy fortify">
-        </div>
-        <div class="avatar fortify"
-            style="background-image:url(&#39;<%= avatar %>&#39;)"
-        >
-        </div>
-        <div class="name expand">
-            <%= name %>
-        </div>
-        <div id="<%= messageWaitingId %>" class="fortify">
-        </div>
-        <div id="<%= presenceId %>" class="fortify">
-        </div>
-        <div class="item-menu Button IconButton fortify center-child">
-            <i class="fa fa-fw fa-ellipsis-v"></i>
-        </div>
-    </div>
+	<div id="<%= clientId %>" class="treeroot contact group row MousePointer">
+		<div class="contact-height-dummy fortify">
+		</div>
+		<div class="avatar fortify"
+			style="background-image:url(&#39;<%= avatar %>&#39;)"
+		>
+		</div>
+		<div class="name expand">
+			<%= name %>
+		</div>
+		<div id="<%= messageWaitingId %>" class="fortify">
+		</div>
+		<div id="<%= presenceId %>" class="fortify">
+		</div>
+		<div class="item-menu Button IconButton fortify center-child">
+			<i class="fa fa-fw fa-ellipsis-v"></i>
+		</div>
+	</div>
 </script>
 
 <!-- SUBSCRIPTION
@@ -372,21 +396,21 @@ contactName,
 -->
 <script id="subscription-tmpl" type="text/html">
 <div id="<%= clientId %>" class="subscription group row">
-    <div class="description">
-        <span class="text">friend request from:&nbsp;</span>
-        <span class="name"><%= contactName %></span>
-    </div>
-    <div class="subscriber actions-container bar row fortify">
-        <button type="button" class="button accept allowSub" title="Graciously accept">
-            <i class="fa fa-fw fa-check"></i>
-        </button>
-        <button type="button" class="button danger denySub" tittle="Politely decline">
-            <i class="fa fa-fw fa-close"></i>
-        </button>
-    </div>
-    <div class="action-pending fortify hidden">
-        <i class="fa fa-fw fa-spinner fa-pulse"></i>
-    </div>
+	<div class="description">
+		<span class="text">friend request from:&nbsp;</span>
+		<span class="name"><%= contactName %></span>
+	</div>
+	<div class="subscriber actions-container bar row fortify">
+		<button type="button" class="button accept allowSub" title="Graciously accept">
+			<i class="fa fa-fw fa-check"></i>
+		</button>
+		<button type="button" class="button danger denySub" tittle="Politely decline">
+			<i class="fa fa-fw fa-close"></i>
+		</button>
+	</div>
+	<div class="action-pending fortify hidden">
+		<i class="fa fa-fw fa-spinner fa-pulse"></i>
+	</div>
 </div>
 </script>
 
@@ -396,18 +420,18 @@ contactName,
 -->
 <script id="subscribee-tmpl" type="text/html">
 <div id="<%= clientId %>" class="subscription group row">
-    <div class="description">
-        <span class="text">friend request to:&nbsp;</span>
-        <span class="name"><%= contactName %></span>
-    </div>
-    <div class="subscribee actions-container fortify">
-        <button type="button" class="button danger cancelSub" title="Cancel your request">
-            <i class="fa fa-fw fa-close"></i>
-        </button>
-    </div>
-    <div class="action-pending fortify hidden">
-        <i class="fa fa-fw fa-spinner fa-pulse"></i>
-    </div>
+	<div class="description">
+		<span class="text">friend request to:&nbsp;</span>
+		<span class="name"><%= contactName %></span>
+	</div>
+	<div class="subscribee actions-container fortify">
+		<button type="button" class="button danger cancelSub" title="Cancel your request">
+			<i class="fa fa-fw fa-close"></i>
+		</button>
+	</div>
+	<div class="action-pending fortify hidden">
+		<i class="fa fa-fw fa-spinner fa-pulse"></i>
+	</div>
 </div>
 </script>
 
@@ -417,28 +441,28 @@ message,
 -->
 <script id="treeroot-pass-reset-tmpl" type="text/html">
 <form id="<%= id %>" class="Box" autocomplete="off">
-    <div class="Message">
-        <p>
-            <%= message %>
-        </p>
-    </div>
-    <div class="inputs">
-        <div>
-            {i18n_recovery_key}:
-        </div>
-        <div class="input-wrap">
-            <input type="text" class="recovery-code">
-        </div>
-        <div>
-            {i18n_new_passphrase}:
-        </div>
-        <div class="input-wrap">
-            <input type="password" class="new-pass">
-        </div>
-    </div>
-    <button type="submit">
-        {i18n_submit}
-    </button>
+	<div class="Message">
+		<p>
+			<%= message %>
+		</p>
+	</div>
+	<div class="inputs">
+		<div>
+			{i18n_recovery_key}:
+		</div>
+		<div class="input-wrap">
+			<input type="text" class="recovery-code">
+		</div>
+		<div>
+			{i18n_new_passphrase}:
+		</div>
+		<div class="input-wrap">
+			<input type="password" class="new-pass">
+		</div>
+	</div>
+	<button type="submit">
+		{i18n_submit}
+	</button>
 </form>
 </script>
 
@@ -450,20 +474,20 @@ value,
 -->
 <script id="query-text-tmpl" type="text/html">
 <form id="<%= id %>" class="Box">
-    <div class="Message fortify">
-        <p>
-            <%= message %>
-        </p>
-    </div>
-    <div class="inputs fortify group row">
-        <div class="input-wrap expand">
-            <input type="text" value="<%= value %>">
-        </div>
-        <button type="submit" class="button accept fortify">
-            <i class="fa fa-fw fa-sign-in"></i>
-            {i18n_submit}
-        </button>
-    </div>
+	<div class="Message fortify">
+		<p>
+			<%= message %>
+		</p>
+	</div>
+	<div class="inputs fortify group row">
+		<div class="input-wrap expand">
+			<input type="text" value="<%= value %>">
+		</div>
+		<button type="submit" class="button accept fortify">
+			<i class="fa fa-fw fa-sign-in"></i>
+			{i18n_submit}
+		</button>
+	</div>
 </form>
 </script>
 
@@ -475,20 +499,20 @@ cancelText,
 -->
 <script id="query-retry-tmpl" type="text/html">
 <form id="<%= id %>" class="Box">
-    <div class="Message fortify">
-        <p>
-            <%= message %>
-        </p>
-    </div>
-    <div class="inputs group row end button-row">
-        <button type="button" class="cancel button fortify">
-            <%= cancelText %>
-        </button>
-        <button type="submit" class="button Accept fortify">
-            <i class="fa fa-fw fa-refresh"></i>
-            <%= retryText %>
-        </button>
-    </div>
+	<div class="Message fortify">
+		<p>
+			<%= message %>
+		</p>
+	</div>
+	<div class="inputs group row end button-row">
+		<button type="button" class="cancel button fortify">
+			<%= cancelText %>
+		</button>
+		<button type="submit" class="button Accept fortify">
+			<i class="fa fa-fw fa-refresh"></i>
+			<%= retryText %>
+		</button>
+	</div>
 </form>
 </script>
 
@@ -499,20 +523,20 @@ placeholder,
 -->
 <script id="query-secure-tmpl" type="text/html">
 <form id="<%= id %>" class="Box">
-    <div class="Message fortify">
-        <p>
-            <%= message %>:
-        </p>
-    </div>
-    <div class="inputs fortify group row">
-        <div class="input-wrap expand">
-            <input type="password" placeholder="<%= placeholder %>">
-        </div>
-        <button type="submit" class="button accept fortify">
-            <i class="fa fa-fw fa-sign-in"></i>
-            {i18n_submit}
-        </button>
-    </div>
+	<div class="Message fortify">
+		<p>
+			<%= message %>:
+		</p>
+	</div>
+	<div class="inputs fortify group row">
+		<div class="input-wrap expand">
+			<input type="password" placeholder="<%= placeholder %>">
+		</div>
+		<button type="submit" class="button accept fortify">
+			<i class="fa fa-fw fa-sign-in"></i>
+			{i18n_submit}
+		</button>
+	</div>
 </form>
 </script>
 
@@ -524,29 +548,29 @@ resetLink,
 -->
 <script id="query-password-tmpl" type="text/html">
 <form id="<%= id %>" class="Box">
-    <div class="Message fortify">
-        <p>
-            <%= message %>:
-        </p>
-    </div>
-    <div class="inputs fortify group row">
-        <div class="input-wrap expand">
-            <input type="password">
-        </div>
-        <button type="submit" class="button accept fortify">
-            <i class="fa fa-fw fa-sign-in"></i>
-            {i18n_submit}
-        </button>
-    </div>
-    <div class="query-pass-reset group row start">
-        <div>
-            {i18n_forgot_your_password}
-        </div>
-        <div class="button pass-reset">
-            <i class="fa fa-fw fa-recycle"></i>
-            {i18n_reset}
-        </div>
-    </div>
+	<div class="Message fortify">
+		<p>
+			<%= message %>:
+		</p>
+	</div>
+	<div class="inputs fortify group row">
+		<div class="input-wrap expand">
+			<input type="password">
+		</div>
+		<button type="submit" class="button accept fortify">
+			<i class="fa fa-fw fa-sign-in"></i>
+			{i18n_submit}
+		</button>
+	</div>
+	<div class="query-pass-reset group row start">
+		<div>
+			{i18n_forgot_your_password}
+		</div>
+		<div class="button pass-reset">
+			<i class="fa fa-fw fa-recycle"></i>
+			{i18n_reset}
+		</div>
+	</div>
 </form>
 </script>
 
@@ -556,20 +580,20 @@ description,
 -->
 <script id="query-secure-confirm-tmpl" type="text/html">
 <form id="<%= id %>" class="Box">
-    <div class="Message fortify">
-        <p>
-            <%= message %>
-        </p>
-    </div>
-    <div class="inputs fortify group row">
-        <div class="input-wrap expand">
-            <input type="password">
-        </div>
-        <button type="submit" class="button accept fortify">
-            <i class="fa fa-fw fa-sign-in"></i>
-            {i18n_submit}
-        </button>
-    </div>
+	<div class="Message fortify">
+		<p>
+			<%= message %>
+		</p>
+	</div>
+	<div class="inputs fortify group row">
+		<div class="input-wrap expand">
+			<input type="password">
+		</div>
+		<button type="submit" class="button accept fortify">
+			<i class="fa fa-fw fa-sign-in"></i>
+			{i18n_submit}
+		</button>
+	</div>
 </form>
 </script>
 
@@ -580,24 +604,24 @@ host,
 -->
 <script id="query-host-err" type="text/html">
 <form id="<%= id %>" class="Box">
-    <div class="Message fortify">
-        <p>
-            Remote host error: <%= error %>. Retrying..
-        </p>
-    </div>
-    <div class="retry-countdown LED">
-        <div class="retry-bar On">
-        </div>
-    </div>
-    <div class="inputs fortify group row">
-        <div class="input-wrap expand">
-            <input type="text" value="<%= host %>">
-        </div>
-        <button type="submit" class="button accept fortify">
-            <i class="fa fa-fw fa-repeat"></i>
-            {i18n_retry_now}
-        </button>
-    </div>
+	<div class="Message fortify">
+		<p>
+			Remote host error: <%= error %>. Retrying..
+		</p>
+	</div>
+	<div class="retry-countdown LED">
+		<div class="retry-bar On">
+		</div>
+	</div>
+	<div class="inputs fortify group row">
+		<div class="input-wrap expand">
+			<input type="text" value="<%= host %>">
+		</div>
+		<button type="submit" class="button accept fortify">
+			<i class="fa fa-fw fa-repeat"></i>
+			{i18n_retry_now}
+		</button>
+	</div>
 </form>
 </script>
 
@@ -606,31 +630,31 @@ id,
 -->
 <script id="info-missing-tmpl" type="text/html">
 <div id="<%= id %>" class="module-info Box Info">
-    <div class="">
-        <p>
-            {i18n_an_account_can_be}
-        </p>
-        <p>
-            {i18n_you_can_choose}
-        </p>
-        <p>
-            {i18n_if_you_have_already}
-        </p>
-    </div>
-    <div class="Buttons group row tighten">
-        <button type="button" class="button accept science group row">
-            <i class="fa fa-fw fa-flask"></i>
-            {i18n_automatic}
-        </button>
-        <button type="button" class="button account group row">
-            <i class="fa fa-fw fa-user-plus"></i>
-            {i18n_create_an_account}
-        </button>
-        <button type="button" class="button settings group row">
-            <i class="fa fa-fw fa-sign-in"></i>
-            {i18n_i_have_an_account}
-        </button>
-    </div>
+	<div class="">
+		<p>
+			{i18n_an_account_can_be}
+		</p>
+		<p>
+			{i18n_you_can_choose}
+		</p>
+		<p>
+			{i18n_if_you_have_already}
+		</p>
+	</div>
+	<div class="Buttons group row tighten">
+		<button type="button" class="button accept science group row">
+			<i class="fa fa-fw fa-flask"></i>
+			{i18n_automatic}
+		</button>
+		<button type="button" class="button account group row">
+			<i class="fa fa-fw fa-user-plus"></i>
+			{i18n_create_an_account}
+		</button>
+		<button type="button" class="button settings group row">
+			<i class="fa fa-fw fa-sign-in"></i>
+			{i18n_i_have_an_account}
+		</button>
+	</div>
 </div>
 </script>
 
@@ -640,18 +664,18 @@ host,
 -->
 <script id="host-unreachable-tmpl" type="text/html">
 <form id="<%= id %>" class="Box Info group row">
-    <div class="Message fortify">
-        {i18n_could_not_connect_to}:
-    </div>
-    <div class="inputs fortify group row">
-        <div class="input-wrap expand">
-            <input type="text" value="<%= host %>">
-        </div>
-        <button type="submit" class="button accept fortify">
-            <i class="fa fa-fw fa-refresh"></i>
-            {i18n_try_again}
-        </button>
-    </div>
+	<div class="Message fortify">
+		{i18n_could_not_connect_to}:
+	</div>
+	<div class="inputs fortify group row">
+		<div class="input-wrap expand">
+			<input type="text" value="<%= host %>">
+		</div>
+		<button type="submit" class="button accept fortify">
+			<i class="fa fa-fw fa-refresh"></i>
+			{i18n_try_again}
+		</button>
+	</div>
 </form>
 </script>
 
@@ -661,18 +685,18 @@ login,
 -->
 <script id="invalid-identity-tmpl" type="text/html">
 <form id="<%= id %>" class="Box Info group row">
-    <div class="Message fortify">
-        {i18n_invalid_login}:
-    </div>
-    <div class="inputs fortify group row">
-        <div class="input-wrap expand">
-            <input type="text" value="<%= login %>">
-        </div>
-        <button type="submit" class="button accept fortify">
-            <i class="fa fa-fw fa-user"></i>
-            {i18n_try_again}
-        </button>
-    </div>
+	<div class="Message fortify">
+		{i18n_invalid_login}:
+	</div>
+	<div class="inputs fortify group row">
+		<div class="input-wrap expand">
+			<input type="text" value="<%= login %>">
+		</div>
+		<button type="submit" class="button accept fortify">
+			<i class="fa fa-fw fa-user"></i>
+			{i18n_try_again}
+		</button>
+	</div>
 </form>
 </script>
 
@@ -681,15 +705,15 @@ id,
 -->
 <script id="error-reconnect-tmpl" type="text/html">
 <div id="<%= id %>" class="Box Error group row tighten">
-    <div class="Message">
-        {i18n_there_was_a_problem}
-    </div>
-    <div class="Buttons group row tighten">
-        <button type="button" class="button reconnect-now">
-            <i class="fa fa-fw fa-refresh"></i>
-            {i18n_reconnect_now}
-        </button>
-    </div>
+	<div class="Message">
+		{i18n_there_was_a_problem}
+	</div>
+	<div class="Buttons group row tighten">
+		<button type="button" class="button reconnect-now">
+			<i class="fa fa-fw fa-refresh"></i>
+			{i18n_reconnect_now}
+		</button>
+	</div>
 </div>
 </script>
 
@@ -698,15 +722,15 @@ id,
 -->
 <script id="offline-reconnect-tmpl" type="text/html">
 <div id="<%= id %>" class="Box Info group row tighten">
-    <div class="Message">
-        {i18n_module_is_offline}
-    </div>
-    <div class="Buttons group row tighten">
-        <button type="button" class="button reconnect">
-            <i class="fa fa-fw fa-bolt"></i>
-            {i18n_connect}
-        </button>
-    </div>
+	<div class="Message">
+		{i18n_module_is_offline}
+	</div>
+	<div class="Buttons group row tighten">
+		<button type="button" class="button reconnect">
+			<i class="fa fa-fw fa-bolt"></i>
+			{i18n_connect}
+		</button>
+	</div>
 </div>
 </script>
 
@@ -719,27 +743,27 @@ itemsId,
 -->
 <script id="presence-rooms-tmpl" type="text/html">
 <div id="<%= roomsId %>" class="module bar column BorderBottom">
-    <div id="<%= folditId %>" class="module-head group row fortify MousePointer">
-        <div class="module-logo fortify">
-            <div class="logo center-child">
-                <i class="fa fa-fw fa-user-circle-o"></i>
-            </div>
-        </div>
-        <div class="module-title expand">
-            <%= title %>
-        </div>
-        <div class="actions group row fortify">
-            <div class="foldit-status">
-            </div>
-            <div id="<%= connStateId %>">
-            </div>
-            <div class="item-menu Button IconButton" title="">
-                <i class="fa fa-fw fa-ellipsis-v"></i>
-            </div>
-        </div>
-    </div>
-    <div id="<%= itemsId %>" class="contacts ZebraList Interactive SmoothScrolling">
-    </div>
+	<div id="<%= folditId %>" class="module-head group row fortify MousePointer">
+		<div class="module-logo fortify">
+			<div class="logo center-child">
+				<i class="fa fa-fw fa-user-circle-o"></i>
+			</div>
+		</div>
+		<div class="module-title expand">
+			<%= title %>
+		</div>
+		<div class="actions group row fortify">
+			<div class="foldit-status">
+			</div>
+			<div id="<%= connStateId %>">
+			</div>
+			<div class="item-menu Button IconButton" title="">
+				<i class="fa fa-fw fa-ellipsis-v"></i>
+			</div>
+		</div>
+	</div>
+	<div id="<%= itemsId %>" class="contacts ZebraList Interactive SmoothScrolling">
+	</div>
 </div>
 </script>
 
@@ -753,38 +777,38 @@ msgWaitingId,
 -->
 <script id="presence-room-tmpl" type="text/html">
 <div id="<%= clientId %>" class="contact room group row MousePointer">
-    <div class="contact-height-dummy fortify">
-    </div>
-    <div class="avatar" style="background-image:url(&#39;<%= avatar %>&#39;)">
-    </div>
-    <button class="button show-set-name fortify hidden" title="Set a name and save room">
-        <i class="fa fa-fw fa-edit"></i>
-    </button>
-    <form class="room-name-form expand group row hidden">
-        <div class="input-wrap expand">
-            <input type="text" placeholder="name room">
-        </div>
-        <button class="button submit-room-name accept" type="submit" title="Save room">
-            <i class="fa fa-fw fa-save"></i>
-        </button>
-        <button class="button danger hide-set-name" type="button" title="Cancel">
-            <i class="fa fa-fw fa-close"></i>
-        </button>
-    </form>
-    <div class="name expand">
-        <%= name %>
-    </div>
-    <div class="contact-status item-row bar row fortify">
-        <div id="<%= msgWaitingId %>">
-        </div>
-        <div id="<%= liveStatusId %>">
-        </div>
-        <div id="<%= roomStatusId %>">
-        </div>
-    </div>
-    <div class="item-menu Button IconButton fortify center-child">
-        <i class="fa fa-fw fa-ellipsis-v"></i>
-    </div>
+	<div class="contact-height-dummy fortify">
+	</div>
+	<div class="avatar" style="background-image:url(&#39;<%= avatar %>&#39;)">
+	</div>
+	<button class="button show-set-name fortify hidden" title="Set a name and save room">
+		<i class="fa fa-fw fa-edit"></i>
+	</button>
+	<form class="room-name-form expand group row hidden">
+		<div class="input-wrap expand">
+			<input type="text" placeholder="name room">
+		</div>
+		<button class="button submit-room-name accept" type="submit" title="Save room">
+			<i class="fa fa-fw fa-save"></i>
+		</button>
+		<button class="button danger hide-set-name" type="button" title="Cancel">
+			<i class="fa fa-fw fa-close"></i>
+		</button>
+	</form>
+	<div class="name expand">
+		<%= name %>
+	</div>
+	<div class="contact-status item-row bar row fortify">
+		<div id="<%= msgWaitingId %>">
+		</div>
+		<div id="<%= liveStatusId %>">
+		</div>
+		<div id="<%= roomStatusId %>">
+		</div>
+	</div>
+	<div class="item-menu Button IconButton fortify center-child">
+		<i class="fa fa-fw fa-ellipsis-v"></i>
+	</div>
 </div>
 </script>
 
@@ -799,24 +823,24 @@ msgWaitingId,
 -->
 <script id="presence-contact-tmpl" type="text/html">
 <div id="<%= clientId %>" class="contact group row MousePointer">
-    <div class="avatar fortify"
-        style="background-image:url(&#39;<%= avatarSrc %>&#39;)"
-    >
-        <div id="<%= statusId %>" class="avatar-status">
-        </div>
-    </div>
-    <div class="name expand">
-        <%= name %>
-    </div>
-    <div class="group row item-row fortify">
-        <div id="<%= liveStatusId %>" class="fortify">
-        </div>
-        <div id="<%= msgWaitingId %>" class="fortify">
-        </div>
-    </div>
-    <div class="item-menu Button IconButton fortify center-child">
-        <i class="fa fa-fw fa-ellipsis-v"></i>
-    </div>
+	<div class="avatar fortify"
+		style="background-image:url(&#39;<%= avatarSrc %>&#39;)"
+	>
+		<div id="<%= statusId %>" class="avatar-status">
+		</div>
+	</div>
+	<div class="name expand">
+		<%= name %>
+	</div>
+	<div class="group row item-row fortify">
+		<div id="<%= liveStatusId %>" class="fortify">
+		</div>
+		<div id="<%= msgWaitingId %>" class="fortify">
+		</div>
+	</div>
+	<div class="item-menu Button IconButton fortify center-child">
+		<i class="fa fa-fw fa-ellipsis-v"></i>
+	</div>
 </div>
 </script>
 
@@ -828,21 +852,21 @@ haveId,
 -->
 <script id="presence-ask-account-tmpl" type="text/html">
 <form id="<%= id %>" class="Box">
-    <div class="Message">
-        <p>
-            {i18n_no_presence_login}
-        </p>
-    </div>
-    <div class="inputs group row">
-        <button type="button" class="button" id="<%= createId %>">
-            <i class="fa fa-fw fa-cube"></i>
-            {i18n_create_new}
-        </button>
-        <button type="button" class="button" id="<%= haveId %>">
-            <i class="fa fa-fw fa-cube"></i>
-            {i18n_use_existing}
-        </button>
-    </div>
+	<div class="Message">
+		<p>
+			{i18n_no_presence_login}
+		</p>
+	</div>
+	<div class="inputs group row">
+		<button type="button" class="button" id="<%= createId %>">
+			<i class="fa fa-fw fa-cube"></i>
+			{i18n_create_new}
+		</button>
+		<button type="button" class="button" id="<%= haveId %>">
+			<i class="fa fa-fw fa-cube"></i>
+			{i18n_use_existing}
+		</button>
+	</div>
 </form>
 </script>
 
@@ -853,23 +877,23 @@ login,
 -->
 <script id="presence-create-account-tmpl" type="text/html">
 <form id="<%= id %>" class="Box">
-    <div class="Message">
-        <p>
-            {i18n_create_a_new_presence_account}
-        </p>
-    </div>
-    <div class="inputs">
-        <div class="input-wrap expand">
-            <input type="text" class="login" value="<%= login %>" placeholder="login">
-        </div>
-        <div class="input-wrap expand">
-            <input type="text" class="passphrase" value="" placeholder="passphrase">
-        </div>
-        <button type="submit" class="button accept fortify">
-            <i class="fa fa-fw fa-sign-in"></i>
-            Submit
-        </button>
-    </div>
+	<div class="Message">
+		<p>
+			{i18n_create_a_new_presence_account}
+		</p>
+	</div>
+	<div class="inputs">
+		<div class="input-wrap expand">
+			<input type="text" class="login" value="<%= login %>" placeholder="login">
+		</div>
+		<div class="input-wrap expand">
+			<input type="text" class="passphrase" value="" placeholder="passphrase">
+		</div>
+		<button type="submit" class="button accept fortify">
+			<i class="fa fa-fw fa-sign-in"></i>
+			Submit
+		</button>
+	</div>
 </form>
 </script>
 
@@ -878,26 +902,26 @@ id,
 -->
 <script id="call-status-tmpl" type="text/html">
 <div id="<%= id %>" class="presence-call group row hidden">
-    <div class="call-status hidden Available">
-        <i class="fa fa-fw fa-phone"></i>
-    </div>
-    <div class="call-incoming group row hidden">
-        <div class="button accept-video Accept">
-            <i class="fa fa-fw fa-video-camera"></i>
-        </div>
-        <div class="button accept-audio Accept">
-            <i class="fa fa-fw fa-microphone"></i>
-        </div>
-    </div>
-    <div class="call-outgoing hidden">
-        <div class="LED">
-            <i class="fa fa-fw fa-video-camera DangerText"></i>
-        </div>
-    </div>
-    <div class="call-live hidden">
-    </div>
+	<div class="call-status hidden Available">
+		<i class="fa fa-fw fa-phone"></i>
+	</div>
+	<div class="call-incoming group row hidden">
+		<div class="button accept-video Accept">
+			<i class="fa fa-fw fa-video-camera"></i>
+		</div>
+		<div class="button accept-audio Accept">
+			<i class="fa fa-fw fa-microphone"></i>
+		</div>
+	</div>
+	<div class="call-outgoing hidden">
+		<div class="LED">
+			<i class="fa fa-fw fa-video-camera DangerText"></i>
+		</div>
+	</div>
+	<div class="call-live hidden">
+	</div>
 </div>
 </script>
 
-    </div>
+	</div>
 </body>

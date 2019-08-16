@@ -189,6 +189,67 @@ library.view = library.view || {};
 	
 })( library.view );
 
+// Presence invite to room
+(function( ns, undefined ) {
+	ns.PresenceInviter = function( roomName, idList, onClose, eventSink ) {
+		const self = this;
+		library.component.EventEmitter.call( self, eventSink );
+		self.roomName = roomName;
+		self.init( idList, onClose );
+	}
+	
+	ns.PresenceInviter.prototype =
+		Object.create( library.component.EventEmitter.prototype );
+		
+	// Public
+	
+	ns.PresenceInviter.prototype.show = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
+	
+	ns.PresenceInviter.prototype.close = function() {
+		const self = this;
+		self.closeEventEmitter();
+		delete self.roomName;
+		const view = self.view;
+		delete self.view;
+		
+		if ( view )
+			view.close();
+	}
+	
+	ns.PresenceInviter.prototype.init = function( idList, onClose ) {
+		const self = this;
+		const filePath = 'html/presenceInviter.html';
+		const windowConf = {
+			title : Application.i18n( 'i18n_invite_to' ) + ' ' + self.roomName,
+			width : 400,
+			height : 500,
+		};
+		const viewConf = {
+			roomName  : self.roomName,
+			idList    : idList,
+			fragments : hello.commonFragments,
+		};
+		self.view = new api.View(
+			filePath,
+			windowConf,
+			viewConf,
+			viewEvent,
+			onClose
+		);
+		
+		function viewEvent( type, data ) {
+			self.emit( type, data );
+		}
+	}
+	
+})( library.view );
+
 // About
 (function( ns, undefined ) {
 	ns.About = function( about, onclose ) {
@@ -199,9 +260,13 @@ library.view = library.view || {};
 	}
 	
 	ns.About.prototype.init = function() {
-		var self = this;
+		const self = this;
+		const title = Application.i18n( 'i18n_about_short' )
+			+ ' ' 
+			+ ( hello.config.appName ? hello.config.appName : 'Friend Chat' );
+		
 		const windowConf = {
-			title  : ( Application.i18n( 'i18n_about_short' ) + ' ' + ( hello.config.appName ? hello.config.appName : 'Friend Chat' ) ) || 'Friend Chat - About',
+			title  : title,
 			width  : 400,
 			height : 400,
 		};

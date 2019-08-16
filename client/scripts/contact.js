@@ -838,6 +838,7 @@ library.contact = library.contact || {};
 		self.view.on( 'live-show', e => self.joinLive());
 		self.view.on( 'open-chat', chat );
 		self.view.on( 'leave-room', leave );
+		self.view.on( 'invite-show', e => self.showInviter( e ));
 		
 		function persist( e ) { self.persistRoom( e ); }
 		function settings( e ) { self.loadSettings( e ); }
@@ -997,6 +998,7 @@ library.contact = library.contact || {};
 		self.chatView.on( 'chat', chat );
 		self.chatView.on( 'live', goLive );
 		self.chatView.on( 'contact-open', openContact );
+		self.chatView.on( 'invite-show', e => self.showInviter( e ));
 		
 		function eventSink( e ) { console.log( 'unhandled chat view event', e ); }
 		function onClose( e ) {
@@ -1041,6 +1043,61 @@ library.contact = library.contact || {};
 		const self = this;
 		const leave = { type : 'leave' };
 		self.send( leave );
+	}
+	
+	ns.PresenceRoom.prototype.showInviter = function( e ) {
+		const self = this;
+		if ( self.inviter ) {
+			self.inviter.show();
+			return;
+		}
+		
+		const allIds = self.idc.readList();
+		const ids = allIds
+			.filter( isOnline )
+			.filter( notInRoom );
+		
+		self.inviter = new library.view.PresenceInviter(
+			self.identity.name,
+			ids,
+			onClose,
+			eventSink
+		);
+		self.inviter.on( 'add', add );
+		
+		function onClose() {
+			if ( self.inviter )
+				self.inviter.close();
+			
+			delete self.inviter;
+		}
+		
+		function eventSink() {
+			console.log( 'inviteer event sink', arguments );
+		}
+		
+		function add( user ) {
+			const roomAdd = {
+				type : 'room-add',
+				data : user,
+			};
+			
+			const inv = {
+				type : 'invite',
+				data : roomAdd,
+			};
+			self.send( inv );
+		}
+		
+		function isOnline( cId ) {
+			console.log( 'isOnline', cId );
+			return cId.isOnline;
+		}
+		
+		function notInRoom( cId ) {
+			const inRoom = self.userIds.some( uId => uId === cId.clientId );
+			return !inRoom;
+		}
 	}
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
@@ -1539,6 +1596,7 @@ library.contact = library.contact || {};
 			
 			if ( id.isOnline )
 				self.onlineList.push( uId );
+			
 			self.updateViewUsers();
 		}
 	}
@@ -1619,7 +1677,6 @@ library.contact = library.contact || {};
 		
 		if ( 'join' === event.type ) {
 			const peer = event.data;
-			console.log( 'peer.join  - peer', peer );
 			self.idc.get( peer.peerId )
 				.then( id => {
 					peer.identity = id;
@@ -1987,7 +2044,6 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.handleCloseLive = function( liveId ) {
 		const self = this;
 		// close the things
-		console.log( 'handleCloseLive', liveId );
 		if ( !liveId ) {
 			clearView();
 			close();

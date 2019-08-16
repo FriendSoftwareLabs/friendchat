@@ -1247,6 +1247,9 @@ library.view = library.view || {};
 		self.userId = conf.userId;
 		
 		library.view.BaseModule.call( self, conf );
+		
+		self.invites = {};
+		
 		self.init();
 	}
 	
@@ -1327,6 +1330,7 @@ library.view = library.view || {};
 		self.mod.on( 'contact-list', contactList );
 		self.mod.on( 'contact-add', contactAdd );
 		self.mod.on( 'contact-remove', contactRemove );
+		self.mod.on( 'invite-add', inviteAdd );
 		
 		function userId( e ) { self.userId = e; }
 		function joinedRoom( e ) { self.handleRoomJoin( e ); }
@@ -1334,6 +1338,7 @@ library.view = library.view || {};
 		function contactList( e ) { self.handleContactList( e ); }
 		function contactAdd( e ) { self.handleContactAdd( e ); }
 		function contactRemove( e ) { self.handleContactRemove( e ); }
+		function inviteAdd( e ) { self.handleInviteAdd( e ); }
 	}
 	
 	ns.Presence.prototype.updateTitle = function() {
@@ -1360,6 +1365,7 @@ library.view = library.view || {};
 		}
 		
 		const cId = conf.clientId;
+		self.clearRoomInvite( cId );
 		if ( self.rooms[ cId ]) {
 			return;
 		}
@@ -1420,6 +1426,92 @@ library.view = library.view || {};
 		delete self.contacts[ clientId ];
 		self.contactIds = Object.keys( self.contacts );
 		contact.close();
+	}
+	
+	ns.Presence.prototype.handleInviteAdd = function( invite ) {
+		const self = this;
+		const from = invite.from;
+		const room = invite.room;
+		const token = invite.token;
+		if ( !from || !room || !token ) {
+			console.log( 'view.Presence.handleInviteAdd - missing things', invite );
+			return;
+		}
+		
+		const roomId = room.clientId;
+		if ( self.invites[ roomId ]) {
+			console.log( 'view.Presence.handleInviteAdd - already have invite', {
+				inv  : invite,
+				invs : self.invites,
+			});
+			return;
+		}
+		
+		const parts = [];
+		parts.push( from.name );
+		parts.push( window.View.i18n( 'i18n_has_invited_you_to' ));
+		parts.push( '#' + room.name );
+		const str = parts.join( ' ' );
+		const item = new library.view.QueryItem(
+			self.roomItemsId,
+			roomId,
+			str,
+			room.avatar,
+			'room',
+			null,
+		);
+		self.invites[ roomId ] = {
+			item    : item,
+			timeout : null,
+		};
+		item.once( 'response', handleResponse );
+		
+		const orderConf = {
+			clientId : roomId,
+			priority : 1,
+			name     : room.name,
+		};
+		self.roomOrder.add( orderConf );
+		self.emit( 'add', item );
+		
+		function handleResponse( res ) {
+			queueRemove( roomId );
+			const invRes = {
+				type : 'invite-response',
+				data : {
+					token    : token,
+					roomId   : roomId,
+					accepted : res.accepted,
+				},
+			};
+			self.mod.send( invRes );
+		}
+		
+		function queueRemove( roomId ) {
+			const inv = self.invites[ roomId ];
+			if ( !inv )
+				return;
+			
+			inv.timeout = window.setTimeout( remove, 2000 );
+			function remove() {
+				self.clearRoomInvite( roomId );
+			}
+		}
+	}
+	
+	ns.Presence.prototype.clearRoomInvite = function( invId ) {
+		const self = this;
+		const inv = self.invites[ invId ];
+		if ( null == inv )
+			return;
+		
+		self.roomOrder.remove( invId );
+		self.emit( 'remove', invId );
+		if ( null != inv.timeout )
+			window.clearTimeout( inv.timeout );
+		
+		inv.item.close();
+		delete self.invites[ invId ];
 	}
 	
 	ns.Presence.prototype.addContact = function( conf ) {

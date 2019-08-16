@@ -1054,3 +1054,114 @@ library.view = library.view || {};
 	}
 	
 })( library.view );
+
+
+// QUERY ITEM
+(function( ns, undefined ) {
+	ns.QueryItem = function(
+		containerId,
+		clientId,
+		queryMsg,
+		avatar,
+		typeKlass,
+		source
+	) {
+		const self = this;
+		library.component.EventEmitter.call( self );
+		self.type = 'query';
+		self.id = clientId;
+		self.queryMsg = queryMsg;
+		self.avatar = avatar;
+		self.typeKlass = typeKlass;
+		self.source = source;
+		
+		self.init( containerId );
+	}
+	
+	ns.QueryItem.prototype =
+		Object.create( library.component.EventEmitter.prototype );
+	
+	// Public
+	
+	ns.QueryItem.prototype.accept = function() {
+		const self = this;
+		if ( self.source ) {
+			self.source.accept();
+			return;
+		}
+		
+		self.respond( true );
+	}
+	
+	ns.QueryItem.prototype.reject = function() {
+		const self = this;
+		if ( self.source ) {
+			self.source.reject();
+			return;
+		}
+		
+		self.respond( false );
+	}
+	
+	ns.QueryItem.prototype.close = function() {
+		const self = this;
+		self.closeEventEmitter();
+		if ( self.el )
+			self.el.parentNode.removeChild( self.el );
+		
+		delete self.el;
+		delete self.source;
+	}
+	
+	// Private
+	
+	ns.QueryItem.prototype.init = function( containerId ) {
+		const self = this;
+		const conf = {
+			id        : self.id,
+			typeKlass : self.typeKlass,
+			avatar    : self.avatar,
+			queryMsg  : self.queryMsg,
+		};
+		
+		self.el = hello.template.getElement( 'query-item-tmpl', conf );
+		const container = document.getElementById( containerId );
+		container.appendChild( self.el );
+		const acceptBtn = self.el.querySelector( '.response-container .accept' );
+		const rejectBtn = self.el.querySelector( '.response-container .reject' );
+		acceptBtn.addEventListener( 'click', accept, true );
+		rejectBtn.addEventListener( 'click', reject, true );
+		
+		function accept( e ) {
+			setSpinny( acceptBtn );
+			self.accept();
+		}
+		
+		function reject( e ) {
+			setSpinny( rejectBtn );
+			self.reject();
+		}
+		
+		function setSpinny( btn ) {
+			if ( null != self.response )
+				return;
+			
+			const i = btn.querySelector( 'i' );
+			i.className = 'fa fa-fw fa-spinner fa-pulse';
+		}
+	}
+	
+	ns.QueryItem.prototype.respond = function( response ) {
+		const self = this;
+		if ( null != self.response )
+			return;
+		
+		self.response = response;
+		const res = {
+			id       : self.id,
+			accepted : response,
+		};
+		self.emit( 'response', res );
+	}
+	
+})( library.view );

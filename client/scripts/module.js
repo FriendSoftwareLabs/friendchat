@@ -832,9 +832,11 @@ library.module = library.module || {};
 		// view
 		self.view.on( 'create-room', createRoom );
 		self.view.on( 'contact', contact );
+		self.view.on( 'invite-response', invResponse );
 		
 		function createRoom( e ) { self.handleCreateRoom( e ); }
 		function contact( e ) { self.handleContactAction( e ); }
+		function invResponse( e ) { self.handleInviteResponse( e ); }
 		
 		self.setup();
 	}
@@ -1172,6 +1174,15 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleContactOnline = function( clientId, userState ) {
 		const self = this;
+		const online = {
+			clientId : clientId,
+			isOnline : !!userState,
+		};
+		self.idc.update({
+			type : 'online',
+			data : online,
+		});
+		
 		if ( clientId === self.accountId )
 			return;
 		
@@ -1187,15 +1198,6 @@ library.module = library.module || {};
 			room.setUserOnline( clientId, userState );
 		});
 		
-		/*
-		self.idc.get( clientId )
-			.then( idBack )
-			.catch(e => {});
-			
-		function idBack( id ) {
-			
-		}
-		*/
 	}
 	
 	ns.Presence.prototype.checkOpenChatWaiting = function( clientId ) {
@@ -1240,7 +1242,51 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleInvite = function( event ) {
 		const self = this;
-		console.log( 'presence.handleInvite - NYI', event );
+		if ( 'add' === event.type ) {
+			self.showRoomInvite( event.data );
+			return;
+		}
+		
+		if ( 'remove' === event.type ) {
+			self.removeRoomInvite( event.data );
+			return;
+		}
+		
+		console.log( 'Presence.handleInvite - unknown event', event );
+	}
+	
+	ns.Presence.prototype.showRoomInvite = function( invite ) {
+		const self = this;
+		self.idc.get( invite.fromId )
+			.then( fromBack )
+			.catch( fromErr );
+		
+		function fromBack( from ) {
+			invite.from = from;
+			const inv = {
+				type : 'invite-add',
+				data : invite,
+			};
+			self.view.send( inv );
+		}
+		
+		function fromErr( e ) {
+			console.log( 'fromErr', e );
+		}
+	}
+	
+	ns.Presence.prototype.removeRoomInvite = function( invId ) {
+		const self = this;
+		console.log( 'Presence.removeRoomInvite', invId );
+	}
+	
+	ns.Presence.prototype.handleInviteResponse = function( res ) {
+		const self = this;
+		const inv = {
+			type : 'invite-response',
+			data : res,
+		};
+		self.toAccount( inv );
 	}
 	
 	ns.Presence.prototype.setupRooms = function( rooms ) {

@@ -421,6 +421,14 @@ html body .tab-bar .tab-item.Button.IconButton
     line-height: 1.8em;
 }
 
+#recent-active .query-item,
+.conferences .query-item,
+.contacts .query-item {
+    position: relative;
+    padding-left:0.7em;
+    line-height: 1.8em;
+}
+
 .treeroot.contact {
 }
 
@@ -437,8 +445,17 @@ html body .tab-bar .tab-item.Button.IconButton
 }
 
 .room .name,
-.contact .name {
+.contact .name,
+.query-item .query-msg {
     margin-left : 1em;
+}
+
+.query-item .query-msg {
+    
+}
+
+.response-container {
+    
 }
 
 .contacts .contact-status,
@@ -484,9 +501,9 @@ html body .tab-bar .tab-item.Button.IconButton
 }
 
 #hello .recent-item {
-    padding-top : 0.4em;
+    padding-top    : 0.4em;
     padding-bottom : 0.2em;
-    padding-left : 0.7em;
+    padding-left   : 0.7em;
 }
 
 .avatar {
@@ -501,16 +518,16 @@ html body .tab-bar .tab-item.Button.IconButton
 
 .room .avatar,
 .recent-room .avatar {
-    border-radius       : 2px;
+    border-radius : 2px;
 }
 
 
 .recent-item .recent-info {
-    overflow: hidden;
+    overflow : hidden;
 }
 
 .recent-item .more-state {
-    max-height: 1.9em;
+    max-height : 1.9em;
 }
 
 .recent-item .name {
@@ -528,11 +545,11 @@ html body .tab-bar .tab-item.Button.IconButton
 }
 
 .recent-item .last-event-icon {
-    opacity: 0.5;
+    opacity : 0.5;
 }
 
 .recent-item .min-height-dummy {
-    line-height: 2em;
+    line-height : 2em;
 }
 
 .recent-item .last-msg-name {
@@ -574,14 +591,14 @@ html body .tab-bar .tab-item.Button.IconButton
 */
 
 .presence-call {
-    border-radius: 3em;
-    padding : 0.3em;
+    border-radius : 3em;
+    padding       : 0.3em;
 }
 
 #hello .call-status {
-    border-radius: 3em;
-    padding : 0.4em;
-    margin-right : 0.3em;
+    border-radius : 3em;
+    padding       : 0.4em;
+    margin-right  : 0.3em;
 }
 
 .call-incoming {

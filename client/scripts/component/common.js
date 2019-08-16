@@ -729,18 +729,33 @@ inherits from EventEmitter
 	
 	ns.IdCache.prototype.update = function( update ) {
 		const self = this;
-		const id = update.data;
-		const cId = id.clientId;
+		const user = update.data;
+		const cId = user.clientId;
 		const current = self.ids[ cId ];
 		if ( !current ) {
-			self.add( id );
+			self.get( cId );
 			return;
 		}
 		
-		if ( 'avatar' === update.type ) {
-			current.avatar = id.avatar;
-			return;
-		}
+		if ( 'avatar' === update.type )
+			current.avatar = user.avatar;
+		
+		if ( 'online' === update.type )
+			current.isOnline = user.isOnline;
+	}
+	
+	ns.IdCache.prototype.read = function( clientId ) {
+		const self = this;
+		return self.ids[ clientId ];
+	}
+	
+	ns.IdCache.prototype.readList = function( clientIdList ) {
+		const self = this;
+		if ( !clientIdList )
+			clientIdList = Object.keys( self.ids );
+		
+		const idList = clientIdList.map( cId => self.ids[ cId ]);
+		return idList;
 	}
 	
 	// Pri<ate

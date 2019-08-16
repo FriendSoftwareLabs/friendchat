@@ -2142,7 +2142,7 @@ library.component = library.component || {};
 		inputContainerId,
 		resultsContainerId,
 		template,
-		onActive
+		onActive,
 	) {
 		const self = this;
 		self.conn = null;
@@ -2214,9 +2214,6 @@ library.component = library.component || {};
 		self.input.addEventListener( 'blur', lostFocus, false );
 		self.inputIcon = inputContainer.querySelector( 'i' );
 		self.inputIcon.parentNode.addEventListener( 'click', clearClick, false );
-		function clearClick( e ) {
-			self.handleClear();
-		}
 		
 		const resContainer = document.getElementById( resultsContainerId );
 		const resultsId = friendUP.tool.uid( 'results' );
@@ -2227,6 +2224,7 @@ library.component = library.component || {};
 		self.output = self.template.getElement( 'search-results-tmpl', tmplConf );
 		resContainer.appendChild( self.output );
 		self.results = document.getElementById( resultsId );
+		
 		function hasSearchInput( e ) {
 			self.handleInput();
 		}
@@ -2239,6 +2237,11 @@ library.component = library.component || {};
 			self.clearSearch();
 			self.setInactive();
 		}
+		
+		function clearClick( e ) {
+			self.handleClear();
+		}
+		
 	}
 	
 	ns.Search.prototype.handleClear = function() {
@@ -2641,6 +2644,284 @@ library.component = library.component || {};
 })( library.component );
 
 
+// Filter list
+/*
+inputContainerId
+listContainerId
+itemList - optional, list of DOM elements to show in the list
+*/
+(function( ns, undefined ) {
+	ns.FilterList = function(
+		templater,
+		inputContainerId,
+		listContainerId,
+		filterProps,
+		itemList,
+	) {
+		const self = this;
+		library.component.EventEmitter.call( self );
+		
+		self.templater = templater,
+		self.inputCId = inputContainerId;
+		self.listCId = listContainerId;
+		self.filterProps = filterProps;
+		
+		self.items = {};
+		self.itemIds = [];
+		self.visible = [];
+		self.hidden = [];
+		
+		self.init( itemList );
+	}
+	
+	ns.FilterList.prototype =
+		Object.create( library.component.EventEmitter.prototype );
+		
+	// Public
+	
+	ns.FilterList.prototype.add = function( items ) {
+		const self = this;
+		console.log( 'FilterList.add', items );
+	}
+	
+	ns.FilterList.prototype.update = function( item ) {
+		const self = this;
+		console.log( 'FilterList.update', item );
+	}
+	
+	ns.FilterList.prototype.remove = function( itemIds ) {
+		const self = this;
+		console.log( 'FilterList.remove', itemIds );
+	}
+	
+	ns.FilterList.prototype.focus = function() {
+		const self = this;
+		self.input.focus();
+	}
+	
+	// Private
+	
+	ns.FilterList.prototype.init = function( itemList ) {
+		const self = this;
+		self.setInput();
+		if ( itemList )
+			itemList.forEach( addItem );
+		
+		function addItem( source ) {
+			const id = source.clientId;
+			const item = {
+				id : source.clientId,
+			};
+			addProps( item, source );
+			self.items[ id ] = item;
+			self.itemIds.push( id );
+			self.visible.push( item );
+		}
+		
+		function addProps( item, source ) {
+			self.filterProps.forEach( prop => {
+				const value = source[ prop ] || '';
+				item[ prop ] = value.toLowerCase();
+			});
+		}
+	}
+	
+	ns.FilterList.prototype.setInput = function() {
+		const self = this;
+		const container = document.getElementById( self.inputCId );
+		const el = self.templater.getElement( 'search-input-tmpl', {});
+		container.appendChild( el );
+		self.input = el.querySelector( 'input' );
+		self.input.addEventListener( 'keyup', hasFilterInput, false );
+		self.input.addEventListener( 'focus', hasFocus, false );
+		self.input.addEventListener( 'blur', lostFocus, false );
+		self.inputIcon = el.querySelector( 'i' );
+		self.inputIcon.parentNode.addEventListener( 'click', clearClick, false );
+		
+		function hasFilterInput( e ) {
+			self.handleInput();
+		}
+		
+		function hasFocus( e ) {
+			self.handleFocus();
+		}
+		
+		function lostFocus( e ) {
+			self.handleBlur();
+		}
+		
+		function clearClick( e ) {
+			self.clearFilter();
+		}
+	}
+	
+	ns.FilterList.prototype.handleInput = function() {
+		const self = this;
+		let str = self.input.value;
+		if ( !str || !str.trim ) {
+			self.clearFilter();
+			return;
+		}
+		
+		str = str.trim();
+		if ( !str || !str.length ) {
+			self.clearFilter();
+			return;
+		}
+		
+		if ( self.filterStr === str )
+			return;
+		
+		self.setFilterStateIcon( true );
+		if ( null != self.filterTimeout ) {
+			window.clearTimeout( self.filterTimeout );
+			self.filterTimeout = null;
+		}
+		
+		if ( self.checkIsSameBase( self.filterStr, str )) {
+			self.filterStr = str;
+			self.filterTimeout = window.setTimeout( filterAnyway, 200 );
+			return;
+		}
+		
+		self.filterStr = str;
+		if ( 1 === str.length ) {
+			self.filterTimeout = window.setTimeout( filterAnyway, 1000 );
+			return;
+		}
+		
+		if ( 2 === str.length ) {
+			self.filterTimeout = window.setTimeout( filterAnyway, 500 );
+			return;
+		}
+		
+		if ( null != self.filterTimeout ) {
+			window.clearTimeout( self.filterTimeout );
+			self.filterTimeout = null;
+		}
+		
+		self.applyFilter();
+		
+		function filterAnyway() {
+			self.applyFilter();
+		}
+	}
+	
+	ns.FilterList.prototype.handleFocus = function() {
+		const self = this;
+		self.setFocus( true );
+	}
+	
+	ns.FilterList.prototype.handleBlur = function() {
+		const self = this;
+		const str = self.input.value;
+		if ( !str || !str.length )
+			self.clearFilter();
+		
+		self.setFocus( false );
+	}
+	
+	ns.FilterList.prototype.clearFilter = function() {
+		const self = this;
+		if ( null != self.filterTimeout ) {
+			window.clearTimeout( self.filterTimeout );
+			self.filterTimeout = null;
+		}
+		
+		self.filterStr = null;
+		self.input.value = '';
+		self.visible = self.itemIds.slice();
+		self.hidden = [];
+		self.visible.forEach( id => {
+			self.toggleVisible( id, true );
+		});
+		self.setFilterStateIcon();
+	}
+	
+	ns.FilterList.prototype.applyFilter = function() {
+		const self = this;
+		if ( !self.filterStr )
+			return;
+		
+		self.filterStr = self.filterStr.toLowerCase();
+		if ( !self.checkIsSameBase( self.currentFilter, self.filterStr )) {
+			self.visible = self.itemIds.slice();
+			self.hidden = [];
+		}
+		
+		self.visible = self.visible.filter( setVisibility );
+		self.setFilterStateIcon();
+		self.currentFilter = self.filterStr;
+		
+		function setVisibility( vId ) {
+			const visible = self.items[ vId ];
+			const hasMatch = self.filterProps.some( prop => {
+				const value = visible[ prop ];
+				const index = value.indexOf( self.filterStr );
+				return ( -1 !== index );
+			});
+			
+			if ( hasMatch ) {
+				self.toggleVisible( vId, true );
+				return true;
+			}
+			
+			self.hidden.push( vId );
+			self.toggleVisible( vId, false );
+			return false;
+		}
+	}
+	
+	ns.FilterList.prototype.setFocus = function( isFocus ) {
+		const self = this;
+		self.hasFocus = isFocus;
+		self.setFilterStateIcon();
+		self.emit( 'focus', isFocus );
+	}
+	
+	ns.FilterList.prototype.setFilterStateIcon = function( isFiltering ) {
+		const self = this;
+		if ( !self.inputIcon )
+			return;
+		
+		if ( isFiltering )
+			self.inputIcon.className = 'fa fa-fw fa-spinner fa-pulse';
+		else {
+			if ( !!self.filterStr ) {
+				self.inputIcon.parentNode.classList.toggle( 'flat-btn', true );
+				self.inputIcon.className = 'fa fa-fw fa-close';
+			}
+			else {
+				self.inputIcon.parentNode.classList.toggle( 'flat-btn', false );
+				self.inputIcon.className = 'fa fa-fw fa-search';
+			}
+		}
+	}
+	
+	ns.FilterList.prototype.checkIsSameBase = function( base, check ) {
+		const self = this;
+		if ( 0 === check.indexOf( base ))
+			return true;
+		else
+			return false;
+	}
+	
+	ns.FilterList.prototype.toggleVisible = function( id, show ) {
+		const self = this;
+		const el = document.getElementById( id );
+		if ( !el )
+			return;
+		
+		el.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.FilterList.prototype.setList = function() {
+		const self = this;
+	}
+	
+})( library.component );
+
+
 // mini menu
 /*
 originElement <DOM element> - element to align the menu to
@@ -2914,16 +3195,27 @@ The menu will remove itself if it loses focus or a menu item is clicked
 /* ListOrder
 	
 	order a list of DOM elements in a specific container,
-	based on priority, then on time or name within the priority.
+	first on priority
+	priority is 1 - 9, with 0 as no/lowest priority.
+	1 is first prio and will be sorted to top
+	
+	elements are then ordered winthin the priority group by a set of properties
+	The order-by properties default to [ time, name ], but a different set can be
+	provided to the constructor
 	
 	the element must already be set in DOM before adding
-	the element will not be removed from DOM by ListOrder.remove()
-	
+	the element will be moved from its original location
+	the element will not be removed from DOM by ListOrder.remove(),
+		it will still be visible in the list, but not longer considered for sorting
 */
 ( function( ns, undefined ) {
-	ns.ListOrder = function( listElId ) {
+	ns.ListOrder = function( listElId, orderBy ) {
 		const self = this;
+		if ( !orderBy || !orderBy.length )
+			orderBy = [ 'time', 'name' ];
+		
 		self.list = null;
+		self.orderBy = orderBy;
 		self.prio = [];
 		self.prio[ 0 ] = []; // 0, no prio
 
@@ -2937,8 +3229,8 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		with a id matching itemConf.clientId
 		
 		itemConf : {
-			clientId : <element id string>,
-			priority : <number - 1, 2, ..., 9 >, optional, 0 is no priority
+			clientId : <unique string>,
+			priority : <number: 1, 2, ..., 9 >, optional, 0 is no priority
 			time     : <int>, used for odering within a priority group,
 			           takes precedence over name
 			name     : <string>, used for ordering within a priority group
@@ -2981,6 +3273,14 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		}
 		
 		self.updateInPrio( itemConf );
+	}
+	
+	/* get
+		returns the current config for a given element
+	*/
+	ns.ListOrder.prototype.get = function( clientId ) {
+		const self = this;
+		return self.getItem( clientId );
 	}
 	
 	/* remove
@@ -3039,6 +3339,22 @@ The menu will remove itself if it loses focus or a menu item is clicked
 				name : '',
 			};
 		}
+	}
+	
+	ns.ListOrder.prototype.getItem = function( id ) {
+		const self = this;
+		let getItem = null;
+		self.prio.some( prio => {
+			return prio.some(( item ) => {
+				if ( item.id !== id )
+					return false;
+				
+				getItem = item;
+				return true;
+			});
+		});
+		
+		return getItem;
 	}
 	
 	ns.ListOrder.prototype.getItemIndex = function( id ) {

@@ -114,9 +114,7 @@ library.view = library.view || {};
 		self.goVideoBtn = document.getElementById( 'upgrade-to-video' );
 		self.goAudioBtn = document.getElementById( 'upgrade-to-audio' );
 		self.toggleUsersBtn = document.getElementById( 'show-hide-btn' );
-		
-		// user list things
-		
+		self.inviteBtn = document.getElementById( 'invite-btn' );
 		
 		// chat things
 		self.messagesEl = document.getElementById( 'messages' );
@@ -129,6 +127,7 @@ library.view = library.view || {};
 		self.goVideoBtn.addEventListener( 'click', goVideoClick, false );
 		self.goAudioBtn.addEventListener( 'click', goAudioClick, false );
 		self.toggleUsersBtn.addEventListener( 'click', toggleUserList, false );
+		self.inviteBtn.addEventListener( 'click', showInviter, false );
 		
 		emoPanelBtn.addEventListener( 'click', toggleEmoPanel, false );
 		inputForm.addEventListener( 'submit', inputSubmit, false );
@@ -137,7 +136,6 @@ library.view = library.view || {};
 		
 		function attach( e ) {
 			var men = ge( 'attachment-menu' );
-			
 			var can = men.querySelector( '.Cancel' );
 			var cam = men.querySelector( '.Camera' );
 			var upl = men.querySelector( '.Upload' );
@@ -179,6 +177,14 @@ library.view = library.view || {};
 			e.stopPropagation();
 			e.preventDefault();
 			self.toggleUserList();
+		}
+		
+		function showInviter() {
+			const inv = {
+				type : 'invite-show',
+				data : null,
+			};
+			self.send( inv );
 		}
 		
 		function toggleEmoPanel( e ) {
@@ -295,10 +301,17 @@ library.view = library.view || {};
 		
 		let UserCtrl = library.component.UserCtrl;
 		let MsgBuilder = library.component.MsgBuilder;
-		if ( state.workgroups && state.workgroups.workId ) {
+		const isWorkroom = ( state.workgroups && state.workgroups.workId );
+		if ( isWorkroom ) {
 			UserCtrl = ns.UserWorkCtrl;
 			MsgBuilder = ns.WorkMsgBuilder;
 		}
+		
+		if ( !self.isPrivate )
+			self.toggleUserListBtn( true );
+		
+		if ( !self.isPrivate && !isWorkroom && ( self.userId === self.ownerId ))
+			self.inviteBtn.classList.toggle( 'hidden', false );
 		
 		//
 		self.users = new UserCtrl(
