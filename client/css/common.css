@@ -5,6 +5,11 @@ friend grey: #808080;
 
 */
 
+/* because theme css lolll */
+.IconButton:hover {
+	border : 1px solid transparent;
+}
+
 #hello .Off {
 	color            : transparent;
 	background-color : transparent;
@@ -1004,15 +1009,14 @@ html body .hidden {
 }
 
 .live-status-icon {
-	margin-right : 0.2em;
-	font-size: 130%;
+	margin-left : 0.2em;
 }
 
 .live-status-peers {
 }
 
 .live-status-peer {
-	margin-left : 0.2em;
+	margin-right : 0.2em;
 }
 
 .live-status-peer .avatar {

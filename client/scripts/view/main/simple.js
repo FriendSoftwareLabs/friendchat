@@ -39,36 +39,36 @@ var hello = window.hello || {};
 		const settingsItem = {
 			type   : 'item',
 			id     : 'account-settings',
-			name   : View.i18n('i18n_account_settings'),
+			name   : View.i18n( 'i18n_account_settings' ),
 			faIcon : 'fa-cog',
 		};
 		
 		const liveItem = {
 			type   : 'item',
 			id     : 'start-live',
-			name   : View.i18n('i18n_start_live_session'),
+			name   : View.i18n( 'i18n_start_live_session' ),
 			faIcon : 'fa-video-camera',
 		};
 		
 		const aboutItem = {
 			type   : 'item',
 			id     : 'about',
-			name   : View.i18n('i18n_about'),
+			name   : View.i18n( 'i18n_about' ),
 			faIcon : 'fa-info',
 		};
 		
 		const logoutItem = {
 			type   : 'item',
 			id     : 'logout',
-			name   : View.i18n('i18n_log_out'),
+			name   : View.i18n( 'i18n_log_out' ),
 			faIcon : 'fa-sign-out',
 		};
 		
 		const quitItem = {
 			type   : 'item',
 			id     : 'quit',
-			name   : View.i18n('i18n_quit'),
-			faIcon : 'fa-close',
+			name   : View.i18n( 'i18n_quit' ),
+			faIcon : 'fa-power-off',
 		};
 		
 		const menuItems = [];
@@ -134,7 +134,7 @@ var hello = window.hello || {};
 		
 		// Recent conversations
 		self.recent = new library.view.Recent(
-			'conversations',
+			'recent-events',
 			self.recentHistory,
 			hello.template
 		);
@@ -145,6 +145,57 @@ var hello = window.hello || {};
 		}
 		
 		// tabs
+		const recent = document.getElementById( 'recent-events' );
+		const recentBtn = document.getElementById( 'show-recent' );
+		const rooms = document.getElementById( 'rooms' );
+		const roomsBtn = document.getElementById( 'show-rooms' );
+		const contacts = document.getElementById( 'contacts' );
+		const contactsBtn = document.getElementById( 'show-contacts' );
+		
+		recentBtn.addEventListener( 'click', recentClick, false );
+		roomsBtn.addEventListener( 'click', roomsClick, false );
+		contactsBtn.addEventListener( 'click', contactsClick, false );
+		
+		setActive( recent, recentBtn );
+		
+		function recentClick( e ) {
+			btnClick();
+			setActive( recent, recentBtn, true );
+		}
+		
+		function roomsClick( e ) {
+			btnClick();
+			setActive( rooms, roomsBtn, true );
+		}
+		
+		function contactsClick( e ) {
+			btnClick();
+			setActive( contacts, contactsBtn, true );
+		}
+		
+		function btnClick() {
+			if ( self.search )
+				self.search.hide();
+			 
+			 setInactive();
+		}
+		
+		function setInactive() {
+			toggleActive( self.currTab, self.currTabBtn, false );
+		}
+		
+		function setActive( el, btnEl ) {
+			self.currTab = el;
+			self.currTabBtn = btnEl;
+			toggleActive( self.currTab, self.currTabBtn, true );
+		}
+		
+		function toggleActive( el, btnEl, show ) {
+			el.classList.toggle( 'active', !!show );
+			btnEl.classList.toggle( 'active', !!show );
+		}
+		
+		/*
 		var btabs = document.getElementById( 'main-tabs' );
 		var eles = document.getElementsByTagName( '*' );
 		var tabs = [];
@@ -180,15 +231,17 @@ var hello = window.hello || {};
 		for( var a = 0; a < tabs.length; a++ ) {
 			addTab( tabs[a], pages, a );
 		}
+		*/
 	}
 	
 	ns.Main.prototype.enableInAppMenu = function() {
-		var self = this;
-		var menu = document.getElementById( 'menu-btn' );
-		if( menu )
+		const self = this;
+		const menu = document.getElementById( 'menu-btn' );
+		if ( menu )
 			menu.classList.remove( 'hidden' );
-		var head = document.getElementById( 'head' );
-		if( head )
+		
+		const head = document.getElementById( 'head' );
+		if ( head )
 			head.classList.remove( 'PaddingRight' );
 	}
 	
@@ -218,7 +271,7 @@ var hello = window.hello || {};
 	ns.ModuleControl.prototype.getContainerId = function( moduleType ) {
 		const self = this;
 		return {
-			conference : 'conferences',
+			conference : 'rooms',
 			contact    : 'contacts',
 		};
 	}
@@ -226,7 +279,7 @@ var hello = window.hello || {};
 	ns.ModuleControl.prototype.setGuide = function() {
 		const self = this;
 		self.guide = new library.component.InfoBox({
-			containerId : 'conversations',
+			containerId : 'recent-events',
 			element     : null,
 		});
 	}
@@ -577,17 +630,38 @@ var hello = window.hello || {};
 		self.welcomeBox = document.getElementById( 'welcome-box' );
 		const welcomeClose = document.getElementById( 'welcome-box-close' );
 		welcomeClose.addEventListener( 'click', closeWelcome, false );
+		if ( !self.history ) {
+			showWelcome();
+			return;
+		}
+		
+		const things = Object.keys( self.history );
+		if ( things.length )
+			self.toggleNoRecent( true );
+		else
+			showWelcome();
+		
 		function closeWelcome() {
 			self.toggleNoRecent();
 		}
+		
+		function showWelcome() {
+			if ( !self.welcomeBox )
+				return;
+			
+			self.welcomeBox.classList.toggle( 'hidden', false );
+		}
 	}
 	
-	ns.Recent.prototype.toggleNoRecent = function() {
+	ns.Recent.prototype.toggleNoRecent = function( waitingForHistory ) {
 		const self = this;
 		if ( self.welcomeBox ) {
 			self.welcomeBox.parentNode.removeChild( self.welcomeBox );
 			delete self.welcomeBox;
 		}
+		
+		if ( waitingForHistory )
+			return;
 		
 		if ( !self.noRecent )
 			return;

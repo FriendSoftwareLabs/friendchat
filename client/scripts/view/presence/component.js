@@ -2759,7 +2759,10 @@ var hello = window.hello || {};
 			self.el.parentNode.removeChild( self.el );
 		
 		delete self.el;
-		delete self.icon;
+		delete self.audioBtn;
+		delete self.audioIcon;
+		delete self.videoBtn;
+		delete self.videoIcon;
 		delete self.peers;
 		delete self.peerList;
 		delete self.peerIdMap;
@@ -2783,28 +2786,38 @@ var hello = window.hello || {};
 		self.el = self.template.getElement( 'live-status-tmpl', elConf );
 		const container = document.getElementById( self.containerId );
 		container.appendChild( self.el );
-		self.icon = self.el.querySelector( '.live-status-icon i' );
+		self.videoBtn = self.el.querySelector( '.live-status-icon.video' );
+		self.audioBtn = self.el.querySelector( '.live-status-icon.audio' );
+		self.videoIcon = self.videoBtn.querySelector( 'i' );
+		self.audioIcon = self.audioBtn.querySelector( 'i' );
 		self.peers = document.getElementById( self.peers );
 		
 		//
-		self.el.addEventListener( 'click', elClick, false );
-		function elClick( e ) {
-			e.stopPropagation();
-			e.preventDefault();
-			self.handleElClick();
+		self.videoBtn.addEventListener( 'click', videoClick, false );
+		self.audioBtn.addEventListener( 'click', audioClick, false );
+		function videoClick( e ) {
+			self.handleClick( 'video' );
+		}
+		
+		function audioClick( e ) {
+			self.handleClick( 'audio' );
 		}
 		
 		// listen
 		self.stateEventId = self.users.on( 'state', live );
-		function live( e ) { self.handleLive( e ); }
+		function live( e ) {
+			self.handleLive( e );
+		}
 	}
 	
-	ns.LiveStatus.prototype.handleElClick = function() {
+	ns.LiveStatus.prototype.handleClick = function( type ) {
 		const self = this;
-		if ( self.userLive )
+		if ( self.userLive ) {
 			self.emit( 'show' );
-		else
-			self.emit( 'join' );
+			return;
+		}
+		
+		self.emit( 'join', type );
 	}
 	
 	ns.LiveStatus.prototype.handleLive = function( event ) {
@@ -2834,9 +2847,11 @@ var hello = window.hello || {};
 		self.peers.appendChild( peerEl );
 		self.peerList.push( userId );
 		if ( userId === self.userId )
-			self.setUserLive( true );
+			self.userLive = true;
+			
+		self.updateIconState();
 		
-		self.updateVisibility();
+		//self.updateVisibility();
 	}
 	
 	ns.LiveStatus.prototype.removePeer = function( userId ) {
@@ -2850,9 +2865,11 @@ var hello = window.hello || {};
 		el.parentNode.removeChild( el );
 		self.peerList = self.peerList.filter( pId => pId !== userId );
 		if ( userId === self.userId )
-			self.setUserLive( false );
+			self.userLive = false;
 		
-		self.updateVisibility();
+		self.updateIconState();
+		
+		//self.updateVisibility();
 	}
 	
 	ns.LiveStatus.prototype.updateVisibility = function() {
@@ -2861,14 +2878,28 @@ var hello = window.hello || {};
 		self.el.classList.toggle( 'hidden', !show );
 	}
 	
-	ns.LiveStatus.prototype.setUserLive = function( isLive ) {
+	ns.LiveStatus.prototype.updateIconState = function() {
 		const self = this;
-		self.userLive = isLive;
-		if ( !self.icon )
+		if ( !self.videoIcon )
 			return;
+			
+		if ( self.currState ) {
+			self.audioIcon.classList.toggle( self.currState, false );
+			self.videoIcon.classList.toggle( self.currState, false );
+		}
 		
-		self.icon.classList.toggle( 'Available', !isLive );
-		self.icon.classList.toggle( 'DangerText', isLive );
+		if ( self.peerList.length )
+			self.currState = 'Available';
+		else
+			self.currState = null;
+		
+		if ( self.userLive )
+			self.currState = 'DangerText';
+		
+		if ( self.currState ) {
+			self.audioIcon.classList.toggle( self.currState, true );
+			self.videoIcon.classList.toggle( self.currState, true );
+		}
 	}
 	
 })( library.component );

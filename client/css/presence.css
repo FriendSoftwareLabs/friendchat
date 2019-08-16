@@ -18,7 +18,7 @@
 }
 
 #live-status-container {
-	margin : 0 1em;
+	
 }
 
 #foot {
@@ -91,10 +91,10 @@ body[mobile] #emojii-panel-button
 
 .avatar-offset,
 .msg-item .avatar {
-	margin-top : 0.2em;
 	width  : 2.4em;
 	height : 2.4em;
 }
+
 .avatar-offset {
 	height: 0;
 }

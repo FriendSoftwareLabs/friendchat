@@ -232,28 +232,18 @@ body {
 
 /* Gui tabs */
 
-.tab-bar
-{
-    width: 100%;
-    height: 50px;
-    position: relative;
+#tab-bar {
+
 }
 
-.tab-bar:after
-{
-    clear: both;
-}
 
-.tab-bar .tab-item
+#tab-bar .Button
 {
-    float: left;
-    width: 33.3%;
-    height: 50px;
-    line-height: 50px;
-    text-align: center;
+    height: 3em;
     transition: background-color,color 0.25s,0.25s;
 }
-html body .tab-bar .tab-item.Button.IconButton
+
+html body #tab-bar .Button
 {
     margin: 0;
     padding: 0;
@@ -261,7 +251,7 @@ html body .tab-bar .tab-item.Button.IconButton
 }
 
 /* Todo: Use theme color here */
-.tab-bar .tab-item.active
+#tab-bar .tab-item.active
 {
     color: #008DD4;
 }
@@ -269,7 +259,8 @@ html body .tab-bar .tab-item.Button.IconButton
 /* Conversations welcome box */
 
 #welcome-box {
-    position : relative;
+    position   : relative;
+    word-break : break-word;
 }
 
 #conversations .Box ul, #conversations .Box li
@@ -294,21 +285,17 @@ html body .tab-bar .tab-item.Button.IconButton
     opacity: 1;
 }
 
-#conversations .Box li
-{
-    padding: 0 0 10px 20px;
-}
-
-#conversations .welcome-box strong.welcome
-{
+#welcome-box p.welcome-title {
     font-size: 140%;
 }
 
-/* Done conversations welcome box */
+#welcome-things {
+    padding : 0 1em;
+    line-height: 2em;
+}
 
-#conversations .Box li:before
-{
-    margin: 0 10px 0 0;
+#welcome-things i {
+    margin-right : 0.5em;
 }
 
 /* Pages */

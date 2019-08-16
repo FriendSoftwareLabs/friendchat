@@ -45,21 +45,21 @@
 					<i class="fa fa-fw fa-cog"></i>
 				</button>
 				<button id="upgrade-to-video"
-					class="IconButton button"
+					class="IconButton button hidden"
 					title="{i18n_go_live}"
 					type="button"
 				>
 					<i class="fa fa-fw fa-video-camera"></i>
 				</button>
 				<button id="upgrade-to-audio"
-					class="IconButton button"
+					class="IconButton button hidden"
 					title="{i18n_go_live}"
 					type="button"
 				>
 					<i class="fa fa-fw fa-microphone"></i>
 				</button>
 				<button id="show-hide-btn"
-					class="IconButton button hidden"
+					class="IconButton button hidden LED"
 					title="{i18n_show_hide_userlist}"
 					type="button"
 				>
@@ -189,11 +189,14 @@ contactName,
 peersId,
 -->
 <script id="live-status-tmpl" type="text/html">
-<div class="live-status group row hidden Box">
-	<div class="live-status-icon LED">
-		<i class="fa fa-fw fa-video-camera Available"></i>
-	</div>
+<div class="live-status group row">
 	<div id="<%= peersId %>" class="live-status-peers group row">
+	</div>
+	<div class="Button IconButton live-status-icon video LED">
+		<i class="fa fa-fw fa-video-camera"></i>
+	</div>
+	<div class="Button IconButton live-status-icon audio LED">
+		<i class="fa fa-fw fa-microphone"></i>
 	</div>
 </div>
 </script>

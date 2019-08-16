@@ -1529,7 +1529,7 @@ var hello = null;
 			fileItems.push( quit );
 		
 		const file = {
-			name : Application.i18n('i18n_app' ),
+			name : Application.i18n( 'i18n_file' ),
 			items : fileItems,
 		};
 		

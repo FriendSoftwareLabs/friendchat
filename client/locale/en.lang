@@ -381,6 +381,16 @@ i18n_max_bandwidth_out : Max bandwidth out
 i18n_codec : Codec
 i18n_packets_lost : Packets lost
 i18n_video_size : Video size
+i18n_welcome_to_friend_chat : Welcome to Friend Chat
+i18n_this_is_a_communication_and_collaboration_tool_for_the_friend_workspace : This is a communication and collaboration tool for the friend workspace
+i18n_please_take_a_moment_to_look_around : Please take a moment to look around
+i18n_the_search_bar_at_the_top_filters_current_rooms_and_contacts_and_allow_finding_community_contacts : The search bar at the top filters current rooms and contacts and allow finding community contacts
+i18n_the_tabs_at_the_bottom_will_take_you_to_the_following_sections : The tabs at the bottom will take you to the following sections
+i18n_current_conversations_and_events : Current conversations and events
+i18n_your_group_chats : Your group chats
+i18n_your_contacts : Your contacts
+i18n_have_fun : Have fun!
+i18n_there_are_no_recent_conversations_or_events : There are no recent conversations or events
 i18n_you_have_no_eligible_contacts : You have no eligible contacts
 i18n_the_person_of_interest_must_be_online_to_receive_the_invite : The person of interest must be online to receive the invite
 i18n_only_online_user_are_listed : Only online users are listed

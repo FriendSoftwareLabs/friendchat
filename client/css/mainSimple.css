@@ -1,10 +1,11 @@
 
 #menu-btn
 {
-	font-size   : 120%;
-	padding     : 0 0.5em;
-	margin-left : 0.3em;
-	align-self  : stretch;
+	font-size     : 120%;
+	padding       : 0 0.5em;
+	margin-left   : 0.3em;
+	align-self    : stretch;
+	border-radius : 3px 0 0 3px;
 }
 
 .assist-conversation {
@@ -52,10 +53,6 @@
 }
 
 /* Misc classes */
-
-.IconSmall.icon-bigger:before {
-	font-size: 20px;
-}
 
 #recent-active
 {

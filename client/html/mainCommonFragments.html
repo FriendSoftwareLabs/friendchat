@@ -136,47 +136,57 @@ faIcon,
 -->
 <script id="recent-convos-tmpl" type="text/html">
 <div id="recent-convos" class="module bar column">
-	<div class="module-head fortify">
-		<div class="module-title">
-			{i18n_recent_conversations}
-		</div>
-	</div>
-	<div id="recent-splash" class="">
-		<div class="Padding welcome-box" id="welcome-box">
-			<div class="Padding Borders Box">
-				<span id="welcome-box-close" class="MousePointer IconSmall FloatRight fa-remove">
-				</span>
-				<p>
-					<strong class="welcome">Welcome to Friend Chat!</strong>
-				</p>
-				<p>
-					You are now using the video chat and collaboration tool
-					for the Friend Workspace. Please spend some moments
-					to look around.
-				</p>
-				<p>
-					The icon tab bar below will take you to the following sections.
-				</p>
-				<ul>
-					<li class="IconSmall fa-comment">Your ongoing conversations</li>
-					<li class="IconSmall fa-group">Conference rooms</li>
-					<li class="IconSmall fa-address-book">Your contacts</li>
-				</ul>
-				<p>
-					The search bar on the top will allow you to find new or existing
-					contacts.
-				</p>
-			</div>
-		</div>
-		<div id="no-recent-convos" class="Padding hidden">
-			<div class="Padding Box">
-				<p>There are no recent conversations</p>
-			</div>
-		</div>
-	</div>
-	<div id="recent-active" class="ZebraList Interactive expand SmoothScrolling"></div>
-	<div id="recent-inactive" class="hidden">
-	</div>
+    <div class="module-head fortify">
+        <div class="module-title">
+            {i18n_recent_conversations}
+        </div>
+    </div>
+    <div id="recent-splash" class="">
+        <div id="welcome-box" class="Padding welcome-box hidden">
+            <div class="Padding Borders Box">
+                <span id="welcome-box-close" class="MousePointer IconSmall FloatRight fa-remove">
+                </span>
+                <p class="welcome-title">
+                    {i18n_welcome_to_friend_chat}
+                </p>
+                <p>
+                    {i18n_this_is_a_communication_and_collaboration_tool_for_the_friend_workspace}.
+                    {i18n_please_take_a_moment_to_look_around}.
+                </p>
+                <p>
+                    {i18n_the_search_bar_at_the_top_filters_current_rooms_and_contacts_and_allow_finding_community_contacts}.
+                </p>
+                <p>
+                    {i18n_the_tabs_at_the_bottom_will_take_you_to_the_following_sections}.
+                </p>
+                <div id="welcome-things">
+                    <div class="group row start">
+                        <i class="fa fa-fw fa-comment"></i>
+                        {i18n_current_conversations_and_events}
+                    </div>
+                    <div class="group row start">
+                        <i class="fa fa-fw fa-group"></i>
+                        {i18n_your_group_chats}
+                    </div>
+                    <div class="group row start">
+                        <i class="fa fa-fw fa-address-book"></i>
+                        {i18n_your_contacts}
+                    </div>
+                </div>
+                <p>
+                    {i18n_have_fun}
+                </p>
+            </div>
+        </div>
+        <div id="no-recent-convos" class="Padding hidden">
+            <div class="Padding Box">
+                <p>{i18n_there_are_no_recent_conversations_or_events}</p>
+            </div>
+        </div>
+    </div>
+    <div id="recent-active" class="ZebraList Interactive expand SmoothScrolling"></div>
+    <div id="recent-inactive" class="hidden">
+    </div>
 </div>
 </script>
 
