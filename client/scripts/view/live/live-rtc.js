@@ -1516,6 +1516,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			//self.menu.setState( 'toggle-screen-share', false );
 			self.isScreenSharing = false;
 			//self.toggleScreenMode( 'cover' );
+			self.media.unshareScreen();
 			self.setupStream();
 			self.emit( 'screen-share', false );
 		}

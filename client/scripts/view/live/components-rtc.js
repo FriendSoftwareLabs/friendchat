@@ -2738,10 +2738,25 @@ library.rtc = library.rtc || {};
 				current.forEach( t => {
 					const ts = t.getSettings();
 					const type = t.kind;
+					if ( !conf[ type ])
+						return;
+					
+					if ( self.shareVTrackId && 'video' == type ) {
+						delete conf[ type ];
+						return;
+					}
+					
 					const devType = type + 'input';
 					const pref = self.preferedDevices[ devType ];
-					if ( null == pref )
+					console.log( 'pref', {
+						pref : pref,
+						pd  : self.preferedDevices,
+					});
+					
+					if ( null == pref ) {
 						delete conf[ type ];
+						return;
+					}
 					
 					if ( ts.deviceId === pref.deviceId )
 						delete conf[ type ];
@@ -2869,6 +2884,19 @@ library.rtc = library.rtc || {};
 				return true;
 			else
 				return false;
+		}
+	}
+	
+	ns.Media.prototype.unshareScreen = function() {
+		const self = this;
+		console.log( 'unshareScreen', self.shareVTrackId );
+		if ( self.shareVTrackId ) {
+			self.removeTrack( 'video' );
+			self.shareVTrackId = null;
+		}
+		
+		if ( self.shareATrackId ) {
+			console.log( 'huehuehue' );
 		}
 	}
 	
