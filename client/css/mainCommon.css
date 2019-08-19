@@ -251,7 +251,7 @@ html body #tab-bar .Button
 }
 
 /* Todo: Use theme color here */
-#tab-bar .tab-item.active
+#tab-bar .active
 {
     color: #008DD4;
 }
