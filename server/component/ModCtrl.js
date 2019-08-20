@@ -613,6 +613,7 @@ ns.ModuleProxy.prototype.kill = function( callback ) {
 
 ns.ModuleProxy.prototype.handle = function( event, data ) {
 	const self = this;
+	log( 'MP.handle', event );
 	self.emit( event, data );
 }
 

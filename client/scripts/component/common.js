@@ -19,8 +19,8 @@
 *                                                                              *
 *****************************************************************************©*/
 
-var library = window.library || {};
-var hello = window.hello || {};
+window.library = window.library || {};
+window.hello = window.hello || {};
 library.component = library.component || {};
 
 /* EVENT EMITTER
@@ -32,10 +32,7 @@ to listeners registered through this interface
 
 (function( ns, undefined ) {
 	ns.EventEmitter = function( eventSink ) {
-		if ( !( this instanceof ns.EventEmitter ))
-			return new ns.EventEmitter();
-		
-		var self = this;
+		const self = this;
 		self._eventSink = eventSink;
 		self.eventToListener = {};
 		self.eventListeners = {};
@@ -47,9 +44,9 @@ to listeners registered through this interface
 	// Added to objects public interface
 	
 	ns.EventEmitter.prototype.on = function( event, listener ) {
-		var self = this;
-		var id = friendUP.tool.uid( 'listener' );
-		var listenerIds = self.eventToListener[ event ];
+		const self = this;
+		const id = friendUP.tool.uid( 'listener' );
+		const listenerIds = self.eventToListener[ event ];
 		if ( !listenerIds ) {
 			self.eventToListener[ event ] = [];
 		}
@@ -61,19 +58,19 @@ to listeners registered through this interface
 	}
 	
 	ns.EventEmitter.prototype.once = function( event, listener ) {
-		var self = this;
-		var onceieId = self.on( event, onceie );
+		const self = this;
+		const onceieId = self.on( event, onceie );
 		
 		function onceie( arrrgs ) {
-			var args = self._getArgs( arguments );
+			const args = self._getArgs( arguments );
 			listener.apply( null, args );
 			self.off( onceieId );
 		}
 	}
 	
 	ns.EventEmitter.prototype.off = function( listenerId ) {
-		var self = this;
-		var listener = self.eventListeners[ listenerId ];
+		const self = this;
+		const listener = self.eventListeners[ listenerId ];
 		if ( !listener )
 			return;
 		
@@ -81,11 +78,11 @@ to listeners registered through this interface
 		delete self.eventListeners[ listenerId ];
 		
 		// remove from events listener id list
-		var events = Object.keys( self.eventToListener );
+		const events = Object.keys( self.eventToListener );
 		events.some( searchListenerIdList );
 		function searchListenerIdList( event ) {
-			var listenerIds = self.eventToListener[ event ];
-			var index = listenerIds.indexOf( listenerId );
+			const listenerIds = self.eventToListener[ event ];
+			const index = listenerIds.indexOf( listenerId );
 			if ( index === -1 )
 				return false;
 			
@@ -99,7 +96,7 @@ to listeners registered through this interface
 	}
 	
 	ns.EventEmitter.prototype.release = function( type ) {
-		var self = this;
+		const self = this;
 		if ( !type )
 			all();
 		else
@@ -111,7 +108,7 @@ to listeners registered through this interface
 		}
 		
 		function ofType( type ) {
-			var lids = self.eventToListener[ type ];
+			const lids = self.eventToListener[ type ];
 			if ( !lids || !lids.length )
 				return;
 			
@@ -128,10 +125,10 @@ to listeners registered through this interface
 	// the first MUST be the event type / listener id
 	// all extra arguments will be passed on to the handler
 	ns.EventEmitter.prototype.emit = function() {
-		var self = this;
-		var args = self._getArgs( arguments );
-		var event = args.shift();
-		var listenerIds = self.eventToListener[ event ];
+		const self = this;
+		const args = self._getArgs( arguments );
+		const event = args.shift();
+		const listenerIds = self.eventToListener[ event ];
 		let caught = false;
 		if ( !listenerIds || !listenerIds.length ) {
 			if ( self._eventSink )
@@ -144,7 +141,7 @@ to listeners registered through this interface
 		return caught;
 		
 		function emit( caught, listenerId ) {
-			var listener = self.eventListeners[ listenerId ];
+			const listener = self.eventListeners[ listenerId ];
 			if ( 'function' !== typeof( listener )) {
 				if ( self._eventSink )
 					emitOnDefault( event, args );
@@ -163,7 +160,7 @@ to listeners registered through this interface
 	}
 	
 	ns.EventEmitter.prototype.closeEventEmitter = function() {
-		var self = this;
+		const self = this;
 		self.release();
 		delete self._eventSink;
 	}
@@ -171,14 +168,14 @@ to listeners registered through this interface
 	// Private
 	
 	ns.EventEmitter.prototype._eventEmitterInit = function() {
-		var self = this;
+		const self = this;
 		// dont remove this, js is weird
 	}
 	
 	ns.EventEmitter.prototype._getArgs = function( argObj ) {
-		var self = this;
-		var args = [];
-		var len = argObj.length;
+		const self = this;
+		const args = [];
+		let len = argObj.length;
 		while( len-- )
 			args[ len ] = argObj[ len ];
 		
@@ -204,7 +201,7 @@ inherits from EventEmitter
 		eventSink,
 		onsend
 	) {
-		var self = this;
+		const self = this;
 		self.type = type || null;
 		self.conn = conn || null;
 		self.onsend = onsend;
@@ -219,14 +216,15 @@ inherits from EventEmitter
 	
 	// to root
 	ns.EventNode.prototype.send = function( event ) {
-		var self = this;
+		const self = this;
 		if ( !self.sendEvent )
 			return;
 		
+		let wrap = null;
 		if ( !self.type )
 			wrap = event;
 		else
-			var wrap = {
+			wrap = {
 				type : self.type,
 				data : event,
 			};
@@ -236,12 +234,12 @@ inherits from EventEmitter
 	
 	// insert event, as if its coming from root ( emit to branches )
 	ns.EventNode.prototype.handle = function( event ) {
-		var self = this;
+		const self = this;
 		self.emit( event.type, event.data );
 	}
 	
 	ns.EventNode.prototype.close = function() {
-		var self = this;
+		const self = this;
 		self.closeEventEmitter();
 		delete self.sendEvent;
 		delete self.onsend;
@@ -256,7 +254,7 @@ inherits from EventEmitter
 	// Private
 	
 	ns.EventNode.prototype.initEventNode = function() {
-		var self = this;
+		const self = this;
 		if ( self.conn && self.type ) {
 			self.conn.on( self.type, handle );
 			function handle( e ) { self.handle( e ); }
@@ -285,13 +283,14 @@ inherits from EventEmitter
 // .request( t, d ) returns a Promise
 (function( ns, undefined ) {
 	ns.RequestNode = function(
+		type,
 		conn,
 		eventSink,
 		onSend
 	) {
 		const self = this;
 		ns.EventNode.call( self,
-			'request',
+			type,
 			conn,
 			eventSink,
 			onSend
@@ -305,19 +304,19 @@ inherits from EventEmitter
 	
 	// Public
 	
-	ns.RequestNode.prototype.request = function( type, data ) {
+	ns.RequestNode.prototype.request = function( request ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
-			let reqId = friendUP.tool.uid( 'req' );
+			const reqId = friendUP.tool.uid( 'req' );
 			self._requests[ reqId ] = handleResponse;
-			let reqWrap = {
-				requestId : reqId,
-				request   : {
-					type    : type,
-					data    : data,
-				},
+			request.requestId = reqId;
+			const reqWrap = {
+				type      : self.type,
+				data      : request,
 			};
-			self.send( reqWrap );
+			
+			console.log( 'RQ.request', reqWrap );
+			self.sendEvent( reqWrap );
 			
 			function handleResponse( error, response ) {
 				delete self._requests[ reqId ];
@@ -333,39 +332,46 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.initRequestNode = function() {
 		const self = this;
+		//console.log( 'initRequestNOde', self.type );
 	}
 	
 	ns.RequestNode.prototype.handle = function( event ) {
 		const self = this;
-		if ( 'response' === event.type ) {
-			self.handleResponse( event.data );
+		const reqId = event.requestId;
+		if ( !reqId ) {
+			self.emit( event.type, event.data );
 			return;
 		}
 		
+		const isResponse = self._requests[ reqId ];
+		if ( !!isResponse )
+			self.handleResponse( event );
+		else
+			self.handleRequest( event );
+	}
+	
+	ns.RequestNode.prototype.handleRequest = function( event ) {
+		const self = this;
 		const reqId = event.requestId;
-		const request = event.request;
+		const request = event.data;
 		self.callListener( req )
 			.then( response )
 			.catch( error );
-			
+		
 		function response( data ) {
 			const res = {
-				type : 'response',
-				data : {
-					requestId : reqId,
-					response  : data,
-				}
+				requestId : reqId,
+				response  : data,
+				error     : null,
 			};
 			self.send( res );
 		}
 		
 		function error( err ) {
 			const errRes = {
-				type : 'response',
-				data : {
-					requestId : reqId,
-					error     : data,
-				},
+				requestId : reqId,
+				response  : null,
+				error     : data,
 			};
 			self.send( errRes );
 		}
@@ -373,6 +379,7 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.handleResponse = function( event ) {
 		const self = this;
+		console.log( 'RQ.handleResponse', event );
 		const reqId = event.requestId;
 		const err = event.error || null;
 		const res = err ? null : ( event.response || null );
@@ -390,6 +397,10 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.callListener = function( req ) {
 		const self = this;
+		console.log( 'callListener', {
+			type : self.type,
+			req  : req,
+		});
 		const type = req.type;
 		const data = req.data;
 		const listeners = self.eventToListener[ type ];
@@ -418,7 +429,7 @@ inherits from EventEmitter
 		if ( !( this instanceof ns.SubView ))
 			return new ns.SubView( conf );
 		
-		var self = this;
+		const self = this;
 		self.parent = conf.parent;
 		self.type = conf.type;
 		self.onloaded = conf.loaded || null;
@@ -429,19 +440,19 @@ inherits from EventEmitter
 	}
 	
 	ns.SubView.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.parent.on( self.type, handleMessage );
 		
 		function handleMessage( msg ) { self.handleMessage( msg ); }
 	}
 	
 	ns.SubView.prototype.on = function( event, handler ) {
-		var self = this;
+		const self = this;
 		self.subscriber[ event ] = handler;
 	}
 	
 	ns.SubView.prototype.off = function( event ) {
-		var self = this;
+		const self = this;
 		if ( self.subscriber[ event ])
 			delete self.subscriber[ event ];
 	}
@@ -452,7 +463,7 @@ inherits from EventEmitter
 	}
 	
 	ns.SubView.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.parent.off )
 			self.parent.off( self.type );
 		if ( self.parent.release )
@@ -464,7 +475,7 @@ inherits from EventEmitter
 	}
 	
 	ns.SubView.prototype.handleMessage = function( msg ) {
-		var self = this;
+		const self = this;
 		
 		if ( !msg || !msg.type) {
 			console.log( 'SubView.handleMessage - invalid: ', msg );
@@ -482,7 +493,7 @@ inherits from EventEmitter
 	}
 	
 	ns.SubView.prototype.unhandled = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( msg.type == 'loaded' && self.onloaded ) {
 			self.onloaded( msg.data );
 			return;
@@ -497,7 +508,7 @@ inherits from EventEmitter
 	}
 	
 	ns.SubView.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : self.type,
 			data : msg
@@ -514,7 +525,7 @@ inherits from EventEmitter
 		if ( !( this instanceof ns.Identity ))
 			return new ns.Identity( conf );
 		
-		var self = this;
+		const self = this;
 		self.init( conf );
 	}
 	
@@ -533,7 +544,7 @@ inherits from EventEmitter
 	ns.Identity.prototype.avatarAlt = '../gfx/avatar_grey.png';
 	
 	ns.Identity.prototype.init = function( conf ) {
-		var self = this;
+		const self = this;
 		if ( conf.UniqueID || conf.ID )
 			self.fromFCUser( conf );
 		else
@@ -622,14 +633,14 @@ inherits from EventEmitter
 	IdCahce
 */
 (function( ns, undefined ) {
-	ns.IdCache = function( conn, identities ) {
+	ns.IdCache = function( parentConn, identities ) {
 		const self = this;
 		self.conn = null;
 		self.ids =  identities || {};
 		self.idList = [];
 		self.loading = {};
 		
-		self.init( conn );
+		self.init( parentConn );
 	}
 	
 	// Public
@@ -668,7 +679,11 @@ inherits from EventEmitter
 				.catch( idSad );
 			
 			function get( cId ) {
-				return self.req.request( 'get', cId );
+				const req = {
+					type : 'get',
+					data : cId,
+				};
+				return self.conn.request( req );
 			}
 			
 			function idBack( id ) {
@@ -762,8 +777,7 @@ inherits from EventEmitter
 	
 	ns.IdCache.prototype.init = function( parentConn ) {
 		const self = this;
-		self.conn = new library.component.EventNode( 'identity', parentConn );
-		self.req = new library.component.RequestNode( self.conn );
+		self.conn = new library.component.RequestNode( 'identity', parentConn );
 		self.conn.on( 'add', e => self.add( e ));
 		self.conn.on( 'update', e => self.update( e ));
 	}

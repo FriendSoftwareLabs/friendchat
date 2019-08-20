@@ -31,20 +31,25 @@ ns.MsgProxy = function( conf ) {
 	if ( !( this instanceof ns.MsgProxy ))
 		return new ns.MsgProxy( conf );
 	
-	var self = this;
-	events.Emitter.call( self );
+	const self = this;
+	log( 'conf', conf );
+	self.moduleId = conf.moduleId;
+	events.RequestNode.call( self, conf.moduleId, null );
 	self.sendMsg = conf.send;
 }
 
-util.inherits( ns.MsgProxy, events.Emitter );
+util.inherits( ns.MsgProxy, events.RequestNode );
 
 ns.MsgProxy.prototype.receiveMsg = function( msg, socketId ) {
-	var self = this;
-	self.emit( msg.type, msg.data, socketId );
+	const self = this;
+	self._handleEvent.apply( self, arguments );
+	//self.emit( msg.type, msg.data, socketId );
 }
 
+/*
 ns.MsgProxy.prototype.send = function( msg, socketId, altId ) {
-	var self = this;
+	const self = this;
+	log( 'send', msg );
 	if ( !msg.data ) {
 		try {
 			throw new Error( 'null data' );
@@ -67,7 +72,16 @@ ns.MsgProxy.prototype.send = function( msg, socketId, altId ) {
 			data : msg,
 		};
 	
-	self.sendMsg( wrap, socketId );
+	self.sendEvent( wrap, socketId );
+}
+*/
+
+ns.MsgProxy.prototype.sendEvent = function( e, sId ) {
+	const self = this;
+	if ( !self.sendMsg )
+		return;
+	
+	self.sendMsg( e, sId );
 }
 
 module.exports = ns.MsgProxy;

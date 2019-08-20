@@ -98,7 +98,7 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.initBaseModule = function() {
 		const self = this;
 		// server stuff
-		self.conn = new library.component.EventNode(
+		self.conn = new library.component.RequestNode(
 			self.clientId,
 			hello.conn,
 			eventSink
@@ -111,10 +111,12 @@ library.module = library.module || {};
 			});
 		}
 		
+		/*
 		self.requests = new library.component.RequestNode(
 			self.conn,
 			reqSink
 		);
+		*/
 		
 		function reqSink() { console.log( 'reqSink', arguments ); }
 		
@@ -660,10 +662,13 @@ library.module = library.module || {};
 			const getFC = {
 				friendId : friendId,
 			};
-			self.req.request( 'friend-get', getFC )
+			const req = {
+				type : 'friend-get',
+				data : getFC,
+			};
+			self.acc.request( req )
 				.then( resolve )
 				.catch( reject );
-			
 		});
 	}
 	
@@ -678,7 +683,11 @@ library.module = library.module || {};
 			const add = {
 				clientId : clientId,
 			};
-			self.req.request( 'contact-add', add )
+			const req = {
+				type : 'contact-add',
+				data : add,
+			};
+			self.acc.request( req )
 				.then( addBack )
 				.catch( reject );
 			
@@ -1023,8 +1032,12 @@ library.module = library.module || {};
 		}
 		
 		self.accountId = accountId;
-		self.acc = new library.component.EventNode( accountId, self.conn, accEventSink );
-		self.req = new library.component.RequestNode( self.acc, accReqEventSink );
+		self.acc = new library.component.RequestNode(
+			accountId,
+			self.conn,
+			accEventSink
+		);
+		//self.req = new library.component.RequestNode( self.acc, accReqEventSink );
 		
 		self.bindAcc();
 		self.initializeAccount();
@@ -1067,8 +1080,12 @@ library.module = library.module || {};
 		function joinedRoom( e ) { self.handleJoin( e ); }
 		function roomClosed( e ) { self.handleRoomClosed( e ); }
 		
-		self.contactEvents = new library.component.EventNode( 'contact-event', self.acc, cEventSink );
-		self.contactEvents.on( 'online', e => self.handleContactOnline( e.contactId, e.data ));
+		self.contactEvents = new library.component.EventNode(
+			'contact-event',
+			self.acc,
+			cEventSink
+		);
+		self.contactEvents.on( 'online', e => self.handleContactOnline( e ));
 		
 		function cEventSink() {
 			console.log( 'Presence.contactEventSink', arguments );
@@ -1172,8 +1189,11 @@ library.module = library.module || {};
 		}
 	}
 	
-	ns.Presence.prototype.handleContactOnline = function( clientId, userState ) {
+	ns.Presence.prototype.handleContactOnline = function( event ) {
 		const self = this;
+		console.log( 'handleContactOnline', event );
+		const clientId = event.clientId;
+		const userState = event.data;
 		const online = {
 			clientId : clientId,
 			isOnline : !!userState,
@@ -1727,7 +1747,7 @@ library.module = library.module || {};
 		self.type = 'treeroot';
 		self.subscribeView = null;
 		
-		self.requestss = {};
+		self.requests = {};
 		
 		self.init();
 	}
@@ -2680,12 +2700,12 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.handleUserList = function( event ) {
 		const self = this;
-		let callback = self.requestss[ event.reqId ];
+		let callback = self.requests[ event.reqId ];
 		if ( !callback )
 			return;
 		
 		callback( event.list );
-		delete self.requestss[ event.reqId ];
+		delete self.requests[ event.reqId ];
 	}
 	
 	ns.Treeroot.prototype.getUserList = function() {
@@ -2696,7 +2716,12 @@ library.module = library.module || {};
 				return;
 			}
 			
-			self.requests.request( 'user-list', null )
+			const req = {
+				type : 'user-list',
+				data : null,
+			};
+			console.log( 'getUserList', req );
+			self.conn.request( req )
 				.then( reqBack )
 				.catch( reqFail );
 			
@@ -2721,7 +2746,11 @@ library.module = library.module || {};
 	ns.Treeroot.prototype.searchAvailable = function( searchStr ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
-			self.requests.request( 'search-available', searchStr )
+			const req = {
+				type : 'search-available',
+				data : searchStr,
+			};
+			self.conn.request( req )
 				.then( resolve )
 				.catch( reject );
 		});
@@ -2742,7 +2771,7 @@ library.module = library.module || {};
 					},
 				},
 			});
-			self.requestss[ reqId ] = subConfirm;
+			self.requests[ reqId ] = subConfirm;
 			function subConfirm( success ) {
 				if ( success )
 					resolve();
@@ -2768,11 +2797,11 @@ library.module = library.module || {};
 		if ( !reqId )
 			return;
 		
-		const callback = self.requestss[ reqId ];
+		const callback = self.requests[ reqId ];
 		if ( !callback )
 			return;
 		
-		delete self.requestss[ reqId ];
+		delete self.requests[ reqId ];
 		callback( event.response );
 	}
 	

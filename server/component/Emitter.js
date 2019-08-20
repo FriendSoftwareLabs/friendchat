@@ -67,17 +67,18 @@ ns.Emitter = function( eventSink ) {
 // first argument must be the event type, a string,
 // send as many extra arguments as you wish, they will be passed to the handler
 // no in args, you say? its voodoo magic, aka 'arguments' object
-ns.Emitter.prototype.emit = function() {
+ns.Emitter.prototype.emit = function( event, ...handlerArgs ) {
 	const self = this;
-	var args = self._getArgs( arguments );
-	const event = args.shift(); // first arguments passed to .emit()
-	const handlerArgs = args;
-		// as an array that will be .apply to the listener
+	if ( self._eventsDebug )
+		log( 'emit', {
+			event : event,
+			args  : handlerArgs,
+		}, 3 );
 	
 	const listenerIds = self._emitterEvent2ListenerId[ event ];
 	if ( !listenerIds || !listenerIds.length ) {
 		if ( self._emitterEventSink )
-			self._emitterEventSink.apply( arguments );
+			self._emitterEventSink([ event, ...handlerArgs ]);
 		
 		const unknownEvent = {
 			type : event,
@@ -88,8 +89,9 @@ ns.Emitter.prototype.emit = function() {
 	
 	listenerIds.forEach( sendOnListener );
 	return null;
+	
 	function sendOnListener( id ) {
-		var listener = self._emitterListeners[ id ];
+		const listener = self._emitterListeners[ id ];
 		if ( !listener )
 			return;
 		
@@ -99,8 +101,14 @@ ns.Emitter.prototype.emit = function() {
 
 ns.Emitter.prototype.on = function( event, listener ) {
 	const self = this;
-	var id = uuid.v4();
-	var eventListenerIds = self._emitterEvent2ListenerId[ event ];
+	if ( self._eventsDebug )
+		log( 'on', {
+			event    : event,
+			listener : listener,
+		});
+	
+	const id = uuid.v4();
+	let eventListenerIds = self._emitterEvent2ListenerId[ event ];
 	if ( !eventListenerIds ) {
 		eventListenerIds = [];
 		self._emitterEvent2ListenerId[ event ] = eventListenerIds;
@@ -165,16 +173,6 @@ ns.Emitter.prototype.release = function( eventName ) {
 	}
 }
 
-ns.Emitter.prototype._getArgs = function( argObj ) {
-	const self = this;
-	const args = [];
-	var len = argObj.length;
-	while( len-- )
-		args[ len ] = argObj[ len ];
-	
-	return args;
-}
-
 ns.Emitter.prototype.emitterClose = function() {
 	const self = this;
 	self.release();
@@ -189,13 +187,12 @@ ns.Emitter.prototype.emitterClose = function() {
 */
 
 const nLog = require( './Log' )( 'EventNode' );
-ns.EventNode = function( type, conn, sink, proxyType ) {
+ns.EventNode = function( type, conn, sink, proxyType, debug ) {
 	const self = this;
 	self._eventNodeType = type;
 	self._eventNodeConn = conn;
 	self._eventNodeProxyType = proxyType;
-	//self._eventNodeSink = sink;
-	ns.Emitter.call( self, sink );
+	ns.Emitter.call( self, sink, debug );
 	
 	self._eventNodeInit();
 }
@@ -206,7 +203,7 @@ util.inherits( ns.EventNode, ns.Emitter );
 
 ns.EventNode.prototype.send = function( event, sourceId, altType ) {
 	const self = this;
-	var wrap = null;
+	let wrap = null;
 	if ( self._eventNodeProxyType )
 		wrap = event;
 	else
@@ -214,56 +211,86 @@ ns.EventNode.prototype.send = function( event, sourceId, altType ) {
 		type : altType || self._eventNodeType,
 		data : event,
 	};
-	self._eventNodeConn.send( wrap, sourceId, self._eventNodeProxyType );
+	self.sendEvent( wrap, sourceId );
 }
 
 ns.EventNode.prototype.handle = function( event, sourceId ) {
 	const self = this;
+	if ( self._eventsDebug )
+		nLog( 'handle', {
+			event : event,
+			sourceId : sourceId,
+		}, 3 );
+	
 	self._handleEvent.apply( self, arguments );
 }
 
 ns.EventNode.prototype.close = function() {
 	const self = this;
-	self.emitterClose();
-	self._eventNodeConn.release( self._eventNodeType );
-	delete self._eventNodeConn;
-	delete self._eventNodeType;
+	self._eventNodeClose();
 }
 
 // Private
 
 ns.EventNode.prototype._eventNodeInit = function() {
 	const self = this;
+	if ( self._eventsDebug )
+		nLog( 'init', self._eventNodeType );
+	
+	if ( !self._eventNodeConn )
+		return;
+	
 	self._eventNodeConn.on( self._eventNodeType, rcvEvent );
 	function rcvEvent() {
-		//const args = Array.prototype.slice.call( arguments );
+		if ( self._eventsDebug )
+			nLog( 'rcvEvent', args, 3 );
+		
 		self._handleEvent.apply( self, arguments );
 	}
 }
 
-ns.EventNode.prototype._handleEvent = function() {
+ns.EventNode.prototype._handleEvent = function( ...args ) {
 	const self = this;
-	var args = self._getArgs( arguments );
+	if ( self._eventsDebug )
+		nLog( '_handleEvent', args, 3 );
+	
 	const event = args.shift();
 	args.unshift( event.data );
 	args.unshift( event.type );
 	self.emit.apply( self, args );
 }
 
+ns.EventNode.prototype.sendEvent = function( e, sId ) {
+	const self = this;
+	self._eventNodeConn.send( e, sId, self._eventNodeProxyType );
+}
+
+ns.EventNode.prototype._eventNodeClose = function() {
+	const self = this;
+	self.emitterClose();
+	if ( self._eventNodeConn )
+		self._eventNodeConn.release( self._eventNodeType );
+	
+	delete self._eventNodeConn;
+	delete self._eventNodeType;
+}
+
+
 /* RequestNode
 
 - Write things here aswell
 - also later
+- but request listeners are expected to return a Promise
 
 */
 
-ns.RequestNode = function( conn, eventSink ) {
+ns.RequestNode = function( type, conn, eventSink, proxyType ) {
 	const self = this;
 	ns.EventNode.call( self,
-		'request',
+		type,
 		conn,
 		eventSink,
-		null,
+		proxyType,
 	);
 	
 	self._requests = {};
@@ -272,21 +299,17 @@ ns.RequestNode = function( conn, eventSink ) {
 
 util.inherits( ns.RequestNode, ns.EventNode );
 
-ns.RequestNode.prototype.request = async function( type, data ) {
+ns.RequestNode.prototype.request = async function( request, sourceId ) {
 	const self = this;
 	return new Promise(( resolve, reject ) => {
 		function sendRequest( type, data ) {
 			const reqId = uuid.get( 'req' );
 			self._requests[ reqId ] = handleResponse;
-			const reqWrap = {
-				requestId : reqId,
-				request   : {
-					type    : type,
-					data    : data,
-				},
-			};
-			
-			self.send( reqWrap );
+			request.requestId = reqId;
+			self.send(
+				request,
+				sourceId
+			);
 		}
 		
 		function handleResponse( error, response ) {
@@ -301,36 +324,51 @@ ns.RequestNode.prototype.request = async function( type, data ) {
 	});
 }
 
+ns.RequestNode.prototype.close = function() {
+	const self = this;
+	self._requestNodeClose();
+}
+
 // Private
 
 ns.RequestNode.prototype._requestNodeInit = function() {
 	const self = this;
 }
 
-ns.RequestNode.prototype._handleEvent = async function( req, sourceId ) {
+ns.RequestNode.prototype._handleEvent = async function( ...args ) {
 	const self = this;
-	if ( 'response' === req.type ) {
-		self._handleResponse( req.data, sourceId );
+	const event = args.shift();
+	const reqId = event.requestId;
+	if ( !reqId ) {
+		args.unshift( event.data );
+		args.unshift( event.type );
+		self.emit.apply( self, args );
 		return;
 	}
 	
-	const reqId = req.requestId;
-	const request = req.request;
+	const isResponse = self._requests[ reqId ];
+	const sourceId = args.shift();
+	if ( !isResponse )
+		self._handleRequest( event, sourceId );
+	else
+		self._handleResponse( event, sourceId );
+}
+
+ns.RequestNode.prototype._handleRequest = async function( event, sourceId ) {
+	const self = this;
+	const reqId = event.requestId;
 	let response = null;
 	let error = null;
 	try {
-		response = await self._callListener( request )
+		response = await self._callListener( event );
 	} catch( err ) {
 		error = err;
 	}
 	
 	const res = {
-		type : 'response',
-		data : {
-			requestId : reqId,
-			error     : error,
-			response  : response,
-		},
+		requestId : reqId,
+		response  : response,
+		error     : error,
 	};
 	self.send( res, sourceId );
 }
@@ -357,6 +395,12 @@ ns.RequestNode.prototype._callListener = async function( req ) {
 	} catch( err ) {
 		throw new Error( err );
 	}
+}
+
+ns.RequestNode.prototype._requestNodeClose = function() {
+	const self = this;
+	delete self._requests;
+	self._eventNodeClose();
 }
 
 module.exports = ns;

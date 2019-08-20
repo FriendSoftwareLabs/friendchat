@@ -560,15 +560,11 @@ var hello = window.hello || {};
 		if ( self.el )
 			self.el.parentNode.removeChild( self.el );
 		
-		if ( self.req )
-			self.req.close();
-		
 		if ( self.conn )
 			self.conn.close();
 		
 		delete self.detached;
 		delete self.el;
-		delete self.req;
 		delete self.conn;
 		delete self.users;
 		delete self.userIds;
@@ -1149,10 +1145,14 @@ var hello = window.hello || {};
 		const getMsg = {
 			msgId : itemId,
 		};
-		self.req.request( 'edit-get', getMsg )
+		const req = {
+			type : 'edit-get',
+			data : getMsg,
+		};
+		self.conn.request( req )
 			.then( msgBack )
 			.catch( reqErr );
-			
+		
 		function msgBack( event ) {
 			if ( !event ) {
 				editError( 'ERR_EDIT_NO_EVENT' );
@@ -1296,7 +1296,11 @@ var hello = window.hello || {};
 				reason  : reason,
 			};
 			
-			self.req.request( 'edit-save', edit )
+			const req = {
+				type : 'edit-save',
+				data : edit,
+			};
+			self.conn.request( req )
 				.then( editBack )
 				.catch( editErr );
 			
@@ -1424,18 +1428,14 @@ var hello = window.hello || {};
 			self.supergroupId = workgroups.superId || '';
 		}
 		
-		self.conn = new library.component.EventNode(
+		self.conn = new library.component.RequestNode(
 			'chat',
-			parentConn
+			parentConn,
+			eSink
 		);
 		
-		self.req = new library.component.RequestNode(
-			self.conn,
-			reqSink
-		);
-		
-		function reqSink( ...args ) {
-			console.log( 'MsgBuilder reqSink', args );
+		function eSink( ...args ) {
+			console.log( 'MsgBuilder eSink', args );
 		}
 		
 		self.container = document.getElementById( self.containerId );

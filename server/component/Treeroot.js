@@ -125,9 +125,9 @@ ns.Treeroot.prototype.init = function() {
 	function stop( e ) { self.log( 'treeroot stop event - this isnt evenn a real handler!?', self.conf ); }
 	function kill( callback ) { self.kill( callback ); }
 	
-	self.requests = new events.RequestNode( self.client, null );
-	self.requests.on( 'user-list', getUserList );
-	self.requests.on( 'search-available', searchAvailable );
+	//self.requests = new events.RequestNode( self.client, null );
+	self.client.on( 'user-list', getUserList );
+	self.client.on( 'search-available', searchAvailable );
 	function getUserList( e ) { return self.getUserList( e ); }
 	function searchAvailable( e ) { return self.handleSearchAvailable( e ); }
 	
@@ -370,6 +370,7 @@ ns.Treeroot.prototype.updateLogFn = function() {
 
 ns.Treeroot.prototype.handleClientInit = function( socketId ) {
 	const self = this;
+	self.log( 'handleClientInit', socketId );
 	if ( !self.conf.login ) {
 		self.client.emitState();
 		return;
