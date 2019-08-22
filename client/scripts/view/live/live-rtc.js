@@ -1573,7 +1573,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setAudioSink = function( selected ) {
 		const self = this;
-		if ( !selected )
+		if ( !selected || !selected.audiooutput )
 			return;
 		
 		self.sources.getByType()
@@ -1581,12 +1581,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			.catch( fail );
 		
 		function devBack( devices ) {
-			let deviceId = selected.audiooutput;
+			let deviceId = selected.audiooutput.deviceId;
 			let out = devices.audiooutput[ deviceId ];
 			if ( !out )
 				return;
 			
-			self.currentAudioOut = deviceId;
+			self.currentAudioOut = out;
 			self.emit( 'audio-sink', out.deviceId );
 		}
 		
