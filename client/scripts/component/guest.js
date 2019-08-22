@@ -69,7 +69,7 @@ library.component = library.component || {};
 		const self = this;
 		const accId = loginEvent.data;
 		self.accountId = accId;
-		self.acc = new library.component.EventNode( accId, self.conn, accSink );
+		self.acc = new library.component.RequestNode( accId, self.conn, accSink );
 		self.acc.on( 'initialize', initialize );
 		self.acc.on( 'join', joinedRoom );
 		
@@ -84,15 +84,6 @@ library.component = library.component || {};
 		function joinedRoom( e ) { self.handleJoinedRoom( e ); }
 	}
 	
-	/*
-	ns.GuestAccount.prototype.handleInit = function( data ) {
-		const self = this;
-		console.log( 'GuestAccount.handleInit', data );
-		const acc = data.account;
-		self.userId = acc.clientId;
-	}
-	*/
-	
 	ns.GuestAccount.prototype.handleInit = function( state ) {
 		const self = this;
 		if ( self.account )
@@ -100,31 +91,19 @@ library.component = library.component || {};
 		
 		self.account = state.account;
 		self.idc = new library.component.IdCache( self.acc );
-	}
-	/*
-	ns.GuestAccount.prototype.handleJoinedRoom = function( room ) {
-		const self = this;
-		console.log( 'GuestAccount.handleJoinedRoom', room );
-		self.roomId = room.clientId;
-		self.roomName = room.name;
-		self.room = new library.component.GuestRoom( self.roomId, self.conn, extraRoomEvent );
-		self.room.on( 'initialize', init );
-		self.room.on( 'identity', identity );
-		self.room.on( 'live', live );
-		self.room.on( 'chat', chat );
+		self.idc.get( self.accountId )
+			.then( selfBack )
+			.catch( selfBoop );
+			
+		function selfBack( id ) {
+			console.log( 'GuestAccount.selfBack', id );
+		}
 		
-		const initEvent = {
-			type : 'initialize',
-		};
-		self.sendToRoom( initEvent );
-		
-		function extraRoomEvent( e ) { self.handleRoomEvent( e ); }
-		function init( e ) { self.handleRoomInit( e ); }
-		function identity( e ) { self.updateIdentity( e ); }
-		function live( e ) { self.handleLive( e ); }
-		function chat( e ) { self.handleChat( e ); }
+		function selfBoop( err ) {
+			console.log( 'GuestAccount.selfBoop', err );
+		}
 	}
-	*/
+	
 	ns.GuestAccount.prototype.handleJoinedRoom = function( event ) {
 		const self = this;
 		const conf = event.joined;
@@ -285,14 +264,52 @@ library.component = library.component || {};
 			return;
 		}
 		
+		if ( 'join' === event.type ) {
+			const peerId = event.data.peerId;
+			self.idc.get( peerId )
+				.then( idBack )
+				.catch( idBoopies );
+			
+			function idBack( id ) {
+				const update = {
+					userId   : id.clientId,
+					identity : id,
+				};
+				self.updateIdentity( update );
+			}
+			
+			function idBoopies( err ) {
+				console.log( 'GuestRoom.handleLive - join, failed to fetch id', {
+					event : event,
+					err   : err,
+				});
+			}
+		}
+		
 		if ( 'open' === event.type ) {
 			if ( !self.live )
 				return;
 			
-			let init = event.data;
-			init.identities = self.identities;
-			self.live.initialize( init );
+			const init = event.data;
+			const peerList = init.liveConf.peerList;
+			self.idc.getList( peerList )
+				.then( listBack )
+				.catch( listBump );
+			
 			return;
+			
+			function listBack( idList ) {
+				const ids = {};
+				idList.forEach( id => {
+					ids[ id.clientId ] = id;
+				});
+				init.identities = ids;
+				self.live.initialize( init );
+			}
+			
+			function listBump( err ) {
+				console.log( 'GuestRoom.handleLive - open event, id list err', err );
+			}
 		}
 		
 		if ( self.live )
@@ -301,7 +318,6 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleChat = function( event ) {
 		const self = this;
-		//console.log( 'handleChat', event );
 		const chat = {
 			type : 'chat',
 			data : event,
@@ -320,7 +336,6 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleLiveChat = function( event ) {
 		const self = this;
-		//console.log( 'guest.handleLiveChat', event );
 		const chat = {
 			type : 'chat',
 			data : event,
