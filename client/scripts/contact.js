@@ -995,17 +995,17 @@ library.contact = library.contact || {};
 			onClose
 		);
 		
-		self.chatView.on( 'chat', chat );
+		self.chatView.on( 'chat', e => self.sendChatEvent( e ));
 		self.chatView.on( 'live', goLive );
-		self.chatView.on( 'contact-open', openContact );
+		self.chatView.on( 'contact-open', e => self.handleContactOpen( e ));
 		self.chatView.on( 'invite-show', e => self.showInviter( e ));
+		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
 		
 		function eventSink( e ) { console.log( 'unhandled chat view event', e ); }
 		function onClose( e ) {
 			self.closeChat();
 		}
 		
-		function chat( e ) { self.sendChatEvent( e ); }
 		function goLive( e ) {
 			if ( 'video' === e )
 				self.startVideo();
@@ -1014,7 +1014,6 @@ library.contact = library.contact || {};
 			if ( 'show' === e )
 				self.joinLive();
 		}
-		function openContact( e ) { self.handleContactOpen( e ); }
 	}
 	
 	ns.PresenceRoom.prototype.handleContactOpen = function( contactId ) {
@@ -1098,6 +1097,12 @@ library.contact = library.contact || {};
 			const inRoom = self.userIds.some( uId => uId === cId.clientId );
 			return !inRoom;
 		}
+	}
+	
+	ns.PresenceRoom.prototype.handleCloseBack = function( e ) {
+		const self = this;
+		self.closeChat();
+		hello.focusMain();
 	}
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {

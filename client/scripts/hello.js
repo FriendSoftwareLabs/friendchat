@@ -52,7 +52,15 @@ var hello = null;
 		self.init();
 	}
 	
-	// 'Public'
+	// """"Public""""
+	
+	ns.Hello.prototype.focusMain = function() {
+		const self = this;
+		if ( !self.main )
+			return;
+		
+		self.main.focus();
+	}
 	
 	// Presence calls this
 	ns.Hello.prototype.setServiceProvider = function( service ) {
@@ -1325,6 +1333,14 @@ var hello = null;
 	}
 	
 	// Public
+	
+	ns.Main.prototype.focus = function() {
+		const self = this;
+		if ( !self.view )
+			return;
+		
+		self.view.activate();
+	}
 	
 	ns.Main.prototype.setConnState = function( state ) {
 		const self = this;

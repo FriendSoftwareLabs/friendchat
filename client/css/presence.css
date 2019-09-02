@@ -4,6 +4,12 @@
 	padding : 0.3em 0.6em;
 }
 
+#room-back {
+	font-size     : 130%;
+	padding       : 5px 0;
+	padding-right : 2px;
+}
+
 #room-title .group-prefix,
 #room-title .title-name {
 	font-size: 130%;

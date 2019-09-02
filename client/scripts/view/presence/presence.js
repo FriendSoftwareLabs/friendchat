@@ -108,6 +108,7 @@ library.view = library.view || {};
 		const self = this;
 		self.titleContainer = document.getElementById( 'room-title' );
 		// buttons?
+		self.backBtn = document.getElementById( 'room-back' );
 		self.goVideoBtn = document.getElementById( 'upgrade-to-video' );
 		self.goAudioBtn = document.getElementById( 'upgrade-to-audio' );
 		self.toggleUsersBtn = document.getElementById( 'show-hide-btn' );
@@ -121,6 +122,7 @@ library.view = library.view || {};
 		const attachBtn = document.getElementById( 'attachment' );
 		
 		//
+		self.backBtn.addEventListener( 'click', closeBack, false );
 		self.goVideoBtn.addEventListener( 'click', goVideoClick, false );
 		self.goAudioBtn.addEventListener( 'click', goAudioClick, false );
 		self.toggleUsersBtn.addEventListener( 'click', toggleUserList, false );
@@ -167,6 +169,7 @@ library.view = library.view || {};
 			} );
 		};
 		
+		function closeBack( e ) { self.closeBack(); }
 		function goVideoClick( e ) { self.goLive( 'video' ); }
 		function goAudioClick( e ) { self.goLive( 'audio' ); }
 		
@@ -234,6 +237,14 @@ library.view = library.view || {};
 		vBtn.classList.toggle( 'hidden', !show );
 		aBtn.classList.toggle( 'hidden', !show );
 		*/
+	}
+	
+	ns.Presence.prototype.closeBack = function() {
+		const self = this;
+		const close = {
+			type : 'close-back',
+		};
+		self.send( close );
 	}
 	
 	ns.Presence.prototype.goLive = function( type ) {
