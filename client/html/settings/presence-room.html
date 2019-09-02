@@ -23,10 +23,10 @@ statusHTML,
 -->
 <script id="setting-assigned-worgs-tmpl" type="text/html">
 <form id="worgs" class="setting group row baseline">
-	<div class="TextLeft label fortify">
+	<div class="label fortify">
 		<%= label %>:
 	</div>
-	<div class="input expand group row">
+	<div class="input expand group row baseline">
 		<div id="worgs-items">
 			<%= itemsHTML %>
 		</div>
@@ -42,12 +42,46 @@ label,
 -->
 <script id="setting-worg-item-tmpl" type="text/html">
 <div class="checker worg-item group row">
-	<div class="TextLeft toggle fortify">
+	<div class="toggle fortify">
 		<input id="<%= id %>" type="checkbox" <%= checked %>>
 	</div>
 	<label class="check-name expand" for="<%= id %>">
 		<%= label %>
 	</label>
+</div>
+</script>
+
+<!-- authorized
+label,
+itemsHTML,
+statusHTML,
+-->
+<script id="setting-authorized-tmpl" type="text/html">
+<form id="authorized" class="setting group row baseline">
+	<div class="label fortify">
+		<%= label %>:
+	</div>
+	<div class="input expand group row baseline">
+		<div id="auth-items" class="ZebraList expand">
+			<%= itemsHTML %>
+		</div>
+		<%= statusHTML %>
+	</div>
+</form>
+</script>
+
+<!-- auth-item
+id,
+name,
+-->
+<script id="setting-auth-item-tmpl" type="text/html">
+<div id="<%= id %>" class="auth-item group row start">
+	<button class="IconButton item-remove">
+		<i class="fa fa-fw fa-close"></i>
+	</button>
+	<div class="item-name expand">
+		<%= name %>
+	</div>
 </div>
 </script>
 

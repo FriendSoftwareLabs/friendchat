@@ -9,9 +9,9 @@
 }
 
 .settings {
-	width : 100%;
-	padding : 1em 0;
-	overflow-x: hidden;
+	width      : 100%;
+	padding    : 1em 0;
+	overflow-x : hidden;
 }
 
 .setting {
@@ -19,24 +19,28 @@
 }
 
 .label {
-	min-width : 8.5em;
+	min-width     : 8.5em;
 	padding-right : 0.5em;
-	text-align: right;
-	line-height: 2em;
+	text-align    : left;
+	line-height   : 2em;
+}
+
+.input {
+	overflow      : hidden;
 }
 
 .status {
-	width: 2em;
+	width : 2em;
 }
 
 .status i {
-	width : 100%;
-	text-align: center;
+	width      : 100%;
+	text-align : center;
 }
 
 .wrap input {
-	width: 100%;
-	text-overflow: ellipsis;
+	width         : 100%;
+	text-overflow : ellipsis;
 }
 
 .nubmer {
@@ -64,6 +68,18 @@
 .setting.singlecheck {
 	
 }
+
 .setting.singlecheck .checklabel {
 	line-height: 2em;
+}
+
+.item-name {
+	padding-left : 0.5em;
+}
+
+.label,
+.item-name,
+.check-name {
+	overflow      : hidden;
+	text-overflow : ellipsis;
 }

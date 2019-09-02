@@ -46,6 +46,7 @@ library.view = library.view || {};
 			'isStream',
 			'isClassroom',
 			'workgroups',
+			'authorized',
 		];
 		
 		self.labelMap = {
@@ -54,6 +55,7 @@ library.view = library.view || {};
 			isStream    : View.i18n( 'i18n_is_stream' ),
 			isClassroom : View.i18n( 'i18n_is_classroom' ),
 			workgroups  : View.i18n( 'i18n_workgroups' ),
+			authorized  : View.i18n( 'i18n_authorized' ),
 		};
 		
 		self.buildMap = {
@@ -62,12 +64,14 @@ library.view = library.view || {};
 			isStream    : singleCheck,
 			isClassroom : singleCheck,
 			workgroups  : assignWorkgroup,
+			authorized  : removeAuthed,
 		};
 		
 		function textInput( setting ) { self.setTextInput( setting ); }
 		function numberInput( setting ) { self.setNumberInput( setting ); }
 		function singleCheck( setting ) { self.singleCheck( setting ); }
 		function assignWorkgroup( setting ) { self.assignWorkgroup( setting ); }
+		function removeAuthed( setting ) { self.removeAuthed( setting ); }
 	}
 	
 	ns.PresenceRoom.prototype.assignWorkgroup = function( setting ) {
@@ -175,6 +179,107 @@ library.view = library.view || {};
 				console.log( 'submit', e );
 			}
 		}
+	}
+	
+	ns.PresenceRoom.prototype.removeAuthed = function( setting ) {
+		const self = this;
+		const data = self.settings[ setting ];
+		console.log( 'removeAuthed', {
+			setting  : setting,
+			settings : self.settings,
+			data     : data,
+		});
+		const state = {
+			el    : null,
+			ids   : data.ids,
+			list  : data.authed,
+			idMap : {},
+		};
+		
+		sort();
+		build();
+		bind();
+		self.updateMap[ setting ] = updateAuthList;
+		
+		function sort() {
+			state.list.sort(( a, b ) => {
+				aN = state.ids[ a ].name.toLowerCase();
+				bN = state.ids[ b ].name.toLowerCase();
+				console.log( 'n', {
+					aN : aN,
+					bN : bN,
+					updown : ( aN < bN ),
+				});
+				if ( aN === bN )
+					return 0;
+				if ( aN < bN )
+					return -1;
+				else
+					return 1;
+			});
+		}
+		
+		function build() {
+			const label = self.labelMap[ setting ] || setting;
+			const statusHTML = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const items = state.list.map( buildItem );
+			const itemsHTML = items.join( '\r\n' );
+			const conf = {
+				label      : label,
+				itemsHTML  : itemsHTML,
+				statusHTML : statusHTML,
+			};
+			const el = hello.template.getElement( 'setting-authorized-tmpl', conf );
+			self.container.appendChild( el );
+			state.el = el;
+			
+			function buildItem( cId ) {
+				const id = state.ids[ cId ];
+				const iId = friendUP.tool.uid( 'auth' );
+				state.idMap[ iId ] = cId;
+				state.idMap[ cId ] = iId;
+				const conf = {
+					id   : iId,
+					name : id.name,
+				};
+				const html = hello.template.get( 'setting-auth-item-tmpl', conf );
+				return html;
+			}
+		}
+		
+		function bind() {
+			state.list.forEach( bindItem );
+			function bindItem( cId ) {
+				const itemId = state.idMap[ cId ];
+				const el = document.getElementById( itemId );
+				const btn = el.querySelector( 'button' );
+				btn.addEventListener( 'click', removeClick, false );
+				function removeClick( e ) {
+					e.preventDefault();
+					e.stopPropagation();
+					console.log( 'removeClick', {
+						cId : cId,
+						iId : itemId,
+					});
+					const value = {
+						clientId : cId,
+					};
+					self.save( setting, value );
+				}
+			}
+		}
+		
+		function updateAuthList( event ) {
+			console.log( 'updateAuthList', event );
+			const cId = event.clientId;
+			const itemId = state.idMap[ cId ];
+			const el = document.getElementById( itemId );
+			if ( !el )
+				return;
+			
+			el.parentNode.removeChild( el );
+		}
+		
 	}
 	
 })( library.view );

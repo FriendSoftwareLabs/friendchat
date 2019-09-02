@@ -707,6 +707,11 @@ inherits from EventEmitter
 	ns.IdCache.prototype.getList = function( list ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
+			if ( !list || !list.length ) {
+				resolve([ ]);
+				return;
+			}
+			
 			const known = [];
 			const unknown = [];
 			list.forEach( cId => {
