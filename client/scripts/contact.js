@@ -2446,6 +2446,7 @@ library.contact = library.contact || {};
 		
 		self.chatView.on( 'chat', chat );
 		self.chatView.on( 'live', goLive );
+		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
 		
 		self.updateActive();
 		
