@@ -3570,3 +3570,184 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	}
 	
 })( library.component );
+
+
+// Overlay
+(function( ns, undefined ) {
+	ns.Overlay = function( anchorEl, conf ) {
+		const self = this;
+		library.component.EventEmitter.call( self );
+		console.log( 'Overlay', {
+			el   : anchorEl,
+			conf : conf,
+		});
+		
+		self.anchor = anchorEl;
+		self.conf = conf;
+		self.isVisible = false;
+		
+		self.initOverlay();
+	}
+	
+	ns.Overlay.prototype =
+		Object.create( library.component.EventEmitter.prototype );
+	
+	// Public
+	
+	ns.Overlay.prototype.show = function() {
+		const self = this;
+		console.log( 'Overlay.show' );
+		self.toggleVisible( true );
+	}
+	
+	ns.Overlay.prototype.toggle = function() {
+		const self = this;
+		self.toggleVisible();
+	}
+	
+	ns.Overlay.prototype.hide = function() {
+		const self = this;
+		console.log( 'Overlay.hide' );
+		self.toggleVisible( false );
+	}
+	
+	ns.Overlay.prototype.close = function() {
+		const self = this;
+		self.closeOverlay();
+		throw new Error( 'Overlay.prototype.close() - implement in extension' );
+	}
+	
+	// Called by Overlay.init - must be implemented
+	
+	// .build must return a DOM object
+	ns.Overlay.prototype.build = function() {
+		const self = this;
+		throw new Error( 'Overlay.prototype.build() - implement in extension' );
+	}
+	
+	// .bind your ui events here
+	ns.Overlay.prototype.bind = function() {
+		const self = this;
+		throw new Error( 'Overlay.prototype.bind() - implement in extension' );
+	}
+	
+	
+	// Private
+	
+	ns.Overlay.prototype.closeOverlay = function() {
+		const self = this;
+		self.closeEventEmitter();
+		if ( self.overlay )
+			self.overlay.parentNode.removeChild( self.overlay );
+		
+		delete self.overlay;
+		delete self.anchor;
+		delete self.pos;
+	}
+	
+	ns.Overlay.prototype.initOverlay = function() {
+		const self = this;
+		const id = friendUP.tool.uid( 'over' );
+		document.addEventListener( 'resize', resize, false );
+		function resize( e ) {
+			self.updatePosition();
+		}
+		
+		const hidden = self.conf.show ? '' : 'hidden';
+		const conf = {
+			id     : id,
+			css    : self.conf.css,
+			hidden : hidden,
+		};
+		
+		self.overlay = hello.template.getElement( 'base-overlay-tmpl', conf );
+		const insert = self.build();
+		self.overlay.appendChild( insert );
+		document.body.appendChild( self.overlay );
+		self.setPosition();
+		self.bind();
+	}
+	
+	ns.Overlay.prototype.toggleVisible = function( show ) {
+		const self = this;
+		if ( null == show )
+			self.isVisible = !self.isVisible;
+		else
+			self.isVisible = show;
+		
+		self.overlay.classList.toggle( 'hidden', !self.isVisible );
+		self.emit( 'visible', self.isVisible );
+	}
+	
+	ns.Overlay.prototype.setPosition = function() {
+		const self = this;
+		const pos = self.conf.position;
+		if ( pos.outside )
+			self.positionOutside( pos.outside );
+		else
+			self.positionInside( pos.inside );
+	}
+	
+	ns.Overlay.prototype.updatePosition = function() {
+		console.log( 'updatePosition' );
+	}
+	
+	ns.Overlay.prototype.positionOutside = function( pos ) {
+		const self = this;
+		const screen = {
+			width  : document.body.clientWidth,
+			height : document.body.clientHeight,
+		};
+		const anchor = self.getElPosition( self.anchor );
+		console.log( 'outside', {
+			pos    : pos,
+			screen : screen,
+			anchor : anchor,
+		});
+		
+		let ap = null;
+		let ep = null;
+		if ( 'top-right' == pos.parent )
+			ap = {
+				x : anchor.x2,
+				y : anchor.y1,
+			};
+		
+		ep = {
+			x : ap.x + pos.offsetX,
+			y : ap.y + pos.offsetY,
+		}
+		
+		console.log( 'possies', {
+			pos : pos,
+			screen : screen,
+			anchor : anchor,
+			ap  : ap,
+			ep  : ep,
+		});
+		
+		if ( 'bottom-right' === pos.self ) {
+			self.overlay.style.right = ( screen.width - ep.x ) + 'px';
+			self.overlay.style.bottom = ( screen.height - ep.y ) + 'px';
+		}
+	}
+	
+	ns.Overlay.prototype.positionInisde = function( pos ) {
+		const self = this;
+		console.log( 'inside', pos );
+		
+	}
+	
+	ns.Overlay.prototype.getElPosition = function( el ) {
+		const self = this;
+		const elRekt = el.getBoundingClientRect();
+		return {
+			x1 : elRekt.x,
+			x2 : elRekt.right,
+			y1 : elRekt.y,
+			y2 : elRekt.bottom,
+		};
+	}
+	
+	
+})( library.component );
