@@ -2974,7 +2974,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		const viewWidth = document.body.clientWidth;
 		const viewHeight = document.body.clientHeight;
 		const middle = viewWidth / 2;
-		const originPos = self.getoriginPosition( originEl );
+		const originPos = self.getOriginPosition( originEl );
 		const align = self.getAlignment( middle, originPos );
 		let x1 = null;
 		let x2 = null;
@@ -3026,7 +3026,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		}
 	}
 	
-	ns.MiniMenu.prototype.getoriginPosition = function( oEl ) {
+	ns.MiniMenu.prototype.getOriginPosition = function( oEl ) {
 		let bRekt = oEl.getBoundingClientRect();
 		return {
 			x1 : bRekt.x,

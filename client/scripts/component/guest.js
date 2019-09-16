@@ -142,15 +142,10 @@ library.component = library.component || {};
 		self.init( accConn );
 	}
 	
-	// Public
+	ns.GuestRoom.prototype =
+		Object.create( library.contact.PresenceRoom.prototype );
 	
-	ns.GuestRoom.prototype.close = function() {
-		const self = this;
-		if ( self.conn )
-			self.conn.close();
-		
-		delete self.conn;
-	}
+	// Public
 	
 	// Private
 	
@@ -169,6 +164,7 @@ library.component = library.component || {};
 		self.conn.on( 'identity', identity );
 		self.conn.on( 'live', live );
 		self.conn.on( 'chat', chat );
+		self.conn.on( 'invite', e => self.handleInvite( e ));
 		
 		const initEvent = {
 			type : 'initialize',
@@ -211,6 +207,7 @@ library.component = library.component || {};
 		};
 		self.live = new library.rtc.RtcSession( conf, liveEvent, onclose );
 		self.live.on( 'chat', chat );
+		self.live.on( 'invite', invite );
 		self.live.on( 'live-name', liveName );
 		const joinLive = {
 			type : 'live-join',
@@ -224,7 +221,15 @@ library.component = library.component || {};
 				data : d,
 			});
 		}
+		
 		function chat( e ) { self.handleLiveChat( e ); }
+		function invite( e ) {
+			const inv = {
+				type : 'invite',
+				data : e,
+			};
+			self.send( inv );
+		}
 		function liveName( e ) { self.handleLiveName( e ); }
 		function onclose( e ) {
 			const leave = {
@@ -327,6 +332,7 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleLiveToRoom = function( event ) {
 		const self = this;
+		console.log( 'handleLiveToRoom', event );
 		const live = {
 			type : 'live',
 			data : event,

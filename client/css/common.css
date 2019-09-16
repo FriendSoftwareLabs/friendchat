@@ -1023,3 +1023,14 @@ html body .hidden {
 	height : 1.7em;
 	width  : 1.7em;
 }
+
+/*
+
+ overlay
+
+*/
+
+.overlay-base {
+	position         : absolute;
+	border-radius    : 0.2em;
+}

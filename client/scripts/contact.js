@@ -652,6 +652,7 @@ library.contact = library.contact || {};
 		conf.roomId = self.clientId;
 		conf.roomName = self.identity.name;
 		conf.isPrivate = self.isPrivate || false;
+		conf.isTempRoom = !self.persistent;
 		conf.guestAvatar = self.guestAvatar;
 		if ( self.settings.isStream )
 			conf.isStream = true;
@@ -705,11 +706,11 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.getInviteToken = function( type, callback ) {
 		const self = this;
 		type = type || 'private';
-		var reqId = null;
+		let reqId = null;
 		if ( callback )
 			reqId = self.setRequest( callback )
 		
-		var getInv = {
+		const getInv = {
 			type : type,
 			data : {
 				reqId : reqId,
@@ -1130,6 +1131,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
+		console.log( 'PersenceRoom.handleInitialize', state );
 		self.users = state.users || {};
 		self.userIds = Object.keys( self.users );
 		self.peers = state.peers;
@@ -1271,6 +1273,8 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
 		const self = this;
+		console.log( 'handlePersistent', event );
+		self.persistent = event.persistent;
 		const persistent = {
 			type : 'persistent',
 			data : event,
@@ -1595,12 +1599,20 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
+		console.log( 'PresenceRoom.handleInvite', event );
 		if ( 'revoke' === event.type )
 			send( event );
 		else
-			event = self.buildInvites( event, invitesBack );
+			self.buildInvites( event )
+				.then( invitesBack )
+				.catch( boop );
+		
+		function boop( e ) {
+			console.log( 'handleInvite.buildInvites boop', e );
+		}
 		
 		function invitesBack( event ) {
+			console.log( 'invtesBack', event );
 			if ( event.data.reqId ) {
 				self.handleRequest( event.data.reqId, event.data );
 			}
@@ -1613,6 +1625,11 @@ library.contact = library.contact || {};
 				type : 'invite',
 				data : event,
 			};
+			
+			console.log( 'send', {
+				event : event,
+				live : self.live,
+			});
 			
 			if ( self.chatView )
 				self.chatView.send( inv );
@@ -1876,106 +1893,130 @@ library.contact = library.contact || {};
 		callback( data );
 	}
 	
-	ns.PresenceRoom.prototype.buildInvites = function( event, callback ) {
+	ns.PresenceRoom.prototype.buildInvites = function( event ) {
 		const self = this;
-		if ( 'state' === event.type )
-			parseState( event.data, allDone );
-		else
-			build( event.data, buildBack );
+		return new Promise(( resolve, reject ) => {
+			console.log( 'buildInvites', event );
+			if ( 'state' === event.type )
+				parseState( event.data )
+					.then( parseDone )
+					.catch( buildBoop );
+			else
+				build( event.data )
+					.then( buildBack )
+					.catch( buildBoop );
+			
+			function buildBoop( err ) {
+				console.log( 'PresenecRoom.buildInvites - err', err );
+				reject( err );
+			}
+			
+			function buildBack( conf ) {
+				event.data = conf;
+				resolve( event );
+			}
+			
+			function parseDone( conf ) {
+				event.data = conf;
+				resolve( event );
+			}
+			
+		});
 		
-		function buildBack( conf ) {
-			event.data = conf;
-			callback( event );
-		}
-		
-		function allDone( conf ) {
-			event.data = conf;
-			callback( event );
-		}
-		
-		function build( conf, callback ) {
-			if ( 'string' === typeof( conf ))
-				conf = { token : conf };
+		function build( conf ) {
+			return new Promise(( resolve, reject ) => {
+				if ( 'string' === typeof( conf ))
+					conf = { token : conf };
+					
+				const data = {
+					type   : 'live',
+					token  : conf.token,
+					host   : conf.host,
+					roomId : self.clientId,
+					v      : 2,
+				};
+				const bundle = {
+					type : 'live-invite',
+					data : data,
+				};
 				
-			const data = {
-				type   : 'live',
-				token  : conf.token,
-				host   : conf.host,
-				roomId : self.clientId,
-				v      : 2,
-			};
-			const bundle = {
-				type : 'live-invite',
-				data : data,
-			};
-			
-			conf.link = hello.intercept.buildURL( bundle, false, 'Join me live' );
-			conf.link.url += '&theme=borderless';
-			
-			conf.data = hello.intercept.buildJSON( bundle );
-			conf.data = conf.data.prefix + conf.data.url;
-			
-			friend.tinyURL.compress( conf.link.url )
-				.then( tinyBack )
-				.catch( tinyErr );
-			
-			//
-			function tinyBack( res ) {
-				done( res.url );
-			}
-			
-			function tinyErr( err ) {
-				console.log( 'tinyErr', err );
-				done();
-			}
-			
-			function done( url ) {
-				if ( !url )
-					conf.link = conf.link.prefix + conf.link.url;
-				else
-					conf.link = conf.link.prefix + url;
+				conf.link = hello.intercept.buildURL( bundle, false, 'i18n_join_me_live' );
+				conf.link.url += '&theme=borderless';
 				
-				callback( conf );
-			}
+				conf.data = hello.intercept.buildJSON( bundle );
+				conf.data = conf.data.prefix + conf.data.url;
+				
+				friend.tinyURL.compress( conf.link.url )
+					.then( tinyBack )
+					.catch( tinyErr );
+				
+				//
+				function tinyBack( res ) {
+					done( res.url );
+				}
+				
+				function tinyErr( err ) {
+					console.log( 'tinyErr', err );
+					reject();
+				}
+				
+				function done( url ) {
+					if ( !url )
+						conf.message = conf.link.prefix + conf.link.url;
+					else {
+						conf.link = url;
+						conf.message = conf.link.prefix + url;
+					}
+					
+					resolve( conf );
+				}
+			});
 		}
 		
 		function parseState( state, callback ) {
-			if ( state.publicToken )
-				build({
-					token : state.publicToken,
-					host : state.host,
-				}, pubBack );
-			
-			let privs = [];
-			state.privateTokens
-				.map( buildPriv );
-			
-			return state;
-			
-			function buildPriv( token ) {
-				return build({
-					token : token,
-					host : state.host,
-				}, privBack );
-			}
-			
-			function pubBack( conf ) {
-				state.publicToken = conf;
-				checkDone();
-			}
-			
-			function privBack( conf ) {
-				privs.push( conf );
-				checkDone();
-			}
-			
-			function checkDone() {
-				if ( state.privateTokens.length !== privs.length )
-					return;
+			console.log( 'parseState', state );
+			return new Promise(( resolve, reject ) => {
+				Promise.all( state.privateTokens.map( buildPriv ))
+					.then( privsDone )
+					.catch( err );
 				
-				state.privateTokens = privs;
-				callback( state );
-			}
+				function privsDone( privs ) {
+					console.log( 'privsDone', privs );
+					state.privateTokens = privs;
+					if ( state.publicToken )
+						buildPub();
+					else
+						resolve( state );
+				}
+				
+				function buildPub() {
+					const conf = {
+						token : state.publicToken,
+						host  : state.host,
+					};
+					const pub = build( conf )
+						.then( pubBack )
+						.catch( err );
+				}
+				
+				function pubBack( conf ) {
+					console.log( 'pubBack', conf );
+					state.publicToken = conf;
+					resolve( state );
+				}
+				
+				function buildPriv( token ) {
+					const conf = {
+						token : token,
+						host  : state.host,
+					};
+					return build( conf );
+				}
+				
+				function err( err ) {
+					console.log( 'eer', err );
+				}
+			});
 		}
 	}
 	

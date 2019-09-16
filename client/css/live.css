@@ -12,7 +12,7 @@ body#hello.Loading {
 	background-color: #222 !important;
 }
 
-#live {
+body #live {
 	position : relative;
 	color    : #eee;
 	height   : 100%;
@@ -114,11 +114,11 @@ body#hello.Loading {
 }
 
 .grad-bg-down {
-	background : linear-gradient( rgba( 30, 30, 30, 0.9 ), rgba( 30, 30, 30, 0.5 ));
+	background : linear-gradient( rgba( 30, 30, 30, 0.9 ), rgba( 30, 30, 30, 0.7 ));
 }
 
 .grad-bg-up {
-	background : linear-gradient( rgba( 30, 30, 30, 0.5 ), rgba( 30, 30, 30, 0.9 ));
+	background : linear-gradient( rgba( 30, 30, 30, 0.7 ), rgba( 30, 30, 30, 0.9 ));
 }
 
 .btn,
@@ -985,7 +985,6 @@ i.svg.camera-off {
 .grid-ui .stream-state .state {
 	width: 2.5em;
 	height : 2.5em;
-	margin: 0 0 2px 2px;
 	border-radius: 3px;
 }
 
@@ -1038,6 +1037,7 @@ i.svg.camera-off {
 
 #ui-bottom-bar {
 	padding : 0.3em 0.5em;
+	background : linear-gradient( rgba( 30, 30, 30, 0.3 ), rgba( 30, 30, 30, 0.9 ));
 }
 
 #ui-left,
@@ -1066,6 +1066,35 @@ body#hello #hangup-btn > i {
 
 body#hello #hangup-btn i {
 	font-size: 180%;
+}
+
+#share-link-view {
+	padding : 0.2em;
+}
+
+#share-title {
+	padding : 0.5em;
+	color   : #ccc;
+}
+
+html body#hello select,
+html body#hello .input-wrap input {
+	color            : #eee;
+	background-color : #222;
+	border           : 1px solid #666;
+	padding          : 0.3em 0.5em;
+}
+
+html body#hello select {
+	padding : 0.5em !important;
+}
+
+#share-link-btn {
+	
+}
+
+#share-public-to-email {
+	margin-right : 2em;
 }
 
 #live-ui-click-catch {

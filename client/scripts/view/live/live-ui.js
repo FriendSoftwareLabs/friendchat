@@ -77,6 +77,37 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.UI.prototype.addShareLink = function( conn ) {
+		const self = this;
+		console.log( 'addShareLink', {
+			conn : conn,
+			lib  : library.view,
+		});
+		if ( !self.shareLinkBtn ) {
+			console.log( 'Live UI.addShareLink, no button found' );
+			return;
+		}
+		
+		if ( self.shareLink )
+			return;
+		
+		self.shareLinkBtn.classList.toggle( 'hidden', false );
+		self.shareLink = new library.view.ShareLink( self.shareLinkBtn, conn );
+		self.shareLink.on( 'visible', onVisible );
+		
+		self.shareLinkBtn.addEventListener( 'click', click, false );
+		return self.shareLink;
+		
+		function onVisible( isVisible ) {
+			console.log( 'onVisible', isVisible );
+			self.shareLinkBtn.classList.toggle( 'available', isVisible );
+		}
+		
+		function click( e ) {
+			self.shareLink.toggle();
+		}
+	}
+	
 	// Private
 	
 	ns.UI.prototype.init = function() {
@@ -179,6 +210,7 @@ library.component = library.component || {};
 		self.audioBtn = document.getElementById( 'audio-toggle-btn' );
 		self.hangupBtn = document.getElementById( 'hangup-btn' );
 		self.videoBtn = document.getElementById( 'video-toggle-btn' );
+		self.shareLinkBtn = document.getElementById( 'share-link-btn' );
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.teaseChat = document.getElementById( 'tease-chat-container' );
 		
@@ -388,6 +420,8 @@ library.component = library.component || {};
 		else {
 			conf.onmenu = onMenuClick;
 			viewPeer = new library.view.Peer( conf );
+			if ( null == self.selfiePopped )
+				self.togglePopped( true );
 		}
 		
 		peer.on( 'video', updateHasVideo );
@@ -481,6 +515,8 @@ library.component = library.component || {};
 		
 		if ( self.peerGridOrder.length === 1 ) {
 			self.peers[ 'selfie' ].stopDurationTimer();
+			self.togglePopped( false );
+			delete self.selfiePopped;
 		}
 		
 		self.updateVoiceListMode();
@@ -928,7 +964,7 @@ library.component = library.component || {};
 			id     : 'popped',
 			name   : View.i18n( 'i18n_toggle_popped_selfie' ),
 			faIcon : 'fa-external-link',
-			toggle : true,
+			toggle : false,
 			close  : false,
 		};
 		const speaker = {
@@ -1025,7 +1061,7 @@ library.component = library.component || {};
 		};
 		
 		const content = [
-			share,
+			//share,
 			chat,
 			blind,
 			mute,
@@ -1106,11 +1142,12 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.togglePopped = function( force ) {
 		const self = this;
+		console.log( 'togglePopped' );
 		const selfie = self.peers[ 'selfie' ];
 		if ( !selfie )
 			return;
 		
-		selfie.togglePopped( force );
+		self.selfiePopped = selfie.togglePopped( force );
 		self.updateSelfieState();
 	}
 	
@@ -2844,7 +2881,7 @@ library.component = library.component || {};
 		self.screenshareBtn = screenshareBtn;
 		self.selectedStreamQuality = 'normal';
 		
-		self.isPopped = true;
+		self.isPopped = false;
 		self.showDuration = false;
 		
 		ns.Peer.call( this, conf );
@@ -2893,6 +2930,7 @@ library.component = library.component || {};
 		const self = this;
 		self.audioBtn.addEventListener( 'click', audioClick, false );
 		self.videoBtn.addEventListener( 'click', videoClick, false );
+		self.togglePopped( self.isPopped );
 		
 		function audioClick( e ) {
 			self.handleAudioClick();

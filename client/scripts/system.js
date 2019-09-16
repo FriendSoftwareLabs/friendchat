@@ -2332,6 +2332,7 @@ library.rtc = library.rtc || {};
 			identities  : init.identities,
 			roomName    : viewConf.roomName,
 			isPrivate   : viewConf.isPrivate,
+			isTempRoom  : viewConf.isTempRoom,
 			logTail     : roomConf.logTail,
 			rtcConf     : {
 				ICE         : roomConf.ICE,

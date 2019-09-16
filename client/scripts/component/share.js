@@ -42,14 +42,14 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.bindConn();
 		self.bindEvents();
 		self.send({ type : 'state' });
 	}
 	
 	ns.ShareView.prototype.bindConn = function() {
-		var self = this;
+		const self = this;
 		self.conn = new library.component.EventNode( self.type, self.parentConn );
 		self.conn.on( 'state', state );
 		self.conn.on( 'private', priv );
@@ -65,7 +65,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		self.inviteContainer = document.getElementById( 'share-invites' );
 		self.inviteBtn = document.getElementById( 'share-add-invite' );
 		
@@ -134,7 +134,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.handleRevoke = function( token ) {
-		var self = this;
+		const self = this;
 		if ( 'public' === token || self.publicToken === token )
 			revokePublic();
 		else
@@ -169,7 +169,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.handlePrivate = function( invite ) {
-		var self = this;
+		const self = this;
 		self.invites[ invite.token ] = invite;
 		build( invite );
 		bind( invite );
@@ -215,7 +215,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.setPublic = function( bool ) {
-		var self = this;
+		const self = this;
 		var setPub = {
 			type : 'public',
 		};
@@ -223,7 +223,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.handlePublic = function( data ) {
-		var self = this;
+		const self = this;
 		// clear styles
 		if ( self.publicToken === self.copyId )
 			self.clearCopy();
@@ -239,7 +239,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.handleState = function( data ) {
-		var self = this;
+		const self = this;
 		self.host = data.host;
 		data.privateTokens
 			.forEach( add );
@@ -253,7 +253,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.requestInvite = function( callback ) {
-		var self = this;
+		const self = this;
 		if ( callback )
 			self.inviteIntercept = callback;
 		
@@ -264,7 +264,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.getEmailLink = function() {
-		var self = this;
+		const self = this;
 		var email = self.emailInput.value;
 		if ( !email )
 			return;
@@ -284,7 +284,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.sendEmailLink = function( email, link ) {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'email',
 			data : {
@@ -297,7 +297,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.confirmEmailSent = function( success ) {
-		var self = this;
+		const self = this;
 		if ( !success )
 			return;
 		
@@ -306,7 +306,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.toggleEmailSending = function( isWorking ) {
-		var self = this;
+		const self = this;
 		if ( !isWorking )
 			isWorking = false;
 		
@@ -339,7 +339,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.copyToClipboard = function( id ) {
-		var self = this;
+		const self = this;
 		self.selectAll( id );
 		try {
 			var success = document.execCommand( 'copy' );
@@ -357,7 +357,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.createEmail = function( id ) {
-		var self = this;
+		const self = this;
 		var input = self.getInputById( id );
 		if ( !input || !input.value || !input.value.length ) {
 			console.log( 'createEmail - input has no content', { id : id, input : input });
@@ -388,7 +388,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.selectAll = function( id ) {
-		var self = this;
+		const self = this;
 		var input = self.getInputById( id );
 		if ( !input || !input.value || !input.value.length ) {
 			console.log( 'shareView.selectAll - invalid input id', {
@@ -405,14 +405,14 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.getInputById = function( id ) {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( id );
 		var input = container.querySelector( 'input' );
 		return input;
 	}
 	
 	ns.ShareView.prototype.setCopy = function( id ) {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( id );
 		if ( !element )
 			return;
@@ -423,7 +423,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.setEmail = function( id ) {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( id );
 		if ( !element )
 			return;
@@ -432,7 +432,7 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.clearCopy = function() {
-		var self = this;
+		const self = this;
 		if ( !self.copyId )
 			return;
 		
@@ -445,7 +445,242 @@ library.component = library.component || {};
 	}
 	
 	ns.ShareView.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
+		self.conn.send( msg );
+	}
+	
+})( library.component );
+
+
+/*
+	share public link
+*/
+(function( ns, undefined ) {
+	ns.ShareLink = function( conf ) {
+		console.log( 'ShareLink', conf );
+		const self = this;
+		self.host = null;
+		self.invites = {};
+		
+		self.init( conf.conn );
+	}
+	
+	ns.ShareLink.prototype.init = function( pConn ) {
+		const self = this;
+		self.bindConn( pConn );
+		self.bindEvents();
+		self.send({ type : 'state' });
+	}
+	
+	ns.ShareLink.prototype.bindConn = function( pConn ) {
+		const self = this;
+		self.conn = new library.component.EventNode( 'invite', pConn );
+		self.conn.on( 'state', state );
+		self.conn.on( 'public', pub );
+		self.conn.on( 'revoke', revoke );
+		self.conn.on( 'email', emailSent );
+		
+		function state( e ) { self.handleState( e ); }
+		function pub( e ) { self.handlePublic( e ); }
+		function revoke( e ) { self.handleRevoke( e ); }
+		function emailSent( e ) { self.confirmEmailSent( e ); }
+	}
+	
+	ns.ShareLink.prototype.bindEvents = function() {
+		const self = this;
+		self.el = document.getElementById( 'share-view' );
+		
+		self.pubInput = document.getElementById( 'share-public-input' );
+		self.pubEmailBtn = document.getElementById( 'share-public-to-email' );
+		self.pubCopyBtn = document.getElementById( 'share-public-to-clippy' );
+		self.closeBtn = document.getElementById( 'share-close' );
+		
+		console.log( 'bindEvents', {
+			input : self.pubInput,
+			email : self.pubEmailBtn,
+			copy : self.pubCopyBtn,
+		});
+		
+		self.pubInput.addEventListener( 'focus', inputFocus, false );
+		self.pubInput.addEventListener( 'keydown', key, false );
+		self.pubInput.addEventListener( 'keyup', key, false );
+		self.pubEmailBtn.addEventListener( 'click', createPublicEmail, false );
+		self.pubCopyBtn.addEventListener( 'click', copyPublic, false );
+		
+		function key( e ) {
+			e.stopPropagation();
+			e.preventDefault();
+		}
+		
+		function inputFocus( e ) {
+			self.selectAll();
+		}
+		
+		function copyPublic( e ) {
+			e.stopPropagation();
+			self.copyToClipboard();
+		}
+		
+		function createPublicEmail( e ) {
+			e.stopPropagation();
+			self.createEmail();
+		}
+		
+	}
+	
+	ns.ShareLink.prototype.handleRevoke = function( token ) {
+		const self = this;
+		console.log( 'handleRevoke', token );
+		if ( 'public' === token || self.publicToken === token )
+			revokePublic();
+		else
+			revoke( token );
+		
+		function revoke( id ) {
+		}
+		
+		function revokePublic() {
+			self.handlePublic({
+				data : null,
+			});
+		}
+	}
+	
+	ns.ShareLink.prototype.setPublic = function( bool ) {
+		const self = this;
+		console.log( 'setPublic' );
+		const setPub = {
+			type : 'public',
+		};
+		self.send( setPub );
+	}
+	
+	ns.ShareLink.prototype.handlePublic = function( data ) {
+		const self = this;
+		// clear styles
+		console.log( 'handlePublic', data );
+		if ( self.publicToken === self.copyId )
+			self.clearCopy();
+		
+		//self.pubContainer.classList.toggle( 'previously-copied', false );
+		//self.pubContainer.id = data.token;
+		self.publicToken = data.token;
+		self.publicInvite = data;
+		const isPublic = !!data.token;
+		const link = isPublic ? data.link : '';
+		self.pubInput.value = link;
+	}
+	
+	ns.ShareLink.prototype.handleState = function( data ) {
+		const self = this;
+		console.log( 'handleState', data );
+		self.host = data.host;
+		if ( data.publicToken )
+			self.handlePublic( data.publicToken );
+		else
+			self.setPublic();
+	}
+	
+	ns.ShareLink.prototype.revoke = function( token ) {
+		const self = this;
+		const revoke = {
+			type : 'revoke',
+			data : token,
+		};
+		self.send( revoke );
+	}
+	
+	ns.ShareLink.prototype.remove = function( token ) {
+		const self = this;
+		var element = document.getElementById( token );
+		if ( element )
+			element.parentNode.removeChild( element );
+		
+		if ( token === self.copyId )
+			self.copyId = null;
+		
+		delete self.invites[ token ];
+		self.revoke( token );
+	}
+	
+	ns.ShareLink.prototype.copyToClipboard = function() {
+		const self = this;
+		self.selectAll();
+		try {
+			var success = document.execCommand( 'copy' );
+		} catch( e ) {
+			console.log( 'failed to copy to clippy', e );
+		}
+		
+		if ( !success ) {
+			console.log( 'copyToClipboard - not success' );
+			return;
+		}
+		
+		self.clearCopy();
+		self.setCopy();
+	}
+	
+	ns.ShareLink.prototype.createEmail = function() {
+		const self = this;
+		const link = self.publicInvite.link;
+		const enSubject =  window.encodeURIComponent( 'Friend Chat - join me live' );
+		const enLink = window.encodeURIComponent( link );
+		const href = 'mailto:'
+			+ '?subject=' + enSubject
+			+ '&body=' + enLink;
+		const iframe = document.createElement( 'iframe' );
+		iframe.classList.add( 'hidden' );
+		document.body.appendChild( iframe );
+		iframe.src = href;
+		window.setTimeout( remove, 1000 );
+		
+		function remove() {
+			iframe.parentNode.removeChild( iframe );
+		}
+	}
+	
+	ns.ShareLink.prototype.selectAll = function() {
+		const self = this;
+		const input = self.pubInput;
+		if ( !input.value.length )
+			return;
+		
+		const strLen = input.value.length;
+		input.focus();
+		input.setSelectionRange( 0, strLen );
+	}
+	
+	ns.ShareLink.prototype.setCopy = function( id ) {
+		const self = this;
+		return;
+		
+		const element = document.getElementById( id );
+		if ( !element )
+			return;
+		
+		element.classList.toggle( 'previously-copied', true );
+		element.classList.toggle( 'on-clipboard', true );
+		self.copyId = id;
+	}
+	
+	ns.ShareLink.prototype.clearCopy = function() {
+		const self = this;
+		return;
+		
+		if ( !self.copyId )
+			return;
+		
+		var element = document.getElementById( self.copyId );
+		if ( !element )
+			return;
+		
+		element.classList.toggle( 'on-clipboard', false );
+		self.copyId = null;
+	}
+	
+	ns.ShareLink.prototype.send = function( msg ) {
+		const self = this;
 		self.conn.send( msg );
 	}
 	

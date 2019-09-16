@@ -20,6 +20,7 @@
 			webclient/apps/FriendChat/scripts/view/live/components-rtc.js;
 			webclient/apps/FriendChat/scripts/view/live/init-checks.js;
 			webclient/apps/FriendChat/scripts/view/live/ui-panes.js;
+			webclient/apps/FriendChat/scripts/view/live/ui-overlays.js;
 			webclient/apps/FriendChat/scripts/view/live/live-rtc.js;
 			webclient/apps/FriendChat/scripts/view/live/live-ui.js;
 			webclient/apps/FriendChat/scripts/view/live/live.js
@@ -64,7 +65,7 @@
 				<div id="live-ui" class="bar column">
 					<div id="live-ui-panes" class="expand hidden">
 					</div>
-					<div id="ui-bottom-bar" class="fortify group row grad-bg-up">
+					<div id="ui-bottom-bar" class="fortify group row bottom-bg">
 						<div id="ui-left" class="group row start item-row">
 							<div id="show-menu-btn" class="btn fortify">
 								<i class="fa fa-fw fa-bars"></i>
@@ -88,7 +89,7 @@
 							</div>
 						</div>
 						<div id="ui-right" class="group row end item-row">
-							<div id="share-btn" class="btn fortify hidden">
+							<div id="share-link-btn" class="btn fortify hidden">
 								<i class="fa fa-fw fa-share-alt"></i>
 							</div>
 							<div id="settings-btn" class="btn fortify">
@@ -118,7 +119,7 @@ name,
 avatar,
 -->
 <script id="selfie-tmpl" type="text/html">
-<div id="selfie" class="peer selfie popped bar column">
+<div id="selfie" class="peer selfie bar column">
 	<div class="stream-container expand">
 		<div class="avatar" style="background-image: url(<%= avatar %>)">
 		</div>
@@ -545,11 +546,40 @@ current,
 </div>
 </script>
 
+
+<!-- live-overlay-share-tmpl
+-->
+<script id="live-overlay-share-tmpl" type="text/html">
+<div id="share-link-view" class="">
+	<div class="group row">
+		<div id="share-title" class="expand">
+			{i18n_share_this_room}
+		</div>
+		<div id="share-close-inline" class="fortify btn">
+			<i class="fa fa-fw fa-close"></i>
+		</div>
+	</div>
+	<div class="input-wrap">
+		<input id="share-public-input" type="text">
+	</div>
+	<div class="group row end">
+		<div id="share-public-to-email" class="btn text fortify" type="button">
+			<i class="fa fa-fw fa-paper-plane"></i>
+			{i18n_create_email}
+		</div>
+		<div id="share-public-to-clippy" class="btn text fortify" type="button">
+			<i class="fa fa-fw fa-clipboard"></i>
+			{i18n_copy_to_clipboard}
+		</div>
+	</div>
+</div>
+</script>
+
 <!-- source-select
 
 -->
 <script id="select-source-tmpl" type="text/html">
-<div id="source-select" class="std-bg bar column start">
+<div id="source-select" class="grad-bg-down bar column start">
 	<div id="source-head"class="fortify group row">
 		<div id="source-title" class="expand Padding">
 			{i18n_audio_video_settings}
@@ -1094,7 +1124,7 @@ faIcon,
 
 -->
 <script id="chat-pane-tmpl" type="text/html">
-<div id="chat-pane" class="std-bg abs-cover">
+<div id="chat-pane" class="grad-bg-down abs-cover">
 	<!-- chat thingie goes here -->
 	<div id="chat-pane-close" class="btn center-child">
 		<i class="fa fa-fw fa-close"></i>

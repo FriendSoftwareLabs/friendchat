@@ -63,12 +63,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTC = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
+		console.log( 'RTC', conf );
 		self.conn = conn || null;
 		self.ui = UI;
 		self.userId = conf.userId;
 		self.rtcConf = conf.rtcConf;
 		self.isGuest = conf.isGuest;
 		self.isPrivate = conf.isPrivate;
+		self.isTempRoom = conf.isTempRoom;
+		self.isPersistent = conf.isPersistent;
 		self.peerList = conf.peerList;
 		self.identities = conf.identities || {};
 		self.guestAvatar = conf.guestAvatar;
@@ -114,7 +117,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		// ui
 		self.chat = self.ui.addChat( self.userId, self.identities, self.conn );
-		self.share = self.ui.addShare( self.conn );
+		
+		if ( !self.isPrivate )
+			self.share = self.ui.addShareLink( self.conn );
+		if ( self.share && self.isTempRoom )
+			self.share.show();
 		
 		// do init checks
 		const initConf = {
