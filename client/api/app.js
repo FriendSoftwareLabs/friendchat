@@ -259,24 +259,34 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( 'app' === event.type ) {
 			const msg = event.data;
 			self.emit( msg.type, msg.data );
+			return;
 		}
 		
 		if ( 'log-sock' === event.type ) {
 			const args = event.data;
 			self.app.handleViewLog( args, self.viewName );
+			return;
 		}
+		
+		if ( 'show-notify' === event.type ) {
+			const notie = event.data;
+			console.log( 'send-notify', notie );
+			self.app.notify( notie );
+			return;
+		}
+		
+		console.log( 'handleViewEvent', event );
 		
 	}
 	
 	ns.View.prototype.setContentUrl = function( htmlPath ) {
 		const self = this;
-		var msg = {
-			method : 'setRichContentUrl',
-			url : self.app.filePath + htmlPath,
-			base : self.app.filePath,
+		const msg = {
+			method   : 'setRichContentUrl',
+			url      : self.app.filePath + htmlPath,
+			base     : self.app.filePath,
 			filePath : self.app.filePath,
-			opts : {},
-			
+			opts     : {},
 		};
 		
 		if ( self.windowConf.viewTheme )

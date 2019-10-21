@@ -199,6 +199,16 @@ var friend = window.friend || {};
 	
 	// public
 	
+	ns.View.prototype.showNotification = function( title, message, notifyId ) {
+		const self = this;
+		const notie = {
+			title    : title,
+			text     : message,
+			notifyId : notifyId,
+		};
+		self.sendTypeEvent( 'show-notify', notie );
+	}
+	
 	ns.View.prototype.getConfig = function() {
 		const self = this;
 		return self.appConf;
@@ -712,19 +722,18 @@ var friend = window.friend || {};
 	ns.View.prototype.openCamera = function( flags, callback )
 	{
 		const self = this;
-		
 		// Create the callback
 		var cbk = function( msg ) {
 			callback( msg.data );
 		};
-
+		
 		// The message
 		var o = {
-			type: 'system',
-			command: 'opencamera',
-			viewId: self.id,
-			targetViewId: self.id, // TODO: This may be needed!
-			flags: flags
+			type         : 'system',
+			command      : 'opencamera',
+			viewId       : self.id,
+			targetViewId : self.id, // TODO: This may be needed!
+			flags        : flags,
 		};
 		
 		// Add a callback
@@ -1130,12 +1139,12 @@ window.View = new api.View();
 	// Initiate paste handler
 	ns.PasteHandler.prototype.paste = function( evt, callback )
 	{
-		var self = this;
+		const self = this;
 		
 		function DirectoryContainsFile( filename, directoryContents )
 		{
 			if( !filename ) return false;
-			if( !directoryContents || directoryContents.length == 0 ) return false;
+			if( !directoryContents || directoryContents.length == 0 ) return false;
 	
 			for(var i = 0; i < directoryContents.length; i++ )
 			{
@@ -1202,8 +1211,16 @@ window.View = new api.View();
 						}
 						if( i > 100 )
 						{
-							Notify({'title':i18n('i18n_paste_error'),'text':'Really unexpected error. You have pasted too many files.'});
-							if( callback ) callback( { response: false, message: 'Too many files pasted.' } );
+							window.View.showNotification(
+								View.i18n( 'i18n_paste_error' ),
+								View.i18n( 'i18n_really_unexpected_error_contact_your_friendly_admin' ),
+							);
+							if( callback ) 
+								callback({
+									response : false,
+									message  : 'Too many files pasted.',
+								});
+							
 							break; // no endless loop please	
 						}
 					}
@@ -1211,11 +1228,18 @@ window.View = new api.View();
 				}
 				else
 				{
-					Notify({'title':i18n('i18n_paste_error'),'text':'Really unexpected error. Contact your Friendly administrator.'});
-					if( callback ) callback( { response: false, message: 'Unexpected error occured.' } );
+					window.View.showNotification(
+						View.i18n( 'i18n_paste_error' ),
+						View.i18n( 'i18n_really_unexpected_error_contact_your_friendly_admin' ),
+					);
+					if( callback ) 
+						callback({
+							response :  false,
+							message  : 'Unexpected error occured.',
+						});
 				}
 			}
-			j.send ();
+			j.send();
 		}
 		
 		// end of uploadPastedFile

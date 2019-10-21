@@ -396,3 +396,5 @@ i18n_the_person_of_interest_must_be_online_to_receive_the_invite : The person of
 i18n_only_online_user_are_listed : Only online users are listed
 i18n_authorized : Authorized
 i18n_share_this_room : Share this room
+i18n_really_unexpected_error_contact_your_friendly_admin : Really unexpected error. Contact your Friendly administrator
+i18n_paste_error : Paste error
