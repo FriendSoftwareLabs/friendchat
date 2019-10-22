@@ -3164,8 +3164,10 @@ library.rtc = library.rtc || {};
 			
 			function mediaFailed( err, conf ) {
 				console.log( 'mediaFailed', {
-					err  : err,
-					conf : conf,
+					err        : err,
+					conf       : conf,
+					noFallBack : noFallBack,
+					giveUp     : self.giveUp,
 				});
 				
 				const errData = {
@@ -3189,6 +3191,7 @@ library.rtc = library.rtc || {};
 		});
 		
 		function retrySimple() {
+			console.log( 'retrySimple', self.simpleConf );
 			// try audio + video, but no special conf
 			if ( !self.simpleConf ) {
 				let send = self.permissions.send;

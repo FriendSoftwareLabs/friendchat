@@ -799,7 +799,7 @@ library.rtc = library.rtc || {};
 			return new ns.BrowserCheck();
 		
 		const self = this;
-		self.userAgent = userAgent;
+		self.userAgent = userAgent || window.navigator.userAgent;
 		self.onresult = onResult;
 		self.isSecure = false;
 		self.browser = null;
