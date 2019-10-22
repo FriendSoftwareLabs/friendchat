@@ -890,7 +890,8 @@ library.rtc = library.rtc || {};
 		
 		// BRAVE
 		console.log( 'idBrowser - ua', self.userAgent );
-		is[ 'brave' ] = ( is[ 'chrome' ] && self.userAgent.includes( 'Brave' ));
+		//is[ 'brave' ] = ( is[ 'chrome' ] && self.userAgent.includes( 'Brave' ));
+		is[ 'brave' ] = ( is[ 'chrome' ] && self.checkIsBrave() );
 		console.log( 'idBrowser - is brave???', is );
 		/*
 		if ( is[ 'blink' ]) {
@@ -900,6 +901,20 @@ library.rtc = library.rtc || {};
 		*/
 		
 		self.is = is;
+	}
+	
+	ns.BrowserCheck.prototype.checkIsBrave = function() {
+		const self = this;
+		const test = document.createElement( 'iframe' );
+		test.classList.toggle( 'hidden', true );
+		document.body.appendChild( test );
+		let isBrave = false;
+		console.log( 'test.contentWindow', test.contentWindow.google_onload_fired )
+		if ( test.contentWindow.google_onload_fired === true )
+			isBrave = true;
+		
+		test.parentNode.removeChild( test );
+		return isBrave;
 	}
 	
 	ns.BrowserCheck.prototype.checkSecure = function() {
