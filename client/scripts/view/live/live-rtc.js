@@ -135,8 +135,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.initChecks.checkICE( self.rtcConf.ICE );
 		console.log( 'conf', window.View.config );
-		const conf = window.View.config.appConf;
-		self.initChecks.checkBrowser( conf.userAgent, browserBack );
+		const appConf = window.View.config.appConf;
+		self.initChecks.checkBrowser( appConf.userAgent, browserBack );
 		function browserBack( err, browser ) {
 			console.log( 'browserBack', browser );
 			if ( err ) {
