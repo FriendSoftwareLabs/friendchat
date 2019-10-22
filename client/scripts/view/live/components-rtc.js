@@ -3176,7 +3176,7 @@ library.rtc = library.rtc || {};
 					conf : conf,
 				};
 				
-				self.emit( 'mediafailed', errData );
+				self.emit( 'media-error', errData );
 				if ( self.giveUp || noFallback )
 					reject( errData );
 				else
