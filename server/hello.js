@@ -167,6 +167,8 @@ function configServer() {
 		let userAgent = null;
 		if ( req.headers )
 			userAgent = req.headers[ 'user-agent' ] || null;
+		
+		log( 'userAgent', userAgent );
 		// null cares given about what the request actually is, client cfg will be served
 		//const confStr = JSON.stringify( state.config.shared );
 		const confCopy = JSON.parse( state.configSharedStr );
