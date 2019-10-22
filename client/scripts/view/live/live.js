@@ -84,6 +84,7 @@ library.component = library.component || {};
 	
 	ns.Init.prototype.initialize = function( data ) {
 		const self = this;
+		console.log( 'conf?', window.View );
 		hello.template.addFragments( data.fragments );
 		hello.template.addFragments( data.liveFragments );
 		
@@ -99,6 +100,9 @@ library.component = library.component || {};
 		// prepare ui state
 		let liveConf = data.liveConf;
 		let localSettings = liveConf.localSettings;
+		
+		// get browser
+		//new library.rtc.BrowserCheck( checkBack );
 		
 		// init ui
 		self.ui = new library.view.UI( self.conn, liveConf, localSettings, self );

@@ -50,9 +50,9 @@ library.rtc = library.rtc || {};
 	
 	// Public
 	
-	ns.InitChecks.prototype.checkBrowser = function( callback ) {
+	ns.InitChecks.prototype.checkBrowser = function( userAgent, callback ) {
 		const self = this;
-		new library.rtc.BrowserCheck( checkBack );
+		new library.rtc.BrowserCheck( userAgent, checkBack );
 		function checkBack( res ) {
 			self.ui.updateBrowserCheck( res );
 			checkErrors( res );
@@ -794,11 +794,12 @@ library.rtc = library.rtc || {};
 
 // Browser check
 (function( ns, undefined ) {
-	ns.BrowserCheck = function( onResult ) {
+	ns.BrowserCheck = function( userAgent, onResult ) {
 		if ( !( this instanceof ns.BrowserCheck ))
 			return new ns.BrowserCheck();
 		
 		const self = this;
+		self.userAgent = userAgent;
 		self.onresult = onResult;
 		self.isSecure = false;
 		self.browser = null;
@@ -824,6 +825,7 @@ library.rtc = library.rtc || {};
 		'safari'  : 'warning',
 		'firefox' : 'success',
 		'chrome'  : 'success',
+		'brave'   : 'warning',
 		'blink'   : 'success',
 		'samsung' : 'success',
 		'android' : 'warning',

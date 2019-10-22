@@ -134,8 +134,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.initChecks.on( 'done', allChecksDone );
 		
 		self.initChecks.checkICE( self.rtcConf.ICE );
-		self.initChecks.checkBrowser( browserBack );
+		console.log( 'conf', window.View.config );
+		const conf = window.View.config.appConf;
+		self.initChecks.checkBrowser( conf.userAgent, browserBack );
 		function browserBack( err, browser ) {
+			console.log( 'browserBack', browser );
 			if ( err ) {
 				self.goLive( false );
 				return;
@@ -925,6 +928,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			if ( 'firefox' === browser )
 				return library.rtc.PeerFirefox;
+			
+			if ( 'brave' === browser )
+				return library.rtc.PeerBrave;
 			
 			return library.rtc.Peer;
 		}
@@ -3238,11 +3244,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.updateDoInit = function( browser ) {
 		const self = this;
+		/*
 		if ( 'firefox' === browser )
 			self.isHost = false;
 		
 		if ( 'safari' === browser )
 			self.isHost = false;
+		*/
 	}
 	
 	ns.Peer.prototype.releaseRemoteMedia = function() {
@@ -3717,11 +3725,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.PeerSafari.prototype.updateDoInit = function( browser ) {
 		const self = this;
+		/*
 		if ( 'chrome' === browser )
 			self.isHost = true;
 		
 		if ( 'firefox' === browser )
 			self.isHost = false;
+		*/
 	}
 	
 })( library.rtc );
@@ -3736,11 +3746,27 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.PeerFirefox.prototype.updateDoInit = function( browser ) {
 		const self = this;
+		/*
 		if ( 'chrome' === browser )
 			self.isHost = true;
 		
 		if ( 'safari' === browser )
 			self.isHost = true;
+		*/
+	}
+	
+})( library.rtc );
+
+(function( ns, undefined ) {
+	ns.PeerBrave = function( conf ) {
+		const self = this;
+		library.rtc.Peer.call( self, conf );
+	}
+	
+	ns.PeerBrave.prototype = Object.create( library.rtc.Peer.prototype );
+	
+	ns.PeerFirefox.prototype.updateDoInit = function( browser ) {
+		const self = this;
 	}
 	
 })( library.rtc );
