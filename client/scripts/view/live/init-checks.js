@@ -822,7 +822,7 @@ library.rtc = library.rtc || {};
 		'ie'      : 'error',
 		'edge'    : 'error',
 		'opera'   : 'warning',
-		'safari'  : 'warning',
+		'safari'  : 'success',
 		'firefox' : 'success',
 		'chrome'  : 'success',
 		'brave'   : 'warning',
