@@ -63,12 +63,11 @@ library.component = library.component || {};
 		
 		//
 		self.conn.on( 'focus', focus );
-		self.conn.on( 'initialize', initialize );
+		self.conn.on( 'initialize', e => self.preInit( e));
 		self.conn.on( 'restore', restore );
 		self.conn.on( 'closeview', closeView );
 		
 		function focus( e ) {}
-		function initialize( e ) { self.initialize( e ); }
 		function restore( e ) { self.handleRestore( e ); }
 		function closeView( e ) {
 			self.closeAllTheThings( e );
@@ -82,9 +81,42 @@ library.component = library.component || {};
 		self.conn.send( loaded );
 	}
 	
+	ns.Init.prototype.preInit = function( initConf ) {
+		const self = this;
+		const honk = document.getElementById( 'honk' );
+		self.pContainer = null;
+		honk.play()
+			.then( honkOk )
+			.catch( honkEx );
+			
+		function honkOk( e ) {
+			console.log( 'honkOk' );
+			if ( self.pContainer )
+				self.pContainer.classList.toggle( 'hidden', true );
+			
+			const initCover = document.getElementById( 'init-cover' );
+			initCover.classList.toggle( 'hidden', false );
+			self.initialize( initConf );
+		}
+		
+		function honkEx( ex ) {
+			console.log( 'honkEx', ex );
+			self.pContainer = document.getElementById( 'play-container' );
+			self.pContainer.classList.toggle( 'hidden', false );
+			const playBtn = document.getElementById( 'play-btn' );
+			playBtn.addEventListener( 'click', pClick, false );
+			
+		}
+		
+		function pClick( e ) {
+			console.log( 'pClick', e );
+			self.preInit( initConf );
+		}
+	}
+	
 	ns.Init.prototype.initialize = function( data ) {
 		const self = this;
-		console.log( 'conf?', window.View );
+		console.log( 'live.View', window.View );
 		hello.template.addFragments( data.fragments );
 		hello.template.addFragments( data.liveFragments );
 		

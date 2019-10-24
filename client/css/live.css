@@ -105,6 +105,26 @@ body #live {
 	
 }
 
+#play-container {
+}
+
+#play-display {
+	padding          : 0.8em;
+	border-radius    : 100%;
+	background-color : #666;
+}
+
+#play-btn {
+	border-radius    : 100%;
+	background-color : #111;
+	width            : 3em;
+	height           : 3em;
+}
+
+#play-btn > i {
+	font-size : 200%;
+}
+
 .std-bg {
 	background-color: rgba( 0, 0, 0, 0.9 );
 }
