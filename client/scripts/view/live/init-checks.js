@@ -825,7 +825,7 @@ library.rtc = library.rtc || {};
 		'safari'  : 'success',
 		'firefox' : 'success',
 		'chrome'  : 'success',
-		'brave'   : 'warning',
+		'brave'   : 'success',
 		'blink'   : 'success',
 		'samsung' : 'success',
 		'android' : 'warning',

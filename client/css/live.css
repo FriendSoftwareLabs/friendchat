@@ -121,7 +121,7 @@ body #live {
 	height           : 3em;
 }
 
-#play-btn > i {
+body #play-display #play-btn > i.fa {
 	font-size : 200%;
 }
 

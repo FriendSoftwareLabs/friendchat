@@ -84,15 +84,15 @@ library.component = library.component || {};
 	ns.Init.prototype.preInit = function( initConf ) {
 		const self = this;
 		const honk = document.getElementById( 'honk' );
-		self.pContainer = null;
 		honk.play()
 			.then( honkOk )
 			.catch( honkEx );
 			
 		function honkOk( e ) {
 			console.log( 'honkOk' );
-			if ( self.pContainer )
+			if ( self.pContainer ) {
 				self.pContainer.classList.toggle( 'hidden', true );
+			}
 			
 			const initCover = document.getElementById( 'init-cover' );
 			initCover.classList.toggle( 'hidden', false );
@@ -105,7 +105,6 @@ library.component = library.component || {};
 			self.pContainer.classList.toggle( 'hidden', false );
 			const playBtn = document.getElementById( 'play-btn' );
 			playBtn.addEventListener( 'click', pClick, false );
-			
 		}
 		
 		function pClick( e ) {
