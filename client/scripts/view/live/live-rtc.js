@@ -145,6 +145,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			self.browser = browser;
+			self.ui.setBrowser( self.browser );
 			self.initChecks.checkDeviceAccess( self.permissions.send, deviceBack );
 		}
 		

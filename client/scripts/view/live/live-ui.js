@@ -66,6 +66,14 @@ library.component = library.component || {};
 	
 	// Public
 	
+	ns.UI.prototype.setBrowser = function( browser ) {
+		const self = this;
+		console.log( 'live.UI.setBrowser', browser );
+		self.browser = browser;
+		if ( 'chrome' !== self.browser )
+			self.screenShareBtn.classList.toggle( 'hidden', true );
+	}
+	
 	ns.UI.prototype.setAudioSink = function( deviceId ) {
 		const self = this;
 		self.audioSinkId = deviceId;
