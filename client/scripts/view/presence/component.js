@@ -2889,12 +2889,12 @@ var hello = window.hello || {};
 		}
 		
 		if ( self.peerList.length )
-			self.currState = 'Available';
+			self.currState = null;
 		else
 			self.currState = null;
 		
 		if ( self.userLive )
-			self.currState = 'DangerText';
+			self.currState = 'AvailableText';
 		
 		if ( self.currState ) {
 			self.audioIcon.classList.toggle( self.currState, true );

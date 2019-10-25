@@ -931,21 +931,21 @@ inherits from EventEmitter
 		if ( notify )
 			self.emit( 'notify', true );
 		
-		self.setStatus( 'Available' );
+		self.setStatus();
 		self.inc.classList.toggle( 'hidden', false );
 		self.current = self.inc;
 	}
 	
 	ns.CallStatus.prototype.setOutgoing = function() {
 		const self = this;
-		self.setStatus( 'Available' );
+		self.setStatus();
 		self.out.classList.toggle( 'hidden', false );
 		self.current = self.out;
 	}
 	
 	ns.CallStatus.prototype.setLive = function() {
 		const self = this;
-		self.setStatus( 'DangerText' );
+		self.setStatus();
 	}
 	
 	ns.CallStatus.prototype.setStatus = function( status ) {

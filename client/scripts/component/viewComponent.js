@@ -375,25 +375,30 @@ library.component = library.component || {};
 			return;
 		}
 		
+		
 		stateKey = stateKey.toString();
-		if ( !self.statusMap[ stateKey ]) {
-			console.log( 'statusIndicator.set - unknown state', stateKey );
+		const current = self.statusMap[ self.state ];
+		const update = self.statusMap[ stateKey ];
+		if ( current === update )
+			return;
+		
+		if ( current.length )
+			self.inner.classList.toggle( current, false );
+		
+		if ( null == update ) {
+			self.state = null;
+			console.log( 'statusIndicator.set - unknown state', {
+				key    : stateKey,
+				states : self.statusMap,
+			});
 			return;
 		}
 		
 		self.state = stateKey
-		removeCurrentClass();
-		addNewStateClass();
+		if ( !update.length )
+			return;
 		
-		function removeCurrentClass() {
-			const parts = self.inner.className.split( ' ' );
-			parts.pop(); // remove last
-			self.inner.className = parts.join( ' ' );
-		}
-		
-		function addNewStateClass() {
-			self.inner.classList.add( self.statusMap[ stateKey ]);
-		}
+		self.inner.classList.toggle( update, true );
 	}
 	
 	ns.StatusIndicator.prototype.getState = function() {
