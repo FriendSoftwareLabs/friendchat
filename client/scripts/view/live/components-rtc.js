@@ -3111,7 +3111,17 @@ library.rtc = library.rtc || {};
 		
 		function constrainUserMedia( track ) {
 			const conf = self.mediaConf.video;
-			return track.applyConstraints( conf );
+			return track.applyConstraints( conf )
+				.then( constrainOk )
+				.catch( constrainFail );
+		}
+		
+		function constrainOk() {
+			
+		}
+		
+		function constrainFail( ex ) {
+			console.log( 'Media.reconstrainTracks - failed to apply constraints', ex );
 		}
 	}
 	
