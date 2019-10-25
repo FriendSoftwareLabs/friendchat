@@ -3111,7 +3111,17 @@ library.rtc = library.rtc || {};
 		
 		function constrainUserMedia( track ) {
 			const conf = self.mediaConf.video;
-			return track.applyConstraints( conf );
+			return track.applyConstraints( conf )
+				.then( constrainOk )
+				.catch( constrainFail );
+		}
+		
+		function constrainOk() {
+			
+		}
+		
+		function constrainFail( ex ) {
+			console.log( 'Media.reconstrainTracks - failed to apply constraints', ex );
 		}
 	}
 	
@@ -3159,13 +3169,15 @@ library.rtc = library.rtc || {};
 				.then( success )
 				.catch( failure );
 			
-			function success( media ) { mediaCreated( media, conf ); }
+			function success( media ) { mediaCreated( media ); }
 			function failure( err ) { mediaFailed( err, conf ); }
 			
 			function mediaFailed( err, conf ) {
 				console.log( 'mediaFailed', {
-					err  : err,
-					conf : conf,
+					err        : err,
+					conf       : conf,
+					noFallBack : noFallback,
+					giveUp     : self.giveUp,
 				});
 				
 				const errData = {
@@ -3174,41 +3186,52 @@ library.rtc = library.rtc || {};
 					conf : conf,
 				};
 				
-				self.emit( 'mediafailed', errData );
+				self.emit( 'media-error', errData );
 				if ( self.giveUp || noFallback )
 					reject( errData );
 				else
-					retrySimple();
+					retrySimple()
+						.then( success )
+						.catch( failure );
 			}
 			
-			function mediaCreated( media, conf ) {
+			function mediaCreated( media ) {
+				console.log( 'mediaCreated' );
 				self.simpleConf = false;
 				self.giveUp = false;
 				resolve( media );
 			}
-		});
-		
-		function retrySimple() {
-			// try audio + video, but no special conf
-			if ( !self.simpleConf ) {
-				let send = self.permissions.send;
-				self.simpleConf = {
-					audio : !!conf.audio,
-					video : !!conf.video,
-				};
+			
+			function retrySimple() {
+				console.log( 'retrySimple', self.simpleConf );
+				// try audio + video, but no special conf
+				if ( !self.simpleConf ) {
+					let send = self.permissions.send;
+					self.simpleConf = {
+						audio : !!conf.audio,
+						video : !!conf.video,
+					};
+					
+					self.getMedia( self.simpleConf )
+						.then( success )
+						.catch( failure );
+					
+					return;
+				}
 				
-				self.getMedia( self.simpleConf );
-				return;
+				// try only audio, set giveUp so we dont try
+				// again if it still fails.
+				if ( self.simpleConf.video ) {
+					self.simpleConf.video = false;
+					self.giveUp = true;
+					self.getMedia( self.simpleConf )
+						.then( success )
+						.catch( failure );
+				}
 			}
 			
-			// try only audio, set giveUp so we dont try
-			// again if it still fails.
-			if ( self.simpleConf.video ) {
-				self.simpleConf.video = false;
-				self.giveUp = true;
-				self.getMedia( self.simpleConf );
-			}
-		}
+		});
+		
 	}
 	
 	ns.Media.prototype.setCurrentDevices = function( media ) {

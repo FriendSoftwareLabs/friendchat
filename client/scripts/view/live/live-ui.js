@@ -66,6 +66,14 @@ library.component = library.component || {};
 	
 	// Public
 	
+	ns.UI.prototype.setBrowser = function( browser ) {
+		const self = this;
+		console.log( 'live.UI.setBrowser', browser );
+		self.browser = browser;
+		if ( 'chrome' !== self.browser )
+			self.screenShareBtn.classList.toggle( 'hidden', true );
+	}
+	
 	ns.UI.prototype.setAudioSink = function( deviceId ) {
 		const self = this;
 		self.audioSinkId = deviceId;
@@ -1559,13 +1567,35 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.restart = function() {
-		var self = this;
+		const self = this;
 		if ( !self.stream ) {
 			console.log( 'video not set', self.id );
 			return;
 		}
 		
-		self.stream.play();
+		self.playStream();
+		
+	}
+	
+	ns.Peer.prototype.playStream = function() {
+		const self = this;
+		if ( !self.stream )
+			return;
+		
+		self.stream.play()
+			.then( playOk )
+			.catch( playErr );
+			
+		function playOk( e ) {
+			console.log( 'Peer.playStream - ok', e );
+		}
+		
+		function playErr( ex ) {
+			console.log( 'Peer.playStream - ex', {
+				stream : self.stream,
+				ex     : ex,
+			});
+		}
 	}
 	
 	ns.Peer.prototype.buildView = function() {
@@ -2379,8 +2409,9 @@ library.component = library.component || {};
 		self.bindStreamResize();
 		
 		function play( e ) {
+			console.log( 'onloadedmetadata' );
 			self.updateAudioSink();
-			self.stream.play();
+			self.playStream();
 		}
 	}
 	

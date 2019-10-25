@@ -4,7 +4,6 @@
 		<script src="
 			/webclient/js/utils/events.js;
 			webclient/apps/FriendChat/scripts/component/tool.js;
-			webclient/apps/FriendChat/dependencies/adapterjs/adapter-latest.js;
 			webclient/apps/FriendChat/api/logSock.js;
 			webclient/apps/FriendChat/api/view.js;
 			webclient/apps/FriendChat/api/compatability.js;
@@ -37,6 +36,9 @@
 		" type="text/css">
 	</head>
 	<body id="hello" class="">
+		<!--
+			webclient/apps/FriendChat/dependencies/adapterjs/adapter-latest.js;
+		-->
 		<div id="live" class="group row cover MouseDefault">
 			<div id="live-content" class="expand column bar cover">
 				<div id="peer-container" class="expand bar row">
@@ -106,11 +108,22 @@
 				<!-- lists go here -->
 			</div>
 			
-			<div id="init-cover" class="abs-cover">
+			<div id="init-cover" class="abs-cover hidden">
 				<!-- init checks go here -->
 			</div>
 			<div id="connecting-peers" class="hidden">
 			</div>
+			<!--
+			<div id="play-container" class="center-child abs-cover hidden">
+				<audio id="honk" src="../res/honkies.wav" class="hidden">
+				</audio>
+				<div id="play-display" class="">
+					<div id="play-btn" class="center-child">
+						<i class="fa fa-fw fa-caret-right"></i>
+					</div>
+				</div>
+			</div>
+			-->
 		</div>
 		<div id="fragments" class="hidden">
 

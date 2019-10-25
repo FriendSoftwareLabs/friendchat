@@ -457,7 +457,7 @@ var hello = null;
 		});
 	}
 	
-	ns.Hello.prototype.loadHostConfig = function( doneBack ) {
+	ns.Hello.prototype.loadHostConfig = function() {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
 			load( resolve, reject );
@@ -538,7 +538,8 @@ var hello = null;
 					return;
 				}
 				
-				var hostConf = library.tool.objectify( response );
+				const hostConf = library.tool.objectify( response );
+				console.log( 'loadHostConfig - response', hostConf );
 				if ( !hostConf ) {
 					const errMsg = Application.i18n( 'i18n_host_config_failed_invalid' )
 						+ ' ' + url;

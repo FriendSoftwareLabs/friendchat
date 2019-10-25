@@ -50,9 +50,9 @@ library.rtc = library.rtc || {};
 	
 	// Public
 	
-	ns.InitChecks.prototype.checkBrowser = function( callback ) {
+	ns.InitChecks.prototype.checkBrowser = function( userAgent, callback ) {
 		const self = this;
-		new library.rtc.BrowserCheck( checkBack );
+		new library.rtc.BrowserCheck( userAgent, checkBack );
 		function checkBack( res ) {
 			self.ui.updateBrowserCheck( res );
 			checkErrors( res );
@@ -794,11 +794,12 @@ library.rtc = library.rtc || {};
 
 // Browser check
 (function( ns, undefined ) {
-	ns.BrowserCheck = function( onResult ) {
+	ns.BrowserCheck = function( userAgent, onResult ) {
 		if ( !( this instanceof ns.BrowserCheck ))
 			return new ns.BrowserCheck();
 		
 		const self = this;
+		self.userAgent = userAgent || window.navigator.userAgent;
 		self.onresult = onResult;
 		self.isSecure = false;
 		self.browser = null;
@@ -821,9 +822,10 @@ library.rtc = library.rtc || {};
 		'ie'      : 'error',
 		'edge'    : 'error',
 		'opera'   : 'warning',
-		'safari'  : 'warning',
+		'safari'  : 'success',
 		'firefox' : 'success',
 		'chrome'  : 'success',
+		'brave'   : 'success',
 		'blink'   : 'success',
 		'samsung' : 'success',
 		'android' : 'warning',
@@ -870,14 +872,14 @@ library.rtc = library.rtc || {};
 		// OPERA
 		is[ 'opera' ] = ( !!window.opr && !!window.opr.addons )
 			|| window.opera
-			|| navigator.userAgent.indexOf( ' OPR/' ) >= 0;
+			|| self.userAgent.indexOf( ' OPR/' ) >= 0;
 		
 		// SAFARI
 		is[ 'safari' ] = /constructor/i.test(window.HTMLElement) 
 			|| (function (p)
 				{ return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] 
 				|| (typeof safari !== 'undefined' && safari.pushNotification)) 
-			|| /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+			|| /^((?!chrome|android).)*safari/i.test( self.userAgent );
 		
 		// FIREFOX
 		is[ 'firefox' ] = !!window.InstallTrigger;
@@ -885,6 +887,12 @@ library.rtc = library.rtc || {};
 		// CHROME
 		is[ 'chrome' ] = !!window.chrome;
 		is[ 'blink' ] = ( is[ 'chrome' ] || is[ 'opera' ] ) && !!window.CSS;
+		
+		// BRAVE
+		console.log( 'idBrowser - ua', self.userAgent );
+		//is[ 'brave' ] = ( is[ 'chrome' ] && self.userAgent.includes( 'Brave' ));
+		is[ 'brave' ] = ( is[ 'chrome' ] && self.checkIsBrave() );
+		console.log( 'idBrowser - is brave???', is );
 		/*
 		if ( is[ 'blink' ]) {
 			is[ 'chrome' ] = false;
@@ -893,6 +901,20 @@ library.rtc = library.rtc || {};
 		*/
 		
 		self.is = is;
+	}
+	
+	ns.BrowserCheck.prototype.checkIsBrave = function() {
+		const self = this;
+		const test = document.createElement( 'iframe' );
+		test.classList.toggle( 'hidden', true );
+		document.body.appendChild( test );
+		let isBrave = false;
+		console.log( 'test.contentWindow', test.contentWindow.google_onload_fired )
+		if ( test.contentWindow.google_onload_fired === true )
+			isBrave = true;
+		
+		test.parentNode.removeChild( test );
+		return isBrave;
 	}
 	
 	ns.BrowserCheck.prototype.checkSecure = function() {
@@ -937,7 +959,7 @@ library.rtc = library.rtc || {};
 		];
 		const rxStr = tokens.join( '|' );
 		const rx = new RegExp( rxStr, '' );
-		const match = navigator.userAgent.match( rx );
+		const match = self.userAgent.match( rx );
 		if ( match )
 			self.isMobile = match[ 0 ];
 		
@@ -953,7 +975,7 @@ library.rtc = library.rtc || {};
 		];
 		var rxStr = tokens.join( '|' );
 		var rx = new RegExp( rxStr, 'i' );
-		var match = navigator.userAgent.match( rx );
+		var match = self.userAgent.match( rx );
 		if ( match )
 			return match[ 0 ];
 		
@@ -962,7 +984,7 @@ library.rtc = library.rtc || {};
 	
 	ns.BrowserCheck.prototype.checkVR = function() {
 		const self = this;
-		var match = navigator.userAgent.match( /VR/ );
+		var match = self.userAgent.match( /VR/ );
 		if ( match )
 			self.isVR = true;
 	}

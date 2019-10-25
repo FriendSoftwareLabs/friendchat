@@ -46,6 +46,7 @@ var state = {
 };
 
 state.config = global.config.get();
+state.configSharedStr = JSON.stringify( state.config.shared );
 
 var MysqlPool = require( './component/MysqlPool' );
 //var RequestHandler = require( './component/RequestHandler' );
@@ -163,12 +164,20 @@ function configServer() {
 	}
 	
 	function requestHandler( req, res ) {
+		let userAgent = null;
+		if ( req.headers )
+			userAgent = req.headers[ 'user-agent' ] || null;
+		
+		log( 'userAgent', userAgent );
 		// null cares given about what the request actually is, client cfg will be served
-		var data = JSON.stringify( state.config.shared );
+		//const confStr = JSON.stringify( state.config.shared );
+		const confCopy = JSON.parse( state.configSharedStr );
+		confCopy.userAgent = userAgent;
+		const dataStr = JSON.stringify( confCopy );
 		res.writeHead( 200, {
 			'Access-Control-Allow-Origin' : '*',
 		});
-		res.end( data );
+		res.end( dataStr );
 	}
 }
 
