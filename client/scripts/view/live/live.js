@@ -63,7 +63,7 @@ library.component = library.component || {};
 		
 		//
 		self.conn.on( 'focus', focus );
-		self.conn.on( 'initialize', e => self.preInit( e));
+		self.conn.on( 'initialize', e => self.initialize( e ));
 		self.conn.on( 'restore', restore );
 		self.conn.on( 'closeview', closeView );
 		
@@ -83,11 +83,13 @@ library.component = library.component || {};
 	
 	ns.Init.prototype.preInit = function( initConf ) {
 		const self = this;
+		throw new Error( 'no u' );
+		
 		const honk = document.getElementById( 'honk' );
 		honk.play()
 			.then( honkOk )
 			.catch( honkEx );
-			
+		
 		function honkOk( e ) {
 			console.log( 'honkOk' );
 			if ( self.pContainer ) {
