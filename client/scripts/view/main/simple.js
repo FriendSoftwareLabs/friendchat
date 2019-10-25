@@ -1475,8 +1475,8 @@ var hello = window.hello || {};
 			cssClass    : 'fa-video-camera',
 			statusMap   : {
 				'empty'   : 'Off',
-				'others'  : 'Available',
-				'user'    : 'DangerText',
+				'others'  : '',
+				'user'    : 'Available',
 			},
 		};
 		self.live = new library.component.StatusIndicator( conf );

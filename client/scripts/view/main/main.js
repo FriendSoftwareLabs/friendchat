@@ -1695,7 +1695,7 @@ library.view = library.view || {};
 			cssClass    : 'fa-users',
 			statusMap   : {
 				'empty' : 'Off',
-				'users' : 'Available',
+				'users' : '',
 			},
 			display : '--',
 		};
@@ -1710,9 +1710,9 @@ library.view = library.view || {};
 			cssClass  : 'fa-video-camera',
 			statusMap : {
 				'empty'  : 'Off',
-				'others' : 'Available',
+				'others' : '',
 				'timeout': 'Notify',
-				'user'   : 'DangerText',
+				'user'   : 'AvailableText',
 			},
 			display : '-',
 		};
