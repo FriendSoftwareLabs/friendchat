@@ -52,6 +52,9 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkBrowser = function( userAgent, callback ) {
 		const self = this;
+		if ( !userAgent )
+			userAgent = navigator.userAgent;
+		
 		new library.rtc.BrowserCheck( userAgent, checkBack );
 		function checkBack( res ) {
 			self.ui.updateBrowserCheck( res );
