@@ -26,20 +26,21 @@ var friend = window.friend || {}; // already instanced stuff
 
 // add friendUP api
 (function() {
-	var scripts = [
-		//'utils/engine.js',
-		//'utils/events.js',
+	const scripts = [
 		'utils/tool.js',
 		'io/request.js',
 	];
 	
-	var path = '/webclient/js/';
-	var pathArr = scripts.map( setPath );
-	var scriptPath = pathArr.join( ';' );
-	var script = document.createElement( 'script' );
+	const path = '/webclient/js/';
+	const pathArr = scripts.map( setPath );
+	const scriptPath = pathArr.join( ';' );
+	const script = document.createElement( 'script' );
 	script.type = 'text/javascript';
 	script.src = scriptPath;
-	script.onload = function( event ) {}
+	script.onload = function( event ) {
+		if ( window.Application )
+			window.Application.setExternalsLoaded();
+	}
 	document.head.appendChild( script );
 	
 	function setPath( script ) { return path + script; }
@@ -610,6 +611,9 @@ var friend = window.friend || {}; // already instanced stuff
 		self.subscriber = {};
 		self.commandMap = null;
 		
+		self.externalsLoaded = false;
+		self.preloadEvents = [];
+		
 		self.initAppEvent();
 		
 		function unhandledEvent( type, data ) {
@@ -619,22 +623,40 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype = Object.create( EventEmitter.prototype );
 	
+	// Public
+	
+	ns.AppEvent.prototype.setExternalsLoaded = function() {
+		const self = this;
+		console.log( 'Application.setExternalsLoaded', self.preloadEvents );
+		self.externalsLoaded = true;
+		if ( !self.preloadEvents.length )
+			return;
+		
+		self.preloadEvents.forEach( e => {
+			self.receiveEvent( e );
+		});
+		
+		self.preloadEvents = [];
+	}
+	
+	// Private
+	
 	ns.AppEvent.prototype.initAppEvent = function() {
 		const self = this;
 		self.commandMap = {
-			'door' : door,
-			'filedialog' : filedialog,
-			'fileload' : fileload,
-			'initappframe' : initialize,
-			'notify' : notify,
-			'register' : register,
-			'viewresponse' : viewResponse,
-			'dormantmaster' : dormantMaster,
+			'door'               : door,
+			'filedialog'         : filedialog,
+			'fileload'           : fileload,
+			'initappframe'       : initialize,
+			'notify'             : notify,
+			'register'           : register,
+			'viewresponse'       : viewResponse,
+			'dormantmaster'      : dormantMaster,
 			'applicationstorage' : storage,
-			'libraryresponse' : libResponse,
-			'refreshtheme' : refreshTheme,
-			'notification' : notification,
-			'quit' : quit,
+			'libraryresponse'    : libResponse,
+			'refreshtheme'       : refreshTheme,
+			'notification'       : notification,
+			'quit'               : quit,
 		};
 		
 		function door( e ) { self.receiveMessage( e ); }
@@ -667,6 +689,12 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.receiveEvent = function( e ) {
 		const self = this;
+		if ( !friendUP || !friendUP.tool || !friendUP.tool.parse ) {
+			console.log( 'AppEvent.receiveEvent - parser not loaded yet', e );
+			self.preloadEvents.push( e );
+			throw new Error( 'AppEvent.receiveEvent - parser not loaded yet' );
+		}
+		
 		const msg = friendUP.tool.parse( e.data );
 		if ( !msg ) {
 			console.log( 'app.receiveEvent - no msg for event', e );
@@ -991,7 +1019,7 @@ var friend = window.friend || {}; // already instanced stuff
 		onclose
 	) {
 		const self = this;
-		var view = new api.View(
+		const view = new api.View(
 			path,
 			conf,
 			initData,
@@ -1471,9 +1499,9 @@ window.Application = new fupLocal.Application();
 (function( ns, undefined ) {
 	ns.Dormant = function() {
 		const self = this;
-		self.doors = {},
-		self.doorIds = [],
-		self.app = window.Application,
+		self.doors = {};
+		self.doorIds = [];
+		self.app = window.Application;
 		
 		self.init();
 	}
