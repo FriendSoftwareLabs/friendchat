@@ -457,7 +457,6 @@ library.component = library.component || {};
 */
 (function( ns, undefined ) {
 	ns.ShareLink = function( conf ) {
-		console.log( 'ShareLink', conf );
 		const self = this;
 		self.host = null;
 		self.invites = {};
@@ -495,12 +494,6 @@ library.component = library.component || {};
 		self.pubCopyBtn = document.getElementById( 'share-public-to-clippy' );
 		self.closeBtn = document.getElementById( 'share-close' );
 		
-		console.log( 'bindEvents', {
-			input : self.pubInput,
-			email : self.pubEmailBtn,
-			copy : self.pubCopyBtn,
-		});
-		
 		self.pubInput.addEventListener( 'focus', inputFocus, false );
 		self.pubInput.addEventListener( 'keydown', key, false );
 		self.pubInput.addEventListener( 'keyup', key, false );
@@ -530,7 +523,6 @@ library.component = library.component || {};
 	
 	ns.ShareLink.prototype.handleRevoke = function( token ) {
 		const self = this;
-		console.log( 'handleRevoke', token );
 		if ( 'public' === token || self.publicToken === token )
 			revokePublic();
 		else
@@ -548,7 +540,6 @@ library.component = library.component || {};
 	
 	ns.ShareLink.prototype.setPublic = function( bool ) {
 		const self = this;
-		console.log( 'setPublic' );
 		const setPub = {
 			type : 'public',
 		};
@@ -558,7 +549,6 @@ library.component = library.component || {};
 	ns.ShareLink.prototype.handlePublic = function( data ) {
 		const self = this;
 		// clear styles
-		console.log( 'handlePublic', data );
 		if ( self.publicToken === self.copyId )
 			self.clearCopy();
 		
@@ -573,7 +563,6 @@ library.component = library.component || {};
 	
 	ns.ShareLink.prototype.handleState = function( data ) {
 		const self = this;
-		console.log( 'handleState', data );
 		self.host = data.host;
 		if ( data.publicToken )
 			self.handlePublic( data.publicToken );

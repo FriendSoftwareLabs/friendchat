@@ -117,7 +117,6 @@ library.component = library.component || {};
 	
 	ns.Init.prototype.initialize = function( data ) {
 		const self = this;
-		console.log( 'live.View', window.View );
 		hello.template.addFragments( data.fragments );
 		hello.template.addFragments( data.liveFragments );
 		

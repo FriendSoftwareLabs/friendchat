@@ -1025,12 +1025,12 @@ html body .hidden {
 }
 
 /*
-
  overlay
-
 */
 
 .overlay-base {
 	position         : absolute;
 	border-radius    : 0.2em;
+	display: flex;
+	align-items: center;
 }

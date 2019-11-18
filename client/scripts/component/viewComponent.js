@@ -3582,11 +3582,6 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	ns.Overlay = function( anchorEl, conf ) {
 		const self = this;
 		library.component.EventEmitter.call( self );
-		console.log( 'Overlay', {
-			el   : anchorEl,
-			conf : conf,
-		});
-		
 		self.anchor = anchorEl;
 		self.conf = conf;
 		self.isVisible = false;
@@ -3601,7 +3596,6 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	
 	ns.Overlay.prototype.show = function() {
 		const self = this;
-		console.log( 'Overlay.show' );
 		self.toggleVisible( true );
 	}
 	
@@ -3612,8 +3606,12 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	
 	ns.Overlay.prototype.hide = function() {
 		const self = this;
-		console.log( 'Overlay.hide' );
 		self.toggleVisible( false );
+	}
+	
+	ns.Overlay.prototype.updatePosition = function() {
+		const self = this;
+		self.setPosition();
 	}
 	
 	ns.Overlay.prototype.close = function() {
@@ -3636,7 +3634,6 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		throw new Error( 'Overlay.prototype.bind() - implement in extension' );
 	}
 	
-	
 	// Private
 	
 	ns.Overlay.prototype.closeOverlay = function() {
@@ -3653,15 +3650,12 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	ns.Overlay.prototype.initOverlay = function() {
 		const self = this;
 		const id = friendUP.tool.uid( 'over' );
-		document.addEventListener( 'resize', resize, false );
-		function resize( e ) {
-			self.updatePosition();
-		}
+		window.View.on( 'resize', e => self.setPosition( e ));
 		
 		const hidden = self.conf.show ? '' : 'hidden';
 		const conf = {
 			id     : id,
-			css    : self.conf.css,
+			css    : self.conf.css || '',
 			hidden : hidden,
 		};
 		
@@ -3693,54 +3687,128 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			self.positionInside( pos.inside );
 	}
 	
-	ns.Overlay.prototype.updatePosition = function() {
-		console.log( 'updatePosition' );
-	}
-	
 	ns.Overlay.prototype.positionOutside = function( pos ) {
 		const self = this;
-		const screen = {
-			width  : document.body.clientWidth,
-			height : document.body.clientHeight,
-		};
+		const screen = self.getScreenSpace();
 		const anchor = self.getElPosition( self.anchor );
+		/*
 		console.log( 'outside', {
 			pos    : pos,
 			screen : screen,
 			anchor : anchor,
 		});
+		*/
 		
-		let ap = null;
-		let ep = null;
-		if ( 'top-right' == pos.parent )
+		let ap = null; // anchor point
+		let op = null; // offset point
+		if ( 'top-right' == pos.parent ) {
 			ap = {
 				x : anchor.x2,
 				y : anchor.y1,
 			};
-		
-		ep = {
-			x : ap.x + pos.offsetX,
-			y : ap.y + pos.offsetY,
 		}
 		
+		op = {
+			x : ap.x + pos.offsetX || 0,
+			y : ap.y + pos.offsetY || 0,
+		}
+		
+		/*
 		console.log( 'possies', {
 			pos : pos,
 			screen : screen,
 			anchor : anchor,
 			ap  : ap,
-			ep  : ep,
+			op  : op,
 		});
-		
+		*/
 		if ( 'bottom-right' === pos.self ) {
-			self.overlay.style.right = ( screen.width - ep.x ) + 'px';
-			self.overlay.style.bottom = ( screen.height - ep.y ) + 'px';
+			self.overlay.style.right = ( screen.width - op.x ) + 'px';
+			self.overlay.style.bottom = ( screen.height - op.y ) + 'px';
 		}
 	}
 	
-	ns.Overlay.prototype.positionInisde = function( pos ) {
+	ns.Overlay.prototype.positionInside = function( pos ) {
 		const self = this;
-		console.log( 'inside', pos );
+		//console.log( 'inside', pos );
+		const screen = self.getScreenSpace();
+		const anchor = self.getElPosition( self.anchor );
+		if ( pos.cover )
+			setCover();
+		else
+			setPos();
 		
+		function setCover() {
+			
+		}
+		
+		function setPos() {
+			let ap = null;
+			let op = null;
+			
+			// THE ANCHOR
+			
+			if ( 'left-center' == pos.parent ) {
+				const c = ( anchor.y1 + anchor.y2 ) / 2;
+				ap = {
+					x : anchor.x1,
+					y : c,
+				};
+			}
+
+			if ( 'bottom-center' == pos.parent ) {
+				const c = ( anchor.x1 + anchor.x2 ) / 2;
+				ap = {
+					x : c,
+					y : 0,
+				};
+			}
+			
+			// THE OTHER THING
+			
+			op = {
+				x : ap.x + pos.offsetX || 0,
+				y : ap.y + pos.offsetY || 0,
+			};
+			
+			const boxWidth = self.overlay.clientWidth;
+			/*
+			console.log( 'possies', {
+				pos : pos,
+				screen : screen,
+				anchor : anchor,
+				ap  : ap,
+				op  : op,
+				boxW : boxWidth,
+			});
+			*/
+			
+			if ( 'left-center' == pos.self ) {
+				const boxHeight = self.overlay.clientHeight;
+				self.overlay.style.left = op.x + 'px';
+				self.overlay.style.top = ( screen.height - op.y - ( boxHeight / 2 )) + 'px';
+				self.overlay.style.right = op.x + 'px';
+				self.overlay.style.maxWidth = pos.maxX;
+			}
+			
+			if ( 'bottom-center' == pos.self ) {
+				if ( pos.margin )
+					self.overlay.style.top = pos.margin;
+				self.overlay.style.left = ( screen.width - op.x - ( boxWidth / 2 )) + 'px';
+				self.overlay.style.bottom = op.y + 'px';
+				self.overlay.style.maxWidth = pos.maxX;
+				
+			}
+		}
+	}
+	
+	ns.Overlay.prototype.getScreenSpace = function() {
+		const self = this;
+		const screen = {
+			width  : document.body.clientWidth,
+			height : document.body.clientHeight,
+		};
+		return screen;
 	}
 	
 	ns.Overlay.prototype.getElPosition = function( el ) {

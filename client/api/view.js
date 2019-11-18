@@ -512,6 +512,20 @@ var friend = window.friend || {};
 			self.queueInputFocusCheck();
 		}
 		
+		// resize listening
+		window.addEventListener( 'resize', onResize, false );
+		function onResize( e ) {
+			self.lastResizeEvent = e;
+			if ( null != self.resizeTimeout )
+				return;
+			
+			self.resizeTimeout = window.setTimeout( resizeThrottle, 333 );
+			function resizeThrottle() {
+				self.resizeTimeout = null;
+				self.emit( 'resize', self.lastResizeEvent );
+			}
+		}
+		
 		//
 		function baseCssLoaded() {
 			self.cssLoaded = true;

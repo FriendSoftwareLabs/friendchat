@@ -18,6 +18,7 @@
 			webclient/apps/FriendChat/scripts/view/live/components-ui.js;
 			webclient/apps/FriendChat/scripts/view/live/components-rtc.js;
 			webclient/apps/FriendChat/scripts/view/live/init-checks.js;
+			webclient/apps/FriendChat/scripts/view/live/ui-overlays.js;
 			webclient/apps/FriendChat/scripts/view/live/ui-panes.js;
 			webclient/apps/FriendChat/scripts/view/live/ui-overlays.js;
 			webclient/apps/FriendChat/scripts/view/live/live-rtc.js;
@@ -107,10 +108,11 @@
 			<div id="lists-container" class="group row cover fortify">
 				<!-- lists go here -->
 			</div>
-			
-			<div id="init-cover" class="abs-cover hidden">
-				<!-- init checks go here -->
+			<!--
+			<div id="init-cover" class="abs-cover">
+				init checks go here 
 			</div>
+			-->
 			<div id="connecting-peers" class="hidden">
 			</div>
 			<!--
@@ -448,19 +450,29 @@ avatar,
 					</div>
 				</div>
 				<div class="stream-state fortify group row center">
-					<div class="state say-state hidden" title="Read out chat messages from this participant">
+					<div class="state say-state hidden"
+						title="Read out chat messages from this participant"
+					>
 						<i class="fa fa-fw fa-volume-up"></i>
 					</div>
-					<div class="state muted blink-red hidden" title="You have muted this participant">
+					<div class="state muted blink-red hidden"
+						title="You have muted this participant"
+					>
 						<i class="fa fa-fw fa-microphone"></i>
 					</div>
-					<div class="state remote-mute  hidden" title="This participant has muted their audio">
+					<div class="state remote-mute  hidden"
+						title="This participant has muted their audio"
+					>
 						<i class="fa fa-fw fa-microphone"></i>
 					</div>
-					<div class="state blinded blink-red  hidden" title="You have blocked video from this participant">
+					<div class="state blinded blink-red  hidden"
+						title="You have blocked video from this participant"
+					>
 						<i class="fa fa-fw fa-video-camera"></i>
 					</div>
-					<div class="state remote-blind  hidden" title="This participant has paused their video">
+					<div class="state remote-blind  hidden"
+						title="This participant has paused their video"
+					>
 						<i class="fa fa-fw fa-video-camera"></i>
 					</div>
 				</div>
@@ -472,7 +484,10 @@ avatar,
 			</div>
 		</div>
 		<div class="ui-view expand">
-			<div class="dragger center-child std-bg dropzone Accelerated hidden" draggable="true" title="Drag to reposition">
+			<div class="dragger center-child std-bg dropzone Accelerated hidden"
+				draggable="true"
+				title="Drag to reposition"
+			>
 				<div class="drag-hint center-child">
 					<i class="fa fa-fw fa-hand-rock-o draggable"></i>
 					<i class="fa fa-fw fa-arrows dragee hidden"></i>
@@ -829,6 +844,155 @@ checks
 				{i18n_verifying_resources}
 			</div>
 		</div>
+	</div>
+</div>
+</script>
+
+<!-- status-main-tmpl
+id,
+-->
+<script id="status-main-tmpl" type="text/html">
+<div id="<%= id %>" class="status-container">
+</div>
+</script>
+
+<!-- status-msg-tmpl
+id,
+title,
+content,
+-->
+<script id="status-msg-tmpl" type="text/html">
+<div id="<%= id %>" class="status-msg grad-bg-down">
+	<div class="status-head group row">
+		<div class="status-icon std-icon center-child fortify">
+			<i class="fa fa-fw"></i>
+		</div>
+		<div class="status-title expand">
+			<%= title %>
+		</div>
+	</div>
+	<div class="status-content">
+		<%= content %>
+	</div>
+	<div class="status-msg-actions group row end">
+		<%= buttons %>
+	</div>
+</div>
+</script>
+
+<!-- status button
+event,
+type,
+faClass,
+label,
+-->
+<script id="status-button-tmpl" type="text/html">
+<div class="btn text status-<%= event %> <%= type %>">
+	<i class="fa fa-fw <%= faClass %>"></i>
+	<%= label %>
+</div>
+</script>
+
+<!-- status msg media fail
+message,
+-->
+<script id="media-fail-tmpl" type="text/html">
+<div class="">
+	<div class="status-explain">
+		<%= message %>
+	</div>
+</div>
+</script>
+
+<!-- status msg browser check
+supportIcon,
+supportMsg,
+secureIcon,
+secureMsg,
+capsHTML,
+-->
+<script id="status-browser-check-tmpl" type="text/html">
+<div id="status-browser-check" class="">
+	<div id="browser-support-check" class="browser-capa-row group row start hidden">
+		<div class="check-icon">
+			<i class="fa fa-fw <%= supportIcon %>"></i>
+		</div>
+		<div class="status-explain">
+			<%= supportMsg %>
+		</div>
+	</div>
+	<div id="browser-secure-check" class="browser-capa-row group row start hidden">
+		<div class="check-icon">
+			<i class="fa fa-fw <%= secureIcon %>"></i>
+		</div>
+		<div class="status-explain">
+			<%= secureMsg %>
+		</div>
+	</div>
+	<div id="browser-capabilities-check" class="hidden">
+		<%= capsHTML %>
+	</div>
+	<div id="browser-check-actions" class="group row end">
+		<div id="browser-check-continue" class="btn text warning hidden">
+			<i class="fa fa-fw fa-exclamation-circle"></i>
+			{i18n_continue}
+		</div>
+		<div id="browser-check-close-live" class="btn text danger">
+			<i class="fa fa-fw fa-close"></i>
+			{i18n_close_live}
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- browser capa
+typeKlass,
+faIcon,
+name
+-->
+<script id="status-browser-capa-tmpl" type="text/html">
+<div class="browser-capa-row group row start">
+	<div class="icon LED <%= typeKlass %>">
+		<i class="fa fa-fw <%= faIcon %>"></i>
+	</div>
+	<div>
+		<%= name %>
+	</div>
+</div>
+</script>
+
+<!-- status msg selfie fail
+
+-->
+<script id="status-selfie-tmpl" type="">
+</script>
+
+<!-- status ICE
+message
+servers
+-->
+<script id="status-ice-tmpl" type="text/html">
+<div class="status-ice">
+	<div class="status-explain">
+		<%= message %>
+	</div>
+	<div>
+		<%= servers %>
+	</div>
+</div>
+</script>
+
+<!-- status ICE host
+errMsg,
+host,
+-->
+<script id="status-ice-host-tmpl" type="text/html">
+<div class="status-ice-row">
+	<div class="status-ice-error">
+		<%= errMsg %>
+	</div>
+	<div class="status-ice-host">
+		<%= host %>
 	</div>
 </div>
 </script>

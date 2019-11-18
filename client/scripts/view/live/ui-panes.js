@@ -1293,6 +1293,7 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.showAV = function( stream ) {
 		const self = this;
+		console.log( 'SourceSleectPane.showAV', stream );
 		self.volume = new library.rtc.Volume(
 			stream,
 			null,

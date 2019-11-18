@@ -232,6 +232,7 @@ i18n_a_recovery_key : A recovery key was sent to
 i18n_please_set_a_host : Please set a host
 i18n_please_set_a_nick : Please set a nick
 i18n_no_contacts : No contacts
+i18n_check_browser_settings : Please check your browser settings
 i18n_media_not_available : Media not available - check your browser settings to make sure it has found your hardware and that the domain is not blocked from using it. ( settings -> show advanced -> content settings -> microphone / camera ). Restarting your browser might help if the problem persists.
 i18n_create_new_account : Create new account
 i18n_has_invited_you_to_live : has invited you to a live session.
@@ -258,8 +259,8 @@ i18n_device_access_error : Device access error
 i18n_err_enumerate_devices_failed : Device list could not be loaded
 i18n_err_devices_blocked : Device access denied by browser
 i18n_err_no_devices_found : No devices were found
-i18n_err_gum_not_allowed : Media access denied
-i18n_err_gum_no_media : No media available
+i18n_err_getusermedia_not_allowed : Media access denied
+i18n_err_getusermedia_no_media : No media available
 i18n_err_https_required : A secure (HTTPS) connection is required
 i18n_sending_types : You will send..
 i18n_receive_types : You will receive..
@@ -396,5 +397,35 @@ i18n_the_person_of_interest_must_be_online_to_receive_the_invite : The person of
 i18n_only_online_user_are_listed : Only online users are listed
 i18n_authorized : Authorized
 i18n_share_this_room : Share this room
+i18n_select_media : Select media
+i18n_close_live : Close Live
+i18n_microphone_muted_outside_friendchat : Microphone muted outside Friend Chat
+i18n_no_input_is_detected_from_mic : No input is detected from microphone
+i18n_audio_issue : Audio issue found
+i18n_browser_issue : Browser issue found
+i18n_media_issue : Media issue found
+i18n_ice_issue : ICE issue found
+i18n_your_browser_is_not_fully_supported_things_may_not_behave_as_they_should : Your browser is not fully supported, things may not behave as they should
+i18n_your_browser_is_not_supported : Your browser is not supported
+i18n_nm_its_fine : Nevermind, its fine
+i18n_great : Great!
+i18n_getusermedia_did_not_return_media : getUserMedia did not return media
+i18n_access_to_microphone_and_camera_is_blocked : Access to microphone and camera is blocked
+i18n_host_could_not_be_reached : Host could not be reached
+i18n_no_turn_server_could_be_reached_limited_connectivity : No TURN server could be reached. Limited connectivity
+i18n_stun_servers_could_not_be_reached_limited_connectivity : STUN servers could not be reached. Limited connectivity
+i18n_dont_show_again : Dont show again
+i18n_setting_audio_output_was_rejected_by_browser_you_might_not_be_able_to_hear_anyone_please_check_your_browser_audio_permissions : Setting audio output was rejected by browser, you might not be able to hear anyone. Please check your browser audio permissions.
+i18n_mic_and_camera_is_blocked_in_the_browser_check_your_settings_for_this_site_if_this_is_not_intended : Access to microphone and camera is blocked in the browser settings. Check your browser settings for this site if this is not intended
+i18n_microhpone_is_blocked_in_the_browser_check_your_settings_for_this_site_if_this_is_not_intended : Microphone is blocked in the browser. Check your browser settings for this site if this is not intended
+i18n_camera_is_blocked_in_the_browser_check_your_settings_for_this_site_if_this_is_not_intended : Camera is blocked in the browser. Check your browser settings for this site if this is not intended
+i18n_ok : Ok
 i18n_really_unexpected_error_contact_your_friendly_admin : Really unexpected error. Contact your Friendly administrator
 i18n_paste_error : Paste error
+i18n_err_getusermedia_error : Internal error
+i18n_warning : Warning
+i18n_info : Info
+i18n_success : Success
+i18n_could_not_find_any_microphone : Could not find any microphone
+i18n_could_not_find_any_camera : Could not find any camera
+i18n_could_not_find_any_microphone_or_camera : Could not find any microphone or camera

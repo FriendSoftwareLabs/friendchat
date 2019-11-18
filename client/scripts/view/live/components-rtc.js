@@ -424,6 +424,7 @@ library.rtc = library.rtc || {};
 					total += vh[ i ];
 				
 				const avg = ( total * 1.0 ) / vh.length;
+				//console.log( 'avg', avg );
 				self.volumeAverage = Math.ceil( avg );
 				self.averageOverTime.shift();
 				self.averageOverTime.push( self.volumeAverage );
@@ -458,7 +459,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Volume.prototype.close = function() {
 		const self = this;
-		self.loop = false;
+		self.stop();
 		self.release();
 		
 		delete self.analyser;
@@ -492,7 +493,7 @@ library.rtc = library.rtc || {};
 	ns.AudioInputDetect = function( mediaStream ) {
 		const self = this;
 		self.mediaStream = mediaStream;
-		self.maxTryTime = 5000 * 3;
+		self.maxTryTime = 1000 * 10;
 		self.sampleInterval = 100;
 		
 		return self.check();
@@ -2748,11 +2749,7 @@ library.rtc = library.rtc || {};
 					
 					const devType = type + 'input';
 					const pref = self.preferedDevices[ devType ];
-					console.log( 'pref', {
-						pref : pref,
-						pd  : self.preferedDevices,
-					});
-					
+										
 					if ( null == pref ) {
 						delete conf[ type ];
 						return;
@@ -2889,7 +2886,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.unshareScreen = function() {
 		const self = this;
-		console.log( 'unshareScreen', self.shareVTrackId );
 		if ( self.shareVTrackId ) {
 			self.removeTrack( 'video' );
 			self.shareVTrackId = null;
@@ -3165,6 +3161,11 @@ library.rtc = library.rtc || {};
 	ns.Media.prototype.getMedia = function( conf, noFallback ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
+			if ( !conf.audio && !conf.video ) {
+				reject( 'ERR_NO_MEDIA_REQUESTED' );
+				return;
+			}
+			
 			window.navigator.mediaDevices.getUserMedia( conf )
 				.then( success )
 				.catch( failure );
@@ -3187,51 +3188,49 @@ library.rtc = library.rtc || {};
 				};
 				
 				self.emit( 'media-error', errData );
-				if ( self.giveUp || noFallback )
+				if ( self.giveUp || noFallback ) {
+					self.simpleConf = null;
+					self.giveUp = false;
 					reject( errData );
-				else
+					return;
+				} else
 					retrySimple()
 						.then( success )
 						.catch( failure );
 			}
 			
 			function mediaCreated( media ) {
-				console.log( 'mediaCreated' );
-				self.simpleConf = false;
+				self.simpleConf = null;
 				self.giveUp = false;
 				resolve( media );
 			}
 			
 			function retrySimple() {
-				console.log( 'retrySimple', self.simpleConf );
 				// try audio + video, but no special conf
-				if ( !self.simpleConf ) {
-					let send = self.permissions.send;
+				if ( !self.simpleConf )
+					return firstTry();
+				
+				self.simpleConf.video = false;
+				self.giveUp = true;
+				return tryNow();
+				
+				function firstTry() {
 					self.simpleConf = {
 						audio : !!conf.audio,
 						video : !!conf.video,
 					};
 					
-					self.getMedia( self.simpleConf )
-						.then( success )
-						.catch( failure );
+					if ( !self.simpleConf.video )
+						self.giveUp = true;
 					
-					return;
+					return tryNow();
 				}
 				
-				// try only audio, set giveUp so we dont try
-				// again if it still fails.
-				if ( self.simpleConf.video ) {
-					self.simpleConf.video = false;
-					self.giveUp = true;
-					self.getMedia( self.simpleConf )
-						.then( success )
-						.catch( failure );
+				function tryNow() {
+					return window.navigator.mediaDevices.getUserMedia( self.simpleConf );
 				}
 			}
-			
 		});
-		
 	}
 	
 	ns.Media.prototype.setCurrentDevices = function( media ) {
@@ -3273,7 +3272,10 @@ library.rtc = library.rtc || {};
 			self.addTrack( t );
 		});
 		
-		self.emit( 'media', self.media );
+		window.setTimeout( update, 1 );
+		function update() {
+			self.emit( 'media', self.media );
+		}
 	}
 	
 	ns.Media.prototype.clearMedia = function() {

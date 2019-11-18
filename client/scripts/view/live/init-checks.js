@@ -26,21 +26,15 @@ library.rtc = library.rtc || {};
 
 // Initchecks
 (function( ns, undefined ) {
-	ns.InitChecks = function( view ) {
-		if ( !( this instanceof ns.InitChecks ))
-			return new ns.InitChecks( conf );
-		
+	ns.InitChecks = function( statusMsg ) {
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		self.view = view;
-		//self.onsourceselect = conf.onsourceselect;
-		//self.ondone = conf.ondone;
+		self.ui = statusMsg;
 		
 		self.hasError = false;
 		self.canContinue = true;
 		self.checksDone = null;
-		self.isDone = false;
 		
 		self.init();
 	}
@@ -52,49 +46,43 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkBrowser = function( userAgent, callback ) {
 		const self = this;
+		const type = 'browser-check';
+		self.startingCheck( type );
 		if ( !userAgent )
 			userAgent = navigator.userAgent;
 		
 		new library.rtc.BrowserCheck( userAgent, checkBack );
 		function checkBack( res ) {
-			self.ui.updateBrowserCheck( res );
-			checkErrors( res );
-			self.setCheckDone( 'browser' );
+			if ( 'success' == res.type ) {
+				callback( null, res.browser );
+				done();
+			} else {
+				self.ui.updateBrowserCheck( res );
+				self.ui.once( type, uiClick );
+				checkErrors( res );
+			}
 			
 			function checkErrors( res ) {
-				var bErr = res.support.type;
-				var success = true;
-				var isCrit = false;
-				
-				// 
-				if ( 'error' === res.secure.type ) {
-					success = false;
+				console.log( 'checkErrors', res );
+				isCrit = false;
+				if ( 'error' === res.type )
 					isCrit = true;
+				
+				self.setHasError( isCrit );
+				callback( isCrit, res.browser );
+			}
+			
+			function uiClick( type ) {
+				if ( 'close-live' === type ) {
+					self.done( true );
+					return;
 				}
 				
-				// check browser
-				if ( 'success' !== bErr ) {
-					success = false;
-					isCrit = 'error' === bErr;
-				}
-				
-				// check capabilities
-				const capKeys = Object.keys( res.capabilities );
-				const hasCapErr = capKeys.some( failed );
-				function failed( key ) { return !res.capabilities[ key ]; }
-				if ( hasCapErr ) {
-					success = false;
-					isCrit = true;
-				}
-				
-				// report back
-				if ( !success ) {
-					self.setHasError( isCrit );
-					callback( isCrit, res.browser );
-				}
-				else {
-					callback( null, res.browser );
-				}
+				done();
+			}
+			
+			function done() {
+				self.setCheckDone( type );
 			}
 		}
 	}
@@ -121,9 +109,7 @@ library.rtc = library.rtc || {};
 		function onopen() {
 			restoreHandlers();
 			cancelResultTimeout();
-			if ( self.isDone )
-				return;
-			
+						
 			var success = {
 				type : 'success',
 				message : '',
@@ -137,8 +123,6 @@ library.rtc = library.rtc || {};
 			errMsg = errMsg || 'connection error';
 			restoreHandlers();
 			cancelResultTimeout();
-			if ( self.isDone )
-				return;
 			
 			var err = {
 				type : 'error',
@@ -187,138 +171,474 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkICE = function( conf ) {
 		const self = this;
-		self.startingCheck( 'ice-servers' );
-		self.turnPass = false;
-		conf.forEach( addToView );
+		const checkId = 'ice-servers-check';
+		self.startingCheck( checkId, conf );
+		let hasTURN = false;
+		let TURNPass = false;
+		const errors = [];
+		//conf.forEach( addToView );
 		new library.rtc.ICECheck( conf, stepBack, doneBack );
 		
+		/*
 		function addToView( server ) {
-			if ( self.isDone )
-				return;
-			
-			var state = {
+			const state = {
 				type : 'add',
 				server : server,
 			};
-			self.ui.updateICEServer( state );
+			self.ui.updateICEServers( state );
 		}
+		*/
 		
 		function stepBack( result ) {
-			if ( self.isDone )
+			const isTURN = checkIsTURN( result.server );
+			if ( TURNPass )
 				return;
 			
-			var isTURN = checkIsTURN( result.server );
+			if ( isTURN )
+				hasTURN = true;
+			
 			if ( isTURN && !result.err  )
-				self.turnPass = true;
+				TURNPass = true;
 			
-			var state = {
-				type    : result.err ? 'error' : 'success',
-				server  : result.server,
-				message : result.err || '',
-			}
+			if ( !result.err )
+				return;
 			
-			self.ui.updateICEServer( state );
+			errors.push( result );
 			
 			function checkIsTURN( server ) {
-				var url = server.urls[ 0 ];
-				var match = url.match( /^turn:/);
+				const url = server.urls[ 0 ];
+				const match = url.match( /^turn:/);
 				return !!match;
 			}
 		}
 		
 		function doneBack() {
-			if ( !self.turnPass )
-				self.setHasError();
+			if ( hasTURN && !TURNPass ) {
+				showStatus( 'error', 'ERR_NO_TURN' );
+				return;
+			}
 			
-			self.setCheckDone( 'ice-servers' );
+			if ( !hasTURN && errors.length ) {
+				showStatus( 'warning', 'WARN_STUN_ERRORS' );
+				return;
+			}
+			
+			self.setCheckDone( checkId );
+		}
+		
+		function showStatus( type, errCode ) {
+			const state = {
+				type    : type,
+				message : errCode,
+				errors  : errors,
+			};
+			self.ui.updateICEServers( state );
+			self.ui.once( checkId, uiBack );
+			self.setHasError();
+		}
+		
+		function uiBack( event ) {
+			if ( 'close-live' === event )
+				self.done( true );
+			
+			self.setCheckDone( checkId );
 		}
 	}
 	
-	ns.InitChecks.prototype.checkAudioDevices = function( mediaStream, preferedDevices ) {
+	ns.InitChecks.prototype.checkAudioInput = function( mediaStream, preferedDevices ) {
 		const self = this;
-		self.startingCheck( 'audio-input' );
+		const checkId = 'audio-input-check';
+		self.startingCheck( checkId );
+		self.ui.once( checkId, uiClick );
 		const tracks = mediaStream.getAudioTracks();
 		if ( !tracks.length ) {
-			console.log( 'no audio sources available, passing' );
 			setError( 'ERR_NO_DEVICES_FOUND' );
-			self.setCheckDone( 'audio-input' );
 			return;
 		}
 		
-		const dev = tracks[ 0 ];
-		const deviceLabel = dev.label ? dev.label : dev.labelExtra;
-		self.ui.updateAudioInput( { desc : deviceLabel } );
 		new library.rtc.AudioInputDetect( mediaStream )
 			.then( checkBack )
 			.catch( checkErr );
 		
-		function checkBack( hasInput ) {
-			if ( self.isDone )
+		let warnSet = false;
+		let warnTimeout = window.setTimeout( warn, 2000 );
+		
+		function warn() {
+			if ( null == warnTimeout )
 				return;
 			
-			if ( !hasInput )
-				setError( 'ERR_NO_INPUT' );
-			else {
-				const state = {
-					type : 'success',
-				};
-				self.ui.updateAudioInput( state );
-			}
+			warnSet = true;
+			const state = {
+				type    : 'warning',
+				message : 'WARN_NO_AUDIO',
+			};
+			self.ui.updateAudioInput( state );
+		}
+		
+		function checkBack( hasInput ) {
+			if ( null != warnTimeout )
+				window.clearTimeout( warnTimeout );
 			
-			self.setCheckDone( 'audio-input' );
+			if ( !hasInput )
+				setError( 'ERR_SYSTEM_MUTE' );
+			else {
+				if ( warnSet ) {
+					const state = {
+						type    : 'success',
+						message : 'SUCC_ITS_FINE',
+					};
+					self.ui.updateAudioInput( state );
+				} else
+					done();
+			}
 		}
 		
 		function checkErr( err ) {
-			if ( self.isDone )
-				return;
-			
+			console.log( 'checkAudioDevice checkErr', err );
 			setError( err );
-			self.setCheckDone( 'audio-input' );
 		}
 		
 		function setError( err ) {
 			const state = {
-				type : 'error',
-				err  : err,
+				type    : 'error',
+				message : err,
 			};
 			self.ui.updateAudioInput( state );
 			self.setHasError();
 		}
-	}
-	
-	ns.InitChecks.prototype.checkVideoDevices = function( mediaStream, preferedDevices ) {
-		const self = this;
-		self.setCheckDone( 'video-input' );
-	}
-	
-	ns.InitChecks.prototype.checkDeviceAccess = function( permissions, callback ) {
-		const self = this;
-		getDevices( check );
-		function getDevices( callback ) {
-			const sources = new library.rtc.MediaDevices();
-			sources.getByType()
-				.then( ok )
-				.catch( error );
-				
-			function ok( devices ) {
-				callback( null, devices );
-			}
-			
-			function error( err ) {
-				console.log( 'getDevices - err', err );
-				callback( err, null );
-			}
-		}
 		
-		function check( err, devices ) {
-			if ( err ) {
-				done( 'ERR_ENUMERATE_DEVICES_FAILED', permissions, devices );
+		function uiClick( type ) {
+			if ( 'close-live' === type ) {
+				self.done( true );
 				return;
 			}
 			
+			if ( 'source-select' === type ) {
+				self.emit( 'source-select' );
+			}
+			
+			done();
+		}
+		
+		function done() {
+			self.setCheckDone( checkId );
+		}
+	}
+	
+	ns.InitChecks.prototype.checkVideoInput = function( mediaStream, preferedDevices ) {
+		const self = this;
+		const checkId = 'video-input-check';
+		self.setCheckDone( checkId );
+	}
+	
+	ns.InitChecks.prototype.checkDeviceAccess = function( permissions ) {
+		const self = this;
+		const checkId = 'devices-check';
+		self.startingCheck( checkId );
+		return new Promise(( resolve, reject ) => {
+			let devices = null;
+			let access = null;
+			getDevices()
+				.then( devsBack )
+				.catch( abortErr );
+			
+			function devsBack( devs ) {
+				devices = devs;
+				checkAccess( devices )
+					.then( accessBack )
+					.catch( abortErr );
+			}
+			
+			function accessBack( access ) {
+				access = access;
+				if ( permissions.audio && !access.audio )
+					permissions.audio = false;
+				
+				if ( permissions.video && !access.video )
+					permissions.video = false;
+				
+				resolve( permissions, devices );
+			}
+			
+			function abortErr( err ) {
+				reject( err );
+			}
+		});
+		
+		function getDevices() {
+			return new Promise(( resolve, reject ) => {
+				const sources = new library.rtc.MediaDevices();
+				sources.getByType()
+					.then( resolve )
+					.catch( error );
+			});
+			
+			function error( err ) {
+				console.log( 'checkDeviceAccess - getDevices - err', err );
+				const error = {
+					type    : 'error',
+					message : 'ERR_ENUMERATE_DEVICES_FAILED',
+				};
+				reject( error );
+			}
+		}
+		
+		function checkAccess( devices ) {
+			const access = {
+				audio : permissions.audio,
+				video : permissions.video,
+			};
+			const aDevs = devices.audioinput;
+			const vDevs = devices.videoinput;
+			const aKeys = Object.keys( aDevs );
+			const vKeys = Object.keys( vDevs );
+			return new Promise(( resolve, reject ) => {
+				checkAvailable( aKeys, vKeys, access )
+					.then( hasAvailable )
+					.catch( reject );
+				
+				function hasAvailable( ava ) {
+					if ( !ava.audio )
+						access.audio = false;
+					if ( !ava.video )
+						access.video = false;
+					
+					if ( !access.audio && !access.video ) {
+						resolve( access );
+						return;
+					}
+					
+					checkPermissions(
+						aDevs[ aKeys[ 0 ]],
+						vDevs[ vKeys[ 0 ]]
+					)
+						.then( hasPermissisons )
+						.catch( reject );
+				}
+				
+				function hasPermissisons( perms ) {
+					if ( !perms.audio )
+						access.audio = false;
+					if ( !perms.video )
+						access.video = false;
+					
+					resolve( access );
+				}
+				
+			});
+			
+		}
+		
+		function checkAvailable( a, v, access ) {
+			const available = {
+				audio : access.audio,
+				video : access.video,
+			};
+			return new Promise(( resolve, reject ) => {
+				if ( access.video && !a.length && !v.length ) {
+					showStatus( 'warning', 'WARN_NO_DEVICES' )
+						.then( noDevsBack )
+						.catch( reject );
+					return;
+				}
+				
+				if ( !a.length ) {
+					showStatus( 'warning', 'WARN_NO_DEVICE_AUDIO' )
+						.then( noAudioBack )
+						.catch( reject );
+						
+					return;
+				}
+				
+				if ( access.video && !v.length ) {
+					showStatus( 'warning', 'WARN_NO_DEVICE_VIDEO' )
+						.then( noVideoBack )
+						.catch( reject );
+					
+					return;
+				}
+				
+				resolve( available );
+				
+				function noDevsBack( event ) {
+					available.audio = false;
+					available.video = false;
+					resolve( available );
+				}
+				
+				function noAudioBack( event ) {
+					available.audio = false;
+					resolve( available );
+				}
+				
+				function noVideoBack( event ) {
+					available.video = false;
+					resolve( available );
+				}
+			});
+		}
+		
+		function checkPermissions( aDev, vDev ) {
+			const perms = {
+				audio : permissions.audio,
+				video : permissions.video,
+			};
+			const blocked = {
+				audio : undefined,
+				video : undefined,
+			};
+			return new Promise(( resolve, reject ) => {
+				askForDeviceAccess( perms )
+					.then( askBack )
+					.catch( askErr );
+					
+				function askBack( success ) {
+					resolve( perms );
+				}
+				
+				function askErr( err ) {
+					console.log( 'check - askErr', err );
+					// all asked for are blocked
+					if ( 'NotAllowedError' === err ) {
+						if ( permissions.audio ) {
+							blocked.audio = true;
+							perms.audio = false;
+						}
+						if ( permissions.video ) {
+							blocked.video = true;
+							perms.video = false;
+						}
+						
+						done();
+						return;
+					}
+					
+					checkType( 'audio', aDev )
+						.then( audioBack )
+						.catch( audioBack );
+				}
+				
+				function audioBack( err ) {
+					perms.audio = !err;
+					if ( 'NotAllowedError' === err )
+						blocked.audio = true;
+					
+					if ( !perms.video )
+						done();
+					else
+						checkType( 'video', vDev )
+							.then( videoBack )
+							.catch( videoBack );
+				}
+				
+				function videoBack( err ) {
+					perms.video = !err;
+					if ( 'NotAllowedError' === err )
+						blocked.video = true;
+					
+					done();
+				}
+				
+				function done() {
+					showBlockStatus( blocked );
+					resolve( perms );
+				}
+			});
+			
+			function checkType( typeStr, typeDev ) {
+				return new Promise(( resolve, reject ) => {
+					if ( !permissions[ typeStr ] || !typeDev ) {
+						reject( 'ERR_NOT_AVAILABLE' );
+						return;
+					}
+					
+					const perm = {};
+					perm[ typeStr ] = true;
+					askForDeviceAccess( perm )
+						.then( askBack )
+						.catch( askErr );
+						
+					function askBack() {
+						resolve( null );
+					}
+					
+					function askErr( err ) {
+						const name = err.name;
+						console.log( 'askErr', {
+							err  : err,
+							name : name,
+						});
+						/*
+						let ERR = null;
+						if ( 'NotFoundError' === name )
+							ERR = 'WARN_GUM_BLOCKED';
+						
+						if ( 'NotAllowedError' === name ) {
+							ERR = 'ERR_GUM_NOT_ALLOWED';
+						
+						if ( 'NoMediaError' === name )
+							ERR = 'ERR_GUM_NO_MEDIA';
+						
+						*/
+						reject( name || err );
+					}
+				});
+			}
+			
+			function showBlockStatus( blocked ) {
+				if ( !blocked.audio && !blocked.video )
+					return;
+				
+				let ERR = null;
+				if ( null == blocked.audio )
+					ERR = 'INFO_GUM_BLOCKED_VIDEO';
+				if ( null == blocked.video )
+					ERR = 'INFO_GUM_BLOCKED_AUDIO';
+				if ( blocked.audio && blocked.video )
+					ERR = 'INFO_GUM_BLOCKED';
+				
+				const state = {
+					type    : 'info',
+					message : ERR,
+					title   : 'access-blocked',
+					events  : [ 'ok' ],
+				};
+				const id = self.ui.showStatus( state );
+				const ui = self.ui;
+				ui.once( id, infoBack );
+				function infoBack( event ) {
+					ui.removeStatus( id );
+				}
+			}
+		}
+		
+		function checkBlocked( perm ) {
+			
+		}
+		
+		function showStatus( type, code ) {
+			const state = {
+				type    : type,
+				message : code,
+			};
+			return new Promise(( resolve, reject ) => {
+				self.ui.updateDevicesCheck( state );
+				self.ui.once( checkId, statusBack );
+				
+				function statusBack( event ) {
+					self.ui.removeStatus( checkId );
+					if ( 'close-live' === event )
+						reject( event );
+					else
+						resolve( event );
+				}
+			});
+		}
+		
+		function check( devices ) {
 			// user has unchecked both audio and video. usecase: screensharing
 			if ( !permissions.audio && !permissions.video ) {
-				done( null, permissions, devices );
+				done( permissions, devices );
 				return;
 			}
 			
@@ -326,7 +646,7 @@ library.rtc = library.rtc || {};
 			const videoIds = Object.keys( devices.videoinput );
 			let deviceErr = checkHasDevices( audioIds, videoIds );
 			if ( deviceErr ) {
-				done( deviceErr, permissions, devices );
+				error( deviceErr, permissions, devices );
 				return;
 			}
 			
@@ -336,7 +656,7 @@ library.rtc = library.rtc || {};
 				return;
 			}
 			
-			done( null, permissions, devices );
+			done( permissions, devices );
 			return;
 			
 			function askBack( err ) {
@@ -347,6 +667,9 @@ library.rtc = library.rtc || {};
 				
 				let label = err.name;
 				let ERR = 'ERR_GUM_' + label;
+				if ( 'NotFoundError' === label )
+					ERR = 'WARN_GUM_BLOCKED';
+				
 				if ( 'NotAllowedError' === label )
 					ERR = 'ERR_GUM_NOT_ALLOWED';
 				
@@ -355,31 +678,27 @@ library.rtc = library.rtc || {};
 				
 				done( ERR, permissions, devices );
 				
-				function devicesBack( err, devices ) {
-					if ( err )
-						done( err, permissions, devices );
-					else
-						done( null, permissions, devices );
+				function devicesBack( devices ) {
+					done( permissions, devices );
 				}
 			}
 			
-			done( null, permissions, devices );
-			
 			function checkHasDevices( a, v ) {
-				let ERR = 'ERR_NO_DEVICES_FOUND';
-				let ok = true;
+				const ERR_all = 'ERR_NO_DEVICES_FOUND';
+				const ERR_audio = 'ERR_NO_MIC_FOUND';
+				const ERR_video = 'ERR_NO_CAM_FOUND';
+				if ( !a.length && !v.length )
+					return ERR_all;
+				
 				if ( onlyAudio()) {
 					if ( !a.length )
-						return ERR;
+						return ERR_audio;
 				}
 				
 				if ( onlyVideo()) {
 					if ( !v.length )
-						return ERR;
+						return ERR_video;
 				}
-				
-				if ( !a.length && !v.length )
-					return ERR;
 				
 				// has permissions for both ( default )
 				// if theres no video device
@@ -394,30 +713,44 @@ library.rtc = library.rtc || {};
 			}
 			
 			function checkIsBlocked( a, v ) {
-				let aDev = a[ 0 ];
-				let vDev = v[ 0 ];
-				let ERR = 'ERR_DEVICES_BLOCKED';
+				if ( 'DESKTOP' !== window.View.deviceType ) {
+					console.log( "InitCheck device check - \
+						checkIsBlocked - well, we're on mobile so who tf knowns v0v" );
+					return null;
+				}
+				
+				const aId = a[ 0 ];
+				const vId = v[ 0 ];
+				const aDev = devices.audioinput[ aId ];
+				const vDev = devices.videoinput[ vId ];
+				const ERR = 'ERR_DEVICES_BLOCKED';
+				const ERR_dev = 'ERR_DEVICE_BLOCKED';
+				const WARN_audio = 'WARN_AUDIO_BLOCKED';
+				const WARN_video = 'WARN_VIDEO_BLOCKED';
+				
+				// if both are blocked, ask for device access ( probably first time use )
+				if ( "" === aDev.label && "" === vDev.label )
+					return ERR;
+				
 				if ( onlyAudio()) {
-					if ( "" === aDev )
-						return ERR;
+					if ( "" === aDev.label )
+						return ERR_dev;
 				}
 				
 				if ( onlyVideo()) {
-					if ( "" === vDev )
-						return ERR;
+					if ( "" === vDev.label )
+						return ERR_dev;
 				}
 				
-				// if both are blocked, ask for device access ( probably first time use )
-				if ( "" === aDev && "" === vDev )
-					return ERR;
+				if ( "" === aDev.label ) {
+					//permissions.audio = false;
+					return WARN_audio;
+				}
 				
-				// if only video devices are blocked
-				// fall back to one or the other
-				if ( "" === vDev )
-					permissions.video = false;
-				
-				if ( "" === aDev )
-					permissions.audio = false;
+				if ( "" === vDev.label ) {
+					//permissions.video = false;
+					return WARN_video;
+				}
 				
 				return null;
 			}
@@ -430,19 +763,27 @@ library.rtc = library.rtc || {};
 				return !permissions.audio && permissions.video;
 			}
 			
-			function askForDeviceAccess( callback ) {
-				window.navigator.mediaDevices.getUserMedia( permissions )
+			
+		} // check
+		
+		function askForDeviceAccess( perm ) {
+			return new Promise(( resolve, reject ) => {
+				window.navigator.mediaDevices.getUserMedia( perm )
 					.then( gumBack )
 					.catch( gumError );
 					
 				function gumBack( mediaStream ) {
 					close ( mediaStream );
-					callback( null, true );
+					resolve( true );
 				}
 				
 				function gumError( err ) {
-					console.log( 'gumError', err );
-					callback( err, null );
+					const name = err.name;
+					console.log( 'gumError', {
+						err  : err,
+						name : name,
+					});
+					reject( err );
 				}
 				
 				function close( media ) {
@@ -453,49 +794,72 @@ library.rtc = library.rtc || {};
 						track.stop();
 					}
 				}
-				
-			} // askPermission
+			});
 			
-		} // check
+		} // askPermission
 		
-		function done( err, permissions, devices ) {
-			if ( err )
-				self.setHasError( true );
-			
+		function done( perms, devs ) {
+			self.setCheckDone( checkId );
+			resolve( perms, devs );
+		}
+		
+		function error( err, perms, devs ) {
+			console.trace( 'error', err );
+			self.setHasError( true );
+			const type = getType( err );
 			const state = {
-				err         : err,
-				permissions : permissions,
-				devices     : devices,
+				type        : type,
+				message     : err,
+				permissions : perms,
+				devices     : devs,
 			};
 			
 			self.ui.updateDevicesCheck( state );
-			self.setCheckDone( 'devices' );
-			if ( err )
-				callback( err, null, devices );
-			else
-				callback( null, permissions, devices );
-		}
-		
-		function error( err ) {
-			callback( err, null, devices );
+			self.ui.once( checkId, uiBack );
+			
+			function uiBack( event ) {
+				self.setCheckDone( checkId );
+				if ( 'close-live' === event ) {
+					reject( err );
+					self.done( true );
+					return;
+				}
+				
+				resolve( permissions, devices );
+			}
+			
+			function getType( code ) {
+				if ( !code || !code.length )
+					return 'error';
+				
+				const pre = code.split( '_' )[ 0 ];
+				if ( 'WARN' === pre )
+					return 'warning';
+				else
+					return 'error';
+			}
 		}
 	}
 	
 	ns.InitChecks.prototype.checkSourceReady = function( hasMedia, mediaErr ) {
 		const self = this;
+		const checkId = 'source-check';
 		let ready = hasMedia;
-		let msg = 'Ready';
-		if ( !ready )
-			msg = View.i18n('i18n_media_not_available');
+		self.startingCheck( checkId );
+		if ( ready ) {
+			self.setCheckDone( checkId );
+			return true;
+		}
+		
+		const msg = 'ERR_SELF_NO_MEDIA';
 		const state = {
-			type    : ready ? 'success' : 'error',
+			type    : 'error',
 			message : msg,
 		};
 		
 		if ( mediaErr ) {
-			ready = false;
 			console.log( 'mediaErr', mediaErr );
-			state.message = state.message || 'Media Error';
+			state.message = 'ERR_GUM_ERROR';
 			try {
 				state.err = JSON.stringify( mediaErr.err, null, 2 );
 			} catch( e ) {
@@ -510,26 +874,49 @@ library.rtc = library.rtc || {};
 		}
 		
 		self.ui.updateSelfieCheck( state );
-		if ( !ready )
-			self.setHasError( true );
+		self.ui.once( checkId, uiBack );
+		self.setHasError( true );
 		
-		self.setCheckDone( 'source-check' );
-		return ready;
+		function uiBack( type ) {
+			if ( 'close-live' === type ) {
+				self.done( true );
+				return;
+			}
+			
+			self.setCheckDone( checkId );
+		}
+		
+		return false;
 	}
 	
 	ns.InitChecks.prototype.passCheck = function( check ) {
 		const self = this;
+		if ( self.ui )
+			self.ui.removeStatus( check );
+		
 		self.setCheckDone( check );
 	}
 	
 	ns.InitChecks.prototype.close = function() {
 		const self = this;
-		self.ui.close();
 		self.isDone = true;
+		
+		removeChecks();
 		
 		delete self.view;
 		delete self.ui;
-		self.release();
+		self.closeEventEmitter();
+		
+		function removeChecks() {
+			if ( !self.ui )
+				return;
+			
+			const checks = Object.keys( self.checksDone );
+			checks.forEach( checkId => {
+				self.ui.removeStatus( checkId )
+				self.ui.release( checkId );
+			});
+		}
 	}
 	
 	// Private
@@ -537,31 +924,29 @@ library.rtc = library.rtc || {};
 	ns.InitChecks.prototype.init = function() {
 		const self = this;
 		self.checksDone = {
-			'source-check' : false,
-			'ice-servers'  : false,
-			'audio-input'  : false,
-			'video-input'  : false,
-			'devices'      : false,
+			'source-check'      : false,
+			'devices-check'     : false,
 		};
 		
-		const conf = {
-			onclose        : onclose,
-			oncontinue     : oncontinue,
-			onsourceselect : onsource,
-		};
-		self.ui = self.view.addInitChecks( conf );
-		self.ui.show();
+		//self.ui.on( 'close', onclose );
+		//self.ui.on( 'close-live', e => self.done( true ));
+		//self.ui.on( 'continue', oncontinue );
+		//self.ui.on( 'source-select', onsource );
 		
-		function onclose() {
-			self.done( true );
+		function onclose( statusId ) {
+			self.passCheck( statusId );
 		}
 		
 		function oncontinue() {
 			self.done();
 		}
 		
-		function onsource() {
-			self.emit( 'source-select', true );
+		function onsource( checkId ) {
+			if ( self.ui )
+				self.ui.removeStatus( checkId );
+			
+			self.emit( 'source-select', checkId );
+			self.passCheck( checkId );
 		}
 	}
 	
@@ -572,7 +957,6 @@ library.rtc = library.rtc || {};
 		if ( critical  )
 			self.canContinue = false;
 		
-		self.ui.showErrorHandling( self.canContinue );
 	}
 	
 	ns.InitChecks.prototype.startingCheck = function( id ) {
@@ -582,12 +966,21 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.setCheckDone = function( id ) {
 		const self = this;
-		if ( null == self.checksDone[ id ])
+		if ( null == self.checksDone[ id ]) {
+			console.log( 'setCheckDone - no check for', id );
 			return;
+		}
 		
 		self.checksDone[ id ] = true;
-		if ( !isDone() )
+		if ( self.ui ) {
+			self.ui.release( id );
+			self.ui.removeStatus( id );
+		}
+		
+		if ( !isDone() ) {
+			console.log( 'not done yet', self.checksDone );
 			return;
+		}
 		
 		if ( self.hasError )
 			return;
@@ -602,15 +995,10 @@ library.rtc = library.rtc || {};
 				return self.checksDone[ id ];
 			}
 		}
-		
 	}
 	
 	ns.InitChecks.prototype.done = function( forceClose ) {
 		const self = this;
-		if ( self.isDone )
-			return;
-		
-		self.isDone = true;
 		self.emit( 'done', forceClose );
 		//self.ondone( forceClose );
 	}
@@ -837,9 +1225,9 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.BrowserCheck.prototype.supportString = {
-		'error'   : 'unsupported',
-		'warning' : 'experimental support',
-		'success' : 'full support',
+		'error'   : 'ERR_NO_SUPPORT',
+		'warning' : 'WARN_EXPERIMENTAL_SUPPORT',
+		'success' : 'SUCC_FULL_SUPPORT',
 	}
 	
 	ns.BrowserCheck.prototype.init = function() {
@@ -892,10 +1280,8 @@ library.rtc = library.rtc || {};
 		is[ 'blink' ] = ( is[ 'chrome' ] || is[ 'opera' ] ) && !!window.CSS;
 		
 		// BRAVE
-		console.log( 'idBrowser - ua', self.userAgent );
 		//is[ 'brave' ] = ( is[ 'chrome' ] && self.userAgent.includes( 'Brave' ));
 		is[ 'brave' ] = ( is[ 'chrome' ] && self.checkIsBrave() );
-		console.log( 'idBrowser - is brave???', is );
 		/*
 		if ( is[ 'blink' ]) {
 			is[ 'chrome' ] = false;
@@ -912,7 +1298,6 @@ library.rtc = library.rtc || {};
 		test.classList.toggle( 'hidden', true );
 		document.body.appendChild( test );
 		let isBrave = false;
-		console.log( 'test.contentWindow', test.contentWindow.google_onload_fired )
 		if ( test.contentWindow.google_onload_fired === true )
 			isBrave = true;
 		
@@ -933,7 +1318,7 @@ library.rtc = library.rtc || {};
 	
 	ns.BrowserCheck.prototype.checkCapabilities = function() {
 		const self = this;
-		var cap = {};
+		const cap = {};
 		cap[ 'webAudio' ] = !!window.AudioContext;
 		cap[ 'webRTC' ] = !!window.RTCPeerConnection;
 		cap[ 'mediaDevices' ] = !!window.navigator.mediaDevices;
@@ -994,6 +1379,7 @@ library.rtc = library.rtc || {};
 	
 	ns.BrowserCheck.prototype.done = function() {
 		const self = this;
+		const checks = [];
 		let browser = getBrowser();
 		let supType = self.supportMap[ browser.toLowerCase() ] || 'error';
 		
@@ -1007,25 +1393,41 @@ library.rtc = library.rtc || {};
 				supType = 'warning';
 		}
 		
-		var supString = self.supportString[ supType ];
-		var support = {
+		const supString = self.supportString[ supType ];
+		const support = {
+			id      : 'browser-support-check',
 			type    : supType,
 			message : supString,
+			data    : browser,
 		};
+		checks.push( support );
 		
 		const secure = {
-			type    : self.isSecure ? '' : 'error',
-			desc    : 'Secure connection',
+			id      : 'browser-secure-check',
+			type    : self.isSecure ? 'success' : 'error',
 			message : 'ERR_HTTPS_REQUIRED',
 		};
+		checks.push( secure );
 		
-		var res = {
-			secure       : secure,
-			browser      : browser,
-			support      : support,
-			capabilities : self.cap,
+		const allSupported = checkAllSupported( self.cap );
+		const capas = {
+			id      : 'browser-capabilities-check',
+			type    : allSupported ? 'success' : 'error',
+			message : 'ERR_DECREPIT_API',
+			data    : self.cap,
 		};
-		var cb = self.onresult;
+		checks.push( capas );
+		const worst = getWorst( checks );
+		const res = {
+			type    : worst,
+			browser : browser,
+			data    : {},
+		};
+		checks.forEach( check => {
+			res.data[ check.id ] = check;
+		});
+		
+		const cb = self.onresult;
 		self.close();
 		cb( res );
 		
@@ -1035,6 +1437,32 @@ library.rtc = library.rtc || {};
 					return browser;
 				
 			return 'unknown';
+		}
+		
+		function checkAllSupported( caps ) {
+			const keys = Object.keys( caps );
+			let fail = false;
+			fail = keys.some( cap => {
+				return !caps[ cap ];
+			});
+			return !fail;
+		}
+		
+		function getWorst( checks ) {
+			let worst = 'success';
+			checks.some( check => {
+				if ( 'error' === check.type ) {
+					worst = 'error';
+					return true;
+				}
+				
+				if ( 'warning' === check.type )
+					worst = 'warning';
+				
+				return false;
+			});
+			
+			return worst;
 		}
 	}
 	

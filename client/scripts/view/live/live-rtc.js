@@ -63,7 +63,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTC = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
-		console.log( 'RTC', conf );
 		self.conn = conn || null;
 		self.ui = UI;
 		self.userId = conf.userId;
@@ -123,22 +122,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.share && self.isTempRoom )
 			self.share.show();
 		
+		self.statusMsg = self.ui.initStatusMessage();
 		// do init checks
-		const initConf = {
-			view           : self.ui,
-			onsourceselect : showSourceSelect,
-			ondone         : allChecksDone,
-		};
-		self.initChecks = new library.rtc.InitChecks( self.ui );
+		self.initChecks = new library.rtc.InitChecks( self.statusMsg );
 		self.initChecks.on( 'source-select', showSourceSelect );
-		self.initChecks.on( 'done', allChecksDone );
+		self.initChecks.on( 'done', currentChecksDone );
 		
-		self.initChecks.checkICE( self.rtcConf.ICE );
-		console.log( 'conf', window.View.config );
+		//self.initChecks.checkICE( self.rtcConf.ICE );
 		const appConf = window.View.config.appConf || {};
 		self.initChecks.checkBrowser( appConf.userAgent, browserBack );
 		function browserBack( err, browser ) {
-			console.log( 'browserBack', browser );
 			if ( err ) {
 				self.goLive( false );
 				return;
@@ -146,19 +139,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.browser = browser;
 			self.ui.setBrowser( self.browser );
-			self.initChecks.checkDeviceAccess( self.permissions.send, deviceBack );
+			self.initChecks.checkDeviceAccess( self.permissions.send )
+				.then( devicesBack )
+				.catch( devFail );
+			
+			function devFail( err ) {
+				console.log( 'devFail', err );
+				self.close();
+			}
 		}
 		
-		function deviceBack( err, permissions, devices ) {
-			if ( err || !permissions ) {
-				console.log( 'oops?', {
-					err : err,
-					per : permissions,
-					dev : devices,
-				});
-				return;
-			}
-			
+		function devicesBack( permissions, devices ) {
 			self.permissions.send = permissions;
 			if ( devices )
 				self.updateMenuSendReceive( self.permissions, devices );
@@ -174,8 +165,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			function passSelfieChecks() {
 				self.initChecks.passCheck( 'source-check' );
-				self.initChecks.passCheck( 'audio-input' );
-				self.initChecks.passCheck( 'video-input' );
+				done();
 			}
 			
 			function runSelfieChecks( gumErr, media ) {
@@ -183,27 +173,33 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( !ready )
 					return;
 				
+				done();
+				
 				const selfStream = self.selfie.getStream();
 				let audioPref = null;
 				if ( self.localSettings.preferedDevices )
 					audioPref = self.localSettings.preferedDevices.audio;
 				
-				self.initChecks.checkAudioDevices( selfStream, audioPref );
-				self.initChecks.checkVideoDevices( selfStream, audioPref );
+				//self.initChecks.checkAudioInput( selfStream, audioPref );
+				//self.initChecks.checkVideoInput( selfStream, audioPref );
+				self.initChecks.checkICE( self.rtcConf.ICE );
+				self.allChecksRun = true;
 			}
 		}
 		
-		function allChecksDone( close ) {
-			if ( close  ) {
+		function currentChecksDone( forceClose ) {
+			if ( forceClose  ) {
 				self.close();
 				return;
 			}
+			
+			if ( !self.allChecksRun )
+				return;
 			
 			closeInit();
 		}
 		
 		function showSourceSelect() {
-			closeInit();
 			if ( !self.selfie )
 				return;
 			
@@ -213,15 +209,54 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function closeInit() {
 			self.initChecks.close();
 			delete self.initChecks;
-			done();
+			self.ui.removeCover();
 		}
 		
 		function done() {
 			if ( self.isAdmin )
 				self.setupAdmin();
 			
+			//self.showTestStatus();
+			
 			self.goLive( true );
 		}
+	}
+	
+	ns.RTC.prototype.showTestStatus = function() {
+		const self = this;
+		const succ = {
+			type    : 'success',
+			title   : '',
+			message : 'SUCC_ITS_FINE',
+			events  : [ 'ok', 'close' ],
+		};
+		const info = {
+			type    : 'info',
+			title   : '',
+			message : 'INFO_GUM_BLOCKED',
+			events  : [ 'continue', 'accept' ],
+		};
+		const warning = {
+			type    : 'warning',
+			title   : '',
+			message : 'WARN_AUDIO_SINK_NOT_ALLOWED',
+			events  : [ 'close-live' ],
+		};
+		const error = {
+			type    : 'error',
+			title   : '',
+			message : 'ERR_GUM_ERROR',
+			events  : [ 'close' ],
+		};
+		const eid = self.statusMsg.showStatus( error );
+		const wid = self.statusMsg.showStatus( warning );
+		const iid = self.statusMsg.showStatus( info );
+		const sid = self.statusMsg.showStatus( succ );
+		self.statusMsg.once( eid, e => self.statusMsg.removeStatus( eid ));
+		self.statusMsg.once( wid, e => self.statusMsg.removeStatus( wid ));
+		self.statusMsg.once( iid, e => self.statusMsg.removeStatus( iid ));
+		self.statusMsg.once( sid, e => self.statusMsg.removeStatus( sid ));
+		
 	}
 	
 	ns.RTC.prototype.convertLegacyDevices = function() {
@@ -878,10 +913,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		let identity = self.identities[ peerId ];
 		if ( !identity ) {
-			console.trace( 'createPeer, no identity', {
-				peer : peerId,
-				ids  : self.identities,
-			});
 			identity = {
 				name   : '---',
 				avatar : self.guestAvatar,
@@ -1058,8 +1089,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.RTC.prototype.closePeer = function( peerId ) {
-		var self = this;
-		var peer = self.peers[ peerId ];
+		const self = this;
+		const peer = self.peers[ peerId ];
 		if ( !peer ) {
 			console.log( 'RTC.closePeer - no peer for id', peerId );
 			return;
@@ -1080,10 +1111,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		let identity = self.identities[ self.userId ];
 		if ( !identity ) {
-			console.trace( 'createSelfie, no identity', {
-				cId : self.userId,
-				ids : self.identities,
-			});
 			identity = {
 				name   : '---',
 				avatar : self.guestAvatar,
@@ -1093,7 +1120,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !identity.avatar )
 			identity.avatar = self.guestAvatar;
 		
-		var selfie = new library.rtc.Selfie({
+		self.selfie = new library.rtc.Selfie({
 			conn            : self.conn,
 			view            : self.ui,
 			menu            : self.menu,
@@ -1114,14 +1141,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			createBack( err, res );
 		}
 		
-		self.selfie = selfie;
-		self.ui.addPeer( selfie );
+		self.ui.addPeer( self.selfie );
 		self.selfie.on( 'error'           , error );
 		self.selfie.on( 'audio-sink'      , audioSink );
 		self.selfie.on( 'mute'            , broadcastMute );
 		self.selfie.on( 'blind'           , broadcastBlind );
 		self.selfie.on( 'screen-mode'     , broadcastScreenMode );
 		self.selfie.on( 'screen-share'    , broadcastScreenShare );
+		self.selfie.on( 'system-mute'     , systemMute );
 		//self.selfie.on( 'tracks-available', broadcastTracksAvailable );
 		self.selfie.on( 'reflow'          , handleReflow );
 		self.selfie.on( 'quality'         , setQuality );
@@ -1135,6 +1162,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function broadcastScreenShare( isSharing ) {
 			broadcast( 'screen-share', isSharing );
 		}
+		
+		function systemMute( isMute ) {
+			self.handleSystemMute( isMute );
+		}
+		
 		function broadcastTracksAvailable( tracks ) {
 			broadcast( 'tracks-available', tracks );
 		}
@@ -1166,6 +1198,57 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.handleSelfieError = function( err ) {
 		const self = this;
 		console.log( 'handleSelfieError - NYI', err );
+	}
+	
+	ns.RTC.prototype.handleSystemMute = function( isMute ) {
+		const self = this;
+		if ( self.ignoreSystemMute )
+			return;
+		
+		const statusId = 'audio-input-check';
+		let conf = null;
+		if ( isMute ) {
+			conf = {
+				type    : 'error',
+				message : 'ERR_SYSTEM_MUTE',
+			};
+		}
+		
+		if ( self.hasAudioStatus && !isMute ) {
+			self.statusMsg.removeStatus( statusId );
+			self.hasAudioStatus = false;
+			/*
+			conf = {
+				type    : 'success',
+				message : 'SUCC_ITS_FINE',
+			};
+			*/
+		}
+		
+		if ( !conf )
+			return;
+		
+		self.statusMsg.updateAudioInput( conf );
+		if ( !self.hasAudioStatus )
+			self.statusMsg.once( statusId, uiBack );
+		
+		self.hasAudioStatus = true;
+		
+		function uiBack( event ) {
+			if ( 'close-live' === event ) {
+				self.close();
+				return;
+			}
+			
+			if ( 'source-select' === event )
+				self.selfie.showSourceSelect();
+			
+			if ( 'ignore' === event )
+				self.ignoreSystemMute = true;
+			
+			self.statusMsg.removeStatus( statusId );
+			self.hasAudioStatus = false;
+		}
 	}
 	
 	ns.RTC.prototype.handleAudioSink = function( deviceId ) {
@@ -1324,7 +1407,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	// Private
 	
 	ns.Selfie.prototype.init =function() {
-		var self = this;
+		const self = this;
 		//self.supported = navigator.mediaDevices.getSupportedConstraints();
 		//console.log( 'supported', self.supported );
 		
@@ -1745,6 +1828,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'volume-source', self.volume );
 		
 		function onVolume( volume, overTime ) {
+			if ( 0 === volume && self.sysUnmuteTimeout ) {
+				window.clearTimeout( self.sysUnmuteTimeout );
+				self.sysUnmuteTimeout = null;
+			}
+			
 			if ( 0 === volume && !self.userMute ) {
 				if ( !self.systemMute && !self.sysMuteTimeout  )
 					self.sysMuteTimeout = window.setTimeout( setSysMute, 1000 );
@@ -1755,13 +1843,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				self.sysMuteTimeout = null;
 			}
 			
-			if ( 0 !== volume && self.systemMute ) {
-				self.handleSystemMute( false );
+			if ( 0 !== volume ) {
+				if ( self.systemMute && !self.sysUnmuteTimeout )
+					self.sysUnmuteTimeout = window.setTimeout( unsetSysMute, 500 );
 			}
 			
 			function setSysMute() {
 				self.handleSystemMute( true );
 				self.sysMuteTimeout = null;
+			}
+			
+			function unsetSysMute() {
+				self.handleSystemMute( false );
+				self.sysUnmuteTimeout = null;
 			}
 		}
 		
@@ -1989,7 +2083,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pingTimeouts = {};
 		self.pongs = [];
 		
-		self.spam = true;
+		self.spam = false;
 		
 		self.init( conf.signal );
 	}
@@ -2299,7 +2393,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				state   : self.state,
 				session : self.session,
 			});
-			console.trace();
 			return;
 		}
 		

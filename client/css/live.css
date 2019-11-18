@@ -20,7 +20,7 @@ body #live {
 
 #init-cover {
 	z-index          : 999;
-	background-color : #222;
+	background-color : transparent;
 }
 
 #lists-container {
@@ -141,6 +141,26 @@ body #play-display #play-btn > i.fa {
 	background : linear-gradient( rgba( 30, 30, 30, 0.7 ), rgba( 30, 30, 30, 0.9 ));
 }
 
+.danger {
+	color            : #E74C3C;
+	background-color : transparent;
+}
+
+.warning {
+	color            : #F1C40F;
+	background-color : transparent;
+}
+
+.accept {
+	color            : #27ae60;
+	background-color : transparent;
+}
+
+.available {
+	color            : rgb( 53, 205, 255 );
+	background-color : transparent;
+}
+
 .btn,
 .mini-rtc-spinner > div,
 .std-icon {
@@ -162,6 +182,10 @@ body #play-display #play-btn > i.fa {
 .btn.text {
 	width   : auto;
 	padding : 0 0.5em;
+}
+
+.btn.text i {
+	margin-right : 0.3em;
 }
 
 .list-head-icon {
@@ -188,13 +212,13 @@ body #play-display #play-btn > i.fa {
 	background-color : unset;
 }
 
-.btn.accept { color : rgb( 148, 255, 42 ); }
+.btn.accept { color : #27ae60; }
 .btn.accept:hover {}
 .btn.available { color : rgb( 53, 205, 255 ); }
 .btn.available:hover {}
-.btn.danger { color : rgb( 255, 65, 17 ); }
+.btn.danger { color : #E74C3C; }
 .btn.danger:hover {}
-.btn.warning { color : rgb( 255, 183, 42 ); }
+.btn.warning { color : #F1C40F; }
 .btn.warning:hover {}
 .btn.disable {
 	opacity : 0.3;
@@ -266,8 +290,8 @@ body #play-display #play-btn > i.fa {
 
 .btn.round-bg.danger {
 	color            : #fff;
-	background-color : #bb0000;
-	border-color     : #bb0000;
+	background-color : #9a3126;
+	border-color     : #9a3126;
 }
 
 .btn.round-bg.inverted.danger {
@@ -275,7 +299,7 @@ body #play-display #play-btn > i.fa {
 }
 
 .btn.inverted .svg {
-	fill : red;
+	fill : #E74C3C;
 }
 
 svg.svg {
@@ -779,7 +803,7 @@ i.svg.camera-off {
 .state-additional .state-value {}
 
 .main-rtc .main-state-error {
-	color : red;
+	color : #E74C3C;
 }
 
 .main-rtc-spinner {
@@ -1020,11 +1044,12 @@ i.svg.camera-off {
 
 .muted,
 .blinded {
+	color : #E74C3C;;
 }
 
 .remote-mute,
 .remote-blind {
-	color : red;
+	color : #E74C3C;;
 }
 
 #live-content {
@@ -1082,10 +1107,12 @@ body#hello #hangup-btn {
 
 body#hello #hangup-btn > i {
 	transform : rotate( 135deg );
+	position  : relative;
+	left      : -1px;
 }
 
 body#hello #hangup-btn i {
-	font-size: 180%;
+	font-size : 180%;
 }
 
 #share-link-view {
@@ -1101,7 +1128,7 @@ html body#hello select,
 html body#hello .input-wrap input {
 	color            : #eee;
 	background-color : #222;
-	border           : 1px solid #666;
+	border           : 1px solid #444;
 	padding          : 0.3em 0.5em;
 }
 
@@ -1161,7 +1188,7 @@ html body#hello select {
 #source-select .error-message {
 	padding          : 0.5em;
 	margin-bottom    : 0.5em;
-	background-color : rgb( 152, 59, 37 );
+	background-color : #9a3126;
 	color            : white;
 }
 
@@ -1538,15 +1565,15 @@ html body#hello select {
 	color : #efef81;
 }
 
-.init-nominal {
+.icon-nominal {
 	color : #72c143;;
 }
 
-.init-warning {
+.icon-warning {
 	color : rgb( 187, 175, 77 );
 }
 
-.init-error {
+.icon-error {
 	color : #ff3b3b;
 }
 
@@ -1727,4 +1754,108 @@ html body#hello select {
 .input-wrap input {
 	line-height : 1.75em;
 	
+}
+
+/*
+
+overlay
+
+*/
+
+.std-overlay {
+	border : 1px solid #333;
+}
+
+/*
+ status
+*/
+
+.status-container {
+	color      : #ddd;
+	overflow   : hidden;
+	
+}
+
+.status-msg {
+	border-top : 3px solid rgba(0,0,0,0.6);
+	margin-top : 6px;
+	padding    : 0.5em;
+}
+
+.status-msg .danger {
+	color            : #E74C3C;
+	background-color : transparent;
+}
+
+.status-msg .warning {
+	color            : #F1C40F;
+	background-color : transparent;
+}
+
+.status-msg .info {
+	
+}
+
+.status-msg .success {
+	color            : #27ae60;
+	background-color : transparent;
+}
+
+.status-error {
+	
+}
+
+.status-warning {
+	
+}
+
+.status-success {
+	
+}
+
+.status-main {
+	padding : 0 0.5em;
+}
+
+.status-icon.std-icon {
+	opacity: 1;
+}
+
+.status-head {
+	opacity: 0.8;
+}
+
+.status-title {
+	font-weight : bold;
+	font-size   : 110%;
+	line-height : 2em;
+}
+
+.status-close {
+	margin-left : 0.5em;
+}
+
+.status-content {
+	padding : 0 0.5em;
+}
+
+.status-explain {
+	
+}
+
+.status-buttons {
+	margin-top : 0.3em;
+}
+
+.status-buttons .btn:not(:first-child) {
+	margin-left : 1em;
+}
+
+.browser-capa-row {
+	line-height: 2em;
+}
+
+.status-ice-row {
+	padding : 0.5em;
+	line-height: 1.8em;
 }
