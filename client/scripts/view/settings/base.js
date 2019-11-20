@@ -40,12 +40,11 @@ library.view = library.view || {};
 	ns.Settings.prototype.settingsInit = function() {
 		const self = this;
 		self.view = window.View;
-		var fragments = document.getElementById( 'fragments' );
-		let fragString = fragments.innerHTML;
-		hello.template = new friendUP.gui.TemplateManager( fragString );
+		hello.template = friend.template;
 		
 		self.bindView();
-		self.send({ type : 'loaded'});
+		
+		window.View.loaded();
 	}
 	
 	ns.Settings.prototype.buildView = function() {
@@ -90,9 +89,6 @@ library.view = library.view || {};
 	ns.Settings.prototype.initialize = function( data ) {
 		const self = this;
 		console.log( 'Settings.initalize', data );
-		if ( data.commonFragments )
-			hello.template.addFragments( data.commonFragments );
-		
 		self.buildView();
 		self.container = document.getElementById( 'settings' );
 		
@@ -103,7 +99,7 @@ library.view = library.view || {};
 		self.setSettings( data.settings );
 		self.bindSettings();
 		
-		self.send({ type : 'ready' });
+		self.view.ready();
 	}
 	
 	ns.Settings.prototype.setSettings = function( data ) {

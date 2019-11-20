@@ -1435,7 +1435,7 @@ var hello = window.hello || {};
 		);
 		
 		function eSink( ...args ) {
-			console.log( 'MsgBuilder eSink', args );
+			//console.log( 'MsgBuilder eSink', args );
 		}
 		
 		self.container = document.getElementById( self.containerId );

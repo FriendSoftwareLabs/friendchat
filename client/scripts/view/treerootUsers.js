@@ -40,9 +40,8 @@ library.view = library.view || {};
 		self.view = window.View;
 		self.bindView();
 		self.bindEvents();
-		self.send({
-			type : 'loaded',
-		});
+		
+		View.loaded();
 	}
 	
 	ns.TreerootUsers.prototype.bindView = function() {
@@ -57,12 +56,8 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootUsers.prototype.initialize = function( data ) {
-		var self = this;
-		friend.template.addFragments( data.fragments );
-		var readyMsg = {
-			type : 'ready',
-		}
-		self.send( readyMsg );
+		const self = this;
+		window.View.ready();
 	}
 	
 	ns.TreerootUsers.prototype.addUserList = function( userlist ) {

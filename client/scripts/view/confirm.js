@@ -41,10 +41,7 @@ library.view = library.view || {};
 		View.setBody();
 		self.bindView();
 		self.bindEvents();
-		
-		self.view.sendMessage({
-			type : 'loaded',
-		});
+		window.View.loaded();
 	}
 	
 	ns.Confirm.prototype.bindView = function() {
@@ -66,9 +63,7 @@ library.view = library.view || {};
 		title.innerHTML = data.title;
 		message.innerHTML = data.message;
 		
-		self.view.sendMessage({
-			type : 'ready',
-		});
+		window.View.ready();
 	}
 	
 	ns.Confirm.prototype.close = function() {

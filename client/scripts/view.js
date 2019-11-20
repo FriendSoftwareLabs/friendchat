@@ -27,16 +27,20 @@ library.view = library.view || {};
 
 // PresenceChat
 (function( ns, undefined ) {
-	ns.PresenceChat = function( state, eventsink, onclose ) {
+	ns.PresenceChat = function( state, roomTitle, isPrivate ) {
 		const self = this;
 		library.component.EventEmitter.call( self, eventsink );
 		
-		self.state = state;
-		self.onclose = onclose;
+		self.roomTitle = roomTitle || null;
+		self.isPrivate = !!isPrivate;
 		
 		self.drop = null;
 		
-		self.init();
+		self.init( state );
+		
+		function eventsink( e ) {
+			//console.log( 'PresenceChat - eventsink', e );
+		}
 	}
 	
 	ns.PresenceChat.prototype =
@@ -81,6 +85,23 @@ library.view = library.view || {};
 		return self.view.isMinimized;
 	}
 	
+	ns.PresenceChat.prototype.updateState = function( state ) {
+		const self = this;
+		self.isPrivate = !!state.isPrivate;
+		self.setTitle( state.roomName );
+		
+		const data = {
+			state  : state,
+			emojii : hello.config.emojii,
+		};
+		
+		const init = {
+			type : 'initialize',
+			data : data,
+		};
+		self.view.send( init, true );
+	}
+	
 	ns.PresenceChat.prototype.close = function() {
 		const self = this;
 		delete self.initData;
@@ -92,9 +113,9 @@ library.view = library.view || {};
 	
 	// Private
 	
-	ns.PresenceChat.prototype.init = function() {
+	ns.PresenceChat.prototype.init = function( state ) {
 		const self = this;
-		var dropConf = {
+		const dropConf = {
 			toView : toView,
 			toChat : toChat,
 		};
@@ -114,11 +135,13 @@ library.view = library.view || {};
 		}
 		
 		const filePath = 'html/presence.html';
-		self.roomTitle = self.state.roomName;
-		self.isPrivate = self.state.isPrivate;
+		if ( state ) {
+			self.roomTitle = state.roomName;
+			self.isPrivate = state.isPrivate;
+		}
 		
 		let viewWidth = 700;
-		if ( self.state.isPrivate )
+		if ( self.isPrivate )
 			viewWidth = 500;
 		
 		const windowConf = {
@@ -127,11 +150,12 @@ library.view = library.view || {};
 			height : 450,
 		};
 		
-		const initData = {
-			state           : self.state,
-			commonFragments : hello.commonFragments,
-			emojii          : hello.config.emojii,
-		};
+		let initData = null;
+		if ( state )
+			initData = {
+				state  : state,
+				emojii : hello.config.emojii,
+			};
 		
 		self.view = new api.View(
 			filePath,
@@ -142,17 +166,16 @@ library.view = library.view || {};
 		);
 		
 		self.view.on( 'drag-n-drop', droppings );
+		self.view.on( 'attach', attach );
 		function droppings( e ) { self.drop.handle( e ); }
 		function eventSink( type, data ) {
 			self.emit( type, data );
 		}
 		
 		function closed( e ) {
-			if ( self.onclose )
-				self.onclose();
+			self.emit( 'close' );
 		}
 		
-		self.view.on( 'attach', attach );
 		function attach() {
 			var o = {
 				triggerFunction( items )
@@ -178,6 +201,9 @@ library.view = library.view || {};
 	
 	ns.PresenceChat.prototype.getTitle = function() {
 		const self = this;
+		if ( !self.roomTitle || !self.roomTitle.length )
+			return '   ';
+		
 		let roomTitle;
 		if ( self.isPrivate )
 			roomTitle = self.roomTitle + ' - ' + Application.i18n( 'i18n_private_chat' );
@@ -233,7 +259,6 @@ library.view = library.view || {};
 		const viewConf = {
 			roomName  : self.roomName,
 			idList    : idList,
-			fragments : hello.commonFragments,
 		};
 		self.view = new api.View(
 			filePath,
@@ -319,7 +344,6 @@ library.view = library.view || {};
 			height : 200,
 		};
 		const viewConf = {
-			fragments : hello.commonFragments,
 		};
 		
 		self.view = hello.app.createView(
@@ -441,7 +465,6 @@ library.view = library.view || {};
 		
 		const initData = {
 			state     : self.state,
-			fragments : hello.commonFragments,
 			config    : hello.config,
 		};
 		
@@ -634,7 +657,12 @@ library.view = library.view || {};
 			self.onevent( 'chat', chat );
 		}
 		
-		api.ApplicationStorage.get( 'live-settings', loadBack );
+		api.ApplicationStorage.get( 'live-settings' )
+			.then( loadBack )
+			.catch( e => {
+				console.log( 'Live.init - applicationStorage uncaught error', e );
+			});
+		
 		function loadBack( res ) {
 			const localSettings = res.data || {};
 			if ( !localSettings.preferedDevices )
@@ -644,7 +672,12 @@ library.view = library.view || {};
 		}
 		
 		function loadOldDevices( localSettings ) {
-			api.ApplicationStorage.get( 'prefered-devices', devBack );
+			api.ApplicationStorage.get( 'prefered-devices' )
+				.then( devBack )
+				.catch( e => {
+					console.log( 'Live.init - applicationStorage uncaught error', e );
+				});
+			
 			function devBack( res ) {
 				let devs = res.data;
 				localSettings.preferedDevices = devs;
@@ -675,7 +708,6 @@ library.view = library.view || {};
 			self.liveConf.localSettings = localSettings;
 			const viewConf = {
 				liveFragments : hello.liveCommonFragments,
-				fragments     : hello.commonFragments,
 				emojii        : hello.config.emojii,
 				liveConf      : self.liveConf,
 			};
@@ -753,7 +785,13 @@ library.view = library.view || {};
 		
 		self.settingsQueue = [];
 		self.settingsQueue.push( data );
-		api.ApplicationStorage.get( 'live-settings', getBack );
+		api.ApplicationStorage.get( 'live-settings' )
+			.then( getBack )
+			.catch( e => {
+				console.log( 'app.Live.storeLocalSetting - \
+					applicationStorage uncaught error', e );
+			});
+		
 		function getBack( res ) {
 			settings = res.data || {};
 			updateFromQueue( settings );
@@ -768,7 +806,12 @@ library.view = library.view || {};
 		}
 		
 		function save( settings ) {
-			api.ApplicationStorage.set( 'live-settings', settings, saveBack );
+			api.ApplicationStorage.set( 'live-settings', settings )
+				.then( saveBack )
+				.catch( e => {
+					console.log( 'app.Live.storeLocalSetting - \
+						applicationStorage uncaught error', e );
+				});
 			self.settingsQueue = null;
 			function saveBack( res ) {
 				//
@@ -827,7 +870,6 @@ library.view = library.view || {};
 		var self = this;
 		const initData = {
 			inputMap : self.inputMap,
-			fragments : hello.commonFragments || '',
 		};
 		self.view = hello.app.createView(
 			'html/form/' + self.file,
@@ -908,7 +950,6 @@ library.view = library.view || {};
 	ns.ComponentForm.prototype.init = function() {
 		var self = this;
 		const initData = {
-			fragments : hello.commonFragments,
 		};
 		
 		self.view = hello.app.createView(
@@ -996,7 +1037,6 @@ library.view = library.view || {};
 		
 		const initData = {
 			settings: self.settings,
-			commonFragments : hello.commonFragments,
 		};
 		
 		self.view = hello.app.createView(
@@ -1141,7 +1181,6 @@ library.view = library.view || {};
 		};
 		
 		const initData = {
-			fragments :  hello.commonFragments,
 		};
 		
 		self.view = hello.app.createView(
@@ -1275,7 +1314,6 @@ library.view = library.view || {};
 		
 		const initData = {
 			state : self.state,
-			commonFragments : hello.commonFragments,
 			emojii : hello.config.emojii,
 		};
 		
@@ -1529,7 +1567,6 @@ library.view = library.view || {};
 			height : 700,
 		};
 		const initData = {
-			fragments : hello.commonFragments,
 		};
 		self.view = hello.app.createView(
 			filePath,

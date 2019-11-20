@@ -54,14 +54,11 @@ library.component = library.component || {};
 		if ( window.View.appConf.hideLive )
 			self.toggleLiveBtns( false );
 		
-		self.appOnline = new library.component.AppOnline( window.View );
-		
 		self.view = window.View;
 		self.messages = document.getElementById( 'messages' );
 		self.placeholder = document.getElementById( 'message-confirm' );
 		self.placeholderText = document.getElementById( 'message-ph' );
 		
-		var fragments = document.getElementById( 'fragments' );
 		self.bottomScroller = new library.component.BottomScroller( 'messages' );
 		self.flourish = new library.component.Flourish( 'flourish-message' );
 		self.highlight = new library.component.Highlight({
@@ -87,9 +84,7 @@ library.component = library.component || {};
 		self.bindView();
 		self.bindEvents();
 		
-		self.view.sendMessage({
-			type : 'loaded',
-		});
+		window.View.loaded();
 		
 		// Timeout for loading messages
 		setTimeout( function()
@@ -258,7 +253,6 @@ library.component = library.component || {};
 		self.updateButtons( data.state );
 		
 		hello.config = data.config;
-		friend.template.addFragments( data.fragments );
 		
 		// parser
 		self.parser = new library.component.parse.Parser();
@@ -308,9 +302,7 @@ library.component = library.component || {};
 		self.setAvatarCss();
 		//self.toggleSmoothScroll( false );
 		
-		self.view.sendMessage({
-			type : 'ready',
-		});
+		self.view.ready();
 		
 		if ( 'DESKTOP' !== window.View.deviceType )
 			self.setFocus( true );

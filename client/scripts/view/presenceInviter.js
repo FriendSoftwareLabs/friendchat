@@ -42,7 +42,6 @@ library.view = library.view || {};
 	
 	ns.PresenceInviter.prototype.handleInit = function( info ) {
 		const self = this;
-		friend.template.addFragments( info.fragments );
 		self.roomName.textContent = '#' + info.roomName;
 		self.setList( info.idList );
 		

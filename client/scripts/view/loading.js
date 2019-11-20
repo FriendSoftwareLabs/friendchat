@@ -38,10 +38,11 @@ library.view = library.view || {};
 	}
 	
 	ns.Loading.prototype.init = function() {
-		var self = this;
+		const self = this;
 		View.setBody();
 		self.connecting = document.getElementById( 'connecting' );
 		
+		hello.template = friend.template;
 		self.view.on( 'initialize', onInit );
 		function onInit( e ) { self.initialize( e ); }
 		
@@ -51,11 +52,10 @@ library.view = library.view || {};
 	ns.Loading.prototype.initialize = function( data ) {
 		const self = this;
 		console.log( 'Loading.initialize', data );
-		window.hello.template = new friendUP.gui.TemplateManager( data.fragments );
 		self.status = new library.component.ConnState(
 			'conn-status',
 			window.View,
-			window.hello.template
+			hello.template
 		);
 		View.ready();
 	}

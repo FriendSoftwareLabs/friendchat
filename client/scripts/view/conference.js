@@ -28,13 +28,10 @@ library.view = library.view || {};
 // Conference
 (function( ns, undefined ) {
 	ns.Conference = function( fupConf ) {
-		if ( !( this instanceof ns.Conference ))
-			return new ns.Conference( fupConf );
-		
 		if ( fupConf )
 			console.log( 'view.Conference - fup conf apparently?', fupConf );
 		
-		var self = this;
+		const self = this;
 		
 		self.topic = '';
 		self.mode = '';
@@ -63,7 +60,6 @@ library.view = library.view || {};
 		if ( window.View.appConf.hideLive )
 			self.toggleLiveBtns();
 		
-		self.appOnline = new library.component.AppOnline( window.View );
 		self.view = window.View;
 		self.modes = [
 			'm',
@@ -139,9 +135,7 @@ library.view = library.view || {};
 			self.messages.classList.add( 'SmoothScrolling' );
 		}, 50 );
 		
-		self.send({
-			type : 'loaded',
-		});
+		window.View.loaded();
 	}
 	
 	ns.Conference.prototype.bindView = function() {
@@ -190,9 +184,6 @@ library.view = library.view || {};
 		var self = this;
 		var state = data.state;
 		self.user = state.user;
-		
-		if ( data.commonFragments )
-			friend.template.addFragments( data.commonFragments );
 		
 		// link expansion
 		var leConf = {
@@ -257,7 +248,7 @@ library.view = library.view || {};
 		self.setMode( state.mode );
 		self.moreParticipants( state.participants );
 		
-		self.send({ type : 'ready' });
+		window.View.ready();
 		self.doFlourish = true;
 		
 		if ( 'DESKTOP' == window.View.deviceType )

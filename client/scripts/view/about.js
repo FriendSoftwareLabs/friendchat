@@ -54,7 +54,7 @@ library.view = library.view || {};
 		versionBtn.addEventListener( 'click', showVersion, false );
 		legalBtn.addEventListener( 'click', showLegal, false );
 		
-		View.loaded();
+		window.View.loaded();
 		
 		function viewResize( e ) { self.handleResize( e ); }
 		function mouseMove( e ) { self.handleMouseMove( e ); }
@@ -94,6 +94,8 @@ library.view = library.view || {};
 		const infoStr = JSON.stringify( info );
 		input.value = infoStr;
 		btn.addEventListener( 'click', toClippy, false );
+		
+		window.View.ready();
 		
 		function check( info ) {
 			info.version = info.version || 'unknown';

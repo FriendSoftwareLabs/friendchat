@@ -47,9 +47,7 @@ library.view = library.view || {};
 		self.view.on( 'initialize', initialize );
 		function initialize( msg ) { self.initialize( msg ); }
 		
-		self.send({
-			type : 'loaded',
-		});
+		window.View.loaded();
 	}
 	
 	ns.CryptWarn.prototype.initialize = function( data ) {
@@ -57,6 +55,8 @@ library.view = library.view || {};
 		console.log( 'view.cryptwarn.initialize', data );
 		var cryptoOn = document.getElementById( 'crypto-host' );
 		cryptoOn.innerHTML = cryptoOn.innerHTML + data.host;
+		
+		window.View.ready();
 	}
 	
 	ns.CryptWarn.prototype.bindEvents = function() {

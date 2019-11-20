@@ -982,15 +982,20 @@ library.contact = library.contact || {};
 		self.setupLive( permissions );
 	}
 	
-	ns.PresenceRoom.prototype.openChat = function() {
+	ns.PresenceRoom.prototype.openChat = function( preView ) {
 		const self = this;
+		console.log( 'openChat - has preView', preView );
 		if ( self.chatView ) {
+			console.log( 'aready has chatView', self.chatView );
 			self.chatView.show();
 			return;
 		}
 		
 		if ( !self.initialized ) {
-			self.openChatPending = true;
+			console.log( 'PresenceRoom.openChat - no inited', preView );
+			self.openChatPending = {
+				view : preView || null,
+			};
 			return;
 		}
 		
@@ -1013,20 +1018,29 @@ library.contact = library.contact || {};
 			userId      : self.userId,
 		};
 		
-		self.chatView = new library.view.PresenceChat(
-			initData,
-			eventSink,
-			onClose
-		);
+		if ( preView ) {
+			console.log( 'PresenceRoom.openChat - has preView', preView );
+			self.chatView = preView;
+			preView.updateState( initData );
+		}
+		else {
+			console.log( 'PresenecRoom.openChat - no preview' );
+			self.chatView = new library.view.PresenceChat(
+				initData,
+				self.isPrivate
+			);
+		}
 		
 		self.chatView.on( 'chat', e => self.sendChatEvent( e ));
 		self.chatView.on( 'live', goLive );
 		self.chatView.on( 'contact-open', e => self.handleContactOpen( e ));
 		self.chatView.on( 'invite-show', e => self.showInviter( e ));
 		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
+		self.chatView.on( 'close', e => self.closeChat());
 		
 		function eventSink( e ) { console.log( 'unhandled chat view event', e ); }
 		function onClose( e ) {
+			console.log( 'app.PresenceRoom.onClose' );
 			self.closeChat();
 		}
 		
@@ -1131,7 +1145,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
-		console.log( 'PersenceRoom.handleInitialize', state );
 		self.users = state.users || {};
 		self.userIds = Object.keys( self.users );
 		self.peers = state.peers;
@@ -1217,8 +1230,9 @@ library.contact = library.contact || {};
 			}
 			
 			if ( self.openChatPending ) {
-				self.openChatPending = false;
-				self.openChat();
+				const pend = self.openChatPending;
+				self.openChatPending = null;
+				self.openChat( pend.view );
 			}
 			
 			self.updateActive();
@@ -1273,7 +1287,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handlePersistent = function( event ) {
 		const self = this;
-		console.log( 'handlePersistent', event );
 		self.persistent = event.persistent;
 		const persistent = {
 			type : 'persistent',
@@ -1289,7 +1302,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.setSettings = function( settings ) {
 		const self = this;
-		console.log( 'setSettings', settings );
 		const keys = Object.keys( settings );
 		keys.forEach( k => {
 			const value = settings[ k ];
@@ -1299,10 +1311,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.showSettings = function( event ) {
 		const self = this;
-		console.log( 'showSettings', {
-			event : event,
-			expect : self.expectSettings,
-		});
 		const settings = event;
 		if ( !self.expectSettings )
 			return;
@@ -1326,7 +1334,6 @@ library.contact = library.contact || {};
 			list.forEach( id => {
 				ids[ id.clientId ] = id;
 			});
-			console.log( 'authIdsBack', ids );
 			settings.authorized = {
 				authed : settings.authorized,
 				ids    : ids,
@@ -1371,7 +1378,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleSettingUpdate = function( event ) {
 		const self = this;
-		console.log( 'handleSettingsUpdate', event );
 		if ( !self.settings )
 			return;
 		
@@ -1477,6 +1483,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleWorkgroup = function( event ) {
 		const self = this;
+		console.log( 'handleWorkgroup', event );
 		if ( !self.workgroups )
 			return;
 		
@@ -1599,7 +1606,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
-		console.log( 'PresenceRoom.handleInvite', event );
 		if ( 'revoke' === event.type )
 			send( event );
 		else
@@ -1612,7 +1618,6 @@ library.contact = library.contact || {};
 		}
 		
 		function invitesBack( event ) {
-			console.log( 'invtesBack', event );
 			if ( event.data.reqId ) {
 				self.handleRequest( event.data.reqId, event.data );
 			}
@@ -1625,11 +1630,6 @@ library.contact = library.contact || {};
 				type : 'invite',
 				data : event,
 			};
-			
-			console.log( 'send', {
-				event : event,
-				live : self.live,
-			});
 			
 			if ( self.chatView )
 				self.chatView.send( inv );
@@ -1896,7 +1896,6 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.buildInvites = function( event ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
-			console.log( 'buildInvites', event );
 			if ( 'state' === event.type )
 				parseState( event.data )
 					.then( parseDone )
@@ -1974,14 +1973,12 @@ library.contact = library.contact || {};
 		}
 		
 		function parseState( state, callback ) {
-			console.log( 'parseState', state );
 			return new Promise(( resolve, reject ) => {
 				Promise.all( state.privateTokens.map( buildPriv ))
 					.then( privsDone )
 					.catch( err );
 				
 				function privsDone( privs ) {
-					console.log( 'privsDone', privs );
 					state.privateTokens = privs;
 					if ( state.publicToken )
 						buildPub();
@@ -2000,7 +1997,6 @@ library.contact = library.contact || {};
 				}
 				
 				function pubBack( conf ) {
-					console.log( 'pubBack', conf );
 					state.publicToken = conf;
 					resolve( state );
 				}
@@ -2447,17 +2443,25 @@ library.contact = library.contact || {};
 		*/
 	}
 	
-	ns.PresenceContact.prototype.openChat = function() {
+	ns.PresenceContact.prototype.openChat = function( preView ) {
 		const self = this;
+		console.log( 'openChat - has preView?', !!preView );
 		if ( !self.isOpen ) {
-			self.openChatPending = true;
+			self.openChatPending = {
+				view : preView || null,
+			};
 			self.open();
-		} else
-			self.openChatView();
+		} else {
+			if ( !preView && self.openChatPending )
+				preView = self.openChatPending.view;
+			
+			self.openChatView( preView );
+		}
 	}
 	
-	ns.PresenceContact.prototype.openChatView = function() {
+	ns.PresenceContact.prototype.openChatView = function( preView ) {
 		const self = this;
+		console.log( 'openChatView - has preView?', !!preView );
 		self.openChatPending = false;
 		if ( self.chatView ) {
 			self.chatView.show();
@@ -2479,19 +2483,20 @@ library.contact = library.contact || {};
 			userId      : self.userId,
 			contactId   : self.contactId,
 		};
-		self.chatView = new library.view.PresenceChat(
-			initData,
-			eventSink,
-			onClose
-		);
 		
+		if ( preView ) {
+			self.chatView = preView;
+			self.chatView.updateState( initData );
+		} else
+			self.chatView = new library.view.PresenceChat( initData );
+		
+		self.chatView.on( 'close', onClose );
 		self.chatView.on( 'chat', chat );
 		self.chatView.on( 'live', goLive );
 		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
 		
 		self.updateActive();
 		
-		function eventSink( e ) { console.log( 'unhandled chat view event', e ); }
 		function onClose( e ) {
 			self.closeChat();
 		}

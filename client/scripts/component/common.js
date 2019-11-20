@@ -315,7 +315,6 @@ inherits from EventEmitter
 				data      : request,
 			};
 			
-			console.log( 'RQ.request', reqWrap );
 			self.sendEvent( reqWrap );
 			
 			function handleResponse( error, response ) {
@@ -354,7 +353,7 @@ inherits from EventEmitter
 		const self = this;
 		const reqId = event.requestId;
 		const request = event.data;
-		self.callListener( req )
+		self.callListener( request )
 			.then( response )
 			.catch( error );
 		
@@ -379,7 +378,6 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.handleResponse = function( event ) {
 		const self = this;
-		console.log( 'RQ.handleResponse', event );
 		const reqId = event.requestId;
 		const err = event.error || null;
 		const res = err ? null : ( event.response || null );
@@ -397,10 +395,6 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.callListener = function( req ) {
 		const self = this;
-		console.log( 'callListener', {
-			type : self.type,
-			req  : req,
-		});
 		const type = req.type;
 		const data = req.data;
 		const listeners = self.eventToListener[ type ];
@@ -522,10 +516,8 @@ inherits from EventEmitter
 // IDENTITY
 (function( ns, undefined ) {
 	ns.Identity = function( conf ) {
-		if ( !( this instanceof ns.Identity ))
-			return new ns.Identity( conf );
-		
 		const self = this;
+		
 		self.init( conf );
 	}
 	
@@ -545,10 +537,18 @@ inherits from EventEmitter
 	
 	ns.Identity.prototype.init = function( conf ) {
 		const self = this;
-		if ( conf.UniqueID || conf.ID )
-			self.fromFCUser( conf );
+		let id = null;
+		try {
+			id = JSON.parse( JSON.stringify( conf ));
+		} catch( ex ) {
+			console.log( 'Identity.ini - failed to copy id', conf );
+			return;
+		}
+		
+		if ( id.UniqueID || id.ID )
+			self.fromFCUser( id );
 		else
-			self.fromIdentity( conf );
+			self.fromIdentity( id );
 		
 	}
 	
@@ -560,9 +560,8 @@ inherits from EventEmitter
 		self.name    = library.tool.htmlDecode( conf.FullName );
 		self.alias   = conf.Name;
 		self.email   = conf.Email;
-		self.avatar  = conf.Image; // || self.avatar;
+		self.avatar  = conf.Image;
 		self.level   = conf.Level;
-		
 	}
 	
 	ns.Identity.prototype.fromIdentity = function( conf ) {
@@ -573,7 +572,7 @@ inherits from EventEmitter
 			FullName : conf.name,
 			Name     : conf.alias,
 			Email    : conf.email,
-			Image    : conf.avatar, // || self.avatar,
+			Image    : conf.avatar,
 			Level    : conf.level,
 		};
 		
@@ -582,7 +581,7 @@ inherits from EventEmitter
 		self.name    = conf.name;
 		self.alias   = conf.alias;
 		self.email   = conf.email;
-		self.avatar  = conf.avatar, // || self.avatar;
+		self.avatar  = conf.avatar;
 		self.level   = conf.level;
 	}
 	

@@ -37,13 +37,11 @@ library.view = library.view || {};
 	}
 	
 	ns.AddImage.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.bindView();
 		self.bindEvents();
 		
-		self.view.sendMessage({
-			type : 'loaded',
-		});
+		View.loaded();
 	}
 	
 	ns.AddImage.prototype.bindView = function() {
@@ -57,9 +55,7 @@ library.view = library.view || {};
 		var self = this;
 		console.log( 'view.AddImage.initialize', data );
 		
-		self.view.sendMessage({
-			type : 'ready',
-		});
+		self.view.ready();
 	}
 	
 	ns.AddImage.prototype.bindEvents = function() {

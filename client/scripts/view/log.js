@@ -38,28 +38,18 @@ library.view = library.view || {};
 	}
 	
 	ns.Log.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.view = window.View;
 		
 		self.scrollAtBottom = true;
 		self.scrollBottomSnapDistance = 10;
 		self.messages = document.getElementById( 'messages' );
 		
-		self.loadLocalFragments();
-		
 		self.bindView();
 		self.bindEvents();
 		
-		self.view.sendMessage({
-			type : 'loaded',
-		});
+		View.loaded();
 	};
-	
-	ns.Log.prototype.loadLocalFragments = function( msg ) {
-		var self = this;
-		var fragments = document.getElementById( 'fragments' );
-		hello.template = new friendUP.gui.TemplateManager( fragments );
-	}
 	
 	ns.Log.prototype.bindView = function() {
 		var self = this;
@@ -166,9 +156,7 @@ library.view = library.view || {};
 	ns.Log.prototype.initialize = function( data ) {
 		var self = this;
 		hello.template.addFragments( data.fragments );
-		self.view.sendMessage({
-			type : 'ready'
-		});
+		self.view.ready();
 	}
 	
 	ns.Log.prototype.bindEvents = function() {

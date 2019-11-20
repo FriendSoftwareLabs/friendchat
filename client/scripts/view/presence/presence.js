@@ -43,11 +43,11 @@ library.view = library.view || {};
 	ns.Presence.prototype.init = function() {
 		const self = this;
 		window.View.setBody();
+		window.View.showLoading( true );
 		if ( window.View.appSettings )
 			self.compact = !!window.View.appSettings.compactChat;
 		
 		self.buildUserList();
-		self.appOnline = new library.component.AppOnline( View );
 		
 		// scroll to bottom on new message
 		self.messageScroller = new library.component.BottomScroller( 'messages' );
@@ -78,7 +78,8 @@ library.view = library.view || {};
 		self.bindConn();
 		
 		//
-		self.conn.loaded();
+		const keepLoading = true;
+		window.View.loaded( keepLoading );
 	}
 	
 	ns.Presence.prototype.buildUserList = function() {
@@ -301,8 +302,12 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleInitialize = function( conf ) {
 		const self = this;
+		/*
+		if ( 'DESKTOP' !== window.View.deviceType )
+			self.backBtn.classList.toggle( 'hidden', false );
+		*/
+		
 		hello.template = friend.template;
-		friend.template.addFragments( conf.commonFragments );
 		const state = conf.state;
 		
 		// things
@@ -479,7 +484,8 @@ library.view = library.view || {};
 			self.input.focus();
 		}
 		
-		self.conn.ready();
+		window.View.ready();
+		window.View.showLoading( false );
 		self.sendChatEvent({
 			type : 'log',
 			data : null,

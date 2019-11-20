@@ -140,7 +140,7 @@ var hello = window.hello || {};
 		);
 		
 		// Check if we *want* the inapp menu
-		if ( settings.inAppMenu ) {
+		if ( settings && settings.inAppMenu ) {
 			self.enableInAppMenu();
 		}
 		
@@ -194,57 +194,14 @@ var hello = window.hello || {};
 			el.classList.toggle( 'active', !!show );
 			btnEl.classList.toggle( 'active', !!show );
 		}
-		
-		/*
-		var btabs = document.getElementById( 'main-tabs' );
-		var eles = document.getElementsByTagName( '*' );
-		var tabs = [];
-		var pages = [];
-		for( var a = 0; a < eles.length; a++ ) {
-			if( eles[a].classList ) {
-				if( eles[a].classList.contains( 'page-item' ) ) {
-					pages.push( eles[a] );
-				}
-				if( eles[a].classList.contains( 'tab-item' ) ) {
-					tabs.push( eles[a] );
-				}
-			}
-		}
-		
-		function addTab( tab, pages, index ) {
-			tab.onclick = function() {
-				if ( self.search )
-					self.search.hide();
-				
-				pages[ index ].classList.add( 'active' );
-				this.classList.add( 'active' );
-				for( var b = 0; b < pages.length; b++ ) {
-					if( b != index ) {
-						pages[ b ].classList.remove( 'active' );
-						tabs[ b ].classList.remove( 'active' );
-					}
-				}
-			}
-			if( index == 0 )
-				tab.onclick();
-		}
-		for( var a = 0; a < tabs.length; a++ ) {
-			addTab( tabs[a], pages, a );
-		}
-		*/
 	}
 	
 	ns.Main.prototype.enableInAppMenu = function() {
 		const self = this;
 		const menu = document.getElementById( 'menu-btn' );
 		if ( menu )
-			menu.classList.remove( 'hidden' );
-		
-		const head = document.getElementById( 'head' );
-		if ( head )
-			head.classList.remove( 'PaddingRight' );
+			menu.classList.toggle( 'hidden', false );
 	}
-	
 	
 })( library.view );
 
@@ -625,6 +582,7 @@ var hello = window.hello || {};
 		self.itemOrder = new library.component.ListOrder( 'recent-active' );
 		
 		self.splash = document.getElementById( 'recent-splash' );
+		self.waiting = document.getElementById( 'recent-waiting' );
 		self.noRecent = document.getElementById( 'no-recent-convos' );
 		
 		self.welcomeBox = document.getElementById( 'welcome-box' );
@@ -641,6 +599,7 @@ var hello = window.hello || {};
 		else
 			showWelcome();
 		
+		//
 		function closeWelcome() {
 			self.toggleNoRecent();
 		}
@@ -660,11 +619,17 @@ var hello = window.hello || {};
 			delete self.welcomeBox;
 		}
 		
-		if ( waitingForHistory )
+		if ( waitingForHistory ) {
+			self.isWaiting = true;
+			self.waiting.classList.toggle( 'hidden', false );
 			return;
+		}
 		
-		if ( !self.noRecent )
-			return;
+		if ( self.isWaiting ) {
+			self.waiting.classList.toggle( 'hidden', true );
+			self.isWaiting = false;
+			window.View.showLoading( false );
+		}
 		
 		if ( self.active.firstChild )
 			self.noRecent.classList.toggle( 'hidden', true );
@@ -726,7 +691,6 @@ var hello = window.hello || {};
 	
 	ns.Recent.prototype.addQuery = function( modId, source ) {
 		const self = this;
-		console.log( 'addQuery', source );
 		const mod = self.modules[ modId ];
 		if ( !mod )
 			return;

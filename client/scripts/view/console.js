@@ -27,10 +27,7 @@ library.view = library.view || {};
 
 (function( ns, undefined ) {
 	ns.Console = function( event ) {
-		if ( !( this instanceof ns.Console ))
-			return new ns.Console( event );
-		
-		var self = this;
+		const self = this;
 		self.view = null;
 		self.input = null;
 		self.messages = null;
@@ -40,7 +37,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Console.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.sendLog = [];
 		self.sendLogCurrentIdnex = 0;
 		self.view = window.View;
@@ -65,16 +62,13 @@ library.view = library.view || {};
 		self.bindView();
 		self.bindEvents();
 		
-		self.view.sendMessage({
-			type : 'loaded',
-		});
+		window.View.loaded();
 		
 	}
 	
 	ns.Console.prototype.loadLocalFragments = function() {
-		var self = this;
-		var fragments = document.getElementById( 'fragments' );
-		hello.template = new friendUP.gui.TemplateManager( fragments );
+		const self = this;
+		hello.template = friend.template;
 	}
 	
 	ns.Console.prototype.bindView = function() {
@@ -122,13 +116,8 @@ library.view = library.view || {};
 	}
 	
 	ns.Console.prototype.initialize = function( data ) {
-		var self = this;
-		if ( data.fragments )
-			hello.template.addFragments( data.fragments );
-		
-		self.view.sendMessage({
-			type : 'ready',
-		});
+		const self = this;
+		window.View.ready();
 	}
 	
 	ns.Console.prototype.handleLog = function( msg ) {

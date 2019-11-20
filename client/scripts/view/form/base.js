@@ -28,10 +28,7 @@ library.view = library.view || {};
 // COMPONENTFORM
 (function( ns, undefined ) {
 	ns.ComponentForm = function() {
-		if ( !( this instanceof ns.ComponentForm ))
-			return new ns.ComponentForm();
-		
-		var self = this;
+		const self = this;
 		self.inputs = [];
 		self.container = null;
 		
@@ -39,11 +36,9 @@ library.view = library.view || {};
 	}
 	
 	ns.ComponentForm.prototype.initComponentForm = function() {
-		var self = this;
-		const frags = document.getElementById( 'fragments' );
-		let fragStr = frags.innerHTML;
-		fragStr = View.i18nReplaceInString( fragStr );
-		hello.template = new friendUP.gui.TemplateManager( fragStr );
+		const self = this;
+		hello.template = friend.template;
+		
 		self.buildView();
 		
 		self.view = window.View;
@@ -68,10 +63,10 @@ library.view = library.view || {};
 		
 		if ( !self.setup )
 			throw new Error( 'ComponentForm - setup() not implemented' );
+		
 		self.setup();
-		self.send({
-			type : 'loaded',
-		});
+		
+		window.View.loaded();
 	}
 	
 	ns.ComponentForm.prototype.buildView = function() {
@@ -99,9 +94,7 @@ library.view = library.view || {};
 		
 		self.overlay = new library.component.FormOverlay( self.form.id );
 		
-		self.send({
-			type : 'ready',
-		});
+		window.View.ready();
 	}
 	
 	ns.ComponentForm.prototype.buildForm = function() {

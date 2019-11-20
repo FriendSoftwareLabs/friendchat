@@ -1166,7 +1166,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Account.prototype.init = function( parentView ) {
 		const self = this;
-		hello.app.setSettings( self.settings );
+		hello.setSettings( self.settings );
 		self.conn = new library.system.Message({
 			id : 'account',
 			handler : receiveMsg,
@@ -1274,7 +1274,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		handler( update.value );
-		hello.app.setSettings( self.settings );
+		hello.setSettings( self.settings );
 	}
 	
 	ns.Account.prototype.updatePopupChat = function( value ) {

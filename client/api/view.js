@@ -92,8 +92,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.ViewEvent.prototype.receiveEvent = function( e ) {
-		
-		var self = this;
+		const self = this;
 		if ( !e.data ) {
 			console.log( 'View.receiveEvent - no data', e );
 			return;
@@ -129,10 +128,9 @@ var friend = window.friend || {};
 	}
 	
 	ns.ViewEvent.prototype.viewEvent = function( msg ) {
-		var self = this;
+		const self = this;
 		self.emit( msg.type, msg.data );
 	}
-	
 	
 	ns.ViewEvent.prototype.notify = function( msg ) {
 		var self = this;
@@ -169,12 +167,9 @@ var friend = window.friend || {};
 // View
 (function( ns, undefined ) {
 	ns.View = function() {
-		if ( !( this instanceof ns.View ))
-			return new ns.View();
+		const self = this;
+		api.ViewEvent.call( self );
 		
-		api.ViewEvent.call( this );
-		
-		var self = this;
 		self.id = null;
 		self.applicationId = null;
 		self.authId = null;
@@ -318,34 +313,33 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.setBody = function( conf ) {
 		const self = this;
-		if ( !friend.template )
-			friend.template = new friendUP.gui.TemplateManager();
-		
-		const frags = document.getElementById( 'fragments' );
-		if ( !frags )
-			return false;
-		
-		var fragStr = frags.innerHTML;
-		fragStr = View.i18nReplaceInString( fragStr );
-		friend.template.addFragments( fragStr );
 		conf = conf || {};
 		const el = friend.template.getElement( 'body-tmpl', conf );
 		document.body.appendChild( el );
 		return true;
 	}
 	
-	ns.View.prototype.loaded = function() {
+	ns.View.prototype.showLoading = function( show ) {
 		const self = this;
-		self.sendMessage({
-			type : 'loaded',
-		});
+		if ( !self.connState ) {
+			console.log( 'view.showLoading - no conn state' );
+			return;
+		}
+		
+		self.connState.showLoading( !!show );
+	}
+	
+	ns.View.prototype.loaded = function( keepLoading ) {
+		const self = this;
+		if ( self.connState && !keepLoading )
+			self.connState.setReady();
+		
+		self.sendTypeEvent( 'loaded', 'yep, its true' );
 	}
 	
 	ns.View.prototype.ready = function() {
 		const self = this;
-		self.sendMessage({
-			type : 'ready',
-		});
+		self.sendTypeEvent( 'ready' );
 	}
 	
 	ns.View.prototype.close = function( msg ) {
@@ -394,6 +388,8 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.setIsLoading = function( isLoading ) {
 		const self = this;
+		return;
+		
 		document.body.classList.toggle( 'Loading', isLoading );
 	}
 	
@@ -449,10 +445,21 @@ var friend = window.friend || {};
 		}
 		
 		self.setIsLoading( false );
-		self.activate();
+		//self.activate();
 		self.sendBase({
 			type: 'notify',
 		});
+	}
+	
+	ns.View.prototype.loadFragments = function() {
+		const self = this;
+		const frags = document.getElementById( 'fragments' );
+		if ( !frags )
+			return false;
+		
+		let fragStr = frags.innerHTML;
+		fragStr = View.i18nReplaceInString( fragStr );
+		friend.template.addFragments( fragStr );
 	}
 	
 	ns.View.prototype.initialize = function( conf ) {
@@ -473,10 +480,19 @@ var friend = window.friend || {};
 		if ( !!self.config.isDev )
 			self.initLogSock();
 		
-		self.setBaseCss( baseCssLoaded );
+		if ( self.config.translations )
+			self.translations = self.config.translations;
 		
-		if ( self.config )
-			self.handleConf();
+		if ( !friend.template )
+			friend.template = new friendUP.gui.TemplateManager( self.config.fragments );
+		
+		self.loadFragments();
+		
+		if ( self.config.viewTheme )
+			self.setViewTheme( self.config.viewTheme );
+		
+		self.connState = new api.ConnState( 'hello' );
+		self.setBaseCss( baseCssLoaded );
 		
 		// mousedown listeing
 		document.body.addEventListener( 'mousedown', mouseDownThings, false );
@@ -498,6 +514,7 @@ var friend = window.friend || {};
 			'metaKey',
 			'altKey',
 		];
+		
 		document.body.addEventListener( 'keydown', onKeyDown, false );
 		document.body.addEventListener( 'keyup', onKeyUp, false );
 		
@@ -542,7 +559,6 @@ var friend = window.friend || {};
 			return;
 		
 		self.logSock = new api.LogSockView();
-		console.log( 'View.initLogSock', window.View.deviceType );
 	}
 	
 	ns.View.prototype.handleKeyDown = function( e ) {
@@ -668,15 +684,6 @@ var friend = window.friend || {};
 			
 			el.parentNode.removeChild( el );
 		}
-	}
-	
-	ns.View.prototype.handleConf = function() {
-		var self = this;
-		if ( self.config.viewTheme )
-			self.setViewTheme( self.config.viewTheme );
-		
-		if ( self.config.translations )
-			self.translations = self.config.translations;
 	}
 	
 	ns.View.prototype.register = function() {
@@ -947,6 +954,7 @@ var friend = window.friend || {};
 			}
 		}
 		
+		console.log( 'themeData', themeData );
 		if( friend.themeStyleElement )
 			friend.themeStyleElement.innerHTML = '';
 		else
@@ -1141,6 +1149,287 @@ body .View.Active.IconWindow ::-webkit-scrollbar-thumb
 })( api );
 
 window.View = new api.View();
+
+
+// ConnState
+(function( ns, undefined ) {
+	ns.ConnState = function( parentId ) {
+		const self = this;
+		self.pId = parentId;
+		
+		self.el = null;
+		
+		self.init();
+	}
+	
+	// Public
+	
+	ns.ConnState.prototype.showLoading = function( show ) {
+		const self = this;
+		self.keepLoading = show;
+		if ( show )
+			self.setLoading();
+		else
+			self.setOnline();
+	}
+	
+	ns.ConnState.prototype.setReady = function() {
+		const self = this;
+		self.keepLoading = false;
+		self.setOnline();
+	}
+	
+	ns.ConnState.prototype.set = function( state ) {
+		const self = this;
+		self.conn.handle( state );
+	}
+	
+	ns.ConnState.prototype.close = function() {
+		const self = this;
+		delete self.pId
+		delete self.el;
+		delete self.loading;
+		delete self.connecting;
+		delete self.reconnect;
+		delete self.denied;
+		
+		if ( !self.conn )
+			return;
+		
+		self.conn.close();
+		delete self.conn;
+	}
+	
+	// Priv
+	
+	ns.ConnState.prototype.init = function() {
+		const self = this;
+		self.build();
+		self.conn = new library.component.EventNode( 'conn-state', window.View, eventSink );
+		self.conn.on( 'load', load );
+		self.conn.on( 'connect', connect );
+		self.conn.on( 'session', session );
+		self.conn.on( 'close', close );
+		self.conn.on( 'timeout', timeout );
+		self.conn.on( 'error', error );
+		self.conn.on( 'resume', resume );
+		self.conn.on( 'wait-reconnect', reconnect );
+		self.conn.on( 'access-denied', denied );
+		
+		function load( e ) { self.handleLoad( e ); }
+		function connect( e ) { self.handleConnect( e ); }
+		function session( e ) { self.handleOnline( e ); }
+		function close( e ) { self.handleClose( e ); }
+		function timeout( e ) { console.log( 'ConnState.timeout', e ); }
+		function error( e ) { self.handleError( e ); }
+		function resume( e ) { self.handleResume( e ); }
+		function reconnect( e ) { self.handleReconnect( e ); }
+		function denied( e ) { self.handleDenied( e ); }
+		
+		function eventSink( ) {
+			console.log( 'ConnState - unknown event', arguments );
+		}
+	}
+	
+	ns.ConnState.prototype.handleLoad = function( data ) {
+		const self = this;
+		self.setLoading();
+	}
+	
+	ns.ConnState.prototype.handleOnline = function( sid ) {
+		const self = this;
+		if ( self.keepLoading )
+			self.setLoading();
+		else
+			self.setOnline();
+	}
+	
+	ns.ConnState.prototype.setLoading = function() {
+		const self = this;
+		self.showUI( true );
+		self.hideProgressStates();
+	}
+	
+	ns.ConnState.prototype.setOnline = function() {
+		const self = this;
+		self.showError( false );
+		self.isOnline = true;
+		self.showUI( false );
+	}
+	
+	ns.ConnState.prototype.handleConnect = function( e ) {
+		const self = this;
+		self.showUI( true );
+		self.hideProgressStates();
+	}
+	
+	
+	ns.ConnState.prototype.handleClose = function( e ) {
+		const self = this;
+		self.showUI( true );
+	}
+	
+	ns.ConnState.prototype.handleError = function( err ) {
+		const self = this;
+		self.showUI( true );
+		self.hideErrorStates();
+		self.hideProgressStates();
+		self.showError( true );
+		self.errorMessage.textContent = err;
+		self.error.classList.toggle( 'hidden', false );
+		self.reconnect.classList.toggle( 'hidden', false );
+	}
+	
+	ns.ConnState.prototype.handleResume = function( event ) {
+		const self = this;
+		self.showUI( true );
+		self.hideProgressStates();
+		//self.loading.classList.toggle( 'hidden', false );
+	}
+	
+	ns.ConnState.prototype.handleReconnect = function( event ) {
+		const self = this;
+		self.showError( false );
+		self.showUI( true );
+		self.hideErrorStates();
+		self.hideProgressStates();
+		//self.connecting.classList.toggle( 'hidden', false );
+		self.reconnect.classList.toggle( 'hidden', false );
+		/*
+		const cont = document.getElementById( 'conn-state-rc-bar-container' );
+		const bar = document.getElementById( 'conn-state-rc-bar' );
+		if ( !event.time ) {
+			hideBar();
+			return;
+		}
+		
+		if ( self.reconnectFrame ) {
+			window.cancelAnimationFrame( self.reconnectFrame );
+			self.reconnectFrame = null;
+		}
+		
+		bar.style.width = '100%';
+		let start = Date.now();
+		let end = event.time;
+		let total = end - start;
+		
+		step();
+		showBar();
+		
+		function step() {
+			self.reconnectFrame = window.requestAnimationFrame( update );
+		}
+		
+		function update() {
+			let now = Date.now();
+			if ( now > end ) {
+				hideBar();
+				return;
+			}
+			
+			let left = end - now;
+			let p = ( left / total );
+			let percent = Math.floor( p * 100 );
+			bar.style.width = percent + '%';
+			
+			step();
+		}
+		
+		function showBar() {
+			bar.classList.toggle( 'hidden', false );
+		}
+		
+		function hideBar() {
+			bar.classList.toggle( 'hidden', true );
+		}
+		*/
+	}
+	
+	ns.ConnState.prototype.handleDenied = function( host ) {
+		const self = this;
+		self.showUI( true );
+		self.hideErrorStates();
+		self.showError( true );
+		self.denied.classList.toggle( 'hidden', false );
+	}
+	
+	ns.ConnState.prototype.showUI = function( show ) {
+		const self = this;
+		self.el.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.ConnState.prototype.hideProgressStates = function() {
+		const self = this;
+		self.loading.classList.toggle( 'hidden', true );
+		self.connecting.classList.toggle( 'hidden', true );
+		self.reconnect.classList.toggle( 'hidden', true );
+	}
+	
+	ns.ConnState.prototype.hideErrorStates = function() {
+		const self = this;
+		self.denied.classList.toggle( 'hidden', true );
+		self.error.classList.toggle( 'hidden', true );
+	}
+	
+	ns.ConnState.prototype.showProgress = function( show ) {
+		const self = this;
+		self.progress.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.ConnState.prototype.showError = function( show ) {
+		const self = this;
+		self.errorHead.classList.toggle( 'hidden', !show );
+		self.progressHead.classList.toggle( 'hidden', show );
+		self.oops.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.ConnState.prototype.build = function() {
+		const self = this;
+		const ui = friend.template.getElement( 'conn-state-tmpl', {} );
+		const pEl = document.body;
+		pEl.appendChild( ui );
+		self.el = document.getElementById( 'conn-state-container' );
+		
+		// bind ui
+		let rcBtn = document.getElementById( 'conn-state-reconnect-btn' );
+		let qBtn = document.getElementById( 'conn-state-quit-btn' );
+		self.errorHead = document.getElementById( 'conn-state-error-head' );
+		self.progressHead = document.getElementById( 'conn-state-progress-head' );
+		self.oops = document.getElementById( 'conn-state-oops' );
+		self.yay = document.getElementById( 'conn-state-yay' );
+		self.loading = document.getElementById( 'conn-state-loading' );
+		self.connecting = document.getElementById( 'conn-state-connecting' );
+		self.reconnect = document.getElementById( 'conn-state-reconnect' );
+		self.denied = document.getElementById( 'conn-state-denied' );
+		self.error = document.getElementById( 'conn-state-error' );
+		self.errorMessage = document.getElementById( 'conn-state-error-msg' );
+		
+		rcBtn.addEventListener( 'click', reconnect, false );
+		qBtn.addEventListener( 'click', quit, false );
+		
+		function reconnect( e ) {
+			self.send({
+				type : 'reconnect',
+			});
+		}
+		
+		function quit( e ) {
+			self.send({
+				type : 'quit',
+			});
+		}
+	}
+	
+	ns.ConnState.prototype.send = function( event ) {
+		const self = this;
+		if ( !window.View )
+			return;
+		
+		window.View.sendTypeEvent( 'conn-state', event );
+	}
+	
+})( api );
+
 
 // Paste handler handles pasting of files and media ----------------------------
 ( function( ns, undefined )

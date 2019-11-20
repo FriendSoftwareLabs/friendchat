@@ -66,6 +66,9 @@ library.view = library.view || {};
 		console.log( 'init', initData );
 		const container = document.getElementById( 'sessions' );
 		initData.sessions.forEach( add );
+		
+		window.View.ready();
+		
 		function add( session ) {
 			console.log( 'add', session );
 			let peers = session.peers.length;

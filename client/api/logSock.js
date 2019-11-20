@@ -270,14 +270,14 @@ var api = window.api || {};
 		try {
 			eventStr = JSON.stringify( event );
 		} catch( e ) {
-			console.log( 'LogSock - json err', e );
+			//console.log( 'LogSock - json err', e );
 			return;
 		}
 		
 		try {
 			self.conn.send( eventStr );
 		} catch( e ) {
-			console.log( 'LogSock - send err', e );
+			//console.log( 'LogSock - send err', e );
 			return;
 		}
 	}

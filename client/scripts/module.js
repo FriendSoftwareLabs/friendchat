@@ -482,7 +482,11 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.setLocalData = function( data, callback ) {
 		const self = this;
-		api.ApplicationStorage.setItem( self.clientId, data, setBack );
+		api.ApplicationStorage.setItem( self.clientId, data )
+			.then( setBack )
+			.catch( e => {
+				console.log( 'BaseModule.setLocalData - applicationStorage uncaught error', e );
+			});
 		function setBack( result ) {
 			if ( result.success == false ) {
 				var err = result.message || 'error';
@@ -496,7 +500,12 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.getLocalData = function( callback ) {
 		const self = this;
-		api.ApplicationStorage.getItem( self.clientId, getBack );
+		api.ApplicationStorage.getItem( self.clientId )
+			.then( getBack )
+			.catch( e => {
+				console.log( 'BaseModule.getLocalData - applicationStorage uncaught error', e );
+			});
+		
 		function getBack( result ) {
 			if ( !hasData( result.data )) {
 				callback( null );
@@ -518,7 +527,11 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.clearLocalData = function( callback ) {
 		const self = this;
-		api.ApplicationStorage.removeItem( self.clientId, removeBack );
+		api.ApplicationStorage.removeItem( self.clientId )
+			.then( removeBack )
+			.catch( e => {
+				console.log( 'BaseModule.clearLocalData - applicationStorage uncaught error', e );
+			});
 		function removeBack( result ) {
 			if ( !result.success ) {
 				var err = result.message || 'some error';
@@ -746,28 +759,30 @@ library.module = library.module || {};
 		});
 	}
 	
-	ns.Presence.prototype.openChat = function( conf ) {
+	ns.Presence.prototype.openChat = function( conf, view ) {
 		const self = this;
 		if ( !self.initialized ) {
 			console.log( 'Presence.openChat - not initialize, queueueueing' );
-			self.queueEvent( 'openChat', [ conf ] );
+			self.queueEvent( 'openChat', [ conf, view ] );
 			return;
 		}
 		
 		const item = self.getTypeItem( conf.id, conf.type );
 		if ( !item ) {
 			console.log( 'Presence.openChat - chat not found for, queueueueueing', conf );
-			self.openChatWaiting.push( conf.id );
+			conf.view = view || null;
+			self.openChatWaiting.push( conf );
 			return;
 		}
 		
 		if ( !item.openChat ) {
 			console.log( 'Presence.openChat - item not ready' );
-			self.openChatWaiting.push( conf.id );
+			conf.view = view || null;
+			self.openChatWaiting.push( conf );
 			return;
 		}
 		
-		item.openChat();
+		item.openChat( view );
 	}
 	
 	ns.Presence.prototype.goLiveAudio = function( conf ) {
@@ -1184,14 +1199,14 @@ library.module = library.module || {};
 			};
 			self.toView( cAdd );
 			
-			if ( self.checkOpenChatWaiting( cId ))
-				room.openChat();
+			const waitConf = self.checkOpenChatWaiting( cId );
+			if ( waitConf )
+				room.openChat( waitConf.view || null );
 		}
 	}
 	
 	ns.Presence.prototype.handleContactOnline = function( event ) {
 		const self = this;
-		console.log( 'handleContactOnline', event );
 		const clientId = event.clientId;
 		const userState = event.data;
 		const online = {
@@ -1222,16 +1237,17 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.checkOpenChatWaiting = function( clientId ) {
 		const self = this;
-		let isWaiting = false;
-		self.openChatWaiting = self.openChatWaiting.filter( wId => {
-			if ( wId !== clientId )
+		let conf = false;
+		self.openChatWaiting = self.openChatWaiting.filter( c => {
+			if ( c.id !== clientId )
 				return true; // keep entry
 			
-			isWaiting = true;
+			// found
+			conf = c;
 			return false;
 		});
 		
-		return isWaiting;
+		return conf;
 	}
 	
 	ns.Presence.prototype.handleContactRemove = function( clientId ) {
@@ -1541,8 +1557,9 @@ library.module = library.module || {};
 		
 		room.on( 'contact', contactEvent );
 		
-		if ( self.checkOpenChatWaiting( cId ))
-			room.openChat();
+		const waitConf = self.checkOpenChatWaiting( cId );
+		if ( waitConf )
+			room.openChat( waitConf.view );
 		
 		return room;
 		
@@ -1564,7 +1581,10 @@ library.module = library.module || {};
 			return;
 		}
 		
-		self.openChatWaiting.push( contactId );
+		const waitConf = {
+			id : contactId,
+		};
+		self.openChatWaiting.push( waitConf );
 		let start = {
 			type : 'start',
 			data : contactId,

@@ -48,9 +48,7 @@ library.view = library.view || {};
 		self.view.on( 'initialize', initialize );
 		function initialize( msg ) { self.initialize( msg ); }
 		
-		self.send({
-			type : 'loaded',
-		});
+		View.loaded();
 	}
 	
 	ns.RtcAsk.prototype.initialize = function( data ) {
@@ -69,6 +67,8 @@ library.view = library.view || {};
 		
 		if ( data.activeSession )
 			showSessionWarning();
+		
+		window.View.ready();
 		
 		function setMessage( message ) {
 			self.inviteTime = Date.now();

@@ -44,12 +44,7 @@ library.component = library.component || {};
 	// Private
 	ns.Init.prototype.init = function() {
 		const self = this;
-		self.appOnline = new library.component.AppOnline( window.View );
-		
-		const fragments = document.getElementById( 'fragments' );
-		let fragStr = fragments.innerHTML;
-		fragStr = View.i18nReplaceInString( fragStr );
-		hello.template = new friendUP.gui.TemplateManager( fragStr );
+		hello.template = friend.template;
 		
 		//
 		const dropConf = {
@@ -74,11 +69,14 @@ library.component = library.component || {};
 		}
 		
 		//
+		/*
 		const loaded = {
 			type : 'loaded',
 			data : 'pølse',
 		};
 		self.conn.send( loaded );
+		*/
+		window.View.loaded();
 	}
 	
 	ns.Init.prototype.preInit = function( initConf ) {
@@ -149,7 +147,7 @@ library.component = library.component || {};
 		);
 		
 		function onready( err ) {
-			self.conn.send({ type : 'ready' });
+			window.View.ready();
 		}
 		
 		function onclose() {

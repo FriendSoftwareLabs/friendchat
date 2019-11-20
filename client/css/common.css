@@ -1,13 +1,21 @@
 /*
 
-friend blue: #2481D7
-friend grey: #808080;
-
 */
 
 /* because theme css lolll */
 .IconButton:hover {
 	border : 1px solid transparent;
+}
+
+body .busy-loading {
+	background       : url(/themes/friendup12/gfx/busy.png) no-repeat center center;
+	background-color : transparent;
+	height           : 2em;
+	width            : 2em;
+}
+
+body:not(.charcoal) .busy-loading {
+	filter : invert( 1 );
 }
 
 #hello .Off {
@@ -726,9 +734,9 @@ div.foldit-status {
 }
 
 #buttonpointer .native-menu-pointer {
-	float : left;
-	height : 150px;
-	width : 80px;
+	float        : left;
+	height       : 150px;
+	width        : 80px;
 	margin-right : 2em;
 	background-image: url( ../gfx/buttonpointer.png );
 }
@@ -810,13 +818,31 @@ div.foldit-status {
 /*
 	Conn state
 */
+#conn-state-container {
+	position : absolute;
+	top      : 0;
+	left     : 0;
+	right    : 0;
+	bottom   : 0;
+	z-index  : 1;
+}
+
+#conn-state-padder {
+	height: 50%;
+}
+
 #conn-state {
-	padding : 1em;
+	padding     : 1em;
+	margin-top  : -5em;
 }
 
 #conn-state-head {
-	font-size     : 130%;
-	margin-bottom : 0.3em;
+	font-size     : 120%;
+	margin-bottom : 0.5em;
+}
+
+#conn-state-progress-head {
+	font-size        : 180%;
 }
 
 .paddddd {
@@ -848,6 +874,8 @@ div.foldit-status {
 	position     : relative;
 	margin-left  : 0.2em;
 	height       : 0.7em;
+	min-width    :  3em;
+	margin       : 0.5em 0;
 }
 
 #conn-state-rc-bar {
@@ -866,8 +894,7 @@ html body .hidden {
 /* search */
 
 #search-bar {
-	padding : 0.5em 0;
-	padding-left : 0.8em;
+	padding : 0.5em 0.8em;
 }
 
 .search-input-content {
@@ -923,7 +950,7 @@ html body .hidden {
 
 .search-result-contact,
 .search-result-room {
-	padding : 0.5em;
+	padding       : 0.5em;
 	margin-bottom : 0.1em;
 }
 
@@ -942,8 +969,8 @@ html body .hidden {
 }
 
 .search-result-subscribe {
-	height: 100%;
-	width : 100%;
+	height : 100%;
+	width  : 100%;
 }
 
 .search-result-room .item-info,

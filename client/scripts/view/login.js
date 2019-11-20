@@ -48,9 +48,7 @@ library.view = library.view || {};
 		self.bindView();
 		self.bindEvents();
 		
-		self.view.sendMessage({
-			type : 'loaded',
-		});
+		View.loaded();
 	}
 	
 	ns.Login.prototype.bindView = function() {
@@ -63,11 +61,8 @@ library.view = library.view || {};
 		self.view.receiveMessage = receiveMessage; // messages unhandled by view.on
 		
 		function initailize( data ) {
-			friend.template.addFragments( data.fragments );
 			self.makeGuide();
-			self.view.sendMessage({
-				type : 'ready',
-			});
+			self.view.ready();
 		}
 		function add( msg ) { self.add( msg ); }
 		function remove( msg ) { self.remove( msg ); }

@@ -3397,15 +3397,13 @@ library.view = library.view || {};
 		self.notification = null;
 		self.account = null;
 		self.module = null;
-		
-		self.connState = null;
+		self.identity = null;
 		
 		self.init();
 	}
 	
 	ns.Main.prototype.close = function() {
 		const self = this;
-		self.connState.close();
 	}
 	
 	ns.Main.prototype.init = function() {
@@ -3414,9 +3412,8 @@ library.view = library.view || {};
 		self.bindView();
 		self.setTemplate();
 		
-		self.view.send({
-			type : 'loaded',
-		});
+		self.view.showLoading( true );
+		self.view.loaded( true );
 	}
 	
 	ns.Main.prototype.bindEvents = function() {
@@ -3440,41 +3437,36 @@ library.view = library.view || {};
 	ns.Main.prototype.bindView = function()	{
 		const self = this;
 		self.view.on( 'initialize', e => self.initialize( e ));
+		self.view.on( 'identity', e => self.updateIdentity( e ));
 		self.view.on( 'avatar', e => self.updateAvatar( e ));
+		self.view.on( 'settings', e => self.updateSettings( e ));
 	}
 	
 	ns.Main.prototype.initialize = function( data ) {
 		const self = this;
+		self.identity = data.identity || {};
 		self.recentHistory = data.recentHistory || [];
-		self.identity = data.identity;
 		self.setAvatar();
 		
-		let settings = data.account.settings;
-		hello.template.addFragments( data.fragments );
+		let settings = data.accSettings;
+		//hello.template.addFragments( data.fragments );
 		hello.template.addFragments( data.mainFragments );
 		
 		self.addMenu();
 		
-		// See if we have a simple gui? Then init.
 		if( self.initSimple )
 			self.initSimple( settings );
-		else
+		else {
 			self.initMain( settings );
-		
-		self.connState = new library.component.ConnState(
-			'online-status',
-			self.view,
-			hello.template
-		);
+			self.view.showLoading( false );
+		}
 		
 		self.account = new library.view.Account();
 		self.module = new library.view.ModuleControl(
 			self.recent || null
 		);
 		
-		self.view.send({
-			type : 'ready',
-		});
+		self.view.ready();
 	}
 	
 	ns.Main.prototype.initMain = function( settings ) {
@@ -3489,6 +3481,18 @@ library.view = library.view || {};
 		self.notification = new library.view.Notification( notificationRootId );
 	}
 	
+	ns.Main.prototype.updateSettings = function( settings ) {
+		const self = this;
+		if ( settings.inAppMenu )
+			self.enableInAppMenu();
+	}
+	
+	ns.Main.prototype.updateIdentity = function( id ) {
+		const self = this;
+		self.identity = id;
+		self.setAvatar();
+	}
+	
 	ns.Main.prototype.updateAvatar = function( event ) {
 		const self = this;
 		self.identity.avatar = event.avatar;
@@ -3497,15 +3501,15 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.setAvatar = function() {
 		const self = this;
-		const ava = document.getElementById( 'self-avatar' );
-		if ( !ava )
+		const avaEl = document.getElementById( 'self-avatar' );
+		if ( !avaEl )
 			return;
 		
 		if ( !self.identity || !self.identity.avatar )
 			return;
 		
-		ava.classList.toggle( 'default-avatar', false );
-		ava.style = "background-image : url(" + self.identity.avatar + " )";
+		avaEl.classList.toggle( 'default-avatar', false );
+		avaEl.style = "background-image : url(" + self.identity.avatar + " )";
 	}
 	
 	ns.Main.prototype.addMenu = function() {
@@ -3613,19 +3617,15 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.enableInAppMenu = function() {
 		const self = this;
-		var foot = document.getElementById( 'foot' );
-		var head = document.getElementById( 'head' );
-		foot.classList.add( 'hidden' );
-		head.classList.remove( 'hidden' );
+		const foot = document.getElementById( 'foot' );
+		const head = document.getElementById( 'head' );
+		foot.classList.toggle( 'hidden', true );
+		head.classList.toggle( 'hidden', false );
 	}
 	
-	ns.Main.prototype.setTemplate = function()
-	{
+	ns.Main.prototype.setTemplate = function() {
 		const self = this;
-		var fragments = document.getElementById( 'fragments' );
-		var fragStr = fragments.innerHTML;
-		fragStr = View.i18nReplaceInString( fragStr );
-		hello.template = new friendUP.gui.TemplateManager( fragStr );
+		hello.template = friend.template;
 	}
 	
 	ns.Main.prototype.receiveMessage = function( msg ) {
