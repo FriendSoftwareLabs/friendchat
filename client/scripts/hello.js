@@ -233,7 +233,7 @@ var hello = null;
 			}
 			
 			self.timeNow( 'getUserAvatar' );
-			self.getUserAvatar( userInfo.Image )
+			self.getUserAvatar()
 				.then( avaDone )
 				.catch( avaErr );
 			
