@@ -1159,6 +1159,9 @@ window.View = new api.View();
 		
 		self.el = null;
 		
+		self.isOnline = null;
+		self.keepLoading = false;
+		
 		self.init();
 	}
 	
@@ -1167,9 +1170,12 @@ window.View = new api.View();
 	ns.ConnState.prototype.showLoading = function( show ) {
 		const self = this;
 		self.keepLoading = show;
-		if ( show )
+		if ( show ) {
 			self.setLoading();
-		else
+			return;
+		}
+		
+		if ( !show && ( self.isOnline || ( null == self.isOnline )))
 			self.setOnline();
 	}
 	
@@ -1233,11 +1239,13 @@ window.View = new api.View();
 	
 	ns.ConnState.prototype.handleLoad = function( data ) {
 		const self = this;
+		self.isOnline = false;
 		self.setLoading();
 	}
 	
 	ns.ConnState.prototype.handleOnline = function( sid ) {
 		const self = this;
+		self.isOnline = true;
 		if ( self.keepLoading )
 			self.setLoading();
 		else
@@ -1259,6 +1267,7 @@ window.View = new api.View();
 	
 	ns.ConnState.prototype.handleConnect = function( e ) {
 		const self = this;
+		self.isOnline = false;
 		self.showUI( true );
 		self.hideProgressStates();
 	}
@@ -1266,11 +1275,13 @@ window.View = new api.View();
 	
 	ns.ConnState.prototype.handleClose = function( e ) {
 		const self = this;
+		self.isOnline = false;
 		self.showUI( true );
 	}
 	
 	ns.ConnState.prototype.handleError = function( err ) {
 		const self = this;
+		self.isOnline = false;
 		self.showUI( true );
 		self.hideErrorStates();
 		self.hideProgressStates();

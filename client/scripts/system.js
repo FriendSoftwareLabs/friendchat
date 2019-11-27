@@ -150,10 +150,13 @@ library.rtc = library.rtc || {};
 		
 		function handle( accounts ) {
 			if ( !accounts.length ) {
-				self.autoCreate( doneBack );
+				self.autoCreate()
+					.then( created )
+					.catch( e => console.log( 'Login, failed to autocreate', e ));
 				return;
 				
-				function doneBack( success ) {
+				
+				function created( success ) {
 					if ( success )
 						return;
 					
@@ -222,14 +225,17 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
-	ns.Login.prototype.autoCreate = function( successBack ) {
-		var self = this;
-		var data = {
-			name : hello.identity.alias,
-		};
-		
-		self.createAccount( data );
-		successBack( true );
+	ns.Login.prototype.autoCreate = function() {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			const data = {
+				name : hello.identity.alias,
+			};
+			
+			self.createAccount( data );
+			
+			return true;
+		});
 	}
 	
 	ns.Login.prototype.createAccount = function( data ) {
@@ -357,8 +363,8 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Login.prototype.done = function( msg ) {
-		var self = this;
-		var loginCallback = self.onlogin;
+		const self = this;
+		const loginCallback = self.onlogin;
 		self.onlogin = null;
 		
 		if ( loginCallback )

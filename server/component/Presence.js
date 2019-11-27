@@ -81,7 +81,6 @@ ns.Presence.prototype.init = function() {
 	function connUpdated( e ) { self.handleConnUpdate( e ); }
 	function loginUpdated( e ) { self.handleLoginUpdate( e ); }
 	
-	log( 'sending initialize to client' );
 	self.client.send({
 		type : 'initialize',
 		data : true,
@@ -722,13 +721,11 @@ ns.ServerConn.prototype.handleOpen = function() {
 		type : 'open',
 		data : Date.now(),
 	}
-	log( 'conn - handleOpen' );
 	self.emitState( status );
 }
 
 ns.ServerConn.prototype.handleClose = function() {
 	var self = this;
-	log( 'conn - handleClose' );
 	self.connected = false;
 	var status = {
 		type : 'offline',
@@ -745,7 +742,6 @@ ns.ServerConn.prototype.handleError = function( err ) {
 
 ns.ServerConn.prototype.handleEnded = function( err ) {
 	const self = this;
-	log( 'conn - handleEnded', err );
 	self.handleDisconnect( err );
 }
 
@@ -850,7 +846,7 @@ ns.ServerConn.prototype.tryParts = function() {
 	try {
 		obj = JSON.parse( whole );
 	} catch( e ) {
-		connLog( 'still nope on parts' );
+		//connLog( 'still nope on parts' );
 	}
 	
 	if ( !obj )

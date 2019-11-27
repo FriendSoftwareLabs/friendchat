@@ -210,7 +210,10 @@ var hello = null;
 			self.timeNow( 'getUser start' );
 			self.getUserInfo()
 				.then( userInfoBack )
-				.catch( e => error( 'ERR_LOAD_USERINFO' ));
+				.catch( e => {
+					console.log( 'e', e );
+					error( 'ERR_LOAD_USERINFO' );
+				});
 		}
 		
 		function userInfoBack( userInfo ) {

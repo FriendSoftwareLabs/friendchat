@@ -150,7 +150,7 @@ ns.Account.prototype.accountMsg = function( msg, sessionId ) {
 
 ns.Account.prototype.clientReady = function( firstLoginConf, sessionId ) {
 	var self = this;
-	if ( null != firstLoginConf )
+	if ( self.isFirstLogin )
 		self.doFirstLoginSetup( firstLoginConf );
 	else
 		self.mods.initializeClient( sessionId );
@@ -204,11 +204,11 @@ ns.Account.prototype.updateClientSetting = function( update ) {
 
 ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	const self = this;
-	log( 'doFirstLoginSetup', global.config );
+	conf = conf || {};
 	// save ui choice
 	self.saveSetting({
 		setting : 'advancedUI',
-		value   : conf.advancedUI,
+		value   : !!conf.advancedUI,
 	});
 	
 	// setup modCtrl
@@ -224,7 +224,6 @@ ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	*/
 	
 	mods = global.config.server.defaults.defaultModules;
-	log( 'doFirstLoginSetup - mods', mods );
 	self.mods.addDefaultModules( mods, self.name );
 }
 
@@ -242,7 +241,6 @@ ns.Account.prototype.setupModCtrl = function( allowAdvanced ) {
 
 ns.Account.prototype.logout = function() {
 	const self = this;
-	log( 'logout', self.name );
 	self.mods.close();
 	var onclose = self.onclose;
 	delete self.onclose;

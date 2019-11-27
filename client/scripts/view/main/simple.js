@@ -503,6 +503,8 @@ var hello = window.hello || {};
 		self.items = {};
 		self.itemOrder = null;
 		
+		self.loadingDone = false;
+		
 		self.init( containerId );
 	}
 	
@@ -545,10 +547,21 @@ var hello = window.hello || {};
 			items    : {},
 		};
 		const mod = self.modules[ moduleId ];
-		mod.addId = module.on( 'add', itemAdd );
-		mod.removeId = module.on( 'remove', itemRemove );
-		function itemAdd( item ) { self.handleItemAdd( moduleId, item ); }
-		function itemRemove( itemId ) { self.handleItemRemove( moduleId, itemId ); }
+		mod.addId = module.on( 'add', item => self.handleItemAdd( moduleId, item ));
+		mod.removeId = module.on( 'remove', itemId => self.handleItemRemove( moduleId, itemId ));
+		
+		if ( self.loadingDone )
+			return;
+		
+		if ( null != self.loadingTimeout )
+			return;
+		
+		self.loadingTimeout = window.setTimeout( wellWereWaiting, 1000 * 10 );
+		function wellWereWaiting() {
+			self.loadingTimeout = null;
+			self.doneLoading();
+			self.toggleNoRecent();
+		}
 	}
 	
 	ns.Recent.prototype.releaseModule = function( moduleId ) {
@@ -582,7 +595,7 @@ var hello = window.hello || {};
 		self.itemOrder = new library.component.ListOrder( 'recent-active' );
 		
 		self.splash = document.getElementById( 'recent-splash' );
-		self.waiting = document.getElementById( 'recent-waiting' );
+		//self.waiting = document.getElementById( 'recent-waiting' );
 		self.noRecent = document.getElementById( 'no-recent-convos' );
 		
 		self.welcomeBox = document.getElementById( 'welcome-box' );
@@ -605,6 +618,7 @@ var hello = window.hello || {};
 		}
 		
 		function showWelcome() {
+			self.doneLoading();
 			if ( !self.welcomeBox )
 				return;
 			
@@ -621,20 +635,30 @@ var hello = window.hello || {};
 		
 		if ( waitingForHistory ) {
 			self.isWaiting = true;
-			self.waiting.classList.toggle( 'hidden', false );
+			//self.waiting.classList.toggle( 'hidden', false );
 			return;
 		}
 		
 		if ( self.isWaiting ) {
-			self.waiting.classList.toggle( 'hidden', true );
+			//self.waiting.classList.toggle( 'hidden', true );
 			self.isWaiting = false;
-			window.View.showLoading( false );
+			self.doneLoading();
 		}
 		
 		if ( self.active.firstChild )
 			self.noRecent.classList.toggle( 'hidden', true );
 		else
 			self.noRecent.classList.toggle( 'hidden', false );
+	}
+	
+	ns.Recent.prototype.doneLoading = function() {
+		const self = this;
+		if ( null != self.loadingTimeout )
+			window.clearTimeout( self.loadingTimeout );
+		
+		self.loadingDone = true;
+		self.loadingTimeout = null;
+		window.View.showLoading( false );
 	}
 	
 	ns.Recent.prototype.releaseModules = function() {

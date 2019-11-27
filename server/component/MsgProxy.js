@@ -32,7 +32,6 @@ ns.MsgProxy = function( conf ) {
 		return new ns.MsgProxy( conf );
 	
 	const self = this;
-	log( 'conf', conf );
 	self.moduleId = conf.moduleId;
 	events.RequestNode.call( self, conf.moduleId, null );
 	self.sendMsg = conf.send;
