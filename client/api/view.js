@@ -491,8 +491,8 @@ var friend = window.friend || {};
 		if ( self.config.viewTheme )
 			self.setViewTheme( self.config.viewTheme );
 		
-		self.connState = new api.ConnState( 'hello' );
 		self.setBaseCss( baseCssLoaded );
+		self.connState = new api.ConnState( 'hello' );
 		
 		// mousedown listeing
 		document.body.addEventListener( 'mousedown', mouseDownThings, false );
@@ -546,6 +546,7 @@ var friend = window.friend || {};
 		//
 		function baseCssLoaded() {
 			self.cssLoaded = true;
+			document.body.classList.toggle( 'hi', true );
 			if ( self.themeData )
 				self.applyThemeConfig( self.themeData );
 			
@@ -954,7 +955,6 @@ var friend = window.friend || {};
 			}
 		}
 		
-		console.log( 'themeData', themeData );
 		if( friend.themeStyleElement )
 			friend.themeStyleElement.innerHTML = '';
 		else

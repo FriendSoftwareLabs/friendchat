@@ -18,6 +18,20 @@ body:not(.charcoal) .busy-loading {
 	filter : invert( 1 );
 }
 
+
+body {
+	opacity : 0;
+}
+
+body#hello.hi {
+	opacity    : 1;
+	transition : opacity 0.2s;
+}
+
+.fullHeight {
+	height: 100%;
+}
+
 #hello .Off {
 	color            : transparent;
 	background-color : transparent;

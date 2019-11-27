@@ -1,3 +1,7 @@
+#conference {
+	height: 100%;
+}
+
 #head {
 	height: unset;
 	min-height: 3.5em;
