@@ -1551,23 +1551,17 @@ library.view = library.view || {};
 			function setNames( worg, targets ) {
 				const wId = worg.clientId;
 				targets.forEach( uId => {
-					let user = self.users.getId( uId );
-					/*
-					if ( wId === self.workgroupId )
-						user = 
-					else
-						user = self.users.getMember( wId, uId );
-					
-					*/
+					const user = self.users.getId( uId );
+					let uName = '';
 					if ( !user ) {
 						console.log( 'setNames - no user for', {
 							uid : uId,
 							w   : worg,
 						});
-						return;
-					}
+					} else
+						uName = user.name;
 					
-					const name = wName( worg ) + '/' + user.name;
+					const name = wName( worg ) + '/' + uName;
 					targetNames.push( name );
 				});
 			}
