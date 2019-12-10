@@ -404,16 +404,28 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.RTC.prototype.saveSetting = function( setting, value ) {
-		var self = this;
-		var save = {
+		const self = this;
+		const save = {
 			setting : setting,
 			value   : value,
 		};
-		var setting = {
+		const sett = {
 			type : 'setting',
 			data : save,
 		};
-		self.conn.send( setting );
+		self.conn.send( sett );
+	}
+	
+	ns.RTC.prototype.saveLocalSetting = function( setting, value ) {
+		const self = this;
+		const sett = {
+			type : 'local-setting',
+			data : {
+				setting : setting,
+				value   : value,
+			},
+		};
+		self.conn.send( sett );
 	}
 	
 	ns.RTC.prototype.handlePing = function( timestamp ) {
@@ -1153,6 +1165,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.selfie.on( 'reflow'          , handleReflow );
 		self.selfie.on( 'quality'         , setQuality );
 		self.selfie.on( 'restart'         , restart );
+		self.selfie.on( 'save'            , e => self.saveLocalSetting( e.setting, e.value ));
 		
 		function error( e ) { self.handleSelfieError( e ); }
 		function audioSink( e ) { self.handleAudioSink( e ); }
@@ -1202,15 +1215,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleSystemMute = function( isMute ) {
 		const self = this;
-		if ( self.ignoreSystemMute )
+		if ( self.ignoreSystemMute ) {
+			
 			return;
+		}
 		
 		const statusId = 'audio-input-check';
 		let conf = null;
 		if ( isMute ) {
 			conf = {
-				type    : 'error',
-				message : 'ERR_SYSTEM_MUTE',
+				type    : 'warning',
+				message : 'WARN_NO_AUDIO',
 			};
 		}
 		
@@ -1243,8 +1258,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( 'source-select' === event )
 				self.selfie.showSourceSelect();
 			
-			if ( 'ignore' === event )
+			if ( 'ignore' === event ) {
 				self.ignoreSystemMute = true;
+				self.selfie.setIgnoreSystemMute( true );
+				self.saveLocalSetting( 'ignore-system-mute', true );
+			}
 			
 			self.statusMsg.removeStatus( statusId );
 			self.hasAudioStatus = false;
@@ -1367,6 +1385,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
+	ns.Selfie.prototype.setIgnoreSystemMute = function( ignore ) {
+		const self = this;
+		self.ignoreSystemMute = ignore;
+		self.handleSystemMute( false );
+		if ( null != self.sysMuteTimeout )
+			window.clearTimeout( self.sysMuteTimeout );
+	}
+	
 	ns.Selfie.prototype.close = function() {
 		var self = this;
 		self.release(); // component.EventEmitter, component/common.js
@@ -1408,6 +1434,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.init =function() {
 		const self = this;
+		const ignoreSysMute = self.localSettings[ 'ignore-system-mute' ];
+		if ( ignoreSysMute )
+			self.ignoreSystemMute = ignoreSysMute;
+		
 		//self.supported = navigator.mediaDevices.getSupportedConstraints();
 		//console.log( 'supported', self.supported );
 		
@@ -1700,13 +1730,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.saveLocalSetting = function( setting, value ) {
 		const self = this;
 		const sett = {
-			type : 'local-setting',
-			data : {
-				setting : setting,
-				value   : value,
-			},
+			setting : setting,
+			value   : value,
 		};
-		self.conn.send( sett );
+		self.emit( 'save', sett );
 	}
 	
 	ns.Selfie.prototype.handleQuality = function( level ) {
@@ -1821,32 +1848,51 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.volume )
 			self.releaseVolume();
 		
+		self.hadInput = false;
+		if ( null != self.sysMuteTimeout ) {
+			window.clearTimeout( self.sysMuteTimeout );
+			delete self.sysMuteTimeout;
+		}
+		
 		self.volume = new library.rtc.Volume( stream );
 		self.onVId = self.volume.on( 'volume', onVolume );
-		self.onBId = self.volume.on( 'buffer', onBuffer );
+		//self.onBId = self.volume.on( 'buffer', onBuffer );
 		self.speaking.setSource( self.volume );
 		self.emit( 'volume-source', self.volume );
 		
-		function onVolume( volume, overTime ) {
-			if ( 0 === volume && self.sysUnmuteTimeout ) {
-				window.clearTimeout( self.sysUnmuteTimeout );
-				self.sysUnmuteTimeout = null;
-			}
+		function onVolume( volume ) {
+			const hasVolume = ( 0 !== volume );
 			
-			if ( 0 === volume && !self.userMute ) {
-				if ( !self.systemMute && !self.sysMuteTimeout  )
-					self.sysMuteTimeout = window.setTimeout( setSysMute, 1000 );
-			}
-			
-			if ( 0 !== volume && self.sysMuteTimeout ) {
+			if ( hasVolume && self.sysMuteTimeout ) {
 				window.clearTimeout( self.sysMuteTimeout );
 				self.sysMuteTimeout = null;
 			}
 			
-			if ( 0 !== volume ) {
+			if ( hasVolume ) {
+				self.hadInput = true;
+				unsetSysMute();
+				/*
 				if ( self.systemMute && !self.sysUnmuteTimeout )
-					self.sysUnmuteTimeout = window.setTimeout( unsetSysMute, 500 );
+					self.sysUnmuteTimeout = window.setTimeout( unsetSysMute, 1000 );
+				*/
 			}
+			
+			if ( self.ignoreSystemMute )
+				return;
+			
+			if ( 0 === volume && !self.userMute ) {
+				if ( !self.systemMute && !self.sysMuteTimeout  ) {
+					const timeout = self.hadInput ? 5000 : 1000;
+					self.sysMuteTimeout = window.setTimeout( setSysMute, timeout );
+				}
+			}
+			
+			/*
+			if ( 0 === volume && self.sysUnmuteTimeout ) {
+				window.clearTimeout( self.sysUnmuteTimeout );
+				self.sysUnmuteTimeout = null;
+			}
+			*/
 			
 			function setSysMute() {
 				self.handleSystemMute( true );

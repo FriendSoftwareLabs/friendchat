@@ -311,9 +311,10 @@ library.component = library.component || {};
 			const butts = [
 				//'ignore',
 				'source-select',
-				'ok',
+				'ignore',
 				//'close-live',
 			];
+			console.log( 'butts', butts );
 			self.showButtons( id, butts );
 		}
 		
@@ -333,7 +334,7 @@ library.component = library.component || {};
 			const events = [
 				//'ignore',
 				'source-select',
-				'ok',
+				'ignore',
 				//'close-live',
 			];
 			self.buildStatus( id, statusConf, events );

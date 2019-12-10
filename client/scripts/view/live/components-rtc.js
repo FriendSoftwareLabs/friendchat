@@ -393,7 +393,7 @@ library.rtc = library.rtc || {};
 			function setVolume() {
 				let max = 0;
 				let buf = self.timeBuffer;
-				
+				//console.log( 'buf', buf );
 				// find max
 				let i = ( buf.length );
 				for( ; i-- ; ) {
@@ -403,18 +403,19 @@ library.rtc = library.rtc || {};
 						max = val;
 				}
 				
+				//
 				updateAverageVolume( max );
 				self.volume = max;
 				setTimeout( emitVolume, 0 );
 				
 				function emitVolume() {
+					//console.log( 'vavg', self.volumeAverage );
 					self.emit( 'volume', self.volumeAverage, self.averageOverTime );
 				}
 			}
 			
 			function updateAverageVolume( current ) {
-				let vh = self.volumeHistory;
-				vh.shift();
+				let vh = self.volumeHistory.slice( 1 );
 				vh.push( current );
 				let total = 0;
 				
@@ -423,12 +424,13 @@ library.rtc = library.rtc || {};
 				for( ; i-- ; )
 					total += vh[ i ];
 				
+				// round up
 				const avg = ( total * 1.0 ) / vh.length;
 				//console.log( 'avg', avg );
+				// 
 				self.volumeAverage = Math.ceil( avg );
-				self.averageOverTime.shift();
+				self.averageOverTime = self.averageOverTime.slice( 1 );
 				self.averageOverTime.push( self.volumeAverage );
-				//self.votIndex++;
 			}
 		}
 	}
@@ -473,12 +475,19 @@ library.rtc = library.rtc || {};
 		self.actx = new window.AudioContext();
 		self.source = self.actx.createMediaStreamSource( self.stream );
 		self.analyser = self.actx.createAnalyser();
-		self.analyser.fftSize = 1024;
-		self.analyser.minDecibels = -200;
+		self.analyser.fftSize = 2048;
+		self.analyser.minDecibels = -1000;
 		const bufLen = self.analyser.frequencyBinCount;
 		self.timeBuffer = new Uint8Array( bufLen );
 		
 		self.source.connect( self.analyser );
+		/*
+		console.log( 'analyser', {
+			fftSize     : self.analyser.fftSize,
+			minDecibels : self.analyser.minDecibels,
+		});
+		*/
+		
 		self.start();
 	}
 	
@@ -493,8 +502,9 @@ library.rtc = library.rtc || {};
 	ns.AudioInputDetect = function( mediaStream ) {
 		const self = this;
 		self.mediaStream = mediaStream;
+		
 		self.maxTryTime = 1000 * 10;
-		self.sampleInterval = 100;
+		self.checking = true;
 		
 		return self.check();
 	}
@@ -528,48 +538,22 @@ library.rtc = library.rtc || {};
 				return;
 			}
 			
-			self.actx = new window.AudioContext();
-			const source = self.actx.createMediaStreamSource( self.mediaStream );
-			const analyser =  self.actx.createAnalyser();
-			source.connect( analyser );
-			analyser.fftSize = 64;
-			analyser.minDecibels = -200;
-			const buffLen = analyser.frequencyBinCount;
+			self.volume = new library.rtc.Volume( self.mediaStream );
+			self.volume.on( 'volume', check );
 			
-			self.interval = window.setInterval( check, self.sampleInterval );
+			//self.interval = window.setInterval( check, self.sampleInterval );
 			self.timeout = window.setTimeout( timeoutHit, self.maxTryTime );
 			
-			function check() {
-				if ( null == self.interval )
+			function check( max, avg ) {
+				if ( !self.checking )
 					return;
 				
-				const sample =  new Uint8Array( buffLen );
-				analyser.getByteTimeDomainData( sample );
-				if ( !sample || !sample.length ) {
-					//resolve();
+				if ( 0 == max )
 					return;
-				}
-				
-				const baseline = sample[ 0 ];
-				let hasInput = false;
-				if ( !sample.some ) { // f.e. older chrome and samsung internet
-									  // does not have .some here
-					hasInput = window.Array.prototype.some.call( sample, notFlat );
-				}
-				else {
-					hasInput = sample.some( notFlat );
-				}
-				
-				if ( !hasInput ){
-					return;
-				}
 				
 				clear();
 				resolve( true );
 				
-				function notFlat( value ) {
-					return !!( baseline !== value );
-				}
 			}
 			
 			function timeoutHit() {
@@ -581,14 +565,13 @@ library.rtc = library.rtc || {};
 			}
 			
 			function clear() {
-				if ( null != self.actx ) {
-					try {
-						self.actx.close();
-					} catch( ex ) {}
-				}
+				delete self.checking;
 				
-				if ( null != self.interval )
-					window.clearInterval( self.interval );
+				if ( self.volume ) {
+					self.volume.release();
+					self.volume.close();
+					delete self.volume;
+				}
 				
 				if ( null != self.timeout )
 					window.clearTimeout( self.timeout );

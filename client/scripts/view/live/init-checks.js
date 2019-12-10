@@ -276,6 +276,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		function checkBack( hasInput ) {
+			console.log( 'checkBack', hasInput );
 			if ( null != warnTimeout )
 				window.clearTimeout( warnTimeout );
 			
