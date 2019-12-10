@@ -1053,6 +1053,11 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Application.prototype.setConfig = function( conf ) {
 		const self = this;
 		self.appConf = conf;
+		const update = {
+			type : 'app-config',
+			data : conf,
+		}
+		self.toAllViews( update );
 	}
 	
 	ns.Application.prototype.setSettings = function( settings ) {

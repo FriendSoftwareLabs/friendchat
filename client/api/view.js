@@ -464,6 +464,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.initialize = function( conf ) {
 		const self = this;
+		console.log( 'View.initialize', conf.viewConf );
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
 		self.authId = conf.authId;
@@ -493,6 +494,8 @@ var friend = window.friend || {};
 		
 		self.setBaseCss( baseCssLoaded );
 		self.connState = new api.ConnState( 'hello' );
+		
+		self.on( 'app-config', e => self.appConfUpdate( e ));
 		
 		// mousedown listeing
 		document.body.addEventListener( 'mousedown', mouseDownThings, false );
@@ -552,6 +555,13 @@ var friend = window.friend || {};
 			
 			self.checkAllLoaded();
 		}
+	}
+	
+	ns.View.prototype.appConfUpdate = function( update ) {
+		const self = this;
+		console.log( 'appConfUpdate', update );
+		self.appConf = update;
+		//self.emit( 'app-config', update );
 	}
 	
 	ns.View.prototype.initLogSock = function() {

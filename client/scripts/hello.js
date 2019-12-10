@@ -312,6 +312,7 @@ var hello = null;
 		self.timeNow( 'honst config loaded' );
 		library.tool.mergeObjects( self.config, hostConf );
 		self.config.appName = self.config.appName || 'Friend Chat';
+		console.log( 'setConfig', hello.config );
 		self.app.setConfig( hello.config );
 	}
 	
