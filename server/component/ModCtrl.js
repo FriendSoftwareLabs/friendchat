@@ -67,6 +67,7 @@ ns.ModCtrl.prototype.initializeModules = function() {
 		
 		modules.forEach( start );
 	}
+	
 	function start( module ) { self.start( module ); }
 	function isPresence( module ) { return !!( 'presence' === module.type ); }
 }
@@ -396,7 +397,13 @@ ns.ModCtrl.prototype.stop = function( moduleId ) {
 
 ns.ModCtrl.prototype.getModuleDefaultConf = function( modType ) {
 	const self = this;
-	return global.config.server.defaults.module[ modType ] || null;
+	const mod = global.config.server.defaults.module[ modType ] || null;
+	if ( !mod )
+		return null;
+	
+	const str = JSON.stringify( mod );
+	const copy = JSON.parse( str );
+	return copy;
 }
 
 

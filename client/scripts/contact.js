@@ -51,6 +51,14 @@ library.contact = library.contact || {};
 	
 	// Public
 	
+	ns.Contact.prototype.show = function() {
+		const self = this;
+		if ( self.chatView )
+			self.chatView.show();
+		else
+			self.openChat();
+	}
+	
 	ns.Contact.prototype.handleEvent = function( event ) {
 		const self = this;
 		if ( !self.conn )
@@ -932,7 +940,6 @@ library.contact = library.contact || {};
 			.catch( settBoop );
 		
 		function settBack( settings ) {
-			console.log( 'PresenceRoom.loadSettings - settings', settings );
 			self.showSettings( settings );
 		}
 		
@@ -984,15 +991,12 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.openChat = function( preView ) {
 		const self = this;
-		console.log( 'openChat - has preView', preView );
 		if ( self.chatView ) {
-			console.log( 'aready has chatView', self.chatView );
 			self.chatView.show();
 			return;
 		}
 		
 		if ( !self.initialized ) {
-			console.log( 'PresenceRoom.openChat - no inited', preView );
 			self.openChatPending = {
 				view : preView || null,
 			};
@@ -1019,12 +1023,10 @@ library.contact = library.contact || {};
 		};
 		
 		if ( preView ) {
-			console.log( 'PresenceRoom.openChat - has preView', preView );
 			self.chatView = preView;
 			preView.updateState( initData );
 		}
 		else {
-			console.log( 'PresenecRoom.openChat - no preview' );
 			self.chatView = new library.view.PresenceChat(
 				initData,
 				self.isPrivate
@@ -1040,7 +1042,6 @@ library.contact = library.contact || {};
 		
 		function eventSink( e ) { console.log( 'unhandled chat view event', e ); }
 		function onClose( e ) {
-			console.log( 'app.PresenceRoom.onClose' );
 			self.closeChat();
 		}
 		
@@ -1126,9 +1127,8 @@ library.contact = library.contact || {};
 			self.send( inv );
 		}
 		
-		function isOnline( cId ) {
-			console.log( 'isOnline', cId );
-			return cId.isOnline;
+		function isOnline( id ) {
+			return id.isOnline;
 		}
 		
 		function notInRoom( cId ) {
@@ -1483,7 +1483,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleWorkgroup = function( event ) {
 		const self = this;
-		console.log( 'handleWorkgroup', event );
 		if ( !self.workgroups )
 			return;
 		
@@ -2198,6 +2197,92 @@ library.contact = library.contact || {};
 })( library.contact );
 
 //
+// PRESENCEHIDDEN
+(function( ns, undefined ) {
+	ns.PresenceHidden = function( conf ) {
+		const self = this;
+		self.type = 'presence';
+		self.data = conf.contact.identity;
+		self.idc = conf.idCache;
+		self.user = conf.user;
+		self.userId = conf.userId;
+		
+		ns.Contact.call( self, conf );
+		
+		self.contactId = null;
+		self.isPrivate = true;
+		self.isHidden = true;
+		self.isDisabled = null;
+		self.settings = null;
+		self.identities = {};
+		self.onlineList = [];
+		self.users = {};
+		
+		self.init( conf.contact );
+	}
+	
+	ns.PresenceHidden.prototype = Object.create( ns.PresenceRoom.prototype );
+	
+	// Public
+	
+	// Private
+	
+	ns.PresenceHidden.prototype.init = function( contact ) {
+		const self = this;
+		self.identity = contact.identity;
+		self.identities[ self.user.clientId ] = self.user;
+		self.identities[ self.identity.clientId ] = self.identity;
+		self.contactId = self.identity.clientId;
+		self.isDisabled = !!self.identity.fIsDisabled;
+		
+		self.conn.on( 'chat', e => {
+			const chat = {
+				type : 'chat',
+				data : e,
+			};
+			self.toChat( chat );
+		});
+		
+		self.openChat();
+	}
+	
+	ns.PresenceHidden.prototype.openChat = function() {
+		const self = this;
+		const initData = {
+			isPrivate   : true,
+			persistent  : true,
+			isHidden    : true,
+			isDisabled  : self.isDisabled,
+			roomName    : self.identity.name,
+			users       : self.identities,
+			identities  : self.identities,
+			workgroups  : [],
+			onlineList  : [],
+			peers       : [],
+			ownerId     : self.ownerId,
+			userId      : self.userId,
+			contactId   : self.contactId,
+		};
+		
+		self.chatView = new library.view.PresenceChat( initData );
+		self.chatView.on( 'close', onClose );
+		self.chatView.on( 'chat', onChat );
+		
+		function onClose() {
+			self.emit( 'close' );
+		}
+		
+		function onChat( e ) {
+			const chat = {
+				type : 'chat',
+				data : e,
+			};
+			self.send( chat );
+		}
+	}
+})( library.contact );
+
+//
 // PRESENCECONTACT
 
 (function( ns, undefined ) {
@@ -2445,7 +2530,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChat = function( preView ) {
 		const self = this;
-		console.log( 'openChat - has preView?', !!preView );
 		if ( !self.isOpen ) {
 			self.openChatPending = {
 				view : preView || null,
@@ -2461,7 +2545,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChatView = function( preView ) {
 		const self = this;
-		console.log( 'openChatView - has preView?', !!preView );
 		self.openChatPending = false;
 		if ( self.chatView ) {
 			self.chatView.show();

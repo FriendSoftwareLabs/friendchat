@@ -1249,6 +1249,7 @@ library.view = library.view || {};
 		library.view.BaseModule.call( self, conf );
 		
 		self.invites = {};
+		self.hiddenContacts = {};
 		
 		self.init();
 	}
@@ -1291,17 +1292,36 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.buildContactsElement = function() {
 		const self = this;
-		const tmplId = 'presence-rooms-tmpl';
+		const tmplId = 'presence-contacts-tmpl';
+		self.hiddenId = friendUP.tool.uid( 'hidden' );
+		self.hiddenItemsId = friendUP.tool.uid( 'hidden' );
 		const conf = {
-			roomsId      : self.contactsId,
-			folditId     : self.contactsFoldit,
-			title        : self.getTitleString( 'contact' ),
-			connStateId  : self.contactsConnState,
-			itemsId      : self.contactItemsId,
+			roomsId       : self.contactsId,
+			folditId      : self.contactsFoldit,
+			title         : self.getTitleString( 'contact' ),
+			connStateId   : self.contactsConnState,
+			itemsId       : self.contactItemsId,
+			hiddenId      : self.hiddenId,
+			hiddenItemsId : self.hiddenItemsId,
 		};
+		
 		const el = hello.template.getElement( tmplId, conf );
 		const container = document.getElementById( self.containers.contact );
 		container.appendChild( el );
+		
+		self.bindHidden();
+	}
+	
+	ns.Presence.prototype.bindHidden = function() {
+		const self = this;
+		const hidden = document.getElementById( self.hiddenId );
+		const unloadHiddenBtn = hidden.querySelector( '.hidden-unload' );
+		unloadHiddenBtn.addEventListener( 'click', unloadClick, false );
+		function unloadClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.unloadHidden();
+		}
 	}
 	
 	ns.Presence.prototype.setLogoCss = function() {
@@ -1331,6 +1351,7 @@ library.view = library.view || {};
 		self.mod.on( 'contact-add', contactAdd );
 		self.mod.on( 'contact-remove', contactRemove );
 		self.mod.on( 'invite-add', inviteAdd );
+		self.mod.on( 'hidden-list', e => self.handleHiddenList( e ));
 		
 		function userId( e ) { self.userId = e; }
 		function joinedRoom( e ) { self.handleRoomJoin( e ); }
@@ -1390,8 +1411,8 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleRoomLeave = function( roomId ) {
 		const self = this;
-		self.roomOrder.remove( roomId );
 		self.emit( 'remove', roomId );
+		self.roomOrder.remove( roomId );
 		const room = self.rooms[ roomId ];
 		if ( !room ) {
 			return;
@@ -1419,6 +1440,8 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleContactRemove = function( clientId ) {
 		const self = this;
+		self.emit( 'remove', clientId );
+		self.contactOrder.remove( clientId );
 		const contact = self.contacts[ clientId ];
 		if ( !contact )
 			return;
@@ -1499,6 +1522,58 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.Presence.prototype.handleHiddenList = function( event ) {
+		const self = this;
+		const list = event.hidden;
+		if ( !list || !list.length ) {
+			console.log( 'no hidden contacts', event );
+			return;
+		}
+		
+		const head = document.getElementById( self.hiddenId );
+		const items = document.getElementById( self.hiddenItemsId );
+		items.textContent = null;
+		
+		head.classList.toggle( 'hidden', false );
+		items.classList.toggle( 'hidden', false );
+		list.forEach( build );
+		
+		function build( user ) {
+			const hId = user.clientId;
+			const exists = document.getElementById( hId );
+			if ( exists ) {
+				console.log( 'handleHiddenList, build - contacts already listed', user );
+				return;
+			}
+			
+			const el = hello.template.getElement( 'presence-hidden-contact-tmpl', user );
+			self.hiddenContacts[ hId ] = el;
+			items.appendChild( el );
+			el.addEventListener( 'click', click, false );
+			function click( e ) {
+				openHidden( hId );
+			}
+		}
+		
+		function openHidden( cId ) {
+			const openH = {
+				type : 'open-hidden',
+				data : cId,
+			};
+			self.mod.send( openH );
+		}
+	}
+	
+	ns.Presence.prototype.unloadHidden = function() {
+		const self = this;
+		const head = document.getElementById( self.hiddenId );
+		const items = document.getElementById( self.hiddenItemsId );
+		head.classList.toggle( 'hidden', true );
+		items.classList.toggle( 'hidden', true );
+		items.textContent = null;
+		self.hiddenContacts = {};
+	}
+	
 	ns.Presence.prototype.clearRoomInvite = function( invId ) {
 		const self = this;
 		const inv = self.invites[ invId ];
@@ -1525,6 +1600,12 @@ library.view = library.view || {};
 		if ( self.contacts[ cId ]) {
 			console.log( 'Presence.addContact - already added', cId );
 			return;
+		}
+		
+		if ( self.hiddenContacts[ cId ]) {
+			hEl = document.getElementById( cId );
+			hEl.parentNode.removeChild( hEl );
+			delete self.hiddenContacts[ cId ];
 		}
 		
 		const contactConf = {
@@ -1555,7 +1636,7 @@ library.view = library.view || {};
 			opts.push( self.menuActions[ 'create-room' ]);
 		
 		if ( 'contact' === type )
-			;
+			opts.push( self.menuActions[ 'load-hidden' ]);
 		
 		return opts;
 	}

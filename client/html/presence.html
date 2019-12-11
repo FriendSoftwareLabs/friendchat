@@ -29,7 +29,7 @@
 
 -->
 <script id="body-tmpl" type="text/html">
-<div class="conference bar column fullHeight BackgroundDefault">
+<div id="conference" class="bar column fullHeight BackgroundDefault">
 	<div id="head" class="BorderBottom fortify group row">
 		<button id="room-back" class="Button IconButton fortify hidden">
 			<i class="fa fa-fw fa-chevron-left"></i>
@@ -145,7 +145,7 @@
 				<i class="fa fa-fw fa-close"></i>
 			</div>
 			<div id="users-title">
-				{i18n_conference_members}
+				{i18n_members}
 			</div>
 		</div>
 		<div id="users-position" class="expand BackgroundHeavy SmoothScrolling">
@@ -188,6 +188,32 @@ contactName,
 </div>
 </script>
 
+<!-- Contacts disabled
+-->
+<script id="contact-disabled-tmpl" type="text/html">
+<div class="user-hidden group row">
+	<div class="hidden-text DangerText fortify">
+		{i18n_account_disabled}
+	</div>
+	<div class="info-boop center-child fortify" tabindex="0">
+		<i class="fa fa-fw fa-question-circle"></i>
+		<div class="info-boop-content Rounded BackgroundDefault BordersDefault">
+			<h3>{i18n_account_disabled}</h3>
+			<p>{i18n_this_account_has_been_disabled_in_friend}</p>
+			{i18n_the_user_can_no_longer_read_messages}
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- No reply
+-->
+<script id="input-disabled-tmpl" type="text/html">
+<div class="input-hidden Padding">
+	{i18n_you_cant_reply_to_this_conversation}
+</div>
+</script>
+
 <!-- LiveStatus
 peersId,
 -->
@@ -204,6 +230,7 @@ peersId,
 </div>
 </script>
 
+
 <!-- LiveStatusPeer
 id,
 avatarKlass,
@@ -214,6 +241,7 @@ avatarKlass,
 	</div>
 </div>
 </script>
+
 
 <!-- log fetcher
 id,
@@ -231,6 +259,7 @@ id,
 	</div>
 </div>
 </script>
+
 
 <!-- time envelope
 id,

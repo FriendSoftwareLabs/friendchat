@@ -479,6 +479,9 @@ library.view = library.view || {};
 				self.setGroupUI();
 		}
 		
+		if ( state.isHidden )
+			self.handleHidden( state );
+		
 		// only focus input if desktop
 		if ( 'DESKTOP' == window.View.deviceType ) {
 			self.input.focus();
@@ -490,6 +493,34 @@ library.view = library.view || {};
 			type : 'log',
 			data : null,
 		});
+	}
+	
+	ns.Presence.prototype.handleHidden = function( state ) {
+		const self = this;
+		self.isDisabled = state.isDisabled;
+		const live = document.getElementById( 'live-status-container' );
+		const actions = document.getElementById( 'room-actions' );
+		const foot = document.getElementById( 'foot' );
+		hide( live );
+		hide( actions );
+		hide( foot );
+		
+		// top info
+		const elDisabled = hello.template.getElement( 'contact-disabled-tmpl', {});
+		const title = document.getElementById( self.titleId );
+		title.appendChild( elDisabled );
+		
+		// input replacement
+		const elNoReply = hello.template.getElement( 'input-disabled-tmpl', {});
+		const conference = document.getElementById( 'conference' );
+		conference.appendChild( elNoReply );
+		
+		function hide( el ) {
+			if ( !el )
+				return;
+			
+			el.classList.toggle( 'hidden', true );
+		}
 	}
 	
 	ns.Presence.prototype.setPrivateUI = function() {

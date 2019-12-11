@@ -429,3 +429,11 @@ i18n_success : Success
 i18n_could_not_find_any_microphone : Could not find any microphone
 i18n_could_not_find_any_camera : Could not find any camera
 i18n_could_not_find_any_microphone_or_camera : Could not find any microphone or camera
+i18n_show_hidden : Show hidden
+i18n_hidden_contacts : Hidden contacts
+i18n_hide : Hide
+i18n_account_disabled : Account disabled
+i18n_members : Members
+i18n_you_cant_reply_to_this_conversation : You can&#39;t reply to this conversation
+i18n_this_account_has_been_disabled_in_friend : This account has been disabled in Friend
+i18n_the_user_can_no_longer_read_messages :  The user can no longer read messages

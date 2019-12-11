@@ -3156,11 +3156,14 @@ ns.Treeroot.prototype.handleResponse = function( xml, request, reqData ) {
 	self.delouse( xml, dataBack );
 	function dataBack( data ) {
 		if ( !data ) {
+			/*
 			self.log( 'failed to parse data for',{
 				req  : request,
 				data : data,
 				raw  : xml,
-				user : self.conf.login }, 4 );
+				user : self.conf.login,
+			}, 4 );
+			*/
 			done( false );
 			return;
 		}

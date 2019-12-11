@@ -205,6 +205,7 @@ library.component = library.component || {};
 			isStream    : state.settings.isStream,
 			guestAvatar : state.guestAvatar,
 		};
+		
 		self.live = new library.rtc.RtcSession( conf, liveEvent, onclose );
 		self.live.on( 'chat', chat );
 		self.live.on( 'invite', invite );

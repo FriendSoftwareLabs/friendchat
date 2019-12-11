@@ -87,8 +87,12 @@ this.DbModule.prototype.get = function( callback ) {
 	}
 	
 	function parseSettings( module ) {
-		var settingsObj = parse( module.settings );
-		module.settings = settingsObj || {};
+		const settingsObj = parse( module.settings );
+		if ( 'string' === typeof( settingsObj ))
+			module.settings = {};
+		else
+			module.settings = settingsObj || {};
+		
 		return module;
 	}
 }

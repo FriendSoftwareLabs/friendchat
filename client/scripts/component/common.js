@@ -761,6 +761,9 @@ inherits from EventEmitter
 		
 		if ( 'online' === update.type )
 			current.isOnline = user.isOnline;
+		
+		if ( 'fIsDisabled' === update.type )
+			current.fIsDisabled = update.fIsDisabled;
 	}
 	
 	ns.IdCache.prototype.read = function( clientId ) {

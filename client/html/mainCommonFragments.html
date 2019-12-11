@@ -749,7 +749,7 @@ id,
 </div>
 </script>
 
-<!-- PRESENCE 
+<!-- PRESENCE ROOMS TAB
 roomsId,
 folditId.
 moduleTitle,
@@ -828,6 +828,47 @@ msgWaitingId,
 </script>
 
 
+<!-- PRESENCE CONTACTS TAB
+roomsId,
+folditId.
+moduleTitle,
+connStateId,
+itemsId,
+hiddendId,
+hiddenItemsId,
+-->
+<script id="presence-contacts-tmpl" type="text/html">
+<div id="<%= roomsId %>" class="module bar column BorderBottom">
+	<div id="<%= folditId %>" class="module-head group row fortify MousePointer">
+		<div class="module-logo fortify">
+			<div class="logo center-child">
+				<i class="fa fa-fw fa-user-circle-o"></i>
+			</div>
+		</div>
+		<div class="module-title expand">
+			<%= title %>
+		</div>
+		<div class="actions group row fortify">
+			<div class="foldit-status">
+			</div>
+			<div id="<%= connStateId %>">
+			</div>
+			<div class="item-menu Button IconButton" title="">
+				<i class="fa fa-fw fa-ellipsis-v"></i>
+			</div>
+		</div>
+	</div>
+	<div id="<%= itemsId %>" class="contacts ZebraList Interactive SmoothScrolling">
+	</div>
+	<div id="<%= hiddendId %>" class="module-head group row fortify BorderTop">
+		{i18n_hidden_users}
+	</div>
+	<div id="<%= hiddenItemsId %>" class="contacts ZebraList Interactive SmoothScrolling">
+	</div>
+</div>
+</script>
+
+
 <!-- PRESENCE CONTACT
 clientId,
 avatarSrc,
@@ -856,6 +897,16 @@ msgWaitingId,
 	<div class="item-menu Button IconButton fortify center-child">
 		<i class="fa fa-fw fa-ellipsis-v"></i>
 	</div>
+</div>
+</script>
+
+<!-- PRESENCE HIDDEN CONTACT
+clientId,
+name,
+-->
+<script id="presence-hidden-contact-tmpl" type="text/html">
+<div id="<%= clientId %>" class="contact">
+	<%= name %>
 </div>
 </script>
 

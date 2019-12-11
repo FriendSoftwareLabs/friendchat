@@ -1,5 +1,7 @@
 #conference {
+	/*
 	height: 100%;
+	*/
 }
 
 #head {
@@ -27,6 +29,41 @@
 	margin-bottom : 0.2em;
 }
 
+.user-hidden {
+	
+}
+
+.hidden-text {
+	padding       : 0.2em 0.5em;
+	font-size     : 100%;
+	border-radius : 0.2em;
+}
+
+.info-boop {
+	position : relative;
+	outline  : none;
+}
+
+.info-boop-content {
+	display    : none;
+	position   : absolute;
+	z-index    : 222;
+	right      : 100%;
+	top        : 0;
+	padding    : 0.5em;
+	width      : 15em;
+	word-break : break-word;
+}
+
+.info-boop:focus .info-boop-content,
+.info-boop:hover .info-boop-content {
+	display : block;
+}
+
+.input-hidden {
+	
+}
+
 #live-status-container {
 	
 }
@@ -35,10 +72,12 @@
 	height: unset;
 }
 
+/*
 body[mobile] #emojii-panel-button
 {
 	display: none !important;
 }
+*/
 
 .user-group {
 	margin-bottom : 0.3em;

@@ -736,7 +736,6 @@ ns.ServerConn.prototype.handleClose = function() {
 
 ns.ServerConn.prototype.handleError = function( err ) {
 	const self = this;
-	log( 'conn - handleError', err );
 	self.handleDisconnect( err );
 }
 

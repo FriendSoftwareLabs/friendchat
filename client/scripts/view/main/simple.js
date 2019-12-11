@@ -392,16 +392,22 @@ var hello = window.hello || {};
 	ns.Presence.prototype.buildContactsElement = function() {
 		const self = this;
 		const title = self.getTitleString( 'contact' );
-		const tmplId = 'simple-presence-rooms-tmpl';
+		const tmplId = 'simple-presence-contacts-tmpl';
+		self.hiddenId = friendUP.tool.uid( 'able' );
+		self.hiddenItemsId = friendUP.tool.uid( 'able' );
 		const conf = {
-			roomsId      : self.contactsId,
-			title        : title,
-			connStateId  : self.contactsConnState,
-			itemsId      : self.contactItemsId,
+			roomsId       : self.contactsId,
+			title         : title,
+			connStateId   : self.contactsConnState,
+			itemsId       : self.contactItemsId,
+			hiddenId      : self.hiddenId,
+			hiddenItemsId : self.hiddenItemsId,
 		};
 		const el = hello.template.getElement(  tmplId, conf );
 		const cont = document.getElementById( self.containers.contact );
 		cont.appendChild( el );
+		
+		self.bindHidden();
 	}
 	
 	ns.Presence.prototype.initStatus = function() {

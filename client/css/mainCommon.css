@@ -340,14 +340,17 @@ html body #tab-bar .Button
     padding-bottom: 2px;
 }
 
+.hidden-head,
 .module-head {
     overflow : hidden;
+    padding : 0.2em;
 }
 
 .module-head .actions {
     margin-right : 4px;
 }
 
+.hidden-title,
 .module-title {
     line-height   : 2em;
     font-size     : 120%;

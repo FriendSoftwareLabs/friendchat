@@ -2945,11 +2945,16 @@ The menu will remove itself if it loses focus or a menu item is clicked
 				name   : View.i18n( 'i18n_create_room' ),
 				faIcon : 'fa-plus',
 			},
+			'load-hidden' : {
+				event  : 'load-hidden',
+				name   : View.i18n( 'i18n_show_hidden' ),
+				faIcon : 'fa-eye-slash',
+			},
 			'console' : {
 				event  : 'console',
 				name   : View.i18n( 'i18n_console' ),
 				faIcon : 'fa-tv',
-			}
+			},
 		};
 		
 		return self;

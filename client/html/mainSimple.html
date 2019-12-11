@@ -115,7 +115,7 @@ itemsId,
 </div>
 </script>
 
-<!-- PRESENCE 
+<!-- PRESENCE ROOMS TAB
 roomsId,
 title,
 connStateId,
@@ -139,3 +139,50 @@ itemsId,
 	</div>
 </div>
 </script>
+
+<!-- PRESENCE CONTACTS TAB
+roomsId,
+title,
+connStateId,
+itemsId,
+hiddenId,
+hiddenItemsId,
+
+-->
+<script id="simple-presence-contacts-tmpl" type="text/html">
+<div id="<%= roomsId %>" class="module bar column BorderBottom">
+	<div id="<%= hiddenId %>" class="hidden-head group row fortify hidden BorderTop">
+		<div class="icon-status center-child fortify">
+			<i class="fa fa-fw fa-eye-slash"></i>
+		</div>
+		<div class="hidden-title expand">
+			{i18n_hidden_contacts}
+		</div>
+		<div class="actions">
+			<button class="hidden-unload fortify">
+				<i class="fa fa-fw fa-close"></i>
+				{i18n_hide}
+			</button>
+		</div>
+	</div>
+	<div id="<%= hiddenItemsId %>" class="contacts ZebraList Interactive SmoothScrolling hidden">
+	</div>
+	<div class="module-head group row fortify MousePointer">
+		<div id="<%= connStateId %>" class="fortify">
+		</div>
+		<div class="module-title expand">
+			<%= title %>
+		</div>
+		<div class="actions group row">
+			<div class="item-menu Button IconButton" title="">
+				<i class="fa fa-fw fa-ellipsis-v"></i>
+			</div>
+		</div>
+	</div>
+	<div id="<%= itemsId %>" class="contacts ZebraList Interactive">
+	</div>
+</div>
+</script>
+
+	</div> <!-- fragments end -->
+</body>

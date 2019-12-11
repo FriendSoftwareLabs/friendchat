@@ -572,6 +572,7 @@ library.module = library.module || {};
 		self.type = 'presence';
 		self.roomRequests = {};
 		self.openChatWaiting = [];
+		self.hiddenContacts = {};
 		self.init();
 	}
 	
@@ -857,6 +858,8 @@ library.module = library.module || {};
 		self.view.on( 'create-room', createRoom );
 		self.view.on( 'contact', contact );
 		self.view.on( 'invite-response', invResponse );
+		self.view.on( 'load-hidden', e => self.handleLoadHidden( e ));
+		self.view.on( 'open-hidden', e => self.handleOpenHidden( e ));
 		
 		function createRoom( e ) { self.handleCreateRoom( e ); }
 		function contact( e ) { self.handleContactAction( e ); }
@@ -1257,6 +1260,7 @@ library.module = library.module || {};
 			return;
 		
 		delete self.contacts[ clientId ];
+		self.contactIds = Object.keys( self.contacts );
 		contact.close();
 		const cAdd = {
 			type : 'contact-remove',
@@ -1323,6 +1327,105 @@ library.module = library.module || {};
 			data : res,
 		};
 		self.toAccount( inv );
+	}
+	
+	ns.Presence.prototype.handleLoadHidden = function() {
+		const self = this;
+		const hiddenLoading = {
+			type : 'hidden-loading',
+			data : Date.now(),
+		};
+		self.toView( hiddenLoading );
+		
+		const loadHidden = {
+			type : 'hidden-list',
+		};
+		self.acc.request( loadHidden )
+			.then( hiddenBack )
+			.catch( loadErr );
+		
+		function loadErr( ex ) {
+			console.log( 'handleLoadHidden - loadErr', ex );
+			showList( null );
+		}
+		
+		function hiddenBack( list ) {
+			showList( list );
+		}
+		
+		function showList( list ) {
+			const hidden = {
+				type : 'hidden-list',
+				data : {
+					hidden : list,
+				},
+			};
+			self.toView( hidden );
+		}
+	}
+	
+	ns.Presence.prototype.handleOpenHidden = function( contactId ) {
+		const self = this;
+		const contact = self.hiddenContacts[ contactId ];
+		if ( true === contact )
+			return;
+		
+		if ( contact ) {
+			contact.show();
+			return;
+		}
+		
+		self.hiddenContacts[ contactId ] = true;
+		
+		const hopen = {
+			type : 'hidden-open',
+			data : contactId,
+		};
+		self.acc.request( hopen )
+			.then( onRes )
+			.catch( onErr );
+		
+		function onErr( err ) {
+			console.log( 'Presence.handleOpenHidden - request err', err );
+			delete self.hiddenContacts[ contactId ];
+			
+		}
+		
+		function onRes( res ) {
+			if ( !res ) {
+				console.log( 'handleOpenHidden - no contact??', res );
+				delete self.hiddenContacts[ contactId ];
+				return;
+			}
+			
+			showHiddenChat( res );
+		}
+		
+		function showHiddenChat( contact ) {
+			const cId = contact.clientId;
+			const conf = {
+				moduleId   : self.clientId,
+				contact    : contact,
+				parentConn : self.acc,
+				parentView : self.parentView,
+				idCache    : self.idc,
+				user       : self.identity,
+				userId     : self.accountId,
+			};
+			
+			room = new library.contact.PresenceHidden( conf );
+			room.once( 'close', onClose );
+			
+			function onClose() {
+				delete self.hiddenContacts[ cId ];
+				const hClose = {
+					type : 'hidden-close',
+					data : cId,
+				};
+				self.acc.send( hClose );
+				room.close();
+			}
+		}
 	}
 	
 	ns.Presence.prototype.setupRooms = function( rooms ) {
