@@ -1482,7 +1482,7 @@ var hello = null;
 	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
 		const self = this;
 		const winConf = {
-			title     : hello.config.appName || ' ',
+			title     : hello.config.appName || 'Friend Chat',
 			width     : 440,
 			height    : 600,
 			//mainView  : true,
