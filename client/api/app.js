@@ -224,6 +224,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fromView.on( 'loaded', loaded );
 		self.fromView.on( 'ready', ready );
 		self.fromView.on( 'minimized', mini );
+		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
 		//self.app.on( self.id, viewEvent );
 		self.app.sendMessage({
 			type   : 'view',
@@ -321,6 +322,11 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.View.prototype.handleMinimized = function( isMinimized ) {
 		const self = this;
 		self.isMinimized = isMinimized;
+	}
+	
+	ns.View.prototype.handleNotification = function( notie ) {
+		const self = this;
+		self.app.notify( notie );
 	}
 	
 	ns.View.prototype.doClose = function() {
@@ -441,17 +447,28 @@ var friend = window.friend || {}; // already instanced stuff
 
 // Filedialogs
 (function( ns, undefined ) {
-	ns.Filedialog = function( object )
-	{
-		if( !object ) return;
+	ns.Filedialog = function( title ) {
 		const self = this;
-		self.id = friendUP.tool.uid;
+		self.title = title || 'File';
 		self.app = window.Application;
-		this.init( object );
+		this.init();
 	}
-	ns.Filedialog.prototype.init = function( object )
-	{
+	
+	// resolves to a list of files selected by user
+	ns.Filedialog.prototype.open = function( path, title ) {
 		const self = this;
+		return self.send( 'load', path, null, title );
+	}
+	
+	ns.Filedialog.prototype.load = function( path, filename ) {
+		const self = this;
+	}
+	
+	ns.Filedialog.prototype.init = function() {
+		const self = this;
+		return;
+		
+		
 		var targetview = false;
 		var triggerFunction = false;
 		var type = false;
@@ -479,23 +496,33 @@ var friend = window.friend || {}; // already instanced stuff
 					break;
 			}
 		}
-
-		if ( !triggerFunction ) return;
-		if ( !type ) type = 'open';
-
+		
+		if ( !triggerFunction )
+			return;
+		
+		if ( !type )
+			type = 'open';
+		
 		var callbackId = self.app.setCallback( triggerFunction );
-
-		self.app.sendMessage( {
+	}
+	
+	ns.Filedialog.prototype.send = function( type, path, file ) {
+		const self = this;
+		const cb = self.app.setPromiseCallback();
+		self.app.sendMessage({
 			type:        'system',
 			command:     'filedialog',
 			method:      'open',
-			callbackId:   callbackId,
+			callbackId:   cb.id,
 			dialogType:   type,
 			path:         path,
-			filename:     filename,
-			title:        title
-		} );
+			filename:     file || '',
+			title:        self.title,
+		});
+		
+		return cb.promise;
 	}
+	
 })( api );
 
 
@@ -746,6 +773,11 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.AppEvent.prototype.handleFromView = function( msg ) {
 		const self = this;
 		const type = msg.viewId;
+		if ( !type || !msg.data ) {
+			console.log( 'weird event', msg );
+			return;
+		}
+		
 		self.emit( type, msg.data );
 	}
 	
@@ -1149,9 +1181,9 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.notify = function( conf ) {
 		const self = this;
-		var cid = self.setCallback( conf.callback );
-		var ccid = self.setCallback( conf.clickCallback );
-		var msg = {
+		const cid = self.setCallback( conf.callback );
+		const ccid = self.setCallback( conf.clickCallback );
+		const msg = {
 			type          : 'system',
 			command       : 'notification',
 			title         : conf.title,
@@ -1304,8 +1336,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.getCallback = function( id ) {
 		const self = this;
-		var callback = self.callbacks[ id ];
-		
+		const callback = self.callbacks[ id ];
 		if ( !callback ) {
 			console.log( 'app.getCallback - no callback for', {
 				id  : id,

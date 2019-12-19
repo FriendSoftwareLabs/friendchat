@@ -383,13 +383,11 @@ ns.Socket.prototype.executeSendQueue = function() {
 
 ns.Socket.prototype.connError = function( event ) {
 	var self = this;
-	log( 'connError', event );
 	self.handleClose();
 }
 
 ns.Socket.prototype.connClose = function( event ) {
 	var self = this;
-	log( 'connClose', event );
 	self.handleClose();
 }
 

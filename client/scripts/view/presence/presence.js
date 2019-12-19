@@ -71,7 +71,10 @@ library.view = library.view || {};
 			ondrop   : onDrop,
 		}
 		self.drop = new library.component.Drop( dropConf );
-		function onDrop( event ) { self.send( event ); }
+		function onDrop( event ) {
+			console.log( 'Drop onDrop', event );
+			self.send( event );
+		}
 		
 		//
 		self.bindUI();
@@ -135,39 +138,38 @@ library.view = library.view || {};
 		attachBtn.addEventListener( 'click', attach, false );
 		
 		function attach( e ) {
-			var men = ge( 'attachment-menu' );
-			var can = men.querySelector( '.Cancel' );
-			var cam = men.querySelector( '.Camera' );
-			var upl = men.querySelector( '.Upload' );
-			can.onclick = function()
-			{
-				men.classList.remove( 'Showing' );
+			console.log( 'attach click' );
+			const menu = ge( 'attachment-menu' );
+			var can = menu.querySelector( '.Cancel' );
+			var cam = menu.querySelector( '.Camera' );
+			var upl = menu.querySelector( '.Upload' );
+			can.onclick = function() {
+				menu.classList.remove( 'Showing' );
 			}
 			
-			if( men.classList.contains( 'Showing' ) )
-			{
-				men.classList.remove( 'Showing' );
+			if( menu.classList.contains( 'Showing' )) {
+				menu.classList.remove( 'Showing' );
+			} else {
+				menu.classList.add( 'Showing' );
 			}
-			else
-			{
-				men.classList.add( 'Showing' );
-			}
+			
 			upl.onclick = function( e ){
-				men.classList.remove( 'Showing' );
-				executeAttach( e );
+				menu.classList.remove( 'Showing' );
+				attachFiles( e );
 			}
 			
-			self.conn.prepareCamera( cam, function( data ) {
-				men.classList.remove( 'Showing' );
-			} );
+			window.View.prepareCamera( cam, function( data ) {
+				menu.classList.remove( 'Showing' );
+			});
 		}
 		
-		function executeAttach( e )
-		{
-			self.send( {
-				type: 'attach',
+		function attachFiles() {
+			console.log( 'attachFiles' );
+			const attach = {
+				type: 'attach-files',
 				data: false
-			} );
+			};
+			self.send( attach );
 		};
 		
 		function closeBack( e ) { self.closeBack(); }
@@ -199,30 +201,36 @@ library.view = library.view || {};
 			self.input.submit(); // input is multiline input model
 		}
 		
-		// Handle paste if it isn't a file
-		window.addEventListener( 'paste', function( evt ) {
-			var pastedItems = (evt.clipboardData || evt.originalEvent.clipboardData).items;
-			for( var i in pastedItems ) {
-				var item = pastedItems[i];
-				if( item.kind === 'file' ) {
-					var p = new api.PasteHandler();
-					p.paste( evt, function( res ) {
-						if( res.response == true ) {
-							self.conn.send(	{
-								type: 'drag-n-drop',
-								data: [ {
-									Type: 'File',
-									Path: res.path
-								} ]
-							} );
-						}
-					} );
-					evt.preventDefault();
-					evt.stopPropagation();
-					break;
-				}
-			}
-		} );
+		window.addEventListener( 'paste', handlePaste, false );
+		function handlePaste( e ) { self.handlePaste( e ); }
+		
+		window.View.on( 'drop', e => {
+			self.handlePaste( e );
+		});
+	}
+	
+	ns.Presence.prototype.handlePaste = function( e ) {
+		const self = this;
+		const data = e.clipboardData || e.dataTransfer;
+		if ( !data )
+			return;
+		
+		const types = data.types.toString();
+		if ( 'Files' !== types )
+			return;
+		
+		const p = new api.PasteHandler();
+		p.handle( e )
+			.then( uploaded )
+			.catch( e => console.log( 'handlePaste err', e ));
+		
+		function uploaded( res ) {
+			const share = {
+				type: 'drag-n-drop',
+				data: res,
+			};
+			self.conn.send( share );
+		};
 	}
 	
 	ns.Presence.prototype.toggleLiveBtns = function( show ) {

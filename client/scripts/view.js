@@ -166,7 +166,7 @@ library.view = library.view || {};
 		);
 		
 		self.view.on( 'drag-n-drop', droppings );
-		self.view.on( 'attach', attach );
+		self.view.on( 'attach-files', attach );
 		function droppings( e ) { self.drop.handle( e ); }
 		function eventSink( type, data ) {
 			self.emit( type, data );
@@ -177,25 +177,32 @@ library.view = library.view || {};
 		}
 		
 		function attach() {
-			var o = {
-				triggerFunction( items )
-				{
-					for( var a = 0; a < items.length; a++ )
-					{
-						( function( item ){
-							var f = new api.File( item.Path );
-							f.expose( function( link )
-							{
-								toChat( link );
-							} );
-						} )( items[ a ] );
-					}
-				},
-				path: 'Mountlist:',
-				type: 'load',
-				title: Application.i18n( 'i18n_share_file' )
-			};
-			new api.Filedialog( o );
+			console.log( 'attach' );
+			const title = Application.i18n( 'i18n_share_file' );
+			const dialog = new api.Filedialog( title );
+			dialog.open( 'Mountlist:' )
+				.then( filesBack )
+				.catch( err );
+			
+			function filesBack( items ) {
+				console.log( 'attach files back', items );
+				if ( !items )
+					return;
+				
+				items.forEach( item => {
+					const f = new api.File( item.Path );
+					f.expose( link => {
+						if ( !link )
+							return;
+						
+						toChat( link );
+					});
+				});
+			}
+			
+			function err( err ) {
+				console.log( 'attach err', err );
+			}
 		}
 	}
 	
@@ -491,7 +498,7 @@ library.view = library.view || {};
 		self.view.on( 'start-live', self.onlive );
 		self.view.on( 'drag-n-drop', handleDropped );
 		self.view.on( 'encrypt', self.onencrypt );
-		self.view.on( 'attach', attach );
+		self.view.on( 'attach-files', attach );
 		
 		function exit( msg ) { self.close(); }
 		function handleDropped( e ) { self.drop.handle( e ); }
@@ -1325,7 +1332,7 @@ library.view = library.view || {};
 			onclose
 		);
 		
-		self.view.on( 'attach', attach );
+		self.view.on( 'attach-files', attach );
 		function attach() {
 			var o = {
 				triggerFunction( items )

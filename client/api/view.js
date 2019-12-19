@@ -546,6 +546,21 @@ var friend = window.friend || {};
 			}
 		}
 		
+		window.addEventListener( 'dragover', onDragover, false );
+		window.addEventListener( 'drop', onDrop, false );
+		function onDragover( e ) {
+			//console.log( 'dragover', e );
+			e.preventDefault();
+			e.stopPropagation();
+		}
+		
+		function onDrop( e ) {
+			console.log( 'onDrop', e );
+			e.preventDefault();
+			e.stopPropagation();
+			self.emit( 'drop', e );
+		}
+		
 		//
 		function baseCssLoaded() {
 			self.cssLoaded = true;
@@ -754,10 +769,6 @@ var friend = window.friend || {};
 	ns.View.prototype.openCamera = function( flags, callback )
 	{
 		const self = this;
-		// Create the callback
-		var cbk = function( msg ) {
-			callback( msg.data );
-		};
 		
 		// The message
 		var o = {
@@ -777,18 +788,17 @@ var friend = window.friend || {};
 		self.sendBase( o );
 	}
 	
-	ns.View.prototype.prepareCamera = function( targetElement, callback )
-	{
+	ns.View.prototype.prepareCamera = function( targetElement, callback ) {
 		const self = this;
+		console.log( 'prepareCamera' );
 		if( self.cameraChecked === true )
 			return;
 		
 		self.cameraChecked = true;
 		
-		
-		const imagetools = document.createElement('script');
+		const imagetools = document.createElement( 'script' );
 		imagetools.src = '/webclient/3rdparty/load-image.all.min.js'
-		document.getElementsByTagName('head')[0].appendChild( imagetools );
+		document.head.appendChild( imagetools );
 		
 		
 		if ( 'DESKTOP' === self.deviceType )
@@ -849,7 +859,7 @@ var friend = window.friend || {};
 				});
 				return;
 			}
-
+			
 			const raw = window.atob( msg.data.split( ';base64,' )[1] );
 			const uInt8Array = new Uint8Array( raw.length );
 			for ( let i = 0; i < raw.length; ++i ) {
@@ -862,24 +872,29 @@ var friend = window.friend || {};
 			);
 			
 			// Paste the blob!
-			const p = new api.PasteHandler();
-			p.paste(
-				{ type: 'blob', blob: bl },
-				pasteBack
-			);
+			const p = new api.PasteHandler( 'camera', 'jpg' );
+			const blob = {
+				type: 'blob',
+				blob: bl
+			};
+			p.handle( blob )
+				.then( pasteBack )
+				.catch( pasteErr );
 			
 			callback({
 				result : true
 			});
 			
-			function pasteBack( data ) {
+			function pasteBack( list ) {
+				console.log( 'camera pasteBack', list );
 				self.send({
 					type: 'drag-n-drop',
-					data: [ {
-						Type: 'File',
-						Path: data.path
-					} ]
-				} );
+					data: list,
+				});
+			}
+			
+			function pasteErr( err ) {
+				console.log( 'camera pasteErr', err );
 			}
 		};
 		
@@ -1453,16 +1468,310 @@ window.View = new api.View();
 
 
 // Paste handler handles pasting of files and media ----------------------------
-( function( ns, undefined )
-{
-	ns.PasteHandler = function()
-	{
+( function( ns, undefined ) {
+	
+	ns.PasteHandler = function( sourceName ) {
+		const self = this;
+		self.name = sourceName || 'file';
+		self.saveDir = 'Home:FriendChat/';
+		self.dup = 1;
+	}
+	
+	ns.PasteHandler.prototype.handle = function( DOMEvent ) {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			const items = self.normalize( DOMEvent );
+			if ( !items.length ) {
+				resolve([]);
+				return;
+			}
+			
+			self.checkPath()
+				.then( pathOk )
+				.catch( reject );
+			
+			function pathOk( dirFileList ) {
+				const dirFiles = {};
+				dirFileList.forEach( item  => {
+					const name = item.Filename;
+					dirFiles[ name ] = item;
+				});
+				self.dirFiles = dirFiles;
+				upload( items );
+			}
+			
+			function upload( items ) {
+				const uploaded = Promise.all( items.map( doUpload ));
+				resolve( uploaded );
+				
+				function doUpload( item ) {
+					return self.uploadFile( item );
+				}
+			}
+		});
+	}
+	
+	// Private
+	
+	ns.PasteHandler.prototype.checkOrigName = function( orig ) {
+		const self = this;
+		const dir = self.dirFiles;
+		const parts = orig.split( '.' );
+		const ext = parts.splice( -1, 1 );
+		const pre = parts.join( '.' );
+		let dup = 1;
+		let name = orig;
+		while( dir[ name ]) {
+			name = pre + '(' + dup + ')' + '.' + ext;
+			dup++;
+		}
 		
+		return name;
+	}
+	
+	ns.PasteHandler.prototype.genName = function( file ) {
+		const self = this;
+		const dir = self.dirFiles;
+		const time = getDateStr();
+		const ext = getExt( file.type );
+		let fileName = '';
+		do {
+			fileName = time 
+				+ '_' + self.name
+				+ '_' + self.dup
+				+ '.' + ext
+			self.dup++;
+		} while ( dir[ fileName ]);
+		
+		return fileName;
+		
+		function getDateStr() {
+			const time = new Date();
+			const y = time.getFullYear();
+			const mo = ( time.getMonth() + 1 );
+			const d = time.getDate();
+			const h = pad( time.getHours());
+			const mi = pad( time.getMinutes());
+			const date = [ y, mo, d ];
+			const clock = [ h, mi ];
+			return date.join( '-' ) + ' ' + clock.join( '-' );
+			
+			function pad( time ) {
+				const str = time.toString();
+				if ( 1 == str.length )
+					return '0' + str;
+				else
+					return str;
+			}
+		}
+		
+		function getExt( type ) {
+			if ( !type )
+				return 'application/octet-stream';
+			
+			const parts = type.split( '/' );
+			const ext = parts[ 1 ];
+			if ( !ext )
+				return 'application/octet-stream';
+			
+			return ext;
+		}
+	}
+	
+	ns.PasteHandler.prototype.uploadFile = function( file ) {
+		const self = this;
+		//const type = ( file.type == '' ? 'application/octet-stream' : file.type );
+		let fileName = file.name;
+		if ( fileName )
+			fileName = self.checkOrigName( fileName );
+		else
+			fileName = self.genName( file );
+		
+		self.dirFiles[ fileName ] = true;
+		return uploadWorker( file, fileName );
+		
+		function uploadWorker( file, fileName  ) {
+			return new Promise(( resolve, reject ) => {
+				window.View.showNotification(
+					fileName,
+					View.i18n( 'i18n_saving_file_to' ) + ': ' + self.saveDir,
+				);
+				const path = self.saveDir + fileName;
+				const url = document.location.protocol + '//' + document.location.host + '/webclient/';
+				const uworker = new Worker( url + 'js/io/filetransfer.js' );
+				
+				uworker.onerror = function( err ) {
+					console.log( 'PasteHandler uploadWorker - err', err );
+				}
+				
+				uworker.onmessage = function( e ) {
+					if ( 1 != e.data.progressinfo )
+						return;
+					
+					if ( 1 != e.data.uploadscomplete )
+						return;
+					
+					resolve({
+						response : true,
+						type     : 'File',
+						path     : path,
+					});
+				}
+				
+				const volume = self.saveDir.split( ':' )[ 0 ];
+				const fileMessage = {
+					'authid'       : View.authId,
+					'targetPath'   : self.saveDir,
+					'targetVolume' : volume,
+					'files'        : [ file ],
+					'filenames'    : [ fileName ]
+				};
+				
+				uworker.postMessage( fileMessage );
+			});
+		}
+	}
+	
+	ns.PasteHandler.prototype.normalize = function( e ) {
+		const self = this;
+		const dTrans = e.dataTransfer;
+		let items = [];
+		// from camera
+		if( e.type && e.type == 'blob' ) {
+			console.log( 'blobl', e.blob );
+			items.push( e.blob );
+		}
+		
+		// data transfer
+		const trans = e.dataTransfer;
+		if ( trans ) {
+			// files
+			if ( trans.files )
+				items = getTransFiles( trans );
+			else if ( trans.items )
+				items = getTransItems( trans );
+		}
+		
+		const clip = e.clipboardData;
+		if ( clip ) {
+			items = getTransItems( clip );
+			//items = ( e.clipboardData || e.originalEvent.clipboardData ).items;
+		}
+		
+		console.log( 'normalize - done', items );
+		return items;
+		
+		function getTransItems( trans ) {
+			const items = lööp( trans.items );
+			let files = items.map( item => {
+				if ( 'file' !== item.kind )
+					return null;
+				
+				const file = item.getAsFile();
+				console.log( 'this is a file, promise', file );
+				return file;
+			});
+			files = files.filter( f => !!f );
+			return files;
+		}
+		
+		function getTransFiles( trans ) {
+			const files = lööp( trans.files );
+			//console.log( 'getTransFiles', files )
+			return files;
+		}
+		
+		function lööp( weird ) {
+			let list = [];
+			let i = weird.length;
+			while( i ) {
+				--i;
+				const item = weird[ i ];
+				//console.log( 'lööp item', item );
+				list.push( item );
+			}
+			
+			return list.reverse();
+		}
+	}
+	
+	ns.PasteHandler.prototype.checkPath = function() {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			// check full path
+			self.callFC( 'dir', self.saveDir )
+				.then( resolve )
+				.catch( notFound );
+			
+			// not foud, try create, maybe fail v0v
+			function notFound() {
+				window.View.showNotification(
+					View.i18n( 'i18n_file_upload' ),
+					View.i18n( 'i18n_creating_folder' ) + ': ' + self.saveDir,
+				);
+				self.callFC( 'makedir', self.saveDir )
+					.then( reCheck )
+					.catch( reject );
+			}
+			
+			function reCheck() {
+				self.checkPath()
+					.then( resolve )
+					.then( reject );
+			}
+		});
+	}
+	
+	ns.PasteHandler.prototype.callFC = function( action, path ) {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			const base = '/system.library/file/' + action + '/?path=';
+			path = encodeURIComponent( path );
+			const url = base
+				+ path
+				+ '&authid='
+				+ window.View.authId
+				+ '&cachekiller=' + ( new Date() ).getTime();
+			
+			const call = new cAjax();
+			call.open(
+				'post',
+				 url ,
+				true
+			);
+			call.send();
+			call.onload = function() {
+				const res = call.responseText();
+				if ( !res || !res.length ) {
+					reject( 'ERR_NO_RESULT' );
+					return;
+				}
+				
+				const parts = res.split( '<!--separate-->' );
+				const success = parts[ 0 ];
+				const str = parts[ 1 ];
+				if ( 'ok' != success ) {
+					reject( 'ERR_ERR_ERR', str );
+					return;
+				}
+				
+				let reply = null;
+				try {
+					reply = window.JSON.parse( str );
+				} catch( ex ) {
+					console.log( 'could not parse', {
+						ex  : ex,
+						str : str,
+					});
+				}
+				
+				resolve( reply );
+			}
+		});
 	}
 	
 	// Initiate paste handler
-	ns.PasteHandler.prototype.paste = function( evt, callback )
-	{
+	ns.PasteHandler.prototype.paste = function( evt, callback ) {
 		const self = this;
 		
 		function DirectoryContainsFile( filename, directoryContents )
@@ -1545,7 +1854,7 @@ window.View = new api.View();
 									message  : 'Too many files pasted.',
 								});
 							
-							break; // no endless loop please	
+							break; // no endless loop please
 						}
 					}
 					uploadFileToDownloadsFolder( file, newfilename, wholePath + newfilename );
@@ -1586,7 +1895,7 @@ window.View = new api.View();
 			{
 				if( e.data['progressinfo'] == 1 )
 				{	
-					if( e.data['uploadscomplete'] == 1 )
+					if( e.data[ 'uploadscomplete' ] == 1 )
 					{
 						if( !this.calledBack )
 							callback( { response: true, path: path } );
@@ -1595,34 +1904,24 @@ window.View = new api.View();
 					}
 				}
 			}
-
+			
 			//hardcoded pathes here!! TODO!
 			var fileMessage = {
-				'authid': View.authId,
-				'targetPath': 'Home:Downloads/',
-				'targetVolume': 'Home',
-				'files': [ file ],
-				'filenames': [ filename ]
+				'authid'       : View.authId,
+				'targetPath'   : 'Home:Downloads/',
+				'targetVolume' : 'Home',
+				'files'        : [ file ],
+				'filenames'    : [ filename ]
 			};
 			
-			uworker.postMessage( fileMessage );		
+			uworker.postMessage( fileMessage );
 		}
 		
-		// Support blob format
-		if( evt.type && evt.type == 'blob' )
-		{
-			evt.blob.name = 'cameraimage.jpg';
-			evt.clipboardData = { items: [ { 
-				kind: 'file', 
-				getAsFile()
-				{
-					return evt.blob;
-				} } ] 
-			};
-			evt.originalEvent = {};
-		}
 		
-		var pastedItems = ( evt.clipboardData || evt.originalEvent.clipboardData ).items;
+		
+		
+		
+		
 		
 		for( var i in pastedItems )
 		{
@@ -1679,6 +1978,6 @@ window.View = new api.View();
 	
 } )( api );
 
-// End paste handler -----------------------------------------------------------
+// End paste handler -----------------------------------------------------------
 
 

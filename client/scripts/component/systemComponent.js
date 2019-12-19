@@ -318,9 +318,10 @@ library.component = library.component || {};
 	
 	ns.Droppings.prototype.handle = function( items ) {
 		var self = this;
+		console.log( 'Droppings.handle', items );
 		items.forEach( jajajaja );
 		function jajajaja( item ) {
-			var handler = self.typeMap[ item.Type ];
+			var handler = self.typeMap[ item.type || item.Type ];
 			if ( !handler ) {
 				console.log( 'Droppings.handle - no handler for', item );
 				return;
@@ -347,7 +348,7 @@ library.component = library.component || {};
 	
 	ns.Droppings.prototype.handleFile = function( item ) {
 		const self = this;
-		const file = new api.File( item.Path );
+		const file = new api.File( item.path || item.Path );
 		file.expose( back );
 		function back( res ) {
 			var success = !!res;
