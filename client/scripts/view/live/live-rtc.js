@@ -63,7 +63,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTC = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
-		console.log( 'RTC conf', conf );
+		console.log( 'RTC conf', conf.rtcConf );
 		self.conn = conn || null;
 		self.ui = UI;
 		self.userId = conf.userId;
@@ -1406,14 +1406,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.publish = function() {
-		console.log( 'Seflie.publish' );
+		console.log( 'Seflie.publish', self.rtcConf );
 		const conf = {
 			type   : 'source',
 			isHost : true,
 			rtc    : self.rtcConf,
 			signal : self.proxy,
 		}
-		self.session = new library.rtc.Session( conf );
+		const isHost = true;
+		self.session = new library.rtc.Session(
+			'source',
+			isHost,
+			self.proxy,
+			null,
+			self.rtcConf
+		);
 	}
 	
 	// receive defaults to same as send
