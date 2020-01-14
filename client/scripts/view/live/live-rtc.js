@@ -300,7 +300,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				data : 'yep',
 			};
 			self.proxy.send( ready );
-			self.selfie.publish();
 		}
 		
 		self.connectPeers();
@@ -359,7 +358,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleProxyRoom = function( event ) {
 		const self = this;
-		console.log( 'handleProxyRoom', event );
+		console.log( 'handleProxyRoom', self.rtcConf );
+		self.selfie.publish( self.rtcConf );
+		//self.selfie.publish();
 	}
 	
 	ns.RTC.prototype.connectPeers = function() {
@@ -1182,9 +1183,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			localSettings : self.localSettings,
 			isAdmin       : self.isAdmin,
 			topology      : self.topology,
-			proxyConn     : self.proxyConn || null,
-			proxyId       : self.userId,
-			rtcConf       : self.rtcConf,
+			proxyConn     : self.proxy || null,
 			onleave       : onLeave,
 		}, done );
 		
@@ -1376,8 +1375,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.isAdmin = conf.isAdmin;
 		self.topology = conf.topology;
 		self.proxyConn = conf.proxyConn;
-		self.proxyId = conf.proxyId;
-		self.rtcConf = conf.rtcConf;
 		
 		self.media = null;
 		self.stream = null;
@@ -1405,22 +1402,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'identity', identity );
 	}
 	
-	ns.Selfie.prototype.publish = function() {
-		console.log( 'Seflie.publish', self.rtcConf );
-		const conf = {
-			type   : 'source',
-			isHost : true,
-			rtc    : self.rtcConf,
-			signal : self.proxy,
-		}
-		const isHost = true;
-		self.session = new library.rtc.Session(
-			'source',
-			isHost,
-			self.proxy,
-			null,
-			self.rtcConf
-		);
+	ns.Selfie.prototype.publish = function( rtcConf ) {
+		const self = this;
+		console.log( 'publsih', rtcConf );
+		self.createSource( rtcConf );
+		
 	}
 	
 	// receive defaults to same as send
@@ -1599,11 +1585,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.setupProxy = function() {
 		const self = this;
 		console.log( 'Selfie - star topoloig detected!!!!11', {
-			pId   : self.proxyId,
 			pConn : self.proxyConn,
 		});
 		self.proxy = new library.component.EventNode(
-			self.proxyId,
+			'source',
 			self.proxyConn,
 			proxySink
 		);
@@ -1613,6 +1598,136 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				type  : type,
 				event : event,
 			});
+		}
+	}
+	
+	ns.Selfie.prototype.createSource = function( rtcConf ) {
+		const self = this;
+		console.log( 'createSource', rtcConf );
+		self.rtcConf = rtcConf;
+		if ( self.session ) {
+			self.log( 'createSession', {
+				state   : self.state,
+				session : self.session,
+			});
+			return;
+		}
+		
+		//if ( !self.media )
+		self.proxyMedia = new window.MediaStream();
+		
+		const type = 'source';
+		const opts = {
+			isHost          : true,
+			//useDefaultCodec : self.useDefaultCodec,
+		};
+		
+		self.proxy.send({
+			type : 'asdasd',
+			data : 5555555,
+		});
+		
+		self.session = new library.rtc.Session(
+			type,
+			true,
+			self.proxy,
+			self.proxyMedia,
+			self.rtcConf,
+			opts,
+			'source'
+		);
+		
+		self.on( 'selfie', e => self.updatePublishedMedia());
+		
+		/*
+		self.session = new library.rtc.Session({
+			type      : type,
+			isHost    : self.isHost,
+			rtc       : self.rtcConf,
+			signal    : self.signal,
+			//modifySDP : modSDP,
+		});
+		*/
+		
+		self.session.on( 'stats', e => console.log( 'session stats', e ));
+		self.session.on( 'state', e => console.log( 'session state', e ));
+		self.session.on( 'error', e => console.log( 'session error', e ));
+		
+		self.updatePublishedMedia();
+		/*
+		self.session.on( 'track-add'   , e => self.trackAdded( e ));
+		self.session.on( 'track-remove', e => self.trackRemoved( e ));
+		self.session.on( 'nostream'    , sendNoStream );
+		self.session.on( 'datachannel' , dataChannel );
+		
+		function sendNoStream( e ) { self.sendNoStream( type ); }
+		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
+		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
+		function sessionError( e ) { self.handleSessionError( e, type ); }
+		function dataChannel( e ) { self.bindDataChannel( e ); }
+		*/
+	}
+	
+	ns.Selfie.prototype.updatePublishedMedia = function() {
+		const self = this;
+		console.log( 'updatePublishedMedia', {
+			session : self.session,
+			stream  : self.stream,
+		});
+		if ( !self.session )
+			return;
+		
+		if ( !self.stream )
+			return;
+		
+		const pTracks = {};
+		self.proxyMedia.getTracks().forEach( t => {
+			const kind = t.kind;
+			pTracks[ kind ] = t;
+		});
+		
+		const sTracks = {};
+		self.stream.getTracks().forEach( t => {
+			const kind = t.kind;
+			sTracks[ kind ] = t;
+		});
+		console.log( 'updatePublishedMedia', {
+			session : self.session,
+			stream  : self.stream,
+			pmedia  : self.proxyMedia,
+			audio   : self.hasAudio,
+			video   : self.hasVideo,
+			pTracks : pTracks,
+			sTracks : sTracks,
+		});
+		
+		if ( !self.hasAudio )
+			remove( 'audio' );
+		else
+			update( 'audio' );
+		
+		if ( !self.hasVideo )
+			remove( 'video' );
+		else
+			update( 'video' );
+		
+		function remove( kind ) {
+			const pT = pTracks[ kind ];
+			if ( !pT )
+				return;
+			
+			self.proxyMedia.removeTrack( pT );
+			self.session.removeTrack( kind );
+		}
+		
+		function update( kind ) {
+			const pT = pTracks[ kind ];
+			const sT = sTracks[ kind ];
+			if ( pT )
+				self.proxyMedia.removeTrack( pT );
+			
+			self.proxyMedia.addTrack( sT );
+			self.session.addTrack( kind );
 		}
 	}
 	
@@ -1891,6 +2006,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setStream = function( stream ) {
 		const self = this;
+		console.log( 'setStream', stream );
 		self.stream = stream;
 		
 		if ( self.userMute ) {
@@ -1903,6 +2019,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const aTrack = self.getAudioTrack();
 		const vTrack = self.getVideoTrack();
+		self.hasAudio = !!aTrack;
+		self.hasVideo = !!vTrack;
 		
 		if ( aTrack )
 			self.bindVolume( stream );
@@ -1910,7 +2028,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.releaseVolume();
 		
 		const tracks = {
-			audio : !!aTrack,
+			audio : self.hasAudio,
 			video : !!vTrack,
 		};
 		
@@ -1918,8 +2036,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'selfie', stream );
 		
 		// TODO refactor these to use tracks-available?
-		self.emit( 'audio', !!aTrack );
-		self.emit( 'video', !!vTrack );
+		self.emit( 'audio', self.hasAudio );
+		self.emit( 'video', self.hasVideo );
 		
 		self.emitVoiceOnly( tracks );
 	}
