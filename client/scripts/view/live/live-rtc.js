@@ -63,6 +63,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTC = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
+		console.log( 'RTC conf', conf );
 		self.conn = conn || null;
 		self.ui = UI;
 		self.userId = conf.userId;
@@ -75,6 +76,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.identities = conf.identities || {};
 		self.guestAvatar = conf.guestAvatar;
 		self.mode = conf.rtcConf.mode || null;
+		self.topology = conf.rtcConf.topology || 'peer';
 		self.quality = conf.rtcConf.quality || null;
 		self.permissions = conf.rtcConf.permissions;
 		self.localSettings = conf.localSettings || {};
@@ -106,6 +108,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		if ( 'DESKTOP' != window.View.deviceType )
 			self.isMobile = true;
+		
+		
+		if ( 'star' === self.topology )
+			self.setupProxy();
 		
 		self.convertLegacyDevices();
 		self.updateMobileRestrictions();
@@ -287,6 +293,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.bindConn();
+		
+		if ( 'star' === self.topology ) {
+			const ready = {
+				type : 'ready',
+				data : 'yep',
+			};
+			self.proxy.send( ready );
+			self.selfie.publish();
+		}
+		
 		self.connectPeers();
 		const onready = self.onready;
 		delete self.onready;
@@ -321,6 +337,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function join(       e ) { self.handlePeerJoin(   e ); }
 		function leave(      e ) { self.handlePeerLeft(   e ); }
 		function close(      e ) { self.handleClosed(     e ); }
+	}
+	
+	ns.RTC.prototype.setupProxy = function() {
+		const self = this;
+		self.proxy = new library.component.EventNode(
+			'proxy',
+			self.conn,
+			signalSink
+		);
+		
+		self.proxy.on( 'room', e => self.handleProxyRoom( e ));
+			
+		function signalSink( type, data ) {
+			console.log( 'RTC signalSink', {
+				type : type,
+				data : data,
+			});
+		}
+	}
+	
+	ns.RTC.prototype.handleProxyRoom = function( event ) {
+		const self = this;
+		console.log( 'handleProxyRoom', event );
 	}
 	
 	ns.RTC.prototype.connectPeers = function() {
@@ -1133,16 +1172,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			identity.avatar = self.guestAvatar;
 		
 		self.selfie = new library.rtc.Selfie({
-			conn            : self.conn,
-			view            : self.ui,
-			menu            : self.menu,
-			identity        : identity,
-			browser         : self.browser,
-			permissions     : self.permissions,
-			quality         : self.quality,
-			localSettings   : self.localSettings,
-			isAdmin         : self.isAdmin,
-			onleave         : onLeave,
+			conn          : self.conn,
+			view          : self.ui,
+			menu          : self.menu,
+			identity      : identity,
+			browser       : self.browser,
+			permissions   : self.permissions,
+			quality       : self.quality,
+			localSettings : self.localSettings,
+			isAdmin       : self.isAdmin,
+			topology      : self.topology,
+			proxyConn     : self.proxyConn || null,
+			proxyId       : self.userId,
+			rtcConf       : self.rtcConf,
+			onleave       : onLeave,
 		}, done );
 		
 		function onLeave() {
@@ -1331,6 +1374,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			scale : 1,
 		};
 		self.isAdmin = conf.isAdmin;
+		self.topology = conf.topology;
+		self.proxyConn = conf.proxyConn;
+		self.proxyId = conf.proxyId;
+		self.rtcConf = conf.rtcConf;
+		
 		self.media = null;
 		self.stream = null;
 		self.onleave = conf.onleave;
@@ -1355,6 +1403,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.updateIdentity = function( identity ) {
 		const self = this;
 		self.emit( 'identity', identity );
+	}
+	
+	ns.Selfie.prototype.publish = function() {
+		console.log( 'Seflie.publish' );
+		const conf = {
+			type   : 'source',
+			isHost : true,
+			rtc    : self.rtcConf,
+			signal : self.proxy,
+		}
+		self.session = new library.rtc.Session( conf );
 	}
 	
 	// receive defaults to same as send
@@ -1470,6 +1529,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		//
+		console.log( 'Selfie.topology', self.topology );
+		if ( 'star' == self.topology )
+			self.setupProxy();
+		
+		//
 		self.extConn = self.view.addExtConnPane( onExtConnShare );
 		function onExtConnShare( e ) {
 			self.extConn.close();
@@ -1522,6 +1586,26 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			delete self.doneBack;
 			if ( doneBack )
 				doneBack( null, res );
+		}
+	}
+	
+	ns.Selfie.prototype.setupProxy = function() {
+		const self = this;
+		console.log( 'Selfie - star topoloig detected!!!!11', {
+			pId   : self.proxyId,
+			pConn : self.proxyConn,
+		});
+		self.proxy = new library.component.EventNode(
+			self.proxyId,
+			self.proxyConn,
+			proxySink
+		);
+		
+		function proxySink( type, event ) {
+			console.log( 'proxySink', {
+				type  : type,
+				event : event,
+			});
 		}
 	}
 	

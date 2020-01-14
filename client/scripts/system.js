@@ -2329,6 +2329,7 @@ library.rtc = library.rtc || {};
 		
 		self.id = init.liveId;
 		const roomConf = init.liveConf;
+		console.log( 'RtcSession - roomConf', roomConf );
 		const viewConf = self.conf;
 		const liveConf = {
 			userId      : roomConf.userId,
@@ -2346,6 +2347,7 @@ library.rtc = library.rtc || {};
 				quality     : roomConf.quality,
 				mode        : roomConf.mode,
 				sourceId    : roomConf.sourceId,
+				topology    : roomConf.topology,
 			},
 		};
 		self.view = new library.view.Live(
