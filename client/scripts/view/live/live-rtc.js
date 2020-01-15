@@ -360,7 +360,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		console.log( 'handleProxyRoom', self.rtcConf );
 		self.selfie.publish( self.rtcConf );
-		//self.selfie.publish();
 	}
 	
 	ns.RTC.prototype.connectPeers = function() {
@@ -978,15 +977,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.currentPeerFocus )
 			isFocus = false;
 		
-		const Peer = getPeerConstructor( self.browser );
+		let Peer = getPeerConstructor( self.browser );
+		let signal = self.conn;
+		if ( 'star' === self.topology ) {
+			signal = self.proxy;
+			Peer = library.rtc.Sink;
+		}
+		
 		peer = new Peer({
 			id          : peerId,
 			identity    : identity,
 			permissions : self.permissions,
 			isFocus     : isFocus,
-			signal      : self.conn,
+			signal      : signal,
 			rtcConf     : self.rtcConf,
 			selfie      : self.selfie,
+			topology    : self.topology,
 			onremove    : signalRemovePeer,
 			closeCmd    : closeCmd,
 		});
@@ -1172,7 +1178,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !identity.avatar )
 			identity.avatar = self.guestAvatar;
 		
-		self.selfie = new library.rtc.Selfie({
+		let Thing = library.rtc.Selfie;
+		if ( 'star' === self.topology )
+			Thing = library.rtc.Source;
+		
+		self.selfie = new Thing({
 			conn          : self.conn,
 			view          : self.ui,
 			menu          : self.menu,
@@ -1622,11 +1632,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			//useDefaultCodec : self.useDefaultCodec,
 		};
 		
-		self.proxy.send({
-			type : 'asdasd',
-			data : 5555555,
-		});
-		
 		self.session = new library.rtc.Session(
 			type,
 			true,
@@ -1671,9 +1676,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.updatePublishedMedia = function() {
 		const self = this;
 		console.log( 'updatePublishedMedia', {
-			session : self.session,
-			stream  : self.stream,
+			session     : self.session,
+			stream      : self.stream,
+			permissions : self.permissions,
 		});
+		
+		const perms = {
+			type : 'permissions',
+			data : self.permissions,
+		};
+		self.proxy.send( perms );
+		
 		if ( !self.session )
 			return;
 		
@@ -2006,7 +2019,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setStream = function( stream ) {
 		const self = this;
-		console.log( 'setStream', stream );
+		console.log( 'setStream', {
+			stream      : stream,
+			permissions : self.permissions,
+		});
 		self.stream = stream;
 		
 		if ( self.userMute ) {
@@ -2296,6 +2312,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 })( library.rtc );
 
+// SOURCE, extends selfie
+( function( ns, undefined ) {
+	ns.Source = function( conf, callback ) {
+		const self = this;
+		library.rtc.Selfie.call( self, conf, callback );
+		
+		console.log( 'Source', self );
+	}
+	
+	ns.Source.prototype = Object.create( library.rtc.Selfie.prototype );
+	
+})( library.rtc );
 
 // PEER
 (function( ns, undefined ) {
@@ -2338,7 +2366,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pingTimeouts = {};
 		self.pongs = [];
 		
-		self.spam = false;
+		self.spam = true;
 		
 		self.init( conf.signal );
 	}
@@ -2503,6 +2531,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			remote : remoteStamp,
 			isHost : self.isHost,
 		});
+		// invalid remote stamp, drop
+		if ( null == remoteStamp )
+			return;
+		
 		if ( null != self.isHost ) {
 			if ( self.isHost )
 				self.syncStamp = remoteStamp - 1;
@@ -2512,10 +2544,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.acceptSync( remoteStamp );
 			return;
 		}
-		
-		// invalid remote stamp, drop
-		if ( null == remoteStamp )
-			return;
 		
 		// same stamp, reroll
 		if ( self.syncStamp === remoteStamp ) {
@@ -2561,6 +2589,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			stamps : stamps,
 			isHost : self.isHost,
 		});
+		
 		if ( !self.syncStamp )
 			return;
 		
@@ -2585,6 +2614,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		else
 			self.isHost = false;
 		
+		self.log( 'setDoinit', self.isHost );
 		self.stopSync();
 		if ( !self.isHost )
 			self.sendOpen();
@@ -4054,6 +4084,76 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const name = id.name;
 		const nameStr = name + ': ' + str;
 		console.log( nameStr, obj );
+	}
+	
+})( library.rtc );
+
+// SINK - extends peer
+(function( ns, undefined ) {
+	ns.Sink = function( conf ) {
+		const self = this;
+		library.rtc.Peer.call( self, conf );
+		
+		self.isHost = true;
+		
+		self.log( 'Sink' );
+	}
+	
+	ns.Sink.prototype = Object.create( library.rtc.Peer.prototype );
+	
+	// Pri>ate
+	
+	ns.Sink.prototype.createSession = function() {
+		const self = this;
+		self.log( 'sink.createSession', self.id );
+		if ( self.session ) {
+			self.log( 'createSession', {
+				state   : self.state,
+				session : self.session,
+			});
+			return;
+		}
+		
+		if ( !self.media )
+			self.media = new window.MediaStream();
+		
+		const peerName = self.identity.name;
+		const type = 'sink';
+		if ( self.alpha )
+			self.closeData();
+		
+		const opts = {
+			isHost          : self.isHost,
+			//useDefaultCodec : self.useDefaultCodec,
+		};
+		
+		self.session = new library.rtc.Session(
+			type,
+			self.isHost,
+			self.signal,
+			self.media,
+			self.rtcConf,
+			opts,
+			peerName
+		);
+		
+		self.session.on( 'track-add'   , e => self.trackAdded( e ));
+		self.session.on( 'track-remove', e => self.trackRemoved( e ));
+		self.session.on( 'nostream'    , sendNoStream );
+		self.session.on( 'state'       , stateChange );
+		self.session.on( 'stats'       , statsUpdate );
+		self.session.on( 'error'       , sessionError );
+		self.session.on( 'datachannel' , dataChannel );
+		
+		self.showSelfie();
+		
+		function modSDP( e ) { return self.modifySDP( e, type ); }
+		
+		function sendNoStream( e ) { self.sendNoStream( type ); }
+		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
+		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
+		function sessionError( e ) { self.handleSessionError( e, type ); }
+		function dataChannel( e ) { self.bindDataChannel( e ); }
 	}
 	
 })( library.rtc );
