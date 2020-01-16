@@ -1601,7 +1601,7 @@ library.component = library.component || {};
 			.catch( playErr );
 			
 		function playOk( e ) {
-			//console.log( 'Peer.playStream - ok', e );
+			console.log( 'Peer.playStream - ok', e );
 		}
 		
 		function playErr( ex ) {
@@ -2072,6 +2072,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.bindPeerCommon = function() {
 		const self = this;
+		console.log( 'bindPeerCommon', self );
 		self.peer.on( 'media'           , handleMedia );
 		self.peer.on( 'track'           , handleTrack );
 		self.peer.on( 'legacy-stream'   , handleLegacyStream );
@@ -2136,6 +2137,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleMedia = function( media ) {
 		const self = this;
+		console.log( 'handleMedia', media );
 		if ( !media )
 			return;
 		
@@ -2210,6 +2212,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleTrack = function( type, track ) {
 		const self = this;
+		console.log( 'UIPeer.handleTrack', track );
 		// set state
 		if ( !self.isUpdatingStream ) {
 			self.stream.pause();
@@ -2225,6 +2228,7 @@ library.component = library.component || {};
 		
 		self.stream.srcObject.addTrack( track );
 		self.stream.load();
+		console.log( 'stream.load called' );
 	}
 	
 	ns.Peer.prototype.removeTrack = function( type ) {
@@ -2424,6 +2428,7 @@ library.component = library.component || {};
 		self.bindStreamResize();
 		
 		function play( e ) {
+			console.log( 'PLAY', e );
 			self.updateAudioSink();
 			self.playStream();
 		}

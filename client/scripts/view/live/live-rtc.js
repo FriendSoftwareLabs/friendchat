@@ -2581,6 +2581,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		// comapre, lowest stamp will be it
 		if ( null == self.isHost )
 			self.setDoInit( self.syncStamp, remoteStamp );
+		else {
+			self.stopSync();
+			if ( !self.isHost )
+				self.sendOpen();
+		}
 	}
 	
 	ns.Peer.prototype.handleSyncAccept = function( stamps ) {
@@ -3727,7 +3732,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.checkStats( stats.data );
-		self.emit( 'state', stats );
+		//self.emit( 'state', stats );
 	}
 	
 	ns.Peer.prototype.checkStats = function( stats ) {
@@ -3736,6 +3741,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		self.log( 'checkStats', stats );
+		return;
 		const trans = stats.transport;
 		const inn = stats.inbound;
 		const audio = inn.audio;
@@ -4094,7 +4100,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		library.rtc.Peer.call( self, conf );
 		
-		self.isHost = true;
+		self.isHost = false;
 		
 		self.log( 'Sink' );
 	}
@@ -4102,6 +4108,33 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Sink.prototype = Object.create( library.rtc.Peer.prototype );
 	
 	// Pri>ate
+	
+	ns.Sink.prototype.init = function( parentSignal ) {
+		const self = this;
+		// websocket / signal server path
+		self.signal = new library.component.EventNode(
+			self.id,
+			parentSignal,
+			eventSink
+		);
+		
+		function eventSink( type, event ) {
+			self.log( 'Peer.eventsink', {
+				t : type,
+				e : event,
+			});
+		}
+		
+		self.bindSignalChannel();
+		
+		/*
+		// selfie
+		self.streamHandlerId = self.selfie.on( 'selfie', handleStream );
+		function handleStream( e ) { self.handleSelfieStream( e ); }
+		*/
+		
+		self.startSync();
+	}
 	
 	ns.Sink.prototype.createSession = function() {
 		const self = this;
@@ -4124,6 +4157,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const opts = {
 			isHost          : self.isHost,
+			useDefaultCodec : true,
 			//useDefaultCodec : self.useDefaultCodec,
 		};
 		
@@ -4154,6 +4188,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
 		function sessionError( e ) { self.handleSessionError( e, type ); }
 		function dataChannel( e ) { self.bindDataChannel( e ); }
+	}
+	
+	ns.Sink.prototype.updateTracks = function() {
+		const self = this;
+		self.log( 'updateTracks - lol no' );
 	}
 	
 })( library.rtc );

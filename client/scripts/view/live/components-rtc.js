@@ -1145,7 +1145,7 @@ library.rtc = library.rtc || {};
 		self.log( 'PeerConnection conf', peerConf );
 		self.conn = new window.RTCPeerConnection( peerConf );
 		self.conn.onconnectionstatechange = connStateChange;
-		self.conn.onaddstream = streamAdded;
+		//self.conn.onaddstream = streamAdded;
 		self.conn.ontrack = onTrack;
 		self.conn.ondatachannel = dataChannel;
 		self.conn.onicecandidate = iceCandidate;
@@ -1347,6 +1347,9 @@ library.rtc = library.rtc || {};
 		}
 		
 		function buildTransport( byType, byId ) {
+			if ( !byType.transport )
+				return null;
+			
 			const t = byType.transport[ 0 ];
 			const p = byId[ t.selectedCandidatePairId ];
 			const local = byId[ p.localCandidateId ];
@@ -1827,7 +1830,6 @@ library.rtc = library.rtc || {};
 	ns.Session.prototype.handleRemoteOffer = function( sdp ) {
 		const self = this;
 		self.logSDP( sdp, 'remote offer' );
-		
 		if (
 			!(( self.conn.signalingState === 'stable' )
 			|| ( self.conn.signalingState === 'have-remote-offer' ))
@@ -2046,7 +2048,6 @@ library.rtc = library.rtc || {};
 	ns.Session.prototype.trackAdded = function( data ) {
 		const self = this;
 		self.log( 'trackAdded', data );
-		self.log( 'trackAdded', data );
 		/*
 		if ( self.useOnStream )
 			return;
@@ -2072,7 +2073,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.streamAdded = function( e ) {
 		const self = this;
-		self.log( 'streamAdded - deprecated', e );
+		//self.log( 'streamAdded - deprecated', e );
 				
 		/*
 		self.log( 'streamAdded', e );
