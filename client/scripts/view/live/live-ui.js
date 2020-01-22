@@ -111,6 +111,19 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.UI.prototype.setRecording = function( isRecording ) {
+		const self = this;
+		console.log( 'setRecording', isRecording );
+		if ( isRecording === self.isRecording )
+			return;
+		
+		self.isRecording = isRecording;
+		if ( !self.recording )
+			return;
+		
+		self.recording.classList.toggle( 'hidden', !self.isRecording );
+	}
+	
 	// Private
 	
 	ns.UI.prototype.init = function() {
@@ -216,6 +229,7 @@ library.component = library.component || {};
 		self.shareLinkBtn = document.getElementById( 'share-link-btn' );
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.teaseChat = document.getElementById( 'tease-chat-container' );
+		self.recording = document.getElementById( 'recording' );
 		
 		self.uiPaneContainer = document.getElementById( 'live-ui-panes' );
 		self.liveContent = document.getElementById( 'live-content' );

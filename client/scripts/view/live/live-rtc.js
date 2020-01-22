@@ -77,6 +77,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.guestAvatar = conf.guestAvatar;
 		self.mode = conf.rtcConf.mode || null;
 		self.topology = conf.rtcConf.topology || 'peer';
+		self.isRecording = conf.rtcConf.isRecording || false;
 		self.quality = conf.rtcConf.quality || null;
 		self.permissions = conf.rtcConf.permissions;
 		self.localSettings = conf.localSettings || {};
@@ -129,6 +130,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.share.show();
 		
 		self.statusMsg = self.ui.initStatusMessage();
+		
+		if ( self.isRecording )
+			self.ui.setRecording( self.isRecording );
+		
 		// do init checks
 		self.initChecks = new library.rtc.InitChecks( self.statusMsg );
 		self.initChecks.on( 'source-select', showSourceSelect );

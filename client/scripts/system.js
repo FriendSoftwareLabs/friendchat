@@ -2348,6 +2348,7 @@ library.rtc = library.rtc || {};
 				mode        : roomConf.mode,
 				sourceId    : roomConf.sourceId,
 				topology    : roomConf.topology,
+				isRecording : roomConf.isRecording,
 			},
 		};
 		self.view = new library.view.Live(

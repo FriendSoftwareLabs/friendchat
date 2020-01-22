@@ -1302,6 +1302,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.setSettings = function( settings ) {
 		const self = this;
+		console.log( 'PresenceRoom.setSettings', settings );
 		const keys = Object.keys( settings );
 		keys.forEach( k => {
 			const value = settings[ k ];
@@ -1328,7 +1329,7 @@ library.contact = library.contact || {};
 		}
 		else
 			showView( settings );
-			
+		
 		function authIdsBack( list ) {
 			const ids = {};
 			list.forEach( id => {
@@ -1378,6 +1379,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleSettingUpdate = function( event ) {
 		const self = this;
+		console.log( 'PresenceRoom.handleSettingUpdate', event );
 		if ( !self.settings )
 			return;
 		
