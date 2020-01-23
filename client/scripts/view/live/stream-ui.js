@@ -26,8 +26,10 @@ library.view = library.view || {};
 library.component = library.component || {};
 
 (function( ns, undefined ) {
-	ns.UI = function( conn, liveConf, localSettings ) {
+	ns.StreamUI = function( conn, liveConf, localSettings ) {
 		const self = this;
+		library.view.UI.call( self, conn, liveConf, localSettings );
+		
 		self.conn = conn;
 		self.userId = liveConf.userId;
 		self.sourceId = liveConf.rtcConf.sourceId;
@@ -105,6 +107,12 @@ library.component = library.component || {};
 		};
 		self.shareUI = self.addUIPane( 'share', conf );
 		return self.shareUI;
+	}
+	
+	ns.UI.prototype.addSettings = function( conf ) {
+		const self = this;
+		console.log( 'addSettings', conf );
+		return self.addUIPane( 'source-select', conf );
 	}
 	
 	ns.UI.prototype.addExtConnPane = function( onshare ) {

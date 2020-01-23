@@ -18,6 +18,8 @@
 			webclient/apps/FriendChat/scripts/view/live/components-rtc.js;
 			webclient/apps/FriendChat/scripts/view/live/init-checks.js;
 			webclient/apps/FriendChat/scripts/view/live/ui-panes.js;
+			webclient/apps/FriendChat/scripts/view/live/live-rtc.js;
+			webclient/apps/FriendChat/scripts/view/live/live-ui.js;
 			webclient/apps/FriendChat/scripts/view/live/stream-rtc.js;
 			webclient/apps/FriendChat/scripts/view/live/stream-ui.js;
 			webclient/apps/FriendChat/scripts/view/live/live.js
@@ -35,7 +37,7 @@
 	</head>
 	<body id="hello" class="">
 		<div id="live" class="std-bg group row cover MouseDefault">
-			<div id="main-content" class="expand bar column">
+			<div id="live-content" class="expand bar column">
 				<div id="stream-container" class="expand">
 					<div id="waiting-for-container" class="abs-cover center-child">
 						<div id="waiting-for-stream-fritz">
@@ -237,20 +239,28 @@ current,
 
 -->
 <script id="select-source-tmpl" type="text/html">
-<div id="source-select" class="solid-bg">
-	<div id="source-body">
-		<div id="source-head"class="group bar start left">
-			<div id="source-back" class="center-child fortify">
-				<i class="fa fa-fw fa-reply"></i>
-			</div>
-			<div id="source-title" class="expand">
-				{i18n_select_input_source}
-			</div>
+<div id="source-select" class="grad-bg-down bar column start">
+	<div id="source-head"class="fortify group row">
+		<div id="source-title" class="expand Padding">
+			{i18n_audio_video_settings}
 		</div>
-		<div id="source-status">
-			<div id="source-explain">
-				{i18n_these_are_the_media}
+		<div id="source-back" class="btn center-child fortify hidden">
+			<i class="fa fa-fw fa-close"></i>
+		</div>
+	</div>
+	<div id="source-preview" class="expand">
+		<div id="source-preview-reset" class="center-child">
+			<div id="source-preview-hint" class="LED">
+				<div>
+					{i18n_camera_preview}
+				</div>
+				<i id="source-no-preview-i" class="fa fa-fw fa-eye On"></i>
 			</div>
+			<video id="source-preview-video" src="" playinline autoplay="autoplay" class="">
+		</div>
+	</div>
+	<div id="source-inputs" class="fortify">
+		<div id="source-status">
 			<div id="source-error" class="hidden">
 				<div class="error-message">
 				</div>
@@ -267,69 +277,67 @@ current,
 			</div>
 		</div>
 		<div id="source-input">
-			<div id="audioinput-container" class="group row">
-				<div class="expand">
-					<div class="select-message">
-						{i18n_available_audio_sources}
-					</div>
-					<div id="audioinput-checking" class="group row hidden">
-						<div class="std-icon fortify">
-							<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-						</div>
-						<div class="checking-message expand">
-							{i18n_checking_input_source}
-						</div>
-					</div>
-					<div id="audioinput-error" class="error-message hidden">
-					</div>
-					<div id="audioinput-select">
-					</div>
-				</div>
-				<div id="source-select-av-container" class="fortify">
-				</div>
-			</div>
-			<div id="videoinput-container">
-				<div class="select-message">
-					{i18n_available_video_sources}
-				</div>
-				<div id="videoinput-error" class="error-message hidden">
-				</div>
-				<div id="videoinput-select">
-				</div>
-			</div>
-			<div id="audiooutput-container">
-				<div class="select-message">
-					{i18n_available_speakers}
-				</div>
+			<div id="audiooutput-container" class="hidden">
 				<div id="audiooutput-error" class="error-message hidden">
 				</div>
-				<div id="audiooutput-select">
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i class="fa fa-fw fa-volume-up"></i>
+					</div>
+					<div id="audiooutput-select" class="expand">
+					</div>
 				</div>
-				<video id="audiooutput-test" class="hidden">
+				<video id="audiooutput-test" class="hidden" playinline>
 			</div>
-			<div id="source-select-buttons" class="group row tighten">
-				<button class="button accept apply-select" title="Apply current selection">
-					<i class="fa fa-fw fa-check"></i>
-					{i18n_apply}
-				</button>
-				<button class="button refresh-select" title="Check for changes in available devices">
-					<i class="fa fa-fw fa-refresh"></i>
-					{i18n_refresh}
-				</button>
-				<button class="button danger discard-select" title="Discard any changes and close">
-					<i class="fa fa-fw fa-close"></i>
-					{i18n_discard}
-				</button>
+			<div id="audioinput-container" class="">
+				<div id="audioinput-error" class="error-message hidden">
+				</div>
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i id="audioinput-icon"
+							class="fa fa-fw fa-microphone">
+						</i>
+						<i id="audioinput-checking"
+							class="fa fa-fw fa-circle-o-notch fa-spin hidden">
+						</i>
+					</div>
+					<div id="audioinput-select" class="expand">
+					</div>
+					<div id="source-select-av-container" class="fortify">
+					</div>
+				</div>
+			</div>
+			<div id="videoinput-container" class="">
+				<div id="videoinput-error" class="error-message hidden">
+				</div>
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i class="fa fa-fw fa-video-camera"></i>
+					</div>
+					<div id="videoinput-select" class="expand">
+					</div>
+				</div>
 			</div>
 		</div>
-	</div>
-	<div id="source-preview">
-		<div class="preview-hint">
-			Preview
-		</div>
-		<div class="preview-show">
-			<i id="source-select-no-preview" class="fa fa-fw fa-close"></i>
-			<video id="source-select-preview" src="">
+		<div id="source-select-buttons" class="group row end btn-row">
+			<div id="apply-select"
+				class="btn text"
+				title="Apply current selection">
+				<i class="fa fa-fw fa-check"></i>
+				{i18n_save}
+			</div>
+			<div id="discard-select"
+				class="btn text danger"
+				title="Discard any changes and close">
+				<i class="fa fa-fw fa-close"></i>
+				{i18n_cancel}
+			</div>
+			<div id="refresh-select"
+				class="btn text hidden"
+				title="Check for changes in available devices">
+				<i class="fa fa-fw fa-cube"></i>
+				{i18n_refresh}
+			</div>
 		</div>
 	</div>
 </script>
@@ -807,6 +815,25 @@ welcomeRoomName
 		</div>
 	</form>
 </div>
+</script>
+
+<!-- tease chat
+	
+-->
+<script id="tease-chat-tmpl" type="text/html">
+<div id="tease-chat" class="btn text group row btn-row"><!--
+	<div id="tease-chat-content" class="expand">
+	</div>
+	--><i class="fa fa-fw fa-comment-o"></i>
+	<div id="tease-chat-num" class="fortify">
+	</div><!--
+	<div id="tease-chat-goto-chat" class="btn fortify">
+		<i class="fa fa-fw fa-keyboard-o"></i>
+	</div>
+	<div id="tease-chat-clear" class="btn danger fortify">
+		<i class="fa fa-fw fa-close"></i>
+	</div>
+--></div>
 </script>
 
 <!-- chat-tease

@@ -883,11 +883,8 @@ library.component = library.component || {};
 // SourceSelectPane
 (function( ns, undefined ) {
 	ns.SourceSelectPane = function( paneConf ) {
-		if ( !( this instanceof ns.SourceSelectPane ))
-			return new ns.SourceSelectPane( paneConf );
-		
 		const self = this;
-		var conf = paneConf.conf;
+		const conf = paneConf.conf;
 		self.permissions = conf.permissions;
 		self.onselect = conf.onselect;
 		
@@ -996,8 +993,9 @@ library.component = library.component || {};
 		const self = this;
 		self.sources = new library.rtc.MediaDevices();
 		
-		var tmplConf = {};
-		var html = hello.template.get( 'select-source-tmpl', tmplConf );
+		const tmplConf = {};
+		const html = hello.template.get( 'select-source-tmpl', tmplConf );
+		console.log( 'html', html );
 		self.insertPane( html );
 		
 		self.bind();
@@ -1007,8 +1005,8 @@ library.component = library.component || {};
 	ns.SourceSelectPane.prototype.bind = function() {
 		const self = this;
 		const bg = document.getElementById( self.paneId );
-		self.previewEl = document.getElementById( 'source-preview-video' );
 		self.previewHint = document.getElementById( 'source-preview-hint' );
+		self.previewEl = document.getElementById( 'source-preview-video' );
 		self.previewEl.muted = true;
 		self.previewEl.preload = 'metadata';
 		

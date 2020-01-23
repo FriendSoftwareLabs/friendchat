@@ -71,9 +71,9 @@ library.rtc = library.rtc || {};
 	
 	ns.SourceSelect.prototype.init = function() {
 		const self = this;
-		var uiConf = {
+		const uiConf = {
 			permissions : self.permissions,
-			onselect : onselect,
+			onselect    : onselect,
 		};
 		self.ui = self.view.addSettings( uiConf );
 		//self.ui.show();

@@ -59,28 +59,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 })();
 
 (function( ns, undefined ) {
-	ns.RTC = function( conn, view, conf, onclose, onready ) {
+	ns.RTCStream = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
-		self.conn = conn;
-		self.view = view;
-		self.userId = conf.userId;
+		library.rtc.RTC.call( self, conn, UI, conf, onclose, onready );
+		
 		self.sourceId = conf.rtcConf.sourceId || null;
-		self.rtcConf = conf.rtcConf;
-		self.isGuest = conf.isGuest;
-		self.userList = conf.peerList;
-		self.identities = conf.identities || {};
-		self.guestAvatar = conf.guestAvatar;
+		
 		self.mode = conf.rtcConf.mode || null;
-		self.quality = conf.rtcConf.quality || null;
-		self.permissions = conf.rtcConf.permissions;
-		self.localSettings = conf.localSettings;
-		self.onclose = onclose;
-		self.onready = onready;
+		self.topology = 'stream'; //conf.rtcConf.topology || 'peer';
 		
-		self.users = {};
-		self.chat = null;
-		
-		self.init( conf );
 	}
 	
 	// Public
@@ -100,10 +87,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	// Private
-	ns.RTC.prototype.init = function( conf ) {
+	ns.RTC.prototype.init = function() {
 		const self = this;
+		if ( 'DESKTOP' != window.View.deviceType )
+			self.isMobile = true;
 		
-		self.bindConn();
+		self.convertLegacyDevices();
 		self.setupUsers();
 		self.bindMenu();
 		
@@ -126,13 +115,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		// ui
-		let chatConf = {
-			userId     : self.userId,
-			identities : self.identities,
-			roomName   : conf.roomName,
-			logTail    : conf.logTail,
-		};
-		self.chat = self.view.addChat( chatConf, self.conn );
+		self.chat = self.view.addChat( self.userId, self.identities, self.conn );
 		self.share = self.view.addShare( self.conn );
 		
 		// do init checks
@@ -234,6 +217,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
+	ns.RTC.prototype.convertLegacyDevices = function() {
+		const self = this;
+		const pref = self.localSettings.preferedDevices;
+		if ( !pref )
+			return;
+		
+		const thePutsBros = Object.keys( pref );
+		thePutsBros.forEach( type => {
+			if ( 'string' !== typeof( pref[ type ]))
+				return;
+			
+			pref[ type ] = {
+				deviceId : pref[ type ],
+			};
+		});
+	}
+	
 	ns.RTC.prototype.bindMenu = function() {
 		const self = this;
 		self.menu = self.view.buildMenu();
@@ -256,6 +256,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function username( e ) { self.changeUsername(); }
 		function sourceSelect( e ) { self.showSourceSelect(); }
 		function screenMode( e ) { self.handleScreenMode(); }
+	}
+	
+	ns.RTC.prototype.bindUI = function() {
+		const self = this;
+		self.ui.on( 'close', e => self.close());
+		self.ui.on( 'settings', e => self.selfie.showSourceSelect());
+		self.ui.on( 'share-screen', e => self.selfie.toggleShareScreen());
 	}
 	
 	ns.RTC.prototype.handleMute = function( e ) {
@@ -402,6 +409,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !testsPassed )
 			return;
 		
+		self.bindConn();
+		
 		const onready = self.onready;
 		delete self.onready;
 		if ( onready )
@@ -414,7 +423,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.conn.on( 'identity'   , identity   );
 		self.conn.on( 'identities' , identities );
 		self.conn.on( 'settings'   , settings   );
-		self.conn.on( 'nested-app' , nestedApp  );
 		self.conn.on( 'source'     , source     );
 		self.conn.on( 'quality'    , quality    );
 		self.conn.on( 'join'       , join       );
@@ -425,17 +433,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function identity(   e ) { self.handleIdentity(   e ); }
 		function identities( e ) { self.handleIdentities( e ); }
 		function settings(   e ) { self.handleSettings(   e ); }
-		function nestedApp(  e ) { self.handleNestedApp(  e ); }
 		function source(     e ) { self.handleSource(     e ); }
 		function quality(    e ) { self.handleQuality(    e ); }
 		function join(       e ) { self.handleUserJoin(   e ); }
 		function leave(      e ) { self.handleUserLeft(   e ); }
 		function close(      e ) { self.handleClosed(     e ); }
-	}
-	
-	ns.RTC.prototype.handleNestedApp = function( event ) {
-		const self = this;
-		console.log( 'handleNestedApp', event );
 	}
 	
 	ns.RTC.prototype.handlePing = function( timestamp ) {

@@ -110,7 +110,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( 'DESKTOP' != window.View.deviceType )
 			self.isMobile = true;
 		
-		
 		if ( 'star' === self.topology )
 			self.setupProxy();
 		
