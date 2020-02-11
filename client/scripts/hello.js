@@ -674,6 +674,17 @@ var hello = null;
 		
 		const conf = self.config.run;
 		if ( 'live-invite' === conf.type ) {
+			console.log( 'live-invite', conf );
+			const data = conf.data;
+			if ( data.name && data.permissions ) {
+				const opts = {
+					name        : data.name,
+					permissions : data.permissions,
+				};
+				setupUser( opts );
+				return;
+			}
+			
 			const randomName = library.tool.getName();
 			const askConf = {
 				name          : randomName,
