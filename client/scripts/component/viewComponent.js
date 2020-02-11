@@ -1692,13 +1692,19 @@ library.component = library.component || {};
 		if ( self.isTypingHint )
 			self.isTypingHint.classList.toggle( 'blink-icon', true );
 		
-		const event = {
-			type : 'set-typing',
-			data : null,
-		};
+		sendTyping();
+		if ( null == self.typingInterval )
+			self.typingInterval = window.setInterval( sendTyping, 1000 * 8 );
 		
-		if ( self.onstate )
+		function sendTyping() {
+			if ( !self.onstate )
+				return;
+			
+			const event = {
+				type : 'set-typing',
+			};
 			self.onstate( event );
+		}
 	}
 	
 	ns.MultiInput.prototype.clearIsTyping = function() {
@@ -1707,6 +1713,9 @@ library.component = library.component || {};
 			return;
 		
 		self.isTyping = false;
+		if ( null != self.typingInterval )
+			window.clearInterval( self.typingInterval );
+		
 		if ( self.isTypingHint )
 			self.isTypingHint.classList.toggle( 'blink-icon', false );
 		
