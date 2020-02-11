@@ -2987,15 +2987,19 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		it will still be visible in the list, but not longer considered for sorting
 */
 ( function( ns, undefined ) {
-	ns.ListOrder = function( listElId, orderBy ) {
+	ns.ListOrder = function( listElId, orderBy, debug ) {
 		const self = this;
 		if ( !orderBy || !orderBy.length )
 			orderBy = [ 'time', 'name' ];
 		
 		self.list = null;
 		self.orderBy = orderBy;
+		self.debug = debug || false;
+		
+		self.needsReorder = [];
 		self.prio = [];
 		self.prio[ 0 ] = []; // 0, no prio
+		self.items = {};
 
 		self.init( listElId );
 	}
@@ -3028,6 +3032,9 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			return;
 		}
 		
+		if ( self.debug )
+			console.log( 'add', itemConf );
+		
 		if ( self.checkIsAdded( cId ))
 			self.update( itemConf );
 		else
@@ -3049,6 +3056,9 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			self.remove( cId );
 			return;
 		}
+		
+		if ( self.debug )
+			console.log( 'update', itemConf );
 		
 		self.updateInPrio( itemConf );
 	}
@@ -3079,6 +3089,8 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			foundIn = prio;
 			return true;
 		});
+		
+		delete self.items[ clientId ];
 		return !!foundIn;
 	}
 	
@@ -3153,30 +3165,43 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	
 	ns.ListOrder.prototype.checkIsAdded = function( id ) {
 		const self = this;
+		return !!self.items[ id ];
+		/*
 		const index = self.getItemIndex( id );
 		return index != null;
+		*/
 	}
 	
 	ns.ListOrder.prototype.addToPrio = function( conf ) {
 		const self = this;
+		const pri = self.normalizePriority( conf.priority );
 		const id = conf.clientId;
-		let pri = self.normalizePriority( conf.priority );
-		const time = conf.time || null;
-		const name = conf.name || '';
+		const item = {
+			id  : id,
+			pri : pri,
+		};
+		self.orderBy.forEach( type => {
+			item[ type ] = conf[ type ];
+		});
 		if ( !self.prio[ pri ])
 			self.prio[ pri ] = [];
 		
 		const prio = self.prio[ pri ];
-		prio.push({
-			id   : id,
-			time : time,
-			name : name,
-		});
+		prio.push( item );
+		self.items[ id ] = item;
+		if ( self.debug )
+			console.log( 'addToPrio', {
+				confpri : conf.priority,
+				pri     : pri,
+				item    : item,
+			});
 		
+		/*
 		if ( ( null == time ) && ( '' === name )) {
 			self.applyOrder( pri );
 			return;
 		}
+		*/
 		
 		self.reorder( pri );
 	}
@@ -3184,31 +3209,69 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	ns.ListOrder.prototype.updateInPrio = function( conf ) {
 		const self = this;
 		const id = conf.clientId;
-		let pri = self.normalizePriority( conf.priority );
-		const prio = self.prio[ pri ];
-		if ( !prio ) {
-			console.log( 'ListOrder.updateInPrio - prio not found', {
-				conf : conf,
-				pri  : pri,
-				prio : self.prio,
-			});
+		const item = self.items[ id ];
+		if ( !item ) {
+			if ( self.debug )
+				console.log( 'no item for', {
+					conf  : conf,
+					items : self.items,
+				});
+			
 			return;
 		}
 		
-		prio.some( item => {
-			if ( item.id != id )
-				return false;
+		let pri = self.normalizePriority( item.priority );
+		self.orderBy.forEach( t => {
+			const val = conf[ t ];
+			if ( undefined === val )
+				return;
 			
-			item.time = conf.time;
-			item.name = conf.name;
-			return true;
+			item[ t ] = val;
 		});
+		
+		if ( self.debug )
+			console.log( 'updateInPrio', item );
 		
 		self.reorder( pri );
 	}
 	
 	ns.ListOrder.prototype.reorder = function( pri  ) {
 		const self = this;
+		if ( self.debug )
+			console.log( 'reorder', pri );
+		
+		if ( null != self.reorderTimeout ) {
+			window.clearTimeout( self.reorderTimeout );
+			self.reorderTimeout = window.setTimeout( allowReorder, 250 );
+			if ( -1 === self.needsReorder.indexOf( pri ))
+				self.needsReorder.push( pri );
+			
+			return;
+		}
+		
+		self.reorderTimeout = window.setTimeout( allowReorder, 250 );
+		//self.needsReorder = [];
+		self.doReorder( pri );
+		
+		function allowReorder() {
+			self.reorderTimeout = null;
+			if ( self.debug )
+				console.log( 'allowReorder', self.needsReorder );
+			
+			if ( self.needsReorder.length )
+				self.needsReorder.forEach( pri => {
+					self.doReorder( pri );
+				});
+			
+			self.needsReorder = [];
+		}
+	}
+	
+	ns.ListOrder.prototype.doReorder = function( pri ) {
+		const self = this;
+		if ( self.debug )
+			console.log( 'actually reorder', pri );
+		
 		const prio = self.prio[ pri ];
 		if ( !prio ) {
 			console.log( 'ListOrder.reorder - no prio found', {
@@ -3220,10 +3283,44 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		
 		prio.sort(( a, b ) => {
 			let res = 0;
+			self.orderBy.some( t => {
+				const av = a[ t ];
+				const bv = b[ t ];
+				if ( undefined === av )
+					return;
+				
+				const sorter = typeof( av );
+				/*
+				console.log( 'sort', {
+					t      : t,
+					av     : av,
+					bv     : bv,
+					sorter : sorter,
+				});
+				*/
+				if ( 'number' == sorter )
+					res = sortByNumber( av, bv );
+				
+				if ( 'string' == sorter )
+					res = sortByString( av, bv );
+				
+				if ( 'boolean' == sorter )
+					res = sortByBool( av, bv );
+				
+				if ( 0 !== res )
+					return true;
+				else
+					return false;
+			});
+			
+			//console.log( 'res', res );
+			
+			/*
 			if ( null != a.time )
-				res = sortByTime( a, b );
+				res = sortByNumber( a, b );
 			else
-				res = sortByName( a, b );
+				res = sortByString( a, b );
+			*/
 			
 			return res;
 		});
@@ -3231,35 +3328,47 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		
 		self.applyOrder( pri );
 		
-		function sortByTime( a, b ) {
-			at = a.time || 0;
-			bt = b.time || 0;
-			if ( at < bt )
+		function sortByNumber( an, bn ) {
+			if ( an < bn )
 				return 1;
-			if ( at > bt )
+			if ( an > bn )
 				return -1;
 			
-			if ( a.name && b.name )
-				return sortByName( a, b );
-			else
-				return 0;
+			return 0;
 		}
 		
-		function sortByName( a, b ) {
-			if ( !a.name || !b.name )
+		function sortByString( as, bs ) {
+			if ( !as || !bs )
 				return 0;
 			
-			const an = a.name.toLowerCase();
-			const bn = b.name.toLowerCase();
-			if ( '' === an )
+			as = as.toLowerCase();
+			bs = bs.toLowerCase();
+			if ( '' === as )
 				return -1;
-			if ( '' === bn )
+			if ( '' === bs )
 				return 1;
-			if ( an < bn )
+			if ( as < bs )
 				return -1;
-			if ( an > bn )
+			if ( as > bs )
 				return 1;
+			
 			return 0;
+		}
+		
+		function sortByBool( ab, bb ) {
+			/*
+			console.log( 'sortByPool', {
+				ab : ab,
+				bb : bb,
+			});
+			*/
+			if ( ab === bb )
+				return 0;
+			
+			if ( ab )
+				return -1;
+			else
+				return 1;
 		}
 	}
 	
@@ -3284,6 +3393,13 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		reapply( nextEl, prio );
 		
 		function reapply( before, list ) {
+			if ( self.debug )
+				console.log( 'reapply', {
+					before   : before,
+					list     : list,
+					selflist : self.list,
+				});
+			
 			list.forEach( item => {
 				id = item.id;
 				const el = document.getElementById( id );
@@ -3294,7 +3410,17 @@ The menu will remove itself if it loses focus or a menu item is clicked
 					});
 					return;
 				}
-				self.list.insertBefore( el, before );
+				try {
+					self.list.insertBefore( el, before );
+				} catch( ex ) {
+					console.log( 'insertBefore ex', {
+						ex       : ex,
+						el       : el,
+						before   : before,
+						selflist : self.list,
+						self     : self,
+					});
+				}
 			});
 		}
 	}

@@ -598,7 +598,7 @@ var hello = window.hello || {};
 		container.appendChild( self.el );
 		self.active = document.getElementById( 'recent-active' );
 		self.inactive = document.getElementById( 'recent-inactive' );
-		self.itemOrder = new library.component.ListOrder( 'recent-active' );
+		self.itemOrder = new library.component.ListOrder( 'recent-active', null );
 		
 		self.splash = document.getElementById( 'recent-splash' );
 		//self.waiting = document.getElementById( 'recent-waiting' );
