@@ -1262,7 +1262,10 @@ library.view = library.view || {};
 	ns.Presence.prototype.init = function() {
 		const self = this;
 		self.roomOrder = new library.component.ListOrder( self.roomItemsId );
-		self.contactOrder = new library.component.ListOrder( self.contactItemsId );
+		self.contactOrder = new library.component.ListOrder(
+			self.contactItemsId,
+			[ 'online', 'name' ]
+		);
 		
 		self.queryMap[ 'account-ask' ] = askForAccount;
 		self.queryMap[ 'account-create' ] = createAccount;
@@ -1613,12 +1616,13 @@ library.view = library.view || {};
 			containerId : self.contactItemsId,
 			userId      : self.userId,
 			contact     : conf,
+			order       : self.contactOrder,
 		};
 		const contact = new library.view.PresenceContact( contactConf, window.View );
 		self.contacts[ cId ] = contact;
 		self.contactIds.push( cId );
 		self.emit( 'add', contact );
-		self.contactOrder.add( conf.identity );
+		//self.contactOrder.add( conf.identity );
 	}
 	
 	ns.Presence.prototype.handleContactJoin = function( conf ) {
@@ -2209,6 +2213,7 @@ library.view = library.view || {};
 		self.type = 'contact';
 		self.data = conf.contact;
 		self.userId = conf.userId;
+		self.order = conf.order;
 		self.userLive = false;
 		self.contactLive = false;
 		self.isOnline = false;
@@ -2275,6 +2280,12 @@ library.view = library.view || {};
 		function message( e ) { self.handleMessage( e ); }
 		function msgWaiting( e ) { self.handleMsgWaiting( e ); }
 		
+		const orderConf = {
+			clientId : self.id,
+			name     : self.identity.name,
+			online   : self.identity.isOnline,
+		};
+		self.order.add( orderConf );
 		self.handleOnline( self.identity.isOnline );
 		
 		if ( !contact.relation )
@@ -2425,6 +2436,12 @@ library.view = library.view || {};
 		const self = this;
 		isOnline = !!isOnline;
 		self.isOnline = isOnline;
+		const orderConf = {
+			clientId : self.id,
+			online   : self.isOnline,
+			name     : self.identity.name,
+		};
+		self.order.update( orderConf );
 		self.emit( 'online', isOnline );
 		if ( isOnline ) {
 			self.onlineStatus.set( 'online' );

@@ -272,6 +272,10 @@ var hello = window.hello || {};
 	// add defaults to true
 	ns.GroupUser.prototype.setState = function( type, add ) {
 		const self = this;
+		console.log( 'GroupUser.setState', {
+			type : type,
+			add  : add,
+		});
 		if ( !type || !type.length || !isValid( type ))
 			return;
 		
@@ -287,6 +291,9 @@ var hello = window.hello || {};
 		self.stateOrder.some( setTopState );
 		let stateKlass = self.stateKlasses[ topState ] || '';
 		self.stateEl.className = 'fa fa-fw ' + stateKlass;
+		
+		if ( 'typing' === type )
+			self.handleTyping( add );
 		
 		function setTopState( state ) {
 			if ( !self.states[ state ])
@@ -360,6 +367,23 @@ var hello = window.hello || {};
 				e.preventDefault();
 				self.handleClick( e );
 			}
+		}
+	}
+	
+	ns.GroupUser.prototype.handleTyping = function( add ) {
+		const self = this;
+		console.log( 'GroupUser.handleTyping', add );
+		if ( null != self.typingTimeout ) {
+			window.clearTimeout( self.typingTimeout );
+			self.typingTimeout = null;
+		}
+		
+		if ( !add )
+			return;
+		
+		self.typingTimeout = window.setTimeout( removeTyping, 1000 * 10 );
+		function removeTyping() {
+			self.setState( 'typing', false );
 		}
 	}
 	

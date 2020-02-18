@@ -727,13 +727,19 @@ library.view = library.view || {};
 		if ( !uid )
 			return;
 		
-		const state = 'typing';
-		// 'set-typing' or 'clear-typing'
-		let add = false;
-		if ( 'set-typing' === event.state.type )
-			add = true;
+		if ( !event.state )
+			return;
 		
-		self.users.setState( uid, state, add );
+		const eType = event.state.type;
+		const state = 'typing';
+		let isTyping = null;
+		// 'set-typing' or 'clear-typing'
+		if ( 'set-typing' === eType )
+			isTyping = true;
+		if ( 'clear-typing' === eType )
+			isTyping = false;
+		
+		self.users.setState( uid, state, isTyping );
 	}
 	
 	ns.Presence.prototype.handleLive = function( event ) {

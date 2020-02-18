@@ -1001,6 +1001,10 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
+		console.log( 'Presence.handleAccountInit', {
+			inited : self.initialized,
+			state  : state,
+		});
 		if ( self.initialized )
 			return;
 		
