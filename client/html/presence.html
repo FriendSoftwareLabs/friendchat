@@ -6,10 +6,10 @@
 			webclient/apps/FriendChat/scripts/component/tool.js;
 			webclient/apps/FriendChat/api/logSock.js;
 			webclient/apps/FriendChat/api/view.js;
-			webclient/apps/FriendChat/scripts/component/parser.js;
-			webclient/apps/FriendChat/scripts/component/drop.js;
 			webclient/apps/FriendChat/scripts/component/common.js;
 			webclient/apps/FriendChat/scripts/component/viewComponent.js;
+			webclient/apps/FriendChat/scripts/component/drop.js;
+			webclient/apps/FriendChat/scripts/component/parser.js;
 			webclient/apps/FriendChat/scripts/view/presence/component.js;
 			webclient/apps/FriendChat/scripts/view/presence/presence.js
 		" type="text/javascript"></script>
@@ -719,6 +719,24 @@ itml
 </div>
 </script>
 
-		</div>
+
+<!-- input helper
+id,
+-->
+<script id="input-helper-tmpl" type="text/html">
+<div id="<%= id %>" class="input-helper BackgroundDefault ZebraList Interactive">
+</div>
+</script>
+
+<!-- input helper item
+str
+-->
+<script id="input-helper-item-tmpl" type="text/html">
+<div class="input-helper-item hidden">
+	<%= str %>
+</div>
+</script>
+
+		</div><!-- end of fragments -->
 	</body>
 </html>

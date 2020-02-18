@@ -1018,6 +1018,7 @@ library.contact = library.contact || {};
 			identities  : self.identities,
 			workgroups  : self.workgroups,
 			onlineList  : self.onlineList,
+			atStrings   : self.atStrings,
 			ownerId     : self.ownerId,
 			userId      : self.userId,
 		};
@@ -1037,6 +1038,7 @@ library.contact = library.contact || {};
 		self.chatView.on( 'live', goLive );
 		self.chatView.on( 'contact-open', e => self.handleContactOpen( e ));
 		self.chatView.on( 'invite-show', e => self.showInviter( e ));
+		//self.chatView.on( 'highlight', e => self.handleHighlight( e ));
 		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
 		self.chatView.on( 'close', e => self.closeChat());
 		
@@ -1137,6 +1139,11 @@ library.contact = library.contact || {};
 		}
 	}
 	
+	ns.PresenceRoom.prototype.handleHighlight = function( e ) {
+		const self = this;
+		hello.playMsgAlert();
+	}
+	
 	ns.PresenceRoom.prototype.handleCloseBack = function( e ) {
 		const self = this;
 		self.closeChat();
@@ -1203,9 +1210,11 @@ library.contact = library.contact || {};
 				},
 			};
 			self.toView( viewUpdate );
+			
 			self.updateViewUsers();
 			self.updateIdentities();
 			self.updateRelation( state.relation );
+			self.updateAtStrings();
 			
 			self.initialized = true;
 			// update main view with # of peers in a live session
@@ -1269,6 +1278,106 @@ library.contact = library.contact || {};
 			data : relation,
 		};
 		self.toView( rel );
+	}
+	
+	ns.PresenceRoom.prototype.updateAtStrings = function() {
+		const self = this;
+		const id = self.idc.read( self.userId );
+		if ( !id ) {
+			console.log( 'updateAtString - could not find user', self );
+			return;
+		}
+		
+		const uId = id.clientId;
+		const name = id.name;
+		const nameChecks = self.atStringsFromName( name );
+		const groupChecks = self.atStringsFromGroups( uId );
+		
+		let tests = null;
+		if ( groupChecks )
+			tests = nameChecks.concat( groupChecks );
+		else
+			tests = nameChecks;
+		
+		tests.push( 'all' );
+		tests.push( 'everyone' );
+		
+		self.atStrings = tests;
+		if ( self.mentionPId ) {
+			const update = {
+				atStrings : self.atStrings
+			};
+			self.parser.update( self.mentionPId, update );
+			if ( !self.chatView )
+				return;
+			
+			self.chatView.send({
+				type : 'at-strings',
+				data : update,
+			});
+			return;
+		}
+		
+		const mentionConf = {
+			atStrings : self.atStrings,
+			onlyEmit  : true,
+		};
+		self.parser = new library.component.parse.Parser();
+		self.mentionPId = self.parser.use( 'AtThings', mentionConf, true );
+		self.parser.on( 'mention', atted );
+		
+		function atted( str ) {
+			self.handleHighlight( str );
+		}
+	}
+	
+	ns.PresenceRoom.prototype.atStringsFromGroups = function( uId ) {
+		const self = this;
+		const user = self.users[ uId ];
+		if ( !user )
+			return null;
+		
+		const memberOf = [];
+		if ( !user.workgroups || !user.workgroups.length )
+			return null;
+		
+		const uwgs = user.workgroups
+		const wgs = self.workgroups;
+		if ( !wgs )
+			return null;
+		
+		let relevant = [];
+		if ( wgs.assigned && wgs.assigned.length ) {
+			const ass = wgs.assigned.map( a => a.clientId );
+			relevant = relevant.concat( ass );
+		}
+		
+		if ( wgs.superId )
+			relevant.push( wgs.superId );
+		
+		if ( wgs.workId )
+			relevant.push( wgs.workId );
+		
+		if ( !relevant.length )
+			return null;
+		
+		relevant = relevant.filter( rId => {
+			return uwgs.some( uwId => uwId === rId );
+		});
+		
+		const names = relevant.map( rwId => {
+			const wg = wgs.available[ rwId ];
+			return wg.name;
+		});
+		
+		return names;
+	}
+	
+	ns.PresenceRoom.prototype.atStringsFromName = function( name ) {
+		const self = this;
+		const tests = [];
+		tests.push( name );
+		return tests;
 	}
 	
 	ns.PresenceRoom.prototype.setLastMessage = function() {
@@ -1506,6 +1615,8 @@ library.contact = library.contact || {};
 					type : 'workgroups-assigned',
 					data : self.workgroups.assigned,
 				});
+			
+			self.updateAtStrings();
 		}
 		
 		function add( worg ) {
@@ -1532,6 +1643,8 @@ library.contact = library.contact || {};
 				data : subIds,
 			};
 			self.chatView.send( update );
+			
+			self.updateAtStrings();
 		}
 	}
 	
@@ -1794,7 +1907,8 @@ library.contact = library.contact || {};
 			data : event,
 		}
 		
-		if (( 'msg' === event.type ) 
+		if (
+			( 'msg' === event.type ) 
 			|| ( 'work-msg' === event.type )
 		) {
 			self.onMessage( event.data );
@@ -1818,10 +1932,15 @@ library.contact = library.contact || {};
 			};
 			
 			let silent = false;
-			if ( self.valueAddedRoom )
+			if ( self.valueAddedRoom ) // workrooms added as subrooms
 				silent = true;
 			
 			self.onChatMessage( event, silent );
+			if ( silent )
+				return;
+			
+			if ( !!from )
+				self.parser.work( msg.message );
 			
 			/*
 			self.recentMessage( msg.message, from, msg.time );
@@ -2427,6 +2546,7 @@ library.contact = library.contact || {};
 			( e ) => self.handleCallNotification( e ));
 		
 		self.isOpen = false;
+		self.updateAtStrings();
 		
 		function open( e ) { self.handleOpen( e ); }
 		function init( e ) { self.handleInitializeContact( e ); }
@@ -2529,6 +2649,48 @@ library.contact = library.contact || {};
 		*/
 	}
 	
+	ns.PresenceContact.prototype.updateAtStrings = function() {
+		const self = this;
+		console.log( 'updateAtStrings', self.userId );
+		self.idc.get( self.userId )
+			.then( uBack )
+			.catch( uErr );
+		
+		function uErr( err ) {
+			console.log( 'updateAtStrings - failed to get id', self );
+		}
+		
+		function uBack( user ) {
+			console.log( 'uBack', user );
+			if ( !user )
+				return;
+			
+			const name = user.name;
+			const tests = self.atStringsFromName( name );
+			self.atStrings = tests;
+			if ( self.parser )
+				self.parser.close();
+			
+			const mentionConf = {
+				atStrings : self.atStrings,
+				onlyEmit  : true,
+			};
+			self.parser = new library.component.parse.Parser();
+			self.parser.use( 'AtThings', mentionConf );
+			self.parser.on( 'mention', atted );
+			
+		}
+		
+		function atted( str ) {
+			self.handleHighlight( str );
+		}
+	}
+	
+	ns.PresenceContact.prototype.handleHighlight = function( e ) {
+		const self = this;
+		hello.playMsgAlert();
+	}
+	
 	ns.PresenceContact.prototype.openChat = function( preView ) {
 		const self = this;
 		if ( !self.isOpen ) {
@@ -2566,6 +2728,7 @@ library.contact = library.contact || {};
 			ownerId     : self.ownerId,
 			userId      : self.userId,
 			contactId   : self.contactId,
+			atStrings   : self.atStrings,
 		};
 		
 		if ( preView ) {
@@ -2624,6 +2787,10 @@ library.contact = library.contact || {};
 			};
 			
 			self.onChatMessage( msg );
+			if ( !from )
+				return;
+			
+			self.parser.work( event.message );
 		}
 	}
 	

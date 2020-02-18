@@ -475,6 +475,10 @@ html body .displayNone {
 	height: 5.2em;
 }
 
+.textarea-wrap.four-lines textarea {
+	height: 6.6em;
+}
+
 .item-row > * {
 	margin : 0 0.2em;
 }
@@ -1074,4 +1078,16 @@ html body .hidden {
 	border-radius    : 0.2em;
 	display: flex;
 	align-items: center;
+}
+
+/*
+ Parser
+*/
+
+.at-things {
+	font-weight    : bold;
+	opacity        : 1;
+	padding        : 0 0.2em;
+	padding-bottom : 0.1em;
+	border-radius  : 0.3em;
 }

@@ -129,28 +129,24 @@ to listeners registered through this interface
 		const args = self._getArgs( arguments );
 		const event = args.shift();
 		const listenerIds = self.eventToListener[ event ];
-		let caught = false;
+		let caught = true;
 		if ( !listenerIds || !listenerIds.length ) {
 			if ( self._eventSink )
 				emitOnDefault( event, args );
 			
-			return caught;
+			return false;
 		}
 		
-		caught = listenerIds.reduce( emit, false );
+		caught = listenerIds.reduce( emit, true );
 		return caught;
 		
 		function emit( caught, listenerId ) {
 			const listener = self.eventListeners[ listenerId ];
-			if ( 'function' !== typeof( listener )) {
-				if ( self._eventSink )
-					emitOnDefault( event, args );
-				
+			const used = listener.apply( null, args );
+			if ( undefined == used )
 				return caught;
-			}
 			
-			listener.apply( null, args );
-			return true;
+			return used;
 		}
 		
 		function emitOnDefault( type, args ) {

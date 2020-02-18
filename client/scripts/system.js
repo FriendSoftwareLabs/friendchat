@@ -1172,6 +1172,9 @@ library.rtc = library.rtc || {};
 	
 	ns.Account.prototype.init = function( parentView ) {
 		const self = this;
+		if ( null == self.settings.roomAlert )
+			self.settings.roomAlert = self.settings.msgAlert;
+		
 		hello.setSettings( self.settings );
 		self.conn = new library.system.Message({
 			id : 'account',
@@ -1183,6 +1186,7 @@ library.rtc = library.rtc || {};
 			'settings' : showSettings,
 			'setting'  : updateSetting,
 		};
+		
 		function showSettings( e ) { self.showSettings( e ); }
 		function updateSetting( e ) { self.updateSetting( e ); }
 		
