@@ -36,7 +36,7 @@ library.component = library.component || {};
 		if ( !hello.template )
 			throw new Error( 'hello.template not defined' );
 		
-		var self = this;
+		const self = this;
 		self.parentId = parentId || 'form';
 		self.templateId = 'form-overlay-tmpl';
 		self.overlayId = 'form-overlay';
@@ -47,27 +47,27 @@ library.component = library.component || {};
 	}
 	
 	ns.FormOverlay.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.parent = document.getElementById( self.parentId );
 		self.build();
 	}
 	
 	ns.FormOverlay.prototype.build = function() {
-		var self = this;
+		const self = this;
 		var overlayElement = hello.template.getElement( self.templateId );
 		self.parent.appendChild( overlayElement );
 		self.bind();
 	}
 	
 	ns.FormOverlay.prototype.bind = function() {
-		var self = this;
+		const self = this;
 		self.element = document.getElementById( self.overlayId );
 		self.msgContainer = self.element.querySelector( '.message-container' );
 		self.spinner = self.element.querySelector( '.spinner' );
 	}
 	
 	ns.FormOverlay.prototype.show = function() {
-		var self = this;
+		const self = this;
 		self.msgContainer.innerHTML = '';
 		self.msgContainer.classList.toggle( 'hidden', true );
 		self.spinner.classList.toggle( 'hidden', false );
@@ -76,12 +76,12 @@ library.component = library.component || {};
 	}
 	
 	ns.FormOverlay.prototype.hide = function() {
-		var self = this;
+		const self = this;
 		self.element.classList.toggle( 'hidden', true );
 	}
 	
 	ns.FormOverlay.prototype.success = function( msg, callback ) {
-		var self = this;
+		const self = this;
 		self.clickBack = callback;
 		var tmplConf = {
 			type : 'success',
@@ -93,7 +93,7 @@ library.component = library.component || {};
 	}
 	
 	ns.FormOverlay.prototype.error = function( msg, callback ) {
-		var self = this;
+		const self = this;
 		self.clickBack = callback;
 		var tmplConf = {
 			type : 'error',
@@ -105,7 +105,7 @@ library.component = library.component || {};
 	}
 	
 	ns.FormOverlay.prototype.showMessage = function( msgConf ) {
-		var self = this;
+		const self = this;
 		var message = hello.template.getElement( 'form-overlay-message-tmpl', msgConf );
 		self.spinner.classList.add( 'hidden' );
 		self.msgContainer.appendChild( message );
@@ -131,7 +131,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.OptionMenu ))
 			return new ns.OptionMenu( conf );
 		
-		var self = this;
+		const self = this;
 		self.buttonParentId = conf.buttonParentId;
 		self.options = conf.options;
 		self.order = conf.order;
@@ -145,13 +145,13 @@ library.component = library.component || {};
 	};
 	
 	ns.OptionMenu.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.build();
 		self.setMenu();
 	};
 	
 	ns.OptionMenu.prototype.build = function() {
-		var self = this;
+		const self = this;
 		var buttonContainer = document.getElementById( self.buttonParentId );
 		if ( !buttonContainer )
 			throw new Error( 'could not ' + self.buttonParentId );
@@ -182,7 +182,7 @@ library.component = library.component || {};
 	}
 	
 	ns.OptionMenu.prototype.bind = function() {
-		var self = this;
+		const self = this;
 		var button = document.getElementById( self.buttonId );
 		
 		button.addEventListener( 'click', showMenu, false );
@@ -202,7 +202,7 @@ library.component = library.component || {};
 	}
 	
 	ns.OptionMenu.prototype.setMenu = function() {
-		var self = this;
+		const self = this;
 		var container = self.menu.querySelector( '.menu-items' );
 		var order = self.order || Object.keys( self.options );
 		order.forEach( build );
@@ -227,7 +227,7 @@ library.component = library.component || {};
 	}
 	
 	ns.OptionMenu.prototype.show = function( event ) {
-		var self = this;
+		const self = this;
 		if ( event )
 			setPos( event.pageY );
 		
@@ -238,7 +238,7 @@ library.component = library.component || {};
 	}
 	
 	ns.OptionMenu.prototype.hide = function() {
-		var self = this;
+		const self = this;
 		self.menu.classList.toggle( 'show', false );
 	}
 	
@@ -412,7 +412,7 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.StatusDisplay = function( conf ) {
 		
-		var self = this;
+		const self = this;
 		self.display = conf.display || '';
 		self.displayArea = null;
 		
@@ -429,7 +429,7 @@ library.component = library.component || {};
 	// public
 	
 	ns.StatusDisplay.prototype.setDisplay = function( str ) {
-		var self = this;
+		const self = this;
 		self.display = str;
 		self.displayArea.textContent = str;
 	}
@@ -532,7 +532,7 @@ library.component = library.component || {};
 	}
 	
 	ns.BottomScroller.prototype.onMutation = function( mutations ) {
-		var self = this;
+		const self = this;
 		self.reposition();
 		return;
 		
@@ -546,7 +546,7 @@ library.component = library.component || {};
 	}
 	
 	ns.BottomScroller.prototype.bindLoad = function( nodes ) {
-		var self = this;
+		const self = this;
 		nodes.forEach( findLoadyThings );
 		function findLoadyThings( node ) {
 			var imgs = node.getElementsByTagName( 'img' );
@@ -580,7 +580,7 @@ library.component = library.component || {};
 	}
 	
 	ns.BottomScroller.prototype.updateScrollTreshold = function() {
-		var self = this;
+		const self = this;
 		var viewport = self.element.parentNode;
 		var sH = viewport.scrollHeight;
 		var sTP = self.scrollTresholdPercent;
@@ -588,7 +588,7 @@ library.component = library.component || {};
 	}
 	
 	ns.BottomScroller.prototype.checkIsAtBottom = function( e ) {
-		var self = this;
+		const self = this;
 		var viewport = self.element.parentNode;
 		var scrollHeight = self.element.scrollHeight;
 		var difference = self.element.scrollTop + viewport.scrollHeight;
@@ -604,7 +604,7 @@ library.component = library.component || {};
 	}
 	
 	ns.BottomScroller.prototype.reposition = function() {
-		var self = this;
+		const self = this;
 		if ( !self.scrollAtBottom )
 			return;
 		
@@ -612,7 +612,7 @@ library.component = library.component || {};
 	}
 	
 	ns.BottomScroller.prototype.scrollToBottom = function() {
-		var self = this;
+		const self = this;
 		self.element.scrollTop = self.element.scrollHeight;
 	}
 	
@@ -625,7 +625,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Foldit ))
 			return new ns.Foldit( conf );
 		
-		var self = this;
+		const self = this;
 		self.folderId = conf.folderId;
 		self.foldeeId = conf.foldeeId;
 		
@@ -633,19 +633,19 @@ library.component = library.component || {};
 	}
 	
 	ns.Foldit.prototype.up = function() {
-		var self = this;
+		const self = this;
 		self.togglePosition( true );
 	}
 	
 	ns.Foldit.prototype.down = function() {
-		var self = this;
+		const self = this;
 		self.togglePosition( false );
 	}
 	
 	// PRIVATE
 	
 	ns.Foldit.prototype.setup = function( startClosed ) {
-		var self = this;
+		const self = this;
 		self.folder = document.getElementById( self.folderId );
 		self.folder.classList.add( 'foldit');
 		
@@ -664,13 +664,13 @@ library.component = library.component || {};
 	}
 	
 	ns.Foldit.prototype.insertHtml = function() {
-		var self = this;
+		const self = this;
 		var element = hello.template.getElement( 'foldit-tmpl' );
 		self.stateContainer.appendChild( element );
 	}
 	
 	ns.Foldit.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		self.stateIndicator.addEventListener( 'click', fold, false );
 		self.folder.addEventListener( 'click', fold, false );
 		
@@ -685,7 +685,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Foldit.prototype.toggleFold = function () {
-		var self = this;
+		const self = this;
 		if ( isUp() )
 			self.down();
 		else
@@ -697,7 +697,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Foldit.prototype.togglePosition = function( setUp ) {
-		var self = this;
+		const self = this;
 		self.stateIndicator.classList.toggle( 'fa-rotate-90', setUp );
 		self.stateIndicator.classList.toggle( 'fa-rotate-180', !setUp );
 		self.foldee.classList.toggle( 'fold', setUp );
@@ -711,13 +711,13 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Guide ))
 			return new ns.Guide( conf );
 		
-		var self = this;
+		const self = this;
 		self.element = conf.element;
 		self.containerId = conf.containerId;
 	}
 	
 	ns.Guide.prototype.show = function() {
-		var self = this;
+		const self = this;
 		var exists = document.getElementById( self.element.id );
 		if ( exists )
 			return;
@@ -727,7 +727,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Guide.prototype.hide = function() {
-		var self = this;
+		const self = this;
 		if ( !self.element.parentNode )
 			return;
 		
@@ -742,7 +742,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.InfoBox ))
 			return new ns.InfoBox( conf );
 		
-		var self = this;
+		const self = this;
 		self.element = conf.element || null;
 		self.containerId = conf.containerId;
 		
@@ -750,7 +750,7 @@ library.component = library.component || {};
 	}
 	
 	ns.InfoBox.prototype.init = function() {
-		var self = this;
+		const self = this;
 		if ( self.element )
 			self.show();
 	}
@@ -758,7 +758,7 @@ library.component = library.component || {};
 	// public
 	
 	ns.InfoBox.prototype.show = function( element, tmplId ) {
-		var self = this;
+		const self = this;
 		if ( element && self.element )
 			self.remove();
 		
@@ -780,7 +780,7 @@ library.component = library.component || {};
 	}
 	
 	ns.InfoBox.prototype.setFocus = function() {
-		var self = this;
+		const self = this;
 		var inputs = self.element.querySelectorAll( 'input, button' );
 		var firstInput = inputs[ 0 ];
 		if ( firstInput )
@@ -788,7 +788,7 @@ library.component = library.component || {};
 	}
 	
 	ns.InfoBox.prototype.hide = function() {
-		var self = this;
+		const self = this;
 		self.remove();
 		self.tmplId = null;
 		self.toggleSiblings( true );
@@ -797,13 +797,13 @@ library.component = library.component || {};
 	// private
 	
 	ns.InfoBox.prototype.isSet = function( elementId ) {
-		var self = this;
+		const self = this;
 		var exists = document.getElementById( elementId );
 		return !!exists;
 	}
 	
 	ns.InfoBox.prototype.remove = function() {
-		var self = this;
+		const self = this;
 		if ( !self.element )
 			return;
 		
@@ -838,7 +838,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.InputHistory ))
 			return new ns.InputHistory( conf );
 		
-		var self = this;
+		const self = this;
 		self.inputId = conf.inputId;
 		self.limit = conf.limit || 50;
 		self.history = [];
@@ -847,7 +847,7 @@ library.component = library.component || {};
 	}
 	
 	ns.InputHistory.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.actionMap = {
 			'ArrowUp'        : maybeShowOlder,
 			'shiftArrowUp'   : older,
@@ -868,7 +868,7 @@ library.component = library.component || {};
 	}
 	
 	ns.InputHistory.prototype.handleKey = function( e ) {
-		var self = this;
+		const self = this;
 		var key = e.code || e.key;
 		if ( e.shiftKey )
 			key = 'shift' + key;
@@ -887,7 +887,7 @@ library.component = library.component || {};
 	}
 	
 	ns.InputHistory.prototype.add = function( str ) {
-		var self = this;
+		const self = this;
 		var prev = self.history[( self.history.length - 1 )];
 		if ( prev !== str )
 			self.history.push( str );
@@ -899,7 +899,7 @@ library.component = library.component || {};
 	}
 	
 	ns.InputHistory.prototype.clear = function() {
-		var self = this;
+		const self = this;
 		self.history = [];
 		self.index = self.history.length;
 		self.setInput();
@@ -915,38 +915,38 @@ library.component = library.component || {};
 	}
 	
 	ns.InputHistory.prototype.showOlder = function() {
-		var self = this;
+		const self = this;
 		self.index = self.index -1;
 		self.setInput();
 	}
 	
 	ns.InputHistory.prototype.showNewer = function() {
-		var self = this;
+		const self = this;
 		self.index = self.index + 1;
 		self.setInput();
 	}
 	
 	ns.InputHistory.prototype.showOldest = function() {
-		var self = this;
+		const self = this;
 		self.index = 0;
 		self.setInput();
 	}
 	
 	ns.InputHistory.prototype.showNewest = function() {
-		var self = this;
+		const self = this;
 		self.index = self.history.length - 1;
 		self.setInput();
 	}
 	
 	ns.InputHistory.prototype.setInput = function() {
-		var self = this;
+		const self = this;
 		var str = self.getStr();
 		self.input.value = str;
 		self.input.setSelectionRange( 0, 0 );
 	}
 	
 	ns.InputHistory.prototype.boundIndex = function() {
-		var self = this;
+		const self = this;
 		var oob = false; // out of bounds
 		var index = self.index;
 		var length = self.history.length;
@@ -967,7 +967,7 @@ library.component = library.component || {};
 	}
 	
 	ns.InputHistory.prototype.getStr = function() {
-		var self = this;
+		const self = this;
 		var isOutOfBounds = self.boundIndex();
 		if ( isOutOfBounds )
 			return '';
@@ -984,18 +984,18 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Flourish ))
 			return new ns.Flourish( defaultCssClass );
 		
-		var self = this;
+		const self = this;
 		self.defaultCssClass = defaultCssClass;
 		
 		self.init();
 	}
 	
 	ns.Flourish.prototype.init = function() {
-		var self = this;
+		const self = this;
 	}
 	
 	ns.Flourish.prototype.do = function( element, cssClass ) {
-		var self = this;
+		const self = this;
 		cssClass = cssClass || self.defaultCssClass || '';
 		if ( !cssClass )
 			throw new Error( 'Flourish - no cssClass provided' );
@@ -1016,7 +1016,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Highlight ))
 			return new ns.Highlight( conf );
 		
-		var self = this;
+		const self = this;
 		self.hlClass = conf.cssClass;
 		self.checks = conf.checks || [];
 		self.listener = conf.listener;
@@ -1025,7 +1025,7 @@ library.component = library.component || {};
 		self.init();
 	}
 	ns.Highlight.prototype.check = function( str, element ) {
-		var self = this;
+		const self = this;
 		if ( !str || ( typeof( str ) !== 'string' ))
 			return false;
 		
@@ -1041,20 +1041,20 @@ library.component = library.component || {};
 	}
 	
 	ns.Highlight.prototype.addCheck = function( str ) {
-		var self = this;
+		const self = this;
 		self.checks.push( str );
 		self.updateCheckRX();
 	}
 	
 	ns.Highlight.prototype.setCheck = function( str ) {
-		var self = this;
+		const self = this;
 		self.checks = [];
 		self.checks.push( str );
 		self.updateCheckRX();
 	}
 	
 	ns.Highlight.prototype.removeCheck = function( str ) {
-		var self = this;
+		const self = this;
 		self.checks = self.checks.filter( isNot );
 		self.updateCheckRX();
 		
@@ -1073,13 +1073,13 @@ library.component = library.component || {};
 	// Private
 	
 	ns.Highlight.prototype.init = function() {
-		var self = this;
+		const self = this;
 		if ( self.check.length )
 			self.updateCheckRX();
 	}
 	
 	ns.Highlight.prototype.updateCheckRX = function() {
-		var self = this;
+		const self = this;
 		var args = self.checks.map( addParens );
 		var rx = args.join( '|' );
 		self.RX = new window.RegExp( rx, 'i' );
@@ -1097,7 +1097,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.LinkExpand ))
 			return new ns.LinkExpand( conf );
 			
-		var self = this;
+		const self = this;
 		self.template = conf.templateManager; // should be pre-loaded with relevant fragments
 		
 		self.init();
@@ -1106,7 +1106,7 @@ library.component = library.component || {};
 	// Public
 	
 	ns.LinkExpand.prototype.work = function( el ) {
-		var self = this;
+		const self = this;
 		var links = el.querySelectorAll( 'a' );
 		Array.prototype.forEach.call( links, expand );
 		
@@ -1138,7 +1138,7 @@ library.component = library.component || {};
 	// private
 	
 	ns.LinkExpand.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.mimeMap = {
 			'image'       : image,
 			'audio'       : audio,
@@ -1156,7 +1156,7 @@ library.component = library.component || {};
 	}
 	
 	ns.LinkExpand.prototype.getMIME = function( url ) {
-		var self = this;
+		const self = this;
 		return new window.Promise( urlCheck );
 		function urlCheck( resolve, reject ) {
 			if ( !url || !url.length )
@@ -1227,7 +1227,7 @@ library.component = library.component || {};
 	}
 	
 	ns.LinkExpand.prototype.getHandler = function( a ) {
-		var self = this;
+		const self = this;
 		var url = a.href;
 		var ext = getFileExtension( url );
 		if ( !ext )
@@ -1251,7 +1251,7 @@ library.component = library.component || {};
 	
 	// Evaluate content and add a "link"
 	ns.LinkExpand.prototype.replace = function( a, content ) {
-		var self = this;
+		const self = this;
 		var src = a.href;
 		var file = null;
 		var fileMatch = src.match( /\/([-_%\w\s]+\.[\w]+)$/i);
@@ -1286,7 +1286,7 @@ library.component = library.component || {};
 	}
 	
 	ns.LinkExpand.prototype.expandImage = function( a ) {
-		var self = this;
+		const self = this;
 		var src = a.href;
 		var conf = {
 			src : src,
@@ -1323,7 +1323,7 @@ library.component = library.component || {};
 	}
 	
 	ns.LinkExpand.prototype.expandAudio = function( a ) {
-		var self = this;
+		const self = this;
 		var src = a.href;
 		var conf = {
 			src : src,
@@ -1333,7 +1333,7 @@ library.component = library.component || {};
 	}
 	
 	ns.LinkExpand.prototype.expandVideo = function( a ) {
-		var self = this;
+		const self = this;
 		var src = a.href;
 		var conf = {
 			src : src,
@@ -1343,7 +1343,7 @@ library.component = library.component || {};
 	}
 	
 	ns.LinkExpand.prototype.expandFile = function( a, mime ) {
-		var self = this;
+		const self = this;
 		return '';
 		
 		typeClass = 'File';
@@ -1358,13 +1358,13 @@ library.component = library.component || {};
 	}
 	
 	ns.LinkExpand.prototype.expandText = function( a, mime ) {
-		var self = this;
+		const self = this;
 		return null;
 		//return a.href;
 	}
 	
 	ns.LinkExpand.prototype.expandOther = function( a, mime ) {
-		var self = this;
+		const self = this;
 		return null;
 		//return a.href;
 	}
@@ -1379,14 +1379,14 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.TouchScroll ))
 			return new ns.TouchScroll( elementId );
 		
-		var self = this;
+		const self = this;
 		self.elId = elementId;
 		
 		self.init();
 	}
 	
 	ns.TouchScroll.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.prevY = 0;
 		self.prevX = 0;
 		self.target = document.getElementById( self.elId );
@@ -1400,14 +1400,14 @@ library.component = library.component || {};
 	}
 	
 	ns.TouchScroll.prototype.tStart = function( e ) {
-		var self = this;
+		const self = this;
 		var touch = e.touches[ 0 ];
 		self.prevY = touch.pageY;
 		self.prevX = touch.pageX;
 	}
 	
 	ns.TouchScroll.prototype.tMove = function( e ) {
-		var self = this;
+		const self = this;
 		var touch = e.touches[ 0 ];
 		var deltaY = self.prevY - touch.pageY;
 		var deltaX = self.prevX - touch.pageX;
@@ -1424,12 +1424,12 @@ library.component = library.component || {};
 	}
 	
 	ns.TouchScroll.prototype.tEnd = function( e ) {
-		var self = this;
+		const self = this;
 		var touch = e.touches[ 0 ];
 	}
 	
 	ns.TouchScroll.prototype.close = function() {
-		var self = this;
+		const self = this;
 		// unregister all the things
 	}
 	
@@ -1439,31 +1439,31 @@ library.component = library.component || {};
 // multiline input
 (function( ns, undefined ) {
 	ns.MultiInput = function( conf ) {
-		if ( !( this instanceof ns.MultiInput ))
-			return new ns.MultiInput( conf );
-		
 		const self = this;
+		library.component.EventEmitter.call( self );
+		
 		self.containerId = conf.containerId;
 		self.singleOnly = !!conf.singleOnly;
 		self.multiIsOn = !!conf.multiIsOn;
 		self.enterIsNewline = !!conf.enterIsNewline;
 		self.template = conf.templateManager;
-		self.onsubmit = conf.onsubmit;
-		self.onstate = conf.onstate;
-		self.onmode = conf.onmode || null;
 		
 		self.currentTAHeight = '';
+		self.currentInput = '';
 		self.isTyping = false;
 		
 		self.init();
 	}
+	
+	ns.MultiInput.prototype =
+		Object.create( library.component.EventEmitter.prototype );
 	
 	ns.MultiInput.prototype.inputTmpl = 'multiline-input-tmpl';
 	
 	// Public
 	
 	ns.MultiInput.prototype.submit = function() {
-		var self = this;
+		const self = this;
 		self.doSubmit();
 	}
 	
@@ -1472,12 +1472,17 @@ library.component = library.component || {};
 		if ( !self.ta )
 			return;
 		
+		if ( !str || !str.length )
+			return;
+		
 		const current = self.ta.value;
-		self.ta.value = current + str;
+		const update = current + str;
+		self.ta.value = update;
+		self.checkChange();
 	}
 	
 	ns.MultiInput.prototype.focus = function() {
-		var self = this;
+		const self = this;
 		if ( !self.ta )
 			return;
 		
@@ -1485,46 +1490,57 @@ library.component = library.component || {};
 	}
 	
 	ns.MultiInput.prototype.setValue = function( string ) {
-		var self = this;
+		const self = this;
 		if ( !self.ta )
 			return;
 		
+		if ( !string )
+			string = '';
+		
 		self.ta.value = string;
 		self.checkLineBreaks();
+		self.checkChange();
 	}
 	
 	ns.MultiInput.prototype.getValue = function() {
-		var self = this;
+		const self = this;
 		if ( !self.ta )
 			return;
 		
 		return self.ta.value;
 	}
 	
+	ns.MultiInput.prototype.getCursorPos = function() {
+		const self = this;
+		return self.ta.selectionStart;
+	}
+	
+	ns.MultiInput.prototype.getElement = function() {
+		const self = this;
+		return self.taWrap;
+	}
+	
 	ns.MultiInput.prototype.toggleMultiline = function( force ) {
-		var self = this;
+		const self = this;
 		if ( null == force )
 			self.multiIsOn = !self.multiIsOn;
 		else
 			self.multiIsOn = !!force;
 		
-		if ( self.onmode )
-			self.onmode( self.multiIsOn );
+		self.emit( 'multiline', self.multiIsOn );
 	}
 	
 	ns.MultiInput.prototype.setSingleOnly = function( singleOnly ) {
-		var self = this;
+		const self = this;
 		self.singleOnly = !!singleOnly;
 	}
 	
 	ns.MultiInput.prototype.close = function() {
-		var self = this;
+		const self = this;
+		self.closeEventEmitter();
 		delete self.containerId;
 		delete self.enterIsNewline;
 		delete self.template;
-		delete self.onsubmit;
-		delete self.onstate;
-		delete self.onmode;
 		delete self.taWrap;
 		delete self.ta;
 	}
@@ -1532,17 +1548,16 @@ library.component = library.component || {};
 	// Private
 	
 	ns.MultiInput.prototype.init = function() {
-		var self = this;
+		const self = this;
 		// setup
 		self.keyMap = {
-			'shiftTab'       : handleTab,
-			'shiftEnter'     : handleSpecialEnter,
-			'Enter'          : handleEnter,
+			'Tab'        : e => self.handleTab( e ),
+			'Enter'      : e => self.handleEnter( e ),
+			'ArrowUp'    : e => self.handleAUp( e ),
+			'ArrowDown'  : e => self.handleADown( e ),
+			'shiftTab'   : e => self.handleSpecialTab( e ),
+			'shiftEnter' : e => self.handleSpecialEnter( e ),
 		};
-		
-		function handleTab( e ) { self.handleTab( e ); }
-		function handleEnter( e ) { self.handleEnter( e ); }
-		function handleSpecialEnter( e ) { self.handleSpecialEnter( e ); }
 		
 		// build
 		var cont = document.getElementById( self.containerId );
@@ -1575,11 +1590,12 @@ library.component = library.component || {};
 		const self = this;
 		self.checkLineBreaks();
 		self.checkIsTyping();
+		self.checkChange();
 	}
 	
 	ns.MultiInput.prototype.handleKeyDown = function( e ) {
-		var self = this;
-		var eventStr = '';
+		const self = this;
+		let eventStr = '';
 		if ( e.ctrlKey )
 			eventStr = 'ctrl';
 		
@@ -1587,7 +1603,7 @@ library.component = library.component || {};
 			eventStr = 'shift';
 		
 		eventStr += e.code || e.key;
-		var handler = self.keyMap[ eventStr ];
+		const handler = self.keyMap[ eventStr ];
 		if ( !handler ) {
 			self.checkIsTyping();
 			return;
@@ -1599,7 +1615,13 @@ library.component = library.component || {};
 	}
 	
 	ns.MultiInput.prototype.handleTab = function( e ) {
-		var self = this;
+		const self = this;
+		const used = self.emit( 'tab', e );
+		return true;
+	}
+	
+	ns.MultiInput.prototype.handleSpecialTab = function( e ) {
+		const self = this;
 		e.preventDefault();
 		const currInput = self.ta.value;
 		const newInput = currInput + '\t';
@@ -1607,10 +1629,42 @@ library.component = library.component || {};
 		return true;
 	}
 	
+	ns.MultiInput.prototype.handleAUp = function( e ) {
+		const self = this;
+		const used = self.emit( 'arrow', 'up' );
+		if ( !used )
+			return true;
+		
+		e.preventDefault();
+		e.stopPropagation();
+		
+		return true;
+	}
+	
+	ns.MultiInput.prototype.handleADown = function( e ) {
+		const self = this;
+		const used = self.emit( 'arrow', 'down' );
+		if ( !used )
+			return true;
+		
+		e.preventDefault();
+		e.stopPropagation();
+		
+		return true;
+	}
+	
 	ns.MultiInput.prototype.handleEnter = function( e ) {
-		var self = this;
+		const self = this;
+		const used = self.emit( 'enter', e );
+		if ( used ) {
+			e.preventDefault();
+			e.stopPropagation();
+			return true;
+		}
+		
 		if ( self.enterIsNewline ) {
-			self.checkLineBreaks( true );
+			const addLB = true;
+			self.checkLineBreaks( addLB );
 			return true;
 		} else {
 			self.doSubmit( e );
@@ -1619,14 +1673,15 @@ library.component = library.component || {};
 	}
 	
 	ns.MultiInput.prototype.handleSpecialEnter = function( e ) {
-		var self = this;
+		const self = this;
 		// a newline was inserted in text area
-		self.checkLineBreaks( true );
+		const addLB = true;
+		self.checkLineBreaks( addLB );
 		return true;
 	}
 	
 	ns.MultiInput.prototype.doSubmit = function( e ) {
-		var self = this;
+		const self = this;
 		if ( e ) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -1637,8 +1692,7 @@ library.component = library.component || {};
 			return;
 		
 		let str = self.ta.value;
-		if ( str.length && self.onsubmit )
-			self.onsubmit( str );
+		self.emit( 'submit', str );
 		
 		self.setValue( '' );
 		self.focus();
@@ -1658,8 +1712,11 @@ library.component = library.component || {};
 		if ( 2 === num )
 			newHeight = 'two-lines';
 		
-		if ( 3 <= num )
+		if ( 3 === num )
 			newHeight = 'three-lines';
+		
+		if ( 4 <= num )
+			newHeight = 'four-lines';
 		
 		if ( self.currentTAHeight === newHeight )
 			return;
@@ -1697,13 +1754,11 @@ library.component = library.component || {};
 			self.typingInterval = window.setInterval( sendTyping, 1000 * 8 );
 		
 		function sendTyping() {
-			if ( !self.onstate )
-				return;
-			
 			const event = {
 				type : 'set-typing',
+				data : null,
 			};
-			self.onstate( event );
+			self.emit( 'state', event );
 		}
 	}
 	
@@ -1723,9 +1778,66 @@ library.component = library.component || {};
 			type : 'clear-typing',
 			data : null,
 		};
+		self.emit( 'state', event );
+	}
+	
+	ns.MultiInput.prototype.checkChange = function() {
+		const self = this;
+		const inputStr = self.ta.value;
+		const inputPos = self.ta.selectionStart;
+		const inputSelection = self.ta.selectionStart !== self.ta.selectionEnd;
+		/*
+		console.log( 'checkChange', {
+			inputStr : inputStr,
+			inputPos : inputPos,
+			inputSelection : inputSelection,
+			currentStr : self.currentInput,
+			currentPos : self.currentPos,
+		});
+		*/
+		let strChange = false;
+		if ( inputStr !== self.currentInput )
+			strChange = true;
 		
-		if ( self.onstate )
-			self.onstate( event );
+		if ( !strChange )
+			return;
+		
+		const conf = {
+			string    : inputStr,
+			caretPos  : inputPos,
+			selection : inputSelection,
+		};
+		
+		self.currentInput = inputStr;
+		self.emit( 'change', conf );
+	}
+	
+})( library.component );
+
+(function( ns, undefined ) {
+	ns.ModMock = function() {
+		const self = this;
+		
+		self.init();
+	}
+	
+	// Public
+	
+	ns.ModMock.prototype.parse = function( str ) {
+		const self = this;
+		console.log( 'ModMock.parse', str );
+		return null;
+	}
+	
+	ns.ModMock.prototype.close = function() {
+		const self = this;
+	}
+	
+	// Private
+	
+	ns.ModMock.prototype.init = function() {
+		const self = this;
+		console.log( 'ModMock.init' );
 	}
 	
 })( library.component );
@@ -1735,7 +1847,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.MsgBuilder ))
 			return new ns.MsgBuilder( conf );
 		
-		var self = this;
+		const self = this;
 		self.user = conf.user;
 		self.contact = conf.contact || {};
 		self.parser = conf.parser;
@@ -1752,22 +1864,22 @@ library.component = library.component || {};
 	// Public
 	
 	ns.MsgBuilder.prototype.message = function( msg ) {
-		var self = this;
+		const self = this;
 		return self.buildMessage( msg, self.messageTmpl );
 	}
 	
 	ns.MsgBuilder.prototype.action = function( msg ) {
-		var self = this;
+		const self = this;
 		return self.buildMessage( msg, self.actionTmpl );
 	}
 	
 	ns.MsgBuilder.prototype.notification = function( msg ) {
-		var self = this;
+		const self = this;
 		return self.buildNotification( msg );
 	}
 	
 	ns.MsgBuilder.prototype.log = function( msg ) {
-		var self = this;
+		const self = this;
 		var handler = self.logHandlers[ msg.type ];
 		if ( !handler ) {
 			console.log( 'MsgBuilder.log - unknown log type', msg );
@@ -1778,7 +1890,7 @@ library.component = library.component || {};
 	}
 	
 	ns.MsgBuilder.prototype.close = function() {
-		var self = this;
+		const self = this;
 		delete self.user;
 		delete self.contact;
 		delete self.parser;
@@ -1789,7 +1901,7 @@ library.component = library.component || {};
 	// Private
 	
 	ns.MsgBuilder.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.logHandlers = {
 			'message'      : message,
 			'action'       : action,
@@ -1815,7 +1927,7 @@ library.component = library.component || {};
 	}
 	
 	ns.MsgBuilder.prototype.buildMessage = function( data, tmplId ) {
-		var self = this;
+		const self = this;
 		var mId = data.mid || '';
 		var time = library.tool.getChatTime( data.time );
 		var speakerClass = 'contact sw2'; // sw 1/2 is a friendup theme class.
@@ -1868,7 +1980,7 @@ library.component = library.component || {};
 	}
 	
 	ns.MsgBuilder.prototype.buildNotification = function( data ) {
-		var self = this;
+		const self = this;
 		var conf = {
 			level : data.level,
 			message : data.message,
@@ -3559,6 +3671,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		};
 		
 		self.overlay = hello.template.getElement( 'base-overlay-tmpl', conf );
+		console.log( 'overlay', self.overlay );
 		const insert = self.build();
 		self.overlay.appendChild( insert );
 		document.body.appendChild( self.overlay );
@@ -3590,13 +3703,11 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		const self = this;
 		const screen = self.getScreenSpace();
 		const anchor = self.getElPosition( self.anchor );
-		/*
 		console.log( 'outside', {
 			pos    : pos,
 			screen : screen,
 			anchor : anchor,
 		});
-		*/
 		
 		let ap = null; // anchor point
 		let op = null; // offset point
@@ -3607,12 +3718,18 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			};
 		}
 		
-		op = {
-			x : ap.x + pos.offsetX || 0,
-			y : ap.y + pos.offsetY || 0,
+		if ( 'top-left' == pos.parent ) {
+			ap = {
+				x : anchor.x1,
+				y : anchor.y1,
+			};
 		}
 		
-		/*
+		op = {
+			x : ap.x + ( pos.offsetX || 0 ),
+			y : ap.y + ( pos.offsetY || 0 ),
+		}
+		
 		console.log( 'possies', {
 			pos : pos,
 			screen : screen,
@@ -3620,9 +3737,14 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			ap  : ap,
 			op  : op,
 		});
-		*/
+		
 		if ( 'bottom-right' === pos.self ) {
 			self.overlay.style.right = ( screen.width - op.x ) + 'px';
+			self.overlay.style.bottom = ( screen.height - op.y ) + 'px';
+		}
+		
+		if ( 'bottom-left' === pos.self ) {
+			self.overlay.style.left = op.x + 'px';
 			self.overlay.style.bottom = ( screen.height - op.y ) + 'px';
 		}
 	}

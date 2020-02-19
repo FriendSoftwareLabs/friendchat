@@ -33,12 +33,12 @@ library.component.parse = library.component.parse || {};
 		if ( !( this instanceof ns.Lexer ))
 			return new ns.Lexer();
 		
-		var self = this;
+		const self = this;
 		self.init();
 	}
 	
 	ns.Lexer.prototype.init = function() {
-		var self = this;
+		const self = this;
 		if ( window.marked )
 			window.marked.setOptions({
 				sanitize : true,
@@ -51,41 +51,171 @@ library.component.parse = library.component.parse || {};
 // PARSER
 (function( ns, undefined) {
 	ns.Parser = function() {
-		if( !( this instanceof ns.Parser ))
-			return new ns.Parser();
-		
-		var self = this;
-		self.parser = {};
-		self.parseOrder = [];
+		const self = this;
+		library.component.EventEmitter.call( self );
+		self.parsers = {};
+		self.pieceOrder = [];
+		self.fullOrder = [];
 		
 		self.init();
 	}
 	
-	ns.Parser.prototype.work = function( str ) {
-		var self  = this;
-		if ( !self.parseOrder.length ) {
-			console.log( 'no parsers registered' );
+	ns.Parser.prototype =
+		Object.create( library.component.EventEmitter.prototype );
+	
+	// Public
+	
+	ns.Parser.prototype.use = function( id, conf, isFullLength ) {
+		const self = this;
+		const ParsyBoi = library.component.parse[ id ];
+		if ( !ParsyBoi ) {
+			console.log( 'could not use, invalid parser id: ', id );
 			return;
+		}
+		
+		const pId = friendUP.tool.uid( 'parser' );
+		const newParser = new ParsyBoi( conf, emitEvent );
+		newParser.id = pId;
+		const type = newParser.type || 'string';
+		
+		function emitEvent( event ) {
+			self.emit( type, event );
+		}
+		
+		self.parsers[ pId ] = newParser;
+		if ( isFullLength )
+			self.fullOrder.push( pId );
+		else
+			self.pieceOrder.push( pId );
+		
+		return pId;
+	}
+	
+	ns.Parser.prototype.update = function( id, conf ) {
+		const self = this;
+		const parsyBoi = self.parsers[ id ];
+		if ( !parsyBoi ) {
+			console.log( 'Parser.update - no parsyBoi for id', {
+				id      : id,
+				conf    : conf,
+				parsers : self.parsers,
+			});
+			return;
+		}
+		
+		parsyBoi.update( conf );
+	}
+	
+	ns.Parser.prototype.remove = function( id ) {
+		const self = this;
+		var idIndex = self.pieceOrder.indexOf( id );
+		if ( idIndex === -1 ) {
+			console.log( 'cannot remove, invalid parser id', id );
+			return;
+		}
+		
+		self.pieceOrder = self.pieceOrder.splice( idIndex, 1 );
+		const parser = self.parsers[ id ];
+		delete self.parsers[ id ];
+		parser.close();
+	}
+	
+	ns.Parser.prototype.work = function( str, isLog ) {
+		const self  = this;
+		str = breakTags( str );
+		
+		if ( !self.pieceOrder.length && !self.fullOrder.length ) {
+			console.log( 'no parsers registered' );
+			return str;
 		}
 		
 		if ( 'number' === typeof( str))
 			str = str.toString();
 		
 		if ( 'string' !== typeof( str ))
+			return str;
+		
+		let tokens = self.fullLengthParser( str, isLog );
+		tokens = tokens.map( piece => {
+			if ( 'string' != piece.type )
+				return piece;
+			
+			
+			piece.data = self.pieceParser( piece.data, isLog );
+			return piece;
+		});
+		
+		if ( 1 == tokens.length )
+			return tokens[ 0 ].data;
+		
+		const strung = tokens.reduce(( a, b ) => {
+			return {
+				data : a.data + b.data
+			};
+		});
+		
+		return strung.data;
+		
+		function breakTags( str ) {
+			str = str.replace( /</g, '&lt;' );
+			str = str.replace( />/g, '&gt;' );
+			return str;
+		}
+	}
+	
+	ns.Parser.prototype.close = function() {
+		const self = this;
+		self.pieceOrder.forEach( id => {
+			const parser = self.parsers[ id ];
+			if ( !parser )
+				return;
+			
+			delete self.parsers[ id ];
+			parser.close();
+		});
+		
+		self.pieceOrder = [];
+		self.parsers = {};
+		
+		self.closeEventEmitter();
+	}
+	
+	ns.Parser.prototype.moveParserForward = function( id ) {
+		const self = this;
+		var currentIndex = self.pieceOrder.indexOf( id );
+		if ( currentIndex === -1 ) {
+			console.log( 'parser.moveForward - invalid id' );
+			return;
+		}
+		
+		self.pieceOrder.splice( currentIndex, 1 );
+		self.pieceOrder.splice( currentIndex - 1, 0, id );
+	}
+	
+	ns.Parser.prototype.moveParserBack = function( id ) {
+		const self = this;
+		console.log( 'parser.moveBack - NYI' );
+	}
+	
+	// Private
+	
+	ns.Parser.prototype.init = function() {
+		const self = this;
+		
+	}
+	
+	ns.Parser.prototype.pieceParser = function( str, isLog ) {
+		const self = this;
+		// do the actual thing
+		if ( !str || !str.length )
 			return;
 		
-		//
-		str = breakTags( str );
-		
-		// do the actual thing
-		var parts = str.match( /(\S+|\s+)/g );
-		var result = '';
-		if( parts )
-		{
+		const parts = str.match( /(\S+|\s+)/g );
+		let result = '';
+		if( parts ) {
 			result = parts.map( parse );
 			result = result.join( '' );
 		}
-		
 		
 		// markdown ?
 		if ( window.marked ) {
@@ -96,75 +226,88 @@ library.component.parse = library.component.parse || {};
 		return result;
 		
 		function parse( part ) {
-			var parsed = null;
-			var parseOrderIndex = 0;
+			let parsed = null;
+			let parseOrderIndex = 0;
 			
 			do {
-				var parserId = self.parseOrder[ parseOrderIndex ];
+				let parserId = self.pieceOrder[ parseOrderIndex ];
 				if ( !parserId )
 					break;
 				
-				var parser = self.parser[ parserId ];
-				parsed = parser.process( part );
+				let parser = self.parsers[ parserId ];
+				parsed = parser.process( part, isLog );
 				parseOrderIndex++;
 			} while ( !parsed );
 			
 			return parsed || part;
 		}
+	}
+	
+	ns.Parser.prototype.fullLengthParser = function( str, isLog ) {
+		const self = this;
+		const piece = {
+			type : 'string',
+			data : str,
+		};
+		let tokens = [ piece ];
+		let toks = tokens.slice();
+		self.fullOrder.forEach( id => {
+			const parser = self.parsers[ id ];
+			let i = tokens.length;
+			while( i ) {
+				--i;
+				const p = tokens[ i ];
+				if ( 'string' != p.type )
+					continue;
+				
+				const cuts = parse(
+					parser,
+					p.data,
+					isLog
+				);
+				if ( cuts.length )
+					toks.splice( i, 1, ...cuts );
+				
+			}
+			
+			tokens = toks;
+		});
 		
-		function breakTags( str ) {
-			str = str.replace( /</g, '&lt;' );
-			str = str.replace( />/g, '&gt;' );
-			return str;
+		return tokens;
+		
+		function parse( parser, str, isLog ) {
+			let tmp = str;
+			const cuts = [];
+			while( tmp.length ) {
+				const cut = parser.process( tmp, isLog );
+				if ( !cut ) {
+					const p = {
+						type : 'string',
+						data : tmp,
+					};
+					cuts.push( p );
+					break;
+				}
+				
+				if ( 0 != cut.start ) {
+					const before = tmp.slice( 0, cut.start );
+					const pre = {
+						type : 'string',
+						data : before,
+					};
+					cuts.push( pre );
+				}
+				
+				const parsed = {
+					type : parser.type,
+					data : cut.replacement,
+				};
+				cuts.push( parsed );
+				tmp = tmp.slice( cut.end );
+			}
+			
+			return cuts;
 		}
-	}
-	
-	ns.Parser.prototype.moveParserForward = function( id ) {
-		var self = this;
-		var currentIndex = self.parseOrder.indexOf( id );
-		if ( currentIndex === -1 ) {
-			console.log( 'parser.moveForward - invalid id' );
-			return;
-		}
-		
-		self.parseOrder.splice( currentIndex, 1 );
-		self.parseOrder.splice( currentIndex - 1, 0, id );
-	}
-	
-	ns.Parser.prototype.moveParserBack = function( id ) {
-		var self = this;
-		console.log( 'parser.moveBack - NYI' );
-	}
-	
-	ns.Parser.prototype.use = function( id, conf ) {
-		var self = this;
-		var constructor = library.component.parse[ id ];
-		if ( !constructor ) {
-			console.log( 'could not use, invalid parser id: ', id );
-			return;
-		}
-		
-		var newParser = new constructor( conf );
-		newParser.id = id;
-		
-		self.parser[ id ] = newParser;
-		self.parseOrder.push( id );
-	}
-	
-	ns.Parser.prototype.remove = function( id ) {
-		var self = this;
-		var idIndex = self.parseOrder.indexOf( id );
-		if ( idIndex === -1 ) {
-			console.log( 'cannot remove, invalid parser id', id );
-			return;
-		}
-		
-		self.parseOrder = self.parseOrder.splice( idIndex, 1 );
-	}
-	
-	ns.Parser.prototype.init = function() {
-		var self = this;
-		
 	}
 	
 })( library.component.parse );
@@ -172,22 +315,31 @@ library.component.parse = library.component.parse || {};
 
 // PARSE base model
 (function( ns, undefined ) {
-	ns.Parse = function() {
-		if ( !( this instanceof ns.Parse ) )
-			return new ns.Parse();
-		
-		var self = this;
+	ns.Parse = function( emitEvent ) {
+		const self = this;
 		self.id = null; // text string to identify the parser
+		
+		self.emit = emitEvent;
 	}
 	
-	ns.Parse.prototype.process = function( str ) {
-		var self = this;
-		console.log( 'basemodel.Parse - please implement - ' + str );
+	ns.Parse.prototype.process = function( str, isLog ) {
+		const self = this;
+		console.log( 'basemodel Parse.process - please implement in ' + self.id, str );
 		return str;
+	}
+	
+	ns.Parse.prototype.update = function( conf ) {
+		const self = this;
+		console.log( 'basemodel Parse.update - please implement in ' + self.id, conf );
 	}
 	
 	ns.Parse.prototype.escape = function( str ) {
 		return str.replace( /[-\/\\^$*+?.()|[\]{}]/g, "\\$&" );
+	}
+	
+	ns.Parse.prototype.close = function() {
+		const self = this;
+		delete self.emit;
 	}
 	
 })( library.component.parse );
@@ -199,7 +351,7 @@ library.component.parse = library.component.parse || {};
 		if ( !( this instanceof ns.WsToEntity ))
 			return new ns.WsToEntity();
 		
-		var self = this;
+		const self = this;
 		ns.Parse.call( self );
 		
 		self.id = 'WsToEntity';
@@ -209,15 +361,15 @@ library.component.parse = library.component.parse || {};
 	ns.WsToEntity.prototype = Object.create( ns.Parse.prototype );
 	
 	ns.WsToEntity.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.spRX = new RegExp( '\x20', 'g' );
 		self.rnRX = new RegExp( '(\\r\\n|\\r|\\n)', 'g' );
 		self.tabRX = new RegExp( '\x09', 'g' );
 		self.matchRX = new RegExp( '(\x20|\x09|\\r\\n|\\r|\\n)', '' );
 	}
 	
-	ns.WsToEntity.prototype.process = function( str ) {
-		var self = this;
+	ns.WsToEntity.prototype.process = function( str, isLog ) {
+		const self = this;
 		var match = self.matchRX.exec( str );
 		if ( !match )
 			return null;
@@ -238,7 +390,7 @@ library.component.parse = library.component.parse || {};
 			return new ns.LinkStd();
 		
 		ns.Parse.call( this );
-		var self = this;
+		const self = this;
 		
 		self.id = 'LinkStd';
 		self.urlRX = null;
@@ -250,13 +402,13 @@ library.component.parse = library.component.parse || {};
 	ns.LinkStd.prototype = Object.create( ns.Parse.prototype );
 	
 	ns.LinkStd.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.buildUrlRX();
 		self.buildPrefixRX();
 	}
 	
-	ns.LinkStd.prototype.process = function( str ) {
-		var self = this;
+	ns.LinkStd.prototype.process = function( str, isLog ) {
+		const self = this;
 		var match = self.urlRX.exec( str );
 		if ( match )
 			return makeLink( match[ 0 ]);
@@ -282,7 +434,7 @@ library.component.parse = library.component.parse || {};
 	}
 	
 	ns.LinkStd.prototype.buildUrlRX = function() {
-		var self = this;
+		const self = this;
 		// taken from
 		// https://gist.github.com/dperini/729294
 		// MIT license
@@ -325,7 +477,7 @@ library.component.parse = library.component.parse || {};
 	}
 	
 	ns.LinkStd.prototype.buildPrefixRX = function() {
-		var self = this;
+		const self = this;
 		self.prefixRX = new RegExp( '(^https?://)', 'ig' );
 	}
 	
@@ -333,7 +485,7 @@ library.component.parse = library.component.parse || {};
 
 
 // NL2BR
-// DEPRECATED - use WsToEntity instead, unless you have special needs
+// DEPRECATED - use WsToEntity instead probably
 (function( ns, undefined ) {
 	ns.NL2BR = function() {
 		if ( !( this instanceof ns.NL2BR ))
@@ -341,7 +493,7 @@ library.component.parse = library.component.parse || {};
 		
 		ns.Parse.call( this );
 		
-		var self = this;
+		const self = this;
 		self.id = 'NL2BR';
 		self.rx = null;
 		self.init();
@@ -349,8 +501,8 @@ library.component.parse = library.component.parse || {};
 	
 	ns.NL2BR.prototype = Object.create( ns.Parse.prototype );
 	
-	ns.NL2BR.prototype.process = function( str ) {
-		var self = this;
+	ns.NL2BR.prototype.process = function( str, isLog ) {
+		const self = this;
 		
 		if ( !str || !str.length || 'string' !== typeof( str ))
 			return null;
@@ -363,12 +515,12 @@ library.component.parse = library.component.parse || {};
 	}
 	
 	ns.NL2BR.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.buildRX();
 	}
 	
 	ns.NL2BR.prototype.buildRX = function() {
-		var self = this;
+		const self = this;
 		self.rx = new RegExp( '(\\r\\n|\\r|\\n)', 'ig' );
 	}
 	
@@ -381,7 +533,7 @@ library.component.parse = library.component.parse || {};
 		if ( !( this instanceof ns.BreakLongStrings ))
 			return new ns.BreakLongStrings( maxLength );
 		
-		var self = this;
+		const self = this;
 		self.id = 'breakLongStrings';
 		self.maxLength = maxLength || 10;
 		self.partLength = null;
@@ -391,20 +543,20 @@ library.component.parse = library.component.parse || {};
 	}
 	
 	ns.BreakLongStrings.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.partLength = Math.ceil( self.maxLength / 2 );
 		self.RX = self.buildRX();
 	}
 	
 	ns.BreakLongStrings.prototype.buildRX = function() {
-		var self = this;
+		const self = this;
 		// /([^\\s-]{n})([^\\s-]{n})/g
 		var rxString = '([^\\s-]{' + self.partLength + '})([^\\s-]{' + self.partLength + '})';
 		return new RegExp( rxString, '' );
 	}
 	
-	ns.BreakLongStrings.prototype.process = function( str ) {
-		var self = this;
+	ns.BreakLongStrings.prototype.process = function( str, isLog ) {
+		const self = this;
 		return String( str ).replace( self.RX, '$1&shy;$2' ).toString();
 	}
 	
@@ -418,7 +570,7 @@ library.component.parse = library.component.parse || {};
 			return new ns.Emojii( emojiiMap );
 		
 		ns.Parse.call( this );
-		var self = this;
+		const self = this;
 		self.emojiiMap = emojiiMap;
 		
 		self.init();
@@ -427,14 +579,14 @@ library.component.parse = library.component.parse || {};
 	ns.Emojii.prototype = Object.create( ns.Parse.prototype );
 	
 	ns.Emojii.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.id = 'Emojii';
 		self.transformMap();
 		self.buildRX();
 	}
 	
 	ns.Emojii.prototype.transformMap = function() {
-		var self = this;
+		const self = this;
 		var notEyesRX = /(:.*:)/;
 		var emoKeys = Object.keys( self.emojiiMap );
 		emoKeys.forEach( escapeThings );
@@ -467,14 +619,14 @@ library.component.parse = library.component.parse || {};
 	}
 	
 	ns.Emojii.prototype.buildRX = function() {
-		var self = this;
-		var emoKeys = Object.keys( self.emojiiMap );
+		const self = this;
+		let emoKeys = Object.keys( self.emojiiMap );
 		emoKeys.sort( byLength );
-		emoKeys = emoKeys.map( self.escape );
-		var flags = 'i';
-		var start = '^(';
-		var end = ')$';
-		var search = emoKeys.join( '|' );
+		emoKeys = emoKeys.map(  e => self.escape( e ));
+		const flags = 'i';
+		const start = '^(';
+		const end = ')$';
+		const search = emoKeys.join( '|' );
 		self.RX = new RegExp( start + search + end, flags );
 		
 		function byLength( a, b ) {
@@ -482,8 +634,8 @@ library.component.parse = library.component.parse || {};
 		}
 	}
 	
-	ns.Emojii.prototype.process = function( str ) {
-		var self = this;
+	ns.Emojii.prototype.process = function( str, isLog ) {
+		const self = this;
 		str = str.toString();
 		var match = self.RX.exec( str );
 		
@@ -537,6 +689,101 @@ library.component.parse = library.component.parse || {};
 					return b + a;
 			}
 		}
+	}
+	
+})( library.component.parse );
+
+(function( ns, undefined ) {
+	ns.AtThings = function( conf, emitEvent ) {
+		const self = this;
+		ns.Parse.call( self, emitEvent );
+		
+		self.type = conf.type || 'mention';
+		self.special = conf.atStrings;
+		self.cssKlass = conf.cssKlass;
+		self.onlyEmit = conf.onlyEmit || false;
+		
+		self.init();
+	}
+	
+	ns.AtThings.prototype = Object.create( ns.Parse.prototype );
+	
+	ns.AtThings.prototype.process = function( str, isLog ) {
+		const self = this;
+		if ( !str || !str.length )
+			return null;
+		
+		const match = self.RX.exec( str );
+		if ( !match )
+			return null;
+		
+		const part = match[ 0 ];
+		if ( self.onlyEmit ) {
+			if ( !isLog )
+				window.setTimeout( emit, 1 );
+			
+			return;
+		}
+		
+		const start = match.index;
+		const end = start + part.length;
+		const container = document.createElement( 'span' );
+		container.innerText = part;
+		container.classList.toggle( 'at-things', true );
+		container.classList.toggle( self.cssKlass, true );
+		const replacement = container.outerHTML;
+		const cut = {
+			start       : start,
+			end         : start + part.length,
+			replacement : replacement,
+		};
+		
+		return cut;
+		
+		function emit() {
+			self.emit( part );
+		}
+	}
+	
+	ns.AtThings.prototype.update = function( conf ) {
+		const self = this;
+		if ( conf.atStrings != null ) {
+			self.special = conf.atStrings;
+			self.buildStrings();
+		}
+		
+		if ( conf.cssKlass != null )
+			self.cssKlass = conf.cssKlass;
+		
+		if ( conf.onlyEmit != null )
+			self.onlyEmit = conf.onlyEmit;
+	}
+	
+	ns.AtThings.prototype.init = function() {
+		const self = this;
+		self.buildStrings();
+	}
+	
+	ns.AtThings.prototype.buildStrings = function() {
+		const self = this;
+		const valid = self.special
+			.map( str => {
+				if ( !str || !str.length || 'string' !== typeof( str ))
+					return null;
+				
+				return str;
+			})
+			.filter( s => !!s );
+		
+		const tests = valid.map( str => {
+			//str = str.toLowerCase();
+			const t = '@' + str;
+			return t;
+		});
+		
+		const flags = '';
+		const test = tests.join( '|' );
+		self.RX = new RegExp( '\\B(' + test + ')\\b', flags );
 	}
 	
 })( library.component.parse );

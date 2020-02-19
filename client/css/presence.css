@@ -523,3 +523,19 @@ html > body > div #attachment-menu button
 	transform: scale3d(1,1,1);
 	
 }
+
+#hello .input-helper {
+	padding    : 0.2em;
+	min-width  : 12em;
+	max-height : 10em;
+	overflow   : auto;
+}
+
+#hello .input-helper-item {
+	padding : 0.5em;
+}
+
+#hello .input-helper-selected {
+	font-weight : bold;
+	padding-left : 1em;
+}

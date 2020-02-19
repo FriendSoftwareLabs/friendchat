@@ -1144,8 +1144,7 @@ var hello = null;
 		if ( !self.msgAlert )
 			return;
 		
-		if ( hello.account.settings.msgAlert )
-			self.msgAlert.play();
+		self.msgAlert.play();
 	}
 	
 	ns.Hello.prototype.receiveMessage = function( msg ) {

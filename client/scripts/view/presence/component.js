@@ -272,10 +272,6 @@ var hello = window.hello || {};
 	// add defaults to true
 	ns.GroupUser.prototype.setState = function( type, add ) {
 		const self = this;
-		console.log( 'GroupUser.setState', {
-			type : type,
-			add  : add,
-		});
 		if ( !type || !type.length || !isValid( type ))
 			return;
 		
@@ -372,7 +368,6 @@ var hello = window.hello || {};
 	
 	ns.GroupUser.prototype.handleTyping = function( add ) {
 		const self = this;
-		console.log( 'GroupUser.handleTyping', add );
 		if ( null != self.typingTimeout ) {
 			window.clearTimeout( self.typingTimeout );
 			self.typingTimeout = null;
@@ -450,6 +445,41 @@ var hello = window.hello || {};
 			return null;
 		
 		return self.groups[ user.group ] || null;
+	}
+	
+	ns.UserCtrl.prototype.getUserNames = function( excludeId ) {
+		const self = this;
+		const names = self.userIds
+			.filter( uId => uId != excludeId )
+			.map( uId => {
+				const user = self.users[ uId ];
+				return user.name;
+			});
+		
+		names.sort();
+		return names;
+	}
+	
+	ns.UserCtrl.prototype.getGroupNames = function() {
+		const self = this;
+		const gIds = self.groupIds.filter( id => {
+			if ( 'offline' == id
+				|| 'online' == id
+				|| 'bug' == id
+				|| 'admins' == id
+			) {
+				return false;
+			}
+			
+			return true;
+		});
+		
+		const names = gIds.map( id => {
+			const grp = self.groupsAvailable[ id ];
+			return grp.name;
+		});
+		
+		return names;
 	}
 	
 	ns.UserCtrl.prototype.getId = function( clientId ) {
@@ -882,6 +912,7 @@ var hello = window.hello || {};
 			self.template
 		);
 		self.users[ uid ] = userItem;
+		self.userIds.push( uid );
 		self.addUserCss( userItem.id, userItem.avatar );
 		if ( id.isOnline )
 			self.handleOnline( id );
@@ -946,6 +977,7 @@ var hello = window.hello || {};
 		
 		self.removeFromGroup( userId );
 		delete self.users[ userId ];
+		self.userIds = Object.keys( self.users );
 		user.close();
 	}
 	
@@ -1237,11 +1269,10 @@ var hello = window.hello || {};
 		const multiConf = {
 			containerId     : multiId,
 			templateManager : self.template,
-			onsubmit        : onSubmit,
-			onstate         : () => {},
 		};
 		const edit = new library.component.MultiInput( multiConf );
 		edit.setValue( msg.message );
+		edit.on( 'submit', onSubmit );
 		
 		subBtn.addEventListener( 'click', subClick, false );
 		cancelBtn.addEventListener( 'click', cancelClick, false );
@@ -1498,10 +1529,10 @@ var hello = window.hello || {};
 			'notification' : logNotie,
 		};
 		
-		function logMsg( e ) { return self.buildMsg( e ); }
-		function logWorkMsg( e ) { return self.buildWorkMsg( e ); }
-		function logAction( e ) { return self.buildAction( e ); }
-		function logNotie( e ) { return self.buildNotie( e ); }
+		function logMsg( e ) { return self.buildMsg( e, true ); }
+		function logWorkMsg( e ) { return self.buildWorkMsg( e, true ); }
+		function logAction( e ) { return self.buildAction( e, true ); }
+		function logNotie( e ) { return self.buildNotie( e, true ); }
 	}
 	
 	ns.MsgBuilder.prototype.getFirstMsg = function() {
@@ -1612,10 +1643,10 @@ var hello = window.hello || {};
 			const multiConf = {
 				containerId     : inputId,
 				templateManager : self.template,
-				onsubmit        : onSubmit,
-				onstate         : () => {},
 			};
 			self.msgTargetInput = new library.component.MultiInput( multiConf );
+			self.msgTargetInput.on( 'submit', onSubmit );
+			
 			const currMsg = self.input.getValue();
 			self.msgTargetInput.setValue( currMsg );
 			self.input.setValue( '' );
@@ -1966,7 +1997,7 @@ var hello = window.hello || {};
 		
 	}
 	
-	ns.MsgBuilder.prototype.buildMsg = function( conf ) {
+	ns.MsgBuilder.prototype.buildMsg = function( conf, isLog ) {
 		const self = this;
 		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
 		const msg = conf.event;
@@ -2002,7 +2033,7 @@ var hello = window.hello || {};
 		let original = msg.message;
 		let message = null;
 		if ( self.parser )
-			message = self.parser.work( original );
+			message = self.parser.work( original, isLog );
 		else
 			message = original;
 		
@@ -2924,6 +2955,295 @@ var hello = window.hello || {};
 			self.audioIcon.classList.toggle( self.currState, true );
 			self.videoIcon.classList.toggle( self.currState, true );
 		}
+	}
+	
+})( library.component );
+
+(function( ns, undefined ) {
+	ns.InputHelper = function( type, anchorEl, conf ) {
+		const self = this;
+		library.component.Overlay.call( self, anchorEl, conf );
+		
+		self.type = type;
+		self.options = {};
+		self.optionIds = [];
+		
+	}
+	
+	ns.InputHelper.prototype =
+		Object.create( library.component.Overlay.prototype );
+	
+	// Public
+	
+	ns.InputHelper.prototype.show = function( list, constraint ) {
+		const self = this;
+		self.setOptions( list );
+		self.toggleVisible( true );
+		constraint = constraint || '@';
+		self.update( constraint );
+	}
+	
+	ns.InputHelper.prototype.update = function( constraint ) {
+		const self = this;
+		if ( !constraint || !constraint.length )
+			return false;
+		
+		constraint = constraint.toLowerCase();
+		if ( constraint === self.currentConstraint )
+			return false;
+		
+		self.unSelect();
+		self.currentConstraint = constraint;
+		if ( '@' === constraint )
+			self.showShortList();
+		else
+			self.showFullList( self.currentConstraint );
+	}
+	
+	ns.InputHelper.prototype.hide = function() {
+		const self = this;
+		self.toggleVisible( false );
+		self.el.innerHTML = '';
+		self.dotdotdot = null;
+		self.currentConstraint = null;
+		self.options = {};
+		self.optionIds = [];
+		self.visibleIds = [];
+		self.selected = null;
+		self.selectIndex = null;
+	}
+	
+	ns.InputHelper.prototype.selectItem = function() {
+		const self = this;
+		console.log( 'selectItem', self.selected );
+		if ( !self.selected )
+			return false;
+		
+		if ( '...' === self.selected.str ) {
+			self.showFullList();
+			self.unSelect();
+			return '@';
+		}
+		
+		return self.selected.str;
+	}
+	
+	ns.InputHelper.prototype.scrollItems = function( direction ) {
+		const self = this;
+		const len = self.visibleIds.length;
+		if ( !len )
+			return true;
+		
+		// first, select top or bottom depending on direction
+		if ( null == self.selected ) {
+			if ( 'up' == direction )
+				self.selectIndex = len - 1;
+			else
+				self.selectIndex = 0;
+			
+			self.applySelection();
+			return true;
+		}
+		
+		let newIndex = null;
+		if ( 'up' == direction )
+			newIndex = self.selectIndex - 1;
+		else
+			newIndex = self.selectIndex + 1;
+		
+		// wrap
+		self.selectIndex = newIndex;
+		if ( -1 == newIndex )
+			self.selectIndex = len-1;
+		if ( newIndex == len )
+			self.selectIndex = 0;
+		
+		//
+		self.applySelection();
+		return true;
+	}
+	
+	ns.InputHelper.prototype.getName = function( str ) {
+		const self = this;
+		if ( !str )
+			return null;
+		
+		str = str.toLowerCase();
+		const match = self.optionIds.filter( id => {
+			const i = id.indexOf( str );
+			if ( 0 === i )
+				return true;
+			else
+				return false;
+				
+		});
+		
+		if ( 1 != match.length )
+			return null;
+		
+		const id = match[ 0 ];
+		const conf = self.options[ id ];
+		if ( !conf )
+			return null;
+		
+		return conf.name;
+	}
+	
+	ns.InputHelper.prototype.close = function() {
+		const self = this;
+		self.closeOverlay();
+	}
+	
+	// Private
+	
+	ns.InputHelper.prototype.build = function() {
+		const self = this;
+		self.id = friendUP.tool.uid( self.type + '-input-helper' );
+		const conf = {
+			id : self.id,
+		};
+		self.el = hello.template.getElement( 'input-helper-tmpl', conf );
+		return self.el;
+	}
+	
+	ns.InputHelper.prototype.bind = function() {
+		const self = this;
+		//console.log( 'InputHelper.bind' );
+	}
+	
+	ns.InputHelper.prototype.setOptions = function( list ) {
+		const self = this;
+		self.visibleIds = [];
+		self.el.innerHTML = '';
+		list.forEach( name => {
+			const str = '@' + name.toLowerCase();
+			const conf = {
+				str : '@' + name,
+			};
+			const el = hello.template.getElement( 'input-helper-item-tmpl', conf );
+			self.options[ str ] = {
+				str  : str,
+				name : name,
+				el   : el,
+			};
+			self.optionIds.push( str );
+			self.el.appendChild( el );
+			el.addEventListener( 'click', click, false );
+			
+			function click( e ) {
+				e.preventDefault();
+				e.stopPropagation();
+				self.emit( 'add', str );
+			}
+		});
+		
+		const dotConf = {
+			str : '...',
+		};
+		const dotEl = hello.template.getElement( 'input-helper-item-tmpl', dotConf );
+		self.el.appendChild( dotEl );
+		dotConf.el = dotEl;
+		self.dotdotdot = dotConf;
+		dotEl.addEventListener( 'click', dotClick, false );
+		
+		function dotClick( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.showFullList();
+		}
+	}
+	
+	ns.InputHelper.prototype.showShortList = function() {
+		const self = this;
+		self.optionIds.forEach( id => {
+			const conf = self.options[ id ];
+			conf.el.classList.toggle( 'hidden', true );
+		});
+		
+		const e = '@everyone';
+		const eConf = self.options[ e ];
+		if ( !eConf ) {
+			self.showFullList();
+			return;
+		}
+		
+		eConf.el.classList.toggle( 'hidden', false );
+		self.dotdotdot.el.classList.toggle( 'hidden', false );
+		self.visibleIds = [ e, '...' ];
+	}
+	
+	ns.InputHelper.prototype.showFullList = function( filter ) {
+		const self = this;
+		const dots = self.dotdotdot;
+		toggle( dots.el, false );
+		self.visibleIds = [];
+		self.optionIds.forEach( id => {
+			const conf = self.options[ id ];
+			if ( !conf )
+				return;
+			
+			const el = conf.el;
+			if ( null == filter ) {
+				toggle( el, true );
+				self.visibleIds.push( id );
+				return;
+			}
+			
+			const ci = id.indexOf( filter );
+			if ( 0 == ci ) {
+				toggle( el, true );
+				self.visibleIds.push( id );
+			}
+			else
+				toggle( el, false );
+		});
+		
+		function toggle( el, show ) {
+			el.classList.toggle( 'hidden', !show );
+		}
+	}
+	
+	ns.InputHelper.prototype.applySelection = function() {
+		const self = this;
+		const id = self.visibleIds[ self.selectIndex ];
+		let conf = null;
+		if ( '...' === id )
+			conf = self.dotdotdot;
+		else
+			conf = self.options[ id ];
+		
+		if ( self.selected )
+			self.selected.el.classList.toggle( 'input-helper-selected', false );
+		
+		self.selected = conf;
+		self.selected.el.classList.toggle( 'input-helper-selected', true );
+		self.scrollTo();
+	}
+	
+	ns.InputHelper.prototype.unSelect = function() {
+		const self = this;
+		if ( !self.selected )
+			return;
+		
+		self.selected.el.classList.toggle( 'input-helper-selected', false );
+		self.selected = null;
+		self.selectIndex = null;
+	}
+	
+	ns.InputHelper.prototype.scrollTo = function() {
+		const self = this;
+		if ( !self.selected )
+			return;
+		
+		const box = self.el;
+		const select = self.selected.el;
+		const boxH = box.clientHeight;
+		const boxST = box.scrollTop;
+		const sH = select.clientHeight;
+		const sOT = select.offsetTop;
+		
+		const topOffset = ( sOT + ( sH / 2 )) - ( boxH / 2 );
+		box.scrollTop = topOffset;
 	}
 	
 })( library.component );

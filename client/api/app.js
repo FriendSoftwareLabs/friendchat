@@ -2105,7 +2105,7 @@ api.DoorFun.prototype.init = function() {
 		self.path = filePath;
 		self.actx = null;
 		self.fileBuffer = null;
-		self.playTimeout = 1000 * 3;
+		self.playTimeout = 1000 * 2;
 		self.playTimeoutId = null;
 		
 		self.init();
