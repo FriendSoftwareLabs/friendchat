@@ -626,12 +626,10 @@ library.component = library.component || {};
 			templateManager : hello.template,
 			singleOnly      : false,
 			multiIsOn       : false,
-			onsubmit        : onSubmit,
-			onmode          : onMode,
 		};
 		self.input = new library.component.MultiInput( inputConf );
+		self.input.on( 'submit', onSubmit );
 		function onSubmit( e ) { self.submit( e ); };
-		function onMode( e ) {};
 		
 		// input history
 		let historyConf = {
@@ -687,7 +685,7 @@ library.component = library.component || {};
 			self.input.submit();
 		}
 		function chatSendClick( e ) {
-			var submit = new Event( 'submit' );
+			const submit = new Event( 'submit' );
 			self.inputForm.dispatchEvent( submit );
 		}
 		
