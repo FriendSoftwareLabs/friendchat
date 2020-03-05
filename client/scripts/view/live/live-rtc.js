@@ -2997,8 +2997,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( curr.id === fresh.id )
 					return;
 				
-				remove( curr );
-				add( fresh );
+				//remove( curr );
+				replace( curr, fresh );
 				return;
 			}
 			
@@ -3013,7 +3013,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return;
 			
 			self.log( 'Peer.updateTracks - add err', {
-				err : err,
+				err   : err,
 				track : t,
 			});
 		};
@@ -3025,8 +3025,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return;
 			
 			self.log( 'Peer.updateTracks - remove err', {
-				err : err,
+				err   : err,
 				track : t,
+			});
+		}
+		
+		function replace( curr, fresh ) {
+			self.media.removeTrack( curr );
+			self.media.addTrack( fresh );
+			const err = self.session.replaceTrack( fresh.kind );
+			if ( !err )
+				return;
+			
+			self.log( 'Peer.updateTracks - replace err', {
+				err    : err,
+				tracks : [ curr, fresh ],
 			});
 		}
 	}

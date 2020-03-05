@@ -935,7 +935,7 @@ library.rtc = library.rtc || {};
 		if ( self.senders.length )
 			self.removeTracks();
 		
-		var tracks = stream.getTracks();
+		const tracks = stream.getTracks();
 		self.log( 'addStream - tracks', { type : self.type, tracks : tracks });
 		tracks.forEach( add );
 		self.log( 'senders after adding tracks', self.senders );
@@ -1210,6 +1210,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.emitStats = function() {
 		const self = this;
+		return;
 		if ( !self.conn ) {
 			done( 'ERR_NO_CONN' );
 			return;
