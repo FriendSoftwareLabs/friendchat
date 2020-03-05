@@ -30,7 +30,7 @@ ns.Account = function( conf, dbPool ) {
 	if( !( this instanceof ns.Account ))
 		return new ns.Account( state, conf );
 	
-	var self = this;
+	const self = this;
 	self.db = dbPool;
 	self.onclose = conf.onclose;
 	self.clientId = conf.clientId;
@@ -47,7 +47,7 @@ ns.Account = function( conf, dbPool ) {
 }
 
 ns.Account.prototype.init = function() {
-	var self = this;
+	const self = this;
 	if ( !self.isFirstLogin && null == self.advancedUI )
 		self.advancedUI = true;
 	
@@ -79,7 +79,7 @@ ns.Account.prototype.init = function() {
 }
 
 ns.Account.prototype.attachSession = function( session ) {
-	var self = this;
+	const self = this;
 	const sid = session.id;
 	self.sessions[ sid ] = session;
 	self.sessionKeys = Object.keys( self.sessions );
@@ -92,20 +92,20 @@ ns.Account.prototype.attachSession = function( session ) {
 }
 
 ns.Account.prototype.detachSession = function( id ) {
-	var self = this;
-	var session = self.sessions[ id ];
+	const self = this;
+	const session = self.sessions[ id ];
 	if ( !session ) {
 		log( 'detachScoket - no session found for ' + id + ' in', self.sessions );
 		return null;
 	}
 	
-	session.removeAllListeners( 'msg' );
+	session.release( 'msg' );
 	self.removeSession( id );
 	return session;
 }
 
 ns.Account.prototype.removeSession = function( sessionId ) {
-	var self = this;
+	const self = this;
 	delete self.sessions[ sessionId ];
 	self.sessionKeys = Object.keys( self.sessions );
 	if ( !self.sessionKeys.length )
@@ -113,7 +113,7 @@ ns.Account.prototype.removeSession = function( sessionId ) {
 }
 
 ns.Account.prototype.receiveMsg = function( msg, sessionId ) {
-	var self = this;
+	const self = this;
 	var handler = self.msgMap[ msg.type ];
 	if ( handler ) {
 		handler( msg.data, sessionId );
@@ -129,7 +129,7 @@ ns.Account.prototype.receiveMsg = function( msg, sessionId ) {
 }
 
 ns.Account.prototype.keepAlive = function( data, sessionId ) {
-	var self = this;
+	const self = this;
 	var pong = {
 		type : 'pong',
 		data : data,
@@ -138,7 +138,7 @@ ns.Account.prototype.keepAlive = function( data, sessionId ) {
 }
 
 ns.Account.prototype.accountMsg = function( msg, sessionId ) {
-	var self = this;
+	const self = this;
 	var handler = self.accountMsgMap[ msg.type ];
 	if ( !handler ) {
 		log( 'accountMsg - no handler for ', msg );
@@ -149,7 +149,7 @@ ns.Account.prototype.accountMsg = function( msg, sessionId ) {
 }
 
 ns.Account.prototype.clientReady = function( firstLoginConf, sessionId ) {
-	var self = this;
+	const self = this;
 	if ( self.isFirstLogin )
 		self.doFirstLoginSetup( firstLoginConf );
 	else
@@ -157,14 +157,14 @@ ns.Account.prototype.clientReady = function( firstLoginConf, sessionId ) {
 }
 
 ns.Account.prototype.getSettings = function( sessionId ) {
-	var self = this;
-	var dbAccount = new DbAccount( self.db, self.userId );
+	const self = this;
+	const dbAccount = new DbAccount( self.db, self.userId );
 	dbAccount.once( 'ready', dbReady );
 	function dbReady( err ) {
 		dbAccount.get( self.clientId, accountBack );
 	}
 	function accountBack( account ) {
-		var msg  = {
+		const msg  = {
 			type : 'settings',
 			data : account,
 		};
@@ -174,8 +174,8 @@ ns.Account.prototype.getSettings = function( sessionId ) {
 }
 
 ns.Account.prototype.saveSetting = function( data, sessionId ) {
-	var self = this;
-	var dbAccount = new DbAccount( self.db, self.userId );
+	const self = this;
+	const dbAccount = new DbAccount( self.db, self.userId );
 	dbAccount.once( 'ready', dbReady );
 	function dbReady( err ) {
 		data.clientId = self.clientId;
@@ -190,6 +190,7 @@ ns.Account.prototype.saveSetting = function( data, sessionId ) {
 	function done() {
 		if ( dbAccount )
 			dbAccount.conn.release();
+		
 		var wrap = {
 			type : 'setting',
 			data : data,
@@ -199,7 +200,7 @@ ns.Account.prototype.saveSetting = function( data, sessionId ) {
 }
 
 ns.Account.prototype.updateClientSetting = function( update ) {
-	var self = this;
+	const self = this;
 }
 
 ns.Account.prototype.doFirstLoginSetup = function( conf ) {
@@ -242,34 +243,49 @@ ns.Account.prototype.setupModCtrl = function( allowAdvanced ) {
 ns.Account.prototype.logout = function() {
 	const self = this;
 	self.mods.close();
-	var onclose = self.onclose;
+	const onclose = self.onclose;
 	delete self.onclose;
-	if ( !!onclose && ( 'function' === typeof( onclose )))
-		onclose();
+	if ( !onclose )
+		return;
+	
+	onclose();
 }
 
 ns.Account.prototype.close = function() {
-	var self = this;
-	if ( self.sessionKeys && self.sessionKeys.length )
-		allSessionsMustDie();
+	const self = this;
+	log( 'close' );
+	allSessionsMustDie();
 	
 	self.sessions = {};
 	self.sessionKeys = [];
-	delete self.onclose;
 	delete self.db;
+	delete self.onclose;
+	delete self.clientId;
+	delete self.userId;
+	delete self.name;
+	delete self.isFirstLogin;
+	delete self.advancedUI;
 	
 	function allSessionsMustDie() {
+		if ( !self.sessionKeys )
+			return;
+		
 		self.sessionKeys.forEach( remove );
-		function remove( sessionKey ) {
-			self.sessions[ sessionKey ].close();
-			delete self.sessions[ sessionKey ];
+		self.sessionKeys = [];
+		function remove( sKey ) {
+			const sess = self.sessions[ sKey ];
+			if ( !sess )
+				return;
+			
+			sess.kill();
+			delete self.sessions[ sKey ];
 		}
 	}
 }
 
 ns.Account.prototype.sendAccountMsg = function( msg, sessionId ) {
-	var self = this;
-	var wrap = {
+	const self = this;
+	const wrap = {
 		type : 'account',
 		data : msg,
 	};
@@ -277,7 +293,7 @@ ns.Account.prototype.sendAccountMsg = function( msg, sessionId ) {
 }
 
 ns.Account.prototype.toClient = function( msg, sessionId ) {
-	var self = this;
+	const self = this;
 	if ( !self.sessionKeys.length ) {
 		return;
 	}

@@ -22,18 +22,18 @@
 // Socket
 var log = require( './Log' )( 'Socket' );
 var util = require( 'util' );
-var events = require( 'events' );
+var events = require( './Emitter' );
 
 var ns = {};
 ns.Socket = function( conf ) {
 	if( !( this instanceof ns.Socket ))
 		return new ns.Socket( conf );
 	
-	var self = this;
+	const self = this;
+	events.Emitter.call( self );
 	self.id = conf.id;
 	self.conn = conf.conn;
 	
-	self.onclose = null;
 	self.pingInterval = null; // holds the 'setInterval' id for pings
 	self.pingStep = 1000 * 15; // 10 sec - time between pings sent
 	self.pingTimeout = 1000 * 10;
@@ -49,48 +49,48 @@ ns.Socket = function( conf ) {
 	self.init();
 }
 
-util.inherits( ns.Socket, events.EventEmitter );
+util.inherits( ns.Socket, events.Emitter );
 
 // PUBLIC INTERFACE
 
-ns.Socket.prototype.send = function( msg, callback ) {
-	var self = this;
-	var wrap = {
+ns.Socket.prototype.send = function( msg ) {
+	const self = this;
+	const wrap = {
 		type : 'msg',
 		data : msg,
 	};
-	self.sendOnSocket( wrap, callback );
+	return self.sendOnSocket( wrap );
 }
 
 ns.Socket.prototype.setSession = function( sessionId, parentId ) {
-	var self = this;
+	const self = this;
 	if ( sessionId ) {
 		self.sessionId = sessionId;
 		self.parentId = parentId;
 	}
 	
-	var sessionEvent = {
+	const sessionEvent = {
 		type : 'session',
 		data : self.sessionId,
 	};
-	self.sendOnSocket( sessionEvent );
+	return self.sendOnSocket( sessionEvent );
 }
 
 ns.Socket.prototype.authenticate = function( success ) {
-	var self = this;
+	const self = this;
 	if ( self.authenticated === success )
 		return;
 	
 	self.authenticated = success;
-	var auth = {
+	const auth = {
 		type : 'authenticate',
 		data : true,
 	};
-	self.sendOnSocket( auth );
+	return self.sendOnSocket( auth );
 }
 
 ns.Socket.prototype.attach = function( conn ) {
-	var self = this;
+	const self = this;
 	if ( !conn )
 		throw new Error( 'u wot m8? Socket.attach - no conn' );
 	
@@ -110,37 +110,43 @@ ns.Socket.prototype.attach = function( conn ) {
 }
 
 ns.Socket.prototype.detach = function() {
-	var self = this;
+	const self = this;
 	self.cleanup();
-	var conn = self.conn;
+	const conn = self.conn;
 	delete self.conn;
 	return conn;
 }
 
-ns.Socket.prototype.unsetSession = function( callback ) {
-	var self = this;
+ns.Socket.prototype.unsetSession = function() {
+	const self = this;
 	self.sessionId = false;
-	var sessionEvent = {
+	const sessionEvent = {
 		type : 'session',
 		data : false,
 	};
 	
-	self.sendOnSocket( sessionEvent, callback );
+	return self.sendOnSocket( sessionEvent );
 }
 
-ns.Socket.prototype.close = function() {
-	var self = this;
-	if ( self.onclose )
-		delete self.onclose;
-	
-	self.closeWs();
+// used from account
+ns.Socket.prototype.kill = function() {
+	const self = this;
 	self.cleanup();
+	self.emit( 'close' );
+}
+
+// used from socketmanager
+ns.Socket.prototype.close = function() {
+	const self = this;
+	self.emitterClose();
+	self.cleanup();
+	self.closeWs();
 }
 
 // PRIVATES
 
 ns.Socket.prototype.init = function() {
-	var self = this;
+	const self = this;
 	if ( !self.conn || !self.id ) {
 		log( 'missing things', { c : self.conn, id : self.id });
 		throw new Error( 'missing stuff' );
@@ -169,26 +175,23 @@ ns.Socket.prototype.start = function() {
 }
 
 ns.Socket.prototype.stop = function() {
-	var self = this;
+	const self = this;
 	self.unbind();
 	self.dontPing();
 }
 
 ns.Socket.prototype.bind = function() {
-	var self = this;
+	const self = this;
 	self.cancelErrorTimer();
 	self.cancelPingClose();
 	
-	self.conn.on( 'error', onError );
-	self.conn.on( 'close', onClose );
-	self.conn.on( 'message', onMessage );
-	function onError( e ) { self.connError( e ); }
-	function onClose( e ) { self.connClose( e ); }
-	function onMessage( e ) { self.receiveMessage( e ); }
+	self.conn.on( 'error', e => self.connError( e ));
+	self.conn.on( 'close', e => self.connClose( e ));
+	self.conn.on( 'message', e => self.receiveMessage( e ));
 }
 
 ns.Socket.prototype.unbind = function() {
-	var self = this;
+	const self = this;
 	if ( !self.conn )
 		return;
 	
@@ -198,7 +201,7 @@ ns.Socket.prototype.unbind = function() {
 }
 
 ns.Socket.prototype.receiveMessage = function( msgString ) {
-	var self = this;
+	const self = this;
 	var msgObj = toJSON( msgString );
 	if( !msgObj ) {
 		log( 'receiveMessage - could not JSON', msgString );
@@ -220,7 +223,7 @@ ns.Socket.prototype.handleEvent = function( event ) {
 }
 
 ns.Socket.prototype.doPing = function() {
-	var self = this;
+	const self = this;
 	if ( self.pingInterval )
 		self.dontPing();
 	
@@ -231,7 +234,7 @@ ns.Socket.prototype.doPing = function() {
 }
 
 ns.Socket.prototype.dontPing = function() {
-	var self = this;
+	const self = this;
 	if ( self.pingInterval ) {
 		clearInterval( self.pingInterval );
 		self.pingInterval = null;
@@ -240,19 +243,23 @@ ns.Socket.prototype.dontPing = function() {
 	self.clearPingTimers();
 }
 
-ns.Socket.prototype.sendPing = function() {
-	var self = this;
+ns.Socket.prototype.sendPing = async function() {
+	const self = this;
 	if ( !self.conn || !( 1 === self.conn.readyState )) {
 		self.emit( 'ping', null );
 		return;
 	}
 	
-	var now = Date.now();
-	var pingMsg = {
+	const now = Date.now();
+	const pingMsg = {
 		type : 'ping',
 		data : now,
 	};
-	self.sendOnSocket( pingMsg, pingSent );
+	const success = await self.sendOnSocket( pingMsg );
+	if ( !success ) {
+		self.emit( 'ping', null );
+		return;
+	}
 	
 	const timer = setTimeout( pingTimeout, self.pingTimeout );
 	self.pingTimers[ now ] = timer;
@@ -265,11 +272,6 @@ ns.Socket.prototype.sendPing = function() {
 		delete self.pingTimers[ now ];
 		self.emit( 'ping', null );
 		self.startPingClose();
-	}
-	
-	function pingSent( success ) {
-		if ( !success )
-			self.emit( 'ping', null );
 	}
 }
 
@@ -291,8 +293,8 @@ ns.Socket.prototype.handlePong = function( stamp ) {
 }
 
 ns.Socket.prototype.handlePing = function( msg ) {
-	var self = this;
-	var pong = {
+	const self = this;
+	const pong = {
 		type : 'pong',
 		data : msg,
 	};
@@ -314,7 +316,7 @@ ns.Socket.prototype.clearPingTimers = function() {
 }
 
 ns.Socket.prototype.startPingClose = function() {
-	var self = this;
+	const self = this;
 	if ( self.pingoutTimer )
 		return;
 	
@@ -326,7 +328,7 @@ ns.Socket.prototype.startPingClose = function() {
 }
 
 ns.Socket.prototype.cancelPingClose = function() {
-	var self = this;
+	const self = this;
 	if ( !self.pingoutTimer )
 		return;
 	
@@ -334,45 +336,36 @@ ns.Socket.prototype.cancelPingClose = function() {
 	self.pingoutTimer = null;
 }
 
-ns.Socket.prototype.sendConn = function( msg, callback ) {
+ns.Socket.prototype.sendConn = function( msg ) {
 	const self = this;
-	self.sendOnSocket( msg, callback );
+	return self.sendOnSocket( msg );
 }
 
-ns.Socket.prototype.sendOnSocket = function( msgObj, callback ) {
-	var self = this;
-	if ( !self.conn ) {
-		self.sendQueue.push( msgObj );
-		done();
-		return false;
-	}
-	
-	var msgString = toString( msgObj );
-	try {
-		self.conn.send( msgString, done );
-	} catch ( e ) {
-		//log( '_conn.send() try error', e );
-		done( e );
-	}
-	
-	function done( err ) {
-		/*
-		if ( err )
-			log( '_conn.send() failed to send', { e : err, m : msgObj }, 2 );
-		*/
-		
-		var success = !err;
-		if ( callback ) {
-			if ( 'function' !== typeof callback )
-				throw new Error( 'hey fucko, this isnt a function' );
-			
-			callback( success );
+ns.Socket.prototype.sendOnSocket = function( msgObj ) {
+	const self = this;
+	return new Promise(( resolve, reject ) => {
+		if ( !self.conn ) {
+			self.sendQueue.push( msgObj );
+			resolve( false );
+			return;
 		}
-	}
+		
+		const msgString = toString( msgObj );
+		try {
+			self.conn.send( msgString, done );
+		} catch ( e ) {
+			done( e );
+		}
+
+		function done( err ) {
+			var success = !err;
+			resolve( success );
+		}
+	});
 }
 
 ns.Socket.prototype.executeSendQueue = function() {
-	var self = this;
+	const self = this;
 	self.sendQueue.forEach( send );
 	self.sendQueue = [];
 	 
@@ -382,27 +375,27 @@ ns.Socket.prototype.executeSendQueue = function() {
 }
 
 ns.Socket.prototype.connError = function( event ) {
-	var self = this;
+	const self = this;
 	self.handleClose();
 }
 
 ns.Socket.prototype.connClose = function( event ) {
-	var self = this;
+	const self = this;
 	self.handleClose();
 }
 
 ns.Socket.prototype.handleClose = function() {
-	var self = this;
+	const self = this;
 	if ( !self.sessionId ) {
 		self.kill();
 		return;
 	}
 	
 	// already erroring
-	if ( self.errorTimer )
+	if ( null != self.errorTimer )
 		return;
 	
-	// timeout
+	// time out
 	self.errorTimer = setTimeout( kill, self.sessionTimeout );
 	function kill() {
 		self.errorTimer = null;
@@ -411,7 +404,7 @@ ns.Socket.prototype.handleClose = function() {
 }
 
 ns.Socket.prototype.cancelErrorTimer = function() {
-	var self = this;
+	const self = this;
 	if ( !self.errorTimer )
 		return;
 	
@@ -419,19 +412,8 @@ ns.Socket.prototype.cancelErrorTimer = function() {
 	self.errorTimer = null;
 }
 
-ns.Socket.prototype.kill = function() {
-	var self = this;
-	if ( !self.onclose )
-		return;
-	
-	self.cleanup();
-	var onclose = self.onclose;
-	delete self.onclose;
-	onclose();
-}
-
 ns.Socket.prototype.closeWs = function() {
-	var self = this;
+	const self = this;
 	if ( !self.conn )
 		return;
 	
@@ -445,14 +427,11 @@ ns.Socket.prototype.closeWs = function() {
 }
 
 ns.Socket.prototype.cleanup = function() {
-	var self = this;
-	if ( self.errorTimer ) {
-		clearTimeout( self.errorTimer );
-		self.errorTimer = null;
-	}
-	
-	self.unbind();
+	const self = this;
+	self.cancelErrorTimer();
+	self.cancelPingClose();
 	self.dontPing();
+	self.unbind();
 }
 
 function toString( obj ) {
