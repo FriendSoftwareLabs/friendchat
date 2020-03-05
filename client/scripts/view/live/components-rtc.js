@@ -3131,14 +3131,41 @@ library.rtc = library.rtc || {};
 		if ( !device )
 			return conf;
 		
-		let aDev = available[ deviceType ][ device.deviceId ];
-		if ( !aDev )
+		const avaOfType = available[ deviceType ];
+		console.log( 'Media.setDevice', {
+			device    : device,
+			available : avaOfType,
+		});
+		
+		let prefDev = null;
+		const devIds = Object.keys( avaOfType );
+		devIds.forEach( id => {
+			const dev = avaOfType[ id ];
+			console.log( 'Media.setDevice - check', dev );
+			if ( device.deviceId === dev.deviceId ) {
+				prefDev = dev;
+				return;
+			}
+			
+			if ( device.label === dev.label ) {
+				prefDev = dev;
+				return;
+			}
+			
+			if ( device.labelExtra === dev.labelExtra ) {
+				prefDev = dev;
+				return;
+			}
+		});
+		
+		if ( !prefDev )
 			return conf;
 		
+		console.log( 'Media.setDevice - found prefered', prefDev );
 		if ( 'boolean' === typeof( conf[ type ]))
 			conf[ type ] = {};
 		
-		conf[ type ].deviceId = aDev.deviceId;
+		conf[ type ].deviceId = prefDev.deviceId;
 		return conf;
 	}
 	

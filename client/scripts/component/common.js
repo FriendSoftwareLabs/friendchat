@@ -349,9 +349,17 @@ inherits from EventEmitter
 		const self = this;
 		const reqId = event.requestId;
 		const request = event.data;
-		self.callListener( request )
-			.then( response )
-			.catch( error );
+		try {
+			self.callListener( request )
+				.then( response )
+				.catch( error );
+		} catch( ex ) {
+			console.trace( 'handleRequest - callListener ex', {
+				ex    : ex,
+				event : event,
+				self  : self,
+			});
+		}
 		
 		function response( data ) {
 			const res = {

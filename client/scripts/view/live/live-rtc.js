@@ -81,6 +81,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.onclose = onclose;
 		self.onready = onready;
 		
+		console.log( 'RTC - localsettings', self.localSettings );
+		
 		self.peers = {};
 		self.peerIds = [];
 		self.selfie = null;
@@ -1724,6 +1726,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.savePreferedDevices = function( devices ) {
 		const self = this;
+		console.log( 'savePreferedDevices', devices );
 		self.saveLocalSetting( 'preferedDevices', devices );
 	}
 	
@@ -1785,6 +1788,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setupStream = function( callback, permissions, preferedDevices ) {
 		const self = this;
+		console.log( 'setupStream - preferedDevices', preferedDevices );
 		if ( self.streamBack ) {
 			let oldBack = self.streamBack;
 			delete self.streamBack;
