@@ -260,13 +260,13 @@ library.component = library.component || {};
 		self.parser.use( 'Emojii', hello.config.emojii );
 		
 		// link expansion
-		var leConf = {
+		const leConf = {
 			templateManager : friend.template,
 		};
 		self.linkExpand = new library.component.LinkExpand( leConf );
 		
 		// msgBuilder
-		var msgConf = {
+		const msgConf = {
 			user             : self.user,
 			contact          : self.contact,
 			parser           : self.parser,
@@ -280,17 +280,15 @@ library.component = library.component || {};
 		self.msgBuilder = new library.component.MsgBuilder( msgConf );
 		
 		// multi line input
-		var multiConf = {
+		const multiConf = {
 			containerId     : 'input-container',
 			templateManager : friend.template,
 			singleOnly      : !data.state.multilineCap,
 			multiIsOn       : false,
-			onsubmit        : onSubmit,
-			onmode          : onMode,
 		};
 		self.input = new library.component.MultiInput( multiConf );
-		function onSubmit( e ) { self.handleSubmit( e ); }
-		function onMode( e ) { self.toggleMultilineActive( e ); }
+		self.input.on( 'submit'   , e => self.handleSubmit( e ));
+		self.input.on( 'multiline', e => self.toggleMultilineActive( e ));
 		
 		// input history
 		self.inputHistory = new library.component.InputHistory({
