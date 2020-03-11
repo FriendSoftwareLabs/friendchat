@@ -62,10 +62,10 @@ i.pictograph
 }
 
 .emo-cat:before { content : "🐱"; }
-.emo-mouse:before { content : "🐭"; }
+.emo-sick:before { content : "😷"; }
 .emo-cake:before { content : "🍰"; }
 .emo-cow:before { content : "🐮"; }
-.emo-fox:before { content : "🐺"; }
+.emo-shrug:before { content : "🤷"; }
 .emo-octopus:before { content : "🐙 "; }
 .emo-snake:before { content : "🐍"; }
 .emo-train:before { content : "🚅"; }
