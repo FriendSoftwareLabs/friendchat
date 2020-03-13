@@ -29,7 +29,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Event ))
 			return new ns.Event( app );
 		
-		var self = this;
+		const self = this;
 		self.source = source;
 		self.subscriber = {};
 		
@@ -37,14 +37,14 @@ library.component = library.component || {};
 	}
 	
 	ns.EventHandler.prototype.eventInit = function() {
-		var self = this;
+		const self = this;
 		self.source.receiveMessage = receiveEvent;
 		
 		function receiveEvent( event ) { self.receiveEvent( event ); }
 	}
 	
 	ns.EventHandler.prototype.receiveEvent = function( msg ) {
-		var self = this;
+		const self = this;
 		var handler = self.subscriber[ msg.type ];
 		
 		if ( !handler ) {
@@ -56,7 +56,7 @@ library.component = library.component || {};
 	}
 	
 	ns.EventHandler.prototype.on = function( id, callback ) {
-		var self = this;
+		const self = this;
 		if ( self.subscriber[ id ] )
 			console.log( 'Event.add > event already exists, overwriting', id );
 		
@@ -64,7 +64,7 @@ library.component = library.component || {};
 	}
 	
 	ns.EventHandler.prototype.off = function( id ) {
-		var self = this;
+		const self = this;
 		if ( self.subscriber[ id ] )
 			delete self.subscriber[ id ];
 		else
@@ -80,18 +80,18 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Status ))
 			return new ns.Status( initialState );
 		
-		var self = this;
+		const self = this;
 		self.subscriber = {};
 		self.state = initialState || 'no-pants';
 		self.data = null;
 	}
 	
 	ns.Status.prototype.init = function() {
-		var self = this;
+		const self = this;
 	}
 	
 	ns.Status.prototype.set = function( state, data ) {
-		var self = this;
+		const self = this;
 		self.state = state;
 		self.data = data;
 		var wrap = {
@@ -104,7 +104,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Status.prototype.get = function( ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : self.state,
 			data  : self.data,
@@ -113,7 +113,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Status.prototype.subscribe = function( id, callback ) {
-		var self = this;
+		const self = this;
 		if ( self.subscriber[ id ]) {
 			console.log( 'OVERWRITING - component.Status.listen - id already exists - OVERWRITING', id );
 		}
@@ -123,7 +123,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Status.prototype.unsubscribe = function( id ) {
-		var self = this;
+		const self = this;
 		if ( self.subscriber[ id ])
 			delete self.subscriber[ id ];
 	}
@@ -138,7 +138,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Availability ))
 			return new ns.Availability( elementId );
 		
-		var self = this;
+		const self = this;
 		self.statusMap = conf.statusMap;
 		self.containerId = conf.containerId;
 		self.availability = null;
@@ -202,7 +202,7 @@ library.component = library.component || {};
 			e.stopPropagation();
 		}
 		
-		var self = this;
+		const self = this;
 		self.button.blur();
 		self.optionsContainer.classList.add( 'show' );
 		ns.app._window.addEventListener( 'click', hideOptions, false );
@@ -215,7 +215,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Availability.prototype.set = function( option ) {
-		var self = this;
+		const self = this;
 		
 		self.status = option;
 		self.availability.id = option.id;
@@ -234,12 +234,12 @@ library.component = library.component || {};
 	}
 	
 	ns.Availability.prototype.on = function( id, fn ) {
-		var self = this;
+		const self = this;
 		self.subscribers[ id ] = fn;
 	}
 	
 	ns.Availability.prototype.off = function( id ) {
-		var self = this;
+		const self = this;
 		if( self.subscribers[ id ])
 			delete self.subscribers[ id ];
 	}
@@ -253,14 +253,14 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Info ))
 			return new ns.Info( parentId );
 		
-		var self = this;
+		const self = this;
 		self.parentId = parentId;
 		
 		self.setup();
 	}
 	
 	ns.Info.prototype.setSuccess = function( str ) {
-		var self = this;
+		const self = this;
 		self.setText( str );
 		self.border.classList.remove( 'fail' );
 		self.border.classList.add( 'success' );
@@ -268,7 +268,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Info.prototype.setFail = function( str ) {
-		var self = this;
+		const self = this;
 		self.setText( str );
 		self.border.classList.remove( 'success' );
 		self.border.classList.add( 'fail' );
@@ -276,22 +276,22 @@ library.component = library.component || {};
 	}
 	
 	ns.Info.prototype.hide = function( str ) {
-		var self = this;
+		const self = this;
 		self.screen.classList.add( 'hidden' );
 	}
 	
 	ns.Info.prototype.show = function() {
-		var self = this;
+		const self = this;
 		self.screen.classList.remove( 'hidden' );
 	}
 	
 	ns.Info.prototype.setText = function( str ) {
-		var self = this;
+		const self = this;
 		self.text.textContent = str;
 	}
 	
 	ns.Info.prototype.setup = function() {
-		var self = this;
+		const self = this;
 		var html = ns.template.get( 'hello-infoscreen-tmpl' );
 		var container = document.getElementById( self.parentId );
 		container.insertAdjacentHTML( 'beforeend', html );
@@ -307,7 +307,7 @@ library.component = library.component || {};
 		if ( !( this instanceof ns.Droppings ))
 			return new ns.Droppings( conf );
 		
-		var self = this;
+		const self = this;
 		self.toView = conf.toView;
 		self.toChat = conf.toChat;
 		
@@ -317,7 +317,7 @@ library.component = library.component || {};
 	// Public
 	
 	ns.Droppings.prototype.handle = function( items ) {
-		var self = this;
+		const self = this;
 		console.log( 'Droppings.handle', items );
 		items.forEach( jajajaja );
 		function jajajaja( item ) {
@@ -334,7 +334,7 @@ library.component = library.component || {};
 	// Private
 	
 	ns.Droppings.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.typeMap = {
 			'File'          : handleFile,
 			'CalendarEvent' : handleCalendar,
@@ -366,7 +366,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Droppings.prototype.handleCalendar = function( item ) {
-		var self = this;
+		const self = this;
 		var event = {
 			type : 'calendar-event',
 			data : item,
@@ -385,7 +385,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Droppings.prototype.close = function() {
-		var self = this;
+		const self = this;
 		delete self.toView;
 		delete self.send;
 	}
@@ -395,7 +395,7 @@ library.component = library.component || {};
 // PresenceService
 (function( ns, undefined ) {
 	ns.PresenceService = function( presence ) {
-		var self = this;
+		const self = this;
 		self.presence = presence;
 		/*
 		self.oninvite = conf.oninvite;
@@ -428,12 +428,12 @@ library.component = library.component || {};
 		return self.presence.serviceGetRoomInfo( roomId );
 	}
 	
-	ns.PresenceService.prototype.createRoom = function( req ) {
-		var self = this;
+	ns.PresenceService.prototype.getRoom = function( action, conf ) {
+		const self = this;
 		if ( !self.presence )
 			return;
 		
-		self.presence.serviceCreateRoom( req );
+		self.presence.serviceGetRoom( action, conf );
 	}
 	
 	ns.PresenceService.prototype.getIdentity = function() {
@@ -513,7 +513,7 @@ library.component = library.component || {};
 	}
 	
 	ns.PresenceService.prototype.send = function( event ) {
-		var self = this;
+		const self = this;
 		if ( !self.presence )
 			return;
 		
@@ -521,7 +521,7 @@ library.component = library.component || {};
 	}
 	
 	ns.PresenceService.prototype.close = function() {
-		var self = this;
+		const self = this;
 		delete self.service;
 		self.release();
 	}
@@ -529,7 +529,7 @@ library.component = library.component || {};
 	// Private
 	
 	ns.PresenceService.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.setupDormant();
 	}
 	
@@ -581,7 +581,7 @@ library.component = library.component || {};
 	}
 	
 	ns.PresenceService.prototype.handle = function( event ) {
-		var self = this;
+		const self = this;
 		self.emit( event.type, event.data );
 	}
 	

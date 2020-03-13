@@ -305,6 +305,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.conn.on( 'settings'       , settings );
 		self.conn.on( 'speaking'       , speaking );
 		self.conn.on( 'nested-app'     , nestedApp );
+		self.conn.on( 'reset-output'   , e => self.resetOutput( e ));
 		self.conn.on( 'quality'        , quality );
 		self.conn.on( 'mode'           , mode );
 		self.conn.on( 'join'           , join );
@@ -740,6 +741,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			type : 'nestedapp',
 			data : app,
 		});
+	}
+	
+	ns.RTC.prototype.resetOutput = function() {
+		const self = this;
+		console.log( 'RTC.resetOutput' );
+		self.restartPeers();
+		//self.ui.restartAudioSinks();
 	}
 	
 	ns.RTC.prototype.changeUsername = function() {

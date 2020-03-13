@@ -149,8 +149,8 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.doMessageIntercept = function( data ) {
 		const self = this;
-		var intercept = self.checkIntercept( data.message );
-		var didIntercept = false;
+		const intercept = self.checkIntercept( data.message );
+		let didIntercept = false;
 		if ( intercept ) {
 			didIntercept = self.handleIntercept( data, intercept );
 		}
@@ -665,7 +665,12 @@ library.contact = library.contact || {};
 		if ( self.settings.isStream )
 			conf.isStream = true;
 		
-		self.live = hello.rtc.createSession( conf, liveToServer, onClose );
+		self.live = hello.rtc.createSession(
+			conf,
+			liveToServer,
+			onClose
+		);
+		
 		if ( !self.live ) {
 			console.log( 'P.joinLive - live was not created..', self );
 			return; // session wasnt created, because :reasons:

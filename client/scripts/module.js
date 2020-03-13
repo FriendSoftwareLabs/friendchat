@@ -949,27 +949,31 @@ library.module = library.module || {};
 		};
 	}
 	
-	ns.Presence.prototype.serviceCreateRoom = function( event ) {
+	ns.Presence.prototype.serviceGetRoom = function( action, conf ) {
 		const self = this;
-		var reqId = friendUP.tool.uid( 'req' );
-		var session = event.data;
+		console.log( 'serviceGetRoom', {
+			action : action,
+			conf   : conf,
+		});
+		const reqId = friendUP.tool.uid( 'req' );
+		const session = conf;
 		self.roomRequests[ reqId ] = {
-			action  : event.type,
+			action  : action,
 			session : session,
 		};
 		
-		var roomConf = {
+		const roomConf = {
 			req    : reqId,
 			invite : session.invite || null,
 			name   : null,
 		}
 		
-		if ( 'create' === event.type ) {
+		if ( 'create' === action ) {
 			self.createRoom( roomConf );
 			return;
 		}
 		
-		if ( 'join' === event.type ) {
+		if ( 'join' === action ) {
 			self.joinRoom( roomConf );
 			return;
 		}
