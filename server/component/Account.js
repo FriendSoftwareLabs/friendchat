@@ -213,10 +213,10 @@ ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	});
 	
 	// setup modCtrl
-	self.setupModCtrl( conf.advancedUI );
+	//self.mods.
 	
 	// add default modules for choice
-	let mods = null;
+	let defMods = null;
 	/*
 	if ( conf.advancedUI )
 		mods = [ 'presence', 'treeroot', 'irc' ];
@@ -224,8 +224,8 @@ ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 		mods = [ 'presence', 'treeroot' ];
 	*/
 	
-	mods = global.config.server.defaults.defaultModules;
-	self.mods.addDefaultModules( mods, self.name );
+	defMods = global.config.server.defaults.defaultModules;
+	self.mods.addDefaultModules( defMods, self.name );
 }
 
 ns.Account.prototype.setupModCtrl = function( allowAdvanced ) {
