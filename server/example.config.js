@@ -56,9 +56,9 @@ var server = {
 			//Presence
 			presence : {
 				displayName : 'Presence',
-				host : 'presence_domain',
-				port : 27960,
-				settings : {
+				host        : 'presence_domain',
+				port        : 27970,
+				settings    : {
 					
 				},
 			},

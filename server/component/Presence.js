@@ -25,6 +25,7 @@ const connLog = require( './Log')( 'Presence.ServerConn' );
 const uuid = require( './UuidPrefix' )( 'live' );
 const events = require( './Emitter' );
 const tls = require( 'tls' );
+const WS = require( 'ws' );
 const util = require( 'util' );
 const fs = require( 'fs' );
 
@@ -110,6 +111,7 @@ ns.Presence.prototype.initialize = function( initConf, socketId ) {
 
 ns.Presence.prototype.connect = function( conf, socketId ) {
 	const self = this;
+	log( 'connect', conf, 3 );
 	if ( conf && conf.mod ) {
 		conf.mod.host = conf.conf.host;
 		conf.mod.port = conf.conf.port;
@@ -130,7 +132,7 @@ ns.Presence.prototype.connect = function( conf, socketId ) {
 	if ( !self.identity )
 		return;
 	
-	var connOpts = {
+	const connOpts = {
 		auth    : self.authBundle,
 		host    : self.conf.host,
 		port    : self.conf.port,
@@ -595,6 +597,7 @@ util.inherits( ns.ServerConn, events.Emitter );
 
 ns.ServerConn.prototype.connect = function( conf ) {
 	const self = this;
+	connLog( 'connect - conf', conf );
 	if ( conf ) {
 		self.host = ( null == conf.host ) ? self.host : conf.host;
 		self.port = ( null == conf.port ) ? self.port : conf.port;
@@ -609,24 +612,35 @@ ns.ServerConn.prototype.connect = function( conf ) {
 	}
 	
 	self.isConnecting = true;
+	/*
 	const opts = {
 		host : self.host,
 		port : self.port,
 	};
+	*/
 	
-	self.socket = tls.connect( opts );
-	self.socket.setEncoding( 'utf8' );
+	//self.socket = tls.connect( opts );
+	//self.socket.setEncoding( 'utf8' );
+	const host = 'wss://' + self.host + ':' + self.port;
+	connLog( 'host', host );
+	const subProto = '';
+	const opts = {
+		rejectUnauthorized : false,
+	};
+	self.socket = new WS( host, subProto, opts );
 	
-	self.socket.on( 'secureConnect', open );
+	//self.socket.on( 'secureConnect', open );
+	self.socket.on( 'open', open );
 	self.socket.on( 'close', closed );
 	self.socket.on( 'error', error );
-	self.socket.on( 'end', ended );
-	self.socket.on( 'data', onData );
+	self.socket.on( 'message', onData );
+	//self.socket.on( 'end', ended );
+	//self.socket.on( 'data', onData );
 	
 	function open( e ) { self.handleOpen(); }
 	function closed( e ) { self.handleClose( e ); }
 	function error( e ) { self.handleError( e ); }
-	function ended( e ) { self.handleEnded( e ); }
+	//function ended( e ) { self.handleEnded( e ); }
 	function onData( e ) { self.handleData( e ); }
 }
 
@@ -706,6 +720,7 @@ ns.ServerConn.prototype.emitState = function( state ) {
 
 ns.ServerConn.prototype.handleOpen = function() {
 	const self = this;
+	connLog( 'handleOpen' );
 	self.connected = true;
 	self.isConnecting = false;
 	self.connectAttempt = 0;
@@ -721,6 +736,7 @@ ns.ServerConn.prototype.handleOpen = function() {
 
 ns.ServerConn.prototype.handleClose = function() {
 	const self = this;
+	connLog( 'handleClose' );
 	self.connected = false;
 	var status = {
 		type : 'offline',
@@ -807,7 +823,8 @@ ns.ServerConn.prototype.tryReconnect = function( instant ) {
 
 ns.ServerConn.prototype.handleData = function( str ) {
 	const self = this;
-	var event = null;
+	connLog( 'handleData', str );
+	let event = null;
 	try {
 		event = JSON.parse( str );
 	} catch ( e ) {
@@ -940,15 +957,17 @@ ns.ServerConn.prototype.sendOnSocket = function( event ) {
 	if ( !self.connected || !self.socket )
 		return;
 	
-	var str = null;
+	let str = null;
 	try {
 		str = JSON.stringify( event );
-	} catch( e ) {
-		connLog( 'failed to string', event );
+		self.socket.send( str );
+	} catch( ex ) {
+		connLog( 'failed to ssend', {
+			ex  : ex,
+			str : str,
+		}, 3 );
 		return;
 	}
-	
-	self.socket.write( str );
 }
 
 ns.ServerConn.prototype.clearSocket = function() {
@@ -959,18 +978,21 @@ ns.ServerConn.prototype.clearSocket = function() {
 	const socket = self.socket;
 	delete self.socket;
 	try {
-		socket.destroy();
+		socket.close();
 	} catch( e ) {
 		connLog( 'tried destroying socket, but it oopsied', e );
 	}
+	socket.removeAllListeners();
+	/*
 	socket.removeAllListeners( 'secureConnect' );
 	socket.removeAllListeners( 'close' );
 	socket.removeAllListeners( 'error' );
 	socket.removeAllListeners( 'end' );
 	socket.removeAllListeners( 'data' );
 	socket.unref();
+	*/
 	
-	socket.on( 'error', function(){});
+	//socket.on( 'error', function(){});
 }
 
 module.exports = ns.Presence;
