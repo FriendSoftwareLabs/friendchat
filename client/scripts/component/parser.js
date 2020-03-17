@@ -772,8 +772,6 @@ library.component.parse = library.component.parse || {};
 					return null;
 				
 				const res = str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-				console.log( 'replaced - res', res );
-				
 				return res;
 			})
 			.filter( s => !!s );

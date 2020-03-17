@@ -212,9 +212,6 @@ ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 		value   : !!conf.advancedUI,
 	});
 	
-	// setup modCtrl
-	//self.mods.
-	
 	// add default modules for choice
 	let defMods = null;
 	/*
@@ -253,7 +250,6 @@ ns.Account.prototype.logout = function() {
 
 ns.Account.prototype.close = function() {
 	const self = this;
-	log( 'close' );
 	allSessionsMustDie();
 	
 	self.sessions = {};

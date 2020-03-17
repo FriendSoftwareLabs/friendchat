@@ -3704,11 +3704,13 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		const self = this;
 		const screen = self.getScreenSpace();
 		const anchor = self.getElPosition( self.anchor );
+		/*
 		console.log( 'outside', {
 			pos    : pos,
 			screen : screen,
 			anchor : anchor,
 		});
+		*/
 		
 		let ap = null; // anchor point
 		let op = null; // offset point
@@ -3731,6 +3733,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			y : ap.y + ( pos.offsetY || 0 ),
 		}
 		
+		/*
 		console.log( 'possies', {
 			pos : pos,
 			screen : screen,
@@ -3738,6 +3741,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			ap  : ap,
 			op  : op,
 		});
+		*/
 		
 		if ( 'bottom-right' === pos.self ) {
 			self.overlay.style.right = ( screen.width - op.x ) + 'px';

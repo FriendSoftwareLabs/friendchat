@@ -2526,7 +2526,6 @@ library.component = library.component || {};
 		}
 		*/
 		
-		console.log( 'UI-REEP.updateAudioSink' );
 		self.stream.setSinkId( deviceId )
 			.then( ok )
 			.catch( fail );

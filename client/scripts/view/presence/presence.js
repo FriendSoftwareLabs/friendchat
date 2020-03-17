@@ -310,7 +310,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleInitialize = function( conf ) {
 		const self = this;
-		console.log( 'init', conf.state );
 		/*
 		if ( 'DESKTOP' !== window.View.deviceType )
 			self.backBtn.classList.toggle( 'hidden', false );
@@ -867,7 +866,6 @@ library.view = library.view || {};
 					names = names.concat( groups );
 			}
 			
-			console.log( 'showNotify', names );
 			self.notify.show( names, str );
 		}
 		
@@ -877,7 +875,6 @@ library.view = library.view || {};
 		
 		function showCommand( str ) {
 			self.inputMode = 'command';
-			console.log( 'showCommand', str );
 		}
 	}
 	
@@ -1020,7 +1017,6 @@ library.view = library.view || {};
 			input    : current,
 			cursor   : cPos,
 		};
-		console.log( 'at', at );
 		return at;
 	}
 	

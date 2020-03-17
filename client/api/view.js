@@ -464,7 +464,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.initialize = function( conf ) {
 		const self = this;
-		console.log( 'View.initialize', conf.viewConf );
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
 		self.authId = conf.authId;

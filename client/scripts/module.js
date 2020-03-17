@@ -951,10 +951,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.serviceGetRoom = function( action, conf ) {
 		const self = this;
-		console.log( 'serviceGetRoom', {
-			action : action,
-			conf   : conf,
-		});
 		const reqId = friendUP.tool.uid( 'req' );
 		const session = conf;
 		self.roomRequests[ reqId ] = {
@@ -1005,10 +1001,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
-		console.log( 'Presence.handleAccountInit', {
-			inited : self.initialized,
-			state  : state,
-		});
 		if ( self.initialized )
 			return;
 		
@@ -2851,7 +2843,6 @@ library.module = library.module || {};
 				type : 'user-list',
 				data : null,
 			};
-			console.log( 'getUserList', req );
 			self.conn.request( req )
 				.then( reqBack )
 				.catch( reqFail );

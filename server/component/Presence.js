@@ -111,7 +111,6 @@ ns.Presence.prototype.initialize = function( initConf, socketId ) {
 
 ns.Presence.prototype.connect = function( conf, socketId ) {
 	const self = this;
-	log( 'connect', conf, 3 );
 	if ( conf && conf.mod ) {
 		conf.mod.host = conf.conf.host;
 		conf.mod.port = conf.conf.port;
@@ -597,7 +596,6 @@ util.inherits( ns.ServerConn, events.Emitter );
 
 ns.ServerConn.prototype.connect = function( conf ) {
 	const self = this;
-	connLog( 'connect - conf', conf );
 	if ( conf ) {
 		self.host = ( null == conf.host ) ? self.host : conf.host;
 		self.port = ( null == conf.port ) ? self.port : conf.port;
@@ -622,7 +620,6 @@ ns.ServerConn.prototype.connect = function( conf ) {
 	//self.socket = tls.connect( opts );
 	//self.socket.setEncoding( 'utf8' );
 	const host = 'wss://' + self.host + ':' + self.port;
-	connLog( 'host', host );
 	const subProto = '';
 	const opts = {
 		rejectUnauthorized : false,
@@ -720,7 +717,6 @@ ns.ServerConn.prototype.emitState = function( state ) {
 
 ns.ServerConn.prototype.handleOpen = function() {
 	const self = this;
-	connLog( 'handleOpen' );
 	self.connected = true;
 	self.isConnecting = false;
 	self.connectAttempt = 0;
@@ -736,7 +732,6 @@ ns.ServerConn.prototype.handleOpen = function() {
 
 ns.ServerConn.prototype.handleClose = function() {
 	const self = this;
-	connLog( 'handleClose' );
 	self.connected = false;
 	var status = {
 		type : 'offline',
@@ -769,16 +764,6 @@ ns.ServerConn.prototype.handleDisconnect = function( err ) {
 
 ns.ServerConn.prototype.tryReconnect = function( instant ) {
 	const self = this;
-	/*
-	connLog( 'tryReconnect', {
-		session   : self.session,
-		auth      : self.auth,
-		timeout   : self.connectTimeout,
-		is        : self.isConnecting,
-		connected : self.connected,
-	});
-	*/
-	
 	if ( !self.auth ) {
 		self.disconnect();
 		return;
@@ -823,7 +808,6 @@ ns.ServerConn.prototype.tryReconnect = function( instant ) {
 
 ns.ServerConn.prototype.handleData = function( str ) {
 	const self = this;
-	connLog( 'handleData', str );
 	let event = null;
 	try {
 		event = JSON.parse( str );
@@ -983,16 +967,6 @@ ns.ServerConn.prototype.clearSocket = function() {
 		connLog( 'tried destroying socket, but it oopsied', e );
 	}
 	socket.removeAllListeners();
-	/*
-	socket.removeAllListeners( 'secureConnect' );
-	socket.removeAllListeners( 'close' );
-	socket.removeAllListeners( 'error' );
-	socket.removeAllListeners( 'end' );
-	socket.removeAllListeners( 'data' );
-	socket.unref();
-	*/
-	
-	//socket.on( 'error', function(){});
 }
 
 module.exports = ns.Presence;

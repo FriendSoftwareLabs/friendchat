@@ -1210,7 +1210,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.emitStats = function() {
 		const self = this;
-		return;
+		//return;
 		if ( !self.conn ) {
 			done( 'ERR_NO_CONN' );
 			return;
@@ -3132,16 +3132,10 @@ library.rtc = library.rtc || {};
 			return conf;
 		
 		const avaOfType = available[ deviceType ];
-		console.log( 'Media.setDevice', {
-			device    : device,
-			available : avaOfType,
-		});
-		
 		let prefDev = null;
 		const devIds = Object.keys( avaOfType );
 		devIds.forEach( id => {
 			const dev = avaOfType[ id ];
-			console.log( 'Media.setDevice - check', dev );
 			if ( device.deviceId === dev.deviceId ) {
 				prefDev = dev;
 				return;
@@ -3161,7 +3155,6 @@ library.rtc = library.rtc || {};
 		if ( !prefDev )
 			return conf;
 		
-		console.log( 'Media.setDevice - found prefered', prefDev );
 		if ( 'boolean' === typeof( conf[ type ]))
 			conf[ type ] = {};
 		

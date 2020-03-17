@@ -828,7 +828,6 @@ library.rtc = library.rtc || {};
 				sessions : roomMetas,
 				onselect : onSelect,
 			};
-			console.log( 'askSpecifyRoom', conf );
 			let select = new library.view.SpecifySession( conf );
 			function onSelect( roomId ) {
 				select.close();
@@ -925,11 +924,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.joinRoom = function( invite, inviteFrom, selfie, permissions ) {
 		const self = this;
-		console.log( 'joinRoom', {
-			self   : self,
-			invite : invite,
-		});
-		
 		if ( !selfie ) {
 			selfie = {
 				name   : library.tool.getName(),
@@ -997,11 +991,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.createSession = function( conf, eventSink, onclose ) {
 		const self = this;
-		console.log( 'createSession', {
-			conf    : conf,
-			sink    : eventSink,
-			onclose : onclose,
-		});
 		const sId = conf.roomId;
 		if ( self.sessions[ sId ] )
 			self.closeSession( sId );
@@ -1032,7 +1021,6 @@ library.rtc = library.rtc || {};
 		return session;
 		
 		function sessionClosed() {
-			console.log( 'sessionClosed', sId );
 			self.closeSession( sId );
 		}
 	}
@@ -1053,7 +1041,6 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		console.log( 'closeSession', session );
 		delete self.sessions[ sId ];
 		self.sessionIds = Object.keys( self.sessions );
 		
@@ -1069,7 +1056,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.restartSessions = function() {
 		const self = this;
-		console.log( 'restartSessions', self.sessionIds );
 		const reset = {
 			type : 'reset-output',
 		};
@@ -2289,10 +2275,6 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		console.log( 'RtcSession.send', {
-			id    : self.id,
-			event : event,
-		});
 		self.view.send( event );
 	}
 	

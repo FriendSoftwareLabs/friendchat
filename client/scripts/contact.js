@@ -1157,7 +1157,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
-		console.log( 'PresenceRoom.handleInitialize', state );
 		self.users = state.users || {};
 		self.userIds = Object.keys( self.users );
 		self.peers = state.peers;
@@ -2656,7 +2655,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.updateAtStrings = function() {
 		const self = this;
-		console.log( 'updateAtStrings', self.userId );
 		self.idc.get( self.userId )
 			.then( uBack )
 			.catch( uErr );
@@ -2666,7 +2664,6 @@ library.contact = library.contact || {};
 		}
 		
 		function uBack( user ) {
-			console.log( 'uBack', user );
 			if ( !user )
 				return;
 			

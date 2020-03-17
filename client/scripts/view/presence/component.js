@@ -866,8 +866,6 @@ var hello = window.hello || {};
 		const self = this;
 		let user = self.users[ userId ];
 		if ( !user || !user.isAuthed ) {
-			console.log( 'UserCtrl.handleOffline - \
-			user not or not authed, so cannot be set offline', user );
 			return;
 		}
 		
@@ -3015,7 +3013,6 @@ var hello = window.hello || {};
 	
 	ns.InputHelper.prototype.selectItem = function() {
 		const self = this;
-		console.log( 'selectItem', self.selected );
 		if ( !self.selected )
 			return false;
 		
