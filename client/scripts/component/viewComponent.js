@@ -3314,7 +3314,8 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			return;
 		}
 		*/
-		
+		const el = document.getElementById( id );
+		self.list.appendChild( el );
 		self.reorder( pri );
 	}
 	
