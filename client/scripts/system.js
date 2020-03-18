@@ -27,7 +27,6 @@ var hello = window.hello || {};
 library.system = library.system || {};
 library.rtc = library.rtc || {};
 
-
 // LOGIN
 (function( ns, undefined ) {
 	ns.Login = function( defaultAccount, onlogin, onclose ) {
@@ -853,7 +852,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.createRoom = function( contacts, permissions ) {
 		const self = this;
-		var sessionConf = {
+		const sessionConf = {
 			roomId      : null,
 			invite      : null,
 			isHost      : true,
@@ -865,9 +864,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.askClient = function( invite, inviteFrom, selfie ) {
 		const self = this;
-		if ( self.session && isInRoomSession( invite.roomId ))
-			return;
-		
 		const inviteHost = invite.host.split( '/' )[ 0 ];
 		const localHost = hello.service.getHost();
 		api.Say( 'Live invite received', { i : invite, 'if' : inviteFrom, s : selfie });
@@ -892,13 +888,6 @@ library.rtc = library.rtc || {};
 			}
 			
 			self.joinRoom( invite, inviteFrom, selfie, result.permissions );
-		}
-		
-		function isInRoomSession( roomId ) {
-			if ( !roomId )
-				return false;
-			
-			return self.session.roomId === roomId;
 		}
 		
 		function isOtherDomain( a, b ) {
@@ -934,9 +923,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.joinRoom = function( invite, inviteFrom, selfie, permissions ) {
 		const self = this;
-		if ( self.session )
-			self.closeSession();
-		
 		if ( !selfie ) {
 			selfie = {
 				name   : library.tool.getName(),
@@ -944,7 +930,7 @@ library.rtc = library.rtc || {};
 			};
 		}
 		
-		var sessionConf = {
+		const sessionConf = {
 			invite      : invite,
 			inviteFrom  : inviteFrom,
 			user        : selfie,
@@ -990,20 +976,16 @@ library.rtc = library.rtc || {};
 	
 	ns.RtcControl.prototype.askHost = function( contacts, selfie ) {
 		const self = this;
-		var conf = {
-			message : 'permissions for live chat',
+		const conf = {
+			message     : 'permissions for live chat',
 			constraints : self.constraints,
 		};
-		var askView = new library.view.RtcAsk( conf, permissionBack );
+		const askView = new library.view.RtcAsk( conf, permissionBack );
 	}
 	
 	ns.RtcControl.prototype.getRoom = function( action, sessionConf ) {
 		const self = this;
-		var roomReq = {
-			type : action,
-			data : sessionConf,
-		};
-		hello.service.createRoom( roomReq );
+		hello.service.getRoom( action, sessionConf );
 	}
 	
 	ns.RtcControl.prototype.createSession = function( conf, eventSink, onclose ) {
@@ -1068,6 +1050,18 @@ library.rtc = library.rtc || {};
 		self.toView( remove );
 		
 		session.close();
+		self.restartSessions();
+	}
+	
+	ns.RtcControl.prototype.restartSessions = function() {
+		const self = this;
+		const reset = {
+			type : 'reset-output',
+		};
+		self.sessionIds.forEach( sId => {
+			const sess = self.sessions[ sId ];
+			sess.send( reset );
+		});
 	}
 	
 	ns.RtcControl.prototype.bindView = function( viewConn ) {

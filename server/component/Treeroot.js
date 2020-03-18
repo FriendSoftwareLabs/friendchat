@@ -370,7 +370,6 @@ ns.Treeroot.prototype.updateLogFn = function() {
 
 ns.Treeroot.prototype.handleClientInit = function( socketId ) {
 	const self = this;
-	self.log( 'handleClientInit', socketId );
 	if ( !self.conf.login ) {
 		self.client.emitState();
 		return;
@@ -673,7 +672,7 @@ ns.Treeroot.prototype.keyExchangeComplete = function( sessionId, socketId ) {
 
 ns.Treeroot.prototype.keyExchangeFailed = function() {
 	var self = this;
-	self.log( 'keyExFail', self.cryptoSetupState, 4 );
+	//self.log( 'keyExFail', self.cryptoSetupState, 4 );
 	self.cryptoSetupState = null;
 	if ( self.tryDBPass ) {
 		self.askRetry();

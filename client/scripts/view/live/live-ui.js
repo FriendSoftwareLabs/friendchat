@@ -84,6 +84,14 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.UI.prototype.restartAudioSinks = function() {
+		const self = this;
+		self.peerIds.forEach( pId => {
+			const peer = self.peers[ pId ];
+			peer.updateAudioSink();
+		});
+	}
+	
 	ns.UI.prototype.addShareLink = function( conn ) {
 		const self = this;
 		
@@ -2504,9 +2512,9 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.resetState = function() {
-		var self = this;
-		var isMuted = false;
-		var isBlinded = false;
+		const self = this;
+		const isMuted = false;
+		const isBlinded = false;
 		self.toggleMuteState( isMuted );
 		self.toggleRemoteMute( isMuted );
 		self.toggleBlindState( isBlinded );

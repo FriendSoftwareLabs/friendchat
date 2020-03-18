@@ -149,8 +149,8 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.doMessageIntercept = function( data ) {
 		const self = this;
-		var intercept = self.checkIntercept( data.message );
-		var didIntercept = false;
+		const intercept = self.checkIntercept( data.message );
+		let didIntercept = false;
 		if ( intercept ) {
 			didIntercept = self.handleIntercept( data, intercept );
 		}
@@ -665,7 +665,12 @@ library.contact = library.contact || {};
 		if ( self.settings.isStream )
 			conf.isStream = true;
 		
-		self.live = hello.rtc.createSession( conf, liveToServer, onClose );
+		self.live = hello.rtc.createSession(
+			conf,
+			liveToServer,
+			onClose
+		);
+		
 		if ( !self.live ) {
 			console.log( 'P.joinLive - live was not created..', self );
 			return; // session wasnt created, because :reasons:
@@ -1152,7 +1157,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
-		console.log( 'PresenceRoom.handleInitialize', state );
 		self.users = state.users || {};
 		self.userIds = Object.keys( self.users );
 		self.peers = state.peers;
@@ -2655,7 +2659,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.updateAtStrings = function() {
 		const self = this;
-		console.log( 'updateAtStrings', self.userId );
 		self.idc.get( self.userId )
 			.then( uBack )
 			.catch( uErr );
@@ -2665,7 +2668,6 @@ library.contact = library.contact || {};
 		}
 		
 		function uBack( user ) {
-			console.log( 'uBack', user );
 			if ( !user )
 				return;
 			

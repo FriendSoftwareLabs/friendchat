@@ -30,7 +30,7 @@ var fcRequest = require( './FcRequest' )( global.config.server.fc );
 var ns = {};
 
 ns.SocketManager = function( tlsConf, port ) {
-	var self = this;
+	const self = this;
 	self.tls = tlsConf;
 	self.port = port;
 	
@@ -45,8 +45,8 @@ ns.SocketManager = function( tlsConf, port ) {
 }
 
 ns.SocketManager.prototype.initWS = function() {
-	var self = this;
-	var watchConf = {
+	const self = this;
+	const watchConf = {
 		keyPath  : self.tls.keyPath,
 		certPath : self.tls.certPath,
 		onchange : onChange,
@@ -107,7 +107,7 @@ ns.SocketManager.prototype.initWS = function() {
 }
 
 ns.SocketManager.prototype.bindPool = function() {
-	var self = this;
+	const self = this;
 	if ( !self.pool )
 		throw new Error( 'SocketManager - no pool' );
 	
@@ -119,7 +119,7 @@ ns.SocketManager.prototype.bindPool = function() {
 	function poolConnection( conn ) {
 		const sid = self.makeSocketId();
 		const conf = {
-			id : sid,
+			id   : sid,
 			conn : conn,
 		};
 		const socket = new Socket( conf );
@@ -135,7 +135,6 @@ ns.SocketManager.prototype.bindPool = function() {
 		socket.sendConn( authChallenge );
 		
 		function closeSocket() {
-			log( 'authenticate - timelimit hit, closing socket' );
 			removeListeners( socket );
 			socket.close();
 		}
@@ -153,13 +152,14 @@ ns.SocketManager.prototype.bindPool = function() {
 		function clearDMZ( socket ) {
 			if ( socket.authTimeout )
 				clearTimeout( socket.authTimeout );
+			
 			delete socket.authTimeout;
 			removeListeners( socket );
 		}
 		
 		function removeListeners( socket ) {
-			socket.removeAllListeners( 'authenticate' );
-			socket.removeAllListeners( 'session' );
+			socket.release( 'authenticate' );
+			socket.release( 'session' );
 		}
 	};
 	
@@ -181,7 +181,7 @@ ns.SocketManager.prototype.authenticate = function( bundle, socket ) {
 		return;
 	}
 	
-	var token = null;
+	let token = null;
 	if ( 'authid' === bundle.type )
 		token = self.validateAuthToken( bundle );
 	
@@ -214,13 +214,13 @@ ns.SocketManager.prototype.authenticate = function( bundle, socket ) {
 }
 
 ns.SocketManager.prototype.validateAuthToken = function( bundle ) {
-	var self = this;
+	const self = this;
 	if ( !bundle )
 		return false;
 	
 	const tokens = bundle.data.tokens;
 	
-	var validatedToken = {};
+	const validatedToken = {};
 	try {
 		validatedToken.authId = tokens.authId.toString();
 		validatedToken.userId = tokens.userId.toString();
@@ -236,18 +236,18 @@ ns.SocketManager.prototype.validateAuthToken = function( bundle ) {
 }
 
 ns.SocketManager.prototype.authRequest = function( token, callback ) {
-	var self = this;
-	var data = {
+	const self = this;
+	const data = {
 		module  : 'system',
 		command : 'userinfoget',
 		authid  : token.authId,
 	};
 	
-	var req = {
-		path : '/system.library/module/',
-		data : data,
+	const req = {
+		path    : '/system.library/module/',
+		data    : data,
 		success : success,
-		error : error,
+		error   : error,
 	};
 	fcRequest.post( req );
 	
@@ -262,96 +262,93 @@ ns.SocketManager.prototype.authRequest = function( token, callback ) {
 }
 
 ns.SocketManager.prototype.bind = function( socket ) {
-	var self = this;
-	var sid = socket.id;
-	self.sockets[ sid ] = socket;
-	
-	socket.onclose = onClose;
-	socket.on( 'session', sessionEvent );
-	socket.on( 'msg', msg );
+	const self = this;
+	const sId = socket.id;
+	self.sockets[ sId ] = socket;
+	socket.on( 'close'   , e => self.removeSocket(   sId ));
+	socket.on( 'session' , e => self.handleSession(  e, sId ));
+	socket.on( 'msg'     , e => self.receiveMessage( e, sId ));
 	
 	socket.authenticate( true );
-	
-	function onClose() {
-		self.removeSocket( sid );
-	}
-	function sessionEvent( e ) { self.handleSession( e, socket.id ); }
-	function msg( e ) { self.receiveMessage( e, socket.id ); }
 }
 
 ns.SocketManager.prototype.receiveMessage = function( msg, socketId ) {
-	log( 'receiveMessage(), your implementation here', msg );
+	log( 'receiveMessage() is redefined in chatsockets )', msg );
 }
 
 ns.SocketManager.prototype.unbind = function( socket ) {
-	var self = this;
+	const self = this;
 	if ( !socket )
 		return;
 	
-	socket.removeAllListeners( 'session' );
-	socket.removeAllListeners( 'msg' );
+	socket.release( 'session' );
+	socket.release( 'msg' );
 }
 
 ns.SocketManager.prototype.checkSession = function( sessionId, socket ) {
-	var self = this;
-	var session = self.getSession( sessionId );
+	const self = this;
+	const session = self.getSession( sessionId );
 	if ( !session ) {
-		socket.unsetSession( unsetBack );
-		function unsetBack() {
-			socket.close();
-		}
+		socket.unsetSession()
+			.then( e => {
+				socket.close();
+			})
+			.catch( e => {
+				socket.close();
+			});
+			
 		return;
 	}
 	
 	self.replaceSession( session, socket );
+	socket.close();
 }
 
 // restore a session, maybe
 ns.SocketManager.prototype.handleSession = function( sessionId, socketId ) {
-	var self = this;
+	const self = this;
 	if ( !sessionId ) { // empty session id menas the client is closing the session
-		log( 'handleSession - sid null, closing' );
 		self.removeSocket( socketId );
-		//socket.close();
 		return;
 	}
 	
-	var session = self.getSession( sessionId );
-	var socket = self.sockets[ socketId ];
+	const session = self.getSession( sessionId );
+	const socket = self.getSocket( socketId );
 	self.replaceSession( session, socket );
+	self.removeSocket( socket.id );
 }
 
 ns.SocketManager.prototype.replaceSession = function( session, socket ) {
-	var self = this;
+	const self = this;
 	if ( !socket || !session ) {
 		log( 'replaceSession - missing stuffs', {
-			soId : socket.id,
-			seId : session.id,
+			soId : !!socket,
+			seId : !!session,
 		});
-		self.removeSocket( socket );
+		if ( socket )
+			self.removeSocket( socket.id );
+		
 		return;
 	}
 	
-	const sid = socket.id;
-	var conn = socket.detach();
+	const conn = socket.detach();
 	if ( !conn ) {
-		self.removeSocket( socket );
+		socket.close();
 		return;
 	}
 	
 	session.attach( conn );
-	self.removeSocket( socket );
 }
 
 ns.SocketManager.prototype.setSession = function( socket, parentId ) {
-	var self = this;
-	var sessionId = self.makeSessionId();
+	const self = this;
+	const sessionId = self.makeSessionId();
 	socket.setSession( sessionId, parentId );
 	self.sessions[ sessionId ] = socket;
 }
 
 ns.SocketManager.prototype.getSession = function( id ) {
-	var self = this;
+	const self = this;
 	var session = self.sessions[ id ];
 	if ( !session )
 		return null;
@@ -359,59 +356,47 @@ ns.SocketManager.prototype.getSession = function( id ) {
 	return session;
 }
 
-ns.SocketManager.prototype.removeSocket = function( subject ) {
-	var self = this;
-	var id = null;
-	var socket = null;
-	
-	// subject might be a id or actual socket
-	if ( 'string' === typeof( subject )) {
-		id = subject;
-		socket = self.sockets[ id ];
-	} else {
-		subject.close();
-	}
-	
-	if ( !socket )
+ns.SocketManager.prototype.getSocket = function( sId ) {
+	const self = this;
+	return self.sockets[ sId ] || null;
+}
+
+ns.SocketManager.prototype.removeSocket = async function( sId ) {
+	const self = this;
+	const socket = self.getSocket( sId );
+	if ( !socket ) {
+		log( 'removeSocket - no socket', sId );
 		return;
-	
-	if ( socket.sessionId )
-		removeSession( socket.sessionId, sessionClosed );
-	else
-		sessionClosed();
-	
-	function sessionClosed() {
-		self.unbind( socket );
-		socket.close();
-		delete self.sockets[ id ];
 	}
 	
-	function removeSession( sid, callback ) {
-		var session = self.sessions[ sid ];
-		if ( !session )
-			return;
-		
-		delete self.sessions[ sid ];
-		var parent = self.getParent( session.parentId );
+	if ( socket.sessionId ) {
+		const parent = self.getParent( socket.parentId );
 		if ( parent )
-			parent.detachSession( session.id );
+			parent.detachSession( sId );
 		
-		session.unsetSession( callback );
+		delete self.sessions[ socket.sessionId ];
+		await socket.unsetSession();
 	}
+	
+	delete self.socketToUserId[ sId ];
+	delete self.sockets[ sId ];
+	socket.close();
 }
 
 ns.SocketManager.prototype.makeSocketId = function() {
-	var self = this;
+	const self = this;
+	let newId = null;
+	let exists = false;
 	do {
-		var newId = uuid.get();
-		var exists = !!self.sessions[ newId ];
+		newId = uuid.get();
+		exists = !!self.sessions[ newId ];
 	} while ( exists )
 	
 	return newId;
 }
 
 ns.SocketManager.prototype.makeSessionId = function() {
-	var self = this;
+	const self = this;
 	var sid = uuid.get( 'session' );
 	return sid;
 }
@@ -425,7 +410,7 @@ ns.SocketManager.prototype.off = function( subscriber ) {
 }
 
 ns.SocketManager.prototype.randomClose = function( socket ) {
-	var self = this;
+	const self = this;
 	var delay = getDelay();
 	setTimeout( doClose, delay );
 	

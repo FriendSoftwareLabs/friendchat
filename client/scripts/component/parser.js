@@ -771,7 +771,8 @@ library.component.parse = library.component.parse || {};
 				if ( !str || !str.length || 'string' !== typeof( str ))
 					return null;
 				
-				return str;
+				const res = str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+				return res;
 			})
 			.filter( s => !!s );
 		

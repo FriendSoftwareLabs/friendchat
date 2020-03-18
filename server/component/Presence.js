@@ -25,6 +25,7 @@ const connLog = require( './Log')( 'Presence.ServerConn' );
 const uuid = require( './UuidPrefix' )( 'live' );
 const events = require( './Emitter' );
 const tls = require( 'tls' );
+const WS = require( 'ws' );
 const util = require( 'util' );
 const fs = require( 'fs' );
 
@@ -34,7 +35,7 @@ ns.Presence = function( clientConn, clientId ) {
 	if ( !( this instanceof ns.Presence ))
 		return new ns.Presence( clientConn, clientId );
 	
-	var self = this;
+	const self = this;
 	self.type = 'presence';
 	self.client = clientConn;
 	self.id = clientId;
@@ -60,7 +61,7 @@ ns.Presence.prototype.getSetup = function( conf, username ) {
 // Private
 
 ns.Presence.prototype.init = function() {
-	var self = this;
+	const self = this;
 	self.client.on( 'connect', connect );
 	self.client.on( 'reconnect', reconnect );
 	self.client.on( 'initialize', initialize );
@@ -130,7 +131,7 @@ ns.Presence.prototype.connect = function( conf, socketId ) {
 	if ( !self.identity )
 		return;
 	
-	var connOpts = {
+	const connOpts = {
 		auth    : self.authBundle,
 		host    : self.conf.host,
 		port    : self.conf.port,
@@ -170,16 +171,6 @@ ns.Presence.prototype.disconnect = function() {
 	self.releaseServerConn();
 }
 
-ns.Presence.prototype.releaseServerConn = function() {
-	const self = this;
-	if ( !self.server )
-		return;
-	
-	self.server.release();
-	self.server.close();
-	delete self.server;
-}
-
 // server conn things
 
 ns.Presence.prototype.handleConnReady = function() {
@@ -191,7 +182,7 @@ ns.Presence.prototype.handleConnReady = function() {
 }
 
 ns.Presence.prototype.handleConnState = function( state ) {
-	var self = this;
+	const self = this;
 	self.client.setState( state );
 }
 
@@ -203,8 +194,7 @@ ns.Presence.prototype.handleConnClosed = function( err ) {
 		data : err,
 	};
 	self.client.setState( state );
-	self.server.close();
-	delete self.server;
+	self.releaseServerConn();
 }
 
 ns.Presence.prototype.clear = function() {
@@ -275,7 +265,7 @@ ns.Presence.prototype.handleAccountStage = function( event ) {
 }
 
 ns.Presence.prototype.createAccount = function() {
-	var self = this;
+	const self = this;
 	if ( !self.identity ) {
 		log( 'createAccount - no identity' );
 		return;
@@ -382,7 +372,7 @@ ns.Presence.prototype.bindAccount = function( accId ) {
 // conf updates
 
 ns.Presence.prototype.handleConnUpdate = function( value ) {
-	var self = this;
+	const self = this;
 	/*
 	var conf = {
 		host : self.conf.host,
@@ -393,26 +383,32 @@ ns.Presence.prototype.handleConnUpdate = function( value ) {
 }
 
 ns.Presence.prototype.handleLoginUpdate = function( value ) {
-	var self = this;
+	const self = this;
 	log( 'handleLoginUpdate - NYI', value );
 	//self.reconnect();
 }
 
 //
+ns.Presence.prototype.releaseServerConn = function() {
+	const self = this;
+	if ( !self.server )
+		return;
+	
+	self.server.close();
+	delete self.server;
+}
 
 ns.Presence.prototype.close = function( callback ) {
-	var self = this;
+	const self = this;
+	self.releaseServerConn();
+	
 	if ( self.conf )
 		self.conf.close();
-	
-	if ( self.server )
-		self.server.close();
 	
 	if ( self.client )
 		self.client.close();
 	
 	delete self.conf;
-	delete self.server;
 	delete self.client;
 	
 	if ( callback )
@@ -426,7 +422,7 @@ ns.Config = function( client ) {
 	if ( !( this instanceof ns.Config ))
 		return new ns.Config( client );
 	
-	var self = this;
+	const self = this;
 	events.Emitter.call( self );
 	self.client = client;
 	self.init();
@@ -446,7 +442,7 @@ ns.Config.prototype.labels = [
 // Public
 
 ns.Config.prototype.set = function( conf ) {
-	var self = this;
+	const self = this;
 	
 	self.labels.forEach( set );
 	function set( label ) {
@@ -455,7 +451,7 @@ ns.Config.prototype.set = function( conf ) {
 }
 
 ns.Config.prototype.get = function() {
-	var self = this;
+	const self = this;
 	confLog( 'get', self );
 	var conf = {};
 	self.labels.forEach( add );
@@ -476,7 +472,7 @@ ns.Config.prototype.update = function( prop, value ) {
 }
 
 ns.Config.prototype.close = function() {
-	var self = this;
+	const self = this;
 	self.release(); // from Emitter
 	self.client.off( 'settings' );
 	
@@ -486,7 +482,7 @@ ns.Config.prototype.close = function() {
 // Private
 
 ns.Config.prototype.init = function() {
-	var self = this;
+	const self = this;
 	self.client.on( 'settings', get );
 	self.client.on( 'setting', set );
 	
@@ -495,7 +491,7 @@ ns.Config.prototype.init = function() {
 }
 
 ns.Config.prototype.emitConfig = function( socketId ) {
-	var self = this;
+	const self = this;
 	var wrap = {
 		type : 'settings',
 		data : self.get(),
@@ -504,7 +500,7 @@ ns.Config.prototype.emitConfig = function( socketId ) {
 }
 
 ns.Config.prototype.receiveUpdate = function( update, socketId ) {
-	var self = this;
+	const self = this;
 	confLog( 'receiveUpdate', update );
 	if ( !update.setting )
 		return;
@@ -533,7 +529,7 @@ ns.Config.prototype.receiveUpdate = function( update, socketId ) {
 }
 
 ns.Config.prototype.doPersist = function( setting, value, callback ) {
-	var self = this;
+	const self = this;
 	var update = {
 		setting : setting,
 		value   : value,
@@ -549,7 +545,7 @@ ns.Config.prototype.doPersist = function( setting, value, callback ) {
 }
 
 ns.Config.prototype.updateClient = function( update ) {
-	var self = this;
+	const self = this;
 	var wrap = {
 		type : 'setting',
 		data : {
@@ -561,7 +557,7 @@ ns.Config.prototype.updateClient = function( update ) {
 }
 
 ns.Config.prototype.send = function( msg ) {
-	var self = this;
+	const self = this;
 	if ( !self.client )
 		return;
 	
@@ -576,7 +572,7 @@ ns.ServerConn = function( conf, onstate, onclose ) {
 	if ( !( this instanceof ns.ServerConn ))
 		return new ns.ServerConn( conf );
 	
-	var self = this;
+	const self = this;
 	events.Emitter.call( self );
 	
 	self.auth = conf.auth;
@@ -599,7 +595,7 @@ util.inherits( ns.ServerConn, events.Emitter );
 // Public
 
 ns.ServerConn.prototype.connect = function( conf ) {
-	var self = this;
+	const self = this;
 	if ( conf ) {
 		self.host = ( null == conf.host ) ? self.host : conf.host;
 		self.port = ( null == conf.port ) ? self.port : conf.port;
@@ -614,30 +610,40 @@ ns.ServerConn.prototype.connect = function( conf ) {
 	}
 	
 	self.isConnecting = true;
-	var opts = {
+	/*
+	const opts = {
 		host : self.host,
 		port : self.port,
 	};
+	*/
 	
-	self.socket = tls.connect( opts );
-	self.socket.setEncoding( 'utf8' );
+	//self.socket = tls.connect( opts );
+	//self.socket.setEncoding( 'utf8' );
+	const host = 'wss://' + self.host + ':' + self.port;
+	const subProto = '';
+	const opts = {
+		rejectUnauthorized : false,
+	};
+	self.socket = new WS( host, subProto, opts );
 	
-	self.socket.on( 'secureConnect', open );
+	//self.socket.on( 'secureConnect', open );
+	self.socket.on( 'open', open );
 	self.socket.on( 'close', closed );
 	self.socket.on( 'error', error );
-	self.socket.on( 'end', ended );
-	self.socket.on( 'data', onData );
+	self.socket.on( 'message', onData );
+	//self.socket.on( 'end', ended );
+	//self.socket.on( 'data', onData );
 	
 	function open( e ) { self.handleOpen(); }
 	function closed( e ) { self.handleClose( e ); }
 	function error( e ) { self.handleError( e ); }
-	function ended( e ) { self.handleEnded( e ); }
+	//function ended( e ) { self.handleEnded( e ); }
 	function onData( e ) { self.handleData( e ); }
 }
 
 ns.ServerConn.prototype.send = function( msg ) {
-	var self = this;
-	var wrap = {
+	const self = this;
+	const wrap = {
 		type : 'msg',
 		data : msg,
 	};
@@ -657,7 +663,7 @@ ns.ServerConn.prototype.reconnect = function( conf ) {
 }
 
 ns.ServerConn.prototype.disconnect = function() {
-	var self = this;
+	const self = this;
 	self.connected = false;
 	self.isConnecting = false;
 	self.clearSocket();
@@ -670,7 +676,7 @@ ns.ServerConn.prototype.disconnect = function() {
 }
 
 ns.ServerConn.prototype.close = function() {
-	var self = this;
+	const self = this;
 	if ( self.socket )
 		self.disconnect();
 	
@@ -679,13 +685,13 @@ ns.ServerConn.prototype.close = function() {
 	delete self.onstate;
 	delete self.onclose;
 	
-	self.release();
+	self.emitterClose();
 }
 
 // Private
 
 ns.ServerConn.prototype.init = function() {
-	var self = this;
+	const self = this;
 	self.connMap = {
 		'authenticate' : auth,
 		'session'      : session,
@@ -702,7 +708,7 @@ ns.ServerConn.prototype.init = function() {
 }
 
 ns.ServerConn.prototype.emitState = function( state ) {
-	var self = this;
+	const self = this;
 	if ( !self.onstate )
 		return;
 	
@@ -710,7 +716,7 @@ ns.ServerConn.prototype.emitState = function( state ) {
 }
 
 ns.ServerConn.prototype.handleOpen = function() {
-	var self = this;
+	const self = this;
 	self.connected = true;
 	self.isConnecting = false;
 	self.connectAttempt = 0;
@@ -725,7 +731,7 @@ ns.ServerConn.prototype.handleOpen = function() {
 }
 
 ns.ServerConn.prototype.handleClose = function() {
-	var self = this;
+	const self = this;
 	self.connected = false;
 	var status = {
 		type : 'offline',
@@ -757,17 +763,7 @@ ns.ServerConn.prototype.handleDisconnect = function( err ) {
 }
 
 ns.ServerConn.prototype.tryReconnect = function( instant ) {
-	var self = this;
-	/*
-	connLog( 'tryReconnect', {
-		session   : self.session,
-		auth      : self.auth,
-		timeout   : self.connectTimeout,
-		is        : self.isConnecting,
-		connected : self.connected,
-	});
-	*/
-	
+	const self = this;
 	if ( !self.auth ) {
 		self.disconnect();
 		return;
@@ -811,8 +807,8 @@ ns.ServerConn.prototype.tryReconnect = function( instant ) {
 }
 
 ns.ServerConn.prototype.handleData = function( str ) {
-	var self = this;
-	var event = null;
+	const self = this;
+	let event = null;
 	try {
 		event = JSON.parse( str );
 	} catch ( e ) {
@@ -857,7 +853,7 @@ ns.ServerConn.prototype.tryParts = function() {
 }
 
 ns.ServerConn.prototype.handleConMsg = function( event ) {
-	var self = this;
+	const self = this;
 	const handler = self.connMap[ event.type ];
 	if ( !handler ) {
 		connLog( 'handleConMsg - no handler for', event );
@@ -936,24 +932,26 @@ ns.ServerConn.prototype.sendSession = function() {
 }
 
 ns.ServerConn.prototype.sendCon = function( event ) {
-	var self = this;
+	const self = this;
 	self.sendOnSocket( event );
 }
 
 ns.ServerConn.prototype.sendOnSocket = function( event ) {
-	var self = this;
+	const self = this;
 	if ( !self.connected || !self.socket )
 		return;
 	
-	var str = null;
+	let str = null;
 	try {
 		str = JSON.stringify( event );
-	} catch( e ) {
-		connLog( 'failed to string', event );
+		self.socket.send( str );
+	} catch( ex ) {
+		connLog( 'failed to ssend', {
+			ex  : ex,
+			str : str,
+		}, 3 );
 		return;
 	}
-	
-	self.socket.write( str );
 }
 
 ns.ServerConn.prototype.clearSocket = function() {
@@ -964,18 +962,11 @@ ns.ServerConn.prototype.clearSocket = function() {
 	const socket = self.socket;
 	delete self.socket;
 	try {
-		socket.destroy();
+		socket.close();
 	} catch( e ) {
 		connLog( 'tried destroying socket, but it oopsied', e );
 	}
-	socket.removeAllListeners( 'secureConnect' );
-	socket.removeAllListeners( 'close' );
-	socket.removeAllListeners( 'error' );
-	socket.removeAllListeners( 'end' );
-	socket.removeAllListeners( 'data' );
-	socket.unref();
-	
-	socket.on( 'error', function(){});
+	socket.removeAllListeners();
 }
 
 module.exports = ns.Presence;

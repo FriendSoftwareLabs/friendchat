@@ -914,6 +914,7 @@ library.component = library.component || {};
 	
 	ns.SourceSelectPane.prototype.showDevices = function( currentDevices ) {
 		const self = this;
+		console.log( 'showDevices - currentDevices', currentDevices );
 		self.refreshDevices( currentDevices );
 	}
 	
@@ -952,6 +953,7 @@ library.component = library.component || {};
 			audiooutput : outputDevice || undefined,
 		};
 		
+		console.log( 'getSelected', selected );
 		if ( outputDevice )
 			selected.audiooutput = outputDevice;
 		
@@ -1092,6 +1094,7 @@ library.component = library.component || {};
 		
 		function show( devices ) {
 			self.allDevices = devices;
+			console.log( 'available devices', devices );
 			self.populate();
 		}
 		
@@ -1394,6 +1397,11 @@ library.component = library.component || {};
 			return optStr;
 		});
 		
+		console.log( 'buildSelect', {
+			type           : type,
+			devices        : devices,
+			currentDevices : self.currentDevices,
+		});
 		const selectConf = {
 			type : type,
 			name : type,
@@ -1405,20 +1413,35 @@ library.component = library.component || {};
 		
 		function buildOption( item ) {
 			let selected = '';
-			const label = ( item.label && item.label.length ) ? item.label : item.labelExtra;
+			let label = null
+			if ( item.label )
+				label = item.label;
+			else
+				label = item.labelExtra || 'please report me, i shouldnt happen';
 			
 			// if there is a device dfined..
-			if ( self.currentDevices && self.currentDevices[ item.kind ] ) {
-				var currDev = self.currentDevices[ item.kind ];
+			if ( self.currentDevices && self.currentDevices[ item.kind ]) {
+				const currDev = self.currentDevices[ item.kind ];
 				// ..check if its this one
-				if ( currDev.deviceId === item.deviceId )
-					selected = 'selected';
-			} else {
-				// ..no device defined, so check if this is the 'no select' or default entry
-				if ( ( label === 'none' ) || ( 'default' === item.deviceId ) )
+				console.log( 'checkSelected', {
+					prefered : currDev,
+					item     : item,
+				});
+				
+				if ( currDev.label === item.label )
 					selected = 'selected';
 				
+				if ( currDev.deviceId === item.deviceId )
+					selected = 'selected';
+				
+			} else {
+				// ..no device defined, so check if this is the 'no select' or default entry
+				if (( label === 'none' ) || ( 'default' === item.deviceId ))
+					selected = 'selected';
 			}
+			
+			if ( selected )
+				console.log( 'selected', item );
 			
 			const optionConf = {
 				value    : item.deviceId,

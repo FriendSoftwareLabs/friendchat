@@ -54,14 +54,12 @@ const uuid = require( './UuidPrefix' )( 'listener' );
 
 const ns = {};
 
-ns.Emitter = function( eventSink ) {
-	if ( !( this instanceof ns.Emitter ))
-		return new ns.Emitter( eventSink );
-	
+ns.Emitter = function( eventSink, debug ) {
 	const self = this;
+	self._emitterEventSink = eventSink;
+	self._eventsDebug = debug || false;
 	self._emitterEvent2ListenerId = {};
 	self._emitterListeners = {};
-	self._emitterEventSink = eventSink;
 }
 
 // first argument must be the event type, a string,

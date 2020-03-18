@@ -935,7 +935,7 @@ library.rtc = library.rtc || {};
 		if ( self.senders.length )
 			self.removeTracks();
 		
-		var tracks = stream.getTracks();
+		const tracks = stream.getTracks();
 		self.log( 'addStream - tracks', { type : self.type, tracks : tracks });
 		tracks.forEach( add );
 		self.log( 'senders after adding tracks', self.senders );
@@ -1210,6 +1210,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.emitStats = function() {
 		const self = this;
+		//return;
 		if ( !self.conn ) {
 			done( 'ERR_NO_CONN' );
 			return;
@@ -3131,14 +3132,34 @@ library.rtc = library.rtc || {};
 		if ( !device )
 			return conf;
 		
-		let aDev = available[ deviceType ][ device.deviceId ];
-		if ( !aDev )
+		const avaOfType = available[ deviceType ];
+		let prefDev = null;
+		const devIds = Object.keys( avaOfType );
+		devIds.forEach( id => {
+			const dev = avaOfType[ id ];
+			if ( device.deviceId === dev.deviceId ) {
+				prefDev = dev;
+				return;
+			}
+			
+			if ( device.label === dev.label ) {
+				prefDev = dev;
+				return;
+			}
+			
+			if ( device.labelExtra === dev.labelExtra ) {
+				prefDev = dev;
+				return;
+			}
+		});
+		
+		if ( !prefDev )
 			return conf;
 		
 		if ( 'boolean' === typeof( conf[ type ]))
 			conf[ type ] = {};
 		
-		conf[ type ].deviceId = aDev.deviceId;
+		conf[ type ].deviceId = prefDev.deviceId;
 		return conf;
 	}
 	

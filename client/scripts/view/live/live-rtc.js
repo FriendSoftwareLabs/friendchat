@@ -84,6 +84,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.onclose = onclose;
 		self.onready = onready;
 		
+		console.log( 'RTC - localsettings', self.localSettings );
+		
 		self.peers = {};
 		self.peerIds = [];
 		self.selfie = null;
@@ -322,6 +324,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.conn.on( 'settings'       , settings );
 		self.conn.on( 'speaking'       , speaking );
 		self.conn.on( 'nested-app'     , nestedApp );
+		self.conn.on( 'reset-output'   , e => self.resetOutput( e ));
 		self.conn.on( 'quality'        , quality );
 		self.conn.on( 'mode'           , mode );
 		self.conn.on( 'join'           , join );
@@ -781,6 +784,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			type : 'nestedapp',
 			data : app,
 		});
+	}
+	
+	ns.RTC.prototype.resetOutput = function() {
+		const self = this;
+		console.log( 'RTC.resetOutput' );
+		self.restartPeers();
+		//self.ui.restartAudioSinks();
 	}
 	
 	ns.RTC.prototype.changeUsername = function() {
@@ -1947,6 +1957,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.savePreferedDevices = function( devices ) {
 		const self = this;
+		console.log( 'savePreferedDevices', devices );
 		self.saveLocalSetting( 'preferedDevices', devices );
 	}
 	
@@ -2008,6 +2019,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setupStream = function( callback, permissions, preferedDevices ) {
 		const self = this;
+		console.log( 'setupStream - preferedDevices', preferedDevices );
 		if ( self.streamBack ) {
 			let oldBack = self.streamBack;
 			delete self.streamBack;
@@ -3245,8 +3257,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( curr.id === fresh.id )
 					return;
 				
-				remove( curr );
-				add( fresh );
+				//remove( curr );
+				replace( curr, fresh );
 				return;
 			}
 			
@@ -3261,7 +3273,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return;
 			
 			self.log( 'Peer.updateTracks - add err', {
-				err : err,
+				err   : err,
 				track : t,
 			});
 		};
@@ -3273,8 +3285,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return;
 			
 			self.log( 'Peer.updateTracks - remove err', {
-				err : err,
+				err   : err,
 				track : t,
+			});
+		}
+		
+		function replace( curr, fresh ) {
+			self.media.removeTrack( curr );
+			self.media.addTrack( fresh );
+			const err = self.session.replaceTrack( fresh.kind );
+			if ( !err )
+				return;
+			
+			self.log( 'Peer.updateTracks - replace err', {
+				err    : err,
+				tracks : [ curr, fresh ],
 			});
 		}
 	}

@@ -949,27 +949,27 @@ library.module = library.module || {};
 		};
 	}
 	
-	ns.Presence.prototype.serviceCreateRoom = function( event ) {
+	ns.Presence.prototype.serviceGetRoom = function( action, conf ) {
 		const self = this;
-		var reqId = friendUP.tool.uid( 'req' );
-		var session = event.data;
+		const reqId = friendUP.tool.uid( 'req' );
+		const session = conf;
 		self.roomRequests[ reqId ] = {
-			action  : event.type,
+			action  : action,
 			session : session,
 		};
 		
-		var roomConf = {
+		const roomConf = {
 			req    : reqId,
 			invite : session.invite || null,
 			name   : null,
 		}
 		
-		if ( 'create' === event.type ) {
+		if ( 'create' === action ) {
 			self.createRoom( roomConf );
 			return;
 		}
 		
-		if ( 'join' === event.type ) {
+		if ( 'join' === action ) {
 			self.joinRoom( roomConf );
 			return;
 		}
@@ -1001,10 +1001,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = function( state ) {
 		const self = this;
-		console.log( 'Presence.handleAccountInit', {
-			inited : self.initialized,
-			state  : state,
-		});
 		if ( self.initialized )
 			return;
 		
@@ -2847,7 +2843,6 @@ library.module = library.module || {};
 				type : 'user-list',
 				data : null,
 			};
-			console.log( 'getUserList', req );
 			self.conn.request( req )
 				.then( reqBack )
 				.catch( reqFail );

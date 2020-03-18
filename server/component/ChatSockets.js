@@ -29,7 +29,7 @@ var SocketManager = require( './SocketManager' );
 var ns = {};
 
 ns.ChatSockets = function( tlsConf, serverPort, state ) {
-	var self = this;
+	const self = this;
 	SocketManager.call( self, tlsConf, serverPort );
 	self.state = state;
 	self.init();
@@ -38,7 +38,7 @@ ns.ChatSockets = function( tlsConf, serverPort, state ) {
 util.inherits( ns.ChatSockets, SocketManager );
 
 ns.ChatSockets.prototype.init = function() {
-	var self = this;
+	const self = this;
 	self.messageMap = self.messageMap || {
 		'/create' : create,
 		'/read' : load,
@@ -53,7 +53,7 @@ ns.ChatSockets.prototype.init = function() {
 }
 
 ns.ChatSockets.prototype.receiveMessage = function( msg, socketId ) {
-	var self = this;
+	const self = this;
 	if ( !msg || !( msg.type == 'request' )) {
 		log( 'invalid request', msg, 4 );
 		return;
@@ -81,22 +81,21 @@ ns.ChatSockets.prototype.receiveMessage = function( msg, socketId ) {
 }
 
 ns.ChatSockets.prototype.send = function( msg, socketId ) {
-	var self = this;
-	var wrap = {
+	const self = this;
+	const wrap = {
 		type : 'request',
 		data : msg,
 	};
-	var socket = self.sockets[ socketId ];
-	if ( !socket ) {
+	const socket = self.getSocket( socketId );
+	if ( !socket )
 		return;
-	}
 	
 	socket.send( wrap );
 }
 
 ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
-	var self = this;
-	var userId = self.socketToUserId[ socketId ];
+	const self = this;
+	const userId = self.socketToUserId[ socketId ];
 	if ( !userId ) {
 		let err = new Error();
 		self.logUserIdErr( socketId, err.stack );
@@ -104,7 +103,7 @@ ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
 		return;
 	}
 	
-	var dbAccount = new DbAccount( self.state.db, userId );
+	const dbAccount = new DbAccount( self.state.db, userId );
 	dbAccount.on( 'ready', dbReady );
 	dbAccount.on( 'error', dbError );
 	function dbError( err ) {
@@ -112,7 +111,7 @@ ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
 		msg.response = {
 			status : 500,
 			message : 'db failed'
-		}
+		};
 		done();
 		return;
 	}
@@ -120,6 +119,7 @@ ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
 	function dbReady() {
 		dbAccount.get( null, accountsBack );
 	}
+	
 	function accountsBack( accounts ) {
 		msg.response = {
 			status : 200,
@@ -135,14 +135,14 @@ ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
 }
 
 ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
-	var self = this;
+	const self = this;
 	log( 'createAccount', msg );
-	var dbAccount = null;
-	var ret = {
+	let dbAccount = null;
+	const args = msg.data;
+	const ret = {
 		status : 403,
 		success : false
 	};
-	var args = msg.data;
 	
 	if ( !args.name ) {
 		ret.message = 'invalid input';
@@ -159,7 +159,7 @@ ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
 	}
 	
 	dbAccount = new DbAccount( self.state.db, userId );
-	dbAccount.once('ready', dbReady );
+	dbAccount.once( 'ready', dbReady );
 	
 	function dbReady() {
 		dbAccount.set( args, setBack );
@@ -175,6 +175,7 @@ ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
 		
 		dbAccount.get( clientId, getBack );
 	}
+	
 	function getBack( account ) {
 		if ( !account ) {
 			log( 'createaccount - could not load account', account );
@@ -200,7 +201,7 @@ ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
 }
 
 ns.ChatSockets.prototype.removeAccount = function( msg, socketId ) {
-	var self = this;
+	const self = this;
 	var args = msg.data;
 	var dbAccount = null;
 	var ret = {
@@ -261,7 +262,7 @@ ns.ChatSockets.prototype.removeAccount = function( msg, socketId ) {
 }
 
 ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
-	var self = this;
+	const self = this;
 	var args = msg.data;
 	var dbAccount = null;
 	args.password = null; // pasword deprecated
@@ -325,7 +326,7 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 		if ( !dbAcc.clientId || !dbAcc.name )
 			throw new Error( 'account.login - critical - missing clientId and/or name' );
 		
-		var account = self.state.account[ dbAcc.clientId ];
+		let account = self.state.account[ dbAcc.clientId ];
 		
 		// fresh login, need an account instance
 		if ( !account ) {
@@ -333,20 +334,19 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 			account = new Account( dbAcc, self.state.db );
 			self.state.account[ account.clientId ] = account;
 			
-			
 			function removeAccount() {
 				self.unsetAccount( account.clientId );
 			}
 		}
 		
 		// hand over socket to account
-		var socket = self.sockets[ socketId ];
+		const socket = self.getSocket( socketId );
 		if ( !socket ) {
 			self.unsetAccount( account.clientId );
 			return;
 		}
 		
-		socket.removeAllListeners( 'msg' );
+		socket.release( 'msg' );
 		self.setSession( socket, account.clientId );
 		account.attachSession( socket );
 		
@@ -362,8 +362,8 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 	}
 	
 	function done() {
-		var loggedInIds = Object.keys( self.state.account );
-		var loggedInList = loggedInIds.map( getName );
+		const loggedInIds = Object.keys( self.state.account );
+		const loggedInList = loggedInIds.map( getName );
 		
 		if( dbAccount && dbAccount.conn )
 			dbAccount.conn.release();
@@ -378,31 +378,33 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 
 // this is the account calling close on itself, it just needs to be deleted here
 ns.ChatSockets.prototype.unsetAccount = function( id ) {
-	var self = this;
-	var account = self.state.account[ id ];
+	const self = this;
+	const account = self.state.account[ id ];
 	if ( !account ) {
 		log( 'unsetAccount - wut, no account found for???', id );
 		return;
 	}
 	
 	delete self.state.account[ id ];
-	removeSessions();
+	//removeSessions();
 	account.close();
 	
+	/*
 	function removeSessions() {
-		var accountSessions = account.sessionKeys;
+		const accountSessions = account.sessionKeys;
 		accountSessions.forEach( close );
 		function close( sessionId ) {
-			var socket = self.sessions[ sessionId ]; // a session is really just a
+			const socket = self.sessions[ sessionId ]; // a session is really just a
 			                                         // socket with  a sessionid set
 			self.removeSocket( socket.id );
 		}
 	}
+	*/
 }
 
 ns.ChatSockets.prototype.getParent = function( id ) {
-	var self = this;
-	var account = self.state.account[ id ];
+	const self = this;
+	const account = self.state.account[ id ];
 	if ( !account )
 		return null;
 	return account;

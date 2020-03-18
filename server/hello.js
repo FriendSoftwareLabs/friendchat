@@ -227,3 +227,9 @@ function registerForGCEvents() {
 		log( 'GC', print );
 	}
 }
+
+
+process.on( 'unhandledRejection', err => {
+	log( 'unhandled promise rejection - ERRPR', err, 3 );
+	process.exit( 666 );
+});
