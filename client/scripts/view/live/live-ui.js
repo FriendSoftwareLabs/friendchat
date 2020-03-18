@@ -1588,6 +1588,11 @@ library.component = library.component || {};
 		self.updateRTC( streamState );
 	}
 	
+	ns.Peer.prototype.reload = function() {
+		const self = this;
+		self.peer.restart();
+	}
+	
 	ns.Peer.prototype.restart = function() {
 		const self = this;
 		if ( !self.stream ) {
@@ -1640,12 +1645,16 @@ library.component = library.component || {};
 		// ui
 		self.menuBtn = self.ui.querySelector( '.peer-options' );
 		self.sayStateBtn = self.ui.querySelector( '.say-state' );
+		self.peerReload = self.ui.querySelector( '.peer-reload' );
 		self.streamState = self.ui.querySelector( '.stream-state' );
 		self.remoteMuteState = self.ui.querySelector( '.remote-mute' );
 		self.remoteBlindState = self.ui.querySelector( 'remote-blind' );
 		
 		self.menuBtn.addEventListener( 'click', peerMenuClick, false );
 		function peerMenuClick( e ) { self.showPeerActions(); }
+		
+		self.peerReload.addEventListener( 'click', peerReload, false );
+		function peerReload( e ) { self.reload(); }
 		
 		// closing
 		self.closing = self.ui.querySelector( '.closing' );
