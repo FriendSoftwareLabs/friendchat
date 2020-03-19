@@ -61,7 +61,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTCStream = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
+		console.log( 'RTCStream', {
+			conn    : conn,
+			UI      : UI,
+			conf    : conf,
+			onclose : onclose,
+			onready : onready,
+		});
 		library.rtc.RTC.call( self, conn, UI, conf, onclose, onready );
+		
+		console.log( 'RTCStream - things', {
+			conf : conf,
+			self : self,
+		});
 		
 		self.sourceId = conf.rtcConf.sourceId || null;
 		
@@ -76,7 +88,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		delete self.conf;
 		delete self.conn;
-		delete self.view;
+		delete self.ui;
 		delete self.sourceSelect;
 		delete self.menu;
 		
@@ -94,39 +106,28 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.convertLegacyDevices();
 		self.setupUsers();
+		self.bindUI();
 		self.bindMenu();
 		
 		if ( self.quality )
-			self.view.setQuality( self.quality.level );
-		
-		const sourceConf = {
-			view     : self.view,
-			onselect : sourcesSelected,
-		};
-		self.sourceSelect = new library.rtc.SourceSelect( sourceConf );
-		function sourcesSelected( selected ) {
-			if ( !selected )
-				return;
-			
-			if ( !self.stream )
-				return;
-			
-			self.stream.setMediaSources( selected );
-		}
+			self.ui.setQuality( self.quality.level );
 		
 		// ui
-		self.chat = self.view.addChat( self.userId, self.identities, self.conn );
-		self.share = self.view.addShare( self.conn );
+		self.chat = self.ui.addChat( self.userId, self.identities, self.conn );
+		self.share = self.ui.addShareLink( self.conn );
+		if ( self.share && self.isTempRoom )
+			self.share.show();
 		
-		// do init checks
-		const initConf = {
-			view           : self.view,
-			onsourceselect : showSourceSelect,
-			ondone         : allChecksDone,
-		};
-		self.initChecks = new library.rtc.InitChecks( initConf );
-		self.initChecks.checkICE( self.rtcConf.ICE );
-		self.initChecks.checkBrowser( browserBack );
+		self.statusMsg = self.ui.initStatusMessage();
+		
+		
+		self.initChecks = new library.rtc.InitChecks( self.statusMsg );
+		self.initChecks.on( 'source-select', showSourceSelect );
+		self.initChecks.on( 'done', currentChecksDone );
+		
+		//self.initChecks.checkICE( self.rtcConf.ICE );
+		const appConf = window.View.config.appConf || {};
+		self.initChecks.checkBrowser( appConf.userAgent, browserBack );
 		function browserBack( err, browser ) {
 			if ( err ) {
 				console.log( 'browserBack - err', err );
@@ -135,6 +136,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			self.browser = browser;
+			self.ui.setBrowser( self.browser );
 			if ( self.isSource() )
 				self.initChecks.checkDeviceAccess( self.permissions.send, deviceBack );
 			else {
@@ -568,6 +570,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.setupUsers = function() {
 		const self = this;
+		console.log( 'setupUsers', self.userList );
+		if ( !self.userList )
+			return;
+		
 		self.userList.forEach( add );
 		function add( uid ) {
 			self.createUser( uid );
@@ -576,6 +582,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.addUser = function( user ) {
 		const self = this;
+		console.log( 'addUser', user );
 		self.createUser( user.peerId );
 	}
 	

@@ -119,6 +119,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.updateMobileRestrictions();
 		self.bindUI();
 		self.bindMenu();
+		
 		if ( self.quality )
 			self.ui.updateQualityLevel( self.quality.level );
 		
