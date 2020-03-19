@@ -1796,7 +1796,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.menu.on( 'mute'                , mute );
 		self.menu.on( 'blind'               , blind );
 		self.menu.on( 'leave'               , leave );
-		self.menu.on( 'q-default'           , qualityDefault );
+		self.menu.on( 'q-high'              , qualityHigh );
 		self.menu.on( 'q-normal'            , qualityNormal );
 		self.menu.on( 'q-medium'            , qualityMedium );
 		self.menu.on( 'q-low'               , qualityLow );
@@ -1811,7 +1811,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function mute( e ) { self.toggleMute(); }
 		function blind( e ) { self.toggleBlind(); }
 		function leave( e ) { self.leave(); }
-		function qualityDefault( e ) { self.handleQuality( 'default' )}
+		function qualityHigh( e ) { self.handleQuality( 'high' )}
 		function qualityNormal( e ) { self.handleQuality( 'normal' ); }
 		function qualityMedium( e ) { self.handleQuality( 'medium' ); }
 		function qualityLow( e ) { self.handleQuality( 'low' ); }
@@ -1978,7 +1978,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.changeStreamQuality = function( level ) {
 		var self = this;
 		if ( !level )
-			level = 'medium';
+			level = 'normal';
 		
 		self.emit( 'quality', level );
 	}

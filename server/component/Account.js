@@ -48,6 +48,7 @@ ns.Account = function( conf, dbPool ) {
 
 ns.Account.prototype.init = function() {
 	const self = this;
+	log( 'init', self.isFirstLogin );
 	if ( !self.isFirstLogin && null == self.advancedUI )
 		self.advancedUI = true;
 	
@@ -150,8 +151,10 @@ ns.Account.prototype.accountMsg = function( msg, sessionId ) {
 
 ns.Account.prototype.clientReady = function( firstLoginConf, sessionId ) {
 	const self = this;
-	if ( self.isFirstLogin )
+	if ( self.isFirstLogin ) {
 		self.doFirstLoginSetup( firstLoginConf );
+		self.isFirstLogin = false;
+	}
 	else
 		self.mods.initializeClient( sessionId );
 }
