@@ -2955,10 +2955,10 @@ library.rtc = library.rtc || {};
 		// lowest quality first or things will break
 		self.videoQualityKeys = [ 'width', 'height', 'frameRate' ];
 		self.videoQualityMap = {
-			'low'     : [ 256, 144, 4 ],
-			'medium'  : [ 640, 480, 24 ],
-			'normal'  : [ 1280, 720, 30 ],
-			'default' : [ 1920, 1080, 60 ],
+			'low'     : [ 256, 168, 4 ],
+			'medium'  : [ 480, 320, 12 ],
+			'normal'  : [ 640, 480, 24 ],
+			'high'    : [ 1280, 720, 60 ],
 		};
 		
 		self.opusQualityKeys = [ 'maxcodecaudiobandwidth', 'maxaveragebitrate', 'usedtx' ];
@@ -2966,15 +2966,15 @@ library.rtc = library.rtc || {};
 			'low'     : [ '24000', '16', null ],
 			'medium'  : [ '48000', '32', null ],
 			'normal'  : [ '48000', '32', null ],
-			'default' : [ '48000', '32', null ],
+			'high'    : [ '48000', '32', null ],
 		};
 		
 		self.shareQualityKeys = [ 'frameRate' ];
 		self.shareQualityMap = {
 			'low'     : [ 1 ],
 			'medium'  : [ 5 ],
-			'normal'  : [ 30 ],
-			'default' : [ 60 ],
+			'normal'  : [ 15 ],
+			'high'    : [ 24 ],
 		};
 		
 		self.mediaConf.audio = {
@@ -2996,7 +2996,7 @@ library.rtc = library.rtc || {};
 		const level = self.quality.level;
 		const scale = self.quality.scale;
 		const arr = self.videoQualityMap[ level ];
-		const defaults = self.videoQualityMap[ 'default' ];
+		const defaults = self.videoQualityMap[ 'normal' ];
 		if ( !arr ) {
 			console.log( 'setVideoQuality - invalid level or missing in map', {
 				level     : level,

@@ -904,8 +904,8 @@ library.component = library.component || {};
 			items  : [
 				{
 					type   : 'item',
-					id     : 'q-default',
-					name   : View.i18n( 'i18n_unconstrained' ),
+					id     : 'q-high',
+					name   : View.i18n( 'i18n_high' ),
 					faIcon : 'fa-diamond',
 				},
 				{
