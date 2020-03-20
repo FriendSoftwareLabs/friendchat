@@ -82,6 +82,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 	}
 	
+	ns.RTCStream.prototype = Object.create( library.rtc.RTC.prototype );
+	
 	// Public
 	
 	ns.RTC.prototype.close = function() {
@@ -113,19 +115,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.ui.setQuality( self.quality.level );
 		
 		// ui
-		self.chat = self.ui.addChat( self.userId, self.identities, self.conn );
+		self.chat = self.ui.addChat(
+			self.userId,
+			self.identities,
+			self.conn
+		);
 		self.share = self.ui.addShareLink( self.conn );
 		if ( self.share && self.isTempRoom )
 			self.share.show();
 		
 		self.statusMsg = self.ui.initStatusMessage();
 		
-		
 		self.initChecks = new library.rtc.InitChecks( self.statusMsg );
 		self.initChecks.on( 'source-select', showSourceSelect );
 		self.initChecks.on( 'done', currentChecksDone );
 		
-		//self.initChecks.checkICE( self.rtcConf.ICE );
 		const appConf = window.View.config.appConf || {};
 		self.initChecks.checkBrowser( appConf.userAgent, browserBack );
 		function browserBack( err, browser ) {
@@ -137,26 +141,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.browser = browser;
 			self.ui.setBrowser( self.browser );
-			if ( self.isSource() )
-				self.initChecks.checkDeviceAccess( self.permissions.send, deviceBack );
+			if ( self.isSource() ) {
+				console.log( 'SOurce setup' );
+				self.initChecks.checkDeviceAccess( self.permissions.send )
+					.then( deviceBack )
+					.catch( devFail );
+			}
 			else {
+				console.log( 'user setup' );
 				self.updateMenuSendReceive();
-				passSourceChecks();
+				self.allChecksRun = true;
+				closeInit();
+				done();
 				if ( self.sourceId )
 					self.createSink();
 			}
 		}
 		
-		function deviceBack( err, permissions, devices ) {
-			if ( err || !permissions ) {
-				console.log( 'oops?', {
-					err : err,
-					per : permissions,
-					dev : devices,
-				});
-				return;
-			}
-			
+		function devFail( err ) {
+			console.log( 'deFail', err );
+			self.close();
+		}
+		
+		function deviceBack( permissions, devices ) {
 			self.permissions.send = permissions;
 			if ( devices )
 				self.updateMenuSendReceive( devices );
@@ -170,10 +177,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			else
 				runSourceChecks( gumErr, media );
 			
+			done();
+			
 			function passSourceChecks() {
 				self.initChecks.passCheck( 'source-check' );
-				self.initChecks.passCheck( 'audio-input' );
-				self.initChecks.passCheck( 'video-input' );
 			}
 			
 			function runSourceChecks() {
@@ -181,34 +188,38 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( !ready )
 					return;
 				
-				const selfStream = self.stream.getStream();
-				const devicePref = self.localSettings.sourcePreferedDevices;
-				self.initChecks.checkAudioDevices( selfStream, devicePref );
-				self.initChecks.checkVideoDevices( selfStream, devicePref );
+				self.allChecksRun = true;
+				self.initChecks.checkICE( self.rtcConf.ICE );
 			}
 		}
 		
-		function passSourceChecks() {
-			self.initChecks.passCheck( 'devices' );
-			self.initChecks.passCheck( 'source-check' );
-			self.initChecks.passCheck( 'audio-input' );
-			self.initChecks.passCheck( 'video-input' );
-		}
-		
-		function allChecksDone( close ) {
-			if ( close  ) {
+		function currentChecksDone( forceClose ) {
+			console.log( 'currentChecksDone', {
+				forceClose   : forceClose,
+				allChecksRun : self.allChecksRun,
+			});
+			if ( forceClose  ) {
 				self.close();
 				return;
 			}
 			
-			self.initChecks.close();
-			delete self.initChecks;
-			done();
+			if ( !self.allChecksRun )
+				return;
+			
+			closeInit();
 		}
 		
 		function showSourceSelect() {
-			closeInit();
 			self.showSourceSelect();
+		}
+		
+		function closeInit() {
+			if ( !self.initChecks )
+				return;
+			
+			self.initChecks.close();
+			delete self.initChecks;
+			self.ui.removeCover();
 		}
 		
 		function done() {
@@ -238,7 +249,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.bindMenu = function() {
 		const self = this;
-		self.menu = self.view.buildMenu();
+		self.menu = self.ui.buildMenu();
 		self.menu.on( 'mute'            , mute );
 		self.menu.on( 'blind'           , blind );
 		self.menu.on( 'change-username' , username );
@@ -263,8 +274,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.bindUI = function() {
 		const self = this;
 		self.ui.on( 'close', e => self.close());
-		self.ui.on( 'settings', e => self.selfie.showSourceSelect());
-		self.ui.on( 'share-screen', e => self.selfie.toggleShareScreen());
+		self.ui.on( 'settings', e => self.showSourceSelect());
+		self.ui.on( 'share-screen', e => self.stream.toggleShareScreen());
 	}
 	
 	ns.RTC.prototype.handleMute = function( e ) {
@@ -296,7 +307,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			current : current,
 			onname : onName,
 		};
-		self.changeUsername = self.view.addUIPane( 'change-username', conf );
+		self.changeUsername = self.ui.addUIPane( 'change-username', conf );
 		self.changeUsername.show();
 		
 		function onName( name ) {
@@ -321,11 +332,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.showSourceSelect = function() {
 		const self = this;
-		let devices = null;
-		if ( self.stream )
-			devices = self.stream.currentDevices;
-		
-		self.sourceSelect.show( devices );
+		self.stream.showSourceSelect();
 	}
 	
 	ns.RTC.prototype.updateSourceMenu = function() {
@@ -408,6 +415,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.goLive = function( testsPassed ) {
 		const self = this;
+		console.log( 'RTC.goLive', testsPassed );
 		if ( !testsPassed )
 			return;
 		
@@ -500,7 +508,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			isStream : isStream,
 			onChoice : onChoice,
 		};
-		self.switchPane = self.view.addUIPane( 'live-stream-switch', conf );
+		self.switchPane = self.ui.addUIPane( 'live-stream-switch', conf );
 		self.switchPane.show();
 		
 		function onChoice( choice ) {
@@ -602,7 +610,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const user = new library.rtc.User( conf );
 		self.users[ userId ] = user;
-		self.view.addUser( user );
+		self.ui.addUser( user );
 	}
 	
 	ns.RTC.prototype.updateUserIdentity = function( userId ) {
@@ -633,7 +641,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
-		self.view.removeUser( userId );
+		self.ui.removeUser( userId );
 		delete self.users[ userId ];
 		
 		user.close();
@@ -655,7 +663,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		};
 		self.stream = new library.rtc.Source(
 			self.conn,
-			self.view,
+			self.ui,
 			self.menu,
 			conf,
 			callback
@@ -679,7 +687,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		};
 		self.stream = new library.rtc.Sink(
 			self.conn,
-			self.view,
+			self.ui,
 			self.menu,
 			conf
 		);

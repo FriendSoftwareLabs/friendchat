@@ -1350,8 +1350,8 @@ library.component = library.component || {};
 			conn        : conn,
 			userId      : userId,
 			identities  : identities,
-			guestAvatar : self.guestAvatar,
 			chatTease   : self.chatTease,
+			guestAvatar : self.guestAvatar,
 		};
 		self.chatUI = self.addUIPane( 'chat', conf );
 		self.chatUI.on( 'visible', onVisible );

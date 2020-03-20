@@ -26,15 +26,18 @@ library.view = library.view || {};
 library.component = library.component || {};
 
 (function( ns, undefined ) {
-	ns.StreamUI = function( conn, liveConf, localSettings ) {
+	ns.UIStream = function( conn, liveConf, localSettings ) {
 		const self = this;
 		library.view.UI.call( self, conn, liveConf, localSettings );
 		
+		console.log( 'UIStream - liveConf', liveConf );
 		self.conn = conn;
 		self.userId = liveConf.userId;
 		self.sourceId = liveConf.rtcConf.sourceId;
 		self.localSettings = localSettings;
 		self.guestAvatar = liveConf.guestAvatar;
+		self.roomName = liveConf.roomName;
+		self.logTail = liveConf.logTail;
 		
 		self.uiPanes = {};
 		self.uiVisible = true;
@@ -50,6 +53,8 @@ library.component = library.component || {};
 		
 		self.init();
 	}
+	
+	ns.UIStream.prototype = Object.create( library.view.UI.prototype );
 	
 	// Public
 	
@@ -83,19 +88,33 @@ library.component = library.component || {};
 		self.currentQuality = qualityLevel;
 	}
 	
-	ns.UI.prototype.addChat = function( conf, conn ) {
+	ns.UI.prototype.addChat = function( userId, identities, conn ) {
 		const self = this;
-		self.chatTease = new library.component.ChatTease( 'tease-chat-container', hello.template );
+		self.chatTease = new library.component.ChatTease(
+			'tease-chat-container',
+			hello.template
+		);
+		
+		self.chatTease.on( 'show-chat', showChat );
+		function showChat( e ) {
+			if ( !self.chatUI )
+				return;
+			
+			const chatOpen = self.chatUI.toggle();
+			self.chatTease.setActive( chatOpen );
+		}
 		
 		const chatConf = {
 			containerId : 'chat-container',
 			conn        : conn,
-			userId      : conf.userId,
-			identities  : conf.identities,
+			userId      : userId,
+			identities  : identities,
+			chatTease   : self.chatTease,
 			guestAvatar : self.guestAvatar,
-			roomName    : conf.roomName,
-			logTail     : conf.logTail,
+			roomName    : self.roomName,
+			logTail     : self.logTail,
 		};
+		console.log( 'UIStream.addChat - chatConf', chatConf );
 		self.chat = new library.component.LiveChat( chatConf, hello.template, self.chatTease );
 		return self.chat;
 	}
@@ -776,10 +795,10 @@ library.component = library.component || {};
 	
 })( library.view );
 
-// StreamUI
+// MediaUI
 
 (function( ns, undefined ) {
-	ns.StreamUI = function() {
+	ns.MediaUI = function() {
 		const self = this;
 		self.source.on( 'screenmode', updateScreen );
 		
@@ -788,7 +807,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.StreamUI.prototype.bindStreamResize = function() {
+	ns.MediaUI.prototype.bindStreamResize = function() {
 		const self = this;
 		self.videoResizeListener = videoResize;
 		self.stream.addEventListener( 'resize', self.videoResizeListener, false );
@@ -806,7 +825,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.StreamUI.prototype.doResize = function() {
+	ns.MediaUI.prototype.doResize = function() {
 		const self = this;
 		if ( !self.stream )
 			return;
@@ -845,7 +864,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.StreamUI.prototype.reflow = function() {
+	ns.MediaUI.prototype.reflow = function() {
 		const self = this;
 		if ( !self.stream )
 			return;
@@ -854,17 +873,17 @@ library.component = library.component || {};
 		self.stream.dispatchEvent( resize );
 	}
 	
-	ns.StreamUI.prototype.toggleElementClass = function( element, className, set ) {
+	ns.MediaUI.prototype.toggleElementClass = function( element, className, set ) {
 		var self = this;
 		element.classList.toggle( className, set );
 	}
 	
-	ns.StreamUI.prototype.toggleMute = function() {
+	ns.MediaUI.prototype.toggleMute = function() {
 		const self = this;
 		self.source.toggleMute();
 	}
 	
-	ns.StreamUI.prototype.toggleAvatar = function( show ) {
+	ns.MediaUI.prototype.toggleAvatar = function( show ) {
 		const self = this;
 		if ( !self.avatar )
 			return;
@@ -880,12 +899,12 @@ library.component = library.component || {};
 	ns.SourceUI = function( source, containerId ) {
 		const self = this;
 		self.source = source;
-		ns.StreamUI.call( self );
+		ns.MediaUI.call( self );
 		
 		self.init( containerId );
 	}
 	
-	ns.SourceUI.prototype = Object.create( ns.StreamUI.prototype );
+	ns.SourceUI.prototype = Object.create( ns.MediaUI.prototype );
 	
 	// Public
 	
@@ -981,12 +1000,12 @@ library.component = library.component || {};
 	ns.SinkUI = function( source, containerId ) {
 		const self = this;
 		self.source = source;
-		ns.StreamUI.call( self );
+		ns.MediaUI.call( self );
 		
 		self.init( containerId );
 	}
 	
-	ns.SinkUI.prototype = Object.create( ns.StreamUI.prototype );
+	ns.SinkUI.prototype = Object.create( ns.MediaUI.prototype );
 	
 	// Public
 	

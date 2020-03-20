@@ -606,6 +606,7 @@ library.component = library.component || {};
 	
 	ns.LiveChat.prototype.init = function( conf, templateManager ) {
 		const self = this;
+		console.log( 'LiveChat.init - conf', conf );
 		// build
 		let parent = document.getElementById( conf.containerId );
 		let tmplConf = {

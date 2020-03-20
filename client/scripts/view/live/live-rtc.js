@@ -176,9 +176,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			else
 				runSelfieChecks( gumErr, media );
 			
+			done();
+			
 			function passSelfieChecks() {
 				self.initChecks.passCheck( 'source-check' );
-				done();
 			}
 			
 			function runSelfieChecks( gumErr, media ) {
@@ -186,15 +187,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( !ready )
 					return;
 				
-				done();
-				
-				const selfStream = self.selfie.getStream();
-				let audioPref = null;
-				if ( self.localSettings.preferedDevices )
-					audioPref = self.localSettings.preferedDevices.audio;
-				
-				//self.initChecks.checkAudioInput( selfStream, audioPref );
-				//self.initChecks.checkVideoInput( selfStream, audioPref );
 				self.initChecks.checkICE( self.rtcConf.ICE );
 				self.allChecksRun = true;
 			}

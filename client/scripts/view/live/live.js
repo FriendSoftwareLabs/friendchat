@@ -128,20 +128,22 @@ library.component = library.component || {};
 		delete data.fragments;
 		delete data.emojii;
 		
-		// prepare ui state
-		let liveConf = data.liveConf;
-		let localSettings = liveConf.localSettings;
-		
-		// get browser
-		//new library.rtc.BrowserCheck( checkBack );
+		const liveConf = data.liveConf;
+		const localSettings = liveConf.localSettings;
 		
 		// init ui
 		let UI = library.view.UI;
-		if ( self.mode = 'stream' );
-		self.ui = new library.view.UI( self.conn, liveConf, localSettings, self );
+		if ( liveConf.isStream )
+			UI = library.view.UIStream;
+		
+		self.ui = new UI( self.conn, liveConf, localSettings );
 		
 		// init Model
-		self.rtc = new library.rtc.RTC(
+		let RTC = library.rtc.RTC;
+		if ( liveConf.isStream )
+			RTC = library.rtc.RTCStream;
+		
+		self.rtc = new RTC(
 			self.conn,
 			self.ui,
 			liveConf,

@@ -2338,6 +2338,7 @@ library.rtc = library.rtc || {};
 			roomName    : viewConf.roomName,
 			isPrivate   : viewConf.isPrivate,
 			isTempRoom  : viewConf.isTempRoom,
+			isStream    : viewConf.isStream,
 			logTail     : roomConf.logTail,
 			rtcConf     : {
 				ICE         : roomConf.ICE,
