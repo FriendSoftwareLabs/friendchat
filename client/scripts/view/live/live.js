@@ -136,7 +136,11 @@ library.component = library.component || {};
 		if ( liveConf.isStream )
 			UI = library.view.UIStream;
 		
-		self.ui = new UI( self.conn, liveConf, localSettings );
+		self.ui = new UI(
+			self.conn,
+			liveConf,
+			localSettings
+		);
 		
 		// init Model
 		let RTC = library.rtc.RTC;

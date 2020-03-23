@@ -1634,14 +1634,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.proxyMedia = new window.MediaStream();
 		
 		const type = 'source';
+		const isHost = true;
 		const opts = {
-			isHost          : true,
 			//useDefaultCodec : self.useDefaultCodec,
 		};
 		
 		self.session = new library.rtc.Session(
 			type,
-			true,
+			isHost,
 			self.proxy,
 			self.proxyMedia,
 			self.rtcConf,
@@ -2048,13 +2048,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.hasVideo = !!vTrack;
 		
 		if ( aTrack )
-			self.bindVolume( stream );
+			self.bindVolume( self.stream );
 		else
 			self.releaseVolume();
 		
 		const tracks = {
 			audio : self.hasAudio,
-			video : !!vTrack,
+			video : self.hasVideo,
 		};
 		
 		self.emit( 'tracks-available', tracks );

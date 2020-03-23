@@ -97,11 +97,7 @@ library.component = library.component || {};
 		
 		self.chatTease.on( 'show-chat', showChat );
 		function showChat( e ) {
-			if ( !self.chatUI )
-				return;
-			
-			const chatOpen = self.chatUI.toggle();
-			self.chatTease.setActive( chatOpen );
+			self.handleUserStuffClick();
 		}
 		
 		const chatConf = {
@@ -327,7 +323,6 @@ library.component = library.component || {};
 		self.uiMenuBtn = document.getElementById( 'show-menu-btn' );
 		self.uiMuteBtn = document.getElementById( 'mute-stream' );
 		self.uiFullscreenBtn = document.getElementById( 'toggle-fullscreen' );
-		self.uiUserStuffBtn = document.getElementById( 'toggle-user-stuff' );
 		self.userStuffEl = document.getElementById( 'user-stuff' );
 		self.uiPaneContainer = document.getElementById( 'stream-ui-panes' );
 		self.teaseChat = document.getElementById( 'tease-chat-container' );
@@ -341,7 +336,6 @@ library.component = library.component || {};
 		self.ui.addEventListener( 'transitionend', uiTransitionEnd, false );
 		self.uiMenuBtn.addEventListener( 'click', menuClick, false );
 		self.uiMuteBtn.addEventListener( 'click', muteClick, false );
-		self.uiUserStuffBtn.addEventListener( 'click', userStuffClick, false );
 		self.uiFullscreenBtn.addEventListener( 'click', fullscreenClick, false );
 		
 		function catchEnter( e ) { self.handleViewOver( true ); }
@@ -357,7 +351,6 @@ library.component = library.component || {};
 		function handleResize( e ) { self.handleResize( e ); }
 		function menuClick( e ) { self.showMenu(); }
 		function muteClick( e ) { self.handleMuteClick( e ); }
-		function userStuffClick( e ) { self.handleUserStuffClick( e ); }
 		function fullscreenClick( e ) { self.handleFullscreenClick( e ); }
 	}
 	
@@ -460,12 +453,14 @@ library.component = library.component || {};
 	ns.UI.prototype.handleUserStuffClick = function( e ) {
 		const self = this;
 		self.showUserStuff = !self.showUserStuff;
+		self.chatTease.setActive( self.showUserStuff );
 		self.saveLocalSetting( 'ui-user-stuff', self.showUserStuff );
 		self.updateShowUserStuff();
 	}
 	
 	ns.UI.prototype.updateShowUserStuff = function() {
 		const self = this;
+		console.log( 'updateShowUserStuff', self.showUserStuff );
 		if ( self.menu )
 			self.menu.setState( 'chat', self.showUserStuff );
 		
