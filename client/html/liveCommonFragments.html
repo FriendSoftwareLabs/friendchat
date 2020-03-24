@@ -1,3 +1,12 @@
+<!-- video
+id,
+src,
+-->
+<script id="stream-video-tmpl" type="text/html">
+<video id="<%= id %>" src="<%= src %>" class="video stream Accelerated" autoplay="autoplay" playinline>
+</video>
+</script>
+
 <!-- live-stream-switch
 fromType
 toType
@@ -180,128 +189,110 @@ host,
 </div>
 </script>
 
-<!-- initchecks-wrap-tmpl
-id,
-hidden,
-content,
--->
-<script id="initchecks-wrap-tmpl" type="text/html">
-<div id="<%= id %>" class="initchecks-wrap group row left <%= hidden %>">
-	<div class="btn initchecks-toggle-item fortify">
-		<i class="fa fa-fw fa-plus"></i>
-	</div>
-	<div class="initchecks-content expand">
-		<%= content %>
-	</div>
-</div>
-</script>
 
-<!-- initchecks-item-tmpl
-type,
-desc,
-state,
--->
-<script id="initchecks-item-tmpl" type="text/html">
-<div>
-	<div class="init-type">
-		<%= type %>
-	</div>
-	<div class="init-info group row start hidden">
-		<div class="init-icon">
-			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-		</div>
-		<div class="init-desc">
-			<%= desc %>
-		</div>
-		<div class="init-state">
-			<%= state %>
-		</div>
-	</div>
-</div>
-</script>
+<!-- source-select
 
-<!-- initchecks-browser
-type,
 -->
-<script id="initchecks-browser" type="text/html">
-<div>
-	<div class="init-type">
-		<%= type %>
+<script id="select-source-tmpl" type="text/html">
+<div id="source-select" class="grad-bg-down bar column start">
+	<div id="source-head"class="fortify group row">
+		<div id="source-title" class="expand Padding">
+			{i18n_audio_video_settings}
+		</div>
+		<div id="source-back" class="btn center-child fortify hidden">
+			<i class="fa fa-fw fa-close"></i>
+		</div>
 	</div>
-	<div class="init-info hidden">
-		<div id="init-check-secure" class="init-info-row group row start">
-			<div class="init-icon">
-				<i class="fa fa-fw fa-cube"></i>
-			</div>
-			<div class="init-desc">
-				
-			</div>
-			<div class="init-state">
-				
-			</div>
-		</div>
-		<div id="init-check-browser" class="init-info-row group row start">
-			<div class="init-icon">
-				<i class="fa fa-fw fa-cube"></i>
-			</div>
-			<div class="init-desc">
-				
-			</div>
-			<div class="init-state">
-				
-			</div>
-		</div>
-		<div class="init-info-row">
-			<div class="group row start Selectable">
-				<div class="init-icon">
-					<i class="fa fa-fw fa-cogs"></i>
+	<div id="source-preview" class="expand">
+		<div id="source-preview-reset" class="center-child">
+			<div id="source-preview-hint" class="LED">
+				<div>
+					{i18n_camera_preview}
 				</div>
-				<div class="init-desc">
-					{i18n_capabilities}:
+				<i id="source-no-preview-i" class="fa fa-fw fa-eye On"></i>
+			</div>
+			<video id="source-preview-video" src="" playinline autoplay="autoplay" class="">
+		</div>
+	</div>
+	<div id="source-inputs" class="fortify">
+		<div id="source-status">
+			<div id="source-error" class="hidden">
+				<div class="error-message">
+				</div>
+				<div class="error-buttons group row tighten">
+					<button class="button available" title="Show available devices">
+						<i class="fa fa-fw fa-list"></i>
+						{i18n_show_available}
+					</button>
+					<button class="button danger ignore" title="Ignore errors and close">
+						<i class="fa fa-fw fa-reply"></i>
+						{i18n_ignore}
+					</button>
 				</div>
 			</div>
-			<div id="init-browser-caps">
+		</div>
+		<div id="source-input">
+			<div id="audiooutput-container" class="hidden">
+				<div id="audiooutput-error" class="error-message hidden">
+				</div>
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i class="fa fa-fw fa-volume-up"></i>
+					</div>
+					<div id="audiooutput-select" class="expand">
+					</div>
+				</div>
+				<video id="audiooutput-test" class="hidden" playinline>
+			</div>
+			<div id="audioinput-container" class="">
+				<div id="audioinput-error" class="error-message hidden">
+				</div>
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i id="audioinput-icon"
+							class="fa fa-fw fa-microphone">
+						</i>
+						<i id="audioinput-checking"
+							class="fa fa-fw fa-circle-o-notch fa-spin hidden">
+						</i>
+					</div>
+					<div id="audioinput-select" class="expand">
+					</div>
+					<div id="source-select-av-container" class="fortify">
+					</div>
+				</div>
+			</div>
+			<div id="videoinput-container" class="">
+				<div id="videoinput-error" class="error-message hidden">
+				</div>
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i class="fa fa-fw fa-video-camera"></i>
+					</div>
+					<div id="videoinput-select" class="expand">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="source-select-buttons" class="group row end btn-row">
+			<div id="apply-select"
+				class="btn text"
+				title="Apply current selection">
+				<i class="fa fa-fw fa-check"></i>
+				{i18n_save}
+			</div>
+			<div id="discard-select"
+				class="btn text danger"
+				title="Discard any changes and close">
+				<i class="fa fa-fw fa-close"></i>
+				{i18n_cancel}
+			</div>
+			<div id="refresh-select"
+				class="btn text hidden"
+				title="Check for changes in available devices">
+				<i class="fa fa-fw fa-cube"></i>
+				{i18n_refresh}
 			</div>
 		</div>
 	</div>
-</div>
-</script>
-
-<!-- initchecks-browser-cap
-id,
-label,
-statusIcon,
--->
-<script id="initchecks-browser-cap" type="text/html">
-<div id="<%= id %>" class="group row">
-	<div class="browser-cap-status">
-		<i class="cap-ok fa fa-fw fa-check"></i>
-		<i class="cap-fail fa fa-fw fa-close"></i>
-	</div>
-	<div class="browser-cap-label">
-		<%= label %>
-	</div>
-</div>
-</script>
-
-<!-- initchecks-devices
-type,
--->
-<script id="initchecks-devices-tmpl" type="text/html">
-<div>
-	<div class="init-type">
-		<%= type %>
-	</div>
-	<div class="init-info group row start hidden">
-		<div class="init-icon">
-			<i class="fa fa-fw fa-circle-o-notch fa-spin"></i>
-		</div>
-		<div class="init-desc">
-			{i18n_device_access_error}
-		</div>
-		<div class="init-state">
-			<%= state %>
-		</div>
-	</div>
-</div>
 </script>

@@ -102,6 +102,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( 'DESKTOP' != window.View.deviceType )
 			self.isMobile = true;
 		
+		self.isStreamer = self.isSource();
+		console.log( 'RTCStream.init - isStreamer', self.isStreamer );
+		if ( self.isStreamer )
+			self.ui.setStreamerUI();
+		else
+			self.ui.setUserUI();
+		
 		self.setupProxy();
 		
 		self.convertLegacyDevices();
@@ -139,7 +146,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.browser = browser;
 			self.ui.setBrowser( self.browser );
-			if ( self.isSource() ) {
+			if ( self.isStreamer ) {
 				console.log( 'SOurce setup' );
 				self.initChecks.checkDeviceAccess( self.permissions.send )
 					.then( deviceBack )
@@ -659,20 +666,26 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const identity = self.getIdentity( self.userId );
 		console.log( 'createSource', identity );
 		const conf = {
-			id            : 'stream', //self.userId,
-			browser       : self.browser,
+			conn          : self.conn,
+			view          : self.ui,
+			menu          : self.menu,
 			identity      : identity,
+			browser       : self.browser,
 			permissions   : self.permissions,
+			quality       : self.quality,
 			localSettings : self.localSettings,
+			isAdmin       : null,
+			topology      : 'stream',
+			proxyConn     : self.proxy,
 			rtcConf       : self.rtcConf,
 		};
-		self.stream = new library.rtc.Source(
-			self.proxy,
-			self.ui,
-			self.menu,
+		
+		self.stream = new library.rtc.StreamSource(
 			conf,
 			callback
 		);
+		
+		self.ui.addSource( self.stream );
 	}
 	
 	ns.RTC.prototype.createSink = function( callback ) {
@@ -690,6 +703,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			localSettings : self.localSettings,
 			rtcConf       : self.rtcConf,
 		};
+		
 		self.stream = new library.rtc.Sink(
 			self.proxy,
 			self.ui,
@@ -738,68 +752,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 // Source
 (function( ns, undefined ) {
-	ns.Source = function(
-		conn,
-		view,
-		menu,
+	ns.StreamSource = function(
 		conf,
 		callback
 	) {
 		const self = this;
-		library.component.EventEmitter.call( self );
-		
-		self.id = conf.id;
-		self.local = conn;
-		self.view = view;
-		self.menu = menu;
-		self.browser = conf.browser;
-		self.identity = conf.identity;
-		self.permissions = conf.permissions;
-		self.localSettings = conf.localSettings;
+		console.log( 'StreamSource', {
+			conf     : conf,
+			callback : callback,
+		});
 		self.rtcConf = conf.rtcConf;
 		
-		self.proxy = null;
-		self.session = null;
-		self.stream = null;
-		self.currentDevices = {};
+		library.rtc.Selfie.call( self, conf, callback );
+		self.id = 'source';
 		self.screenMode = 'contain';
 		
-		self.init( conn, callback );
+		//self.init( conn, callback );
 	}
 	
-	ns.Source.prototype = Object.create( library.component.EventEmitter.prototype );
+	ns.StreamSource.prototype = Object.create( library.rtc.Selfie.prototype );
 	
 	// Public 
 	
-	ns.Source.prototype.close = function() {
-		const self = this;
-		self.release();
-		if ( self.stream )
-			self.clearStream();
-		
-		if ( self.shareMedia )
-			self.clearShareMedia();
-		
-		if ( self.session )
-			self.session.close();
-		
-		if ( self.proxy )
-			self.proxy.close();
-		
-		delete self.local;
-		delete self.proxy;
-		delete self.session;
-		delete self.stream;
-		delete self.view;
-		delete self.menu;
-	}
-	
-	ns.Source.prototype.getStream = function() {
-		const self = this;
-		return self.stream || null;
-	}
-	
-	ns.Source.prototype.restart = function() {
+	ns.StreamSource.prototype.restart = function() {
 		const self = this;
 		if ( self.session )
 			self.closeSession();
@@ -812,7 +787,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	// Private
 	
-	ns.Source.prototype.init = function( parentSignal, callback ) {
+	ns.StreamSource.prototype.init = function( parentSignal, callback ) {
 		const self = this;
 		const ignoreSysMute = self.localSettings[ 'ignore-system-mute' ];
 		if ( ignoreSysMute )
@@ -822,10 +797,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.proxy = new library.component.EventNode(
 			self.id,
 			parentSignal,
-			signalSink
+			proxySink
 		);
 		
-		function signalSink( type, event ) {
+		function proxySink( type, event ) {
 			console.log( 'Source.signal.eventsink', [
 				type,
 				event,
@@ -891,201 +866,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function trackEnded( e ) { self.handleTrackEnded( e ); }
 		function mediaError( e ) { self.handleMediaError( e ); }
 		
-		self.view.addSource( self );
 		self.setAudioSink( self.localSettings.preferedDevices );
 		self.setupStream( done );
 		function done( err, res ) {
-			callback( err, res );
-			//self.createSource();
+			if ( callback )
+				callback( err, res );
 		}
 	}
 	
-	ns.Source.prototype.tryPreferedDevices = function( available ) {
+	ns.StreamSource.prototype.bindVolume = function() {
 		const self = this;
-		if ( !self.localSettings || !self.localSettings.sourcePreferedDevices )
-			return;
-		
-		let pref = self.localSettings.sourcePreferedDevices;
-		if ( !pref || available )
-			return;
-		
-		let prefAudio = available.audioinput[ pref.audioinput ];
-		let prefVideo = available.videoinput[ pref.videoinput ];
-		let prefOut = available.audiooutput[ pref.audiooutput ];
-		if ( prefAudio )
-			self.currentDevices.audioinput = pref.audioinput;
-		
-		if ( prefVideo )
-			self.currentDevices.videoinput = pref.videoinput;
-		
-		if ( prefOut ) {
-			self.currentDevices.audiooutput = pref.audiooutput;
-			self.setAudioSink( pref );
-		}
+		//////
 	}
 	
-	ns.Source.prototype.bindMenu = function() {
-		var self = this;
-		self.menu.on( 'leave'               , leave );
-		//self.menu.on( 'q-default'           , qualityDefault );
-		//self.menu.on( 'q-normal'            , qualityNormal );
-		//self.menu.on( 'q-medium'            , qualityMedium );
-		//self.menu.on( 'q-low'               , qualityLow );
-		self.menu.on( 'send-audio'          , sendAudio );
-		self.menu.on( 'send-video'          , sendVideo );
-		//self.menu.on( 'receive-audio'       , receiveAudio );
-		//self.menu.on( 'receive-video'       , receiveVideo );
-		self.menu.on( 'toggle-screen-share' , screenShare );
-		self.menu.on( 'screen-share-ext'    , screenExtInstall );
-		
-		function leave( e ) { self.leave(); }
-		//function qualityDefault( e ) { self.handleQuality( 'default' )}
-		//function qualityNormal( e ) { self.handleQuality( 'normal' ); }
-		//function qualityMedium( e ) { self.handleQuality( 'medium' ); }
-		//function qualityLow( e ) { self.handleQuality( 'low' ); }
-		function sendAudio( e ) { self.toggleSendAudio( e ); }
-		function sendVideo( e ) { self.toggleSendVideo( e ); }
-		//function receiveAudio( e ) { self.toggleReceiveAudio( e ); }
-		//function receiveVideo( e ) { self.toggleReceiveVideo( e ); }
-		function screenShare( e ) { self.toggleShareScreen(); }
-		function screenExtInstall( e ) { self.openScreenExtInstall( e ); }
-	}
-	
-	ns.Source.prototype.toggleSendAudio = function() {
-		const self = this;
-		let send = self.permissions.send;
-		send.audio = !send.audio;
-		self.menu.setState( 'send-audio', send.audio );
-		self.setupStream( streamUp );
-		function streamUp( err, media ) {
-			//self.emit( 'restart' );
-		}
-	}
-	
-	ns.Source.prototype.toggleSendVideo = function() {
-		const self = this;
-		let send = self.permissions.send;
-		send.video = !send.video;
-		self.menu.setState( 'send-video', send.video );
-		self.setupStream( streamUp );
-		function streamUp( err, media ) {
-			//self.emit( 'restart' );
-		}
-	}
-	
-	ns.Source.prototype.toggleMenuScreenShareInstall = function( showInstall ) {
-		const self = this;
-		if ( showInstall ) {
-			self.menu.disable( 'toggle-screen-share' );
-			self.menu.enable( 'screen-share-ext' );
-		} else {
-			self.menu.disable( 'screen-share-ext' );
-			self.menu.enable( 'toggle-screen-share' );
-		}
-	}
-	
-	ns.Source.prototype.openScreenExtInstall = function() {
-		const self = this;
-		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/\
-			ipakdgondpoahmhclacfgekboimhgpap' );
-		
-		self.extConn.show();
-		self.screenShare.connect( connBack );
-		function connBack( err, res ) {
-			if ( err ) {
-				self.close();
-				return;
-			}
-			
-			self.extConn.setConnected( true );
-			self.toggleMenuScreenShareInstall( false );
-		}
-	}
-	
-	ns.Source.prototype.bindShareTracks = function( media ) {
-		const self = this;
-		self.shareMedia = media;
-		const tracks = media.getTracks();
-		tracks.forEach( bindOnEnded );
-		
-		function bindOnEnded( track ) {
-			track.onended = onEnded;
-			function onEnded( e ) {
-				track.onended = null;
-				if ( !self.shareMedia )
-					return;
-				
-				self.shareMedia.removeTrack( track );
-				checkMediaEmpty();
-			}
-		}
-		
-		function checkMediaEmpty() {
-			if ( !self.shareMedia )
-				return;
-			
-			let tracks = self.shareMedia.getTracks();
-			if ( tracks.length )
-				return;
-			
-			self.clearShareMedia();
-			
-			// no tracks, lets close share thingie, maybe
-			if ( self.chromeSourceId )
-				self.toggleShareScreen();
-		}
-	}
-	
-	ns.Source.prototype.clearShareMedia = function() {
-		const self = this;
-		if ( !self.shareMedia )
-			return;
-		
-		let tracks = self.shareMedia.getTracks();
-		tracks.forEach( stop );
-		delete self.shareMedia;
-		
-		function stop( track ) {
-			self.shareMedia.removeTrack( track );
-			track.onended = null;
-			track.stop();
-		}
-	}
-	
-	ns.Source.prototype.setMediaSources = function( devices ) {
-		const self = this;
-		let send = self.permissions.send;
-		if ( typeof( devices.audioinput ) === 'boolean' )
-			send.audio = false;
-		else
-			send.audio = true;
-		
-		if ( typeof( devices.videoinput ) === 'boolean' )
-			send.video = false;
-		else
-			send.video = true;
-		
-		self.menu.setState( 'send-audio', send.audio );
-		self.menu.setState( 'send-video', send.video );
-		
-		self.currentDevices = devices;
-		self.setupStream( streamBack );
-		function streamBack( err, res ) {
-			if ( err )
-				return;
-			
-			self.savePreferedDevices();
-			if ( devices.audiooutput )
-				self.setAudioSink( devices );
-		}
-	}
-	
-	ns.Source.prototype.savePreferedDevices = function() {
-		const self = this;
-		self.saveLocalSetting( 'sourcePreferedDevices', self.currentDevices );
-	}
-	
-	ns.Source.prototype.saveLocalSetting = function( setting, value ) {
+	ns.StreamSource.prototype.saveLocalSetting = function( setting, value ) {
 		const self = this;
 		const sett = {
 			type : 'local-setting',
@@ -1094,15 +888,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				value   : value,
 			},
 		};
-		self.local.send( sett );
+		self.conn.send( sett );
 	}
 	
-	ns.Source.prototype.clearStream = function() {
-		var self = this;
+	ns.StreamSource.prototype.clearStream = function() {
+		const self = this;
 		if ( !self.stream )
 			return;
 		
-		var tracks = self.stream.getTracks();
+		const tracks = self.stream.getTracks();
 		tracks.forEach( stop );
 		self.stream = null;
 		self.emit( 'stream', null );
@@ -1113,102 +907,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.Source.prototype.toggleMute = function( force ) {
-		var self = this;
-		var audio = self.getAudioTrack();
-		if ( !audio )
-			return;
-		
-		if ( force === !audio.enabled )
-			return;
-		
-		if ( typeof( force ) !== 'undefined' )
-			audio.enabled = !force;
-		else
-			audio.enabled = !audio.enabled;
-		
-		self.isMute = !audio.enabled;
-		self.menu.setState( 'mute', self.isMute );
-		self.emit( 'mute', self.isMute );
-		return self.isMute;
-	}
-	
-	ns.Source.prototype.toggleBlind = function( force ) {
-		var self = this;
-		var video = self.getVideoTrack();
-		if ( !video ) {
-			console.log( 'selfie.toggleBlind - no video track' );
-			return;
-		}
-		
-		if ( force === !video.enabled )
-			return;
-		
-		if ( typeof( force ) !== 'undefined' )
-			video.enabled = !force;
-		else
-			video.enabled = !video.enabled;
-		
-		self.isBlind = !video.enabled;
-		self.menu.setState( 'blind', self.isBlind );
-		self.emit( 'blind', self.isBlind );
-		return self.isBlind;
-	}
-	
-	ns.Source.prototype.getAudioTrack = function() {
-		var self = this;
-		if ( self.stream )
-			return self.stream.getAudioTracks()[ 0 ];
-		else
-			return null;
-	}
-	
-	ns.Source.prototype.getVideoTrack = function() {
-		var self = this;
-		if ( self.stream )
-			return self.stream.getVideoTracks()[ 0 ];
-		else
-			return null;
-	}
-	
-	ns.Source.prototype.emitVoiceOnly = function( tracks ) {
-		const self = this;
-		const voiceOnly = checkIsVoiceOnly( tracks );
-		self.emit( 'voice-only', voiceOnly );
-		
-		function checkIsVoiceOnly( tracks ) {
-			const send = ( tracks && tracks.video ) || self.permissions.send.video;
-			const receive = self.permissions.receive.video;
-			if ( send || receive )
-				return false;
-			
-			return true;
-		}
-	}
-	
-	ns.Source.prototype.handleJoined = function( e ) {
+	ns.StreamSource.prototype.handleJoined = function( e ) {
 		const self = this;
 		self.createSource();
 	}
 	
-	ns.Source.prototype.handleRestart = function( e ) {
+	ns.StreamSource.prototype.handleRestart = function( e ) {
 		const self = this;
 		console.log( 'handleRestart', e );
 	}
 	
-	ns.Source.prototype.handleStreamState = function( webRTCisUP ) {
+	ns.StreamSource.prototype.handleStreamState = function( webRTCisUP ) {
 		const self = this;
 		console.log( 'source.handleStreamState', webRTCisUP );
 		if ( !webRTCisUP )
 			self.restart();
 	}
 	
-	ns.Source.prototype.handleClientState = function( state ) {
+	ns.StreamSource.prototype.handleClientState = function( state ) {
 		const self = this;
 		self.emit( 'client-state', state );
 	}
 	
-	ns.Source.prototype.toggleScreenMode = function( mode ) {
+	ns.StreamSource.prototype.toggleScreenMode = function( mode ) {
 		const self = this;
 		if ( !self.screenMode || 'cover' === self.screenMode )
 			self.screenMode = 'contain';
@@ -1224,7 +945,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	/*
-	ns.Source.prototype.createSource = function() {
+	ns.StreamSource.prototype.createSource = function() {
 		const self = this;
 		console.log( 'createSource', self );
 		
@@ -1244,7 +965,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	*/
 	
-	ns.Source.prototype.closeSession = function() {
+	ns.StreamSource.prototype.closeSession = function() {
 		const self = this;
 		if ( !self.session )
 			return;
@@ -1373,7 +1094,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				value   : value,
 			},
 		};
-		self.local.send( sett );
+		self.conn.send( sett );
 	}
 	
 	ns.Sink.prototype.setupSession = function() {

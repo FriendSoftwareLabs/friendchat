@@ -343,13 +343,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.proxy = new library.component.EventNode(
 			'proxy',
 			self.conn,
-			signalSink
+			proxySink
 		);
 		
 		self.proxy.on( 'room', e => self.handleProxyRoom( e ));
 			
-		function signalSink( type, data ) {
-			console.log( 'RTC signalSink', {
+		function proxySink( type, data ) {
+			console.log( 'RTC proxySink', {
 				type : type,
 				data : data,
 			});
@@ -1189,7 +1189,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( 'star' === self.topology )
 			Thing = library.rtc.Source;
 		
-		self.selfie = new Thing({
+		const selfieConf = {
 			conn          : self.conn,
 			view          : self.ui,
 			menu          : self.menu,
@@ -1201,18 +1201,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			isAdmin       : self.isAdmin,
 			topology      : self.topology,
 			proxyConn     : self.proxy || null,
-			onleave       : onLeave,
-		}, done );
+		};
 		
-		function onLeave() {
-			self.leave();
-		}
+		self.selfie = new Thing( selfieConf, done );
+		
 		
 		function done( err, res ) {
 			createBack( err, res );
 		}
 		
 		self.ui.addPeer( self.selfie );
+		self.selfie.on( 'leave'           , onLeave );
 		self.selfie.on( 'error'           , error );
 		self.selfie.on( 'audio-sink'      , audioSink );
 		self.selfie.on( 'mute'            , broadcastMute );
@@ -1226,6 +1225,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.selfie.on( 'restart'         , restart );
 		self.selfie.on( 'save'            , e => self.saveLocalSetting( e.setting, e.value ));
 		
+		function onLeave() { self.leave(); }
 		function error( e ) { self.handleSelfieError( e ); }
 		function audioSink( e ) { self.handleAudioSink( e ); }
 		function broadcastMute( isMuted ) { broadcast( 'mute', isMuted ); }
@@ -1395,7 +1395,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.media = null;
 		self.stream = null;
-		self.onleave = conf.onleave;
 		self.doneBack = callback;
 		
 		self.currentDevices = {};
@@ -1494,7 +1493,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		delete self.view;
 		delete self.extConn;
 		delete self.menu;
-		delete self.onleave;
 		delete self.doneBack;
 		delete self.conn;
 	}
@@ -2315,8 +2313,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.leave = function() {
-		var self = this;
-		self.onleave();
+		const self = this;
+		self.emit( 'leave', true );
 	}
 	
 })( library.rtc );
@@ -3953,6 +3951,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.isMute = !audio.enabled;
 		self.emit( 'mute', self.isMute );
+		return self.isMute;
 	}
 	
 	ns.Peer.prototype.toggleBlind = function( force ) {
@@ -3971,6 +3970,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.isBlind = !video.enabled;
 		self.emit( 'blind', self.isBlind );
+		return self.isBlind;
 	}
 	
 	ns.Peer.prototype.toggleFocus = function() {

@@ -116,9 +116,8 @@ library.component = library.component || {};
 	ns.Init.prototype.initialize = function( data ) {
 		const self = this;
 		console.log( 'Live.initalize', data );
-		hello.template.addFragments( data.fragments );
+		//hello.template.addFragments( data.fragments );
 		hello.template.addFragments( data.liveFragments );
-		
 		//
 		hello.parser = new library.component.parse.Parser();
 		hello.parser.use( 'LinkStd' );

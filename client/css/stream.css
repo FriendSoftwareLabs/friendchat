@@ -130,6 +130,10 @@
 	z-index: 1024;
 }
 
+#video-toggle-btn {
+	margin-left : 0.5em;
+}
+
 .landscape {
 	
 }
