@@ -992,6 +992,27 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.MediaUI.prototype.playStream = function() {
+		const self = this;
+		if ( !self.stream )
+			return;
+		
+		self.stream.play()
+			.then( playOk )
+			.catch( playErr );
+			
+		function playOk( e ) {
+			console.log( 'Peer.playStream - ok', e );
+		}
+		
+		function playErr( ex ) {
+			console.log( 'Peer.playStream - ex', {
+				stream : self.stream,
+				ex     : ex,
+			});
+		}
+	}
+	
 	ns.MediaUI.prototype.removeStream = function() {
 		const self = this;
 		if ( !self.stream )
@@ -1214,7 +1235,7 @@ library.component = library.component || {};
 		}
 		
 		if ( !self.stream ) {
-			self.setStreamElement( media.id );
+			self.setStream( media.id );
 		}
 		
 		//self.stream.pause();
@@ -1244,57 +1265,51 @@ library.component = library.component || {};
 	
 	ns.SinkUI.prototype.handleTrack = function( type, track ) {
 		const self = this;
-		if ( !self.stream )
-			return;
-		
+		console.log( 'SinkUI.handleTrack', {
+			self  : self,
+			type  : type,
+			track : track,
+		});
 		// set state
-		/*
-		const alreadyUpdating = !!self.isUpdatingStream;
 		if ( !self.isUpdatingStream ) {
 			self.stream.pause();
 			self.isUpdatingStream = true;
 		}
-		*/
-		self.stream.load();
-		//self.stream.play();
 		
-		/*
+		//
+		self.removeTrack( type );
+		if ( null == track ) {
+			self.stream.load();
+			return;
+		}
+		
 		self.stream.srcObject.addTrack( track );
 		self.stream.load();
-		*/
+		console.log( 'stream.load called' );
 	}
 	
-	ns.SinkUI.prototype.setStreamElement = function( id ) {
+	ns.SinkUI.prototype.removeTrack = function( type ) {
 		const self = this;
-		if ( self.stream )
-			self.removeStream();
+		if ( !self.stream )
+			return;
 		
-		let conf = {
-			id : id
-		};
+		const srcObj = self.stream.srcObject;
+		let removed = false;
+		if ( !srcObj )
+			return false;
 		
-		let container = document.getElementById( 'source-media-container' );
-		self.stream = hello.template.getElement( 'live-video-tmpl', conf );
-		self.stream.onloadedmetadata = play;
-		//self.updateAudioSink();
+		let tracks = srcObj.getTracks();
+		tracks.forEach( removeType );
+		return removed;
 		
-		container.appendChild( self.stream );
-		//self.toggleSpinner( false );
-		self.bindStreamResize();
-		
-		function play( e ) {
-			self.stream.play();
+		function removeType( track ) {
+			if ( type !== track.kind )
+				return;
+			
+			srcObj.removeTrack( track );
+			track.stop();
+			removed = true;
 		}
-	}
-	
-	ns.SinkUI.prototype.removeStream = function() {
-		const self = this;
-		if ( self.stream ) {
-			self.stream.parentNode.removeChild( self.stream );
-			self.stream.srcObject = null;
-		}
-		
-		delete self.stream;
 	}
 	
 })( library.view );

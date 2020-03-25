@@ -519,7 +519,7 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addIdentities = function( idMap ) {
 		const self = this;
-		cIds = Object.keys( idMap );
+		const cIds = Object.keys( idMap );
 		cIds.forEach( cId => {
 			const id = idMap[ cId ];
 			self.addId( id );
@@ -710,7 +710,7 @@ var hello = window.hello || {};
 		self.workId = conf.workId;
 		const ava = conf.available;
 		const ass = conf.assigned;
-		avaIds = Object.keys( ava );
+		const avaIds = Object.keys( ava );
 		avaIds.forEach( wId => {
 			let worg = ava[ wId ];
 			self.addWorgAvailable( worg );

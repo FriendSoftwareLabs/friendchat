@@ -343,7 +343,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.proxy = new library.component.EventNode(
 			'proxy',
 			self.conn,
-			proxySink
+			proxySink,
+			null,
+			true
 		);
 		
 		self.proxy.on( 'room', e => self.handleProxyRoom( e ));
@@ -1190,6 +1192,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			Thing = library.rtc.Source;
 		
 		const selfieConf = {
+			id            : 'selfie',
 			conn          : self.conn,
 			view          : self.ui,
 			menu          : self.menu,
@@ -1377,7 +1380,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		self.id = 'selfie';
+		self.id = conf.id;
 		self.conn = conf.conn;
 		self.view = conf.view;
 		self.menu = conf.menu;
@@ -1392,6 +1395,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.isAdmin = conf.isAdmin;
 		self.topology = conf.topology;
 		self.proxyConn = conf.proxyConn;
+		self.rtcConf = conf.rtcConf;
 		
 		self.media = null;
 		self.stream = null;
@@ -1605,7 +1609,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.proxy = new library.component.EventNode(
 			'source',
 			self.proxyConn,
-			proxySink
+			proxySink,
+			null,
+			true
 		);
 		
 		function proxySink( type, event ) {
@@ -1618,10 +1624,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.createSource = function( rtcConf ) {
 		const self = this;
-		console.log( 'createSource', rtcConf );
-		self.rtcConf = rtcConf;
+		console.log( 'createSource', {
+			rtcConf : self.rtcConf,
+			rtcConfpassed : rtcConf,
+		});
+		if ( rtcConf )
+			self.rtcConf = rtcConf;
+		
 		if ( self.session ) {
-			self.log( 'createSession', {
+			console.log( 'createSession', {
 				state   : self.state,
 				session : self.session,
 			});
@@ -2684,7 +2695,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.createSession = function() {
 		const self = this;
-		self.log( 'createSession', self.id );
+		self.log( 'createSession', {
+			id      : self.id,
+			rtcConf : self.rtcConf,
+		});
 		if ( self.session ) {
 			self.log( 'createSession', {
 				state   : self.state,

@@ -290,7 +290,7 @@ var hello = window.hello || {};
 		
 		const sId = sess.id;
 		const id = 'sess_' + sId;
-		conf = {
+		const conf = {
 			id    : id,
 			title : sess.conf.roomName,
 		};

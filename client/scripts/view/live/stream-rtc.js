@@ -177,6 +177,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkSourceReady( gumErr, media ) {
+			console.log( 'checkSourceReady' );
 			if ( !self.permissions.send.audio && !self.permissions.send.video )
 				passSourceChecks();
 			else
@@ -228,6 +229,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function done() {
+			console.log( 'done' );
 			if ( self.isAdmin )
 				self.setupAdmin();
 			
@@ -666,6 +668,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const identity = self.getIdentity( self.userId );
 		console.log( 'createSource', identity );
 		const conf = {
+			id            : 'stream',
 			conn          : self.conn,
 			view          : self.ui,
 			menu          : self.menu,
@@ -761,10 +764,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			conf     : conf,
 			callback : callback,
 		});
-		self.rtcConf = conf.rtcConf;
 		
 		library.rtc.Selfie.call( self, conf, callback );
-		self.id = 'source';
 		self.screenMode = 'contain';
 		
 		//self.init( conn, callback );
@@ -787,21 +788,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	// Private
 	
-	ns.StreamSource.prototype.init = function( parentSignal, callback ) {
+	ns.StreamSource.prototype.init = function() {
 		const self = this;
 		const ignoreSysMute = self.localSettings[ 'ignore-system-mute' ];
 		if ( ignoreSysMute )
 			self.ignoreSystemMute = ignoreSysMute;
 		
 		//
+		console.log( 'StreamSource.init', self.id );
 		self.proxy = new library.component.EventNode(
 			self.id,
-			parentSignal,
-			proxySink
+			self.proxyConn,
+			proxySink,
+			null,
 		);
 		
 		function proxySink( type, event ) {
-			console.log( 'Source.signal.eventsink', [
+			console.log( 'Source.proxy.eventsink', [
 				type,
 				event,
 			]);
@@ -869,8 +872,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.setAudioSink( self.localSettings.preferedDevices );
 		self.setupStream( done );
 		function done( err, res ) {
-			if ( callback )
-				callback( err, res );
+			const doneBack = self.doneBack;
+			delete self.doneBack;
+			if ( doneBack )
+				doneBack( null, res );
 		}
 	}
 	
@@ -998,7 +1003,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.proxy = null;
 		self.session = null;
-		self.stream = null;
+		self.remoteMedia = null;
 		self.isStreaming = false;
 		self.screenMode = 'contain';
 		
@@ -1015,7 +1020,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.session )
 			self.session.close();
 		
-		if ( self.stream )
+		if ( self.remoteMedia )
 			self.stopStream();
 		
 		if ( self.proxy )
@@ -1029,7 +1034,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		delete self.local;
 		delete self.proxy;
-		delete self.stream;
+		delete self.remoteMedia;
 		delete self.view;
 		delete self.menu;
 		delete self.identity;
@@ -1057,6 +1062,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.id,
 			parentSignal,
 			signalSink,
+			null,
+			true
 		);
 		
 		self.proxy.on( 'source-state', sourceState );
@@ -1099,6 +1106,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Sink.prototype.setupSession = function() {
 		const self = this;
+		console.log( 'setupSession - rtcConf', self.rtcConf );
 		if ( self.session )
 			self.closeSession();
 		
@@ -1118,9 +1126,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			null,
 			self.identity.name,
 		);
-		self.session.on( 'track', handleTrack );
-		
-		function handleTrack( track ) { self.handleTrack( track ); }
+		self.session.on( 'track-add', e => self.handleTrack( e ));
 	}
 	
 	ns.Sink.prototype.toggleScreenMode = function( mode ) {
@@ -1140,52 +1146,44 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Sink.prototype.handleTrack = function( track ) {
 		const self = this;
-		if ( !self.stream ) {
-			self.stream = new window.MediaStream();
-			self.emit( 'media', self.stream );
+		console.log( 'handleTrack', track );
+		if ( !self.remoteMedia ) {
+			self.remoteMedia = new window.MediaStream();
+			self.emit( 'media', self.remoteMedia );
 		}
 		
+		//self.bindTrack( track );
 		const type = track.kind;
-		remove( type );
+		if ( 'video' === type )
+			addVideo( track );
+		if ( 'audio' === type )
+			addAudio( track );
 		
-		self.stream.addTrack( track );
+		//self.emitStreamState( 'nominal' );
 		
-		if ( 'audio' === type ) {
-			track.enabled = !self.isMute;
-			self.hasAudio = true;
+		function addVideo( track ) {
+			self.emit( 'track', 'video', track );
+			self.toggleBlind( self.isBlind );
+			//self.receiving.video = true;
+			//self.emit( 'video', self.receiving.video );
 		}
-		if ( 'video' === type ) {
-			track.enabled = !self.isBlind;
-			self.hasVideo = true;
-		}
 		
-		self.emit( 'track', type, !!track );
-		
-		function remove( type ) {
-			let srcObj = self.stream;
-			if ( !srcObj )
-				return;
-			
-			let tracks = srcObj.getTracks();
-			tracks.forEach( removeType );
-			function removeType( track ) {
-				if ( type !== track.kind )
-					return;
-				
-				srcObj.removeTrack( track );
-				track.stop();
-			}
+		function addAudio( track ) {
+			self.emit( 'track', 'audio', track );
+			self.toggleMute( self.isMute );
+			//self.receiving.audio = true;
+			//self.emit( 'audio', self.receiving.audio );
 		}
 	}
 	
 	ns.Sink.prototype.stopStream = function() {
 		const self = this;
-		if ( !self.stream )
+		if ( !self.remoteMedia )
 			return;
 		
-		let tracks = self.stream.getTracks();
+		let tracks = self.remoteMedia.getTracks();
 		tracks.forEach( track => {
-			self.stream.removeTrack( track );
+			self.remoteMedia.removeTrack( track );
 			track.stop();
 		});
 	}
@@ -1244,18 +1242,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			audio.enabled = !audio.enabled;
 		
 		self.isMute = !audio.enabled;
-		self.menu.setState( 'mute', self.isMute );
 		self.emit( 'mute', self.isMute );
 		return self.isMute;
 	}
 	
 	ns.Sink.prototype.toggleBlind = function( force ) {
-		const self = this;
-		const video = self.getVideoTrack();
-		if ( !video ) {
-			console.log( 'selfie.toggleBlind - no video track' );
+		var self = this;
+		var video = self.getVideoTrack();
+		if ( !video )
 			return;
-		}
 		
 		if ( force === !video.enabled )
 			return;
@@ -1266,25 +1261,38 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			video.enabled = !video.enabled;
 		
 		self.isBlind = !video.enabled;
-		self.menu.setState( 'blind', self.isBlind );
 		self.emit( 'blind', self.isBlind );
 		return self.isBlind;
 	}
 	
 	ns.Sink.prototype.getAudioTrack = function() {
 		const self = this;
-		if ( self.stream )
-			return self.stream.getAudioTracks()[ 0 ];
-		else
+		//var streams = self.session.conn.getRemoteStreams()[ 0 ];
+		if ( !self.remoteMedia ) {
+			self.log( 'getAudioTrack', self.remoteMedia );
 			return null;
+		}
+		
+		var tracks = self.remoteMedia.getAudioTracks();
+		if ( !tracks.length )
+			return null;
+		
+		return tracks[ 0 ];
 	}
 	
 	ns.Sink.prototype.getVideoTrack = function() {
-		const self = this;
-		if ( self.stream )
-			return self.stream.getVideoTracks()[ 0 ];
-		else
+		var self = this;
+		//var stream = self.session.conn.getRemoteStreams()[ 0 ];
+		if ( !self.remoteMedia ) {
+			self.log( 'getVideoTrack', self.remoteMedia );
 			return null;
+		}
+		
+		var tracks = self.remoteMedia.getVideoTracks();
+		if ( !tracks.length )
+			return null;
+		
+		return tracks[ 0 ];
 	}
 	
 })( library.rtc );

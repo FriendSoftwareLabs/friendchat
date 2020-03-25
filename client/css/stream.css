@@ -22,13 +22,16 @@
 	width    : 100%;
 }
 
-#source {
+#source,
+#sink {
 	height: 100%;
 }
 
 #source-media-container {
 	position : relative;
 	overflow : hidden;
+	height   : 100%;
+	width    : 100%;
 }
 
 #source-media-container .video {
@@ -47,11 +50,6 @@
 	opacity: 0;
 	*/
 	transition : opacity 0.2s;
-}
-
-#source-media-container {
-	height: 100%;
-	width : 100%;
 }
 
 #source-media-container .avatar {

@@ -155,6 +155,7 @@ library.component = library.component || {};
 		);
 		
 		function onready( err ) {
+			console.log( 'Live onready' );
 			window.View.ready();
 		}
 		
