@@ -94,7 +94,11 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.addShareLink = function( conn ) {
 		const self = this;
-		
+		console.log( 'UI.addShareLink', {
+			conn  : conn,
+			btn   : self.shareLinkBtn,
+			slink : self.shareLink,
+		});
 		if ( !self.shareLinkBtn ) {
 			console.log( 'Live UI.addShareLink, no button found' );
 			return;

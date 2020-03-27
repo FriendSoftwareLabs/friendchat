@@ -960,3 +960,41 @@ overlay
 	padding : 0.5em;
 	line-height: 1.8em;
 }
+
+/*
+  share link 
+*/
+
+[mobile] #share-screen-btn {
+	display : none !important;
+}
+
+#share-link-view {
+	padding : 0.2em;
+}
+
+#share-title {
+	padding : 0.5em;
+	color   : #ccc;
+}
+
+#share-link-btn {
+	
+}
+
+#share-public-to-email {
+	margin-right : 2em;
+}
+
+
+html body#hello select,
+html body#hello .input-wrap input {
+	color            : #eee;
+	background-color : #222;
+	border           : 1px solid #444;
+	padding          : 0.3em 0.5em;
+}
+
+html body#hello select {
+	padding : 0.5em !important;
+}

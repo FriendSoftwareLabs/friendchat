@@ -581,10 +581,6 @@ i.svg.camera-off {
 	flex : 1;
 }
 
-[mobile] #share-screen-btn {
-	display : none !important;
-}
-
 #ui-menu-anchor {
 	
 }
@@ -603,35 +599,6 @@ body#hello #hangup-btn > i {
 
 body#hello #hangup-btn i {
 	font-size : 180%;
-}
-
-#share-link-view {
-	padding : 0.2em;
-}
-
-#share-title {
-	padding : 0.5em;
-	color   : #ccc;
-}
-
-html body#hello select,
-html body#hello .input-wrap input {
-	color            : #eee;
-	background-color : #222;
-	border           : 1px solid #444;
-	padding          : 0.3em 0.5em;
-}
-
-html body#hello select {
-	padding : 0.5em !important;
-}
-
-#share-link-btn {
-	
-}
-
-#share-public-to-email {
-	margin-right : 2em;
 }
 
 #live-ui-click-catch {

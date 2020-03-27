@@ -115,15 +115,6 @@ library.component = library.component || {};
 		return self.chat;
 	}
 	
-	ns.UIStream.prototype.addShare = function( conn ) {
-		const self = this;
-		const conf = {
-			conn : conn,
-		};
-		self.shareUI = self.addUIPane( 'share', conf );
-		return self.shareUI;
-	}
-	
 	ns.UIStream.prototype.addSettings = function( conf ) {
 		const self = this;
 		console.log( 'addSettings', conf );
@@ -382,12 +373,12 @@ library.component = library.component || {};
 		self.uiMuteBtn.addEventListener( 'click', muteClick, false );
 		self.uiBlindBtn.addEventListener( 'click', blindClick, false );
 		
-		self.uiShareLinkBtn = document.getElementById( 'share-link-btn' );
+		self.shareLinkBtn = document.getElementById( 'share-link-btn' );
 		self.userStuffEl = document.getElementById( 'user-stuff' );
 		
 		//self.uiMenuBtn.addEventListener( 'click', menuClick, false );
 		self.uiLeaveBtn.addEventListener( 'click', leaveClick, false );
-		//self.uiShareLinkBtn.addEventListener( 'click', shareClick, false );
+		//self.shareLinkBtn.addEventListener( 'click', shareClick, false );
 		
 		//function menuClick( e ) { self.showMenu(); }
 		function leaveClick( e ) { self.leave(); }

@@ -52,13 +52,16 @@
 	transition : opacity 0.2s;
 }
 
+.avatar {
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-position: center center;
+}
+
 #source-media-container .avatar {
 	height: 100%;
 	width: 100%;
 	opacity: 0.3;
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: center center;
 }
 
 #user-stuff {
@@ -66,16 +69,28 @@
 }
 
 #chat-container {
-	width        : 20em;
-	position     : relative;
-	/*
-	border-left  : 0.1em solid rgba( 255, 255, 255, 0.2 );
-	border-right : 0.1em solid rgba( 255, 255, 255, 0.2 );
-	*/
+	width    : 20em;
+	position : relative;
 }
 
 #live-chat {
 	
+}
+
+.peer {
+	position : relative;
+	padding  : 0.25em;
+}
+
+.peer .avatar {
+	height       : 2em;
+	width        : 2em;
+	margin-right : 0.4em;
+}
+
+.peer .name {
+	overflow: hidden;
+	white-space: nowrap;
 }
 
 #waiting-for-container {

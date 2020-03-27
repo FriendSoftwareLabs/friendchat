@@ -589,14 +589,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.setupUsers = function() {
 		const self = this;
-		console.log( 'setupUsers', self.userList );
-		if ( !self.userList )
+		console.log( 'setupUsers', self.peerList );
+		if ( !self.peerList )
 			return;
 		
-		self.userList.forEach( add );
-		function add( uid ) {
-			self.createUser( uid );
-		}
+		self.peerList.forEach( pId => {
+			self.createUser( pId );
+		});
+		self.peerList = [];
 	}
 	
 	ns.RTC.prototype.addUser = function( user ) {
