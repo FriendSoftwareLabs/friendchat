@@ -115,6 +115,7 @@ library.component = library.component || {};
 		}
 		
 		function click( e ) {
+			console.log( 'shareLinkBtn click' );
 			self.shareLink.toggle();
 		}
 	}

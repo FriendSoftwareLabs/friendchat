@@ -187,8 +187,12 @@ library.component = library.component || {};
 			self.updateShowUserStuff();
 		}
 		
-		self.stream = new library.view.SourceUI( source, 'stream-element-container' );
-		self.bindSource( source );
+		self.stream = new library.view.SourceUI(
+			'stream-element-container',
+			source,
+			self.uiMuteBtn,
+			self.uiBlindBtn
+		);
 		source.on( 'client-state', clientState );
 		function clientState( e ) { self.updateClientState( e ); }
 	}
@@ -197,8 +201,12 @@ library.component = library.component || {};
 		const self = this;
 		//self.setUserUI();
 		self.waiting.classList.toggle( 'hidden', true );
-		self.stream = new library.view.SinkUI( sink, 'stream-element-container' );
-		self.bindSource( sink );
+		self.stream = new library.view.SinkUI( 
+			'stream-element-container',
+			sink,
+			self.uiMuteBtn,
+			self.uiBlindBtn
+		);
 	}
 	
 	ns.UIStream.prototype.removeStream = function( sinkId ) {
@@ -271,17 +279,6 @@ library.component = library.component || {};
 		self.bindUI();
 	}
 	
-	ns.UIStream.prototype.bindSource = function( stream ) {
-		const self = this;
-		stream.on( 'mute', mute );
-		function mute( e ) { self.handleIsMute( e ); }
-	}
-	
-	ns.UIStream.prototype.handleIsMute = function( isMute ) {
-		const self = this;
-		self.uiMuteBtn.classList.toggle( 'danger', isMute );
-	}
-	
 	ns.UIStream.prototype.updateClientState = function( user ) {
 		const self = this;
 		self.userList.updateConnected( user.clientId, user.state );
@@ -351,7 +348,12 @@ library.component = library.component || {};
 		
 		self.bindBarCommon();
 		
+		self.uiShareScreenBtn = document.getElementById( 'share-screen-btn' );
+		
+		self.uiShareScreenBtn.addEventListener( 'click', shareScreenClick, false );
 		self.applyLocalSettings();
+		
+		function shareScreenClick( e ) { self.stream.shareScreen(); }
 	}
 	
 	ns.UIStream.prototype.setUserUI = function() {
@@ -362,31 +364,42 @@ library.component = library.component || {};
 		container.appendChild( el );
 		
 		self.bindBarCommon();
-		
-		self.uiFullscreenBtn = document.getElementById( 'fullscreen-btn' );
-		
-		self.uiFullscreenBtn.addEventListener( 'click', fullscreenClick, false );
-		
 		self.applyLocalSettings();
 		
+		self.uiFullscreenBtn = document.getElementById( 'fullscreen-btn' );		
+		self.uiFullscreenBtn.addEventListener( 'click', fullscreenClick, false );
 		function fullscreenClick( e ) { self.handleFullscreenClick( e ); }
 	}
 	
 	ns.UIStream.prototype.bindBarCommon = function() {
 		const self = this;
-		self.uiMenuBtn = document.getElementById( 'show-menu-btn' );
+		//self.uiMenuBtn = document.getElementById( 'show-menu-btn' );
+		self.uiLeaveBtn = document.getElementById( 'leave-stream-btn' );
+		
 		self.uiMuteBtn = document.getElementById( 'audio-toggle-btn' );
 		self.uiBlindBtn = document.getElementById( 'video-toggle-btn' );
-		self.uiLeaveBtn = document.getElementById( 'leave-stream' );
-		self.userStuffEl = document.getElementById( 'user-stuff' );
 		
-		self.uiMenuBtn.addEventListener( 'click', menuClick, false );
 		self.uiMuteBtn.addEventListener( 'click', muteClick, false );
 		self.uiBlindBtn.addEventListener( 'click', blindClick, false );
 		
-		function menuClick( e ) { self.showMenu(); }
-		function muteClick( e ) { self.handleMuteClick( e ); }
-		function blindClick( e ) { self.handleBlindClick( e ); }
+		self.uiShareLinkBtn = document.getElementById( 'share-link-btn' );
+		self.userStuffEl = document.getElementById( 'user-stuff' );
+		
+		//self.uiMenuBtn.addEventListener( 'click', menuClick, false );
+		self.uiLeaveBtn.addEventListener( 'click', leaveClick, false );
+		//self.uiShareLinkBtn.addEventListener( 'click', shareClick, false );
+		
+		//function menuClick( e ) { self.showMenu(); }
+		function leaveClick( e ) { self.leave(); }
+		//function shareClik( e ) { self.toggleShare(); }
+		function muteClick( e ) { self.stream.toggleMute(); }
+		function blindClick( e ) { self.stream.toggleBlind(); }
+	}
+	
+	ns.UIStream.prototype.leave = function() {
+		const self = this;
+		console.log( 'UIStream.leave' );
+		self.emit( 'close' );
 	}
 	
 	ns.UIStream.prototype.applyLocalSettings = function() {
@@ -478,16 +491,6 @@ library.component = library.component || {};
 	ns.UIStream.prototype.handleViewOver = function( e ) {
 		const self = this;
 		//console.log( 'handleViewOver', e );
-	}
-	
-	ns.UIStream.prototype.handleMuteClick = function( e ) {
-		const self = this;
-		self.stream.toggleMute();
-	}
-	
-	ns.UIStream.prototype.handleBlindClick = function( e ) {
-		const self = this;
-		self.stream.toggleBlind();
 	}
 	
 	ns.UIStream.prototype.handleUserStuffClick = function( e ) {
@@ -833,13 +836,59 @@ library.component = library.component || {};
 // MediaUI
 
 (function( ns, undefined ) {
-	ns.MediaUI = function() {
+	ns.MediaUI = function(
+		source,
+		muteBtn,
+		blindBtn
+	) {
 		const self = this;
-		self.source.on( 'screenmode', updateScreen );
+		self.source = source;
+		self.muteBtn = muteBtn;
+		self.blindBtn = blindBtn;
 		
-		function updateScreen( e ) {
-			self.doResize( e );
+		self.setupMedia();
+	}
+	
+	// Public
+	
+	ns.MediaUI.prototype.close = function() {
+		const self = this;
+		self.closeMedia();
+	}
+	
+	// Private
+	
+	ns.MediaUI.prototype.setupMedia = function() {
+		const self = this;
+		self.source.on( 'media', e => self.handleMedia( e ));
+		self.source.on( 'track', ( ty, tr ) => self.handleTrack( ty, tr ));
+		self.source.on( 'mute', e => self.handleMute( e ));
+		self.source.on( 'blind', e => self.handleBlind( e ));
+		self.source.on( 'screenmode', e => self.doResize( e ));
+		
+		self.avatar = document.getElementById( 'source-avatar' );
+		self.ui = document.getElementById( 'source-ui' );
+		
+		//self.muteBtn.addEventListener( 'click', muteClick, false );
+		//self.blindBtn.addEventListener( 'click', blindClick, false );
+		
+		function muteClick( e ) {
+			self.source.toggleMute();
 		}
+		
+		function blindClick( e ) {
+			self.source.toggleBlind();
+		}
+	}
+	
+	ns.MediaUI.prototype.closeMedia = function() {
+		const self = this;
+		self.source.release( 'mute' );
+		self.source.release( 'blind' );
+		self.source.release( 'screenmode' );
+		delete self.source;
+		delete self.avatar;
+		delete self.ui;
 	}
 	
 	ns.MediaUI.prototype.bindStreamResize = function() {
@@ -909,12 +958,13 @@ library.component = library.component || {};
 	}
 	
 	ns.MediaUI.prototype.toggleElementClass = function( element, className, set ) {
-		var self = this;
+		const self = this;
 		element.classList.toggle( className, set );
 	}
 	
 	ns.MediaUI.prototype.toggleMute = function() {
 		const self = this;
+		console.log( 'toggleMute' );
 		self.source.toggleMute();
 	}
 	
@@ -925,6 +975,11 @@ library.component = library.component || {};
 	
 	ns.MediaUI.prototype.toggleAvatar = function( show ) {
 		const self = this;
+		console.log( 'toggleAvatar', {
+			ava  : self.avatar,
+			show : show,
+		});
+		
 		if ( !self.avatar )
 			return;
 		
@@ -1066,6 +1121,55 @@ library.component = library.component || {};
 	}
 	
 	
+	ns.MediaUI.prototype.handleTrack = function( type, track ) {
+		const self = this;
+		console.log( 'MediaUI.handleTrack', {
+			self  : self,
+			type  : type,
+			track : track,
+		});
+		// set state
+		if ( !self.isUpdatingStream ) {
+			self.stream.pause();
+			self.isUpdatingStream = true;
+		}
+		
+		//
+		self.removeTrack( type );
+		if ( null == track ) {
+			self.stream.load();
+			return;
+		}
+		
+		self.stream.srcObject.addTrack( track );
+		self.stream.load();
+		console.log( 'stream.load called' );
+	}
+	
+	ns.MediaUI.prototype.removeTrack = function( type ) {
+		const self = this;
+		if ( !self.stream )
+			return;
+		
+		const srcObj = self.stream.srcObject;
+		let removed = false;
+		if ( !srcObj )
+			return false;
+		
+		let tracks = srcObj.getTracks();
+		tracks.forEach( removeType );
+		return removed;
+		
+		function removeType( track ) {
+			if ( type !== track.kind )
+				return;
+			
+			srcObj.removeTrack( track );
+			track.stop();
+			removed = true;
+		}
+	}
+	
 	ns.MediaUI.prototype.updateAudioSink = function() {
 		const self = this;
 		const deviceId = self.audioSinkId || '';
@@ -1113,16 +1217,29 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.MediaUI.prototype.switchIcon = function( el, from, to ) {
+		const self = this;
+		el.classList.toggle( from, false );
+		el.classList.toggle( to, true );
+	}
 	
 })( library.view );
 
 
 // SourceUI
 (function( ns, undefined ) {
-	ns.SourceUI = function( source, containerId ) {
+	ns.SourceUI = function(
+		containerId,
+		source,
+		muteBtn,
+		blindBtn
+	) {
 		const self = this;
-		self.source = source;
-		ns.MediaUI.call( self );
+		ns.MediaUI.call( self,
+			source,
+			muteBtn,
+			blindBtn
+		);
 		
 		self.init( containerId );
 	}
@@ -1131,9 +1248,15 @@ library.component = library.component || {};
 	
 	// Public
 	
+	ns.SourceUI.prototype.shareScreen = function() {
+		const self = this;
+		self.source.toggleShareScreen();
+	}
+	
 	ns.SourceUI.prototype.close = function() {
 		const self = this;
-		delete self.source;
+		self.closeMedia();
+		delete self.el;
 	}
 	
 	// Private
@@ -1152,15 +1275,9 @@ library.component = library.component || {};
 		self.el = hello.template.getElement( 'live-stream-source-tmpl', sourceConf )
 		container.appendChild( self.el );
 		
-		self.avatar = document.getElementById( 'source-avatar' );
-		self.ui = document.getElementById( 'source-ui' );
-		
 		self.source.on( 'selfie', media );
-		self.source.on( 'mute', mute );
-		self.source.on( 'blind', blind );
 		function media( e ) { self.handleSelfie( e ); }
-		function mute( e ) { console.log( 'mute' ); }
-		function blind( e ) { console.log( 'blind' ); }
+		
 	}
 	
 	ns.SourceUI.prototype.handleSelfie = function( media ) {
@@ -1169,15 +1286,43 @@ library.component = library.component || {};
 		self.stream.muted = true;
 	}
 	
+	ns.SourceUI.prototype.handleMute = function( isMute ) {
+		const self = this;
+		console.log( 'SourceUI.handleMute', isMute );
+		self.isMute = isMute;
+		self.muteBtn.classList.toggle( 'danger', isMute );
+		if ( isMute )
+			self.switchIcon( self.muteBtn.children[ 0 ], 'fa-microphone', 'fa-microphone-slash' );
+		else
+			self.switchIcon( self.muteBtn.children[ 0 ], 'fa-microphone-slash', 'fa-microphone' );
+	}
+	
+	ns.SourceUI.prototype.handleBlind = function( isBlind ) {
+		const self = this;
+		console.log( 'SourceUI.handleBLind', isBlind );
+		self.isBlind = isBlind;
+		self.blindBtn.classList.toggle( 'danger', isBlind );
+	}
+	
+
 })( library.view );
 
 
 // SinkUI
 (function( ns, undefined ) {
-	ns.SinkUI = function( source, containerId ) {
+	ns.SinkUI = function(
+		containerId,
+		source,
+		muteBtn,
+		blindBtn
+	) {
 		const self = this;
-		self.source = source;
-		ns.MediaUI.call( self );
+		console.log( 'SinkUI', [ containerId, source, muteBtn, blindBtn ]);
+		ns.MediaUI.call( self,
+			source,
+			muteBtn,
+			blindBtn,
+		);
 		
 		self.init( containerId );
 	}
@@ -1189,12 +1334,12 @@ library.component = library.component || {};
 	ns.SinkUI.prototype.close = function() {
 		const self = this;
 		self.removeStream();
+		self.closeMedia();
 		delete self.avatar;
 		delete self.ui;
+		
 		self.el.parentNode.removeChild( self.el );
-		self.source.release( 'media' );
-		self.source.release( 'track' );
-		delete self.source;
+		delete self.el;
 	}
 	
 	// Private
@@ -1219,97 +1364,31 @@ library.component = library.component || {};
 		// stream state
 		self.state = new library.component.StreamStateUI( 'sink-ui' );
 		
-		self.source.on( 'media', handleMedia );
-		self.source.on( 'track', handleTrack );
 		self.source.on( 'stream-state', streamState );
 		
-		function handleMedia( media ) { self.handleMedia( media ); }
-		function handleTrack( type, track ) { self.handleTrack( type, track ); }
 		function streamState( state ) { self.state.update( state ); }
 	}
 	
-	ns.SinkUI.prototype.handleMedia = function( media ) {
+	ns.SinkUI.prototype.handleMute = function( isMute ) {
 		const self = this;
-		if ( !media ) {
-			return;
-		}
-		
-		if ( !self.stream ) {
-			self.setStream( media.id );
-		}
-		
-		//self.stream.pause();
-		let srcObj = self.stream.srcObject;
-		if ( srcObj ) {
-			self.stream.pause();
-			clear( srcObj );
-			self.stream.load();
-			self.stream.srcObject = null;
-		}
-		
-		self.stream.srcObject = media;
-		//self.bindStream();
-		self.stream.load();
-		self.toggleAvatar( !media );
-		
-		function clear( media ) {
-			let tracks = media.getTracks();
-			tracks.forEach( stop );
-			
-			function stop( track ) {
-				track.stop();
-				media.removeTrack( track );
-			}
-		}
+		console.log( 'SinkUI.handleMute', isMute );
+		self.isMute = isMute;
+		self.muteBtn.classList.toggle( 'danger', isMute );
+		if ( isMute )
+			self.switchIcon( self.muteBtn.children[ 0 ], 'fa-volume-up', 'fa-volume-off' );
+		else
+			self.switchIcon( self.muteBtn.children[ 0 ], 'fa-volume-off', 'fa-volume-up' );
 	}
 	
-	ns.SinkUI.prototype.handleTrack = function( type, track ) {
+	ns.SinkUI.prototype.handleBlind = function( isBlind ) {
 		const self = this;
-		console.log( 'SinkUI.handleTrack', {
-			self  : self,
-			type  : type,
-			track : track,
-		});
-		// set state
-		if ( !self.isUpdatingStream ) {
-			self.stream.pause();
-			self.isUpdatingStream = true;
-		}
-		
-		//
-		self.removeTrack( type );
-		if ( null == track ) {
-			self.stream.load();
-			return;
-		}
-		
-		self.stream.srcObject.addTrack( track );
-		self.stream.load();
-		console.log( 'stream.load called' );
-	}
-	
-	ns.SinkUI.prototype.removeTrack = function( type ) {
-		const self = this;
-		if ( !self.stream )
-			return;
-		
-		const srcObj = self.stream.srcObject;
-		let removed = false;
-		if ( !srcObj )
-			return false;
-		
-		let tracks = srcObj.getTracks();
-		tracks.forEach( removeType );
-		return removed;
-		
-		function removeType( track ) {
-			if ( type !== track.kind )
-				return;
-			
-			srcObj.removeTrack( track );
-			track.stop();
-			removed = true;
-		}
+		console.log( 'SinkUI.handleBLind', isBlind );
+		self.isBlind = isBlind;
+		self.blindBtn.classList.toggle( 'danger', isBlind );
+		if ( isBlind )
+			self.switchIcon( self.blindBtn.children[ 0 ], 'fa-eye', 'fa-eye-slash' );
+		else
+			self.switchIcon( self.blindBtn.children[ 0 ], 'fa-eye-slash', 'fa-eye' );
 	}
 	
 })( library.view );

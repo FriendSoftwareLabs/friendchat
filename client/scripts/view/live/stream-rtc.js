@@ -691,7 +691,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.ui.addSource( self.stream );
 	}
 	
-	ns.RTC.prototype.createSink = function( callback ) {
+	ns.RTC.prototype.createSink = function() {
 		const self = this;
 		if ( self.stream )
 			self.stream.close();
@@ -702,17 +702,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const  conf = {
 			id            : 'stream', //self.userId,
+			conn          : self.conn,
+			view          : self.ui,
+			menu          : self.menu,
 			identity      : sourceIdentity,
 			localSettings : self.localSettings,
+			proxyConn     : self.proxy,
 			rtcConf       : self.rtcConf,
 		};
 		
-		self.stream = new library.rtc.Sink(
-			self.proxy,
-			self.ui,
-			self.menu,
-			conf
-		);
+		self.stream = new library.rtc.Sink( conf );
+		self.ui.addSink( self.stream );
 	}
 	
 })( library.rtc );
@@ -773,7 +773,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.StreamSource.prototype = Object.create( library.rtc.Selfie.prototype );
 	
-	// Public 
+	// Public
 	
 	ns.StreamSource.prototype.restart = function() {
 		const self = this;
@@ -984,19 +984,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 
 // Sink
 (function( ns, undefined ) {
-	ns.Sink = function(
-		conn,
-		view,
-		menu,
-		conf
-	) {
+	ns.Sink = function( conf ) {
 		const self = this;
+		console.log( 'Sink', conf );
 		library.component.EventEmitter.call( self );
 		
 		self.id = conf.id;
-		self.local = conn;
-		self.view = view;
-		self.menu = menu;
+		self.local = conf.conn;
+		self.proxyConn = conf.proxyConn;
+		self.view = conf.view;
+		self.menu = conf.menu;
 		self.identity = conf.identity;
 		self.localSettings = conf.localSettings;
 		self.rtcConf = conf.rtcConf;
@@ -1007,7 +1004,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.isStreaming = false;
 		self.screenMode = 'contain';
 		
-		self.init( conn );
+		self.isMute = false;
+		self.isBlind = false;
+		
+		self.init();
 	}
 	
 	ns.Sink.prototype = Object.create( library.component.EventEmitter.prototype )
@@ -1056,11 +1056,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	// Private
 	
-	ns.Sink.prototype.init = function( parentSignal ) {
+	ns.Sink.prototype.init = function() {
 		const self = this;
 		self.proxy = new library.component.EventNode(
 			self.id,
-			parentSignal,
+			self.proxyConn,
 			signalSink,
 			null,
 			true
@@ -1072,13 +1072,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function sourceState( e ) { self.handleSourceState( e ); }
 		function streamState( e ) { self.handleStreamState( e ); }
 		function signalSink( type, event ) {
-			console.log( 'Sink.signal.eventSink', [
+			console.log( 'Sink.proxy.eventSink', [
 				type,
 				event,
 			]);
 		}
 		
-		self.view.addSink( self );
 		//self.bindMenu();
 		//self.setupSession();
 	}
@@ -1126,7 +1125,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			null,
 			self.identity.name,
 		);
+		
 		self.session.on( 'track-add', e => self.handleTrack( e ));
+		self.session.on( 'stats', e => self.handleStats( e ));
+	}
+	
+	ns.Sink.prototype.handleStats = function( stats ) {
+		const self = this;
+		console.log( 'Sink.handleStats', stats );
 	}
 	
 	ns.Sink.prototype.toggleScreenMode = function( mode ) {
@@ -1202,6 +1208,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !webRTCisUP )
 			self.restart();
 		
+		console.log( 'Sink.handleStreamState', webRTCisUP  );
 		let state = {
 			type : 'stream',
 			data : webRTCisUP,
@@ -1242,6 +1249,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			audio.enabled = !audio.enabled;
 		
 		self.isMute = !audio.enabled;
+		console.trace( 'toggleMute', self.isMute );
 		self.emit( 'mute', self.isMute );
 		return self.isMute;
 	}
