@@ -29,9 +29,13 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.UI = function( conn, liveConf, localSettings, live ) {
 		const self = this;
+		console.log( 'UI - liveConf', liveConf );
 		library.component.EventEmitter.call( self );
 		
 		self.conn = conn;
+		self.userId = liveConf.userId;
+		self.isPrivate = liveConf.isPrivate;
+		self.isTempRoom = liveConf.isTempRoom;
 		self.localSettings = localSettings;
 		self.guestAvatar = liveConf.guestAvatar;
 		self.rtc = null;
@@ -92,6 +96,13 @@ library.component = library.component || {};
 		});
 	}
 	
+	ns.UI.prototype.showDeviceSelect = function( currentDevices ) {
+		const self = this;
+		console.log( 'UI.showDeviceSelect', currentDevices );
+		self.settingsUI.showDevices( currentDevices )
+		self.settingsUI.show();
+	}
+	
 	ns.UI.prototype.addShareLink = function( conn ) {
 		const self = this;
 		console.log( 'UI.addShareLink', {
@@ -139,7 +150,7 @@ library.component = library.component || {};
 	
 	// Private
 	
-	ns.UI.prototype.init = function() {
+	ns.UI.prototype.init = function( conf ) {
 		var self = this;
 		self.uiPaneMap = {
 			'init-checks'        : library.view.InitChecksPane      ,
@@ -187,6 +198,15 @@ library.component = library.component || {};
 		}
 		
 		self.bindEvents();
+		
+		let share = null;
+		if ( !self.isPrivate )
+			share = self.addShareLink( self.conn );
+		if ( share && self.isTempRoom )
+			share.show();
+		
+		self.addSettings();
+		
 		self.uiVisible = true;
 		self.toggleUI();
 	}
@@ -330,6 +350,10 @@ library.component = library.component || {};
 		
 		// theres is only change in container visibility
 		// at 0 and 1 panes visible
+		console.log( 'toggleUIPanes', {
+			visible    : self.panesVisible,
+			contrainer : self.uiPaneContainer,
+		});
 		if ( self.panesVisible > 1 )
 			return;
 		
@@ -341,8 +365,8 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.getUIPane = function( id ) {
-		var self = this;
-		var pane = self.uiPanes[ id ];
+		const self = this;
+		const pane = self.uiPanes[ id ];
 		if ( !pane ) {
 			console.log( 'getUIPane - no pane found for id', id );
 			return null;
@@ -352,8 +376,11 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.hideUIPane = function( id ) {
-		var self = this;
-		var pane = self.getPane( id );
+		const self = this;
+		const pane = self.getPane( id );
+		if( !pane )
+			return;
+		
 		pane.hide();
 	}
 	
@@ -1349,6 +1376,7 @@ library.component = library.component || {};
 			
 			const chatOpen = self.chatUI.toggle();
 			self.chatTease.setActive( chatOpen );
+			self.shareLink.updatePosition();
 		}
 		
 		const conf = {
@@ -1367,37 +1395,38 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.UI.prototype.addShare = function( conn ) {
-		const self = this;
-		const conf = {
-			conn : conn,
-		};
-		self.shareUI = self.addUIPane( 'share', conf );
-		return self.shareUI;
-	}
-	
 	ns.UI.prototype.addSettings = function( conf ) {
 		const self = this;
+		console.log( 'addSettings', conf );
 		if ( !self.settingsBtn ) {
 			console.log( 'UI.addSettings - settingsBtn missing, abort' );
 			return;
 		}
 		
 		self.settingsBtn.addEventListener( 'click', settingsClick, false );
-		self.settingsUI = self.addUIPane( 'source-select', conf );
+		//self.settingsUI = self.addUIPane( 'source-select', conf );
+		self.settingsUI = new library.view.DeviceSelect( self.settingsBtn, onSelect );
 		self.settingsUI.on( 'visible', onVisible );
 		return self.settingsUI;
 		
 		function settingsClick( e ) {
-			const isOpen = self.settingsUI.getOpen();
-			if ( isOpen )
+			if ( self.settingsShow )
 				self.settingsUI.hide();
 			else
-				self.emit( 'settings' ); 
+				self.emit( 'device-select' );
+			
 		}
 		
 		function onVisible( isVisible ) {
+			console.log( 'settingsUI onVisivle', isVisible );
+			self.settingsShow = isVisible;
 			self.settingsBtn.classList.toggle( 'available', isVisible );
+		}
+		
+		function onSelect( devices ) {
+			console.log( 'UI.settings - onselect', devices );
+			self.settingsUI.hide();
+			self.emit( 'use-devices', devices );
 		}
 	}
 	

@@ -538,7 +538,7 @@ var friend = window.friend || {};
 			if ( null != self.resizeTimeout )
 				return;
 			
-			self.resizeTimeout = window.setTimeout( resizeThrottle, 333 );
+			self.resizeTimeout = window.setTimeout( resizeThrottle, 100 );
 			function resizeThrottle() {
 				self.resizeTimeout = null;
 				self.emit( 'resize', self.lastResizeEvent );

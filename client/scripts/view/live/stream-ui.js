@@ -34,6 +34,7 @@ library.component = library.component || {};
 		self.conn = conn;
 		self.userId = liveConf.userId;
 		self.sourceId = liveConf.rtcConf.sourceId;
+		self.isTempRoom = liveConf.isTempRoom;
 		self.localSettings = localSettings;
 		self.guestAvatar = liveConf.guestAvatar;
 		self.roomName = liveConf.roomName;
@@ -115,12 +116,6 @@ library.component = library.component || {};
 		return self.chat;
 	}
 	
-	ns.UIStream.prototype.addSettings = function( conf ) {
-		const self = this;
-		console.log( 'addSettings', conf );
-		return self.addUIPane( 'source-select', conf );
-	}
-	
 	ns.UIStream.prototype.addExtConnPane = function( onshare ) {
 		const self = this;
 		const conf = {
@@ -128,35 +123,6 @@ library.component = library.component || {};
 		};
 		self.extConnUI = self.addUIPane( 'ext-connect', conf );
 		return self.extConnUI;
-	}
-	
-	ns.UIStream.prototype.addUIPane = function( id, conf ) {
-		const self = this;
-		const Pane = self.uiPaneMap[ id ];
-		if ( !Pane ) {
-			console.log( 'no ui pane for id', { id : id, map : self.uiPaneMap });
-			throw new Error( 'no ui pane found for id: ' + id );
-			return;
-		}
-		
-		const paneConf = {
-			id           : id,
-			parentId     : 'stream-ui-panes',
-			onpanetoggle : onToggle,
-			onpaneclose  : onClose,
-			conf         : conf,
-		};
-		const pane = new Pane( paneConf );
-		self.uiPanes[ pane.id ] = pane;
-		return pane;
-		
-		function onToggle( setVisible ) {
-			self.toggleUIPanes( setVisible );
-		}
-		
-		function onClose() {
-			self.removeUIPane( pane.id );
-		}
 	}
 	
 	ns.UIStream.prototype.addUser = function( user ) {
@@ -268,6 +234,14 @@ library.component = library.component || {};
 		}
 		
 		self.bindUI();
+		
+		self.addSettings();
+		self.share = self.ui.addShareLink( self.conn );
+		if ( self.share && self.isTempRoom )
+			self.share.show();
+		
+		self.uiVisible = true;
+		self.toggleUI();
 	}
 	
 	ns.UIStream.prototype.updateClientState = function( user ) {
@@ -301,13 +275,14 @@ library.component = library.component || {};
 		self.peerContainer = document.getElementById( self.peerContainerId );
 		
 		// ui
+		self.live = document.getElementById( 'live' );
 		self.streamContainer = document.getElementById( 'stream-container' );
 		self.streamEl = document.getElementById( 'stream-element-container' );
 		self.waiting = document.getElementById( 'waiting-for-container' );
 		self.waitingFritz = document.getElementById( 'waiting-for-stream-fritz' );
 		self.waitingDots = document.getElementById( 'waiting-for-stream-dots' );
 		self.ui = document.getElementById( 'stream-ui' );
-		self.uiPaneContainer = document.getElementById( 'stream-ui-panes' );
+		self.uiPaneContainer = document.getElementById( 'live-ui-panes' );
 		
 		document.addEventListener( 'mouseleave', catchLeave, false );
 		document.addEventListener( 'mouseenter', catchEnter, false );
@@ -333,7 +308,7 @@ library.component = library.component || {};
 	ns.UIStream.prototype.setStreamerUI = function() {
 		const self = this;
 		console.log( 'setStreamerUI' );
-		const container = document.getElementById( 'stream-ui' );
+		const container = self.ui;
 		const el = hello.template.getElement( 'source-bar-tmpl', {});
 		container.appendChild( el );
 		
@@ -350,7 +325,7 @@ library.component = library.component || {};
 	ns.UIStream.prototype.setUserUI = function() {
 		const self = this;
 		console.log( 'setUserUI' );
-		const container = document.getElementById( 'stream-ui' );
+		const container = self.ui;
 		const el = hello.template.getElement( 'sink-bar-tmpl', {});
 		container.appendChild( el );
 		
@@ -374,6 +349,7 @@ library.component = library.component || {};
 		self.uiBlindBtn.addEventListener( 'click', blindClick, false );
 		
 		self.shareLinkBtn = document.getElementById( 'share-link-btn' );
+		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.userStuffEl = document.getElementById( 'user-stuff' );
 		
 		//self.uiMenuBtn.addEventListener( 'click', menuClick, false );
@@ -406,82 +382,12 @@ library.component = library.component || {};
 		self.toggleUI();
 	}
 	
-	ns.UIStream.prototype.toggleUI = function( show, skipAnim ) {
-		const self = this;
-		let setVisible = self.uiVisible;
-		if ( null != show )
-			setVisible = show;
-		
-		if ( !!self.panesVisible )
-			setVisible = false;
-		
-		self.ui.classList.toggle( 'hidden', !setVisible );
-		self.reflow();
-	}
-	
 	ns.UIStream.prototype.toggleUIMode = function() {
 		const self = this;
 		self.uiVisible = !self.uiVisible;
 		self.saveLocalSetting( 'ui-visible', self.uiVisible );
 		self.menu.setState( 'clean-ui', !self.uiVisible );
 		self.toggleUI();
-	}
-	
-	ns.UIStream.prototype.toggleUIPanes = function( setVisible ) {
-		const self = this;
-		if ( setVisible )
-			self.panesVisible++;
-		else
-			self.panesVisible--;
-		
-		// theres is only change in container visibility
-		// at 0 and 1 panes visible
-		if ( self.panesVisible > 1 )
-			return;
-		
-		//self.toggleUI( null, true );
-		self.uiPaneContainer.classList.toggle( 'hidden', !setVisible );
-	}
-	
-	ns.UIStream.prototype.getUIPane = function( id ) {
-		const self = this;
-		const pane = self.uiPanes[ id ];
-		if ( !pane ) {
-			console.log( 'getUIPane - no pane found for id', id );
-			return null;
-		}
-		
-		return pane;
-	}
-	
-	ns.UIStream.prototype.hideUIPane = function( id ) {
-		const self = this;
-		const pane = self.getPane( id );
-		if ( !pane )
-			return;
-		
-		pane.hide();
-	}
-	
-	ns.UIStream.prototype.removeUIPane = function( id ) {
-		const self = this;
-		const pane = self.getUIPane( id )
-		if ( !pane )
-			return;
-		
-		//pane.hide();
-		delete self.uiPanes[ id ];
-		self.toggleUIPanes( false );
-	}
-	
-	ns.UIStream.prototype.uiTransitionEnd = function( e ) {
-		const self = this;
-		//console.log( 'uiTransitionEnd', e );
-	}
-	
-	ns.UIStream.prototype.handleViewOver = function( e ) {
-		const self = this;
-		//console.log( 'handleViewOver', e );
 	}
 	
 	ns.UIStream.prototype.handleUserStuffClick = function( e ) {

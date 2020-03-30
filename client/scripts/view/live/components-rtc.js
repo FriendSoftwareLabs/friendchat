@@ -27,13 +27,9 @@ library.rtc = library.rtc || {};
 //SourceSelect
 (function( ns, undefined ) {
 	ns.SourceSelect = function( conf ) {
-		if ( !( this instanceof ns.SourceSelect ))
-			return new ns.SourceSelect( conf );
-		
 		const self = this;
 		self.view = conf.view;
 		self.onselect = conf.onselect;
-		self.selfie = conf.selfie;
 		self.permissions = conf.permissions;
 		
 		self.init();

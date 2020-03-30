@@ -115,13 +115,11 @@
 }
 
 #stream-ui {
-	background-color : rgba( 0, 0, 0, 1 );
-	padding : 0.1em;
-	max-width : 100%;
-	overflow : hidden;
-	transition : opacity 0.2s;
-	z-index : 999;
-	border-bottom-right-radius: 0.2em;
+	transition : opacity 0.1s;
+}
+
+#stream-ui.show-panes {
+	
 }
 
 .show-ui #stream-ui,
@@ -130,17 +128,6 @@
 .show-ui .list-ui {
 	opacity: 1;
 	transition : opacity 0.2s;
-}
-
-#stream-ui > .btn {
-	margin-left : 0.1em;
-}
-#stream-ui > .btn:first-child {
-	margin-left : 0px;
-}
-
-#stream-ui-panes {
-	z-index: 1024;
 }
 
 #video-toggle-btn {

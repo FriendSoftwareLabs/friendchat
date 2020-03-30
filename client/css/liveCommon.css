@@ -3,6 +3,10 @@ body#hello.Loading {
 	background-color: #222 !important;
 }
 
+body#hello {
+	color    : #eee;
+}
+
 body #live {
 	position : relative;
 	color    : #eee;
@@ -15,10 +19,13 @@ body #live {
 }
 
 
+#live-content {
+	position: relative;
+}
+
 #lists-container {
 	
 }
-
 
 #lists-container > div {
 	position   : relative;
@@ -428,6 +435,32 @@ body #live {
 	to { color : rgb( 255, 255, 255 ); }
 }
 
+#ui-bottom-bar {
+	padding : 0.3em 0.5em;
+	background : linear-gradient( rgba( 30, 30, 30, 0.3 ), rgba( 30, 30, 30, 0.9 ));
+}
+
+#ui-left,
+#ui-middle,
+#ui-right {
+	flex : 1;
+}
+
+#ui-menu-anchor {
+	
+}
+
+#live-ui-click-catch {
+	
+}
+
+#live-ui-panes {
+	position      : relative;
+	z-index       : 444;
+	margin-bottom : 2px;
+}
+
+
 .options {
 	
 }
@@ -514,11 +547,8 @@ body #live {
 /* Video and audio settings ------------------------------------------------- */
 
 #source-select {
-	position: absolute;
 	max-width: 30em;
-	top : 0;
-	right : 0;
-	bottom : 0;
+	height: 100%;
 }
 
 #source-body {
@@ -534,7 +564,6 @@ body #live {
 
 #source-title {
 	align-self : center;
-	font-size: 140%;
 }
 
 #source-select #source-explain,
@@ -867,6 +896,10 @@ overlay
 	border : 1px solid #333;
 }
 
+.std-overlay .title {
+	font-size: 130%;
+}
+
 /*
  status
 */
@@ -985,7 +1018,6 @@ overlay
 #share-public-to-email {
 	margin-right : 2em;
 }
-
 
 html body#hello select,
 html body#hello .input-wrap input {

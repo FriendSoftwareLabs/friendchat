@@ -3746,6 +3746,10 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		if ( 'bottom-right' === pos.self ) {
 			self.overlay.style.right = ( screen.width - op.x ) + 'px';
 			self.overlay.style.bottom = ( screen.height - op.y ) + 'px';
+			if ( null != pos.height )
+				self.overlay.style.top = pos.height + 'px';
+			if ( null != pos.width )
+				self.overlay.style.left = pos.width + 'px';
 		}
 		
 		if ( 'bottom-left' === pos.self ) {

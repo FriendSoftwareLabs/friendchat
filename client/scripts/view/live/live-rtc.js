@@ -124,13 +124,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.ui.updateQualityLevel( self.quality.level );
 		
 		// ui
-		self.chat = self.ui.addChat( self.userId, self.identities, self.conn );
-		
-		if ( !self.isPrivate )
-			self.share = self.ui.addShareLink( self.conn );
-		if ( self.share && self.isTempRoom )
-			self.share.show();
-		
+		self.ui.addChat( self.userId, self.identities, self.conn );
 		self.statusMsg = self.ui.initStatusMessage();
 		
 		if ( self.isRecording )
@@ -208,7 +202,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( !self.selfie )
 				return;
 			
-			self.selfie.showSourceSelect();
+			self.showSourceSelect();
 		}
 		
 		function closeInit() {
@@ -225,6 +219,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.goLive( true );
 		}
+	}
+	
+	ns.RTC.prototype.showSourceSelect = function() {
+		const self = this;
+		self.selfie.showSourceSelect();
 	}
 	
 	ns.RTC.prototype.showTestStatus = function() {
@@ -379,8 +378,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.bindUI = function() {
 		const self = this;
 		self.ui.on( 'close', e => self.close());
-		self.ui.on( 'settings', e => self.selfie.showSourceSelect());
-		self.ui.on( 'share-screen', e => self.selfie.toggleShareScreen());
+		self.ui.on( 'device-select', e => self.showSourceSelect());
+		self.ui.on( 'use-devices'  , e => self.selfie.useDevices( e ));
+		self.ui.on( 'share-screen' , e => self.selfie.toggleShareScreen());
 	}
 	
 	ns.RTC.prototype.bindMenu = function() {
@@ -1227,6 +1227,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.selfie.on( 'quality'         , setQuality );
 		self.selfie.on( 'restart'         , restart );
 		self.selfie.on( 'save'            , e => self.saveLocalSetting( e.setting, e.value ));
+		self.selfie.on( 'device-select'   , e => self.ui.showDeviceSelect( e ));
 		
 		function onLeave() { self.leave(); }
 		function error( e ) { self.handleSelfieError( e ); }
@@ -1318,7 +1319,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			if ( 'source-select' === event )
-				self.selfie.showSourceSelect();
+				self.showSourceSelect();
 			
 			if ( 'ignore' === event ) {
 				self.ignoreSystemMute = true;
@@ -1417,6 +1418,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	// Public
 	
+	ns.Selfie.prototype.useDevices = function( selected ) {
+		const self = this;
+		self.setMediaSources( selected );
+	}
+	
 	ns.Selfie.prototype.updateIdentity = function( identity ) {
 		const self = this;
 		self.emit( 'identity', identity );
@@ -1428,6 +1434,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.createSource( rtcConf );
 		
 	}
+	
 	
 	// receive defaults to same as send
 	ns.Selfie.prototype.toggleVideo = function( send, receive ) {
@@ -1483,16 +1490,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.media )
 			self.media.close();
 		
-		if ( self.sourceSelect )
-			self.sourceSelect.close();
-		
 		delete self.currentAudioOut;
 		delete self.localSettings;
 		delete self.speaking;
 		delete self.volume;
 		delete self.stream;
 		delete self.shareMedia;
-		delete self.sourceSelect;
 		delete self.media;
 		delete self.view;
 		delete self.extConn;
@@ -1564,15 +1567,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function shareCheckErr( err ) {
 			console.log( 'shareScreenErr', err );
 			self.screenShareAvailable = false;
-		}
-		
-		const sourceConf = {
-			view     : self.view,
-			onselect : sourcesSelected,
-		};
-		self.sourceSelect = new library.rtc.SourceSelect( sourceConf );
-		function sourcesSelected( selected ) {
-			self.setMediaSources( selected );
 		}
 		
 		self.bindMenu();
@@ -1833,9 +1827,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.showSourceSelect = function() {
 		const self = this;
+		console.log( 'showSourceSelect' );
 		const devices = self.media.getCurrentDevices() || null;
 		devices.audiooutput = self.currentAudioOut;
-		self.sourceSelect.show( devices );
+		self.emit( 'device-select', devices );
 	}
 	
 	ns.Selfie.prototype.openScreenExtInstall = function() {
@@ -1909,6 +1904,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
 		const self = this;
+		console.log( 'setMediaSources', devices );
 		if ( !devices )
 			return;
 		

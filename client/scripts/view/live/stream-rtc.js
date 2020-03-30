@@ -120,11 +120,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.ui.setQuality( self.quality.level );
 		
 		// ui
-		self.chat = self.ui.addChat(
+		self.ui.addChat(
 			self.userId,
 			self.identities,
 			self.conn
 		);
+		
 		self.share = self.ui.addShareLink( self.conn );
 		if ( self.share && self.isTempRoom )
 			self.share.show();
@@ -281,8 +282,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.bindUI = function() {
 		const self = this;
 		self.ui.on( 'close', e => self.close());
-		self.ui.on( 'settings', e => self.showSourceSelect());
-		self.ui.on( 'share-screen', e => self.stream.toggleShareScreen());
+		self.ui.on( 'device-select', e => self.showSourceSelect());
+		self.ui.on( 'use-devices'  , e => self.stream.useDevices( e ));
+		self.ui.on( 'share-screen' , e => self.stream.toggleShareScreen());
 	}
 	
 	ns.RTC.prototype.handleMute = function( e ) {
@@ -689,6 +691,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		);
 		
 		self.ui.addSource( self.stream );
+		
+		self.stream.on( 'device-select', e => self.ui.showDeviceSelect( e ));
 	}
 	
 	ns.RTC.prototype.createSink = function() {

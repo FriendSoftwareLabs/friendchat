@@ -542,9 +542,6 @@ i.svg.camera-off {
 	color : #E74C3C;;
 }
 
-#live-content {
-}
-
 #live-ui {
 	opacity    : 0;
 	position   : absolute;
@@ -570,21 +567,6 @@ i.svg.camera-off {
 	transition : opacity 0.1s;
 }
 
-#ui-bottom-bar {
-	padding : 0.3em 0.5em;
-	background : linear-gradient( rgba( 30, 30, 30, 0.3 ), rgba( 30, 30, 30, 0.9 ));
-}
-
-#ui-left,
-#ui-middle,
-#ui-right {
-	flex : 1;
-}
-
-#ui-menu-anchor {
-	
-}
-
 body#hello #hangup-btn {
 	margin        : 0 0.7em;
 	border-radius : 100%;
@@ -599,15 +581,6 @@ body#hello #hangup-btn > i {
 
 body#hello #hangup-btn i {
 	font-size : 180%;
-}
-
-#live-ui-click-catch {
-}
-
-#live-ui-panes {
-	position      : relative;
-	z-index       : 444;
-	margin-bottom : 2px;
 }
 
 .video-border {
