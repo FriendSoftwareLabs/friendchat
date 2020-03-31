@@ -152,7 +152,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			else {
 				console.log( 'user setup' );
-				self.updateMenuSendReceive();
+				//self.updateMenuSendReceive();
 				self.allChecksRun = true;
 				closeInit();
 				done();
