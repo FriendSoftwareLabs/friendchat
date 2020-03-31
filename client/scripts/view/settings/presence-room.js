@@ -203,8 +203,8 @@ library.view = library.view || {};
 		
 		function sort() {
 			state.list.sort(( a, b ) => {
-				aN = state.ids[ a ].name.toLowerCase();
-				bN = state.ids[ b ].name.toLowerCase();
+				const aN = state.ids[ a ].name.toLowerCase();
+				const bN = state.ids[ b ].name.toLowerCase();
 				console.log( 'n', {
 					aN : aN,
 					bN : bN,
