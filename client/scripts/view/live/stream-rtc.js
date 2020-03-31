@@ -82,7 +82,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	// Public
 	
-	ns.RTC.prototype.close = function() {
+	ns.RTCStream.prototype.close = function() {
 		const self = this;
 		delete self.conf;
 		delete self.conn;
@@ -97,7 +97,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	// Private
-	ns.RTC.prototype.init = function() {
+	ns.RTCStream.prototype.init = function() {
 		const self = this;
 		if ( 'DESKTOP' != window.View.deviceType )
 			self.isMobile = true;
@@ -114,7 +114,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.convertLegacyDevices();
 		self.setupUsers();
 		self.bindUI();
-		self.bindMenu();
+		//self.bindMenu();
 		
 		if ( self.quality )
 			self.ui.setQuality( self.quality.level );
@@ -125,10 +125,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.identities,
 			self.conn
 		);
-		
-		self.share = self.ui.addShareLink( self.conn );
-		if ( self.share && self.isTempRoom )
-			self.share.show();
 		
 		self.statusMsg = self.ui.initStatusMessage();
 		
@@ -149,6 +145,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.ui.setBrowser( self.browser );
 			if ( self.isStreamer ) {
 				console.log( 'SOurce setup' );
+				self.ui.addSettings();
 				self.initChecks.checkDeviceAccess( self.permissions.send )
 					.then( deviceBack )
 					.catch( devFail );
@@ -238,7 +235,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.convertLegacyDevices = function() {
+	ns.RTCStream.prototype.convertLegacyDevices = function() {
 		const self = this;
 		const pref = self.localSettings.preferedDevices;
 		if ( !pref )
@@ -255,7 +252,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		});
 	}
 	
-	ns.RTC.prototype.bindMenu = function() {
+	ns.RTCStream.prototype.bindMenu = function() {
 		const self = this;
 		self.menu = self.ui.buildMenu();
 		self.menu.on( 'mute'            , mute );
@@ -279,7 +276,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function screenMode( e ) { self.handleScreenMode(); }
 	}
 	
-	ns.RTC.prototype.bindUI = function() {
+	ns.RTC.prototype.showSourceSelect = function() {
+		const self = this;
+		console.log( 'showSourceSelect' );
+		self.stream.showSourceSelect();
+	}
+	
+	ns.RTCStream.prototype.bindUI = function() {
 		const self = this;
 		self.ui.on( 'close', e => self.close());
 		self.ui.on( 'device-select', e => self.showSourceSelect());
@@ -287,17 +290,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.ui.on( 'share-screen' , e => self.stream.toggleShareScreen());
 	}
 	
-	ns.RTC.prototype.handleMute = function( e ) {
+	ns.RTCStream.prototype.handleMute = function( e ) {
 		const self = this;
 		self.stream.toggleMute();
 	}
 	
-	ns.RTC.prototype.handleBlind = function( e ) {
+	ns.RTCStream.prototype.handleBlind = function( e ) {
 		const self = this;
 		self.stream.toggleBlind();
 	}
 	
-	ns.RTC.prototype.restartStream = function( e ) {
+	ns.RTCStream.prototype.restartStream = function( e ) {
 		const self = this;
 		if ( !self.stream )
 			return;
@@ -305,7 +308,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.stream.restart();
 	}
 	
-	ns.RTC.prototype.changeUsername = function() {
+	ns.RTCStream.prototype.changeUsername = function() {
 		const self = this;
 		const id = self.identities[ self.userId ];
 		let current = '';
@@ -339,12 +342,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.showSourceSelect = function() {
-		const self = this;
-		self.stream.showSourceSelect();
-	}
-	
-	ns.RTC.prototype.updateSourceMenu = function() {
+	ns.RTCStream.prototype.updateSourceMenu = function() {
 		const self = this;
 		if ( self.isSource() ) {
 			self.menu.enable( 'source-select' );
@@ -358,12 +356,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.handleScreenMode = function() {
+	ns.RTCStream.prototype.handleScreenMode = function() {
 		const self = this;
 		self.stream.toggleScreenMode();
 	}
 	
-	ns.RTC.prototype.updateMenuSendReceive = function( devices ) {
+	ns.RTCStream.prototype.updateMenuSendReceive = function( devices ) {
 		const self = this;
 		let perms = self.permissions;
 		updateSendToggles( perms.send );
@@ -410,7 +408,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	// sourceId is optional
-	ns.RTC.prototype.isSource = function( sourceId ) {
+	ns.RTCStream.prototype.isSource = function( sourceId ) {
 		const self = this;
 		const sid = self.sourceId || sourceId;
 		console.log( 'isSource', {
@@ -421,12 +419,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		return isSource;
 	}
 	
-	ns.RTC.prototype.setupAdmin = function() {
+	ns.RTCStream.prototype.setupAdmin = function() {
 		const self = this;
 		console.log( 'setupAdmin' );
 	}
 	
-	ns.RTC.prototype.goLive = function( testsPassed ) {
+	ns.RTCStream.prototype.goLive = function( testsPassed ) {
 		const self = this;
 		console.log( 'RTC.goLive', testsPassed );
 		if ( !testsPassed )
@@ -440,7 +438,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			onready( null );
 	}
 	
-	ns.RTC.prototype.bindConn = function() {
+	ns.RTCStream.prototype.bindConn = function() {
 		const self = this;
 		self.conn.on( 'ping'       , ping       );
 		self.conn.on( 'identity'   , identity   );
@@ -463,7 +461,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function close(      e ) { self.handleClosed(     e ); }
 	}
 	
-	ns.RTC.prototype.handlePing = function( timestamp ) {
+	ns.RTCStream.prototype.handlePing = function( timestamp ) {
 		const self = this;
 		const pong = {
 			type : 'pong',
@@ -472,13 +470,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.conn.send( pong );
 	}
 	
-	ns.RTC.prototype.handleIdentity = function( conf ) {
+	ns.RTCStream.prototype.handleIdentity = function( conf ) {
 		const self = this;
 		self.identities[ conf.userId ] = conf.identity;
 		self.updatePeerIdentity( conf.userId, conf.identity );
 	}
 	
-	ns.RTC.prototype.handleIdentities = function( identities ) {
+	ns.RTCStream.prototype.handleIdentities = function( identities ) {
 		const self = this;
 		for ( let idKey in identities ) {
 			const id = identities[ idKey ];
@@ -487,7 +485,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.updatePeerIdentity = function( peerId, id ) {
+	ns.RTCStream.prototype.updatePeerIdentity = function( peerId, id ) {
 		const self = this;
 		const user = self.peers[ peerId ];
 		if ( !user ) {
@@ -502,13 +500,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		user.updateIdentity( id );
 	}
 	
-	ns.RTC.prototype.handleSettings = function( update ) {
+	ns.RTCStream.prototype.handleSettings = function( update ) {
 		const self = this;
 		if ( 'isStream' === update.setting )
 			self.handleLiveSwitch( update.value );
 	}
 	
-	ns.RTC.prototype.handleLiveSwitch = function( isStream ) {
+	ns.RTCStream.prototype.handleLiveSwitch = function( isStream ) {
 		const self = this;
 		if ( isStream ) {
 			if ( self.switchPane )
@@ -537,7 +535,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.handleSource = function( sourceId ) {
+	ns.RTCStream.prototype.handleSource = function( sourceId ) {
 		const self = this;
 		const isSource = self.isSource( sourceId );
 		if ( !!sourceId )
@@ -562,7 +560,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.handleQuality = function( quality ) {
+	ns.RTCStream.prototype.handleQuality = function( quality ) {
 		const self = this;
 		if ( !self.stream )
 			return;
@@ -572,24 +570,24 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 	}
 	
-	ns.RTC.prototype.handleUserJoin = function( user ) {
+	ns.RTCStream.prototype.handleUserJoin = function( user ) {
 		const self = this;
 		user.isHost = false;
 		self.addUser( user );
 	}
 	
-	ns.RTC.prototype.handleUserLeft = function( user ) {
+	ns.RTCStream.prototype.handleUserLeft = function( user ) {
 		const self = this;
 		const userId = user.peerId;
 		self.closeUser( userId );
 	}
 	
-	ns.RTC.prototype.handleClosed = function() {
+	ns.RTCStream.prototype.handleClosed = function() {
 		const self = this;
 		self.close();
 	}
 	
-	ns.RTC.prototype.setupUsers = function() {
+	ns.RTCStream.prototype.setupUsers = function() {
 		const self = this;
 		console.log( 'setupUsers', self.peerList );
 		if ( !self.peerList )
@@ -601,13 +599,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.peerList = [];
 	}
 	
-	ns.RTC.prototype.addUser = function( user ) {
+	ns.RTCStream.prototype.addUser = function( user ) {
 		const self = this;
 		console.log( 'addUser', user );
 		self.createUser( user.peerId );
 	}
 	
-	ns.RTC.prototype.createUser = function( userId ) {
+	ns.RTCStream.prototype.createUser = function( userId ) {
 		const self = this;
 		if ( self.peers[ userId ])
 			self.closeUser( userId );
@@ -627,12 +625,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.ui.addUser( user );
 	}
 	
-	ns.RTC.prototype.updateUserIdentity = function( userId ) {
+	ns.RTCStream.prototype.updateUserIdentity = function( userId ) {
 		const self = this;
 		console.log( 'updateUserIdentity', userId );
 	}
 	
-	ns.RTC.prototype.getIdentity = function( userId ) {
+	ns.RTCStream.prototype.getIdentity = function( userId ) {
 		const self = this;
 		const identity = self.identities[ userId ];
 		if ( !identity )
@@ -647,7 +645,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		return identity;
 	}
 	
-	ns.RTC.prototype.closeUser = function( userId ) {
+	ns.RTCStream.prototype.closeUser = function( userId ) {
 		const self = this;
 		const user = self.peers[ userId ];
 		if ( !user ) {
@@ -662,7 +660,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		user.close();
 	}
 	
-	ns.RTC.prototype.createSource = function( callback ) {
+	ns.RTCStream.prototype.createSource = function( callback ) {
 		const self = this;
 		if ( self.stream )
 			self.stream.close();
@@ -695,7 +693,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.stream.on( 'device-select', e => self.ui.showDeviceSelect( e ));
 	}
 	
-	ns.RTC.prototype.createSink = function() {
+	ns.RTCStream.prototype.createSink = function() {
 		const self = this;
 		if ( self.stream )
 			self.stream.close();
@@ -847,17 +845,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		//
-		const sourceConf = {
-			view     : self.view,
-			onselect : sourcesSelected,
-		};
-		self.sourceSelect = new library.rtc.SourceSelect( sourceConf );
-		function sourcesSelected( selected ) {
-			self.setMediaSources( selected );
-		}
-		
-		//
-		self.bindMenu();
+		//self.bindMenu();
 		self.sources = new library.rtc.MediaDevices();
 		self.media = new library.rtc.Media(
 			self.permissions,

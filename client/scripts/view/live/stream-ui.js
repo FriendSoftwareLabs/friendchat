@@ -28,21 +28,11 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.UIStream = function( conn, liveConf, localSettings ) {
 		const self = this;
-		library.view.UI.call( self, conn, liveConf, localSettings );
 		
 		console.log( 'UIStream - liveConf', liveConf );
-		self.conn = conn;
-		self.userId = liveConf.userId;
 		self.sourceId = liveConf.rtcConf.sourceId;
-		self.isTempRoom = liveConf.isTempRoom;
-		self.localSettings = localSettings;
-		self.guestAvatar = liveConf.guestAvatar;
 		self.roomName = liveConf.roomName;
 		self.logTail = liveConf.logTail;
-		
-		self.uiPanes = {};
-		self.uiVisible = true;
-		self.panesVisible = 0;
 		
 		self.currentQuality = null;
 		self.users = {};
@@ -52,7 +42,7 @@ library.component = library.component || {};
 		self.doOneMoreResize = false;
 		self.showUserStuff = false;
 		
-		self.init();
+		library.view.UI.call( self, conn, liveConf, localSettings );
 	}
 	
 	ns.UIStream.prototype = Object.create( library.view.UI.prototype );
@@ -234,12 +224,6 @@ library.component = library.component || {};
 		}
 		
 		self.bindUI();
-		
-		self.addSettings();
-		self.share = self.ui.addShareLink( self.conn );
-		if ( self.share && self.isTempRoom )
-			self.share.show();
-		
 		self.uiVisible = true;
 		self.toggleUI();
 	}
@@ -313,9 +297,7 @@ library.component = library.component || {};
 		container.appendChild( el );
 		
 		self.bindBarCommon();
-		
 		self.uiShareScreenBtn = document.getElementById( 'share-screen-btn' );
-		
 		self.uiShareScreenBtn.addEventListener( 'click', shareScreenClick, false );
 		self.applyLocalSettings();
 		
@@ -355,6 +337,10 @@ library.component = library.component || {};
 		//self.uiMenuBtn.addEventListener( 'click', menuClick, false );
 		self.uiLeaveBtn.addEventListener( 'click', leaveClick, false );
 		//self.shareLinkBtn.addEventListener( 'click', shareClick, false );
+		
+		self.shareUI = self.addShareLink( self.conn );
+		if ( self.isTempRoom )
+			self.shareUI.show();
 		
 		//function menuClick( e ) { self.showMenu(); }
 		function leaveClick( e ) { self.leave(); }
@@ -406,6 +392,11 @@ library.component = library.component || {};
 		
 		//self.uiUserStuffBtn.classList.toggle( 'danger', !self.showUserStuff );
 		self.userStuffEl.classList.toggle( 'hidden', !self.showUserStuff );
+		if ( self.shareUI )
+			self.shareUI.updatePosition();
+		if ( self.settingsUI )
+			self.settingsUI.updatePosition();
+		
 		self.reflow();
 	}
 	

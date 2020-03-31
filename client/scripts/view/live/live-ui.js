@@ -54,7 +54,7 @@ library.component = library.component || {};
 		self.peerAddQueue = [];
 		
 		self.currentSpeaker = null;
-		self.uiVisible = false;
+		self.uiVisible = true;
 		self.ui = null;
 		self.uiPanes = {};
 		self.panesVisible = 0;
@@ -199,13 +199,13 @@ library.component = library.component || {};
 		
 		self.bindEvents();
 		
+		self.addSettings();
 		let share = null;
 		if ( !self.isPrivate )
 			share = self.addShareLink( self.conn );
 		if ( share && self.isTempRoom )
 			share.show();
 		
-		self.addSettings();
 		
 		self.uiVisible = true;
 		self.toggleUI();
@@ -1395,16 +1395,15 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.UI.prototype.addSettings = function( conf ) {
+	ns.UI.prototype.addSettings = function() {
 		const self = this;
-		console.log( 'addSettings', conf );
+		console.log( 'addSettings' );
 		if ( !self.settingsBtn ) {
 			console.log( 'UI.addSettings - settingsBtn missing, abort' );
 			return;
 		}
 		
 		self.settingsBtn.addEventListener( 'click', settingsClick, false );
-		//self.settingsUI = self.addUIPane( 'source-select', conf );
 		self.settingsUI = new library.view.DeviceSelect( self.settingsBtn, onSelect );
 		self.settingsUI.on( 'visible', onVisible );
 		return self.settingsUI;

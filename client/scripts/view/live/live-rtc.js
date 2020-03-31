@@ -223,6 +223,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.showSourceSelect = function() {
 		const self = this;
+		console.log( 'showSourceSelect' );
 		self.selfie.showSourceSelect();
 	}
 	
@@ -1420,6 +1421,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.useDevices = function( selected ) {
 		const self = this;
+		console.log( 'userDevices', selected );
 		self.setMediaSources( selected );
 	}
 	
