@@ -1072,7 +1072,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		//self.bindMenu();
-		//self.setupSession();
+		self.setupSession();
 	}
 	
 	ns.Sink.prototype.bindMenu = function() {
@@ -1211,6 +1211,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Sink.prototype.handleSourceState = function( isStreaming ) {
 		const self = this;
+		console.log( 'handleSourceState', isStreaming );
 		if ( self.isStreaming === isStreaming )
 			return;
 		
