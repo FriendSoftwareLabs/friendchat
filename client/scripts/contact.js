@@ -712,7 +712,7 @@ library.contact = library.contact || {};
 				type : type,
 				data : data,
 			};
-			console.log( 'xliveToServer')
+			console.log( 'xliveToServer', event );
 			self.liveToServer( event );
 		}
 	}
