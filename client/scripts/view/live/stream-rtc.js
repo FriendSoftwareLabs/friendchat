@@ -155,9 +155,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				//self.updateMenuSendReceive();
 				self.allChecksRun = true;
 				closeInit();
-				done();
 				if ( self.sourceId )
 					self.createSink();
+				
+				done();
 			}
 		}
 		
