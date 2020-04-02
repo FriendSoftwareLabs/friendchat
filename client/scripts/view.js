@@ -592,10 +592,7 @@ library.view = library.view || {};
 // LIVE
 (function( ns, undefined ) {
 	ns.Live = function( liveConf, viewConf, onEvent, onClose ) {
-		if ( !( this instanceof ns.Live ))
-			return new ns.Live( liveConf, onEvent, onClose );
-		
-		var self = this;
+		const self = this;
 		self.liveConf = liveConf;
 		self.onevent = onEvent,
 		self.onclose = onClose;
