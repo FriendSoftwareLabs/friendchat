@@ -372,7 +372,6 @@ library.component = library.component || {};
 		const self = this;
 		self.uiVisible = !self.uiVisible;
 		self.saveLocalSetting( 'ui-visible', self.uiVisible );
-		self.menu.setState( 'clean-ui', !self.uiVisible );
 		self.toggleUI();
 	}
 	
