@@ -597,6 +597,7 @@ library.view = library.view || {};
 		self.onevent = onEvent,
 		self.onclose = onClose;
 		
+		self.initQueue = [];
 		self.init( viewConf );
 	}
 	
@@ -642,8 +643,8 @@ library.view = library.view || {};
 	// Private
 	
 	ns.Live.prototype.init = function( conf ) {
-		var self = this;
-		var dropConf = {
+		const self = this;
+		const dropConf = {
 			toView : toView,
 			toChat : toChat,
 		};
@@ -651,6 +652,7 @@ library.view = library.view || {};
 		function toView( e ) {
 			self.send( e );
 		}
+		
 		function toChat( link ) {
 			const chat = {
 				type : 'msg',
@@ -773,11 +775,24 @@ library.view = library.view || {};
 		self.view.on( 'local-setting', localSetting );
 		self.view.on( 'drag-n-drop', heyYouDroppedThis );
 		self.view.on( 'close'      , ohOkayThen );
+		self.view.on( 'loaded', e => console.log( 'live loaded', e ));
+		self.view.on( 'ready', e => self.liveReady());
 		
 		function storePrefered( e ) { self.storePrefered( e ); }
 		function localSetting( e ) { self.storeLocalSetting( e ); }
 		function heyYouDroppedThis( e ) { self.drop.handle( e ); }
 		function ohOkayThen( e ) { self.closed(); }
+	}
+	
+	ns.Live.prototype.liveReady = function() {
+		const self = this;
+		console.log( 'liveReady', self.initQueue );
+		if ( !self.initQueue )
+			return;
+		
+		self.initQueue.forEach( e => self.send( e ));
+		self.initQueue = [];
+		delete self.initQueue;
 	}
 	
 	ns.Live.prototype.storeLocalSetting = function( data ) {
@@ -825,8 +840,10 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.send = function( msg ) {
 		var self = this;
-		if ( !self.view )
+		if ( !self.view ) {
+			self.initQueue.push( msg );
 			return;
+		}
 		
 		self.view.send( msg );
 	}
