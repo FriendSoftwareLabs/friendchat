@@ -1917,8 +1917,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( null != devices.videoinput )
 			send.video = !!devices.videoinput;
 		
-		self.menu.setState( 'send-audio', send.audio );
-		self.menu.setState( 'send-video', send.video );
+		if ( self.menu ) {
+			self.menu.setState( 'send-audio', send.audio );
+			self.menu.setState( 'send-video', send.video );
+		}
 		
 		self.setupStream( streamBack, null, devices );
 		function streamBack( err, res ) {
