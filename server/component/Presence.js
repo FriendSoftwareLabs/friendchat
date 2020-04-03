@@ -717,13 +717,14 @@ ns.ServerConn.prototype.emitState = function( state ) {
 
 ns.ServerConn.prototype.handleOpen = function() {
 	const self = this;
+	connLog( 'handleOpen' );
 	self.connected = true;
 	self.isConnecting = false;
 	self.connectAttempt = 0;
 	if ( self.onopen )
 		self.onopen( true );
 	
-	var status = {
+	const status = {
 		type : 'open',
 		data : Date.now(),
 	}
@@ -732,16 +733,21 @@ ns.ServerConn.prototype.handleOpen = function() {
 
 ns.ServerConn.prototype.handleClose = function() {
 	const self = this;
-	self.connected = false;
-	var status = {
+	connLog( 'handleClose' );
+	const status = {
 		type : 'offline',
 		data : Date.now(),
 	}
 	self.emitState( status );
+	if ( self.connected )
+		self.handleDisconnect();
+	
+	self.connected = false;
 }
 
 ns.ServerConn.prototype.handleError = function( err ) {
 	const self = this;
+	connLog( 'handleError', err );
 	self.handleDisconnect( err );
 }
 
