@@ -994,7 +994,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.proxy = null;
 		self.session = null;
 		self.remoteMedia = null;
-		self.isStreaming = false;
+		self.isStreaming = true;
 		self.screenMode = 'contain';
 		
 		self.isMute = false;
@@ -1072,7 +1072,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		//self.bindMenu();
-		//self.setupSession();
+		self.setupSession();
 	}
 	
 	ns.Sink.prototype.bindMenu = function() {
