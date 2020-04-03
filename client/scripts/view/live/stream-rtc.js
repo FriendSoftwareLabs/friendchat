@@ -1072,7 +1072,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		//self.bindMenu();
-		self.setupSession();
+		//self.setupSession();
 	}
 	
 	ns.Sink.prototype.bindMenu = function() {
