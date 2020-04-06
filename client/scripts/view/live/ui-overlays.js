@@ -41,7 +41,7 @@ library.component = library.component || {};
 				outside : {
 					parent  : 'top-right',
 					self    : 'bottom-right',
-					offsetX : 10,
+					offsetX : -5,
 					offsetY : -10,
 				},
 			},
@@ -96,7 +96,7 @@ library.component = library.component || {};
 				outside : {
 					parent  : 'top-right',
 					self    : 'bottom-right',
-					offsetX : 0,
+					offsetX : -5,
 					offsetY : -10,
 					height  : 5,
 					width   : null,
