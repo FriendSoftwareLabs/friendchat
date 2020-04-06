@@ -103,6 +103,7 @@ library.component = library.component || {};
 		};
 		console.log( 'UIStream.addChat - chatConf', chatConf );
 		self.chat = new library.component.LiveChat( chatConf, hello.template, self.chatTease );
+		self.updateShowUserStuff();
 		return self.chat;
 	}
 	
@@ -378,7 +379,6 @@ library.component = library.component || {};
 	ns.UIStream.prototype.handleUserStuffClick = function( e ) {
 		const self = this;
 		self.showUserStuff = !self.showUserStuff;
-		self.chatTease.setActive( self.showUserStuff );
 		self.saveLocalSetting( 'ui-user-stuff', self.showUserStuff );
 		self.updateShowUserStuff();
 	}
@@ -386,10 +386,12 @@ library.component = library.component || {};
 	ns.UIStream.prototype.updateShowUserStuff = function() {
 		const self = this;
 		console.log( 'updateShowUserStuff', self.userStuffEl );
+		if ( self.chatTease )
+			self.chatTease.setActive( self.showUserStuff );
+		
 		if ( self.menu )
 			self.menu.setState( 'chat', self.showUserStuff );
 		
-		//self.uiUserStuffBtn.classList.toggle( 'danger', !self.showUserStuff );
 		self.userStuffEl.classList.toggle( 'hidden', !self.showUserStuff );
 		if ( self.shareUI )
 			self.shareUI.updatePosition();
@@ -747,14 +749,13 @@ library.component = library.component || {};
 	
 	ns.MediaUI.prototype.setupMedia = function() {
 		const self = this;
-		self.source.on( 'media', e => self.handleMedia( e ));
-		self.source.on( 'track', ( ty, tr ) => self.handleTrack( ty, tr ));
-		self.source.on( 'mute', e => self.handleMute( e ));
-		self.source.on( 'blind', e => self.handleBlind( e ));
+		self.source.on( 'media'     , e => self.handleMedia( e ));
+		self.source.on( 'track'     , ( ty, tr ) => self.handleTrack( ty, tr ));
+		self.source.on( 'mute'      , e => self.handleMute( e ));
+		self.source.on( 'blind'     , e => self.handleBlind( e ));
 		self.source.on( 'screenmode', e => self.doResize( e ));
-		
-		self.avatar = document.getElementById( 'source-avatar' );
-		self.ui = document.getElementById( 'source-ui' );
+		self.source.on( 'audio'     , e => self.handleHasAudio( e ));
+		self.source.on( 'video'     , e => self.handleHasVideo( e ));
 		
 		//self.muteBtn.addEventListener( 'click', muteClick, false );
 		//self.blindBtn.addEventListener( 'click', blindClick, false );
@@ -858,19 +859,6 @@ library.component = library.component || {};
 	ns.MediaUI.prototype.toggleBlind = function() {
 		const self = this;
 		self.source.toggleBlind();
-	}
-	
-	ns.MediaUI.prototype.toggleAvatar = function( show ) {
-		const self = this;
-		console.log( 'toggleAvatar', {
-			ava  : self.avatar,
-			show : show,
-		});
-		
-		if ( !self.avatar )
-			return;
-		
-		self.avatar.classList.toggle( 'hidden', !show );
 	}
 	
 	ns.MediaUI.prototype.handleMedia = function( media ) {
@@ -986,6 +974,7 @@ library.component = library.component || {};
 		
 		self.stream.parentNode.removeChild( self.stream );
 		self.stream = null;
+		self.toggleVideo( false );
 		
 		function clear( src ) {
 			if ( !src.getTracks )
@@ -1110,6 +1099,13 @@ library.component = library.component || {};
 		el.classList.toggle( to, true );
 	}
 	
+	ns.MediaUI.prototype.toggleVideo = function( hasVideo ) {
+		const self = this;
+		self.avatar.classList.toggle( 'hidden', hasVideo );
+		if ( self.stream )
+			self.stream.classList.toggle( 'hidden', !hasVideo )
+	}
+	
 })( library.view );
 
 
@@ -1162,6 +1158,9 @@ library.component = library.component || {};
 		self.el = hello.template.getElement( 'live-stream-source-tmpl', sourceConf )
 		container.appendChild( self.el );
 		
+		self.avatar = document.getElementById( 'source-avatar' );
+		self.ui = document.getElementById( 'source-ui' );
+		
 		self.source.on( 'selfie', media );
 		function media( e ) { self.handleSelfie( e ); }
 		
@@ -1191,6 +1190,16 @@ library.component = library.component || {};
 		self.blindBtn.classList.toggle( 'danger', isBlind );
 	}
 	
+	ns.SourceUI.prototype.handleHasAudio = function( hasAudio ) {
+		const self = this;
+		console.log( 'SourceUI.handleHasAudio', hasAudio );
+	}
+	
+	ns.SourceUI.prototype.handleHasVideo = function( hasVideo ) {
+		const self = this;
+		console.log( 'SourceUI.handleHasVideo', hasVideo );
+		self.toggleVideo( hasVideo );
+	}
 
 })( library.view );
 
@@ -1272,10 +1281,22 @@ library.component = library.component || {};
 		console.log( 'SinkUI.handleBLind', isBlind );
 		self.isBlind = isBlind;
 		self.blindBtn.classList.toggle( 'danger', isBlind );
+		self.toggleVideo( !isBlind );
 		if ( isBlind )
 			self.switchIcon( self.blindBtn.children[ 0 ], 'fa-eye', 'fa-eye-slash' );
 		else
 			self.switchIcon( self.blindBtn.children[ 0 ], 'fa-eye-slash', 'fa-eye' );
+	}
+	
+	ns.SinkUI.prototype.handleHasAudio = function( hasAudio ) {
+		const self = this;
+		console.log( 'SinkUI.handleHasAudio', hasAudio );
+	}
+	
+	ns.SinkUI.prototype.handleHasVideo = function( hasVideo ) {
+		const self = this;
+		console.log( 'SinkUI.handleHasVideo', hasVideo );
+		self.toggleVideo( hasVideo );
 	}
 	
 })( library.view );

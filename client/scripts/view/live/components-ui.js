@@ -696,7 +696,7 @@ library.component = library.component || {};
 		function inputKeyUp( e ) { self.handleInputKey( e ); }
 		
 		if ( conf.logTail && conf.logTail.length )
-			conf.logTail.forEach( msg => self.addMessage( msg.data ));
+			conf.logTail.forEach( msg => self.addMessage( msg.data, true ));
 	}
 	
 	
@@ -752,7 +752,7 @@ library.component = library.component || {};
 		api.Say( message );
 	}
 	
-	ns.LiveChat.prototype.addMessage = function( data ) {
+	ns.LiveChat.prototype.addMessage = function( data, isLog ) {
 		const self = this;
 		let parsedMessage = hello.parser.work( data.message );
 		const identity = self.identities[ data.fromId ];
@@ -776,8 +776,13 @@ library.component = library.component || {};
 		self.messages.appendChild( element );
 		self.linkExpand.work( element );
 		scrollBottom();
-		if ( self.tease && !self.isVisible && notFromSelf( data.fromId ))
+		if ( self.tease
+			&& !isLog
+			&& !self.isVisible
+			&& notFromSelf( data.fromId )
+		) {
 			self.tease.showMessage( conf.message, conf.from );
+		}
 		
 		function scrollBottom() {
 			self.messages.scrollTop = self.messages.scrollHeight;

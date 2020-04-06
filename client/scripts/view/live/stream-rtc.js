@@ -999,6 +999,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.isMute = false;
 		self.isBlind = false;
+		self.receiving = {
+			audio : false,
+			video : false,
+		};
 		
 		self.init();
 	}
@@ -1163,15 +1167,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function addVideo( track ) {
 			self.emit( 'track', 'video', track );
 			self.toggleBlind( self.isBlind );
-			//self.receiving.video = true;
-			//self.emit( 'video', self.receiving.video );
+			self.receiving.video = true;
+			self.emit( 'video', self.receiving.video );
 		}
 		
 		function addAudio( track ) {
 			self.emit( 'track', 'audio', track );
 			self.toggleMute( self.isMute );
-			//self.receiving.audio = true;
-			//self.emit( 'audio', self.receiving.audio );
+			self.receiving.audio = true;
+			self.emit( 'audio', self.receiving.audio );
 		}
 	}
 	
