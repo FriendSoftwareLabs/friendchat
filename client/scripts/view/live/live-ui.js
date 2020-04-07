@@ -3188,6 +3188,18 @@ library.component = library.component || {};
 		self.stream.muted = true;
 	}
 	
+	ns.Selfie.prototype.updateVideoMirror = function() {
+		const self = this;
+		console.log( 'updateVideoMirror', {
+			screenShare : self.screenShare,
+			el          : self.stream,
+		});
+		
+		if ( !self.stream )
+			return;
+		
+		self.stream.classList.toggle( 'video-mirror', !self.screenShare );
+	}
 	
 	ns.Selfie.prototype.toggleAVGraph = function() {
 		const self = this;
@@ -3286,6 +3298,8 @@ library.component = library.component || {};
 		const self = this;
 		self.screenShare = isActive;
 		self.updateQualityLevel();
+		self.updateVideoMirror();
+		self.doResize();
 		if ( !self.screenshareBtn )
 			return;
 		

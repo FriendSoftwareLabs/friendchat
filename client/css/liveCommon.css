@@ -20,3 +20,8 @@
 	margin-bottom   : 1em;
 	justify-content : start;
 }
+
+#source .video.video-mirror,
+#selfie .video.video-mirror {
+	transform : translate( -50%, -50% ) rotateY(180deg);
+}
