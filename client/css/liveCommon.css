@@ -385,6 +385,11 @@ body #live {
 	padding-left : 0.5em;
 }
 
+#source .video.video-mirror,
+#selfie .video.video-mirror {
+	transform : translate( -50%, -50% ) rotateY(180deg);
+}
+
 #tease-chat-container {
 	margin : 0;
 }
