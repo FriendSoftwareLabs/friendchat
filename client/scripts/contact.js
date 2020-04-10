@@ -2062,6 +2062,7 @@ library.contact = library.contact || {};
 					roomId : self.clientId,
 					v      : 2,
 				};
+				console.log( 'invite data', data );
 				const bundle = {
 					type : 'live-invite',
 					data : data,

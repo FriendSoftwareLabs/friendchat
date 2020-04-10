@@ -132,6 +132,7 @@ library.component = library.component || {};
 	ns.GuestRoom = function( conf, accConn ) {
 		const self = this;
 		self.id = conf.roomId;
+		self.clientId = conf.roomId;
 		self.identity = conf.identity;
 		self.permissions = conf.permissions;
 		self.idc = conf.idCache;
