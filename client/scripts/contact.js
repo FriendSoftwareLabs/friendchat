@@ -712,6 +712,7 @@ library.contact = library.contact || {};
 				type : type,
 				data : data,
 			};
+			console.log( 'xliveToServer', event );
 			self.liveToServer( event );
 		}
 	}
@@ -1416,6 +1417,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.setSettings = function( settings ) {
 		const self = this;
+		console.log( 'PresenceRoom.setSettings', settings );
 		const keys = Object.keys( settings );
 		keys.forEach( k => {
 			const value = settings[ k ];
@@ -1442,7 +1444,7 @@ library.contact = library.contact || {};
 		}
 		else
 			showView( settings );
-			
+		
 		function authIdsBack( list ) {
 			const ids = {};
 			list.forEach( id => {
@@ -1492,6 +1494,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleSettingUpdate = function( event ) {
 		const self = this;
+		console.log( 'PresenceRoom.handleSettingUpdate', event );
 		if ( !self.settings )
 			return;
 		
@@ -1723,6 +1726,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
+		console.log( 'handleInvite', event );
 		if ( 'revoke' === event.type )
 			send( event );
 		else
@@ -1846,6 +1850,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLive = function( event ) {
 		const self = this;
+		console.log( 'xlive handleLive', event );
 		if ( 'open' === event.type ) {
 			if ( !self.live )
 				return;
@@ -2057,6 +2062,7 @@ library.contact = library.contact || {};
 					roomId : self.clientId,
 					v      : 2,
 				};
+				console.log( 'invite data', data );
 				const bundle = {
 					type : 'live-invite',
 					data : data,
@@ -2253,6 +2259,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.liveToServer = function( event ) {
 		const self = this;
+		console.log( 'liveToServer', event );
 		var wrap = {
 			type : 'live',
 			data : event,

@@ -1414,7 +1414,7 @@ library.view = library.view || {};
 		});
 		
 		function setGAvailable( gId ) {
-			group = groups[ gId ];
+			const group = groups[ gId ];
 			self.groupsAvailable[ gId ] = group;
 		}
 	}

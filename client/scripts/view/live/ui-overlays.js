@@ -41,7 +41,7 @@ library.component = library.component || {};
 				outside : {
 					parent  : 'top-right',
 					self    : 'bottom-right',
-					offsetX : 10,
+					offsetX : -5,
 					offsetY : -10,
 				},
 			},
@@ -81,6 +81,65 @@ library.component = library.component || {};
 		function close( e ) {
 			self.hide();
 		}
+	}
+	
+})( library.view );
+
+(function( ns, undefined ) {
+	ns.DeviceSelect = function( anchor, onSelect ) {
+		const self = this;
+		self.onSelect = onSelect;
+		const conf = {
+			css      : 'std-overlay grad-bg-down',
+			show     : false,
+			position : {
+				outside : {
+					parent  : 'top-right',
+					self    : 'bottom-right',
+					offsetX : -5,
+					offsetY : -10,
+					height  : 5,
+					width   : null,
+				},
+			},
+		};
+		library.component.Overlay.call( self, anchor, conf );
+	}
+	
+	ns.DeviceSelect.prototype = 
+		Object.create( library.component.Overlay.prototype );
+		
+	// Public
+		
+	ns.DeviceSelect.prototype.showDevices = function( devices ) {
+		const self = this;
+		console.log( 'showDevices', devices );
+		self.ui.showDevices( devices );
+	}
+	
+	ns.DeviceSelect.prototype.close = function() {
+		const self = this;
+		if ( self.ui )
+			self.ui.close();
+		
+		delete self.ui;
+		
+		self.closeOverlay();
+	}
+	
+	// called by Overlay
+	
+	ns.DeviceSelect.prototype.build = function() {
+		const self = this;
+		const tmplConf = {};
+		const el = hello.template.getElement( 'select-source-tmpl', tmplConf );
+		return el;
+	}
+	
+	ns.DeviceSelect.prototype.bind = function() {
+		const self = this;
+		self.ui = new library.view.SourceSelect( self.onSelect );
+		delete self.onSelect;
 	}
 	
 })( library.view );

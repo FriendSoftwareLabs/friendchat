@@ -30,7 +30,7 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.Init = function( viewConf ) {
 		const self = this;
-		
+		console.log( 'viewConf', viewConf );
 		self.conn = window.View;
 		self.rtc = null;
 		self.ui = null;
@@ -115,9 +115,9 @@ library.component = library.component || {};
 	
 	ns.Init.prototype.initialize = function( data ) {
 		const self = this;
-		hello.template.addFragments( data.fragments );
+		console.log( 'Live.initalize', data );
+		//hello.template.addFragments( data.fragments );
 		hello.template.addFragments( data.liveFragments );
-		
 		//
 		hello.parser = new library.component.parse.Parser();
 		hello.parser.use( 'LinkStd' );
@@ -127,18 +127,26 @@ library.component = library.component || {};
 		delete data.fragments;
 		delete data.emojii;
 		
-		// prepare ui state
-		let liveConf = data.liveConf;
-		let localSettings = liveConf.localSettings;
-		
-		// get browser
-		//new library.rtc.BrowserCheck( checkBack );
+		const liveConf = data.liveConf;
+		const localSettings = liveConf.localSettings;
 		
 		// init ui
-		self.ui = new library.view.UI( self.conn, liveConf, localSettings, self );
+		let UI = library.view.UI;
+		if ( liveConf.isStream )
+			UI = library.view.UIStream;
+		
+		self.ui = new UI(
+			self.conn,
+			liveConf,
+			localSettings
+		);
 		
 		// init Model
-		self.rtc = new library.rtc.RTC(
+		let RTC = library.rtc.RTC;
+		if ( liveConf.isStream )
+			RTC = library.rtc.RTCStream;
+		
+		self.rtc = new RTC(
 			self.conn,
 			self.ui,
 			liveConf,
@@ -147,6 +155,7 @@ library.component = library.component || {};
 		);
 		
 		function onready( err ) {
+			console.log( 'Live onready' );
 			window.View.ready();
 		}
 		

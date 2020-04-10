@@ -29,9 +29,13 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.UI = function( conn, liveConf, localSettings, live ) {
 		const self = this;
+		console.log( 'UI - liveConf', liveConf );
 		library.component.EventEmitter.call( self );
 		
 		self.conn = conn;
+		self.userId = liveConf.userId;
+		self.isPrivate = liveConf.isPrivate;
+		self.isTempRoom = liveConf.isTempRoom;
 		self.localSettings = localSettings;
 		self.guestAvatar = liveConf.guestAvatar;
 		self.rtc = null;
@@ -50,7 +54,7 @@ library.component = library.component || {};
 		self.peerAddQueue = [];
 		
 		self.currentSpeaker = null;
-		self.uiVisible = false;
+		self.uiVisible = true;
 		self.ui = null;
 		self.uiPanes = {};
 		self.panesVisible = 0;
@@ -92,9 +96,20 @@ library.component = library.component || {};
 		});
 	}
 	
+	ns.UI.prototype.showDeviceSelect = function( currentDevices ) {
+		const self = this;
+		console.log( 'UI.showDeviceSelect', currentDevices );
+		self.settingsUI.showDevices( currentDevices )
+		self.settingsUI.show();
+	}
+	
 	ns.UI.prototype.addShareLink = function( conn ) {
 		const self = this;
-		
+		console.log( 'UI.addShareLink', {
+			conn  : conn,
+			btn   : self.shareLinkBtn,
+			slink : self.shareLink,
+		});
 		if ( !self.shareLinkBtn ) {
 			console.log( 'Live UI.addShareLink, no button found' );
 			return;
@@ -115,13 +130,27 @@ library.component = library.component || {};
 		}
 		
 		function click( e ) {
+			console.log( 'shareLinkBtn click' );
 			self.shareLink.toggle();
 		}
 	}
 	
+	ns.UI.prototype.setRecording = function( isRecording ) {
+		const self = this;
+		console.log( 'setRecording', isRecording );
+		if ( isRecording === self.isRecording )
+			return;
+		
+		self.isRecording = isRecording;
+		if ( !self.recording )
+			return;
+		
+		self.recording.classList.toggle( 'hidden', !self.isRecording );
+	}
+	
 	// Private
 	
-	ns.UI.prototype.init = function() {
+	ns.UI.prototype.init = function( conf ) {
 		var self = this;
 		self.uiPaneMap = {
 			'init-checks'        : library.view.InitChecksPane      ,
@@ -169,6 +198,15 @@ library.component = library.component || {};
 		}
 		
 		self.bindEvents();
+		
+		self.addSettings();
+		let share = null;
+		if ( !self.isPrivate )
+			share = self.addShareLink( self.conn );
+		if ( share && self.isTempRoom )
+			share.show();
+		
+		
 		self.uiVisible = true;
 		self.toggleUI();
 	}
@@ -224,6 +262,7 @@ library.component = library.component || {};
 		self.shareLinkBtn = document.getElementById( 'share-link-btn' );
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.teaseChat = document.getElementById( 'tease-chat-container' );
+		self.recording = document.getElementById( 'recording' );
 		
 		self.uiPaneContainer = document.getElementById( 'live-ui-panes' );
 		self.liveContent = document.getElementById( 'live-content' );
@@ -311,6 +350,10 @@ library.component = library.component || {};
 		
 		// theres is only change in container visibility
 		// at 0 and 1 panes visible
+		console.log( 'toggleUIPanes', {
+			visible    : self.panesVisible,
+			contrainer : self.uiPaneContainer,
+		});
 		if ( self.panesVisible > 1 )
 			return;
 		
@@ -322,8 +365,8 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.getUIPane = function( id ) {
-		var self = this;
-		var pane = self.uiPanes[ id ];
+		const self = this;
+		const pane = self.uiPanes[ id ];
 		if ( !pane ) {
 			console.log( 'getUIPane - no pane found for id', id );
 			return null;
@@ -333,8 +376,11 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.hideUIPane = function( id ) {
-		var self = this;
-		var pane = self.getPane( id );
+		const self = this;
+		const pane = self.getPane( id );
+		if( !pane )
+			return;
+		
 		pane.hide();
 	}
 	
@@ -1330,14 +1376,15 @@ library.component = library.component || {};
 			
 			const chatOpen = self.chatUI.toggle();
 			self.chatTease.setActive( chatOpen );
+			self.shareLink.updatePosition();
 		}
 		
 		const conf = {
 			conn        : conn,
 			userId      : userId,
 			identities  : identities,
-			guestAvatar : self.guestAvatar,
 			chatTease   : self.chatTease,
+			guestAvatar : self.guestAvatar,
 		};
 		self.chatUI = self.addUIPane( 'chat', conf );
 		self.chatUI.on( 'visible', onVisible );
@@ -1348,37 +1395,37 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.UI.prototype.addShare = function( conn ) {
+	ns.UI.prototype.addSettings = function() {
 		const self = this;
-		const conf = {
-			conn : conn,
-		};
-		self.shareUI = self.addUIPane( 'share', conf );
-		return self.shareUI;
-	}
-	
-	ns.UI.prototype.addSettings = function( conf ) {
-		const self = this;
+		console.log( 'addSettings' );
 		if ( !self.settingsBtn ) {
 			console.log( 'UI.addSettings - settingsBtn missing, abort' );
 			return;
 		}
 		
 		self.settingsBtn.addEventListener( 'click', settingsClick, false );
-		self.settingsUI = self.addUIPane( 'source-select', conf );
+		self.settingsUI = new library.view.DeviceSelect( self.settingsBtn, onSelect );
 		self.settingsUI.on( 'visible', onVisible );
 		return self.settingsUI;
 		
 		function settingsClick( e ) {
-			const isOpen = self.settingsUI.getOpen();
-			if ( isOpen )
+			if ( self.settingsShow )
 				self.settingsUI.hide();
 			else
-				self.emit( 'settings' ); 
+				self.emit( 'device-select' );
+			
 		}
 		
 		function onVisible( isVisible ) {
+			console.log( 'settingsUI onVisivle', isVisible );
+			self.settingsShow = isVisible;
 			self.settingsBtn.classList.toggle( 'available', isVisible );
+		}
+		
+		function onSelect( devices ) {
+			console.log( 'UI.settings - onselect', devices );
+			self.settingsUI.hide();
+			self.emit( 'use-devices', devices );
 		}
 	}
 	
@@ -1614,7 +1661,7 @@ library.component = library.component || {};
 			.catch( playErr );
 			
 		function playOk( e ) {
-			//console.log( 'Peer.playStream - ok', e );
+			console.log( 'Peer.playStream - ok', e );
 		}
 		
 		function playErr( ex ) {
@@ -2089,6 +2136,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.bindPeerCommon = function() {
 		const self = this;
+		console.log( 'bindPeerCommon', self );
 		self.peer.on( 'media'           , handleMedia );
 		self.peer.on( 'track'           , handleTrack );
 		self.peer.on( 'legacy-stream'   , handleLegacyStream );
@@ -2153,6 +2201,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleMedia = function( media ) {
 		const self = this;
+		console.log( 'handleMedia', media );
 		if ( !media )
 			return;
 		
@@ -2227,6 +2276,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleTrack = function( type, track ) {
 		const self = this;
+		console.log( 'UIPeer.handleTrack', track );
 		// set state
 		if ( !self.isUpdatingStream ) {
 			self.stream.pause();
@@ -2242,6 +2292,7 @@ library.component = library.component || {};
 		
 		self.stream.srcObject.addTrack( track );
 		self.stream.load();
+		console.log( 'stream.load called' );
 	}
 	
 	ns.Peer.prototype.removeTrack = function( type ) {
@@ -2441,6 +2492,7 @@ library.component = library.component || {};
 		self.bindStreamResize();
 		
 		function play( e ) {
+			console.log( 'PLAY', e );
 			self.updateAudioSink();
 			self.playStream();
 		}
@@ -3185,6 +3237,7 @@ library.component = library.component || {};
 		if ( !self.stream )
 			return;
 		
+		self.updateVideoMirror();
 		self.stream.muted = true;
 	}
 	

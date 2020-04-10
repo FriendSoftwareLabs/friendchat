@@ -31,9 +31,10 @@ to listeners registered through this interface
 */
 
 (function( ns, undefined ) {
-	ns.EventEmitter = function( eventSink ) {
+	ns.EventEmitter = function( eventSink, debug ) {
 		const self = this;
 		self._eventSink = eventSink;
+		self._eventsDebug = !!debug;
 		self.eventToListener = {};
 		self.eventListeners = {};
 		
@@ -46,6 +47,12 @@ to listeners registered through this interface
 	ns.EventEmitter.prototype.on = function( event, listener ) {
 		const self = this;
 		const id = friendUP.tool.uid( 'listener' );
+		if ( self._eventsDebug )
+			console.log( 'EventEmitter.on', {
+				id    : id,
+				event : event,
+			});
+		
 		const listenerIds = self.eventToListener[ event ];
 		if ( !listenerIds ) {
 			self.eventToListener[ event ] = [];
@@ -134,6 +141,12 @@ to listeners registered through this interface
 			if ( self._eventSink )
 				emitOnDefault( event, args );
 			
+			if ( self._eventsDebug )
+				console.log( 'EventEmitter.emit - no listener for', {
+					event : event,
+					args  : args,
+				});
+			
 			return false;
 		}
 		
@@ -142,6 +155,13 @@ to listeners registered through this interface
 		
 		function emit( caught, listenerId ) {
 			const listener = self.eventListeners[ listenerId ];
+			if ( self._eventsDebug )
+				console.log( 'EventEmitter.emit - emitting', {
+					event    : event,
+					args     : args,
+					listener : listener,
+				});
+			
 			const used = listener.apply( null, args );
 			if ( undefined == used )
 				return caught;
@@ -195,14 +215,15 @@ inherits from EventEmitter
 		type,
 		conn,
 		eventSink,
-		onsend
+		onsend,
+		debug
 	) {
 		const self = this;
 		self.type = type || null;
 		self.conn = conn || null;
 		self.onsend = onsend;
 		
-		ns.EventEmitter.call( self, eventSink );
+		ns.EventEmitter.call( self, eventSink, debug );
 		self.initEventNode();
 	}
 	
@@ -213,8 +234,11 @@ inherits from EventEmitter
 	// to root
 	ns.EventNode.prototype.send = function( event ) {
 		const self = this;
-		if ( !self.sendEvent )
+		if ( !self.sendEvent ) {
+			if ( self._eventsDebug )
+				console.log( 'EventNode.send - no sendEvent fun??', event );
 			return;
+		}
 		
 		let wrap = null;
 		if ( !self.type )
@@ -224,6 +248,12 @@ inherits from EventEmitter
 				type : self.type,
 				data : event,
 			};
+		
+		if ( self._eventsDebug )
+			console.log( 'EventNode.send', {
+				event : event,
+				wrap  : wrap,
+			});
 		
 		self.sendEvent( wrap );
 	}
@@ -251,6 +281,12 @@ inherits from EventEmitter
 	
 	ns.EventNode.prototype.initEventNode = function() {
 		const self = this;
+		if ( self._eventsDebug )
+			console.log( 'initEventNode', {
+				type : self.type,
+				conn : self.conn,
+			});
+		
 		if ( self.conn && self.type ) {
 			self.conn.on( self.type, handle );
 			function handle( e ) { self.handle( e ); }

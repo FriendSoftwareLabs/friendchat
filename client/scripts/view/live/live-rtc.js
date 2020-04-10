@@ -63,6 +63,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTC = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
+		console.log( 'RTC conf', conf.rtcConf );
 		self.conn = conn || null;
 		self.ui = UI;
 		self.userId = conf.userId;
@@ -75,6 +76,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.identities = conf.identities || {};
 		self.guestAvatar = conf.guestAvatar;
 		self.mode = conf.rtcConf.mode || null;
+		self.topology = conf.rtcConf.topology || 'peer';
+		self.isRecording = conf.rtcConf.isRecording || false;
 		self.quality = conf.rtcConf.quality || null;
 		self.permissions = conf.rtcConf.permissions;
 		self.localSettings = conf.localSettings || {};
@@ -109,22 +112,24 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( 'DESKTOP' != window.View.deviceType )
 			self.isMobile = true;
 		
+		if ( 'star' === self.topology )
+			self.setupProxy();
+		
 		self.convertLegacyDevices();
 		self.updateMobileRestrictions();
 		self.bindUI();
 		self.bindMenu();
+		
 		if ( self.quality )
 			self.ui.updateQualityLevel( self.quality.level );
 		
 		// ui
-		self.chat = self.ui.addChat( self.userId, self.identities, self.conn );
-		
-		if ( !self.isPrivate )
-			self.share = self.ui.addShareLink( self.conn );
-		if ( self.share && self.isTempRoom )
-			self.share.show();
-		
+		self.ui.addChat( self.userId, self.identities, self.conn );
 		self.statusMsg = self.ui.initStatusMessage();
+		
+		if ( self.isRecording )
+			self.ui.setRecording( self.isRecording );
+		
 		// do init checks
 		self.initChecks = new library.rtc.InitChecks( self.statusMsg );
 		self.initChecks.on( 'source-select', showSourceSelect );
@@ -165,9 +170,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			else
 				runSelfieChecks( gumErr, media );
 			
+			done();
+			
 			function passSelfieChecks() {
 				self.initChecks.passCheck( 'source-check' );
-				done();
 			}
 			
 			function runSelfieChecks( gumErr, media ) {
@@ -175,15 +181,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( !ready )
 					return;
 				
-				done();
-				
-				const selfStream = self.selfie.getStream();
-				let audioPref = null;
-				if ( self.localSettings.preferedDevices )
-					audioPref = self.localSettings.preferedDevices.audio;
-				
-				//self.initChecks.checkAudioInput( selfStream, audioPref );
-				//self.initChecks.checkVideoInput( selfStream, audioPref );
 				self.initChecks.checkICE( self.rtcConf.ICE );
 				self.allChecksRun = true;
 			}
@@ -205,7 +202,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( !self.selfie )
 				return;
 			
-			self.selfie.showSourceSelect();
+			self.showSourceSelect();
 		}
 		
 		function closeInit() {
@@ -222,6 +219,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.goLive( true );
 		}
+	}
+	
+	ns.RTC.prototype.showSourceSelect = function() {
+		const self = this;
+		console.log( 'showSourceSelect' );
+		self.selfie.showSourceSelect();
 	}
 	
 	ns.RTC.prototype.showTestStatus = function() {
@@ -289,6 +292,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.bindConn();
+		
+		if ( 'star' === self.topology ) {
+			const ready = {
+				type : 'ready',
+				data : 'yep',
+			};
+			self.proxy.send( ready );
+		}
+		
 		self.connectPeers();
 		const onready = self.onready;
 		delete self.onready;
@@ -326,6 +338,32 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function close(      e ) { self.handleClosed(     e ); }
 	}
 	
+	ns.RTC.prototype.setupProxy = function() {
+		const self = this;
+		self.proxy = new library.component.EventNode(
+			'proxy',
+			self.conn,
+			proxySink,
+			null,
+			true
+		);
+		
+		self.proxy.on( 'room', e => self.handleProxyRoom( e ));
+			
+		function proxySink( type, data ) {
+			console.log( 'RTC proxySink', {
+				type : type,
+				data : data,
+			});
+		}
+	}
+	
+	ns.RTC.prototype.handleProxyRoom = function( event ) {
+		const self = this;
+		console.log( 'handleProxyRoom', self.rtcConf );
+		self.selfie.publish( self.rtcConf );
+	}
+	
 	ns.RTC.prototype.connectPeers = function() {
 		const self = this;
 		self.peerList.forEach( connect );
@@ -341,8 +379,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.bindUI = function() {
 		const self = this;
 		self.ui.on( 'close', e => self.close());
-		self.ui.on( 'settings', e => self.selfie.showSourceSelect());
-		self.ui.on( 'share-screen', e => self.selfie.toggleShareScreen());
+		self.ui.on( 'device-select', e => self.showSourceSelect());
+		self.ui.on( 'use-devices'  , e => self.selfie.useDevices( e ));
+		self.ui.on( 'share-screen' , e => self.selfie.toggleShareScreen());
 	}
 	
 	ns.RTC.prototype.bindMenu = function() {
@@ -948,15 +987,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.currentPeerFocus )
 			isFocus = false;
 		
-		const Peer = getPeerConstructor( self.browser );
+		let Peer = getPeerConstructor( self.browser );
+		let signal = self.conn;
+		if ( 'star' === self.topology ) {
+			signal = self.proxy;
+			Peer = library.rtc.Sink;
+		}
+		
 		peer = new Peer({
 			id          : peerId,
 			identity    : identity,
 			permissions : self.permissions,
 			isFocus     : isFocus,
-			signal      : self.conn,
+			signal      : signal,
 			rtcConf     : self.rtcConf,
 			selfie      : self.selfie,
+			topology    : self.topology,
 			onremove    : signalRemovePeer,
 			closeCmd    : closeCmd,
 		});
@@ -1142,28 +1188,34 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !identity.avatar )
 			identity.avatar = self.guestAvatar;
 		
-		self.selfie = new library.rtc.Selfie({
-			conn            : self.conn,
-			view            : self.ui,
-			menu            : self.menu,
-			identity        : identity,
-			browser         : self.browser,
-			permissions     : self.permissions,
-			quality         : self.quality,
-			localSettings   : self.localSettings,
-			isAdmin         : self.isAdmin,
-			onleave         : onLeave,
-		}, done );
+		let Thing = library.rtc.Selfie;
+		if ( 'star' === self.topology )
+			Thing = library.rtc.Source;
 		
-		function onLeave() {
-			self.leave();
-		}
+		const selfieConf = {
+			id            : 'selfie',
+			conn          : self.conn,
+			view          : self.ui,
+			menu          : self.menu,
+			identity      : identity,
+			browser       : self.browser,
+			permissions   : self.permissions,
+			quality       : self.quality,
+			localSettings : self.localSettings,
+			isAdmin       : self.isAdmin,
+			topology      : self.topology,
+			proxyConn     : self.proxy || null,
+		};
+		
+		self.selfie = new Thing( selfieConf, done );
+		
 		
 		function done( err, res ) {
 			createBack( err, res );
 		}
 		
 		self.ui.addPeer( self.selfie );
+		self.selfie.on( 'leave'           , onLeave );
 		self.selfie.on( 'error'           , error );
 		self.selfie.on( 'audio-sink'      , audioSink );
 		self.selfie.on( 'mute'            , broadcastMute );
@@ -1176,7 +1228,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.selfie.on( 'quality'         , setQuality );
 		self.selfie.on( 'restart'         , restart );
 		self.selfie.on( 'save'            , e => self.saveLocalSetting( e.setting, e.value ));
+		self.selfie.on( 'device-select'   , e => self.ui.showDeviceSelect( e ));
 		
+		function onLeave() { self.leave(); }
 		function error( e ) { self.handleSelfieError( e ); }
 		function audioSink( e ) { self.handleAudioSink( e ); }
 		function broadcastMute( isMuted ) { broadcast( 'mute', isMuted ); }
@@ -1266,7 +1320,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			if ( 'source-select' === event )
-				self.selfie.showSourceSelect();
+				self.showSourceSelect();
 			
 			if ( 'ignore' === event ) {
 				self.ignoreSystemMute = true;
@@ -1328,7 +1382,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		self.id = 'selfie';
+		self.id = conf.id;
 		self.conn = conf.conn;
 		self.view = conf.view;
 		self.menu = conf.menu;
@@ -1341,9 +1395,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			scale : 1,
 		};
 		self.isAdmin = conf.isAdmin;
+		self.topology = conf.topology;
+		self.proxyConn = conf.proxyConn;
+		self.rtcConf = conf.rtcConf;
+		
 		self.media = null;
 		self.stream = null;
-		self.onleave = conf.onleave;
 		self.doneBack = callback;
 		
 		self.currentDevices = {};
@@ -1362,10 +1419,24 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	// Public
 	
+	ns.Selfie.prototype.useDevices = function( selected ) {
+		const self = this;
+		console.log( 'userDevices', selected );
+		self.setMediaSources( selected );
+	}
+	
 	ns.Selfie.prototype.updateIdentity = function( identity ) {
 		const self = this;
 		self.emit( 'identity', identity );
 	}
+	
+	ns.Selfie.prototype.publish = function( rtcConf ) {
+		const self = this;
+		console.log( 'publsih', rtcConf );
+		self.createSource( rtcConf );
+		
+	}
+	
 	
 	// receive defaults to same as send
 	ns.Selfie.prototype.toggleVideo = function( send, receive ) {
@@ -1421,21 +1492,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.media )
 			self.media.close();
 		
-		if ( self.sourceSelect )
-			self.sourceSelect.close();
-		
 		delete self.currentAudioOut;
 		delete self.localSettings;
 		delete self.speaking;
 		delete self.volume;
 		delete self.stream;
 		delete self.shareMedia;
-		delete self.sourceSelect;
 		delete self.media;
 		delete self.view;
 		delete self.extConn;
 		delete self.menu;
-		delete self.onleave;
 		delete self.doneBack;
 		delete self.conn;
 	}
@@ -1480,6 +1546,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		//
+		console.log( 'Selfie.topology', self.topology );
+		if ( 'star' == self.topology )
+			self.setupProxy();
+		
+		//
 		self.extConn = self.view.addExtConnPane( onExtConnShare );
 		function onExtConnShare( e ) {
 			self.extConn.close();
@@ -1498,15 +1569,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function shareCheckErr( err ) {
 			console.log( 'shareScreenErr', err );
 			self.screenShareAvailable = false;
-		}
-		
-		const sourceConf = {
-			view     : self.view,
-			onselect : sourcesSelected,
-		};
-		self.sourceSelect = new library.rtc.SourceSelect( sourceConf );
-		function sourcesSelected( selected ) {
-			self.setMediaSources( selected );
 		}
 		
 		self.bindMenu();
@@ -1532,6 +1594,165 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			delete self.doneBack;
 			if ( doneBack )
 				doneBack( null, res );
+		}
+	}
+	
+	ns.Selfie.prototype.setupProxy = function() {
+		const self = this;
+		console.log( 'Selfie - star topoloig detected!!!!11', {
+			pConn : self.proxyConn,
+		});
+		self.proxy = new library.component.EventNode(
+			'source',
+			self.proxyConn,
+			proxySink,
+			null,
+			true
+		);
+		
+		function proxySink( type, event ) {
+			console.log( 'proxySink', {
+				type  : type,
+				event : event,
+			});
+		}
+	}
+	
+	ns.Selfie.prototype.createSource = function( rtcConf ) {
+		const self = this;
+		console.log( 'createSource', {
+			rtcConf : self.rtcConf,
+			rtcConfpassed : rtcConf,
+		});
+		if ( rtcConf )
+			self.rtcConf = rtcConf;
+		
+		if ( self.session ) {
+			console.log( 'createSession', {
+				state   : self.state,
+				session : self.session,
+			});
+			return;
+		}
+		
+		//if ( !self.media )
+		self.proxyMedia = new window.MediaStream();
+		
+		const type = 'source';
+		const isHost = true;
+		const opts = {
+			//useDefaultCodec : self.useDefaultCodec,
+		};
+		
+		self.session = new library.rtc.Session(
+			type,
+			isHost,
+			self.proxy,
+			self.proxyMedia,
+			self.rtcConf,
+			opts,
+			'source'
+		);
+		
+		self.on( 'selfie', e => self.updatePublishedMedia());
+		
+		/*
+		self.session = new library.rtc.Session({
+			type      : type,
+			isHost    : self.isHost,
+			rtc       : self.rtcConf,
+			signal    : self.signal,
+			//modifySDP : modSDP,
+		});
+		*/
+		
+		self.session.on( 'stats', e => console.log( 'session stats', e ));
+		self.session.on( 'state', e => console.log( 'session state', e ));
+		self.session.on( 'error', e => console.log( 'session error', e ));
+		
+		self.updatePublishedMedia();
+		/*
+		self.session.on( 'track-add'   , e => self.trackAdded( e ));
+		self.session.on( 'track-remove', e => self.trackRemoved( e ));
+		self.session.on( 'nostream'    , sendNoStream );
+		self.session.on( 'datachannel' , dataChannel );
+		
+		function sendNoStream( e ) { self.sendNoStream( type ); }
+		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
+		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
+		function sessionError( e ) { self.handleSessionError( e, type ); }
+		function dataChannel( e ) { self.bindDataChannel( e ); }
+		*/
+	}
+	
+	ns.Selfie.prototype.updatePublishedMedia = function() {
+		const self = this;
+		console.log( 'updatePublishedMedia', {
+			session     : self.session,
+			stream      : self.stream,
+			permissions : self.permissions,
+		});
+		
+		const perms = {
+			type : 'permissions',
+			data : self.permissions,
+		};
+		self.proxy.send( perms );
+		
+		if ( !self.session )
+			return;
+		
+		if ( !self.stream )
+			return;
+		
+		const pTracks = {};
+		self.proxyMedia.getTracks().forEach( t => {
+			const kind = t.kind;
+			pTracks[ kind ] = t;
+		});
+		
+		const sTracks = {};
+		self.stream.getTracks().forEach( t => {
+			const kind = t.kind;
+			sTracks[ kind ] = t;
+		});
+		console.log( 'updatePublishedMedia', {
+			session : self.session,
+			stream  : self.stream,
+			pmedia  : self.proxyMedia,
+			audio   : self.hasAudio,
+			video   : self.hasVideo,
+			pTracks : pTracks,
+			sTracks : sTracks,
+		});
+		
+		if ( !self.hasAudio )
+			remove( 'audio' );
+		else
+			update( 'audio' );
+		
+		if ( !self.hasVideo )
+			remove( 'video' );
+		else
+			update( 'video' );
+		
+		function remove( kind ) {
+			const pT = pTracks[ kind ];
+			if ( !pT )
+				return;
+			
+			self.proxyMedia.removeTrack( pT );
+			self.session.removeTrack( kind );
+		}
+		
+		function update( kind ) {
+			const pT = pTracks[ kind ];
+			const sT = sTracks[ kind ];
+			if ( pT )
+				self.proxyMedia.removeTrack( pT );
+			
+			self.proxyMedia.addTrack( sT );
+			self.session.addTrack( kind );
 		}
 	}
 	
@@ -1608,9 +1829,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.showSourceSelect = function() {
 		const self = this;
+		console.log( 'showSourceSelect' );
 		const devices = self.media.getCurrentDevices() || null;
 		devices.audiooutput = self.currentAudioOut;
-		self.sourceSelect.show( devices );
+		self.emit( 'device-select', devices );
 	}
 	
 	ns.Selfie.prototype.openScreenExtInstall = function() {
@@ -1684,6 +1906,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
 		const self = this;
+		console.log( 'setMediaSources', devices );
 		if ( !devices )
 			return;
 		
@@ -1694,8 +1917,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( null != devices.videoinput )
 			send.video = !!devices.videoinput;
 		
-		self.menu.setState( 'send-audio', send.audio );
-		self.menu.setState( 'send-video', send.video );
+		if ( self.menu ) {
+			self.menu.setState( 'send-audio', send.audio );
+			self.menu.setState( 'send-video', send.video );
+		}
 		
 		self.setupStream( streamBack, null, devices );
 		function streamBack( err, res ) {
@@ -1812,6 +2037,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setStream = function( stream ) {
 		const self = this;
+		console.log( 'setStream', {
+			stream      : stream,
+			permissions : self.permissions,
+		});
 		self.stream = stream;
 		
 		if ( self.userMute ) {
@@ -1824,23 +2053,25 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const aTrack = self.getAudioTrack();
 		const vTrack = self.getVideoTrack();
+		self.hasAudio = !!aTrack;
+		self.hasVideo = !!vTrack;
 		
 		if ( aTrack )
-			self.bindVolume( stream );
+			self.bindVolume( self.stream );
 		else
 			self.releaseVolume();
 		
 		const tracks = {
-			audio : !!aTrack,
-			video : !!vTrack,
+			audio : self.hasAudio,
+			video : self.hasVideo,
 		};
 		
 		self.emit( 'tracks-available', tracks );
 		self.emit( 'selfie', stream );
 		
 		// TODO refactor these to use tracks-available?
-		self.emit( 'audio', !!aTrack );
-		self.emit( 'video', !!vTrack );
+		self.emit( 'audio', self.hasAudio );
+		self.emit( 'video', self.hasVideo );
 		
 		self.emitVoiceOnly( tracks );
 	}
@@ -2093,12 +2324,24 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.leave = function() {
-		var self = this;
-		self.onleave();
+		const self = this;
+		self.emit( 'leave', true );
 	}
 	
 })( library.rtc );
 
+// SOURCE, extends selfie
+( function( ns, undefined ) {
+	ns.Source = function( conf, callback ) {
+		const self = this;
+		library.rtc.Selfie.call( self, conf, callback );
+		
+		console.log( 'Source', self );
+	}
+	
+	ns.Source.prototype = Object.create( library.rtc.Selfie.prototype );
+	
+})( library.rtc );
 
 // PEER
 (function( ns, undefined ) {
@@ -2306,6 +2549,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			remote : remoteStamp,
 			isHost : self.isHost,
 		});
+		// invalid remote stamp, drop
+		if ( null == remoteStamp )
+			return;
+		
 		if ( null != self.isHost ) {
 			if ( self.isHost )
 				self.syncStamp = remoteStamp - 1;
@@ -2315,10 +2562,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.acceptSync( remoteStamp );
 			return;
 		}
-		
-		// invalid remote stamp, drop
-		if ( null == remoteStamp )
-			return;
 		
 		// same stamp, reroll
 		if ( self.syncStamp === remoteStamp ) {
@@ -2356,6 +2599,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		// comapre, lowest stamp will be it
 		if ( null == self.isHost )
 			self.setDoInit( self.syncStamp, remoteStamp );
+		else {
+			self.stopSync();
+			if ( !self.isHost )
+				self.sendOpen();
+		}
 	}
 	
 	ns.Peer.prototype.handleSyncAccept = function( stamps ) {
@@ -2364,6 +2612,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			stamps : stamps,
 			isHost : self.isHost,
 		});
+		
 		if ( !self.syncStamp )
 			return;
 		
@@ -2388,6 +2637,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		else
 			self.isHost = false;
 		
+		self.log( 'setDoinit', self.isHost );
 		self.stopSync();
 		if ( !self.isHost )
 			self.sendOpen();
@@ -2445,7 +2695,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.createSession = function() {
 		const self = this;
-		self.log( 'createSession', self.id );
+		self.log( 'createSession', {
+			id      : self.id,
+			rtcConf : self.rtcConf,
+		});
 		if ( self.session ) {
 			self.log( 'createSession', {
 				state   : self.state,
@@ -3513,7 +3766,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.checkStats( stats.data );
-		self.emit( 'state', stats );
+		//self.emit( 'state', stats );
 	}
 	
 	ns.Peer.prototype.checkStats = function( stats ) {
@@ -3522,6 +3775,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		self.log( 'checkStats', stats );
+		return;
 		const trans = stats.transport;
 		const inn = stats.inbound;
 		const audio = inn.audio;
@@ -3711,6 +3965,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.isMute = !audio.enabled;
 		self.emit( 'mute', self.isMute );
+		return self.isMute;
 	}
 	
 	ns.Peer.prototype.toggleBlind = function( force ) {
@@ -3729,6 +3984,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.isBlind = !video.enabled;
 		self.emit( 'blind', self.isBlind );
+		return self.isBlind;
 	}
 	
 	ns.Peer.prototype.toggleFocus = function() {
@@ -3870,6 +4126,109 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const name = id.name;
 		const nameStr = name + ': ' + str;
 		console.log( nameStr, obj );
+	}
+	
+})( library.rtc );
+
+// SINK - extends peer
+(function( ns, undefined ) {
+	ns.Sink = function( conf ) {
+		const self = this;
+		library.rtc.Peer.call( self, conf );
+		
+		self.isHost = false;
+		
+		self.log( 'Sink' );
+	}
+	
+	ns.Sink.prototype = Object.create( library.rtc.Peer.prototype );
+	
+	// Pri>ate
+	
+	ns.Sink.prototype.init = function( parentSignal ) {
+		const self = this;
+		// websocket / signal server path
+		self.signal = new library.component.EventNode(
+			self.id,
+			parentSignal,
+			eventSink
+		);
+		
+		function eventSink( type, event ) {
+			self.log( 'Peer.eventsink', {
+				t : type,
+				e : event,
+			});
+		}
+		
+		self.bindSignalChannel();
+		
+		/*
+		// selfie
+		self.streamHandlerId = self.selfie.on( 'selfie', handleStream );
+		function handleStream( e ) { self.handleSelfieStream( e ); }
+		*/
+		
+		self.startSync();
+	}
+	
+	ns.Sink.prototype.createSession = function() {
+		const self = this;
+		self.log( 'sink.createSession', self.id );
+		if ( self.session ) {
+			self.log( 'createSession', {
+				state   : self.state,
+				session : self.session,
+			});
+			return;
+		}
+		
+		if ( !self.media )
+			self.media = new window.MediaStream();
+		
+		const peerName = self.identity.name;
+		const type = 'sink';
+		if ( self.alpha )
+			self.closeData();
+		
+		const opts = {
+			isHost          : self.isHost,
+			useDefaultCodec : true,
+			//useDefaultCodec : self.useDefaultCodec,
+		};
+		
+		self.session = new library.rtc.Session(
+			type,
+			self.isHost,
+			self.signal,
+			self.media,
+			self.rtcConf,
+			opts,
+			peerName
+		);
+		
+		self.session.on( 'track-add'   , e => self.trackAdded( e ));
+		self.session.on( 'track-remove', e => self.trackRemoved( e ));
+		self.session.on( 'nostream'    , sendNoStream );
+		self.session.on( 'state'       , stateChange );
+		self.session.on( 'stats'       , statsUpdate );
+		self.session.on( 'error'       , sessionError );
+		self.session.on( 'datachannel' , dataChannel );
+		
+		self.showSelfie();
+		
+		function modSDP( e ) { return self.modifySDP( e, type ); }
+		
+		function sendNoStream( e ) { self.sendNoStream( type ); }
+		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
+		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
+		function sessionError( e ) { self.handleSessionError( e, type ); }
+		function dataChannel( e ) { self.bindDataChannel( e ); }
+	}
+	
+	ns.Sink.prototype.updateTracks = function() {
+		const self = this;
+		self.log( 'updateTracks - lol no' );
 	}
 	
 })( library.rtc );

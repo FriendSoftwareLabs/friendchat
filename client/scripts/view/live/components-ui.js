@@ -606,6 +606,7 @@ library.component = library.component || {};
 	
 	ns.LiveChat.prototype.init = function( conf, templateManager ) {
 		const self = this;
+		console.log( 'LiveChat.init - conf', conf );
 		// build
 		let parent = document.getElementById( conf.containerId );
 		let tmplConf = {
@@ -695,7 +696,7 @@ library.component = library.component || {};
 		function inputKeyUp( e ) { self.handleInputKey( e ); }
 		
 		if ( conf.logTail && conf.logTail.length )
-			conf.logTail.forEach( msg => self.addMessage( msg.data ));
+			conf.logTail.forEach( msg => self.addMessage( msg.data, true ));
 	}
 	
 	
@@ -751,7 +752,7 @@ library.component = library.component || {};
 		api.Say( message );
 	}
 	
-	ns.LiveChat.prototype.addMessage = function( data ) {
+	ns.LiveChat.prototype.addMessage = function( data, isLog ) {
 		const self = this;
 		let parsedMessage = hello.parser.work( data.message );
 		const identity = self.identities[ data.fromId ];
@@ -775,8 +776,13 @@ library.component = library.component || {};
 		self.messages.appendChild( element );
 		self.linkExpand.work( element );
 		scrollBottom();
-		if ( self.tease && !self.isVisible && notFromSelf( data.fromId ))
+		if ( self.tease
+			&& !isLog
+			&& !self.isVisible
+			&& notFromSelf( data.fromId )
+		) {
 			self.tease.showMessage( conf.message, conf.from );
+		}
 		
 		function scrollBottom() {
 			self.messages.scrollTop = self.messages.scrollHeight;
@@ -1121,3 +1127,639 @@ library.component = library.component || {};
 	}
 	
 })( library.component );
+
+
+// SourceSelect
+(function( ns, undefined ) {
+	ns.SourceSelect = function( onSelect ) {
+		const self = this;
+		self.onselect = onSelect;
+		
+		self.previewId = 'source-preview';
+		
+		self.audioId = 'audioinput';
+		self.videoId = 'videoinput';
+		self.outputId = 'audiooutput';
+		
+		self.sources = null;
+		self.currentDevices = null;
+		self.selectedDevices = null;
+		self.allDevices = null;
+		
+		self.audioinput = null;
+		self.videoinput = null;
+		self.audiooutput = null;
+		
+		self.supportsSinkId = false;
+		
+		self.init();
+	}
+	
+	// Public
+	
+	ns.SourceSelect.prototype.showDevices = function( currentDevices ) {
+		const self = this;
+		console.log( 'showDevices - currentDevices', currentDevices );
+		self.refreshDevices( currentDevices );
+	}
+	
+	ns.SourceSelect.prototype.showGetUserMediaError = function( data ) {
+		const self = this;
+		self.clear();
+		const error = 'Failed to attach media: ' + data.err.name;
+		const errorElement = document.getElementById( 'source-error' );
+		const errorMsg = errorElement.querySelector( '.error-message' );
+		errorMsg.innerText = error;
+		self.toggleExplain( false );
+		self.toggleSelects( false );
+	}
+	
+	ns.SourceSelect.prototype.getSelected = function() {
+		const self = this;
+		const audioDevice = getSelectDevice(
+			self[ self.audioId ],
+			'audioinput'
+		);
+		const videoDevice = getSelectDevice(
+			self[ self.videoId ],
+			'videoinput'
+		);
+		
+		let outputDevice = null;
+		if ( self.supportsSinkId )
+			outputDevice = getSelectDevice(
+				self[ self.outputId ],
+				'audiooutput'
+			);
+		
+		const selected = {
+			audioinput  : audioDevice,
+			videoinput  : videoDevice,
+			audiooutput : outputDevice || undefined,
+		};
+		
+		console.log( 'getSelected', selected );
+		if ( outputDevice )
+			selected.audiooutput = outputDevice;
+		
+		return selected;
+		
+		function getSelectDevice( select, type ) {
+			if ( !select )
+				return null;
+			
+			const deviceId = select.value;
+			if ( !deviceId.length )
+				return null;
+			
+			if ( 'none' === deviceId )
+				return false;
+			
+			if ( !self.allDevices )
+				return null;
+			
+			const devs = self.allDevices[ type ];
+			if ( !devs )
+				return null;
+			
+			const device = devs[ deviceId ];
+			return device || null;
+		}
+	}
+	
+	ns.SourceSelect.prototype.close = function() {
+		const self = this;
+		if( self.sources )
+			self.sources.close();
+		
+		delete self.sources;
+		delete self.onselect;
+	}
+	
+	// Private
+	
+	ns.SourceSelect.prototype.init = function() {
+		const self = this;
+		self.sources = new library.rtc.MediaDevices();
+		self.bind();
+		self.checkOutputSelectSupport();
+	}
+	
+	ns.SourceSelect.prototype.bind = function() {
+		const self = this;
+		const bg = document.getElementById( self.paneId );
+		self.previewHint = document.getElementById( 'source-preview-hint' );
+		self.previewEl = document.getElementById( 'source-preview-video' );
+		self.previewEl.muted = true;
+		self.previewEl.preload = 'metadata';
+		
+		const element = document.getElementById( 'source-select' );
+		const closeBtn = document.getElementById( 'source-back' );
+		
+		const applyBtn = document.getElementById( 'apply-select' );
+		const discardBtn = document.getElementById( 'discard-select' );
+		const refreshBtn = document.getElementById( 'refresh-select' );
+		
+		const errElement = document.getElementById( 'source-error' );
+		const errAvailableBtn = errElement.querySelector( '.error-buttons .available' );
+		const errIgnoreBtn = errElement.querySelector( '.error-buttons .ignore' );
+		
+		self.audioOutput = document.getElementById( 'audiooutput-container' );
+		self.outputTestEl = document.getElementById( 'audiooutput-test' );
+		self.avEl = document.getElementById( 'source-select-av-container' );
+		
+		closeBtn.addEventListener( 'click', closeClick, false );
+		applyBtn.addEventListener( 'click', applyClick, false );
+		refreshBtn.addEventListener( 'click', refreshClick, false );
+		discardBtn.addEventListener( 'click', discardClick, false );
+		
+		errAvailableBtn.addEventListener( 'click', errShowAvailable, false );
+		errIgnoreBtn.addEventListener( 'click', errIgnore, false );
+		
+		self.previewEl.onloadedmetadata = letsPlay;
+		function letsPlay( e ) {
+			self.previewEl.play();
+		}
+		
+		function closeClick( e ) {
+			self.done();
+		}
+		
+		function applyClick( e ) {
+			var selected = self.getSelected();
+			self.done( selected );
+		}
+		
+		function refreshClick( e ) {
+			self.refreshDevices();
+		}
+		
+		function discardClick( e ) {
+			self.done();
+		}
+		
+		function errShowAvailable( e ) {
+			self.refreshDevices();
+		}
+		
+		function errIgnore( e ) {
+			self.done();
+		}
+	}
+	
+	ns.SourceSelect.prototype.checkOutputSelectSupport = function() {
+		const self = this;
+		if ( !self.outputTestEl )
+			return;
+		
+		if ( !self.outputTestEl.setSinkId )
+			return;
+		
+		self.audioOutput.classList.toggle( 'hidden', false );
+		self.supportsSinkId = true;
+	}
+	
+	ns.SourceSelect.prototype.refreshDevices = function( current ) {
+		const self = this;
+		self.clear();
+		self.clearErrors();
+		self.toggleExplain( true );
+		self.toggleSelects( true );
+		
+		if ( current )
+			self.currentDevices = current;
+		
+		self.sources.getByType()
+			.then( show )
+			.catch( showErr );
+		
+		function show( devices ) {
+			self.allDevices = devices;
+			console.log( 'available devices', devices );
+			self.populate();
+		}
+		
+		function showErr( err ) {
+			self.showMediaDevicesErr ( err );
+		}
+	}
+	
+	ns.SourceSelect.prototype.showMediaDevicesErr = function( err ) {
+		const self = this;
+		console.log( 'SourceSelect.showMediaDevicesErr', err.stack || err );
+	}
+	
+	ns.SourceSelect.prototype.clearErrors = function() {
+		const self = this;
+		self.toggleExplain( true );
+		self.toggleSelectError( self.audioId );
+		self.toggleSelectError( self.videoId );
+		self.toggleSelectError( self.outputId );
+	}
+	
+	ns.SourceSelect.prototype.populate = function() {
+		const self = this;
+		setupAudio();
+		setupVideo();
+		
+		if ( self.supportsSinkId )
+			setupOutput();
+		
+		const selected = self.getSelected();
+		self.setPreview( selected );
+		
+		function setupAudio() {
+			var conf = {
+				type    : self.audioId,
+				errType : 'audio',
+			};
+			setupSelect( conf );
+		}
+		
+		function setupVideo() {
+			var conf = {
+				type    : self.videoId,
+				errType : 'video',
+			};
+			setupSelect( conf );
+		}
+		
+		function setupOutput() {
+			const conf = {
+				type    : self.outputId,
+				errType : 'output',
+			};
+			setupSelect( conf );
+		}
+		
+		function setupSelect( conf ) {
+			const devices = self.allDevices[ conf.type ];
+			const deviceIds = Object.keys( devices );
+			// no devices available
+			if ( !deviceIds.length ) {
+				self.toggleSelectError( conf.type, View.i18n('i18n_no_devices_detected'), true );
+				return;
+			}
+			
+			// Ignores blocked devices...
+			if ( deviceIds.length === 1 ) {
+				if ( deviceIds[ 0 ] === '' ) {
+					self.toggleSelectError( conf.type,
+							View.i18n('i18n_devices_detected_unavailable'),
+						true );
+					return;
+				}
+			}
+			
+			// add no select option to the list
+			if ( conf.type !== self.outputId )
+				devices[ 'none' ] = {
+					label        : 'none',
+					displayLabel : View.i18n( 'i18n_no_selection' ),
+					kind         : conf.type,
+					deviceId     : 'none',
+				}
+			
+			const select = self.buildSelect( conf.type, devices );
+			const containerId = conf.type + '-select';
+			const container = document.getElementById( containerId );
+			container.appendChild( select );
+			self.bindSelect( select );
+			self[ conf.type ] = select;
+		}
+	}
+	
+	// Set the preview video rect
+	ns.SourceSelect.prototype.setPreview = function( selected ) {
+		const self = this;
+		self.clearPreview();
+		let audioDevice = false;
+		let videoDevice = false;
+		let audioDeviceId = null;
+		let videoDeviceId = null;
+		
+		// The selected has audio
+		if ( selected.audioinput ) {
+			const saD = selected.audioinput;
+			const aiDev = self.allDevices.audioinput[ saD.deviceId ];
+			if( aiDev && aiDev.deviceId )
+			{
+				audioDeviceId = aiDev.deviceId;
+			}
+		}
+		
+		// The selected has video
+		if ( selected.videoinput ) {
+			const svD = selected.videoinput;
+			const viDev = self.allDevices.videoinput[ svD.deviceId ];
+			if( viDev && viDev.deviceId )
+			{
+				videoDeviceId = viDev.deviceId;
+			}
+		}
+		
+		// If video device
+		if ( audioDeviceId )
+			audioDevice = { "deviceId" : audioDeviceId };
+		
+		// If audio device
+		if ( videoDeviceId )
+			videoDevice = { "deviceId" : videoDeviceId };
+		
+		const mediaConf = {
+			audio : audioDevice,
+			video : videoDevice
+		};
+		
+		// No audio and video - just return
+		if ( !mediaConf.audio && !mediaConf.video ) {
+			togglePreviewHint( true );
+			return;
+		}
+	   
+		// Get user media depending on query 
+		navigator.mediaDevices.getUserMedia( mediaConf )
+			.then( setMedia )
+			.catch( mediaErr );
+		
+		// Upon getting a media stream, set audio and or video
+		function setMedia( stream ) {
+			if ( mediaConf.audio ) {
+				self.showAV( stream );
+				self.checkAudioInput( stream );
+			}
+			
+			// Get stream tracks
+			const tracks = stream.getTracks();
+			const hasVideo = tracks.some( isVideo );
+			togglePreviewHint( !hasVideo );
+			
+			if( stream )
+				self.previewEl.srcObject = stream;
+			else
+				self.previewEl.srcObject = null;
+		}
+		
+		function mediaErr( err ) {
+			console.log( 'preview media failed', err );
+		}
+		
+		function togglePreviewHint( show ) {
+			self.previewHint.classList.toggle( 'hidden', !show );
+		}
+		
+		function isVideo( track ) {
+			return 'video' === track.kind;
+		}
+	}
+	
+	ns.SourceSelect.prototype.clearPreview = function() {
+		const self = this;
+		self.closeAV();
+		self.previewEl.pause();
+		let srcObj = self.previewEl.srcObject;
+		
+		if ( !srcObj )
+			return;
+		
+		var tracks = srcObj.getTracks();
+		tracks.forEach( stop );
+		self.previewEl.load();
+		
+		function stop( track ) {
+			track.stop();
+			if ( srcObj.removeTrack )
+				srcObj.removeTrack( track );
+		}
+	}
+	
+	ns.SourceSelect.prototype.showAV = function( stream ) {
+		const self = this;
+		console.log( 'SourceSleectPane.showAV', stream );
+		self.volume = new library.rtc.Volume(
+			stream,
+			null,
+			null
+		);
+		
+		self.AV = new library.view.AudioVisualizer(
+			self.volume,
+			hello.template,
+			'source-select-av-container'
+		);
+	}
+	
+	ns.SourceSelect.prototype.closeAV = function() {
+		const self = this;
+		if ( self.AV )
+			self.AV.close();
+		
+		if ( self.volume )
+			self.volume.close();
+		
+		delete self.AV;
+		delete self.volume;
+	}
+	
+	// Check audio device
+	ns.SourceSelect.prototype.checkAudioInput = function( stream ) {
+		const self = this;
+		const audioIcon = document.getElementById( 'audioinput-icon' );
+		const checkIcon = document.getElementById( 'audioinput-checking' );
+		showChecking( true );
+		new library.rtc.AudioInputDetect( stream )
+			.then( checkBack )
+			.catch( checkErr );
+		
+		function checkBack( hasInput ) {
+			showChecking( false );
+			if ( !hasInput )
+				self.toggleSelectError( 'audioinput', 'No inputs' );
+		}
+		
+		function checkErr( err ) {
+			console.log( 'checkAudiooInput - checkErr', err );
+			self.toggleSelectError( 'audioinput', err );
+		}
+		
+		function showChecking( show ) {
+			audioIcon.classList.toggle( 'hidden', show );
+			checkIcon.classList.toggle( 'hidden', !show );
+		}
+	}
+	
+	// Set the audio device
+	ns.SourceSelect.prototype.setAudioSink = function( selected ) {
+		const self = this;
+		if ( !self.previewEl )
+			return;
+		
+		const sD = selected[ 'audiooutput' ];
+		const dev = self.allDevices.audiooutput[ sD.deviceId ];
+		
+		if ( !dev )
+			return;
+		
+		self.previewEl.setSinkId( dev.deviceId )
+			.then( ok )
+			.catch( fail );
+			
+		function ok() {
+			//console.log( 'source select - sink id set', self.previewEl.sinkId );
+		}
+		
+		function fail( err ) {
+			console.log( 'source select - failed to set sink id', err.stack || err );
+		}
+	}
+	
+	// Bind select element
+	ns.SourceSelect.prototype.bindSelect = function( element ) {
+		const self = this;
+		element.addEventListener( 'change', selectChange, false );
+		function selectChange( e ) {
+			const selected = self.getSelected();
+			if ( 'source-select-audiooutput' === e.target.id ) {
+				self.setAudioSink( selected );
+			}
+			else {
+				self.setPreview( selected );
+			}
+		}
+	}
+	
+	// Build select options
+	ns.SourceSelect.prototype.buildSelect = function( type, devices ) {
+		const self = this;
+		const dIds = Object.keys( devices );
+		const options = dIds.map( dId => {
+			const dev = devices[ dId ];
+			const optStr = buildOption( dev );
+			return optStr;
+		});
+		
+		console.log( 'buildSelect', {
+			type           : type,
+			devices        : devices,
+			currentDevices : self.currentDevices,
+		});
+		const selectConf = {
+			type : type,
+			name : type,
+			optionsHtml : options.join(),
+		};
+		const selectElement = hello.template.getElement( 'source-select-tmpl', selectConf );
+		
+		return selectElement;
+		
+		function buildOption( item ) {
+			let selected = '';
+			let label = null
+			if ( item.label )
+				label = item.label;
+			else
+				label = item.labelExtra || 'please report me, i shouldnt happen';
+			
+			// if there is a device dfined..
+			if ( self.currentDevices && self.currentDevices[ item.kind ]) {
+				const currDev = self.currentDevices[ item.kind ];
+				// ..check if its this one
+				console.log( 'checkSelected', {
+					prefered : currDev,
+					item     : item,
+				});
+				
+				if ( currDev.label === item.label )
+					selected = 'selected';
+				
+				if ( currDev.deviceId === item.deviceId )
+					selected = 'selected';
+				
+			} else {
+				// ..no device defined, so check if this is the 'no select' or default entry
+				if (( label === 'none' ) || ( 'default' === item.deviceId ))
+					selected = 'selected';
+			}
+			
+			if ( selected )
+				console.log( 'selected', item );
+			
+			const optionConf = {
+				value    : item.deviceId,
+				selected : selected,
+				label    : item.displayLabel || label
+			};
+			const html = hello.template.get( 'source-select-option-tmpl', optionConf );
+			return html;
+		}
+	}
+	
+	ns.SourceSelect.prototype.toggleExplain = function( show ) {
+		const self = this;
+		//var explainElement = document.getElementById( 'source-explain' );
+		const errorElement = document.getElementById( 'source-error' );
+		//explainElement.classList.toggle( 'hidden', !show );
+		errorElement.classList.toggle( 'hidden', show );
+	}
+	
+	ns.SourceSelect.prototype.toggleSelects = function( show ) {
+		const self = this;
+		var selects = document.getElementById( 'source-input' );
+		selects.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.SourceSelect.prototype.toggleSelectError = function( type, errorMessage, hideSelect ) {
+		const self = this;
+		var hideSelect = !!hideSelect;
+		var hasErr = !!errorMessage;
+		var selectId = type + '-select';
+		var errorId = type + '-error';
+		var selectElement = document.getElementById( selectId );
+		var errorElement = document.getElementById( errorId );
+		
+		selectElement.classList.toggle( 'hidden', hideSelect );
+		errorElement.innerText = errorMessage;
+		errorElement.classList.toggle( 'hidden', !hasErr );
+	}
+	
+	ns.SourceSelect.prototype.clear = function() {
+		const self = this;
+		var clear = [
+			self.audioId,
+			self.videoId,
+			self.outputId,
+		];
+		
+		clear.forEach( remove );
+		function remove( type ) {
+			var id = 'source-select-' + type;
+			var element = document.getElementById( id );
+			if ( !element )
+				return;
+			
+			element.parentNode.removeChild( element );
+		}
+	}
+	
+	ns.SourceSelect.prototype.done = function( selected ) {
+		const self = this;
+		self.clearPreview();
+		if ( selected )
+			selected = getChanged( selected );
+		
+		self.onselect( selected );
+		
+		function getChanged( sel ) {
+			const curr = self.currentDevices;
+			if ( sel.audioinput === curr.audioinput )
+				sel.audioinput = null;
+			if ( self.videoinput === curr.videoinput )
+				sel.videoinput = null;
+			if ( sel.audiooutput === curr.audiooutput )
+				sel.audiooutput = null;
+			
+			return sel;
+		}
+	}
+	
+})( library.view );

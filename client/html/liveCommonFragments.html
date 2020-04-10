@@ -1,3 +1,12 @@
+<!-- video
+id,
+src,
+-->
+<script id="stream-video-tmpl" type="text/html">
+<video id="<%= id %>" src="<%= src %>" class="video stream Accelerated" autoplay="autoplay" playinline>
+</video>
+</script>
+
 <!-- live-stream-switch
 fromType
 toType
@@ -30,3 +39,317 @@ toType
 	</div>
 </div>
 </script>
+
+<!-- status-main-tmpl
+id,
+-->
+<script id="status-main-tmpl" type="text/html">
+<div id="<%= id %>" class="status-container">
+</div>
+</script>
+
+<!-- status-msg-tmpl
+id,
+title,
+content,
+-->
+<script id="status-msg-tmpl" type="text/html">
+<div id="<%= id %>" class="status-msg grad-bg-down">
+	<div class="status-head group row">
+		<div class="status-icon std-icon center-child fortify">
+			<i class="fa fa-fw"></i>
+		</div>
+		<div class="status-title expand">
+			<%= title %>
+		</div>
+	</div>
+	<div class="status-content">
+		<%= content %>
+	</div>
+	<div class="status-msg-actions group row end">
+		<%= buttons %>
+	</div>
+</div>
+</script>
+
+<!-- status button
+event,
+type,
+faClass,
+label,
+-->
+<script id="status-button-tmpl" type="text/html">
+<div class="btn text status-<%= event %> <%= type %>">
+	<i class="fa fa-fw <%= faClass %>"></i>
+	<%= label %>
+</div>
+</script>
+
+<!-- status msg media fail
+message,
+-->
+<script id="media-fail-tmpl" type="text/html">
+<div class="">
+	<div class="status-explain">
+		<%= message %>
+	</div>
+</div>
+</script>
+
+<!-- status msg browser check
+supportIcon,
+supportMsg,
+secureIcon,
+secureMsg,
+capsHTML,
+-->
+<script id="status-browser-check-tmpl" type="text/html">
+<div id="status-browser-check" class="">
+	<div id="browser-support-check" class="browser-capa-row group row start hidden">
+		<div class="check-icon">
+			<i class="fa fa-fw <%= supportIcon %>"></i>
+		</div>
+		<div class="status-explain">
+			<%= supportMsg %>
+		</div>
+	</div>
+	<div id="browser-secure-check" class="browser-capa-row group row start hidden">
+		<div class="check-icon">
+			<i class="fa fa-fw <%= secureIcon %>"></i>
+		</div>
+		<div class="status-explain">
+			<%= secureMsg %>
+		</div>
+	</div>
+	<div id="browser-capabilities-check" class="hidden">
+		<%= capsHTML %>
+	</div>
+	<div id="browser-check-actions" class="group row end">
+		<div id="browser-check-continue" class="btn text warning hidden">
+			<i class="fa fa-fw fa-exclamation-circle"></i>
+			{i18n_continue}
+		</div>
+		<div id="browser-check-close-live" class="btn text danger">
+			<i class="fa fa-fw fa-close"></i>
+			{i18n_close_live}
+		</div>
+	</div>
+</div>
+</script>
+
+<!-- browser capa
+typeKlass,
+faIcon,
+name
+-->
+<script id="status-browser-capa-tmpl" type="text/html">
+<div class="browser-capa-row group row start">
+	<div class="icon LED <%= typeKlass %>">
+		<i class="fa fa-fw <%= faIcon %>"></i>
+	</div>
+	<div>
+		<%= name %>
+	</div>
+</div>
+</script>
+
+<!-- status msg selfie fail
+
+-->
+<script id="status-selfie-tmpl" type="">
+</script>
+
+<!-- status ICE
+message
+servers
+-->
+<script id="status-ice-tmpl" type="text/html">
+<div class="status-ice">
+	<div class="status-explain">
+		<%= message %>
+	</div>
+	<div>
+		<%= servers %>
+	</div>
+</div>
+</script>
+
+<!-- status ICE host
+errMsg,
+host,
+-->
+<script id="status-ice-host-tmpl" type="text/html">
+<div class="status-ice-row">
+	<div class="status-ice-error">
+		<%= errMsg %>
+	</div>
+	<div class="status-ice-host">
+		<%= host %>
+	</div>
+</div>
+</script>
+
+
+<!-- source-select
+
+-->
+<script id="select-source-tmpl" type="text/html">
+<div id="source-select" class="grad-bg-down bar column start">
+	<div id="source-head"class="fortify group row">
+		<div id="source-title" class="title expand Padding">
+			{i18n_audio_video_settings}
+		</div>
+		<div id="source-back" class="btn center-child fortify hidden">
+			<i class="fa fa-fw fa-close"></i>
+		</div>
+	</div>
+	<div id="source-preview" class="expand">
+		<div id="source-preview-reset" class="center-child">
+			<div id="source-preview-hint" class="LED">
+				<div>
+					{i18n_camera_preview}
+				</div>
+				<i id="source-no-preview-i" class="fa fa-fw fa-eye On"></i>
+			</div>
+			<video id="source-preview-video" src="" playinline autoplay="autoplay" class="">
+		</div>
+	</div>
+	<div id="source-inputs" class="fortify">
+		<div id="source-status">
+			<div id="source-error" class="hidden">
+				<div class="error-message">
+				</div>
+				<div class="error-buttons group row tighten">
+					<button class="button available" title="Show available devices">
+						<i class="fa fa-fw fa-list"></i>
+						{i18n_show_available}
+					</button>
+					<button class="button danger ignore" title="Ignore errors and close">
+						<i class="fa fa-fw fa-reply"></i>
+						{i18n_ignore}
+					</button>
+				</div>
+			</div>
+		</div>
+		<div id="source-input">
+			<div id="audiooutput-container" class="hidden">
+				<div id="audiooutput-error" class="error-message hidden">
+				</div>
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i class="fa fa-fw fa-volume-up"></i>
+					</div>
+					<div id="audiooutput-select" class="expand">
+					</div>
+				</div>
+				<video id="audiooutput-test" class="hidden" playinline>
+			</div>
+			<div id="audioinput-container" class="">
+				<div id="audioinput-error" class="error-message hidden">
+				</div>
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i id="audioinput-icon"
+							class="fa fa-fw fa-microphone">
+						</i>
+						<i id="audioinput-checking"
+							class="fa fa-fw fa-circle-o-notch fa-spin hidden">
+						</i>
+					</div>
+					<div id="audioinput-select" class="expand">
+					</div>
+					<div id="source-select-av-container" class="fortify">
+					</div>
+				</div>
+			</div>
+			<div id="videoinput-container" class="">
+				<div id="videoinput-error" class="error-message hidden">
+				</div>
+				<div class="group row">
+					<div class="select-icon std-icon fortify">
+						<i class="fa fa-fw fa-video-camera"></i>
+					</div>
+					<div id="videoinput-select" class="expand">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="source-select-buttons" class="group row end btn-row">
+			<div id="apply-select"
+				class="btn text"
+				title="Apply current selection">
+				<i class="fa fa-fw fa-check"></i>
+				{i18n_save}
+			</div>
+			<div id="discard-select"
+				class="btn text danger"
+				title="Discard any changes and close">
+				<i class="fa fa-fw fa-close"></i>
+				{i18n_cancel}
+			</div>
+			<div id="refresh-select"
+				class="btn text hidden"
+				title="Check for changes in available devices">
+				<i class="fa fa-fw fa-cube"></i>
+				{i18n_refresh}
+			</div>
+		</div>
+	</div>
+</script>
+
+
+<!-- change user name
+current,
+-->
+<script id="viewpane-change-username-tmpl" type="text/html">
+<div id="change-username" class="center-child">
+	<div id="change-username-content" class="std-bg">
+		{i18n_change_username}
+		<form id="change-username-form">
+			<div class="input-wrap">
+				<input id="change-username-input" type="text" value="<%= current %>">
+			</div>
+			<div class="group row btn-row">
+				<div id="change-username-accept" class="btn text Accept">
+					<i class="fa fa-fw fa-check"></i>
+					{i18n_set_name}
+				</div>
+				<div id="change-username-cancel" class="btn text Danger">
+					<i class="fa fa-fw fa-close"></i>
+					{i18n_cancel}
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+</script>
+
+
+<!-- live-overlay-share-tmpl
+-->
+<script id="live-overlay-share-tmpl" type="text/html">
+<div id="share-link-view" class="">
+	<div class="group row">
+		<div id="share-title" class="title expand">
+			{i18n_share_this_room}
+		</div>
+		<div id="share-close-inline" class="fortify btn">
+			<i class="fa fa-fw fa-close"></i>
+		</div>
+	</div>
+	<div class="input-wrap">
+		<input id="share-public-input" type="text">
+	</div>
+	<div class="group row end">
+		<div id="share-public-to-email" class="btn text fortify" type="button">
+			<i class="fa fa-fw fa-paper-plane"></i>
+			{i18n_create_email}
+		</div>
+		<div id="share-public-to-clippy" class="btn text fortify" type="button">
+			<i class="fa fa-fw fa-clipboard"></i>
+			{i18n_copy_to_clipboard}
+		</div>
+	</div>
+</div>
+</script>
+

@@ -27,7 +27,6 @@ var hello = window.hello || {};
 library.system = library.system || {};
 library.rtc = library.rtc || {};
 
-
 // LOGIN
 (function( ns, undefined ) {
 	ns.Login = function( defaultAccount, onlogin, onclose ) {
@@ -2248,7 +2247,7 @@ library.rtc = library.rtc || {};
 		self.server = null;
 		self.view = null;
 		self.peers = null;
-		self.queue = [];
+		self.sendQueue = [];
 		
 		self.init();
 	}
@@ -2271,7 +2270,8 @@ library.rtc = library.rtc || {};
 	ns.RtcSession.prototype.send = function( event ) {
 		const self = this;
 		if ( !self.view )  {
-			console.log( '!rtc.session.view - dropping', event );
+			console.log( '!rtc.session.view - queueueueueuing', event );
+			self.sendQueue.push( event );
 			return;
 		}
 		
@@ -2328,6 +2328,7 @@ library.rtc = library.rtc || {};
 		
 		self.id = init.liveId;
 		const roomConf = init.liveConf;
+		console.log( 'RtcSession - roomConf', roomConf );
 		const viewConf = self.conf;
 		const liveConf = {
 			userId      : roomConf.userId,
@@ -2338,6 +2339,7 @@ library.rtc = library.rtc || {};
 			roomName    : viewConf.roomName,
 			isPrivate   : viewConf.isPrivate,
 			isTempRoom  : viewConf.isTempRoom,
+			isStream    : viewConf.isStream,
 			logTail     : roomConf.logTail,
 			rtcConf     : {
 				ICE         : roomConf.ICE,
@@ -2345,6 +2347,8 @@ library.rtc = library.rtc || {};
 				quality     : roomConf.quality,
 				mode        : roomConf.mode,
 				sourceId    : roomConf.sourceId,
+				topology    : roomConf.topology,
+				isRecording : roomConf.isRecording,
 			},
 		};
 		self.view = new library.view.Live(
@@ -2355,6 +2359,10 @@ library.rtc = library.rtc || {};
 		);
 		
 		delete self.identities;
+		if ( self.sendQueue.length ) {
+			self.sendQueue.forEach( e => self.send( e ));
+			self.sendQueue = [];
+		}
 		
 		function eventSink( type, data ) {
 			self.emit( type, data );

@@ -31,7 +31,7 @@ var friend = window.friend || {};
 			return new ns.ViewEvent();
 		
 		const self = this;
-		window.EventEmitter.call( self, eventSink );
+		library.component.EventEmitter.call( self, eventSink, true );
 		
 		self.listener = {};
 		
@@ -47,7 +47,7 @@ var friend = window.friend || {};
 		}
 	}
 	
-	ns.ViewEvent.prototype = Object.create( window.EventEmitter.prototype );
+	ns.ViewEvent.prototype = Object.create( library.component.EventEmitter.prototype );
 	
 	ns.ViewEvent.prototype.eventInit = function() {
 		var self = this;
@@ -538,7 +538,7 @@ var friend = window.friend || {};
 			if ( null != self.resizeTimeout )
 				return;
 			
-			self.resizeTimeout = window.setTimeout( resizeThrottle, 333 );
+			self.resizeTimeout = window.setTimeout( resizeThrottle, 100 );
 			function resizeThrottle() {
 				self.resizeTimeout = null;
 				self.emit( 'resize', self.lastResizeEvent );
