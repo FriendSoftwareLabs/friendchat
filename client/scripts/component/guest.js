@@ -184,6 +184,7 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleInit = function( state ) {
 		const self = this;
+		console.log( 'GuestRoom.handleInit', state );
 		self.users = state.users;
 		self.identities = state.identities || {};
 		const perms = self.permissions || {

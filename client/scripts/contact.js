@@ -1726,6 +1726,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
+		console.log( 'handleInvite', event );
 		if ( 'revoke' === event.type )
 			send( event );
 		else

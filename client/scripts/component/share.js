@@ -548,6 +548,7 @@ library.component = library.component || {};
 	
 	ns.ShareLink.prototype.handlePublic = function( data ) {
 		const self = this;
+		console.log( 'handlePublic', data );
 		// clear styles
 		if ( self.publicToken === self.copyId )
 			self.clearCopy();
@@ -563,6 +564,7 @@ library.component = library.component || {};
 	
 	ns.ShareLink.prototype.handleState = function( data ) {
 		const self = this;
+		console.log( 'handleState', data );
 		self.host = data.host;
 		if ( data.publicToken )
 			self.handlePublic( data.publicToken );

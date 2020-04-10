@@ -2247,7 +2247,7 @@ library.rtc = library.rtc || {};
 		self.server = null;
 		self.view = null;
 		self.peers = null;
-		self.queue = [];
+		self.sendQueue = [];
 		
 		self.init();
 	}
@@ -2270,7 +2270,8 @@ library.rtc = library.rtc || {};
 	ns.RtcSession.prototype.send = function( event ) {
 		const self = this;
 		if ( !self.view )  {
-			console.log( '!rtc.session.view - dropping', event );
+			console.log( '!rtc.session.view - queueueueueuing', event );
+			self.sendQueue.push( event );
 			return;
 		}
 		
@@ -2358,6 +2359,10 @@ library.rtc = library.rtc || {};
 		);
 		
 		delete self.identities;
+		if ( self.sendQueue.length ) {
+			self.sendQueue.forEach( e => self.send( e ));
+			self.sendQueue = [];
+		}
 		
 		function eventSink( type, data ) {
 			self.emit( type, data );
