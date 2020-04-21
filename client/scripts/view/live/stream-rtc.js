@@ -573,6 +573,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTCStream.prototype.handleUserJoin = function( user ) {
 		const self = this;
+		const pId = user.peerId;
+		if ( pId === self.userId )
+			return;
+		
+		const id = user.identity;
+		if ( id )
+			self.identities[ pId ] = id;
+		
 		user.isHost = false;
 		self.addUser( user );
 	}
