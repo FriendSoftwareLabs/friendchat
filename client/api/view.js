@@ -31,7 +31,7 @@ var friend = window.friend || {};
 			return new ns.ViewEvent();
 		
 		const self = this;
-		library.component.EventEmitter.call( self, eventSink, true );
+		library.component.EventEmitter.call( self, eventSink );
 		
 		self.listener = {};
 		

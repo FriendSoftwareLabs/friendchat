@@ -1290,6 +1290,7 @@ library.contact = library.contact || {};
 		const id = self.idc.read( self.userId );
 		if ( !id ) {
 			console.log( 'updateAtString - could not find user', self );
+			self.atStrings = null;
 			return;
 		}
 		

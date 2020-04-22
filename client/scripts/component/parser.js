@@ -129,7 +129,7 @@ library.component.parse = library.component.parse || {};
 			return str;
 		}
 		
-		if ( 'number' === typeof( str))
+		if ( 'number' === typeof( str ))
 			str = str.toString();
 		
 		if ( 'string' !== typeof( str ))
@@ -699,9 +699,11 @@ library.component.parse = library.component.parse || {};
 		ns.Parse.call( self, emitEvent );
 		
 		self.type = conf.type || 'mention';
-		self.special = conf.atStrings;
+		self.special = conf.atStrings || [];
 		self.cssKlass = conf.cssKlass;
 		self.onlyEmit = conf.onlyEmit || false;
+		
+		self.RX = null;
 		
 		self.init();
 	}
@@ -710,6 +712,9 @@ library.component.parse = library.component.parse || {};
 	
 	ns.AtThings.prototype.process = function( str, isLog ) {
 		const self = this;
+		if ( !self.RX )
+			return null;
+		
 		if ( !str || !str.length )
 			return null;
 		
@@ -775,6 +780,11 @@ library.component.parse = library.component.parse || {};
 				return res;
 			})
 			.filter( s => !!s );
+		
+		if ( !valid.length ) {
+			self.RX = null;
+			return;
+		}
 		
 		const tests = valid.map( str => {
 			//str = str.toLowerCase();
