@@ -2002,6 +2002,7 @@ var hello = window.hello || {};
 		const uId = msg.fromId;
 		const mId = msg.msgId;
 		const user = self.users.get( self.userId );
+		const from = self.users.get( uId );
 		const isGuest = uId == null ? true : false;
 		
 		let name = '';
@@ -2013,7 +2014,11 @@ var hello = window.hello || {};
 			name = 'Guest > ' + msg.name;
 			userKlass = 'guest-user-klass';
 		} else {
-			name = msg.name;
+			if ( from )
+				name = from.name;
+			else
+				name = msg.name;
+			
 			userKlass = uId + '-klass';
 		}
 		
