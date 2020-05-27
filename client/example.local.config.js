@@ -18,18 +18,17 @@
 *****************************************************************************©*/
 
 window.localconfig = {
-	about : null,
+	about   : null,
 	// master config is fetched from here,
-	// and is probably where friendcore is running
-	host : 'friendcore_host',
-	port : '3000',
-	// main view
+	// and is probably same place as where friendcore is running
+	host    : 'friendcore_host',
+	port    : '/hello/',
 	appName : 'Friend Chat',
 	default : {
-		view : {
-			width : 350,
+		view  : {
+			width  : 350,
 			height : 320,
 		},
 	},
-	hideLive : false,
+	hideLive  : false,
 };
