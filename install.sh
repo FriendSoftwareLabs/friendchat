@@ -821,13 +821,24 @@ Do you wish to set up systemd to run FriendChat and Presence servers as system s
 This requires superuser access on your system" 10 50
 HELLO_EXE=$FRIEND_FOLDER/services/FriendChat/hello.js
 PRES_EXE=$FRIEND_FOLDER/services/Presence/presence.js
+HELLO_EXE_RUN=$FRIEND_FOLDER/services/FriendChat/run.sh
+PRES_EXE_RUN=$FRIEND_FOLDER/services/Presence/run.sh
 sudo chmod u+x $HELLO_EXE
 sudo chmod u+x $PRES_EXE
 
 if [ $? -eq "0" ]; then
 	USE_SYSD="1"
-	install_systemd_service "${HELLO_EXE}" "friendchat-server" "FriendChat server"
-	install_systemd_service "${PRES_EXE}" "presence-server" "Presence server"
+	# Generate run file friendchat
+	echo '#!/bin/sh' > $HELLO_EXE_RUN
+	echo 'node hello.js' >> $HELLO_EXE_RUN
+	chmod 555 $HELLO_EXE_RUN
+	# Generate run file presence
+	echo '#!/bin/sh' > $PRES_EXE_RUN
+	echo 'node presence.js' >> $PRES_EXE_RUN
+	chmod 555 $PRES_EXE_RUN
+	# Generate systemd scripts
+	install_systemd_service "${HELLO_EXE_RUN}" "friendchat-server" "FriendChat server"
+	install_systemd_service "${PRES_EXE_RUN}" "presence-server" "Presence server"
 else
 	echo "systemd setup declined"
 fi
