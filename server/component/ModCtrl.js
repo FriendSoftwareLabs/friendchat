@@ -43,19 +43,23 @@ ns.ModCtrl = function( conf ) {
 	self.onsend = conf.onsend;
 	
 	self.modules = {};
+	self.moduleOrder = [];
 	self.eventMap = null;
 	self.init();
 }
 
 // Public
 
-ns.ModCtrl.prototype.initializeModules = function() {
+ns.ModCtrl.prototype.initializeModules = function( defaultUsername ) {
 	const self = this;
 	self.load( modsBack );
-	function modsBack( modules ) {
+	function modsBack( dbModules ) {
+		const defaultModules = global.config.server.defaults.defaultModules;
+		let modules = self.checkAllowRun( dbModules );
+		const add = defaultModules.filter( d => checkAdd( d, modules ));
 		modules = self.sortModules( modules );
-		var hasPresenceModule = modules.some( isPresence );
-		if ( !hasPresenceModule ) {
+		const hasPresenceModule = modules.some( isPresence );
+		if ( !hasPresenceModule && defaultModules.some( type => type === 'presence' )) {
 			const pres = {
 				type     : 'presence',
 				settings : {
@@ -65,17 +69,32 @@ ns.ModCtrl.prototype.initializeModules = function() {
 			self.create( pres );
 		}
 		
-		modules.forEach( start );
+		modules.forEach( mod => self.start( mod ));
+		const addConfs = add.map( mod => self.buildModConf( mod, defaultUsername ));
+		addConfs.forEach( ac => self.create( ac ));
 	}
 	
-	function start( module ) { self.start( module ); }
+	function checkAdd( def, mods ) {
+		if ( 'presence' === def )
+			return false;
+		
+		const has = mods.some( m => {
+			return m.type == def;
+		});
+		if ( !has )
+			return true;
+		else
+			return false;
+	}
+	
 	function isPresence( module ) { return !!( 'presence' === module.type ); }
 }
 
 ns.ModCtrl.prototype.initializeClient = function( sessionId ) {
 	const self = this;
 	self.load( modsBack );
-	function modsBack( modules ) {
+	function modsBack( dbMods ) {
+		let modules = self.checkAllowRun( dbMods );
 		modules = self.sortModules( modules );
 		if ( !modules.length ) {
 			sendToClient( null );
@@ -86,7 +105,7 @@ ns.ModCtrl.prototype.initializeClient = function( sessionId ) {
 	}
 	
 	function sendToClient( modConf ) {
-		var msg = {
+		const msg = {
 			type : 'add',
 			data : modConf,
 		};
@@ -94,24 +113,13 @@ ns.ModCtrl.prototype.initializeClient = function( sessionId ) {
 	}
 }
 
-ns.ModCtrl.prototype.addDefaultModules = function( modules, defaultUsername ) {
+ns.ModCtrl.prototype.addDefaultModules = function( defaultUsername ) {
 	const self = this;
-	let modConfs = modules.map( buildConf );
+	const modules = global.config.server.defaults.defaultModules;
+	let modConfs = modules.map( type => self.buildModConf( type, defaultUsername ));
 	modConfs = modConfs.filter( mod => null != mod );
 	modConfs = self.sortModules( modConfs );
 	modConfs.forEach( create );
-	
-	function buildConf( mod ) {
-		let MOD = self.available[ mod ];
-		if ( !MOD )
-			return null;
-		
-		let conf = self.getModuleDefaultConf( mod );
-		conf = MOD.prototype.getSetup( conf, defaultUsername );
-		conf.type = mod;
-		conf.settings = conf.settings || {};
-		return conf;
-	}
 	
 	function create( modConf ) {
 		self.create( modConf )
@@ -156,7 +164,7 @@ ns.ModCtrl.prototype.close = function() {
 
 ns.ModCtrl.prototype.init = function() {
 	const self = this;
-	// these ( Presence, Tree.., etc ) are loaded/require at the top ^^^
+	// these ( Presence, Tree.., etc ) are loaded/require'd at the top ^^^
 	self.available = {
 		'presence' : Presence,
 		'treeroot' : Treeroot,
@@ -171,6 +179,34 @@ ns.ModCtrl.prototype.init = function() {
 	
 	function create( e, sid ) { self.create( e, sid ); }
 	function remove( e, sid ) { self.remove( e, sid ); }
+}
+
+ns.ModCtrl.prototype.buildModConf = function( type, defaultUsername ) {
+	const self = this;
+	let MOD = self.available[ type ];
+	if ( !MOD )
+		return null;
+	
+	let conf = self.getModuleDefaultConf( type );
+	conf = MOD.prototype.getSetup( conf, defaultUsername );
+	conf.type = type;
+	conf.settings = conf.settings || {};
+	return conf;
+}
+
+ns.ModCtrl.prototype.checkAllowRun = function( dbMods ) {
+	const self = this;
+	const defMods = global.config.server.defaults.defaultModules;
+	const allowed = dbMods.filter( m => check( m, defMods ));
+	return allowed;
+	
+	function check( mod, defs ) {
+		const run = defs.some( d => d == mod.type );
+		if ( run )
+			return true;
+		else
+			return false;
+	}
 }
 
 ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
@@ -221,9 +257,6 @@ ns.ModCtrl.prototype.create = function( modConf, sessionId, callback ) {
 
 ns.ModCtrl.prototype.sortModules = function( modList ) {
 	const self = this;
-	if ( !self.allowAdvanced )
-		modList = getSimpleList( modList );
-	
 	modList.sort( presenceFirst );
 	return modList;
 	
@@ -236,39 +269,12 @@ ns.ModCtrl.prototype.sortModules = function( modList ) {
 		
 		return 0;
 	}
-	
-	function getSimpleList( mods ) {
-		let simpleList = [];
-		let hasTreeroot = false;
-		let treerootConf = self.getModuleDefaultConf( 'treeroot' );
-		mods.forEach( isAllowed );
-		return simpleList;
-		
-		function isAllowed( mod ) {
-			if ( 'presence' === mod.type ) {
-				simpleList.push( mod );
-				return;
-			}
-			
-			if ( 'treeroot' !== mod.type )
-				return;
-			
-			if ( hasTreeroot )
-				return;
-			
-			if ( mod.host !== treerootConf.host )
-				return;
-			
-			hasTreeroot = true;
-			simpleList.push( mod );
-		}
-	}
 }
 
 ns.ModCtrl.prototype.add = function( module ) {
 	const self = this;
 	self.start( module );
-	var addEvent = {
+	const addEvent = {
 		type : 'module',
 		data : {
 			type : 'add',
@@ -362,6 +368,7 @@ ns.ModCtrl.prototype.start = function( mod ) {
 	
 	new Module( conn, clientId );
 	self.modules[ clientId ] = conn;
+	self.moduleOrder.push( clientId );
 	const conf = self.getModuleDefaultConf( mod.type );
 	if ( !conf )
 		throw new Error( 'start - module does not have default conf:' + mod.type );
@@ -385,14 +392,11 @@ ns.ModCtrl.prototype.start = function( mod ) {
 
 ns.ModCtrl.prototype.stop = function( moduleId ) {
 	const self = this;
-	var _module = self.modules[ moduleId ];
-	if ( !_module.kill ) {
-		log( 'module has no end, cannot', _module );
-		return;
-	}
-	
-	self.modules[ moduleId ].kill();
+	const mod = self.modules[ moduleId ];
 	delete self.modules[ moduleId ];
+	const mIdx = self.moduleOrder.indexOf( moduleId );
+	self.moduleOrder.splice( mIdx, 1 );
+	mod.kill();
 }
 
 ns.ModCtrl.prototype.getModuleDefaultConf = function( modType ) {
@@ -405,7 +409,6 @@ ns.ModCtrl.prototype.getModuleDefaultConf = function( modType ) {
 	const copy = JSON.parse( str );
 	return copy;
 }
-
 
 ns.ModCtrl.prototype.persistSetting = function( moduleId, pair, callback ) {
 	const self = this;

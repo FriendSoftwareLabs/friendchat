@@ -463,7 +463,7 @@ library.rtc = library.rtc || {};
 			treeroot : library.module.Treeroot,
 			irc      : library.module.IRC,
 			presence : library.module.Presence,
-			//telegram : library.module.Telegram,
+			telegram : library.module.Telegram,
 		};
 		self.availableModules = setAvailable( hello.config.modules );
 		
@@ -527,6 +527,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.create = function( module ) {
 		const self = this;
+		console.log( 'ModuleControl.create', module );
 		if ( module )
 			self.doCreate( module );
 		else
@@ -535,6 +536,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.add = function( modConf ) {
 		const self = this;
+		console.log( 'ModuleControl.add', modConf );
 		if ( modConf === null ) {
 			self.handleNoModule();
 			return;
@@ -724,6 +726,7 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.handleRemove = function( moduleId ) {
 		const self = this;
+		console.log( 'ModuleControl.handleRemove', moduleId );
 		var module = self.active[ moduleId ];
 		if ( !module ) {
 			console.log( 'invalid module id ');

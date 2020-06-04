@@ -48,7 +48,6 @@ ns.Account = function( conf, dbPool ) {
 
 ns.Account.prototype.init = function() {
 	const self = this;
-	log( 'init', self.isFirstLogin );
 	if ( !self.isFirstLogin && null == self.advancedUI )
 		self.advancedUI = true;
 	
@@ -76,7 +75,7 @@ ns.Account.prototype.init = function() {
 	if ( self.isFirstLogin )
 		return;
 	
-	self.mods.initializeModules();
+	self.mods.initializeModules( self.name );
 }
 
 ns.Account.prototype.attachSession = function( session ) {
@@ -212,7 +211,8 @@ ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 	// save ui choice
 	self.saveSetting({
 		setting : 'advancedUI',
-		value   : !!conf.advancedUI,
+		//value   : !!conf.advancedUI,
+		value   : false,
 	});
 	
 	// add default modules for choice
@@ -224,8 +224,7 @@ ns.Account.prototype.doFirstLoginSetup = function( conf ) {
 		mods = [ 'presence', 'treeroot' ];
 	*/
 	
-	defMods = global.config.server.defaults.defaultModules;
-	self.mods.addDefaultModules( defMods, self.name );
+	self.mods.addDefaultModules( self.name );
 }
 
 ns.Account.prototype.setupModCtrl = function( allowAdvanced ) {

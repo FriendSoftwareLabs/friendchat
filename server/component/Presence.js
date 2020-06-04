@@ -32,9 +32,6 @@ const fs = require( 'fs' );
 var ns = {};
 
 ns.Presence = function( clientConn, clientId ) {
-	if ( !( this instanceof ns.Presence ))
-		return new ns.Presence( clientConn, clientId );
-	
 	const self = this;
 	self.type = 'presence';
 	self.client = clientConn;

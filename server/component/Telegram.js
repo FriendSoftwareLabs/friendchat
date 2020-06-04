@@ -39,18 +39,23 @@ ns.Telegram = function( clientConn, clientId ) {
 
 // Public
 
+// Static
+ns.Telegram.prototype.getSetup = function( conf, username ) {
+	return conf || {};
+}
+
 // Private
 
 ns.Telegram.prototype.init = function() {
 	const self = this;
 	log( 'init *______*' );
-	self.client.on( 'connect', connect );
+	self.client.on( 'connect', ( e, sId ) => self.handleConnect( e, sId ));
+	self.client.on( 'kill', cb => self.kill( cb ));
 	
 	self.client.send({
 		type : 'initialize',
 	});
 	
-	function connect( e, sId ) { self.handleConnect( e, sId ); }
 }
 
 ns.Telegram.prototype.handleConnect = function( conf, socketId ) {
@@ -59,6 +64,12 @@ ns.Telegram.prototype.handleConnect = function( conf, socketId ) {
 		conf : conf,
 		sId  : socketId,
 	}, 3 );
+}
+
+ns.Telegram.prototype.kill = function( callback ) {
+	const self = this;
+	log( 'kill', callback );
+	callback( true );
 }
 
 module.exports = ns.Telegram;
