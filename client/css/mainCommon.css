@@ -47,7 +47,7 @@ body {
 }
 
 #notifications {
-    
+
 }
 
 .log-notify {
@@ -85,7 +85,7 @@ body {
 }
 
 .log-notify .message .log-info {
-    
+
 }
 
 .log-notify .unread-num {
@@ -133,7 +133,7 @@ body {
 }
 
 #assist-status-new {
-    
+
 }
 
 #assist-status-from {
@@ -141,7 +141,7 @@ body {
 }
 
 #assist-select-from {
-    
+
 }
 
 .assist-select-type .assist-select-col {
@@ -371,7 +371,7 @@ html body #tab-bar .Button
 }
 
 .module-info {
-    
+
 }
 
 
@@ -381,7 +381,7 @@ html body #tab-bar .Button
 }
 
 .active {
-    
+
 }
 
 .inactive-header {
@@ -399,7 +399,7 @@ html body #tab-bar .Button
 }
 
 .inactive {
-    
+
 }
 
 
@@ -441,11 +441,11 @@ html body #tab-bar .Button
 }
 
 .query-item .query-msg {
-    
+
 }
 
 .response-container {
-    
+
 }
 
 .contacts .contact-status,
@@ -464,10 +464,10 @@ html body #tab-bar .Button
 }
 
 .subscription .subscribee {
-    
+
 }
 .subscription .subscriber {
-    
+
 }
 
 .subscription .actions-container {
@@ -572,7 +572,7 @@ html body #tab-bar .Button
 */
 
 .room-name-form {
-    
+
 }
 
 .room-name-form .input-wrap {
@@ -595,7 +595,7 @@ html body #tab-bar .Button
 }
 
 .call-incoming {
-    
+
 }
 
 #hello .accept-video,
@@ -615,9 +615,9 @@ html body #tab-bar .Button
 }
 
 .call-outgoing {
-    
+
 }
 
 .call-live {
-    
+
 }

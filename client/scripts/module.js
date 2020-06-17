@@ -3806,7 +3806,7 @@ library.module = library.module || {};
 
 	ns.Jitsi.prototype.init = function() {
 		const self = this;
-		console.log( 'app.module.Telegram.init' );
+		console.log( 'app.module.Jitsi.init' );
 	}
 
 })( library.module );
