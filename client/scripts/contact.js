@@ -640,6 +640,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		const self = this;
+		console.log( 'joinLive', conf );
 		if ( hello.config.hideLive ) {
 			console.log( 'PresenceRoom.joinLive - blocked by conf', hello.config );
 			return;
@@ -652,6 +653,7 @@ library.contact = library.contact || {};
 		}
 		
 		if ( !self.settings ) {
+			console.log( 'settings??', self.settings );
 			self.goLivePending = conf || {};
 			return;
 		}
@@ -867,8 +869,14 @@ library.contact = library.contact || {};
 		function persist( e ) { self.persistRoom( e ); }
 		function settings( e ) { self.loadSettings( e ); }
 		function rename( e ) { self.renameRoom( e ); }
-		function startVideo( e ) { self.startVideo( e ); }
-		function startAudio( e ) { self.startAudio( e ); }
+		function startVideo( e ) {
+			console.log( 'startVideo', e );
+			self.startVideo( e );
+		}
+		function startAudio( e ) {
+			console.log( 'startAudio', e );
+			self.startAudio( e );
+		}
 		function chat( e ) { self.openChat( e ); }
 		function leave( e ) { self.leaveRoom( e ); }
 		
@@ -1158,6 +1166,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
+		console.log( 'handleInitialize', state );
 		self.users = state.users || {};
 		self.userIds = Object.keys( self.users );
 		self.peers = state.peers;
@@ -2630,7 +2639,7 @@ library.contact = library.contact || {};
 		
 		function nClose() {}
 		function nClick() {
-			self.startVideo();
+			self.startAudio();
 		}
 	}
 	
@@ -2769,16 +2778,16 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.setupLive = function( permissions ) {
 		const self = this;
-		if ( !self.isOpen ) {
-			//self.livePermissions = permissions;
-			self.goLivePending = permissions;
-			self.open();
-			return;
-		}
-		
+		console.log( 'setupLive', permissions );
 		const conf = {
 			permissions : permissions,
 		};
+		
+		if ( !self.isOpen ) {
+			self.goLivePending = conf;
+			self.open();
+			return;
+		}
 		
 		self.joinLive( conf );
 	}
