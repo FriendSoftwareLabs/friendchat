@@ -23,11 +23,11 @@ var library = window.library || {};
 library.component = library.component || {};
 
 (function( ns, undefined ) {
-	ns.GuestAccount = function( conn, permissions, onclose ) {
+	ns.GuestAccount = function( conn, permissions, onClose ) {
 		const self = this;
 		self.conn = conn;
 		self.permissions = permissions;
-		self.onclose = onclose;
+		self.onClose = onClose;
 		
 		self.roomId = null;
 		self.room = null;
@@ -43,7 +43,7 @@ library.component = library.component || {};
 			self.conn.close();
 		
 		delete self.conn;
-		delete self.onclose;
+		delete self.onClose;
 	}
 	
 	// Private
@@ -113,6 +113,7 @@ library.component = library.component || {};
 			identity    : conf,
 			permissions : self.permissions,
 			idCache     : self.idc,
+			onClose     : self.onClose,
 		};
 		self.room = new library.component.GuestRoom( roomConf, self.acc );
 	}
@@ -136,6 +137,7 @@ library.component = library.component || {};
 		self.identity = conf.identity;
 		self.permissions = conf.permissions;
 		self.idc = conf.idCache;
+		self.onClose = conf.onClose;
 		
 		self.conn = null;
 		self.identities = {};
@@ -235,12 +237,13 @@ library.component = library.component || {};
 		}
 		function liveName( e ) { self.handleLiveName( e ); }
 		function onclose( e ) {
+			console.log( 'guestroom onclose')
 			const leave = {
 				type : 'leave',
 			};
 			self.handleLiveToRoom( leave );
-			const onclose = self.onclose;
-			delete self.onclose;
+			const onclose = self.onClose;
+			delete self.onClose;
 			if ( onclose )
 				onclose();
 		}

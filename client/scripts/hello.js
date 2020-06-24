@@ -792,7 +792,10 @@ var hello = null;
 	ns.Hello.prototype.setupLiveRoom = function( permissions ) {
 		const self = this;
 		new library.component.GuestAccount( self.conn, permissions, onclose );
-		function onclose() { self.quit(); }
+		function onclose() {
+			console.log( 'hello.guestAccount.onclose' );
+			self.quit();
+		}
 		
 		//self.rtc.createClient( self.config.run.data );
 	}
