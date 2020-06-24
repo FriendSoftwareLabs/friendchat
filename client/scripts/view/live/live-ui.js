@@ -259,6 +259,7 @@ library.component = library.component || {};
 		self.audioBtn = document.getElementById( 'audio-toggle-btn' );
 		self.hangupBtn = document.getElementById( 'hangup-btn' );
 		self.videoBtn = document.getElementById( 'video-toggle-btn' );
+		self.sessionTimer = document.getElementById( 'session-timer' );
 		self.shareLinkBtn = document.getElementById( 'share-link-btn' );
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.teaseChat = document.getElementById( 'tease-chat-container' );
@@ -497,8 +498,8 @@ library.component = library.component || {};
 		viewPeer.on( 'status', showStatus );
 		
 		// start session duration on selfie when the first peer is added
-		if ( self.peerGridOrder.length === 2 )
-			self.peers[ 'selfie' ].startDurationTimer();
+		if ( self.peerIds.length === 2 )
+			self.startDurationTimer();
 		
 		function addToVoiceList( peer ) {
 			peer.setIsInList( true );
@@ -577,9 +578,12 @@ library.component = library.component || {};
 			self.setSpeaker();
 		
 		if ( self.peerGridOrder.length === 1 ) {
-			self.peers[ 'selfie' ].stopDurationTimer();
 			self.togglePopped( false );
 			delete self.selfiePopped;
+		}
+		
+		if ( self.peerIds.length === 1 ) {
+			self.stopDurationTimer();
 		}
 		
 		self.updateVoiceListMode();
@@ -677,6 +681,98 @@ library.component = library.component || {};
 			
 			peer.reflow();
 		}
+	}
+	
+	
+	ns.UI.prototype.startDurationTimer = function() {
+		const self = this;
+		console.log( 'start durrr')
+		self.startTime = Date.now();
+		self.isDurationTimer = true;
+		self.toggleDurationUpdate();
+	}
+	
+	ns.UI.prototype.toggleDurationUpdate = function() {
+		const self = this;
+		if ( !self.isDurationTimer ) {
+			stop();
+			return;
+		}
+		
+		if ( self.durationLoopId )
+			return;
+		
+		self.durationLoopId = 1;
+		timeLoop();
+		function timeLoop() {
+			if ( !self.durationLoopId )
+				return;
+			
+			self.durationLoopId = window.requestAnimationFrame( timeLoop );
+			updateTime();
+		}
+		
+		function updateTime() {
+			const now = Date.now();
+			const duration = now - self.startTime;
+			self.setDurationTime( duration );
+		}
+		
+		function stop() {
+			if ( self.durationLoopId ) {
+				window.cancelAnimationFrame( self.durationLoopId );
+				self.durationLoopId = null;
+			}
+		}
+	}
+	
+	ns.UI.prototype.setDurationTime = function( msSinceStart ) {
+		const self = this;
+		if ( !msSinceStart ) {
+			clear();
+			return;
+		}
+		
+		let seconds = window.Math.floor( msSinceStart / 1000 );
+		const hours = window.Math.floor( seconds / 60 / 60 );
+		if ( hours ) {
+			const hourSeconds = hours * 60 * 60;
+			seconds = seconds - hourSeconds;
+		}
+		
+		const minutes = window.Math.floor( seconds / 60 );
+		if ( minutes ) {
+			const minuteSeconds = minutes * 60;
+			seconds = seconds - minuteSeconds
+		}
+		
+		const time = [];
+		if ( hours )
+			time.push( pad( hours ));
+		
+		time.push( pad( minutes ));
+		time.push( pad( seconds ));
+		self.sessionTimer.innerText = time.join( ':' );
+		
+		function clear() {
+			self.sessionTimer.innerText = '--:--:--';
+		}
+		
+		function pad( num ) {
+			if ( 10 > num )
+				return '0' + num;
+			
+			return num;
+		}
+	}
+	
+	ns.UI.prototype.stopDurationTimer = function() {
+		const self = this;
+		console.log( 'stopDurrrr' );
+		self.isDurationTimer = false;
+		self.startTime = null;
+		self.toggleDurationUpdate();
+		self.setDurationTime( null );
 	}
 	
 	ns.UI.prototype.handleQueue = function( msg ) {
@@ -3025,7 +3121,6 @@ library.component = library.component || {};
 		
 		self.menu.setState( 'popped', self.wasPopped );
 		self.updateDisplayState();
-		self.toggleDurationUpdate();
 		self.toggleAVGraph();
 		
 		return self.isPopped;
@@ -3108,8 +3203,6 @@ library.component = library.component || {};
 		// ui
 		//self.audioBtn = document.getElementById( 'mute-self' );
 		self.nameBar = self.ui.querySelector( '.ui-buttons .name-bar' );
-		self.durationBar = document.getElementById( 'session-duration' );
-		self.durationTime = self.durationBar.querySelector( '.time' );
 		
 		//self.audioBtn.addEventListener( 'click', audioBtnClick, false );
 		function audioBtnClick( e ) { self.peer.toggleMute(); }
@@ -3126,95 +3219,6 @@ library.component = library.component || {};
 		
 		// 
 		self.elementMap[ 'queue' ] = self.queueContainer;
-	}
-	
-	ns.Selfie.prototype.startDurationTimer = function() {
-		const self = this;
-		self.startTime = Date.now();
-		self.isDurationTimer = true;
-		self.toggleDurationUpdate();
-	}
-	
-	ns.Selfie.prototype.toggleDurationUpdate = function() {
-		const self = this;
-		if ( !self.isDurationTimer || self.isPopped || self.isInList ) {
-			stop();
-			return;
-		}
-		
-		if ( self.durationLoopId )
-			return;
-		
-		self.durationLoopId = 1;
-		timeLoop();
-		function timeLoop() {
-			if ( !self.durationLoopId )
-				return;
-			
-			self.durationLoopId = window.requestAnimationFrame( timeLoop );
-			updateTime();
-		}
-		
-		function updateTime() {
-			var now = Date.now();
-			var duration = now - self.startTime;
-			self.setDurationTime( duration );
-		}
-		
-		function stop() {
-			if ( self.durationLoopId ) {
-				window.cancelAnimationFrame( self.durationLoopId );
-				self.durationLoopId = null;
-			}
-		}
-	}
-	
-	ns.Selfie.prototype.setDurationTime = function( msSinceStart ) {
-		var self = this;
-		if ( !msSinceStart ) {
-			clear();
-			return;
-		}
-		
-		var seconds = window.Math.floor( msSinceStart / 1000 );
-		var hours = window.Math.floor( seconds / 60 / 60 );
-		if ( hours ) {
-			var hourSeconds = hours * 60 * 60;
-			seconds = seconds - hourSeconds;
-		}
-		
-		var minutes = window.Math.floor( seconds / 60 );
-		if ( minutes ) {
-			var minuteSeconds = minutes * 60;
-			seconds = seconds - minuteSeconds
-		}
-		
-		var time = [];
-		if ( hours )
-			time.push( pad( hours ));
-		
-		time.push( pad( minutes ));
-		time.push( pad( seconds ));
-		self.durationTime.innerText = time.join( ':' );
-		
-		function clear() {
-			self.durationTime.innerText = '--:--:--';
-		}
-		
-		function pad( num ) {
-			if ( 10 > num )
-				return '0' + num;
-			
-			return num;
-		}
-	}
-	
-	ns.Selfie.prototype.stopDurationTimer = function() {
-		var self = this;
-		self.isDurationTimer = false;
-		self.startTime = null;
-		self.toggleDurationUpdate();
-		self.setDurationTime( null );
 	}
 	
 	ns.Selfie.prototype.bindPeer = function() {
