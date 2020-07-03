@@ -63,7 +63,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTC = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
-		console.log( 'RTC conf', conf.rtcConf );
 		self.conn = conn || null;
 		self.ui = UI;
 		self.userId = conf.userId;
@@ -78,13 +77,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.mode = conf.rtcConf.mode || null;
 		self.topology = conf.rtcConf.topology || 'peer';
 		self.isRecording = conf.rtcConf.isRecording || false;
+		self.speaking = conf.rtcConf.speaking;
 		self.quality = conf.rtcConf.quality || null;
 		self.permissions = conf.rtcConf.permissions;
 		self.localSettings = conf.localSettings || {};
 		self.onclose = onclose;
 		self.onready = onready;
-		
-		console.log( 'RTC - localsettings', self.localSettings );
 		
 		self.peers = {};
 		self.peerIds = [];
@@ -223,7 +221,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.showSourceSelect = function() {
 		const self = this;
-		console.log( 'showSourceSelect' );
 		self.selfie.showSourceSelect();
 	}
 	
@@ -286,11 +283,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !ready )
 			return;
 		
-		if ( self.mode ) {
-			if ( 'presentation' === self.mode.type )
-				self.setModePresentation();
-		}
-		
+		self.applyMode();
 		self.bindConn();
 		
 		if ( 'star' === self.topology ) {
@@ -360,7 +353,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleProxyRoom = function( event ) {
 		const self = this;
-		console.log( 'handleProxyRoom', self.rtcConf );
 		self.selfie.publish( self.rtcConf );
 	}
 	
@@ -390,6 +382,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.menu.on( 'change-username'  , username );
 		self.menu.on( 'restart'          , restart );
 		self.menu.on( 'mode-presentation', presentation );
+		self.menu.on( 'mode-speaker'     , speaker );
 		
 		if ( self.isGuest || self.isPrivate ) {
 			self.menu.disable( 'share' );
@@ -397,7 +390,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function username( e ) { self.changeUsername(); }
 		function restart( e ) { self.restartPeers(); }
-		function presentation( e ) { self.togglePresentationMode( e ); }
+		function presentation( e ) { self.sendModeToggle( 'presentation' ); }
+		function speaker( e ) { self.sendModeToggle( 'follow-speaker' ); }
 	}
 	
 	ns.RTC.prototype.updateMenuSendReceive = function( permissions, devices ) {
@@ -541,13 +535,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.handleSpeaking = function( speaker ) {
+	ns.RTC.prototype.handleSpeaking = function( speaking ) {
 		const self = this;
-		if ( self.userId === speaker.peerId ) {
-			speaker.peerId = 'selfie';
-		}
-		
-		self.ui.setSpeaker( speaker );
+		self.ui.setSpeaker( speaking );
 	}
 	
 	ns.RTC.prototype.handleQuality = function( quality ) {
@@ -556,89 +546,76 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		self.quality = quality;
-		self.selfie.setRoomQuality( quality );
+		self.selfie.updateRoomQuality( quality );
 		
 	}
 	
-	ns.RTC.prototype.handleMode = function( event ) {
+	ns.RTC.prototype.handleMode = function( mode ) {
 		const self = this;
-		if ( !event )
-			event = {};
+		if ( mode && self.mode ) {
+			if ( mode.type === self.mode.type )
+				return;
+		}
 		
-		let mode = event.type;
-		if ( '' === mode )
-			self.setModeNormal();
-		
-		if ( 'presentation' === mode )
-			self.setModePresentation( event.data );
-		
-		//self.restartStream();
+		self.clearCurrentMode();
+		self.mode = mode;
+		self.applyMode();
 	}
 	
-	ns.RTC.prototype.setModeNormal = function() {
+	ns.RTC.prototype.applyMode = function() {
 		const self = this;
-		self.menu.enable( 'mode-speaker' );
-		self.menu.enable( 'send-receive' );
-		self.menu.enable( 'mode-presentation', true );
-		self.menu.enable( 'source-select' );
-		self.menu.enable( 'toggle-screen-share' );
-		self.menu.enable( 'dragger' );
-		self.menu.setState( 'mode-presentation', false );
-		self.ui.togglePresentation( null );
-		self.modePerms = null;
-		self.updatePermissions();
-		
-		if ( self.mode.data && ( null != self.mode.data.wasMuted ))
-			self.selfie.toggleMute( self.mode.data.wasMuted );
-		
-		self.mode = null;
-		self.updatePermissions();
-	}
-	
-	ns.RTC.prototype.setModePresentation = function( conf ) {
-		const self = this;
-		if ( !self.mode && !conf ) {
-			console.log( 'live.setModePresentation - invalid data', {
-				conf : conf,
-				mode : self.mode,
-			});
+		const mode = self.mode;
+		if ( null == mode ) {
+			self.updatePermissions();
 			return;
 		}
 		
-		if ( !self.mode )
-			self.mode = {
-				type : 'presentation',
-				data : conf,
-			};
+		const type = mode.type;
+		if ( 'presentation' === type )
+			self.setModePresentation();
 		
-		let presenterId = self.mode.data.owner;
-		let isPresenter = presenterId === self.userId;
+		if ( 'follow-speaker' === type )
+			self.setModeFollowSpeaker();
+		
+		self.updatePermissions();
+	}
+	
+	ns.RTC.prototype.clearCurrentMode = function() {
+		const self = this;
+		if ( !self.mode )
+			return;
+		
+		const type = self.mode.type;
+		if ( 'presentation' === type )
+			self.clearModePresentation();
+		
+		if ( 'follow-speaker' === type )
+			self.clearModeFollowSpeaker();
+		
+		self.updatePermissions();
+	}
+	
+	ns.RTC.prototype.setModePresentation = function() {
+		const self = this;
+		if ( !self.mode ) {
+			console.log( 'live.setModePresentation - invalid data', conf );
+			return;
+		}
+		
+		const presenterId = self.mode.data.owner;
+		const isPresenter = ( presenterId === self.userId );
 		if ( !isPresenter ) {
 			self.mode.data.wasMuted = !!self.selfie.isMute;
 			self.selfie.toggleMute( true );
 		}
 		
-		self.menu.disable( 'dragger' );
-		self.menu.disable( 'mode-speaker' );
-		self.menu.disable( 'send-receive' );
-		self.menu.setState( 'mode-presentation', true );
-		if ( !isPresenter ) {
-			self.menu.disable( 'source-select' );
-			self.menu.disable( 'toggle-screen-share' );
-		}
-		
-		if ( isPresenter )
-			self.ui.togglePresentation( 'selfie' );
-		else
-			self.ui.togglePresentation( presenterId );
+		self.ui.setModePresentation( presenterId, isPresenter );
 		
 		self.modePerms = {};
 		if ( isPresenter )
 			setPresenterPermissions();
 		else
 			setReceiverPermissions();
-		
-		self.updatePermissions();
 		
 		function setPresenterPermissions() {
 			self.modePerms.send = {
@@ -663,8 +640,33 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
+	ns.RTC.prototype.clearModePresentation = function() {
+		const self = this;
+		if (  null != self.mode.data.wasMuted )
+			self.selfie.toggleMute( self.mode.data.wasMuted );
+		
+		self.ui.clearModePresentation();
+		self.modePerms = null;
+	}
+	
+	ns.RTC.prototype.setModeFollowSpeaker = function() {
+		const self = this;
+		self.ui.setModeFollowSpeaker( true );
+		self.selfie.setModeFollowSpeaker( true );
+		self.modePerms = null;
+	}
+	
+	ns.RTC.prototype.clearModeFollowSpeaker = function() {
+		const self = this;
+		self.selfie.setModeFollowSpeaker( false );
+		self.ui.setModeFollowSpeaker( false );
+	}
+	
 	ns.RTC.prototype.updateMobileRestrictions = function() {
 		const self = this;
+		self.mobilePerms = null;
+		return;
+		
 		if ( !self.isMobile )
 			return;
 		
@@ -784,7 +786,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.resetOutput = function() {
 		const self = this;
-		console.log( 'RTC.resetOutput' );
 		self.restartPeers();
 		//self.ui.restartAudioSinks();
 	}
@@ -859,12 +860,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.togglePresentationMode = function( e ) {
+	ns.RTC.prototype.sendModeToggle = function( modeId ) {
 		const self = this;
 		const mode = {
 			type : 'mode',
 			data : {
-				mode : 'presentation',
+				type : modeId,
 			},
 		};
 		self.conn.send( mode );
@@ -1200,6 +1201,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			identity      : identity,
 			browser       : self.browser,
 			permissions   : self.permissions,
+			speaking      : self.speaking,
 			quality       : self.quality,
 			localSettings : self.localSettings,
 			isAdmin       : self.isAdmin,
@@ -1388,9 +1390,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.menu = conf.menu;
 		self.browser = conf.browser;
 		self.identity = conf.identity;
+		self.userId = self.identity.clientId;
 		self.permissions = conf.permissions;
 		self.localSettings = conf.localSettings;
-		self.currentQuality = conf.quality || {
+		self.mediaQuality = conf.quality || {
 			level : 'normal',
 			scale : 1,
 		};
@@ -1412,16 +1415,24 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.isChrome = null;
 		self.isFirefox = null;
 		
-		self.init();
+		self.init( conf.speaking );
 	}
 	
 	ns.Selfie.prototype = Object.create( library.component.EventEmitter.prototype );
 	
 	// Public
 	
+	ns.Selfie.prototype.saveLocalSetting = function( setting, value ) {
+		const self = this;
+		const sett = {
+			setting : setting,
+			value   : value,
+		};
+		self.emit( 'save', sett );
+	}
+	
 	ns.Selfie.prototype.useDevices = function( selected ) {
 		const self = this;
-		console.log( 'userDevices', selected );
 		self.setMediaSources( selected );
 	}
 	
@@ -1430,13 +1441,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'identity', identity );
 	}
 	
+	ns.Selfie.prototype.updateRoomQuality = function( quality ) {
+		const self = this;
+		self.mediaQuality = quality;
+		self.setMediaQuality();
+	}
+	
 	ns.Selfie.prototype.publish = function( rtcConf ) {
 		const self = this;
-		console.log( 'publsih', rtcConf );
 		self.createSource( rtcConf );
 		
 	}
 	
+	ns.Selfie.prototype.setModeFollowSpeaker = function( setActive ) {
+		const self = this;
+		self.modeFollowSpeaker = setActive;
+		self.updateFollowSpeaker();
+	}
 	
 	// receive defaults to same as send
 	ns.Selfie.prototype.toggleVideo = function( send, receive ) {
@@ -1508,7 +1529,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	// Private
 	
-	ns.Selfie.prototype.init =function() {
+	ns.Selfie.prototype.init =function( speaking ) {
 		const self = this;
 		const ignoreSysMute = self.localSettings[ 'ignore-system-mute' ];
 		if ( ignoreSysMute )
@@ -1523,6 +1544,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			onSpeaking
 		);
 		
+		if ( null != speaking ) {
+			self.updateFollowSpeaker( speaking );
+			if ( speaking.current == self.userId )
+				self.speaking.setIsSpeaker( true );
+		}
+		
 		function onSpeaking( isSpeaking ) {
 			const speaking = {
 				type : 'speaking',
@@ -1534,19 +1561,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.conn.send( speaking );
 		}
 		
-		self.conn.on( 'speaking', speaking );
-		function speaking( speaker ) {
-			if ( !self.speaking )
-				return;
-			
-			if ( speaker.peerId === self.identity.clientId )
-				self.speaking.setIsSpeaker( speaker.isSpeaking );
-			else
-				self.speaking.setIsSpeaker( false );
-		}
+		self.conn.on( 'speaking', e => self.handleSpeaking( e ));
 		
 		//
-		console.log( 'Selfie.topology', self.topology );
 		if ( 'star' == self.topology )
 			self.setupProxy();
 		
@@ -1567,7 +1584,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function shareCheckErr( err ) {
-			console.log( 'shareScreenErr', err );
 			self.screenShareAvailable = false;
 		}
 		
@@ -1576,7 +1592,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.media = new library.rtc.Media(
 			self.permissions,
 			self.localSettings.preferedDevices,
-			self.currentQuality,
+			self.mediaQuality,
 			self.sources
 		);
 		
@@ -1599,9 +1615,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setupProxy = function() {
 		const self = this;
-		console.log( 'Selfie - star topoloig detected!!!!11', {
-			pConn : self.proxyConn,
-		});
 		self.proxy = new library.component.EventNode(
 			'source',
 			self.proxyConn,
@@ -1620,20 +1633,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.createSource = function( rtcConf ) {
 		const self = this;
-		console.log( 'createSource', {
-			rtcConf : self.rtcConf,
-			rtcConfpassed : rtcConf,
-		});
 		if ( rtcConf )
 			self.rtcConf = rtcConf;
 		
-		if ( self.session ) {
-			console.log( 'createSession', {
-				state   : self.state,
-				session : self.session,
-			});
+		if ( self.session )
 			return;
-		}
 		
 		//if ( !self.media )
 		self.proxyMedia = new window.MediaStream();
@@ -1679,7 +1683,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function sendNoStream( e ) { self.sendNoStream( type ); }
 		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
-		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
+		function statsUpdate( e ) { self.handleFullStats( e, type ); }
 		function sessionError( e ) { self.handleSessionError( e, type ); }
 		function dataChannel( e ) { self.bindDataChannel( e ); }
 		*/
@@ -1687,12 +1691,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.updatePublishedMedia = function() {
 		const self = this;
-		console.log( 'updatePublishedMedia', {
-			session     : self.session,
-			stream      : self.stream,
-			permissions : self.permissions,
-		});
-		
 		const perms = {
 			type : 'permissions',
 			data : self.permissions,
@@ -1715,15 +1713,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.stream.getTracks().forEach( t => {
 			const kind = t.kind;
 			sTracks[ kind ] = t;
-		});
-		console.log( 'updatePublishedMedia', {
-			session : self.session,
-			stream  : self.stream,
-			pmedia  : self.proxyMedia,
-			audio   : self.hasAudio,
-			video   : self.hasVideo,
-			pTracks : pTracks,
-			sTracks : sTracks,
 		});
 		
 		if ( !self.hasAudio )
@@ -1759,13 +1748,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.handleMedia = function( media ) {
 		const self = this;
 		self.setStream( media );
-		if ( !media )
-			return;
+		let error = null;
+		if ( !media ) 
+			error = 'ERR_NO_MEDIA';
 		
 		let callback = self.streamBack;
 		delete self.streamBack;
 		if ( callback ) {
-			callback( null, media );
+			callback( error, media );
 		}
 		
 		if ( self.isScreenSharing ) {
@@ -1789,8 +1779,39 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		console.log( 'handleMediaError - NYI', err );
 	}
 	
+	ns.Selfie.prototype.handleSpeaking = function( speaking ) {
+		const self = this;
+		if ( null != self.speakingTimeout ) {
+			window.clearTimeout( self.speakingTimeout );
+			self.speakingTimeout = null;
+		}
+		
+		let wasSpeaker = false;
+		let isSpeaker = false;
+		if ( speaking.current === self.userId )
+			isSpeaker = true;
+		
+		if ( 
+			!!speaking.current
+			&& !isSpeaker 
+			&& ( speaking.last === self.userId )
+		)
+			wasSpeaker = true;
+		
+		self.speaking.setIsSpeaker( isSpeaker );
+		if ( wasSpeaker )
+			self.speakingTimeout = window.setTimeout( waitABit, 2000 );
+		else
+			self.updateFollowSpeaker( speaking );
+		
+		function waitABit() {
+			self.speakingTimeout = null;
+			self.updateFollowSpeaker( speaking );
+		}
+	}
+	
 	ns.Selfie.prototype.bindMenu = function() {
-		var self = this;
+		const self = this;
 		self.menu.on( 'mute'                , mute );
 		self.menu.on( 'blind'               , blind );
 		self.menu.on( 'leave'               , leave );
@@ -1829,7 +1850,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.showSourceSelect = function() {
 		const self = this;
-		console.log( 'showSourceSelect' );
 		const devices = self.media.getCurrentDevices() || null;
 		devices.audiooutput = self.currentAudioOut;
 		self.emit( 'device-select', devices );
@@ -1906,7 +1926,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
 		const self = this;
-		console.log( 'setMediaSources', devices );
 		if ( !devices )
 			return;
 		
@@ -1922,7 +1941,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.menu.setState( 'send-video', send.video );
 		}
 		
-		self.setupStream( streamBack, null, devices );
+		self.setupStream( streamBack, devices );
 		function streamBack( err, res ) {
 			if ( err )
 				return;
@@ -1959,17 +1978,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.savePreferedDevices = function( devices ) {
 		const self = this;
-		console.log( 'savePreferedDevices', devices );
 		self.saveLocalSetting( 'preferedDevices', devices );
-	}
-	
-	ns.Selfie.prototype.saveLocalSetting = function( setting, value ) {
-		const self = this;
-		const sett = {
-			setting : setting,
-			value   : value,
-		};
-		self.emit( 'save', sett );
 	}
 	
 	ns.Selfie.prototype.handleQuality = function( level ) {
@@ -1985,14 +1994,61 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'quality', level );
 	}
 	
-	ns.Selfie.prototype.setRoomQuality = function( quality ) {
+	ns.Selfie.prototype.updateFollowSpeaker = function( speaking ) {
 		const self = this;
+		if ( null != speaking )
+			self.speaker = speaking;
+		
+		self.setMediaQuality();
+	}
+	
+	ns.Selfie.prototype.getFollowSpeakerQuality = function( inQuality ) {
+		const self = this;
+		if ( !self.modeFollowSpeaker )
+			return inQuality;
+		
+		if ( !self.speaker )
+			return inQuality;
+		
+		let isSpeaker = false;
+		if ( self.speaker.current == self.userId )
+			isSpeaker = true;
+		
+		if ( !self.speaker.current && ( self.speaker.last == self.userId ))
+			isSpeaker = true;
+		
+		if ( isSpeaker )
+			return inQuality;
+		else
+			return {
+				level : 'pixel',
+			};
+	}
+	
+	ns.Selfie.prototype.setMediaQuality = function() {
+		const self = this;
+		if ( !self.media )
+			return;
+		
+		let quality = self.mediaQuality;
+		
+		quality = self.getFollowSpeakerQuality( quality );
+		
+		//
+		if ( self.currentQuality ) {
+			const cl = self.currentQuality.level;
+			const ql = quality.level;
+			if ( cl === ql )
+				return;
+		}
+		
+		//
 		try {
 			self.media.setQuality( quality )
 				.then( qOk )
 				.catch( qErr );
 		} catch( ex ) {
-			console.log( 'setRoomQuality - ex', ex );
+			console.log( 'setMediaQuality - ex', ex );
 		}
 		
 		function qOk( quality ) {
@@ -2004,7 +2060,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function qErr( quality ) {
-			console.log( 'setRoomQuality qErr', quality );
+			console.log( 'setMediaQuality qErr', quality );
 			if ( !quality )
 				return;
 			
@@ -2019,9 +2075,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.media.getOpusConf();
 	}
 	
-	ns.Selfie.prototype.setupStream = function( callback, permissions, preferedDevices ) {
+	ns.Selfie.prototype.setupStream = function( callback, preferedDevices ) {
 		const self = this;
-		console.log( 'setupStream - preferedDevices', preferedDevices );
 		if ( self.streamBack ) {
 			let oldBack = self.streamBack;
 			delete self.streamBack;
@@ -2032,15 +2087,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.isScreenSharing )
 			self.media.shareScreen( self.chromeSourceId );
 		else
-			self.media.create( permissions, preferedDevices );
+			self.media.create( preferedDevices );
 	}
 	
 	ns.Selfie.prototype.setStream = function( stream ) {
 		const self = this;
-		console.log( 'setStream', {
-			stream      : stream,
-			permissions : self.permissions,
-		});
 		self.stream = stream;
 		
 		if ( self.userMute ) {
@@ -2426,6 +2477,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
+	ns.Peer.prototype.setStatsRate = function( rate ) {
+		const self = this;
+		if ( !self.session )
+			return;
+		
+		self.session.setStatsRate( rate );
+	}
+	
 	ns.Peer.prototype.checkFailed = function() {
 		const self = this;
 		if ( hasFailed( self.session ))
@@ -2510,6 +2569,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.bindSignalChannel();
+		self.setupStats();
 		
 		// selfie
 		self.streamHandlerId = self.selfie.on( 'selfie', handleStream );
@@ -2691,6 +2751,25 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function closed( e ) { self.closeCmd(); }
 	}
 	
+	ns.Peer.prototype.setupStats = function() {
+		const self = this;
+		if ( self.stats )
+			self.stats.close();
+		
+		self.stats = new library.rtc.RTCStats( self.browser );
+		self.stats.on( 'base', e => self.handleBaseStats( e ));
+		self.stats.on( 'extended', e => self.handleFullStats( e ));
+	}
+	
+	ns.Peer.prototype.closeStats = function() {
+		const self = this;
+		if ( !self.stats )
+			return;
+		
+		self.stats.close();
+		delete self.stats;
+	}
+	
 	// stream setup
 	
 	ns.Peer.prototype.createSession = function() {
@@ -2730,33 +2809,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			peerName
 		);
 		
-		/*
-		self.session = new library.rtc.Session({
-			type      : type,
-			isHost    : self.isHost,
-			rtc       : self.rtcConf,
-			signal    : self.signal,
-			//modifySDP : modSDP,
-		});
-		*/
-		
 		self.session.on( 'track-add'   , e => self.trackAdded( e ));
 		self.session.on( 'track-remove', e => self.trackRemoved( e ));
-		self.session.on( 'nostream'    , sendNoStream );
-		self.session.on( 'state'       , stateChange );
-		self.session.on( 'stats'       , statsUpdate );
-		self.session.on( 'error'       , sessionError );
-		self.session.on( 'datachannel' , dataChannel );
+		self.session.on( 'nostream'    , e => self.sendNoStream( type ));
+		self.session.on( 'state'       , e => self.handleSessionStateChange( e, type ));
+		self.session.on( 'error'       , e => self.handleSessionError( e ));
+		self.session.on( 'datachannel' , e => self.bindDataChannel( e ));
+		
+		if ( self.stats )
+			self.stats.updateSource( self.session );
 		
 		self.showSelfie();
-		
-		function modSDP( e ) { return self.modifySDP( e, type ); }
-		
-		function sendNoStream( e ) { self.sendNoStream( type ); }
-		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
-		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
-		function sessionError( e ) { self.handleSessionError( e, type ); }
-		function dataChannel( e ) { self.bindDataChannel( e ); }
 	}
 	
 	ns.Peer.prototype.bindDataChannel = function( channel ) {
@@ -2974,7 +3037,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.closeAllSessions = function() {
-		var self = this;
+		const self = this;
 		self.closeSession();
 		return;
 		
@@ -2989,6 +3052,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		self.log( 'Peer.closeSession', self.id );
 		self.closeData();
+		if ( self.stats )
+			self.stats.updateSource( null );
 		
 		const sess = self.session;
 		delete self.session;
@@ -3379,6 +3444,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.emit( 'media', self.remoteMedia );
 		}
 		
+		if ( self.stats )
+			self.stats.trackAdded( track );
+		
 		//self.bindTrack( track );
 		const type = track.kind;
 		if ( 'video' === type )
@@ -3422,6 +3490,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		});
 		if ( !track )
 			return;
+		
+		if ( self.stats )
+			self.stats.trackRemoved( type );
 		
 		self.remoteMedia.removeTrack( track );
 		self.receiving[ type ] = false;
@@ -3758,10 +3829,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.refreshTheThing();
 	}
 	
-	ns.Peer.prototype.handleStatsUpdate = function( stats ) {
+	ns.Peer.prototype.handleFullStats = function( stats ) {
 		const self = this;
 		if ( 'error' == stats.type ) {
-			self.log( 'Peer.handleStatsUpdate - err', stats );
+			self.log( 'Peer.handleFullStats - err', stats );
 			return;
 		}
 		
@@ -3769,13 +3840,42 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		//self.emit( 'state', stats );
 	}
 	
+	ns.Peer.prototype.handleBaseStats = function( base ) {
+		const self = this;
+		self.log( 'base stats', base ); //spammy!
+		if ( !self.baseStats ) {
+			self.baseStats = base;
+			return;
+		}
+		
+		const curr = self.baseStats;
+		if ( null == curr.video && base.video ) {
+			self.emit( 'change-video-res', base.video );
+		}
+		
+		if ( curr.video && base.video ) {
+			if ( curr.video.width != base.video.width )
+				self.emit( 'change-video-res', base.video );
+		}
+		
+		if ( curr.video && ( null == base.video )) {
+			self.emit( 'change-video-res', null );
+		}
+		
+		if ( curr.audio && base.audio ) {
+			self.emit( 'audio-level', base.audio.level );
+		}
+		
+		self.baseStats = base;
+	}
+	
 	ns.Peer.prototype.checkStats = function( stats ) {
 		const self = this;
 		if ( !stats || !stats.inbound )
 			return;
 		
-		self.log( 'checkStats', stats );
 		return;
+		self.log( 'checkStats', stats );
 		const trans = stats.transport;
 		const inn = stats.inbound;
 		const audio = inn.audio;
@@ -4087,6 +4187,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.close = function() {
 		const self = this;
 		self.stopPing();
+		self.closeStats();
 		if ( self.metaInterval ) {
 			window.clearInterval( self.metaInterval );
 			self.metaInterval = null;
@@ -4211,7 +4312,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.session.on( 'track-remove', e => self.trackRemoved( e ));
 		self.session.on( 'nostream'    , sendNoStream );
 		self.session.on( 'state'       , stateChange );
-		self.session.on( 'stats'       , statsUpdate );
 		self.session.on( 'error'       , sessionError );
 		self.session.on( 'datachannel' , dataChannel );
 		
@@ -4221,7 +4321,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function sendNoStream( e ) { self.sendNoStream( type ); }
 		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
-		function statsUpdate( e ) { self.handleStatsUpdate( e, type ); }
 		function sessionError( e ) { self.handleSessionError( e, type ); }
 		function dataChannel( e ) { self.bindDataChannel( e ); }
 	}

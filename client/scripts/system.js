@@ -2351,6 +2351,7 @@ library.rtc = library.rtc || {};
 				mode        : roomConf.mode,
 				sourceId    : roomConf.sourceId,
 				topology    : roomConf.topology,
+				speaking    : roomConf.speaking,
 				isRecording : roomConf.isRecording,
 			},
 		};

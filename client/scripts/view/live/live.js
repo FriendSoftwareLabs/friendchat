@@ -30,7 +30,6 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.Init = function( viewConf ) {
 		const self = this;
-		console.log( 'viewConf', viewConf );
 		self.conn = window.View;
 		self.rtc = null;
 		self.ui = null;
@@ -115,7 +114,6 @@ library.component = library.component || {};
 	
 	ns.Init.prototype.initialize = function( data ) {
 		const self = this;
-		console.log( 'Live.initalize', data );
 		//hello.template.addFragments( data.fragments );
 		hello.template.addFragments( data.liveFragments );
 		//
@@ -124,7 +122,7 @@ library.component = library.component || {};
 		hello.parser.use( 'Emojii', data.emojii );
 		
 		// we dont need these any more
-		delete data.fragments;
+		delete data.liveFragments;
 		delete data.emojii;
 		
 		const liveConf = data.liveConf;
@@ -155,7 +153,6 @@ library.component = library.component || {};
 		);
 		
 		function onready( err ) {
-			console.log( 'Live onready' );
 			window.View.ready();
 		}
 		

@@ -26,6 +26,309 @@ library.view = library.view || {};
 library.component = library.component || {};
 
 /*
+	Peer thumb menu
+*/
+(function( ns, undefined ) {
+	ns.PeerThumbMenu = function(
+		anchor,
+		peerId,
+		opts,
+		onSelect,
+		onClose,
+	) {
+		const self = this;
+		self.id = 'peer-thumb-menu';
+		self.peerId = peerId;
+		self.opts = opts;
+		self.onSelect = onSelect;
+		self.onClose = onClose;
+		
+		self.items = {};
+		
+		const overlayConf = {
+			css  : 'overlay-base std-overlay grad-bg-down',
+			show : true,
+			position : {
+				outside : {
+					parent  : 'left-center',
+					self    : 'right-center',
+					offsetX : -10,
+				}
+			}
+		};
+		library.component.Overlay.call( self, anchor, overlayConf );
+	}
+	
+	ns.PeerThumbMenu.prototype = 
+		Object.create( library.component.Overlay.prototype );
+		
+	// Public
+	
+	ns.PeerThumbMenu.prototype.close = function() {
+		const self = this;
+		delete self.opts;
+		delete self.items;
+		delete self.el;
+		delete self.onSelect;
+		delete self.onClose;
+		
+		self.closeOverlay();
+	}
+	
+	// Static
+	
+	ns.PeerThumbMenu.prototype.build = function() {
+		const self = this;
+		const conf = {
+			peerName  : self.opts.peerName,
+		};
+		self.el = hello.template.getElement( 'peer-thumb-menu-tmpl', conf );
+		return self.el;
+	}
+	
+	ns.PeerThumbMenu.prototype.bind = function() {
+		const self = this;
+		self.menu = self.el.querySelector( '.menu-items' );
+		const items = self.opts.items;
+		items.forEach( i => {
+			const mId = friendUP.tool.uid( 'tm' );
+			i.menuId = mId;
+			const el = hello.template.getElement( 'thumb-menu-item-tmpl', i );
+			self.items[ mId ] = i;
+			self.menu.appendChild( el );
+			el.addEventListener( 'click', itemClick, false );
+			
+			function itemClick( e ) {
+				self.onSelect( i.id );
+			}
+		});
+		
+		self.updatePosition();
+		self.el.addEventListener( 'blur', menuBlur, false );
+		self.el.focus();
+		
+		function menuBlur() {
+			if ( !self.onClose )
+				return;
+			
+			self.onClose();
+		}
+	}
+	
+})( library.view );
+
+/*
+	ThumbGrid
+*/
+
+(function( ns, undefined ) {
+	ns.ThumbGrid = function( anchor, conf ) {
+		const self = this;
+		self.id = 'peer-thumb-grid';
+		self.peerOrder = [];
+		self.peers = {};
+		self.wrapMap = {};
+		self.showRoundBois = conf[ 'use_round_bois' ] || false;
+		
+		const overlayConf = {
+			css  : 'thumbs-mask',
+			show : false,
+			position : {
+				inside : {
+					parent  : 'right-center',
+					self    : 'right-center',
+					offsetX : -10,
+					top     : 10,
+					bottom  : 60,
+				},
+			},
+		};
+		
+		library.component.Overlay.call( self, anchor, overlayConf );
+	}
+	
+	ns.ThumbGrid.prototype = 
+		Object.create( library.component.Overlay.prototype );
+	
+	// Public
+	
+	ns.ThumbGrid.prototype.setOrder = function( peerIds ) {
+		const self = this;
+		if ( null == peerIds ) {
+			self.peerOrder = [];
+			return;
+		}
+		
+		self.peerOrder = peerIds;
+		self.updateOrder();
+	}
+	
+	ns.ThumbGrid.prototype.add = function( peer ) {
+		const self = this;
+		const pId = peer.id;
+		const exists = self.peers[ pId ];
+		if ( exists )
+			return;
+		
+		self.set( pId, peer );
+	}
+	
+	ns.ThumbGrid.prototype.remove = function( peerId ) {
+		const self = this;
+		self.peerOrder = self.peerOrder.filter( pId => pId != peerId );
+		return self.unset( peerId );
+	}
+	
+	ns.ThumbGrid.prototype.swapIn = function( peerId ) {
+		const self = this;
+		const pEl = self.peers[ peerId ];
+		const wId = self.wrapMap[ peerId ];
+		if ( !pEl || !wId ) {
+			console.trace( 'ThumbGrid.swapIn - missing things', self );
+			return false;
+		}
+		
+		const wrap = document.getElementById( wId );
+		const stream = wrap.querySelector( '.stream' );
+		stream.appendChild( pEl );
+		wrap.classList.toggle( 'active', false );
+	}
+	
+	ns.ThumbGrid.prototype.swapOut = function( peerId ) {
+		const self = this;
+		const wId = self.wrapMap[ peerId ];
+		if ( !wId ) {
+			console.log( 'ThumbGrid.swapout - no wId for', self );
+			return;
+		}
+		
+		const wrap = document.getElementById( wId );
+		wrap.classList.toggle( 'active', true );
+	}
+	
+	ns.ThumbGrid.prototype.useRoundBois = function( use ) {
+		const self = this;
+		if ( use === self.useRoundBois )
+			return;
+		
+		self.showRoundBois = use;
+		self.grid.classList.toggle( 'round-bois', self.showRoundBois );
+	}
+	
+	ns.ThumbGrid.prototype.close = function() {
+		const self = this;
+		self.closeOverlay();
+		delete self.peers;
+	}
+	
+	// Overlay implementations
+	
+	ns.ThumbGrid.prototype.build = function() {
+		const self = this;
+		let roundBoiKlass = '';
+		if ( self.showRoundBois )
+			roundBoiKlass = 'round-bois';
+		
+		const conf = {
+			roundBois : roundBoiKlass,
+		};
+		const el = hello.template.getElement( 'thumb-grid-tmpl', conf );
+		return el;
+	}
+	
+	ns.ThumbGrid.prototype.bind = function() {
+		const self = this;
+		self.grid = document.getElementById( self.id );
+		self.ph = document.getElementById( self.phId );
+	}
+	
+	// Private
+	
+	ns.ThumbGrid.prototype.updateOrder = function() {
+		const self = this;
+		self.peerOrder.forEach( pId => {
+			let wrapId = self.wrapMap[ pId ];
+			if ( null == wrapId )
+				return;
+			
+			const wrap = document.getElementById( wrapId );
+			self.grid.appendChild( wrap );
+		});
+	}
+	
+	ns.ThumbGrid.prototype.setWrap = function( pId, peer ) {
+		const self = this;
+		const wId = friendUP.tool.uid( 'warp' );
+		const avatar = peer.getAvatarStr();
+		self.wrapMap[ pId ] = wId;
+		const conf = {
+			id     : wId,
+		};
+		
+		const el = hello.template.getElement( 'thumb-grid-wrap-tmpl', conf );
+		let avatarUrl = null;
+		if ( avatar ) {
+			avatarUrl = window.encodeURI( avatar );
+			let avatarStyle = 'url("' + avatarUrl + '")';
+			const ava = el.querySelector( '.avatar' );
+			ava.style.backgroundImage = avatarStyle;
+		}
+		
+		self.grid.appendChild( el );
+		self.updatePosition();
+		return wId;
+	}
+	
+	ns.ThumbGrid.prototype.set = function( pId, peer ) {
+		const self = this;
+		self.peerOrder.push( pId );
+		if ( !self.wrapMap[ pId ])
+			self.setWrap( pId, peer );
+		
+		const pEl = peer.el;
+		self.peers[ pId ] = pEl;
+		//self.swapIn( pId );
+		self.updatePacking();
+	}
+	
+	ns.ThumbGrid.prototype.unset = function( pId ) {
+		const self = this;
+		const wId = self.wrapMap[ pId ];
+		if ( !wId )
+			return null;
+		
+		const pEl = document.getElementById( pId );
+		const wEl = document.getElementById( wId );
+		delete self.wrapMap[ pId ];
+		delete self.peers[ pId ];
+		wEl.parentNode.removeChild( wEl );
+		
+		self.updatePosition();
+		self.updatePacking();
+		
+		return pEl;
+	}
+	
+	ns.ThumbGrid.prototype.updatePacking = function() {
+		const self = this;
+		let packing = 'loose';
+		if ( 3 < self.peerOrder.length )
+			packing = 'tight';
+		
+		if ( packing === self.currentPacking )
+			return;
+		
+		if ( self.currentPacking )
+			self.grid.classList.toggle( self.currentPacking, false );
+		
+		self.currentPacking = packing;
+		self.grid.classList.toggle( self.currentPacking, true );
+	}
+	
+})( library.view );
+
+
+/*
 	Overlay is defined in components/viewComponents.js
 */
 
@@ -113,7 +416,6 @@ library.component = library.component || {};
 		
 	ns.DeviceSelect.prototype.showDevices = function( devices ) {
 		const self = this;
-		console.log( 'showDevices', devices );
 		self.ui.showDevices( devices );
 	}
 	

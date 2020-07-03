@@ -226,6 +226,11 @@ library.rtc = library.rtc || {};
 		self.isSpeaking = !!isSpeaker;
 	}
 	
+	ns.IsSpeaking.prototype.getIsSpeaker = function() {
+		const self = this;
+		return self.isSpeaking;
+	}
+	
 	ns.IsSpeaking.prototype.close = function() {
 		const self = this;
 		self.releaseSource();
@@ -349,7 +354,7 @@ library.rtc = library.rtc || {};
 		self.volumeAverage = 0;
 		self.timeBuffer = null;
 		
-		self.volumeHistory = new Array( 10 );
+		self.volumeHistory = new Array( 2 );
 		self.volumeHistory.fill( 0 );
 		
 		self.averageOverTime = new Array( 30 );
@@ -746,7 +751,8 @@ library.rtc = library.rtc || {};
 		media,
 		rtcConf,
 		opts,
-		peerName
+		peerName,
+		browser
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
@@ -763,6 +769,8 @@ library.rtc = library.rtc || {};
 		self.peerId = opts.peerId || null;
 		self.bundlePolicy = opts.bundlePolicy || null;
 		self.peerName = peerName || '';
+		self.browser = browser || 'chrome';
+		
 		self.log( 'Session', type );
 		
 		// peer connection, holder of streams
@@ -785,8 +793,6 @@ library.rtc = library.rtc || {};
 		
 		self.iceTimeoutMs = 1000 * 6;
 		
-		self.statsRate = 1000 * 2;
-		self.statsInterval = null;
 		self.statsCache = {};
 		
 		// data channels
@@ -896,19 +902,19 @@ library.rtc = library.rtc || {};
 		
 		const sender = self.senders[ kind ];
 		if ( !sender ) {
-			self.log( 'Session.removeTrack - no sender' );
+			self.log( 'removeTrack - no sender' );
 			self.checkWaiters();
 			return;
 		}
 		
-		self.log( 'Session.removeTrack', sender );
+		self.log( 'removeTrack', sender );
 		self.conn.removeTrack( sender );
 		delete self.senders[ kind ];
 	}
 	
 	ns.Session.prototype.addStream = function( stream ) {
 		const self = this;
-		self.log( 'Session.addStream', {
+		self.log( 'addStream', {
 			stream : stream,
 			conn   : self.conn, 
 		});
@@ -993,6 +999,26 @@ library.rtc = library.rtc || {};
 		channel.close();
 	}
 	
+	ns.Session.prototype.getStats = function() {
+		const self = this;
+		return new Promise(( ook, eek ) => {
+			if ( null == self.conn ) {
+				eek( 'ERR_NO_CONN' );
+				return;
+			}
+			
+			if ( 'nominal' != self.state ) {
+				eek( 'ERR_INVALID_STATE' );
+				return;
+			}
+			
+			self.conn.getStats()
+				.then( ook )
+				.catch( eek );
+			
+		});
+	}
+	
 	ns.Session.prototype.negotiate = function() {
 		const self = this;
 		self.log( 'negotiate' );
@@ -1007,22 +1033,18 @@ library.rtc = library.rtc || {};
 		return state;
 	}
 	
-	/* accepts:
-		'fast'
-		undefined
-	*/
 	ns.Session.prototype.setStatsRate = function( rate ) {
 		const self = this;
-		if ( 'fast' === rate )
-			self.statsRate = 250;
-		else
-			self.statsRate = 1000 * 2;
+		if ( !self.stats )
+			return;
+		
+		self.stats.setRate( rate );
 	}
 	
 	ns.Session.prototype.setDefaultCodec = function( useDefault ) {
 		const self = this;
 		self.log( 'setDefaultCodec', {
-			use : useDefault,
+			use  : useDefault,
 			curr : self.useDefaultCodec,
 		});
 		if ( !!useDefault === self.useDefaultCodec )
@@ -1043,7 +1065,7 @@ library.rtc = library.rtc || {};
 		
 		delete self.negotiationNeededWaiting;
 		
-		self.stopStats();
+		closeStats();
 		self.removeTracks();
 		self.setState( 'closed' );
 		self.release(); // event listeners
@@ -1081,6 +1103,14 @@ library.rtc = library.rtc || {};
 			self.signal.close();
 			
 			delete self.signal;
+		}
+		
+		function closeStats() {
+			if ( !self.stats )
+				return;
+			
+			self.stats.close();
+			delete self.stats;
 		}
 		
 	}
@@ -1155,8 +1185,6 @@ library.rtc = library.rtc || {};
 		self.conn.onremovestream = streamRemoved;
 		self.conn.onsignalingstatechange = signalStateChange;
 		
-		self.startStats();
-		
 		function connStateChange( e ) { self.connectionStateChange( e ); }
 		function streamAdded( e ) { self.streamAdded( e ); }
 		function onTrack( e ) { self.trackAdded( e ); }
@@ -1189,264 +1217,6 @@ library.rtc = library.rtc || {};
 		//return;
 		self.log( 'Session.renegotiate - isHost', self.isHost );
 		self.tryNegotiation();
-	}
-	
-	ns.Session.prototype.startStats = function() {
-		const self = this;
-		if ( !self.conn.getStats ) {
-			self.log( 'Session - getStats not supported' );
-			return;
-		}
-		
-		self.statsInterval = window.setInterval( emitStats, self.statsRate );
-		function emitStats() {
-			self.emitStats();
-		}
-	}
-	
-	ns.Session.prototype.emitStats = function() {
-		const self = this;
-		//return;
-		if ( !self.conn ) {
-			done( 'ERR_NO_CONN' );
-			return;
-		}
-		
-		if ( 'nominal' !== self.state ) {
-			self.log( 'Session.emitStats - not ready', self.state );
-			return;
-		}
-		
-		self.conn.getStats()
-			.then( success )
-			.catch( error );
-		
-		function success( stats ) {
-			const byType = {};
-			const byId = {};
-			stats.forEach( item => { 
-				const type = item.type;
-				const id = item.id;
-				if ( !byType[ type ])
-					byType[ type ] = [];
-				
-				byType[ type ].push( item );
-				byId[ id ] = item;
-			});
-			/*
-			self.log( 'stats', {
-				byType : byType,
-				byId   : byId,
-			});
-			*/
-			const res = {};
-			const inn = byType[ 'inbound-rtp' ];
-			const out = byType[ 'outbound-rtp' ];
-			res.inbound = buildInnieStats( inn, byId );
-			//res.outbound = buildOutieStats( out, byId );
-			res.transport = buildTransport( byType, byId );
-			res.raw = {
-				byId   : byId,
-				byType : byType,
-			};
-			done( null, res );
-		}
-		
-		function buildInnieStats( rtps, things ) {
-			if ( !rtps || !things )
-				return null;
-			
-			const res = {};
-			rtps.forEach( rtp => {
-				const id = rtp.id;
-				const track = things[ rtp.trackId ];
-				if ( !track )
-					return;
-				
-				const trackId = track.trackIdentifier;
-				const kind = track.kind;
-				if ( self.remoteTracks[ kind ] !== trackId )
-					return;
-				
-				const cache = self.statsCache[ kind ];
-				if ( cache && cache.id !== trackId ) {
-					self.statsCache[ kind ] = null;
-					return;
-				}
-				
-				/*
-				self.log( 'innie', {
-					rtp   : rtp,
-					track : track,
-				});
-				*/
-				const type = rtp.mediaType;
-				const codec = things[ rtp.codecId ];
-				rtp.track = track;
-				rtp.codec = codec;
-				if ( 'audio' == type )
-					setAudioDeltas( rtp );
-				if ( 'video' == type )
-					setVideoDeltas( rtp );
-				
-				res[ type ] = rtp;
-			});
-			return res;
-			
-			function setAudioDeltas( a ) {
-				const c = self.statsCache.audio;
-				const t = a.track;
-				if ( c ) {
-					t.audioEnergy = t.totalAudioEnergy * 10000;
-					t.volumeLevel = +( t.audioLevel * 100 ).toFixed( 2 );
-					const time = a.timestamp;
-					const bps = getRate( c.time, time, c.bytesReceived, a.bytesReceived );
-					const pps = getRate( c.time, time, c.packetsReceived, a.packetsReceived );
-					const lps = getRate( c.time, time, c.packetsLost, a.packetsLost );
-					const eps = getRate( c.time, time, c.audioEnergy, t.audioEnergy );
-					a.byteRate = bps;
-					a.packetRate = pps;
-					a.packetLoss = lps;
-					t.energyRate = eps;
-				}
-				
-				self.statsCache.audio = {
-					id              : t.trackIdentifier,
-					time            : a.timestamp,
-					bytesReceived   : a.bytesReceived,
-					packetsReceived : a.packetsReceived,
-					packetsLost     : a.packetsLost,
-					audioEnergy     : t.audioEnergy,
-				};
-			}
-			
-			function setVideoDeltas( v ) {
-				const c = self.statsCache.video;
-				const t = v.track;
-				if ( c ) {
-					const time = v.timestamp;
-					const bps = getRate( c.time, time, c.bytesReceived, v.bytesReceived );
-					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived );
-					const lps = getRate( c.time, time, c.packetsLost, v.packetsLost );
-					v.byteRate = bps;
-					v.packetRate = pps;
-					v.packetLoss = lps;
-				}
-				
-				self.statsCache.video = {
-					id              : t.id,
-					time            : v.timestamp,
-					bytesReceived   : v.bytesReceived,
-					packetsReceived : v.packetsReceived,
-					packetsLost     : v.packetsLost,
-				};
-			}
-		}
-		
-		function buildTransport( byType, byId ) {
-			if ( !byType.transport )
-				return null;
-			
-			const t = byType.transport[ 0 ];
-			const p = byId[ t.selectedCandidatePairId ];
-			const local = byId[ p.localCandidateId ];
-			const remote = byId[ p.remoteCandidateId ];
-			t.pair = p;
-			t.local = local;
-			t.remote = remote;
-			const c = self.statsCache.transport;
-			if ( c ) {
-				const time = t.timestamp;
-				const sent = t.bytesSent;
-				const recv = t.bytesReceived;
-				t.sendRate = getRate( c.time, time, c.sent, sent );
-				t.receiveRate = getRate( c.time, time, c.recv, recv );
-				t.ping = Math.round(( p.totalRoundTripTime / p.responsesReceived ) * 1000 );
-			}
-			
-			self.statsCache.transport = {
-				id   : t.id,
-				sent : t.bytesSent,
-				recv : t.bytesReceived,
-				time : t.timestamp,
-			};
-			
-			return t;
-		}
-		
-		function getRate( t1, t2, b1, b2 ) {
-			if ( null == t1
-				|| null == t2
-				|| null == b1
-				|| null == b2
-			) {
-				return null;
-			}
-			
-			const dt = t2 - t1;
-			const db = b2 - b1;
-			
-			// things per second
-			const scale = 1000.0 / dt;
-			const tps = +( 1.0 * db * scale ).toFixed( 4 );
-			/*
-			self.log( 'rate', {
-				t1 : t1,
-				t2 : t2,
-				b1 : b1,
-				b2 : b2,
-				dt : dt,
-				db : db,
-				scale : scale,
-				tps : tps,
-			});
-			*/
-			//self.log( 'tps', tps );
-			return tps;
-		}
-		
-		function error( err ) {
-			self.log( 'error', err );
-			let str = null;
-			try {
-				str = err.message;
-			} catch( e ) {}
-			done( 'ERR_STATS_FAILED', str || err );
-		}
-		
-		function done( err , res ) {
-			if ( err ) {
-				emitError( err, res );
-				return;
-			}
-			
-			//self.log( 'stats', res );
-			const event = {
-				type : 'stats',
-				data : res,
-			};
-			self.emit( 'stats', event );
-		}
-		
-		function emitError( type, data ) {
-			const err = {
-				type : 'error',
-				data : {
-					type : type,
-					data : data,
-				},
-			};
-			self.emit( 'stats', err );
-		}
-	}
-	
-	ns.Session.prototype.stopStats = function() {
-		const self = this;
-		if ( null == self.statsInterval )
-			return;
-		
-		window.clearInterval( self.statsInterval );
-		self.statsInterval = null;
 	}
 	
 	ns.Session.prototype.connectionStateChange = function( e ) {
@@ -1800,7 +1570,7 @@ library.rtc = library.rtc || {};
 		if ( 'have-local-offer' === self.conn.signalingState )
 			self.inOfferProcess = true;
 		
-		var desc = {
+		const desc = {
 			type : 'sdp',
 			data : self.conn.localDescription,
 		};
@@ -2050,6 +1820,9 @@ library.rtc = library.rtc || {};
 			return;
 		*/
 		const track = data.track;
+		if ( self.stats )
+			self.stats.trackAdded( track );
+		
 		//self.useOnTrack = true;
 		self.log( 'emitTrack', { type : self.type, track : track });
 		const tId = track.id;
@@ -2064,8 +1837,22 @@ library.rtc = library.rtc || {};
 				track : track,
 				e     : e,
 			});
-			self.emit( 'track-remove', type );
+			self.handleTrackEnded( e, track );
+			
 		}
+	}
+	
+	ns.Session.prototype.handleTrackEnded = function( e, track ) {
+		const self = this;
+		self.log( 'handleTrackEnded', {
+			e : e,
+			t : track,
+		});
+		if ( self.stats )
+			self.stats.trackRemoved( track );
+		
+		const type = track.kind;
+		self.emit( 'track-remove', type );
 	}
 	
 	ns.Session.prototype.streamAdded = function( e ) {
@@ -2347,6 +2134,7 @@ library.rtc = library.rtc || {};
 			return;
 		
 		self.state = type;
+		
 		self.emitState( type, data );
 		if ( 'nominal' === self.state )
 			self.checkWaiters();
@@ -2633,6 +2421,430 @@ library.rtc = library.rtc || {};
 	
 })( library.rtc );
 
+(function( ns, undefined ) {
+	ns.RTCStats = function( browser ) {
+		const self = this;
+		self.browser = browser;
+		
+		self.rtcConn = null;
+		self.baseRate = 500;
+		self.extendedRate = 1000 * 4;
+		self.extendedChecked = false;
+		self.statsCache = {};
+		
+		library.component.EventEmitter.call( self );
+		
+		self.init();
+	}
+	
+	ns.RTCStats.prototype = Object.create( library.component.EventEmitter.prototype );
+	
+	// Public
+	
+	ns.RTCStats.prototype.setRate = function( rate ) {
+		const self = this;
+		if ( null == rate )
+			self.baseRate = 500;
+		else
+			self.baseRate = rate;
+		
+		self.setPollers();
+	}
+	
+	ns.RTCStats.prototype.resume = function() {
+		
+	}
+	
+	ns.RTCStats.prototype.stop = function() {
+		const self = this;
+		self.clearPollers();
+	}
+	
+	ns.RTCStats.prototype.trackAdded = function( track ) {
+		const self = this;
+		const id = track.id;
+		const k = track.kind;
+		if ( 'audio' == k )
+			self.aDiscover = track;
+		if ( 'video' == k )
+			self.vDiscover = track;
+		
+		self.discoverTrack( id );
+	}
+	
+	ns.RTCStats.prototype.trackRemoved = function( type ) {
+		const self = this;
+		if ( 'audio' == type ) {
+			self.aId = null;
+			self.aDiscover = null;
+		}
+		
+		if ( 'video' == type ) {
+			self.vId = null;
+			self.vDiscover = null;
+		}
+	}
+	
+	ns.RTCStats.prototype.updateSource = function( webRTCSession ) {
+		const self = this;
+		if ( null == webRTCSession ) {
+			self.rtcConn = null;
+			self.stop();
+			return;
+		}
+		
+		self.rtcConn = webRTCSession;
+		self.setPollers();
+	}
+	
+	ns.RTCStats.prototype.updateState = function( state ) {
+		const self = this;
+		self.state = state;
+	}
+	
+	ns.RTCStats.prototype.close = function() {
+		const self = this;
+		self.clearPollers();
+		self.closeEventEmitter();
+		delete self.browser;
+		delete self.rtcConn;
+	}
+	
+	// Private
+	
+	ns.RTCStats.prototype.init = function() {
+		const self = this;
+	}
+	
+	ns.RTCStats.prototype.setPollers = function() {
+		const self = this;
+		self.clearPollers();
+		
+		self.baseInterval = window.setInterval( getStats, self.baseRate );
+		function getStats() {
+			self.getStats();
+		}
+		
+		self.extendedInterval = window.setInterval( checkExt, self.extendedRate );
+		function checkExt() {
+			self.extendedChecked = false;
+		}
+	}
+	
+	ns.RTCStats.prototype.clearPollers = function() {
+		const self = this;
+		if ( null != self.baseInterval ) {
+			window.clearInterval( self.baseInterval );
+			delete self.baseInterval;
+		}
+		
+		if ( null != self.extendedInterval ) {
+			window.clearInterval( self.extendedInterval );
+			delete self.extendedInterval;
+		}
+	}
+	
+	ns.RTCStats.prototype.getStats = function() {
+		const self = this;
+		if ( !self.rtcConn )
+			return;
+		
+		self.rtcConn.getStats()
+			.then( statsBack )
+			.catch( bonk );
+		
+		function bonk( err ) {
+			console.log( 'RTCStats.getStats - failed to get stats', err );
+		}
+		
+		function statsBack( raw ) {
+			self.raw = raw;
+			self.emitBase();
+			if ( self.extendedChecked )
+				return;
+			
+			self.emitExtended();
+		}
+	}
+	
+	ns.RTCStats.prototype.emitBase = function() {
+		const self = this;
+		if ( null == self.raw )
+			return;
+		
+		let vT = null;
+		let aT = null;
+		if ( null == self.aId ) {
+			if ( self.aDiscover )
+				aT = self.discoverTrack( self.aDiscover.id );
+		}
+		else
+			aT = self.raw.get( self.aId );
+		
+		if ( null == self.vId ) {
+			if ( self.vDiscover )
+				vT = self.discoverTrack( self.vDiscover.id );
+		}
+		else
+			vT = self.raw.get( self.vId );
+		
+		let audio = null;
+		let video = null;
+		if ( null != aT ) {
+			audio = {
+				level : aT.audioLevel,
+			};
+		}
+		
+		if ( null != vT ) {
+			video = {
+				height : vT.frameHeight,
+				width  : vT.frameWidth,
+			};
+		}
+		const base = {
+			audio : audio,
+			video : video,
+		};
+		
+		self.emit( 'base', base );
+	}
+	
+	ns.RTCStats.prototype.discoverTrack = function( id ) {
+		const self = this;
+		if ( null == self.raw )
+			return;
+		
+		let track = null;
+		let type = null;
+		self.raw.forEach( t => {
+			if ( 'track' != t.type )
+				return;
+			
+			if ( !t.remoteSource )
+				return;
+			
+			const tId = t.trackIdentifier;
+			if ( tId != id )
+				return;
+			
+			
+			track = t;
+			type = t.kind;
+		});
+		
+		if ( !track )
+			return null;
+		
+		if ( 'audio' == type ) {
+			self.aId = track.id;
+			self.aDiscover = null;
+		}
+		
+		if ( 'video' == type ) {
+			self.vId = track.id;
+			self.vDiscover = null;
+		}
+		
+		return track;
+	}
+	
+	ns.RTCStats.prototype.emitExtended = function() {
+		const self = this;
+		if ( !self.raw )
+			return;
+		
+		self.extendedChecked = true;
+		const stats = self.raw;
+		const byType = {};
+		const byId = {};
+		stats.forEach( item => { 
+			const type = item.type;
+			const id = item.id;
+			if ( !byType[ type ])
+				byType[ type ] = [];
+			
+			byType[ type ].push( item );
+			byId[ id ] = item;
+		});
+		
+		const res = {};
+		const inn = byType[ 'inbound-rtp' ];
+		const out = byType[ 'outbound-rtp' ];
+		res.inbound = buildInnieStats( inn, byId );
+		//res.outbound = buildOutieStats( out, byId );
+		res.transport = buildTransport( byType, byId );
+		res.raw = {
+			byId   : byId,
+			byType : byType,
+		};
+		done( res );
+		
+		function buildInnieStats( rtps, things ) {
+			if ( !rtps || !things )
+				return null;
+			
+			const res = {};
+			rtps.forEach( rtp => {
+				const id = rtp.id;
+				const track = things[ rtp.trackId ];
+				if ( !track )
+					return;
+				
+				const trackId = track.trackIdentifier;
+				const kind = track.kind;
+				if ( !track.remoteSource )
+					return;
+				
+				const cache = self.statsCache[ kind ];
+				if ( cache && cache.id !== trackId ) {
+					self.statsCache[ kind ] = null;
+					return;
+				}
+				
+				/*
+				self.log( 'innie', {
+					rtp   : rtp,
+					track : track,
+				});
+				*/
+				const type = rtp.mediaType;
+				const codec = things[ rtp.codecId ];
+				rtp.track = track;
+				rtp.codec = codec;
+				if ( 'audio' == type )
+					setAudioDeltas( rtp );
+				if ( 'video' == type )
+					setVideoDeltas( rtp );
+				
+				res[ type ] = rtp;
+			});
+			return res;
+			
+			function setAudioDeltas( a ) {
+				const c = self.statsCache.audio;
+				const t = a.track;
+				if ( c ) {
+					t.audioEnergy = t.totalAudioEnergy * 10000;
+					t.volumeLevel = +( t.audioLevel * 100 ).toFixed( 2 );
+					const time = a.timestamp;
+					const bps = getRate( c.time, time, c.bytesReceived, a.bytesReceived );
+					const pps = getRate( c.time, time, c.packetsReceived, a.packetsReceived );
+					const lps = getRate( c.time, time, c.packetsLost, a.packetsLost );
+					const eps = getRate( c.time, time, c.audioEnergy, t.audioEnergy );
+					a.byteRate = bps;
+					a.packetRate = pps;
+					a.packetLoss = lps;
+					t.energyRate = eps;
+				}
+				
+				self.statsCache.audio = {
+					id              : t.trackIdentifier,
+					time            : a.timestamp,
+					bytesReceived   : a.bytesReceived,
+					packetsReceived : a.packetsReceived,
+					packetsLost     : a.packetsLost,
+					audioEnergy     : t.audioEnergy,
+				};
+			}
+			
+			function setVideoDeltas( v ) {
+				const c = self.statsCache.video;
+				const t = v.track;
+				if ( c ) {
+					const time = v.timestamp;
+					const bps = getRate( c.time, time, c.bytesReceived, v.bytesReceived );
+					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived );
+					const lps = getRate( c.time, time, c.packetsLost, v.packetsLost );
+					v.byteRate = bps;
+					v.packetRate = pps;
+					v.packetLoss = lps;
+				}
+				
+				self.statsCache.video = {
+					id              : t.id,
+					time            : v.timestamp,
+					bytesReceived   : v.bytesReceived,
+					packetsReceived : v.packetsReceived,
+					packetsLost     : v.packetsLost,
+				};
+			}
+		}
+		
+		function buildTransport( byType, byId ) {
+			if ( !byType.transport )
+				return null;
+			
+			const t = byType.transport[ 0 ];
+			const p = byId[ t.selectedCandidatePairId ];
+			const local = byId[ p.localCandidateId ];
+			const remote = byId[ p.remoteCandidateId ];
+			t.pair = p;
+			t.local = local;
+			t.remote = remote;
+			const c = self.statsCache.transport;
+			if ( c ) {
+				const time = t.timestamp;
+				const sent = t.bytesSent;
+				const recv = t.bytesReceived;
+				t.sendRate = getRate( c.time, time, c.sent, sent );
+				t.receiveRate = getRate( c.time, time, c.recv, recv );
+				t.ping = Math.round(( p.totalRoundTripTime / p.responsesReceived ) * 1000 );
+			}
+			
+			self.statsCache.transport = {
+				id   : t.id,
+				sent : t.bytesSent,
+				recv : t.bytesReceived,
+				time : t.timestamp,
+			};
+			
+			return t;
+		}
+		
+		function getRate( t1, t2, b1, b2 ) {
+			if ( null == t1
+				|| null == t2
+				|| null == b1
+				|| null == b2
+			) {
+				return null;
+			}
+			
+			const dt = t2 - t1;
+			const db = b2 - b1;
+			
+			// things per second
+			const scale = 1000.0 / dt;
+			const tps = +( 1.0 * db * scale ).toFixed( 4 );
+			/*
+			self.log( 'rate', {
+				t1 : t1,
+				t2 : t2,
+				b1 : b1,
+				b2 : b2,
+				dt : dt,
+				db : db,
+				scale : scale,
+				tps : tps,
+			});
+			*/
+			//self.log( 'tps', tps );
+			return tps;
+		}
+		
+		function done( res ) {
+			const event = {
+				type : 'stats',
+				data : res,
+			};
+			
+			self.emit( 'extended', event );
+		}
+	}
+	
+})( library.rtc );
+
 
 // media
 (function( ns, undefined ) {
@@ -2680,11 +2892,8 @@ library.rtc = library.rtc || {};
 	}
 	
 	// permissions and preferedDevices are optional
-	ns.Media.prototype.create = function( permissions, preferedDevices ) {
+	ns.Media.prototype.create = function( preferedDevices ) {
 		const self = this;
-		if ( null != permissions )
-			self.permissions = permissions;
-		
 		self.updatePreferedDevices( preferedDevices );
 		let send = self.permissions.send;
 		if ( !send || ( !send.audio && !send.video )) {
@@ -2952,10 +3161,11 @@ library.rtc = library.rtc || {};
 		// lowest quality first or things will break
 		self.videoQualityKeys = [ 'width', 'height', 'frameRate' ];
 		self.videoQualityMap = {
-			'low'     : [ 256, 168, 4 ],
-			'medium'  : [ 480, 320, 12 ],
+			'pixel'   : [ 128, 96, 4 ],
+			'low'     : [ 256, 192, 4 ],
+			'medium'  : [ 480, 360, 12 ],
 			'normal'  : [ 640, 480, 24 ],
-			'high'    : [ 1280, 720, 60 ],
+			'high'    : [ 1280, 960, 60 ],
 		};
 		
 		self.opusQualityKeys = [ 'maxcodecaudiobandwidth', 'maxaveragebitrate', 'usedtx' ];

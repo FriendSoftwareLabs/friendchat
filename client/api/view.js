@@ -532,19 +532,7 @@ var friend = window.friend || {};
 		}
 		
 		// resize listening
-		window.addEventListener( 'resize', onResize, false );
-		function onResize( e ) {
-			self.lastResizeEvent = e;
-			if ( null != self.resizeTimeout )
-				return;
-			
-			self.resizeTimeout = window.setTimeout( resizeThrottle, 100 );
-			function resizeThrottle() {
-				self.resizeTimeout = null;
-				self.emit( 'resize', self.lastResizeEvent );
-			}
-		}
-		
+		window.addEventListener( 'resize', e => self.handleResize( e ), false );
 		window.addEventListener( 'dragover', onDragover, false );
 		window.addEventListener( 'drop', onDrop, false );
 		function onDragover( e ) {
@@ -568,6 +556,28 @@ var friend = window.friend || {};
 				self.applyThemeConfig( self.themeData );
 			
 			self.checkAllLoaded();
+		}
+	}
+	
+	ns.View.prototype.handleResize = function( e ) {
+		const self = this;
+		if ( null != self.resizeTimeout ) {
+			self.pendingResizeEvent = e;
+			return;
+		}
+		
+		self.currentResizeEvent = e;
+		self.resizeTimeout = window.setTimeout( resizeThrottle, 100 );
+		function resizeThrottle() {
+			self.resizeTimeout = null;
+			self.emit( 'resize', self.currentResizeEvent );
+			self.currentResizeEvent = null;
+			if ( null == self.pendingResizeEvent )
+				return;
+			
+			const pending = self.pendingResizeEvent;
+			self.pendingResizeEvent = null;
+			self.handleResize( pending );
 		}
 	}
 	
@@ -1637,7 +1647,6 @@ window.View = new api.View();
 		let items = [];
 		// from camera
 		if( e.type && e.type == 'blob' ) {
-			console.log( 'blobl', e.blob );
 			items.push( e.blob );
 		}
 		

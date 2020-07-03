@@ -16,10 +16,18 @@
 	padding-right : 5px;
 }
 
+#room-title {
+	flex        : 1 0;
+	overflow    : hidden;
+	min-width   : 1em;
+	white-space : nowrap;
+}
+
 #room-title .group-prefix,
 #room-title .title-name {
-	font-size: 130%;
-	font-weight: bold;
+	font-size   : 130%;
+	font-weight : bold;
+	min-width   : 3em;
 }
 
 #room-title .avatar {

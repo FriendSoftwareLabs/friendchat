@@ -29,7 +29,6 @@ library.component = library.component || {};
 (function( ns, undefined ) {
 	ns.UI = function( conn, liveConf, localSettings, live ) {
 		const self = this;
-		console.log( 'UI - liveConf', liveConf );
 		library.component.EventEmitter.call( self );
 		
 		self.conn = conn;
@@ -38,6 +37,7 @@ library.component = library.component || {};
 		self.isTempRoom = liveConf.isTempRoom;
 		self.localSettings = localSettings;
 		self.guestAvatar = liveConf.guestAvatar;
+		self.speaking = liveConf.rtcConf.speaking;
 		self.rtc = null;
 		self.peerGridId = 'peer-grid';
 		self.peerListId = 'peer-list';
@@ -53,7 +53,6 @@ library.component = library.component || {};
 		self.isReordering = false;
 		self.peerAddQueue = [];
 		
-		self.currentSpeaker = null;
 		self.uiVisible = true;
 		self.ui = null;
 		self.uiPanes = {};
@@ -98,18 +97,12 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.showDeviceSelect = function( currentDevices ) {
 		const self = this;
-		console.log( 'UI.showDeviceSelect', currentDevices );
 		self.settingsUI.showDevices( currentDevices )
 		self.settingsUI.show();
 	}
 	
 	ns.UI.prototype.addShareLink = function( conn ) {
 		const self = this;
-		console.log( 'UI.addShareLink', {
-			conn  : conn,
-			btn   : self.shareLinkBtn,
-			slink : self.shareLink,
-		});
 		if ( !self.shareLinkBtn ) {
 			console.log( 'Live UI.addShareLink, no button found' );
 			return;
@@ -130,14 +123,12 @@ library.component = library.component || {};
 		}
 		
 		function click( e ) {
-			console.log( 'shareLinkBtn click' );
 			self.shareLink.toggle();
 		}
 	}
 	
 	ns.UI.prototype.setRecording = function( isRecording ) {
 		const self = this;
-		console.log( 'setRecording', isRecording );
 		if ( isRecording === self.isRecording )
 			return;
 		
@@ -148,10 +139,56 @@ library.component = library.component || {};
 		self.recording.classList.toggle( 'hidden', !self.isRecording );
 	}
 	
+	ns.UI.prototype.setModePresentation = function( presenterId, isPresenter ) {
+		const self = this;
+		if ( isPresenter )
+			presenterId = 'selfie';
+		
+		self.presenterId = presenterId;
+		
+		self.menu.disable( 'dragger' );
+		self.menu.disable( 'mode-speaker' );
+		self.menu.disable( 'send-receive' );
+		if ( !isPresenter )
+			self.menu.disable( 'mode-presentation' );
+		
+		self.menu.setState( 'mode-presentation', true );
+		self.updateDisplayMode();
+	}
+	
+	ns.UI.prototype.clearModePresentation = function() {
+		const self = this;
+		self.menu.enable( 'dragger' );
+		self.menu.enable( 'mode-speaker' );
+		self.menu.enable( 'send-receive' );
+		self.menu.enable( 'mode-presentation', true );
+		
+		self.menu.setState( 'mode-presentation', false );
+		
+		self.presenterId = null;
+		self.updateDisplayMode();
+	}
+	
+	ns.UI.prototype.setModeFollowSpeaker = function( isActive ) {
+		const self = this;
+		if ( self.showThumbs === isActive )
+			return;
+		
+		self.showThumbs = isActive;
+		self.updateDisplayMode();
+	}
+	
+	ns.UI.prototype.setUseRoundBois = function( useRoundBois ) {
+		const self = this;
+		self.saveLocalSetting( 'use_round_bois', !!useRoundBois );
+		if ( self.thumbGrid )
+			self.thumbGrid.useRoundBois( useRoundBois );
+	}
+	
 	// Private
 	
 	ns.UI.prototype.init = function( conf ) {
-		var self = this;
+		const self = this;
 		self.uiPaneMap = {
 			'init-checks'        : library.view.InitChecksPane      ,
 			'source-select'      : library.view.SourceSelectPane    ,
@@ -163,6 +200,13 @@ library.component = library.component || {};
 			'menu'               : library.view.MenuPane            ,
 			'chat'               : library.view.ChatPane            ,
 		};
+		
+		if ( self.speaking )
+			self.setSpeaker( self.speaking );
+		
+		self.bindEvents();
+		//const peersEl = document.getElementById( self.ui );
+		self.thumbGrid = new library.view.ThumbGrid( self.gridContainer, self.localSettings );
 		
 		/*
 		let queueConf = {
@@ -197,8 +241,6 @@ library.component = library.component || {};
 			});
 		}
 		
-		self.bindEvents();
-		
 		self.addSettings();
 		let share = null;
 		if ( !self.isPrivate )
@@ -209,6 +251,18 @@ library.component = library.component || {};
 		
 		self.uiVisible = true;
 		self.toggleUI();
+	}
+	
+	ns.UI.prototype.saveLocalSetting = function( setting, value ) {
+		const self = this;
+		const sett = {
+			type : 'local-setting',
+			data : {
+				setting : setting,
+				value   : value,
+			},
+		};
+		self.conn.send( sett );
 	}
 	
 	ns.UI.prototype.addUIPane = function( id, conf ) {
@@ -250,9 +304,11 @@ library.component = library.component || {};
 		// ui
 		self.cover = document.getElementById( 'init-cover' );
 		self.live = document.getElementById( 'live' );
+		/*
 		self.waiting = document.getElementById( 'waiting-for-container' );
 		self.waitingFritz = document.getElementById( 'waiting-for-peers-fritz' );
 		self.waitingDots = document.getElementById( 'waiting-for-peers-dots' );
+		*/
 		self.ui = document.getElementById( 'live-ui' );
 		self.menuBtn = document.getElementById( 'show-menu-btn' );
 		self.screenShareBtn = document.getElementById( 'share-screen-btn');
@@ -320,6 +376,23 @@ library.component = library.component || {};
 		self.toggleUI( isOver );
 	}
 	
+	ns.UI.prototype.clearCurrentMode = function() {
+		const self = this;
+		console.log( 'clearCurrentMode' );
+	}
+	
+	ns.UI.prototype.updateDisplayMode = async function() {
+		const self = this;
+		self.peerIds.forEach( pId => {
+			self.updatePeerMode( pId );
+		});
+		
+		self.updateGridClass();
+		await self.updateVoiceListMode();
+		await self.updateThumbsGrid();
+		await self.toggleThumbGrid();
+	}
+	
 	ns.UI.prototype.showMenu = function() {
 		const self = this;
 		self.menuUI.toggle();
@@ -351,10 +424,6 @@ library.component = library.component || {};
 		
 		// theres is only change in container visibility
 		// at 0 and 1 panes visible
-		console.log( 'toggleUIPanes', {
-			visible    : self.panesVisible,
-			contrainer : self.uiPaneContainer,
-		});
 		if ( self.panesVisible > 1 )
 			return;
 		
@@ -398,7 +467,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.handleResize = function( e ) {
 		var self = this;
-		if ( self.resizeWait ) {
+		if ( null != self.resizeWait ) {
 			self.doOneMoreResize = true;
 			return;
 		}
@@ -420,16 +489,16 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.addNestedApp = function( appData ) {
-		var self = this;
+		const self = this;
 		if ( self.nestedApp )
 			self.nestedApp.close();
 		
-		var appId = friendUP.tool.uid( 'nested-app' );
-		var conf = {
-			id : appId,
+		const appId = friendUP.tool.uid( 'nested-app' );
+		const conf = {
+			id          : appId,
 			containerId : self.peerGridId,
-			app : appData,
-			onclose : onclose,
+			app         : appData,
+			onclose     : onclose,
 		};
 		self.nestedApp = new library.component.NestedApp( conf );
 		self.updateGridClass();
@@ -445,7 +514,7 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.addPeer = function( peer ) {
-		var self = this;
+		const self = this;
 		if ( self.isReordering ) {
 			self.peerAddQueue.push( peer );
 			return;
@@ -478,40 +547,32 @@ library.component = library.component || {};
 		else {
 			conf.onmenu = onMenuClick;
 			viewPeer = new library.view.Peer( conf );
-			if ( null == self.selfiePopped )
-				self.togglePopped( true );
 		}
 		
-		peer.on( 'video', updateHasVideo );
-		
-		// add to ui
 		self.peers[ pid ] = viewPeer;
 		self.peerIds.push( pid );
-		if ( self.isVoiceOnly )
-			addToVoiceList( viewPeer );
-		else
-			addToGrid( viewPeer );
+		if ( self.thumbGrid )
+			self.thumbGrid.add( viewPeer );
 		
-		self.updateMenu();
+		if (( 'selfie' === pid )
+			&& self.localSettings
+			&& ( null != self.localSettings.popped_user )
+		) {
+			self.togglePopped( self.localSettings.popped_user );
+		}
+		
+		self.updatePeerMode( pid );
+		
 		self.updateVoiceListMode();
+		self.updateThumbsGrid();
+		self.updateMenu();
 		
 		viewPeer.on( 'status', showStatus );
+		viewPeer.on( 'video', updateHasVideo );
 		
 		// start session duration on selfie when the first peer is added
 		if ( self.peerIds.length === 2 )
 			self.startDurationTimer();
-		
-		function addToVoiceList( peer ) {
-			peer.setIsInList( true );
-			self.audioList.add( peer.el );
-		}
-		
-		function addToGrid( peer ) {
-			self.gridContainer.appendChild( viewPeer.el );
-			viewPeer.el.classList.toggle( 'in-grid', true );
-			self.peerGridOrder.push( viewPeer.id );
-			self.updateGridClass();
-		}
 		
 		// show/hide waiting splash
 		self.updateWaiting();
@@ -529,7 +590,7 @@ library.component = library.component || {};
 		}
 		
 		function togglePopped( e ) {
-			self.togglePopped();
+			self.togglePopped( e );
 		}
 		
 		function voiceOnly( e ) {
@@ -541,8 +602,7 @@ library.component = library.component || {};
 		}
 		
 		function onMenuClick( e ) {
-			self.menu.show( viewPeer.menuId );
-			self.menuUI.show();
+			self.showPeerMenu( pid );
 		}
 		
 		function showStatus( e ) {
@@ -550,46 +610,200 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.UI.prototype.showPeerMenu = function( peerId ) {
+		const self = this;
+		if ( self.peerThumbMenu ) {
+			if ( peerId == self.peerThumbMenu.peerId )
+				return;
+			else
+				self.peerThumbMenu.close();
+		}
+		
+		const peer = self.peers[ peerId ];
+		if ( peer.isInThumbs )
+			showThumbMenu( peer )
+		else
+			showMainMenu( peer );
+		
+		function showThumbMenu( peer ) {
+			const pId = peer.id;
+			const id = peer.getIdentity();
+			const opts = {
+				peerName : id.name,
+				items : [
+					{
+						id      : 'reload',
+						faKlass : 'fa-refresh',
+						label   : View.i18n( 'i18n_reload' ),
+					},
+				],
+			};
+			self.peerThumbMenu = new library.view.PeerThumbMenu(
+				peer.el,
+				pId,
+				opts,
+				( e ) => self.handleThumbMenuSelect( e, pId ),
+				( e ) => onClose( e ),
+			);
+			
+			function onClose() {
+				if ( !self.peerThumbMenu )
+					return;
+				
+				self.peerThumbMenu.close();
+				delete self.peerThumbMenu;
+			}
+			
+		}
+		
+		function showMainMenu( peer ) {
+			self.menu.show( peer.menuId );
+			self.menuUI.show();
+		}
+	}
+	
+	ns.UI.prototype.handleThumbMenuSelect = function( menuItem, peerId ) {
+		const self = this;
+		self.maybeCloseThumbMenu( peerId );
+		const peer = self.peers[ peerId ];
+		if ( !peer )
+			return;
+		
+		if ( 'reload' == menuItem )
+			peer.reload();
+	}
+	
+	ns.UI.prototype.updatePeerMode = function( peerId ) {
+		const self = this;
+		const peer = self.peers[ peerId ];
+		if ( self.isVoiceOnly ) {
+			setInList( peer );
+			return;
+		}
+		
+		if ( self.presenterId ) {
+			if ( peerId == self.presenterId )
+				setInGrid( peer );
+			else
+				setInList( peer );
+			
+			return;
+		}
+		
+		if ( self.showThumbs ) {
+			//self.updateThumbsGrid();
+			self.updatePopped();
+			return;
+		}
+		
+		setInGrid( peer );
+		
+		function setInList( peer ) {
+			if ( peer.isInList )
+				return;
+			
+			if ( peer.isInGrid )
+				removeFromGrid( peer.id );
+			
+			peer.setInList();
+			self.audioList.add( peer.el );
+			self.updatePopped();
+		}
+		
+		function setInGrid( peer ) {
+			if ( peer.isInGrid )
+				return;
+			
+			if ( peer.isInList )
+				removeFromList( peer.id );
+			
+			peer.setInGrid();
+			self.gridContainer.appendChild( peer.el );
+			self.peerGridOrder.push( peer.id );
+			self.updatePopped();
+		}
+		
+		function setInThumbs( peer ) {
+			if ( peer.isInThumbs )
+				return;
+			
+			if ( peer.isInGrid )
+				removeFromGrid( peer.id );
+			
+			if ( peer.isInList )
+				removeFromList( peer.id );
+			
+			peer.setInThumbs();
+			self.thumbGrid.add( peer );
+			self.updatePopped();
+		}
+		
+		function removeFromGrid( pId ) {
+			const pdx = self.peerGridOrder.indexOf( pId );
+			if ( -1 == pdx )
+				return;
+			
+			self.peerGridOrder.splice( pdx, 1 );
+		}
+		
+		function removeFromList( pId ) {
+			self.audioList.remove( pId );
+		}
+	}
+	
 	ns.UI.prototype.removePeer = function( peerId ) {
-		var self = this;
-		var peer = self.peers[ peerId ];
+		const self = this;
+		const peer = self.peers[ peerId ];
 		if ( !peer ) {
 			console.log( 'live - no peer found for ', peerId );
 			return;
 		}
 		
 		let model = peer.peer;
-		model.release( 'video' );
+		//model.release( 'video' );
 		if ( 'selfie' === peerId ) {
 			model.release( 'room-quality' );
 			model.release( 'popped' );
 		}
 		
+		self.maybeCloseThumbMenu( peerId );
+		
+		self.thumbGrid.remove( peerId );
+		self.audioList.remove( peerId );
+		
+		const pidx = self.peerGridOrder.indexOf( peerId );
+		if ( -1 != pidx )
+			self.peerGridOrder.splice( pidx, 1 );
+		
 		peer.close();
 		delete self.peers[ peerId ];
 		self.peerIds = Object.keys( self.peers );
-		let pidx = self.peerGridOrder.indexOf( peerId );
-		if ( -1 === pidx )
-			self.audioList.remove( peerId );
-		else
-			self.peerGridOrder.splice( pidx, 1 );
 		
 		if ( self.modeSpeaker && self.currentSpeaker === peerId )
 			self.setSpeaker();
-		
-		if ( self.peerGridOrder.length === 1 ) {
-			self.togglePopped( false );
-			delete self.selfiePopped;
-		}
 		
 		if ( self.peerIds.length === 1 ) {
 			self.stopDurationTimer();
 		}
 		
 		self.updateVoiceListMode();
-		self.updateGridClass();
 		self.updateWaiting();
+		self.updatePopped();
 		self.updateMenu();
+		self.updateGridClass();
+		self.updateThumbsGrid();
+	}
+	
+	ns.UI.prototype.maybeCloseThumbMenu = function( peerId ) {
+		const self = this;
+		if ( !self.peerThumbMenu )
+			return;
+		
+		if ( peerId != self.peerThumbMenu.peerId )
+			return;
+		
+		self.peerThumbMenu.close();
+		delete self.peerThumbMenu;
 	}
 	
 	ns.UI.prototype.executePeerAddQueue = function() {
@@ -605,6 +819,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateWaiting = function() {
 		const self = this;
+		return;
 		const pids = Object.keys( self.peers );
 		const hideWaiting = pids.length > 1;
 		const onlyVoice = self.isVoiceOnly;
@@ -632,15 +847,23 @@ library.component = library.component || {};
 		if ( !selfie )
 			return;
 		
+		if ( self.presenterId || self.showThumbs ) {
+			if ( self.currentGridKlass ) {
+				if ( 'grid1' === self.currentGridKlass )
+					return;
+				
+				container.classList.toggle( self.currentGridKlass, false );
+			}
+			
+			self.currentGridKlass = 'grid1';
+			container.classList.toggle( self.currentGridKlass, true );
+			return;
+		}
+		
 		self.currentGridKlass = self.currentGridKlass || 'grid1';
 		container.classList.remove( self.currentGridKlass );
 		const peerNum = getPeerNum();
-		let newGridKlass = 'grid1';
-		if ( self.modeSpeaker && self.currentSpeaker )
-			newGridKlass = 'grid1';
-		else {
-			newGridKlass = getGridKlass( peerNum );
-		}
+		const newGridKlass = getGridKlass( peerNum );
 		
 		self.currentGridKlass = newGridKlass;
 		container.classList.add( self.currentGridKlass );
@@ -657,23 +880,56 @@ library.component = library.component || {};
 		}
 		
 		function getPeerNum() {
-			var numberOfPeers = self.peerGridOrder.length;
-			var peerNum = numberOfPeers;
+			let peerNum = self.peerGridOrder.length;
 			
 			if ( self.nestedApp )
 				peerNum += 1;
 			
-			
-			if ( !selfie.isInList && selfie.isPopped )
+			if ( self.selfiePopped )
 				peerNum -= 1;
 			
 			return peerNum;
 		}
 	}
 	
+	ns.UI.prototype.toggleThumbGrid = function() {
+		const self = this;
+		if ( self.presenterId ) {
+			return disable();
+		}
+		
+		if ( self.isVoiceOnly ) {
+			return disable();
+		}
+		
+		if ( self.showThumbs )
+			return enable();
+		else
+			return disable();
+		
+		function enable() {
+			return new Promise(( ook, eek ) => {
+				self.thumbGrid.show();
+				ook();
+			});
+		}
+		
+		function disable() {
+			return new Promise(( ook, eek ) => {
+				self.thumbGrid.hide();
+				if ( self.gridSwap )
+					self.clearGridSwap()
+						.then( ook )
+						.catch( ook );
+				else
+					ook();
+			});
+		}
+	}
+	
 	ns.UI.prototype.reflowPeers = function() {
-		var self = this;
-		self.peerGridOrder.forEach( callReflow );
+		const self = this;
+		self.peerIds.forEach( callReflow );
 		function callReflow( peerId ) {
 			var peer = self.peers[ peerId ];
 			if ( !peer )
@@ -686,7 +942,6 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.startDurationTimer = function() {
 		const self = this;
-		console.log( 'start durrr')
 		self.startTime = Date.now();
 		self.isDurationTimer = true;
 		self.toggleDurationUpdate();
@@ -768,7 +1023,6 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.stopDurationTimer = function() {
 		const self = this;
-		console.log( 'stopDurrrr' );
 		self.isDurationTimer = false;
 		self.startTime = null;
 		self.toggleDurationUpdate();
@@ -783,35 +1037,39 @@ library.component = library.component || {};
 		self.queue.handle( msg );
 	}
 	
-	ns.UI.prototype.handleVoiceOnly = function( isVoiceOnly ) {
+	ns.UI.prototype.handleVoiceOnly = async function( isVoiceOnly ) {
 		const self = this;
+		if ( isVoiceOnly === self.isVoiceOnly )
+			return;
+		
 		self.isVoiceOnly = isVoiceOnly;
-		self.updateWaiting();
+		
 		self.videoBtn.classList.toggle( 'inverted', isVoiceOnly );
 		self.gridContainer.classList.toggle( 'hidden', isVoiceOnly );
 		self.listContainer.classList.toggle( 'expand', isVoiceOnly );
 		self.listContainer.classList.toggle( 'fortify', !isVoiceOnly );
 		self.audioList.show( isVoiceOnly );
 		
-		self.updateVoiceListMode();
+		self.updateWaiting();
+		await self.updateDisplayMode();
 	}
 	
 	ns.UI.prototype.updateVoiceListMode = function() {
 		const self = this;
 		const ids = Object.keys( self.peers );
-		if ( !ids.length )
+		if ( !self.peerIds.length )
 			return;
 		
-		if ( self.isVoiceOnly && hasMaxTwoPeers( ids ) && hasNoVideoPeers() )
-			setToItems( ids );
+		if ( self.isVoiceOnly && hasMaxTwoPeers() && hasNoVideoPeers() )
+			setToItems();
 		else
-			setToRows( ids );
+			setToRows();
 		
 		self.audioListEl.classList.toggle( 'large-items', self.isVoiceListLarge );
 		updatePeers( ids );
 		
-		function setToItems( ids ) { self.isVoiceListLarge = true; }
-		function setToRows( ids ) { self.isVoiceListLarge = false; }
+		function setToItems() { self.isVoiceListLarge = true; }
+		function setToRows() { self.isVoiceListLarge = false; }
 		
 		function updatePeers( ids ) {
 			ids.forEach( toggleLarge );
@@ -822,7 +1080,7 @@ library.component = library.component || {};
 		}
 		
 		function hasMaxTwoPeers( ids ) {
-			if ( 2 >= ids.length )
+			if ( 2 >= self.peerIds.length )
 				return true;
 			else
 				return false;
@@ -835,54 +1093,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateHasVideo = function( peerId, hasVideo ) {
 		const self = this;
-		const peer = self.peers[ peerId ];
-		if ( !peer ) {
-			console.log( 'updateHasVideo - no peer for', peerId );
-			return;
-		}
-		
-		if ( hasVideo )
-			moveToPeers( peer );
-		else
-			moveToAudioList( peer );
-		
-		function moveToPeers( peer ) {
-			let pid = peer.id;
-			if ( isInVideo( pid ))
-				return;
-			
-			self.audioList.remove( pid );
-			self.peerGridOrder.push( pid );
-			peer.setIsInList( false );
-			self.gridContainer.appendChild( peer.el );
-			if ( 'selfie' === peer.id )
-				self.updateSelfieState();
-			
-			self.updateGridClass();
-		}
-		
-		function moveToAudioList( peer ) {
-			let pid = peer.id;
-			if ( isInAudio( pid ))
-				return;
-			
-			peer.setIsInList( true );
-			if ( 'selfie' === peer.id )
-				self.updateSelfieState();
-			
-			let pidx = self.peerGridOrder.indexOf( peer.id );
-			self.peerGridOrder.splice( pidx, 1 );
-			self.audioList.add( peer.el );
-			self.updateGridClass();
-			
-			function isInAudio( pid ) {
-				return !isInVideo( pid );
-			}
-		}
-		
-		function isInVideo( pid ) {
-			return self.peerGridOrder.some( poId => poId === pid );
-		}
+		return;
 	}
 	
 	ns.UI.prototype.onDrag = function( type, peerId ) {
@@ -1018,7 +1229,7 @@ library.component = library.component || {};
 		self.uiVisible = !self.uiVisible;
 		self.toggleUI();
 		
-		self.peerGridOrder.forEach( updateUI );
+		self.peerIds.forEach( updateUI );
 		function updateUI( pId ) {
 			var peer = self.peers[ pId ];
 			if ( !peer ) {
@@ -1070,42 +1281,6 @@ library.component = library.component || {};
 				},
 			],
 		};
-		const mute = {
-			type   : 'item',
-			id     : 'mute',
-			name   : View.i18n('i18n_mute_your_audio'),
-			faIcon : 'fa-microphone-slash',
-			toggle : false,
-			close  : false,
-		};
-		const blind = {
-			type   : 'item',
-			id     : 'blind',
-			name   : View.i18n('i18n_pause_your_video'),
-			faIcon : 'fa-eye-slash',
-			toggle : false,
-			close  : false,
-		};
-		const screenShare = {
-			type   : 'item',
-			id     : 'toggle-screen-share',
-			name   : View.i18n( 'i18n_toggle_share_screen' ),
-			faIcon : 'fa-laptop',
-			toggle : false,
-			close  : true,
-		};
-		const source = {
-			type   : 'item',
-			id     : 'source-select',
-			name   : View.i18n( 'i18n_select_media_sources' ),
-			faIcon : 'fa-random',
-		};
-		const chat = {
-			type   : 'item',
-			id     : 'chat',
-			name   : View.i18n( 'i18n_text_chat' ),
-			faIcon : 'fa-keyboard-o',
-		};
 		const restart = {
 			type   : 'item',
 			id     : 'restart',
@@ -1142,19 +1317,6 @@ library.component = library.component || {};
 			faIcon : 'fa-user-circle-o',
 			toggle : false,
 			close  : true,
-		};
-		const settings = {
-			type    : 'item',
-			id      : 'settings',
-			name    : View.i18n( 'i18n_room_settings' ),
-			faIcon  : 'fa-ellipsis-v',
-			disable : true,
-		};
-		const share = {
-			type   : 'item',
-			id     : 'share',
-			name   : View.i18n( 'i18n_share' ),
-			faIcon : 'fa-share-alt',
 		};
 		const presentation = {
 			type   : 'item',
@@ -1229,21 +1391,15 @@ library.component = library.component || {};
 		};
 		
 		const content = [
-			//share,
-			chat,
-			blind,
-			mute,
 			quality,
 			restart,
 			fullscreen,
-			//screenShare,
 			presentation,
-			source,
 			popped,
 			speaker,
 			sendReceive,
 			screenMode,
-			settings,
+			//settings,
 			dragger,
 			username,
 			cleanUI,
@@ -1251,7 +1407,7 @@ library.component = library.component || {};
 			leave,
 		];
 		
-		var conf = {
+		const conf = {
 			menuConf : {
 				content      : content,
 				onnolistener : noListenerFor,
@@ -1260,11 +1416,10 @@ library.component = library.component || {};
 		self.menuUI = self.addUIPane( 'menu', conf );
 		self.menu = self.menuUI.getMenu();
 		self.menu.on( 'share', shareHandler );
-		self.menu.on( 'chat', chatHandler );
 		self.menu.on( 'clean-ui', cleanUIHandler );
 		self.menu.on( 'dragger', reorderHandler );
 		self.menu.on( 'popped', togglePopped );
-		self.menu.on( 'mode-speaker', modeSpeaker );
+		//self.menu.on( 'mode-speaker', modeSpeaker );
 		self.menu.on( 'fullscreen', toggleFullscreen );
 		return self.menu;
 		
@@ -1277,13 +1432,6 @@ library.component = library.component || {};
 				return;
 			
 			self.shareUI.toggle();
-		}
-		
-		function chatHandler( state ) {
-			if ( !self.chatUI )
-				return;
-			
-			self.chatUI.toggle();
 		}
 		
 		function cleanUIHandler( state ) {
@@ -1308,40 +1456,52 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.UI.prototype.togglePopped = function( force ) {
+	ns.UI.prototype.togglePopped = function( userPop ) {
 		const self = this;
 		const selfie = self.peers[ 'selfie' ];
-		if ( !selfie )
+		if ( !selfie ) {
+			console.log( 'popped no seflie' );
 			return;
+		}
 		
-		self.selfiePopped = selfie.togglePopped( force );
-		self.updateSelfieState();
+		self.selfiePopped = selfie.togglePopped( userPop );
+		self.updateGridClass();
 	}
 	
-	ns.UI.prototype.updateSelfieState = function() {
+	ns.UI.prototype.updatePopped = function() {
 		const self = this;
 		const selfie = self.peers[ 'selfie' ];
 		if ( !selfie )
 			return;
 		
-		if ( self.modeSpeaker && 'selfie' === self.currentSpeaker )
-			selfie.updateDisplayState( true );
-		else
-			selfie.updateDisplayState();
+		let popped = null;
+		if ( self.peerIds.length === 1 )
+			popped = false;
 		
+		if ( self.showThumbs )
+			popped = false;
+		
+		if ( null != self.presenterId ) {
+			if ( 'selfie' === self.presenterId )
+				popped = false;
+			else
+				popped = true;
+		}
+		
+		self.selfiePopped = selfie.setPopped( popped );
 		self.updateGridClass();
 	}
 	
 	ns.UI.prototype.toggleModeSpeaker = function() {
 		const self = this;
-		self.modeSpeaker = !self.modeSpeaker;
-		if ( self.modeSpeaker )
+		self.showThumbs = !self.showThumbs;
+		if ( self.showThumbs )
 			enable();
 		else
 			disable();
 		
-		self.updateModeSpeaker();
-		return self.modeSpeaker;
+		self.updateThumbsGrid();
+		return self.showThumbs;
 		
 		function enable() {
 			self.clearDragger();
@@ -1353,86 +1513,433 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.UI.prototype.updateModeSpeaker = function() {
+	ns.UI.prototype.checkIsThumbsActive = function() {
 		const self = this;
-		const container = document.getElementById( self.peerGridId );
-		const modeSpeaker = ( !!self.modeSpeaker && !!self.currentSpeaker );
-		const speaker = self.peers[ self.currentSpeaker ];
-		if ( speaker && speaker.isInList )
-			container.classList.toggle( 'mode-speaker', false );
-		else
-			container.classList.toggle( 'mode-speaker', modeSpeaker );
+		let isActive = !!self.showThumbs;
+		if ( self.isVoiceOnly )
+			isActive = false;
+		if ( self.presenterId )
+			isActive = false;
 		
-		self.updateSelfieState();
-		if ( modeSpeaker )
-			enable();
-		else
-			disable();
+		return isActive;
+	}
+	
+	ns.UI.prototype.updateThumbsGrid = async function( force ) {
+		const self = this;
+		const isActive = self.checkIsThumbsActive();
+		if ( !isActive )
+			return;
 		
-		function enable() {
-			const peer = self.peers[ self.currentSpeaker ];
-			if ( !peer )
+		self.peerIds.forEach( moveToThumbs );
+		
+		//
+		let currSpeaker = null;
+		let lastSpeaker = null;
+		if ( null != self.currentSpeaker )
+			currSpeaker = self.peers[ self.currentSpeaker ];
+		
+		if ( null != self.lastSpeaker )
+			lastSpeaker = self.peers[ self.lastSpeaker ];
+		
+		
+		if ( !isActive ) {
+			
+			/*
+			if ( lastSpeaker ) {
+				lastSpeaker.showIsSpeaking( false );
+				if ( lastSpeaker.isInThumbs )
+					self.updatePeerMode( self.lastSpeaker );
+				
+			}
+			
+			if ( currSpeaker ) {
+				currSpeaker.showIsSpeaking( false );
+				
+				if ( currSpeaker.isInThumbs )
+					self.updatePeerMode( self.currentSpeaker );
+				
+			}
+			*/
+			return;
+		}
+		
+		
+		if ( !currSpeaker && lastSpeaker ) {
+			if ( self.gridSwap ) {
+				if ( self.gridSwap.in == self.lastSpeaker ) {
+					console.log( 'updateThumbsGrid - already swapping to lastSpeaker' );
+					return;
+				}
+			}
+			
+			self.showInMain( lastSpeaker );
+			//self.thumbGrid.updatePosition();
+			return;
+		}
+		
+		if ( !currSpeaker || !lastSpeaker ) {
+			console.log( 'updateThumbsGrid - missing one', {
+				curr : currSpeaker,
+				last : lastSpeaker,
+				pIds : self.peerIds,
+			});
+			return;
+		}
+		
+		/*
+		if ( currSpeaker ) {
+			if ( lastSpeaker ) {
+				lastSpeaker.showIsSpeaking( false );
+				self.showInThumbs( lastSpeaker );
+			}
+			
+			currSpeaker.showIsSpeaking( true );
+			self.showInMain( currSpeaker );
+		}
+		*/
+		if ( self.currentSpeaker === self.lastSpeaker ) {
+			self.showInMain( currSpeaker );
+			return;
+		}
+		
+		const pOutId = lastSpeaker.id;
+		const pInId = currSpeaker.id;
+		if ( self.gridSwap ) {
+			if ( checkSwap( pOutId, pInId )) {
+				return;
+			}
+			else
+				await self.clearGridSwap();
+		}
+		
+		try {
+			await self.swapGridPeers( pOutId, pInId );
+		} catch( ex ) {
+			if ( 'ERR_ABORT' === ex )
 				return;
 			
-			peer.reflow();
+			await self.clearGridSwap();
 		}
 		
-		function disable() {
-			self.reflowPeers();
+		function moveToThumbs( pId ) {
+			if ( self.currentSpeaker && ( pId === self.currentSpeaker ))
+				return;
+			
+			if ( self.lastSpeaker && ( pId === self.lastSpeaker ))
+				return;
+			
+			const peer = self.peers[ pId ];
+			self.showInThumbs( peer );
 		}
+		
+		function checkSwap( pOut, pIn ) {
+			const swap = self.gridSwap;
+			if ( swap.out != pOut )
+				return false;
+			
+			if ( swap.in != pIn )
+				return false;
+			
+			return true;
+		}
+	}
+	
+	ns.UI.prototype.showInMain = function( peer ) {
+		const self = this;
+		if ( !self.checkIsThumbsActive())
+			return;
+		
+		const pId = peer.id;
+		const pIdx = self.peerGridOrder.indexOf( pId );
+		if ( -1 == pIdx )
+			self.peerGridOrder.push( pId );
+		
+		peer.setFaded( false );
+		self.audioList.remove( pId );
+		self.thumbGrid.swapOut( pId );
+		self.gridContainer.appendChild( peer.el );
+		peer.setInGrid();
+		peer.showIsSpeaking( true );
+	}
+	
+	ns.UI.prototype.showInThumbs = function( peer ) {
+		const self = this;
+		if ( !self.checkIsThumbsActive())
+			return;
+		
+		const pId = peer.id;
+		const oIdx = self.peerGridOrder.indexOf( pId );
+		if ( -1 != oIdx )
+			self.peerGridOrder.splice( oIdx, 1 );
+		
+		peer.setFaded( false );
+		self.audioList.remove( pId );
+		self.thumbGrid.swapIn( pId );
+		peer.setInThumbs();
+		peer.showIsSpeaking( false );
+	}
+	
+	ns.UI.prototype.swapGridPeers = async function( peerOut, peerIn ) {
+		const self = this;
+		// derp
+		self.audioList.remove( peerOut );
+		self.audioList.remove( peerIn );
+		
+		//
+		let rejected = false;
+		const swapId = friendUP.tool.uid( 'swap' );
+		self.gridSwap = {
+			id     : swapId,
+			out    : peerOut,
+			in     : peerIn,
+			resId  : null,
+			timeId : null,
+		};
+		
+		let swapRes = null;
+		try {
+			swapRes = await doSwap();
+		} catch( ex ) {
+			console.log( 'swapErr', ex );
+			throw ex;
+		}
+		
+		return swapRes;
+		
+		function doSwap() {
+			return new Promise(( resolve, reject ) => {
+				const pOut = self.peers[ peerOut ];
+				const pIn = self.peers[ peerIn ];
+				if ( !pOut || !pIn ) {
+					reject( 'ERR_PEER_MISSING' );
+					return;
+				}
+				
+				let waitForPINVideo = false;
+				if (( 'selfie' !== peerIn )	&& pIn.hasVideo )
+					waitForPINVideo = true;
+				
+				if ( waitForPINVideo ) {
+					pIn.setFastStats( true );
+					const rId = pIn.once( 'video-resolution', e => videoWait());
+					self.gridSwap.resId = rId;
+					const tId = window.setTimeout( videoWait, 1000 * 5 );
+					self.gridSwap.timeId = tId;
+				} else {
+					const tId = window.setTimeout( fadeIn, 500 );
+					self.gridSwap.timeId = tId;
+					pOut.fadeOut()
+						.then( faded )
+						.catch( reject );
+				}
+				
+				function videoWait() {
+					if ( !checkContinue( swapId )) {
+						if ( !rejected ) {
+							rejected = true;
+							resolve( 'WARN_ABORT' );
+						}
+						
+						return;
+					}
+					
+					if ( null != self.gridSwap.timeId ) {
+						window.clearTimeout( self.gridSwap.timeId )
+						self.gridSwap.timeId = null;
+					}
+					
+					if ( null != self.gridSwap.resId ) {
+						pIn.off( self.gridSwap.resId );
+						self.gridSwap.resId = null;
+					}
+					
+					const pIn = self.peers[ peerIn ];
+					const pOut = self.peers[ peerOut ];
+					if ( !pIn || !pOut ) {
+						if ( !rejected ) {
+							rejected = true;
+							reject( 'ERR_PEER_MISSING' );
+						}
+						
+						return;
+					}
+					
+					pIn.setFastStats( false );
+					const tId = window.setTimeout( fadeIn, 500 );
+					self.gridSwap.timeId = tId;
+					pOut.fadeOut()
+						.then( faded )
+						.catch( faded );
+				}
+				
+				function fadeIn() {
+					if ( !checkContinue( swapId )) {
+						if ( !rejected ) {
+							rejected = true;
+							resolve( 'WARN_ABORT' );
+						}
+						
+						return;
+					}
+					
+					if ( null != self.gridSwap.timeId ) {
+						window.clearTimeout( self.gridSwap.timeId )
+						self.gridSwap.timeId = null;
+					}
+					
+					const pOut = self.peers[ peerOut ];
+					pOut.setFaded( false );
+					self.thumbGrid.swapIn( pOut.id );
+					pOut.setInThumbs();
+					pOut.showIsSpeaking( false );
+					
+					pIn.setFaded( true );
+					self.thumbGrid.swapOut( pIn.id );
+					self.gridContainer.appendChild( pIn.el );
+					const pIdx = self.peerGridOrder.indexOf( pIn.id );
+					if ( -1 === pIdx )
+						self.peerGridOrder.push( pIn.id );
+					
+					pIn.setInGrid();
+					pIn.showIsSpeaking( true );
+					pIn.fadeIn()
+						.then( visible )
+						.catch( visible );
+					
+				}
+				
+				function faded( err ) {
+					if ( !checkContinue( swapId )) {
+						if ( !rejected ) {
+							rejected = true;
+							resolve( 'WARN_ABORT' );
+						}
+						
+						return;
+					}
+					
+					const oIdx = self.peerGridOrder.indexOf( peerOut );
+					if ( -1 !== oIdx )
+						self.peerGridOrder.splice( oIdx, 1 );
+					
+					self.gridSwap.inGrid = true;
+					done( swapId );
+				}
+				
+				function visible( err ) {
+					if ( !checkContinue( swapId )) {
+						if ( !rejected ) {
+							rejected = true;
+							resolve( 'WARN_ABORT' );
+						}
+						
+						return;
+					}
+					
+					self.gridSwap.inMain = true;
+					done( swapId );
+					resolve( peerIn );
+				}
+			});
+		}
+		
+		function checkContinue( swapId ) {
+			if ( !self.gridSwap )
+				return false;
+			
+			if ( swapId !== self.gridSwap.id )
+				return false;
+			
+			return true;
+		}
+		
+		function done( swapId ) {
+			const swap = self.gridSwap;
+			if ( !swap || ( swapId != swap.id ))
+				return;
+			
+			if ( !swap.inGrid || !swap.inMain )
+				return;
+			
+			self.gridSwap = null;
+		}
+	}
+	
+	ns.UI.prototype.clearGridSwap = async function() {
+		const self = this;
+		const swap = self.gridSwap;
+		if ( null == swap )
+			return;
+		
+		delete self.gridSwap;
+		
+		const peerOut = swap.out;
+		const peerIn = swap.in;
+		const pOut = self.peers[ peerOut ];
+		const pIn = self.peers[ peerIn ];
+		
+		if ( swap.timeId )
+			window.clearTimeout( swap.timeId );
+		
+		if ( swap.resId )
+			pIn.off( swap.resId );
+		
+		if ( 'selfie' !== peerIn )
+			pIn.setFastStats( false );
+		
+		//const unFade = [
+			pOut.setFaded( false );
+			pIn.setFaded( false );
+		//];
+		//await Promise.all( unFade );
+		
+		const isActive = self.checkIsThumbsActive();
+		if ( !isActive )
+			return;
+		
+		//const move = [
+			self.showInThumbs( pOut );
+			self.showInMain( pIn );
+		//];
+		//await Promise.all( move );
+		return;
 	}
 	
 	ns.UI.prototype.setSpeaker = function( speaker ) {
 		const self = this;
-		if ( !speaker || !speaker.isSpeaking )
-			unset();
-		else
-			set( speaker );
+		let curr = speaker.current;
+		let last = speaker.last;
+		if ( curr === self.userId )
+			curr = 'selfie';
+		if ( last === self.userId )
+			last = 'selfie';
 		
-		self.updateModeSpeaker();
+		if ( curr != self.currentSpeaker )
+			unset();
+		
+		self.currentSpeaker = curr;
+		self.lastSpeaker = last;
+		set();
+		
+		self.updateThumbsGrid();
 		
 		function unset() {
-			if ( !self.currentSpeaker )
+			if ( null == self.currentSpeaker )
 				return;
 			
 			const peer = self.peers[ self.currentSpeaker ];
 			if ( !peer )
 				return;
 			
-			self.currentSpeaker = false;
 			peer.setIsSpeaking( false );
 		}
 		
-		function set( speaker ) {
-			unset();
-			const peer = self.peers[ speaker.peerId ];
+		function set() {
+			const peer = self.peers[ self.currentSpeaker ];
 			if ( !peer )
 				return;
 			
-			self.currentSpeaker = speaker.peerId;
 			peer.setIsSpeaking( true );
-		}
-	}
-	
-	ns.UI.prototype.togglePresentation = function( presenterId ) {
-		const self = this;
-		if ( !presenterId )
-			disable();
-		else
-			enable( presenterId );
-		
-		function disable() {
-			self.togglePopped( true );
-		}
-		
-		function enable( presenterId ) {
-			let peer = self.peers[ presenterId ];
-			if ( !peer )
-				return;
-			
-			if ( 'selfie' === presenterId )
-				self.togglePopped( false );
-			
 		}
 	}
 	
@@ -1493,7 +2000,6 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.addSettings = function() {
 		const self = this;
-		console.log( 'addSettings' );
 		if ( !self.settingsBtn ) {
 			console.log( 'UI.addSettings - settingsBtn missing, abort' );
 			return;
@@ -1513,13 +2019,11 @@ library.component = library.component || {};
 		}
 		
 		function onVisible( isVisible ) {
-			console.log( 'settingsUI onVisivle', isVisible );
 			self.settingsShow = isVisible;
 			self.settingsBtn.classList.toggle( 'available', isVisible );
 		}
 		
 		function onSelect( devices ) {
-			console.log( 'UI.settings - onselect', devices );
 			self.settingsUI.hide();
 			self.emit( 'use-devices', devices );
 		}
@@ -1584,6 +2088,8 @@ library.component = library.component || {};
 		self.sayMessages = false;
 		
 		self.isLowQMode = false;
+		self.fastRefresh = false;
+		self.showAsSpeaker = false;
 		
 		self.uiVisible = true;
 		self.showStack = [];
@@ -1597,12 +2103,43 @@ library.component = library.component || {};
 	
 	// Public
 	
-	ns.Peer.prototype.setIsInList = function( isInList ) {
+	ns.Peer.prototype.fadeOut = function() {
 		const self = this;
-		self.isInList = isInList;
-		self.el.classList.toggle( 'in-grid', !isInList );
-		self.el.classList.toggle( 'in-list', isInList );
-		self.clickCatch.classList.toggle( 'hidden', isInList );
+		return self.fade( true );
+	}
+	
+	ns.Peer.prototype.fadeIn = function() {
+		const self = this;
+		return self.fade( false );
+	}
+	
+	ns.Peer.prototype.setFaded = function( showFaded ) {
+		const self = this;
+		self.el.classList.toggle( 'faded', showFaded );
+	}
+	
+	ns.Peer.prototype.setInList = function() {
+		const self = this;
+		self.clearPosition();
+		self.isInList = true;
+		self.positionClass = 'in-list';
+		self.updatePosition();
+	}
+	
+	ns.Peer.prototype.setInGrid = function() {
+		const self = this;
+		self.clearPosition();
+		self.isInGrid = true;
+		self.positionClass = 'in-grid';
+		self.updatePosition();
+	}
+	
+	ns.Peer.prototype.setInThumbs = function() {
+		const self = this;
+		self.clearPosition();
+		self.isInThumbs = true;
+		self.positionClass = 'in-thumbs';
+		self.updatePosition();
 	}
 	
 	ns.Peer.prototype.setVoiceListMode = function( isLarge ) {
@@ -1614,14 +2151,47 @@ library.component = library.component || {};
 	ns.Peer.prototype.setIsSpeaking = function( isSpeaker ) {
 		const self = this;
 		self.isSpeaker = isSpeaker;
-		self.el.classList.toggle( 'speaker', isSpeaker );
-		self.reflow();
+		self.el.classList.toggle( 'is-speaking', isSpeaker );
+		//self.setFastStats( true );
+	}
+	
+	ns.Peer.prototype.showIsSpeaking = function( isSpeaker ) {
+		const self = this;
+		if ( isSpeaker === self.showAsSpeaker )
+			return;
+		
+		self.showAsSpeaker = isSpeaker;
+		//self.el.classList.toggle( 'show-speaker', isSpeaker );
+		//self.reflow();
+		self.updateStatsRate();
 	}
 	
 	ns.Peer.prototype.setAudioSink = function( deviceId ) {
 		const self = this;
 		self.audioSinkId = deviceId || '';
 		self.updateAudioSink();
+	}
+	
+	ns.Peer.prototype.getAvatarStr = function() {
+		const self = this;
+		if ( !self.identity )
+			return null;
+		
+		return self.identity.avatar || null;
+	}
+	
+	ns.Peer.prototype.getIdentity = function() {
+		const self = this;
+		return self.identity || {};
+	}
+	
+	ns.Peer.prototype.setFastStats = function( fastRefresh ) {
+		const self = this;
+		if ( fastRefresh === self.fastRefresh )
+			return;
+		
+		self.fastRefresh = fastRefresh;
+		self.updateStatsRate();
 	}
 	
 	// Private
@@ -1638,6 +2208,41 @@ library.component = library.component || {};
 		self.initSelf();
 		if ( self.peer.identity )
 			self.updateIdentity( self.peer.identity );
+	}
+	
+	ns.Peer.prototype.fade = function( fadeOut ) {
+		const self = this;
+		self.clearTransitionWait( 'ERR_ABORT' );
+		return new Promise(( resolve, reject ) => {
+			self.el.classList.toggle( 'faded', fadeOut );
+			const trans = {
+				ended   : transEnd,
+				timeout : window.setTimeout( transOut, 3000 ),
+			};
+			self.waitForTransition( trans );
+			
+			function transOut() {
+				self.clearTransitionWait( 'ERR_TIMEOUT' );
+			}
+			
+			function transEnd( err, type ) {
+				if ( err )
+					reject( err );
+				else
+					resolve( type );
+			}
+		});
+	}
+	
+	ns.Peer.prototype.updateStatsRate = function() {
+		const self = this;
+		let rate = null;
+		if ( self.showAsSpeaker )
+			rate = 50;
+		if ( self.fastRefresh )
+			rate = 20;
+		
+		self.peer.setStatsRate( rate );
 	}
 	
 	ns.Peer.prototype.setupMenu = function() {
@@ -1731,6 +2336,31 @@ library.component = library.component || {};
 		self.updateRTC( streamState );
 	}
 	
+	ns.Peer.prototype.clearPosition = function() {
+		const self = this;
+		self.isInList = false;
+		self.isInGrid = false;
+		self.isInThumbs = false;
+		self.el.classList.toggle( self.positionClass, false );
+	}
+	
+	ns.Peer.prototype.updatePosition = function() {
+		const self = this;
+		self.el.classList.toggle( self.positionClass, true );
+		self.clickCatch.classList.toggle( 'hidden', self.isInList );
+		self.updateUIVisibility();
+		
+		self.reflow();
+	}
+	
+	ns.Peer.prototype.updateUIVisibility = function() {
+		const self = this;
+		if ( self.rtcState )
+			self.rtcState.setEnabled( !self.isInThumbs );
+		
+		
+	}
+	
 	ns.Peer.prototype.reload = function() {
 		const self = this;
 		self.peer.restart();
@@ -1757,11 +2387,11 @@ library.component = library.component || {};
 			.catch( playErr );
 			
 		function playOk( e ) {
-			console.log( 'Peer.playStream - ok', e );
 		}
 		
 		function playErr( ex ) {
 			console.log( 'Peer.playStream - ex', {
+				id     : self.id,
 				stream : self.stream,
 				ex     : ex,
 			});
@@ -1773,7 +2403,7 @@ library.component = library.component || {};
 		const avatarUrl =  window.encodeURI( self.peer.getAvatar());
 		const conf = {
 			peerId : self.id,
-			name : self.peer.getName() || '',
+			name   : self.peer.getName() || '',
 			avatar : avatarUrl || '',
 		};
 		self.el = hello.template.getElement( 'peer-tmpl', conf );
@@ -1799,6 +2429,13 @@ library.component = library.component || {};
 		self.peerReload.addEventListener( 'click', peerReload, false );
 		function peerReload( e ) { self.reload(); }
 		
+		// thumb ui
+		self.thumbUI = self.el.querySelector( '.thumb-ui' );
+		self.thumbMenuBtn = self.thumbUI.querySelector( '.peer-options' );
+		
+		self.thumbMenuBtn.addEventListener( 'click', thumbMenuClick, false );
+		function thumbMenuClick( e ) { self.showPeerActions(); }
+		
 		// closing
 		self.closing = self.ui.querySelector( '.closing' );
 		
@@ -1806,7 +2443,7 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.bindUICommon = function() {
-		var self = this;
+		const self = this;
 		// stream
 		self.avatar = self.el.querySelector( '.stream-container .avatar' );
 		
@@ -1830,6 +2467,9 @@ library.component = library.component || {};
 		self.blindState = self.ui.querySelector( '.blinded' );
 		
 		// bind
+		self.avatar.addEventListener( 'transitionend', avaTrans, false );
+		self.avatar.addEventListener( 'transitioncancel', avaTrans, false );
+		
 		self.clickCatch.addEventListener( 'click', clickCatch, false );
 		self.clickCatch.addEventListener( 'touchstart', clickCatch, false );
 		self.uiView.addEventListener( 'click', uiViewClick, false );
@@ -1844,6 +2484,17 @@ library.component = library.component || {};
 		
 		self.el.addEventListener( 'mouseenter', showUI, false );
 		self.el.addEventListener( 'mouseleave', hideUI, false );
+		
+		self.el.addEventListener( 'transitionend', transEnd, false );
+		self.el.addEventListener( 'transitioncancel', transEnd, false );
+		
+		function avaTrans( e ) {
+			e.stopPropagation();
+		}
+		
+		function transEnd( e ) {
+			self.handleTransitionEnd( e.type );
+		}
 		
 		function clickCatch( e ) {
 			self.onclick( true );
@@ -1910,6 +2561,33 @@ library.component = library.component || {};
 		self.elementMap[ 'dragger' ] = self.dragger;
 	}
 	
+	ns.Peer.prototype.handleTransitionEnd = function( type ) {
+		const self = this;
+		const trans = self.transition;
+		if ( !trans )
+			return;
+		
+		delete self.transition;
+		if ( trans.timeout )
+			window.clearTimeout( trans.timeout );
+		
+		trans.ended( null, type );
+	}
+	
+	ns.Peer.prototype.waitForTransition = function( conf ) {
+		const self = this;
+		self.transition = conf;
+	}
+	
+	ns.Peer.prototype.clearTransitionWait = function( errCode ) {
+		const self = this;
+		const trans = self.transition;
+		if ( !trans )
+			return;
+		
+		trans.ended( errCode, null )
+	}
+	
 	ns.Peer.prototype.handleTouchEnd = function( e ) {
 		var self = this;
 		return;
@@ -1934,6 +2612,8 @@ library.component = library.component || {};
 		const self = this;
 		self.onmenu();
 	}
+	
+	//ns.Peer.prototype.showPeerThumbActions
 	
 	ns.Peer.prototype.toggleOptions = function() {
 		var self = this;
@@ -2029,7 +2709,6 @@ library.component = library.component || {};
 		
 		self.toggleElement( topElement, false );
 	}
-	
 	
 	ns.Peer.prototype.handleWheelEvent = function( e ) {
 		var self = this;
@@ -2232,7 +2911,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.bindPeerCommon = function() {
 		const self = this;
-		console.log( 'bindPeerCommon', self );
 		self.peer.on( 'media'           , handleMedia );
 		self.peer.on( 'track'           , handleTrack );
 		self.peer.on( 'legacy-stream'   , handleLegacyStream );
@@ -2248,6 +2926,8 @@ library.component = library.component || {};
 		self.peer.on( 'screen-mode'     , screenMode );
 		self.peer.on( 'screen-share'    , screenShare );
 		self.peer.on( 'local-quality'   , localQuality );
+		self.peer.on( 'change-video-res', e => self.handleVideoRes( e ));
+		self.peer.on( 'audio-level'     , e => self.handleAudioLevel( e ));
 		
 		function handleMedia( e ) { self.handleMedia( e ); }
 		function handleTrack( e, f ) { self.handleTrack( e, f ); }
@@ -2297,7 +2977,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleMedia = function( media ) {
 		const self = this;
-		console.log( 'handleMedia', media );
 		if ( !media )
 			return;
 		
@@ -2372,7 +3051,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleTrack = function( type, track ) {
 		const self = this;
-		console.log( 'UIPeer.handleTrack', track );
 		// set state
 		if ( !self.isUpdatingStream ) {
 			self.stream.pause();
@@ -2388,7 +3066,6 @@ library.component = library.component || {};
 		
 		self.stream.srcObject.addTrack( track );
 		self.stream.load();
-		console.log( 'stream.load called' );
 	}
 	
 	ns.Peer.prototype.removeTrack = function( type ) {
@@ -2417,7 +3094,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleLegacyStream = function( conf ) {
 		const self = this;
-		self.isVideo = conf.isVideo;
+		self.hasVideo = conf.isVideo;
 		self.isAudio = conf.isAudio;
 		const src = window.URL.createObjectURL( conf.stream );
 		self.setStream( conf.stream.id, src );
@@ -2445,10 +3122,11 @@ library.component = library.component || {};
 		if ( !self.stream )
 			return;
 		
-		self.isVideo = available;
+		self.hasVideo = available;
 		//self.updateStream();
 		self.updateButtonVisibility();
 		self.toggleStream();
+		self.emit( 'video', self.hasVideo );
 	}
 	
 	ns.Peer.prototype.handleAudio = function( available ) {
@@ -2462,6 +3140,7 @@ library.component = library.component || {};
 		
 		//self.updateStream();
 		self.updateButtonVisibility();
+		self.emit( 'audio', self.isAudio );
 	}
 	
 	ns.Peer.prototype.updateStream = function() {
@@ -2490,6 +3169,7 @@ library.component = library.component || {};
 			
 			self.videoAspect = aspectRatio;
 			self.doResize();
+			self.handleTransitionEnd( 'resize' );
 			
 			/*
 			if ( aspectRatio > 1 )
@@ -2588,7 +3268,6 @@ library.component = library.component || {};
 		self.bindStreamResize();
 		
 		function play( e ) {
-			console.log( 'PLAY', e );
 			self.updateAudioSink();
 			self.playStream();
 		}
@@ -2642,7 +3321,7 @@ library.component = library.component || {};
 	ns.Peer.prototype.releaseStream = function() {
 		var self = this;
 		self.removeStream();
-		self.isVideo = false;
+		self.hasVideo = false;
 		self.isAudio = false;
 		self.resetState();
 		self.toggleStream();
@@ -2713,7 +3392,7 @@ library.component = library.component || {};
 		else
 			self.menu.disable( self.menuMuteId );
 		
-		if ( self.isVideo )
+		if ( self.hasVideo )
 			self.menu.enable( self.menuBlindId );
 		else
 			self.menu.disable( self.menuBlindId );
@@ -2769,7 +3448,7 @@ library.component = library.component || {};
 			return;
 		}
 		
-		if ( self.localBlind || self.remoteBlind || !self.isVideo )
+		if ( self.localBlind || self.remoteBlind || !self.hasVideo )
 			toggle( false );
 		else
 			toggle( true );
@@ -2809,7 +3488,8 @@ library.component = library.component || {};
 	ns.Peer.prototype.updateIdentity = function( identity ) {
 		const self = this;
 		identity = identity || self.identity;
-		var id = identity;
+		self.identity = identity;
+		const id = identity;
 		if ( !id ) {
 			console.log( 'updateIdentity - no identity' )
 			return;
@@ -2868,6 +3548,34 @@ library.component = library.component || {};
 		self.reflow();
 	}
 	
+	ns.Peer.prototype.handleVideoRes = function( res ) {
+		const self = this;
+		self.emit( 'video-resolution', res );
+		if ( null == res )
+			return;
+		
+		//self.playStream();
+	}
+	
+	ns.Peer.prototype.handleAudioLevel = function( level ) {
+		const self = this;
+		//console.log( 'handleAudioLevel', level );
+		self.updateAvatarVolume( level );
+	}
+	
+	ns.Peer.prototype.updateAvatarVolume = function( level ) {
+		const self = this;
+		if ( self.hasVideo || !self.isInGrid )
+			return;
+		
+		if ( level < 0.01 )
+			level = 0;
+		
+		const width = 20 * level;
+		//console.log( 'updateAvatarVolume', width );
+		self.avatar.style.boxShadow = "#0F85D1 0px 0px " + width + "vmin";
+	}
+	
 	ns.Peer.prototype.setButtonIcon = function( btn, remove, add ) {
 		const self = this;
 		const i = btn.querySelector( 'i' );
@@ -2878,6 +3586,15 @@ library.component = library.component || {};
 	ns.Peer.prototype.toggleUIIndicator = function( indicatorClass, isOn ) {
 		const self = this;
 		const peerElement = document.getElementById( self.id );
+		if ( !peerElement ) {
+			console.log( 'wtf no peer element', self );
+			window.setTimeout(
+				e => self.toggleUIIndicator( indicatorClass, isOn ),
+				100
+			);
+			return;
+		}
+		
 		const uiElement = peerElement.querySelector( indicatorClass );
 		uiElement.classList.toggle( 'hidden', !isOn );
 	}
@@ -3100,7 +3817,7 @@ library.component = library.component || {};
 		self.screenshareBtn = screenshareBtn;
 		self.selectedStreamQuality = 'normal';
 		
-		self.isPopped = false;
+		self.poppedUser = true;
 		self.showDuration = false;
 		
 		ns.Peer.call( this, conf );
@@ -3108,47 +3825,61 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype = Object.create( ns.Peer.prototype );
 	
-	ns.Selfie.prototype.togglePopped = function( force ) {
+	// Public
+	
+	ns.Selfie.prototype.setFastStats = function() {
 		const self = this;
-		if ( null == force ) {
-			self.isPopped = !self.isPopped;
-			self.wasPopped = self.isPopped;
-		}
-		else {
-			self.wasPopped = self.isPopped;
-			self.isPopped = force;
-		}
-		
-		self.menu.setState( 'popped', self.wasPopped );
-		self.updateDisplayState();
-		self.toggleAVGraph();
-		
-		return self.isPopped;
 	}
 	
-	ns.Selfie.prototype.updateDisplayState = function( isSpeaker ) {
+	ns.Selfie.prototype.togglePopped = function( userSet ) {
+		const self = this;
+		if ( null == userSet )
+			self.poppedUser = !self.poppedUser;
+		else
+			self.poppedUser = userSet;
+		
+		self.peer.saveLocalSetting( 'popped_user', self.poppedUser );
+		return self.updatePopped();
+	}
+	
+	ns.Selfie.prototype.setPopped = function( appSet ) {
 		const self = this;
 		// is in list, ignore everything else
-		if ( self.isInList ) {
-			setPopped( false );
-			return;
-		}
-		
-		if ( isSpeaker )
-			setPopped( false );
+		if ( null == appSet )
+			self.poppedOverride = null;
 		else
-			setPopped( self.isPopped );
+			self.poppedOverride = appSet;
 		
-		function setPopped( popped ) {
-			self.el.classList.toggle( 'popped', popped );
-		}
+		return self.updatePopped();
+	}
+	
+	// overrides
+	
+	ns.Selfie.prototype.updateStatsRate = function() {
+		const self = this;
+	}
+	
+	// pri<>t
+	
+	ns.Selfie.prototype.updatePopped = function() {
+		const self = this;
+		let popped = self.poppedUser;
+		if ( null != self.poppedOverride )
+			popped = self.poppedOverride;
+		
+		if ( self.isInList )
+			popped = false;
+		
+		self.isPopped = popped;
+		self.el.classList.toggle( 'popped', popped );
+		self.menu.setState( 'popped', popped );
+		return popped;
 	}
 	
 	ns.Selfie.prototype.initSelf = function() {
 		const self = this;
 		self.audioBtn.addEventListener( 'click', audioClick, false );
 		self.videoBtn.addEventListener( 'click', videoClick, false );
-		self.togglePopped( self.isPopped );
 		
 		function audioClick( e ) {
 			self.handleAudioClick();
@@ -3165,7 +3896,7 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.handleVideoClick = function() {
 		const self = this;
-		if ( self.isVideo )
+		if ( self.hasVideo )
 			self.peer.toggleBlind();
 		else
 			self.peer.toggleVideo();
@@ -3197,7 +3928,7 @@ library.component = library.component || {};
 		self.poppedMuteBtn.addEventListener( 'click', audioBtnClick, false );
 		self.unpopBtn.addEventListener( 'click', unpopClick, false );
 		function unpopClick( e ) {
-			self.peer.emit( 'popped', self.isPopped );
+			self.peer.emit( 'popped', !self.poppedUser );
 		}
 		
 		// ui
@@ -3247,11 +3978,6 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.updateVideoMirror = function() {
 		const self = this;
-		console.log( 'updateVideoMirror', {
-			screenShare : self.screenShare,
-			el          : self.stream,
-		});
-		
 		if ( !self.stream )
 			return;
 		
@@ -3305,7 +4031,7 @@ library.component = library.component || {};
 		else
 			self.menu.disable( 'mute' );
 		
-		if ( self.isVideo ) {
+		if ( self.hasVideo ) {
 			self.menu.enable( 'blind' );
 			self.menu.enable( 'screen-mode' );
 			self.menu.enable( 'popped' );
@@ -3365,7 +4091,7 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.handleSelfMute = function( isMuted ) {
 		const self = this;
-		self.menu.setState( 'mute', isMuted );
+		//self.menu.setState( 'mute', isMuted );
 		self.audioBtn.classList.toggle( 'inverted', isMuted );
 		self.audioBtn.classList.toggle( 'danger', isMuted );
 		self.poppedMuteBtn.classList.toggle( 'danger', isMuted );
@@ -3374,7 +4100,7 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.handleSelfBlind = function( isBlinded ) {
 		const self = this;
-		self.menu.setState( 'blind', isBlinded );
+		//self.menu.setState( 'blind', isBlinded );
 		self.videoBtn.classList.toggle( 'inverted', isBlinded );
 		self.videoBtn.classList.toggle( 'danger', isBlinded );
 		//const active = self.videoBtn.querySelector( '.camera-on' );
@@ -3389,9 +4115,6 @@ library.component = library.component || {};
 	ns.Selfie.prototype.peerClose = ns.Selfie.prototype.close;
 	ns.Selfie.prototype.close = function() {
 		const self = this;
-		if ( self.menu )
-			self.menu.off( self.screenModeId );
-		
 		if ( self.audioBtn )
 			self.audioBtn.cloneNode( true );
 		
@@ -3475,23 +4198,35 @@ library.component = library.component || {};
 	}
 	
 	ns.RTCState.prototype.show = function() {
-		var self = this;
+		const self = this;
 		self.keepOpen = true;
 		self.toggle( true );
 	}
 	
 	ns.RTCState.prototype.hide = function() {
-		var self = this;
+		const self = this;
 		self.keepOpen = false;
 		self.toggle( false );
+	}
+	
+	ns.RTCState.prototype.setEnabled = function( isEnabled ) {
+		const self = this;
+		if ( self.enable === isEnabled )
+			return;
+		
+		self.enable = !!isEnabled;
+		self.toggle();
 	}
 	
 	// PRIVATE
 	
 	ns.RTCState.prototype.toggle = function( show ) {
-		var self = this;
+		const self = this;
 		if ( self.keepOpen )
 			show = true;
+		
+		if ( !self.enable )
+			show = false;
 		
 		self.main.classList.toggle( 'hidden', !show );
 	}
@@ -3526,7 +4261,7 @@ library.component = library.component || {};
 	}
 	
 	ns.RTCState.prototype.build = function() {
-		var self = this;
+		const self = this;
 	}
 	
 	ns.RTCState.prototype.bind = function() {
@@ -3534,6 +4269,7 @@ library.component = library.component || {};
 		var peer = document.getElementById( self.parentId );
 		self.main = peer.querySelector( '.stream-container .main-rtc' );
 		self.mini = peer.querySelector( '.grid-ui .mini-rtc' );
+		//self.thumb = peer.querySelector( '.thumb-ui .mini-rtc' );
 		
 		self.mainState = self.main.querySelector( '.main-rtc-status' );
 		//self.miniState = self.mini.querySelector( '.mini-rtc-state' );

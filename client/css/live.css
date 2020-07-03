@@ -21,6 +21,42 @@
 	
 }
 
+#peer-thumb-container {
+	max-height   : 100%;
+	overflow-y   : auto;
+}
+
+#peer-thumb-grid {
+	padding       : 0.1em;
+	border-radius : 0.2em;
+	padding-left  : 1em;
+}
+
+.thumbs-mask {
+	/*
+	mask-image    : linear-gradient( to bottom, transparent 0px, black 2em );
+	*/
+	-webkit-mask-image : linear-gradient(
+		to bottom,
+		transparent 0px,
+		black 2em,
+		black calc( 100% - 2em ),
+		transparent 100%
+	);
+}
+
+#peer-thumb-grid .thumb-wrap:not(:first-child) {
+	margin-top : 0.2em;
+}
+
+#peer-thumb-grid.round-bois.loose .thumb-wrap:not(:first-child) {
+	margin-top : 0.5em;
+}
+
+#peer-thumb-grid.round-bois.tight .thumb-wrap:not(:first-child) {
+	margin-top : -1em;
+}
+
 #play-container {
 }
 
@@ -58,9 +94,19 @@ i.svg.camera-off {
 }
 
 .peer {
-	position: relative;
-	overflow: hidden;
-	color : white;
+	position   : relative;
+	overflow   : hidden;
+	color      : white;
+	transition : opacity 0.5s;
+}
+
+.peer.faded {
+	opacity    : 0;
+	transition : opacity 0.75s;
+}
+
+#hello .peer.no-trans {
+	transition: none;
 }
 
 .peer.no-avatar {
@@ -76,6 +122,103 @@ i.svg.camera-off {
 	border: 2px solid transparent;
 }
 
+.peer.in-thumbs {
+	height: 100%;
+	width: 100%;
+}
+
+.thumb-wrap {
+	position         : relative;
+	height           : 4em;
+	width            : 4em;
+	border-radius    : 0.3em;
+}
+
+.round-bois .thumb-wrap {
+	transition       : all 0.2s;
+	border-radius    : 100%;
+	border           : 2px solid rgb( 60, 60, 60, 0.5 );
+	background-color : rgb( 60, 60, 60, 0.5 );
+}
+
+.thumb-wrap.active {
+	background-color : rgb( 20, 20, 20, 1 );
+}
+
+.round-bois .thumb-wrap.active {
+	height    : 3em;
+	width     : 3em;
+	transform : translateX( -1em );
+	transition: all 0.2s;
+}
+
+.thumb-wrap > .stream,
+.thumb-wrap > .avatar {
+	overflow      : hidden;
+	border-radius : 0.3em;
+}
+
+.round-bois .thumb-wrap > .stream,
+.round-bois .thumb-wrap > .avatar {
+	border-radius : 100%;
+}
+
+.thumb-wrap > .avatar {
+	position : absolute;
+	top      : 20%;
+	right    : 20%;
+	bottom   : 20%;
+	left     : 20%;
+}
+
+.round-bois .thumb-wrap > .avatar,
+.thumb-wrap > .stream {
+	position : absolute;
+	top      : 0;
+	right    : 0;
+	bottom   : 0;
+	left     : 0;
+}
+
+.thumb-wrap > .avatar {
+	opacity             : 0;
+	background-repeat   : no-repeat;
+	background-position : center center;
+	background-size     : cover;
+	border-radius       : 100%;
+}
+
+.thumb-wrap.active > .avatar {
+	opacity : 1;
+}
+
+.thumb-wrap > .arrow {
+	position         : absolute;
+	background-color : rgb( 20, 20, 20, 1 );
+	width            : 1em;
+	height           : 1em;
+	transform        : rotate( 45deg );
+	top              : 50%;
+	margin-top       : -0.5em;
+	opacity          : 0;
+	left             : 0.2em;
+	transition       : opacity 0.2s, left 0.2s;
+}
+
+.thumb-wrap.active .arrow {
+	opacity    : 1;
+	left       : -0.5em;
+	transition : opacity 0.2s, left 0.2s;
+}
+
+/*
+.thumb-wrap .stream {
+	top       : 50%;
+	left      : 50%;
+	transform : translate( -50%, -50% );
+}
+*/
+
 .peer .stream-container {
 	position : relative;
 	width    : 100%;
@@ -88,32 +231,47 @@ i.svg.camera-off {
 }
 
 .peer .avatar {
-	position : absolute;
-	top    : 0;
-	right  : 0;
-	bottom : 0;
-	left   : 0;
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: center center;
+	position            : absolute;
+	top                 : 0;
+	right               : 0;
+	bottom              : 0;
+	left                : 0;
+	background-repeat   : no-repeat;
+	background-size     : cover;
+	background-position : center center;
 }
 
 .peer:not( .popped ).in-grid .avatar {
-	top    : 1px;
-	right  : 1px;
-	bottom : 1px;
-	left   : 1px;
+	/*
+	top             : 1px;
+	right           : 1px;
+	bottom          : 1px;
+	left            : 1px;
+	*/
+	width         : 60vmin;
+	height        : 60vmin;
+	top           : 50%;
+	left          : 50%;
+	transform     : translate( -50%, -50% );
+	border-radius : 100%;
+	transition    : all 0.05s;
 }
 
+/*
 .peer .video {
 	-webkit-transform : translateZ( 0 );
 }
+*/
 
 .peer .video {
-	position : absolute;
-	top : 50%;
-	left: 50%;
+	position  : absolute;
+	top       : 50%;
+	left      : 50%;
 	transform : translate( -50%, -50% );
+}
+
+.round-bois .peer.in-thumbs .video {
+	border-radius: 100%;
 }
 
 .peer .visualizer {
@@ -127,7 +285,25 @@ i.svg.camera-off {
 }
 
 .peer:not( .popped ).in-grid .grid-ui {
-	display: flex;
+	display : flex;
+}
+
+.peer .thumb-ui {
+	display    : none;
+	transition : opacity 0.1s;
+	opacity    : 0;
+}
+
+.peer.in-thumbs .thumb-ui {
+	display : flex;
+}
+
+/*
+.peer.in-thumbs.show-ui .thumb-ui,
+*/
+.peer.in-thumbs:hover .thumb-ui {
+	opacity    : 1;
+	transition : opacity 0.1s;
 }
 
 .peer .list-ui {
@@ -135,9 +311,9 @@ i.svg.camera-off {
 }
 
 .peer.in-list.list-large {
-	flex    : 1 1 auto;
-	padding : 1em;
-	max-width: 20em;
+	flex      : 1 1 auto;
+	padding   : 1em;
+	max-width : 20em;
 }
 
 .peer.in-list .list-ui {
@@ -251,6 +427,10 @@ i.svg.camera-off {
 	border-bottom-right-radius: 0.2em;
 }
 
+.peer.in-thumbs .ui-peer-info {
+	border-bottom-right-radius: 1em;
+}
+
 #selfie {
 	
 }
@@ -260,14 +440,14 @@ i.svg.camera-off {
 }
 
 #selfie.popped {
-	position: absolute;
-	top    : 0.7em;
-	right  : 0.7em;
-	width  : auto;
-	height : auto;
-	border : 2px solid black;
+	position      : absolute;
+	top           : 0.7em;
+	right         : 0.7em;
+	width         : auto;
+	height        : auto;
+	border        : 2px solid black;
 	border-radius : 3px;
-	z-index : 333;
+	z-index       : 333;
 }
 
 #popped-ui {
@@ -622,8 +802,9 @@ body#hello #hangup-btn i {
 }
 
 .grid1 > div {
-	height : 100%;
-	width : 100%;
+	position : absolute;
+	height   : 100%;
+	width    : 100%;
 }
 
 .grid2 > div,
@@ -634,8 +815,8 @@ body#hello #hangup-btn i {
 .grid7 > div,
 .grid8 > div,
 .grid9 > div {
-	height: 100%;
-	width: 100%;
+	height : 100%;
+	width  : 100%;
 }
 
 /* square-ish */
@@ -826,7 +1007,6 @@ body#hello #hangup-btn i {
 	font-size: 180%;
 }
 
-
 /* Speaker only mode */
 
 .mode-speaker {
@@ -834,9 +1014,33 @@ body#hello #hangup-btn i {
 }
 
 .mode-speaker > .peer {
-	display: none;
+	position   : absolute;
+	width      : 100%;
+	height     : 100%;
+	opacity    : 0;
+	transition : opacity 0.3s;
 }
 
-.mode-speaker > .peer.speaker {
-	display: inherit;
+.mode-speaker > .peer.show-speaker {
+	opacity    : 1;
+	transition : opacity 0.3s;
+}
+
+#peer-thumb-menu {
+	padding : 0 0.5em;
+	outline : transparent;
+}
+
+#peer-thumb-menu .peer-name {
+	padding   : 0.3em;
+	font-size : 130%;
+	border-bottom : 1px solid rgba( 255, 255, 255, 0.1 );
+}
+
+#peer-thumb-menu .thumb-menu-item {
+	padding : 0.2em;
+}
+
+#peer-thumb-menu .thumb-menu-item .label {
+	padding-left : 0.5em;
 }

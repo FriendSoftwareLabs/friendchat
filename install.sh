@@ -118,7 +118,7 @@ while true; do
 	fi
 	
 	temp=$(dialog --backtitle "Friend Chat installer" --inputbox "\
-A temporary folder for clonig git repos will be used" 11 60 "$INSTALL_TMP" --output-fd 1)
+A temporary folder for cloning git repos will be used" 11 60 "$INSTALL_TMP" --output-fd 1)
 	if [ $? = "1" ]; then
 		echo "$QUIT"
 		exit 1

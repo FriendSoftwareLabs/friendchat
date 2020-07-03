@@ -42,7 +42,8 @@
 		<div id="live" class="group row cover MouseDefault">
 			<div id="live-content" class="expand column bar cover">
 				<div id="peer-container" class="expand bar row">
-					<div id="waiting-for-container" class="expand bar row">
+					<!--
+					<div id="waiting-for-container" class="expand bar row hidden">
 						<div id="waiting-for-peers-fritz" class="expand center">
 						</div>
 						<div id="waiting-for-peers-dots" class="center hidden">
@@ -57,6 +58,7 @@
 							</div>
 						</div>
 					</div>
+					-->
 					<div id="peer-grid" class="expand group row allow-wrap grid1">
 						<!-- peer views in grid mode -->
 					</div>
@@ -424,6 +426,13 @@ avatar,
 		</div>
 	</div>
 	<div class="click-catch abs-cover">
+	</div>
+	<div class="thumb-ui abs-cover group column left">
+		<div class="ui-peer-info fortify group row start grad-bg-down">
+			<div class="btn peer-options" title="Actions for this participant">
+				<i class="fa fa-fw fa-ellipsis-v"></i>
+			</div>
+		</div>
 	</div>
 	<div class="grid-ui abs-cover bar column">
 		<div class="ui-peer-top fortify group row start">
@@ -859,7 +868,64 @@ message,
 </div>
 </script>
 
+
+<!-- thumb grid
+	roundBois
+-->
+<script id="thumb-grid-tmpl" type="text/html">
+<div id="peer-thumb-container">
+	<div id="peer-thumb-grid" class="<%= roundBois %>">
+	</div>
+</div>
+</script>
+
+<!-- thumb grid wrap
+id,
+-->
+<script id="thumb-grid-wrap-tmpl" type="text/html">
+<div id="<%= id %>" class="thumb-wrap">
+	<div class="arrow">
+	</div>
+	<div class="avatar">
+	</div>
+	<div class="stream">
+	</div>
+</div>
+</script>
+
+
+<!-- peer thumb menu
+	peerName,
+-->
+<script id="peer-thumb-menu-tmpl" type="text/html">
+<div id="peer-thumb-menu" class="thumb-menu" tabindex="0">
+	<div class="peer-name">
+		<%= peerName %>
+	</div>
+	<div class="menu-items">
+	</div>
+</div>
+</script>
+
+<!-- peer thumb menu item
+	menuId,
+	faKlass,
+	label,
+-->
+<script id="thumb-menu-item-tmpl" type="text/html">
+<div id="<%= menuId %>" class="thumb-menu-item group row start">
+	<div class="fa fa-fw <%= faKlass %>">
+	</div>
+	<div class="label">
+		<%= label %>
+	</div>
+</div>
+</script>
+
+
+
+<!-- END OF TEMPATES -->
+
 		</div>
 	</body>
 </html>
-

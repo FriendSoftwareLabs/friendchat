@@ -309,7 +309,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleReady = function( e ) {
 		const self = this;
-		console.log( 'app.View.handleReady', e );
 		self.ready = true;
 		self.sendEventQueue();
 		if ( self.onready ) {
@@ -360,7 +359,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.queueEvent = function( event ) {
 		const self = this;
-		console.log( 'app.View.queueEvent', event );
 		if ( !self.eventQueue )
 			self.eventQueue = [];
 		
@@ -369,7 +367,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.sendEventQueue = function() {
 		const self = this;
-		console.log( 'app.View.sendEventQueue', self.eventQueue );
 		self.eventQueue.forEach( send );
 		self.eventQueue = [];
 		function send( event ) {
@@ -646,7 +643,12 @@ var friend = window.friend || {}; // already instanced stuff
 		self.initAppEvent();
 		
 		function unhandledEvent( type, data ) {
-			self.receiveMessage( data );
+			const e = {
+				type : type,
+				data : data,
+			};
+			console.log( 'AppEvent - unhandled event', e );
+			self.receiveMessage( e );
 		}
 	}
 	

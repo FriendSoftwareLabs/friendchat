@@ -1,6 +1,6 @@
 body#hello,
 body#hello.Loading {
-	background-color: #222 !important;
+	background-color: #333 !important;
 }
 
 body#hello {
@@ -29,7 +29,9 @@ body #live {
 
 #lists-container > div {
 	position   : relative;
+	/*
 	transition : width 0.2s;
+	*/
 }
 #lists-container > div:not( .hide ) { margin-right : 2px; }
 

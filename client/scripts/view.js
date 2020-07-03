@@ -594,7 +594,7 @@ library.view = library.view || {};
 	ns.Live = function( liveConf, viewConf, onEvent, onClose ) {
 		const self = this;
 		self.liveConf = liveConf;
-		self.onevent = onEvent,
+		self.onevent = onEvent;
 		self.onclose = onClose;
 		
 		self.initQueue = [];

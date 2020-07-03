@@ -343,7 +343,6 @@ library.component = library.component || {};
 	
 	ns.Menu.prototype.removeItem = function( id ) {
 		var self = this;
-		console.log( 'removeItem', id );
 		var item = self.items[ id ];
 		if ( !item )
 			return;
