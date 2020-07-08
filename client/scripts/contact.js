@@ -2623,11 +2623,12 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.handleCallNotification = function() {
 		const self = this;
-		const trans = Application.i18n( 'i18n_incoming_call' );
-		api.Say( trans );
+		const incCall = Application.i18n( 'i18n_incoming_call' );
+		const callNotie = Application.i18n( 'i18n_join_video_call' );
+		api.Say( incCall );
 		const notie = {
 			title         : self.identity.name,
-			text          : trans,
+			text          : callNotie,
 			callback      : nClose,
 			clickCallback : nClick,
 		};
@@ -2636,7 +2637,7 @@ library.contact = library.contact || {};
 		
 		function nClose() {}
 		function nClick() {
-			self.startAudio();
+			self.startVideo();
 		}
 	}
 	
