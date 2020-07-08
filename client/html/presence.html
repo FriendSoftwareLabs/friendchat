@@ -303,7 +303,7 @@ msgActions,
 				<div class="name"><%= from %></div>
 			</div>
 			<div class="msg-content group row">
-				<div class="str hidden"><%= original %></div>
+				<div class="str hidden"></div>
 				<div class="msg-things expand">
 					<div class="message"><%= message %></div>
 					<%= msgActions %>
@@ -344,7 +344,7 @@ msgActions,
 		</div>
 		<div class="msg-container expand">
 			<div class="msg-content group row">
-				<div class="str hidden"><%= original %></div>
+				<div class="str hidden"></div>
 				<div class="msg-things expand">
 					<div class="message"><%= message %></div>
 					<%= msgActions %>
@@ -384,7 +384,6 @@ toFromNameHidden,
 toFromMsg,
 toFromName,
 targets,
-original,
 message,
 msgActions,
 time,
@@ -415,7 +414,6 @@ time,
 				</div>
 			</div>
 			<div class="msg-content group row">
-				<div class="str hidden"><%= original %></div>
 				<div class="msg-things expand">
 					<div class="message"><%= message %></div>
 					<%= msgActions %>
@@ -453,7 +451,6 @@ target,
 <!-- action
 TODO : id,
 from,
-original,
 message,
 time,
 -->
@@ -462,7 +459,6 @@ time,
 	<div class="msg-icon fortify center-child">
 		<i class="fa fa-fw fa-asterisk"></i>
 	</div>
-	<div class="str hidden"><%= original %></div>
 	<div class="message expand"><%= message %></div>>
 	<div class="time fortify">
 		<%= time %>
@@ -510,7 +506,6 @@ time
 <!-- TODO move to system fragments, its used in atleast two views -->
 <!-- notification
 level,
-original,
 message,
 time,
 -->
@@ -520,7 +515,6 @@ time,
 		<div class="icon fortify">
 			<i class="fa fa-fw fa-exclamation-circle"></i>
 		</div>
-		<div class="str hidden"><%= original %></div>
 		<div class="message expand"><%= message %></div>
 		<div class="time fortify">
 			<%= time %>

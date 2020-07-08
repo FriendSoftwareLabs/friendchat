@@ -1829,7 +1829,7 @@ library.view = library.view || {};
 			toFromName       : toFromName,
 			targets          : targetHtmls.join( '' ),
 			time             : timeStr,
-			original         : original,
+			//original         : original,
 			message          : message,
 			msgActions       : actionsHtml,
 		};

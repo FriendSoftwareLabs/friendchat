@@ -1177,9 +1177,9 @@ var hello = window.hello || {};
 		else
 			parsed = update;
 		
-		const orgEl = el.querySelector( '.msg-container .str' );
+		//const orgEl = el.querySelector( '.msg-container .str' );
 		const msgEl = el.querySelector( '.msg-container .message' );
-		orgEl.textContent = update;
+		//orgEl.textContent = update;
 		msgEl.innerHTML = parsed;
 		if ( isEdit )
 			self.setEdit( msg );
@@ -2048,7 +2048,6 @@ var hello = window.hello || {};
 			selfKlass  : selfKlass,
 			from       : name,
 			time       : timeStr,
-			original   : original,
 			message    : message,
 			msgActions : actionsHtml,
 		};
