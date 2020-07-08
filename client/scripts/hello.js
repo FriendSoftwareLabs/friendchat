@@ -303,7 +303,6 @@ var hello = null;
 		self.app.on( 'notification', e => self.handleNotie( e ));
 		self.app.on( 'app-resume', e => self.handleAppResume( e ));
 		self.app.on( 'userupdate', e => self.handleUserUpdate( e ));
-		
 		self.app.on( 'conn-state', e => self.handleConnState( e ));
 	}
 	
@@ -312,6 +311,13 @@ var hello = null;
 		self.timeNow( 'honst config loaded' );
 		library.tool.mergeObjects( self.config, hostConf );
 		self.config.appName = self.config.appName || 'Friend Chat';
+		if ( hello.app.friendApp ) {
+			console.log( 'hello - friendApp', hello.app.friendApp );
+			if ( 'iOS' === hello.app.friendApp.platform )
+				hello.config.hideLive = true;
+		}
+		
+		//hello.config.hideLive = true;
 		console.log( 'setConfig', hello.config );
 		self.app.setConfig( hello.config );
 	}

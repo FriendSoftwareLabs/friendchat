@@ -594,8 +594,8 @@ library.view = library.view || {};
 	ns.Live = function( liveConf, viewConf, onEvent, onClose ) {
 		const self = this;
 		self.liveConf = liveConf;
-		self.onevent = onEvent;
-		self.onclose = onClose;
+		self.onEvent = onEvent,
+		self.onClose = onClose;
 		
 		self.initQueue = [];
 		self.init( viewConf );
@@ -660,7 +660,7 @@ library.view = library.view || {};
 					message : link,
 				},
 			};
-			self.onevent( 'chat', chat );
+			self.onEvent( 'chat', chat );
 		}
 		
 		api.ApplicationStorage.get( 'live-settings' )
@@ -674,7 +674,7 @@ library.view = library.view || {};
 			if ( !localSettings.preferedDevices )
 				loadOldDevices( localSettings );
 			else
-				initLive( localSettings );
+				setup( localSettings );
 		}
 		
 		function loadOldDevices( localSettings ) {
@@ -687,11 +687,40 @@ library.view = library.view || {};
 			function devBack( res ) {
 				let devs = res.data;
 				localSettings.preferedDevices = devs;
-				initLive( localSettings );
+				setup( localSettings );
 			}
 		}
 		
-		function initLive( localSettings ) {
+		function setup( localSettings ) {
+			console.log( 'setup', conf );
+			self.roomId = conf.roomId;
+			self.roomTitle = conf.roomName;
+			self.isPrivate = conf.isPrivate
+			self.isStream = conf.isStream;
+			self.liveConf.localSettings = localSettings;
+			
+			console.log( 'checkNative', hello.app );
+			if ( hello.app.friendApp && ( 'iOS' === hello.app.friendApp.platform ))
+				initNative();
+			else
+				initLive();
+		}
+		
+		function initNative() {
+			const viewConf = {
+				emojii   : hello.config.emojii,
+				liveConf : self.liveConf,
+			};
+			self.view = new api.NativeView(
+				null,
+				viewConf,
+				self.onEvent
+			);
+			
+			self.bindView();
+		}
+		
+		function initLive() {
 			let width = 850;
 			let height = 500;
 			if ( !conf.isStream && isVoiceOnly() ) {
@@ -699,9 +728,6 @@ library.view = library.view || {};
 				height = 350;
 			}
 			
-			self.roomTitle = conf.roomName;
-			self.isPrivate = conf.isPrivate
-			self.isStream = conf.isStream;
 			const title = self.getTitle();
 			
 			const windowConf = {
@@ -711,7 +737,7 @@ library.view = library.view || {};
 				fullscreenenabled  : true,
 			};
 			
-			self.liveConf.localSettings = localSettings;
+			
 			const viewConf = {
 				liveFragments : hello.liveCommonFragments,
 				emojii        : hello.config.emojii,
@@ -726,7 +752,7 @@ library.view = library.view || {};
 				template,
 				windowConf,
 				viewConf,
-				self.onevent,
+				self.onEvent,
 				closed
 			);
 			
@@ -851,17 +877,17 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.closed = function() {
 		const self = this;
-		let onclose = self.onclose;
+		let onClose = self.onClose;
 		self.close();
-		if ( onclose )
-			onclose();
+		if ( onClose )
+			onClose();
 	}
 	
 	ns.Live.prototype.close = function() {
 		const self = this;
 		let view = self.view;
-		delete self.onevent;
-		delete self.onclose;
+		delete self.onEvent;
+		delete self.onClose;
 		delete self.view;
 		if ( view ) {
 			view.close();

@@ -376,11 +376,13 @@ ns.Socket.prototype.executeSendQueue = function() {
 
 ns.Socket.prototype.connError = function( event ) {
 	const self = this;
+	log( 'connError', event );
 	self.handleClose();
 }
 
 ns.Socket.prototype.connClose = function( event ) {
 	const self = this;
+	log( 'connClose', event );
 	self.handleClose();
 }
 

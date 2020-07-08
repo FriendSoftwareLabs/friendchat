@@ -294,12 +294,14 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		const self = this;
+		console.log( 'ws closed', e );
 		self.setState( 'close', e );
 		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		const self = this;
+		console.log( 'ws error', e );
 		self.setState( 'error', e );
 	}
 	

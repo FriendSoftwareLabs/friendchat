@@ -45,6 +45,7 @@ library.view = library.view || {};
 	// Public
 	
 	
+	
 	// Private
 	
 	ns.Subscriber.prototype.init = function() {
@@ -1789,6 +1790,9 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.buildLiveStatus = function() {
 		const self = this;
+		if ( window.View.appConf.hideLive )
+			return;
+		
 		const liveConf = {
 			containerId : self.liveStatus,
 			type      : 'icon',
@@ -2068,6 +2072,9 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.bindLive = function() {
 		const self = this;
+		if ( window.View.appConf.hideLive )
+			return;
+		
 		self.live = new library.component.EventNode(
 			'live',
 			self.conn
@@ -2356,6 +2363,9 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.bindLive = function() {
 		const self = this;
+		if ( window.View.appConf.hideLive )
+			return;
+		
 		self.live = new library.component.EventNode(
 			'live',
 			self.conn
