@@ -1058,16 +1058,61 @@ html body .hidden {
 }
 
 .live-status-peers {
-}
-
-.live-status-peer {
+	position     : relative;
 	margin-right : 0.2em;
 }
 
+.live-status-peer {
+	opacity    : 1;
+	transition : all 0.2s;
+}
+
+.live-status-peer.invisible {
+	opacity    : 0;
+	transition : all 0.2s;
+}
+
+.live-status-peers.loose > div {
+	margin-left : -0.2em;
+	transition   : all 0.2s;
+}
+
+.live-status-peers.tight > div {
+	margin-left : -0.5em;
+	transition   : all 0.2s;
+}
+
+.live-status-peers.plus > div {
+	margin-left : -0.8em;
+	transition   : all 0.2s;
+}
+
+.live-status-peers.stack > div {
+	margin-left : -1.7em;
+	opacity      : 0;
+	transition   : all 0.2s;
+}
+
+.live-status-peers > div:first-child {
+	margin-left : 0;
+}
+
+.live-status-count,
 .live-status-peer .avatar {
 	height : 1.7em;
 	width  : 1.7em;
 }
+
+.live-status-count {
+	border-radius    : 100%;
+	background-color : #333;
+	color            : #ddd;
+	font-weight      : bolder;
+	line-height      : 1.7em;
+	text-align       : center;
+	z-index          : 1;
+}
+
 
 /*
  overlay

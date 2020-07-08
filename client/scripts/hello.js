@@ -1166,13 +1166,13 @@ var hello = null;
 		}
 		
 		if ( !event || !event.extra ) {
-			console.log( 'hello.handlePushNotie - not valid event', event );
+			console.trace( 'hello.handlePushNotie - not valid event', event );
 			return false;
 		}
 		
 		const extra = friendUP.tool.parse( event.extra );
 		if ( !extra ) {
-			console.log( 'hello.handlePushNotie - invalid data', {
+			console.trace( 'hello.handlePushNotie - invalid data', {
 				event : event,
 				extra : extra,
 			});
@@ -1211,9 +1211,8 @@ var hello = null;
 	
 	ns.Hello.prototype.handleNotie = function( event ) {
 		const self = this;
-		console.trace( 'handleNotie', event );
 		if ( !event || !event.extra ) {
-			console.log( 'hello.handleNotie - invalid event', event );
+			console.trace( 'hello.handleNotie - invalid event', event );
 			return false;
 		}
 		
@@ -1231,7 +1230,7 @@ var hello = null;
 		
 		let extra = friendUP.tool.parse( event.extra );
 		if ( !extra ) {
-			console.log( 'hello.handleNotie - invalid extra', event );
+			console.trace( 'hello.handleNotie - invalid extra', event );
 			return;
 		}
 		

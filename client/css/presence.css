@@ -37,6 +37,15 @@
 	margin-bottom : 0.2em;
 }
 
+.title-grp {
+	position : relative;
+	-webkit-mask-image : linear-gradient(
+		to left,
+		transparent 0px,
+		black 1em
+	);
+}
+
 .user-hidden {
 	
 }

@@ -2802,9 +2802,9 @@ var hello = window.hello || {};
 	
 	// Public
 	
-	ns.LiveStatus.prototype.update = function( peerList ) {
+	ns.LiveStatus.prototype.update = function( userList ) {
 		const self = this;
-		peerList.forEach( peerId => self.addPeer( peerId ));
+		userList.forEach( uId => self.addPeer( uId ));
 	}
 	
 	ns.LiveStatus.prototype.close = function() {
@@ -2821,6 +2821,7 @@ var hello = window.hello || {};
 		delete self.videoBtn;
 		delete self.videoIcon;
 		delete self.peers;
+		delete self.peerCount;
 		delete self.peerList;
 		delete self.peerIdMap;
 		
@@ -2837,8 +2838,10 @@ var hello = window.hello || {};
 		
 		// build
 		self.peers = friendUP.tool.uid( 'peers' );
+		self.peerCount = friendUP.tool.uid( 'count' );
 		const elConf = {
 			peersId : self.peers,
+			peerCountId : self.peerCount,
 		};
 		self.el = self.template.getElement( 'live-status-tmpl', elConf );
 		const container = document.getElementById( self.containerId );
@@ -2848,6 +2851,7 @@ var hello = window.hello || {};
 		self.videoIcon = self.videoBtn.querySelector( 'i' );
 		self.audioIcon = self.audioBtn.querySelector( 'i' );
 		self.peers = document.getElementById( self.peers );
+		self.peerCount = document.getElementById( self.peerCount );
 		
 		//
 		self.videoBtn.addEventListener( 'click', videoClick, false );
@@ -2890,7 +2894,7 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.addPeer = function( userId ) {
 		const self = this;
-		if ( self.peerList.some( pId => pId === userId ))
+		if ( self.peerIdMap[ userId ])
 			return;
 		
 		const peerId = friendUP.tool.uid( 'peer' );
@@ -2901,14 +2905,20 @@ var hello = window.hello || {};
 		};
 		const peerEl = self.template.getElement( 'live-status-peer-tmpl', peer );
 		self.peerIdMap[ userId ] = peerId;
-		self.peers.appendChild( peerEl );
-		self.peerList.push( userId );
+		self.peers.insertBefore( peerEl, self.peerCount );
+		//self.peers.appendChild( self.peerCount );
+		self.peerList.push( peerId );
 		if ( userId === self.userId )
 			self.userLive = true;
-			
+		
 		self.updateIconState();
+		self.updateStacking();
 		
 		//self.updateVisibility();
+		 window.setTimeout( show, 1 );
+		 function show() {
+			peerEl.classList.toggle( 'invisible', false );
+		 }
 	}
 	
 	ns.LiveStatus.prototype.removePeer = function( userId ) {
@@ -2920,11 +2930,12 @@ var hello = window.hello || {};
 		delete self.peerIdMap[ userId ];
 		const el = document.getElementById( peerId );
 		el.parentNode.removeChild( el );
-		self.peerList = self.peerList.filter( pId => pId !== userId );
+		self.peerList = self.peerList.filter( pId => pId !== peerId );
 		if ( userId === self.userId )
 			self.userLive = false;
 		
 		self.updateIconState();
+		self.updateStacking();
 		
 		//self.updateVisibility();
 	}
@@ -2957,6 +2968,57 @@ var hello = window.hello || {};
 			self.audioIcon.classList.toggle( self.currState, true );
 			self.videoIcon.classList.toggle( self.currState, true );
 		}
+	}
+	
+	ns.LiveStatus.prototype.updateStacking = function() {
+		const self = this;
+		const num = self.peerList.length;
+		
+		let stacking = 'loose';
+		let hideNum = 0;
+		if ( num > 2 )
+			stacking = 'tight';
+		if ( num > 4 ) {
+			stacking = 'plus';
+			hideNum = num - 4;
+		}
+		
+		const curr = self.currentStacking;
+		console.log( 'updateStacking', {
+			num : num,
+			curr : curr,
+			new : stacking,
+			hidenum : hideNum,
+			plist : self.peerList,
+		});
+		// has stacking, different from new stacking
+		if (( null != curr ) && ( curr !== stacking )) {
+			// remove current
+			self.peers.classList.toggle( curr, false );
+			
+			// change from plus, unhide all
+			if ( 'plus' === curr )
+				self.peerList.forEach( pId => {
+					const el = document.getElementById( pId );
+					el.classList.toggle( 'hidden', false );
+				});
+		}
+		
+		self.currentStacking = stacking;
+		self.peers.classList.toggle( self.currentStacking, true );
+		self.peerCount.classList.toggle( 'hidden', !hideNum );
+		if ( !hideNum )
+			return;
+		
+		self.peerCount.textContent = '+' + hideNum;
+		const showToIndex = ( num - hideNum ) - 1;
+		console.log( 'showToIndex', showToIndex );
+		self.peerList.forEach(( pId, index ) => {
+			const el = document.getElementById( pId );
+			const hide = index > showToIndex;
+			console.log( 'hide?', [ index, hide ]);
+			el.classList.toggle( 'hidden', hide );
+		});
 	}
 	
 })( library.component );

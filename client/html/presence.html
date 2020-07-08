@@ -162,7 +162,7 @@ avatarCssKlass,
 roomName,
 -->
 <script id="group-title-tmpl" type="text/html">
-<div id="<%= id %>" class="group row start <%= avatarCssKlass %>">
+<div id="<%= id %>" class="title-grp group row start <%= avatarCssKlass %>">
 	<div class="avatar room fortify">
 	</div>
 	<div class="title-name expand">
@@ -178,7 +178,7 @@ avatarCssKlass,
 contactName,
 -->
 <script id="contact-title-tmpl" type="text/html">
-<div id="<%= id %>" class="group row start <%= avatarCssKlass %>">
+<div id="<%= id %>" class="title-grp group row start <%= avatarCssKlass %>">
 	<div class="avatar fortify">
 		<div id="<%= statusId %>" class="avatar-status">
 		</div>
@@ -217,10 +217,14 @@ contactName,
 
 <!-- LiveStatus
 peersId,
+peerCountId,
 -->
 <script id="live-status-tmpl" type="text/html">
 <div class="live-status group row">
 	<div id="<%= peersId %>" class="live-status-peers group row">
+		<div id="<%= peerCountId %>" class="live-status-count Available hidden">
+			+1
+		</div>
 	</div>
 	<div class="Button IconButton live-status-icon video LED">
 		<i class="fa fa-fw fa-video-camera"></i>
@@ -237,7 +241,7 @@ id,
 avatarKlass,
 -->
 <script id="live-status-peer-tmpl" type="text/html">
-<div id="<%= id %>" class="live-status-peer <%= avatarKlass %>">
+<div id="<%= id %>" class="live-status-peer <%= avatarKlass %> invisible">
 	<div class="avatar">
 	</div>
 </div>

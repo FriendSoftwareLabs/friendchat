@@ -369,6 +369,7 @@ library.view = library.view || {};
 			self.liveStatus.on( 'show', e => self.goLive( 'show' ));
 			self.liveStatus.on( 'join', e => self.goLive( e ));
 		}
+		
 		// get logs when scrolling to top
 		self.logFetcher = new library.component.LogFetcher(
 			'message-container',
