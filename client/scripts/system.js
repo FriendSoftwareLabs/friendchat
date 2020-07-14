@@ -2239,6 +2239,7 @@ library.rtc = library.rtc || {};
 		library.component.EventEmitter.call( self, eventSink );
 		
 		self.id = null; // set by initialize / open event
+		self.clientId = conf.clientId;
 		self.roomId = conf.roomId;
 		self.isPrivate = conf.isPrivate;
 		self.conf = conf;
@@ -2329,9 +2330,8 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		self.id = init.liveId;
+		self.id = init.sessionId;
 		const roomConf = init.liveConf;
-		console.log( 'RtcSession - roomConf', roomConf );
 		const viewConf = self.conf;
 		const liveConf = {
 			userId      : roomConf.userId,

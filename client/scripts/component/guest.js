@@ -201,12 +201,14 @@ library.component = library.component || {};
 			},
 		};
 		
+		const cId = friendUP.tool.uid( 'glc' );
 		const conf = {
 			roomId      : self.id,
-			roomName    : self.identity.name,
 			isGuest     : true,
-			permissions : perms,
+			clientId    : cId,
+			roomName    : self.identity.name,
 			isStream    : state.settings.isStream,
+			permissions : perms,
 			guestAvatar : state.guestAvatar,
 		};
 		
@@ -216,7 +218,7 @@ library.component = library.component || {};
 		self.live.on( 'live-name', liveName );
 		const joinLive = {
 			type : 'live-join',
-			data : null,
+			data : cId,
 		};
 		self.send( joinLive );
 		
@@ -301,7 +303,10 @@ library.component = library.component || {};
 			if ( !self.live )
 				return;
 			
-			const init = event.data;
+			console.log( 'guest.live.opne', event );
+			const open = event.data;
+			const clietId = open.clientId;
+			const init = open.live;
 			const peerList = init.liveConf.peerList;
 			self.idc.getList( peerList )
 				.then( listBack )

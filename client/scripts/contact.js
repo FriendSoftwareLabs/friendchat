@@ -640,7 +640,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		const self = this;
-		console.log( 'joinLive', conf );
 		if ( hello.config.hideLive ) {
 			console.log( 'PresenceRoom.joinLive - blocked by conf', hello.config );
 			return;
@@ -658,7 +657,9 @@ library.contact = library.contact || {};
 			return;
 		}
 		
+		const cId = friendUP.tool.uid( 'lc' );
 		conf = conf || {};
+		conf.clientId = cId;
 		conf.roomId = self.clientId;
 		conf.roomName = self.identity.name;
 		conf.isPrivate = self.isPrivate || false;
@@ -679,17 +680,12 @@ library.contact = library.contact || {};
 		}
 		
 		// tell server
+		
 		const join = {
 			type : 'live-join',
-			data : null,
+			data : cId,
 		};
 		self.send( join );
-		
-		// tell main view
-		const userJoin = {
-			type : 'user-join',
-		};
-		self.liveToView( userJoin );
 		
 		// events from live view we care about, everything else is passed on
 		self.live.on( 'chat', chat );
@@ -868,14 +864,8 @@ library.contact = library.contact || {};
 		function persist( e ) { self.persistRoom( e ); }
 		function settings( e ) { self.loadSettings( e ); }
 		function rename( e ) { self.renameRoom( e ); }
-		function startVideo( e ) {
-			console.log( 'startVideo', e );
-			self.startVideo( e );
-		}
-		function startAudio( e ) {
-			console.log( 'startAudio', e );
-			self.startAudio( e );
-		}
+		function startVideo( e ) { self.startVideo( e ); }
+		function startAudio( e ) { self.startAudio( e ); }
 		function chat( e ) { self.openChat( e ); }
 		function leave( e ) { self.leaveRoom( e ); }
 		
@@ -1165,7 +1155,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
 		const self = this;
-		console.log( 'handleInitialize', state );
 		self.users = state.users || {};
 		self.userIds = Object.keys( self.users );
 		self.peers = state.peers;
@@ -1272,7 +1261,10 @@ library.contact = library.contact || {};
 		const self = this;
 		const restore = {
 			type : 'live-restore',
-			data : Date.now(),
+			data : {
+				clientId  : self.live.clientId,
+				sessionId : self.live.id,
+			},
 		};
 		self.send( restore );
 	}
@@ -1426,7 +1418,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.setSettings = function( settings ) {
 		const self = this;
-		console.log( 'PresenceRoom.setSettings', settings );
 		const keys = Object.keys( settings );
 		keys.forEach( k => {
 			const value = settings[ k ];
@@ -1503,7 +1494,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleSettingUpdate = function( event ) {
 		const self = this;
-		console.log( 'PresenceRoom.handleSettingUpdate', event );
 		if ( !self.settings )
 			return;
 		
@@ -1735,7 +1725,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
-		console.log( 'handleInvite', event );
 		if ( 'revoke' === event.type )
 			send( event );
 		else
@@ -1859,22 +1848,18 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLive = function( event ) {
 		const self = this;
-		if ( 'open' === event.type ) {
-			if ( !self.live )
-				return;
-			
-			let init = event.data;
-			init.identities = self.identities;
-			self.live.initialize( event.data );
+		const type = event.type;
+		if ( 'open' === type ) {
+			self.handleLiveOpen( event.data );
 			return;
 		}
 		
-		if ( 'close' === event.type ) {
-			self.handleCloseLive( event.data );
+		if ( 'close' === type ) {
+			self.handleLiveClose( event.data );
 			return;
 		}
 		
-		if ( 'ping' === event.type ) {
+		if ( 'ping' === type ) {
 			if ( !self.live )
 				return;
 			
@@ -1886,9 +1871,9 @@ library.contact = library.contact || {};
 			return;
 		}
 		
-		if ( 'peers' === event.type
-			|| 'join' === event.type
-			|| 'leave' === event.type
+		if ( 'peers' === type
+			|| 'join' === type
+			|| 'leave' === type
 		) {
 			self.onLive( event );
 		}
@@ -1896,7 +1881,7 @@ library.contact = library.contact || {};
 		if ( !self.live )
 			return;
 		
-		if ( 'join' === event.type ) {
+		if ( 'join' === type ) {
 			const peer = event.data;
 			self.idc.get( peer.peerId )
 				.then( id => {
@@ -2070,7 +2055,6 @@ library.contact = library.contact || {};
 					roomId : self.clientId,
 					v      : 2,
 				};
-				console.log( 'invite data', data );
 				const bundle = {
 					type : 'live-invite',
 					data : data,
@@ -2289,29 +2273,43 @@ library.contact = library.contact || {};
 		self.updateActive();
 	}
 	
-	ns.PresenceRoom.prototype.handleCloseLive = function( liveId ) {
+	ns.PresenceRoom.prototype.handleLiveOpen = function( event ) {
 		const self = this;
-		// close the things
-		if ( !liveId ) {
+		const clientId = event.clientId;
+		const userJoin = {
+			type : 'user-join',
+		};
+		self.liveToView( userJoin );
+		
+		if ( !self.live )
+			return;
+		
+		if ( clientId !== self.live.clientId )
+			return;
+		
+		let init = event.live;
+		init.identities = self.identities;
+		self.live.initialize( init );
+	}
+	
+	ns.PresenceRoom.prototype.handleLiveClose = function( event ) {
+		const self = this;
+		const sessionId = event.sessionId;
+		const clientId = event.clientId;
+		// close without clientId means user left live, close all the things
+		if ( !clientId ) {
 			clearView();
 			close();
 			return;
 		}
 		
-		// no live here
-		if ( !self.live ) {
-			clearView();
-			return;
-		}
-		
-		// yep, we're closing
-		if ( liveId === self.live.id ) {
-			clearView();
+		// we're closing live in this client, but user is still live somewhere else
+		if ( clientId === self.live.clientId ) {
 			close();
 			return;
 		}
 		
-		// a live was told to close, but not this one
+		// a live was told to close, but not this one. User is still live here or somewhere else
 		return;
 		
 		//
@@ -2326,7 +2324,7 @@ library.contact = library.contact || {};
 			if ( !self.live )
 				return;
 			
-			var live = self.live;
+			const live = self.live;
 			delete self.live;
 			live.close();
 		}
