@@ -549,7 +549,7 @@ content
 			</div>
 		</div>
 	</div>
-	<div class="link-expand-content">
+	<div class="link-expand-content group row center">
 	</div>
 </div>
 </script>
@@ -558,7 +558,7 @@ content
 src
 -->
 <script id="image-expand-tmpl" type="text/html">
-<a href="<%= src %>" target="_blank">
+<a href="<%= src %>" target="_blank" class="expand">
 	<div class="link-expand-image"
 		style="background-image : url(&#39;<%= src%>&#39;)"
 	></div>
@@ -569,14 +569,14 @@ src
 src
 -->
 <script id="audio-expand-tmpl" type="text/html">
-<audio class="link-expand-audio" src="<%= src %>" controls></audio>
+<audio class="link-expand-audio" src="<%= src %>" controls class="fortify"></audio>
 </script>
 
 <!-- video-expand-tmpl
 src
 -->
 <script id="video-expand-tmpl" type="text/html">
-<video class="link-expand-video" src="<%= src %>" controls></video>
+<video class="link-expand-video" src="<%= src %>" controls class="fortify"></video>
 </script>
 
 <!-- file-expand-tmpl
