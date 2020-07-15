@@ -366,7 +366,7 @@ library.view = library.view || {};
 				friend.template
 			);
 			self.liveStatus.update( state.peers );
-			self.liveStatus.on( 'show', e => self.goLive( 'show' ));
+			self.liveStatus.on( 'show', e => self.goLive( e ));
 			self.liveStatus.on( 'join', e => self.goLive( e ));
 		}
 		

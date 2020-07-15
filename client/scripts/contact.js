@@ -2774,7 +2774,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.setupLive = function( permissions ) {
 		const self = this;
-		console.log( 'setupLive', permissions );
 		const conf = {
 			permissions : permissions,
 		};

@@ -2874,7 +2874,7 @@ var hello = window.hello || {};
 	ns.LiveStatus.prototype.handleClick = function( type ) {
 		const self = this;
 		if ( self.userLive ) {
-			self.emit( 'show' );
+			self.emit( 'show', type );
 			return;
 		}
 		
