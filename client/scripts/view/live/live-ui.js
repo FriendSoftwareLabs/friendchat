@@ -31,6 +31,7 @@ library.component = library.component || {};
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
+		console.log( 'live.UI', window.View );
 		self.conn = conn;
 		self.userId = liveConf.userId;
 		self.isPrivate = liveConf.isPrivate;
@@ -248,6 +249,8 @@ library.component = library.component || {};
 		if ( share && self.isTempRoom )
 			share.show();
 		
+		if (( 'DESKTOP' !== window.View.deviceType ) && !self.isPrivate )
+			self.sessionTimer.classList.toggle( 'hidden', true );
 		
 		self.uiVisible = true;
 		self.toggleUI();
