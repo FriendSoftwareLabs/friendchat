@@ -601,7 +601,7 @@ var hello = window.hello || {};
 		const self = this;
 		const user = self.get( clientId );
 		if ( user && user.isGuest )
-			return clientId = 'guest-user';
+			return clientId = 'guest-user-klass';
 		
 		return self.getUserCssKlass( clientId );
 	}
