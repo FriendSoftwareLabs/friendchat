@@ -38,12 +38,12 @@ var friend = window.friend || {};
 		self.eventInit();
 		
 		function eventSink( type, data ) {
-			/*
+			return;
+			
 			console.log( 'View.eventSink', {
 				type : type,
 				data : data,
 			});
-			*/
 		}
 	}
 	
@@ -118,7 +118,7 @@ var friend = window.friend || {};
 		
 		msg.origin = e.origin;
 		
-		var handler = self.eventMap[ msg.command ];
+		const handler = self.eventMap[ msg.command ];
 		if ( !handler ) {
 			self.viewEvent( msg );
 			return;
@@ -133,8 +133,8 @@ var friend = window.friend || {};
 	}
 	
 	ns.ViewEvent.prototype.notify = function( msg ) {
-		var self = this;
-		var handler = self.notifyMap[ msg.method ];
+		const self = this;
+		const handler = self.notifyMap[ msg.method ];
 		if ( !handler ) {
 			console.log( 'unkown notify event', msg );
 			return;
@@ -583,7 +583,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.appConfUpdate = function( update ) {
 		const self = this;
-		console.log( 'appConfUpdate', update );
 		self.appConf = update;
 		//self.emit( 'app-config', update );
 	}

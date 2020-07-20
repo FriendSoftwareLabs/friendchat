@@ -1264,7 +1264,7 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		var fid = self.setCallback( loadCallback );
+		const fid = self.setCallback( loadCallback );
 		self.sendMessage({
 			type     : 'file',
 			method   : 'load',
@@ -1327,7 +1327,7 @@ var friend = window.friend || {}; // already instanced stuff
 			msg.callback = callbackId;
 		}
 		
-		var msgString = friendUP.tool.stringify( msg );
+		const msgString = friendUP.tool.stringify( msg );
 		window.parent.postMessage( msgString, window.origin || '*' );
 	}
 	

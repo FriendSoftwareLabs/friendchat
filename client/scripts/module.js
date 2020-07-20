@@ -142,7 +142,7 @@ library.module = library.module || {};
 		// view stuff
 		self.view = new library.component.SubView({
 			parent : self.parentView,
-			type : self.clientId,
+			type   : self.clientId,
 		});
 		
 		self.view.on( 'settings', getSettings );
@@ -419,9 +419,9 @@ library.module = library.module || {};
 			|| 'no-display-name';
 	}
 	
-	ns.BaseModule.prototype.setIdentity = function() {
+	ns.BaseModule.prototype.setIdentity = function( id ) {
 		const self = this;
-		self.identity = hello.identity;
+		self.identity = id || {};
 		self.identity.avatar = '';
 		if ( !self.identity.name )
 			self.identity.name = self.identity.alias;
@@ -588,6 +588,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.updateAvatar = function( avatar ) {
 		const self = this;
+		console.log( 'Presence.updateAvatar - send to presence', avatar );
 		if ( !self.initialized )
 			return;
 		

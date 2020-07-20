@@ -566,8 +566,8 @@ inherits from EventEmitter
 	ns.Identity.prototype.updateAvatar = function( avatar ) {
 		const self = this;
 		self.avatar = avatar;
-		self.fupConf.Image = avatar;
-		// TODO ? self.emit( 'avatar', self.avatar );
+		if ( self.fupConf )
+			self.fupConf.Image = avatar;
 	}
 	
 	// Private

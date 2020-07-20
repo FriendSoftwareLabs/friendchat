@@ -217,6 +217,7 @@ var hello = null;
 		}
 		
 		function userInfoBack( userInfo ) {
+			console.log( 'userInfoBack', userInfo );
 			self.timeNow( 'user info loaded' );
 			if ( !userInfo ) {
 				self.showConnStatus({
@@ -318,7 +319,6 @@ var hello = null;
 		}
 		
 		//hello.config.hideLive = true;
-		console.log( 'setConfig', hello.config );
 		self.app.setConfig( hello.config );
 	}
 	
@@ -349,62 +349,38 @@ var hello = null;
 		});
 	}
 	
-	ns.Hello.prototype.getUserAvatar = function( userImage ) {
+	ns.Hello.prototype.getUserAvatar = async function( userImage ) {
 		const self = this;
-		return new Promise(( resolve, reject ) => {
-			let current = null;
-			let check = null;
-			if ( userImage && userImage.length )
-				current = userImage;
-			
-			loadCheck()
-				.then( checkBack )
-				.catch( reject );
-			
-			function checkBack( avaPart ) {
-				check = avaPart || null;
-				if ( current )
-					checkFreshness();
-				else
-					loadCurrent()
-						.then( currentBack )
-						.catch( reject );
-			}
-			
-			function currentBack( avatar ) {
-				current = avatar || null;
-				checkFreshness();
-			}
-			
-			function checkFreshness() {
-				if ( !current ) {
-					self.setAvatar( false );
-					api.ApplicationStorage.remove( 'avatar-check' );
-					resolve();
-					return;
-				}
-				
-				const currentPart = getPart( current );
-				if ( !check ) {
-					api.ApplicationStorage.set( 'avatar-check', currentPart );
-					self.setAvatar( current );
-					resolve();
-					return;
-				}
-				
-				if ( currentPart === check ) {
-					self.setAvatar( null, current );
-					resolve();
-				} else {
-					api.ApplicationStorage.set( 'avatar-check', currentPart );
-					self.setAvatar( current );
-					resolve();
-				}
-			}
-		});
+		let current = null;
+		let check = null;
+		if ( userImage && userImage.length )
+			current = userImage;
+		else
+			current = await loadCurrent();
+		
+		if ( !current ) {
+			await self.setAvatar( false );
+			api.ApplicationStorage.remove( 'avatar-check' );
+			return;
+		}
+		
+		check = await loadCheck();
+		if ( !check ) {
+			api.ApplicationStorage.set( 'avatar-check', currentPart );
+			await self.setAvatar( current );
+			return;
+		}
+		
+		const currentPart = getPart( current );
+		if ( currentPart === check ) {
+			await self.setAvatar( null, current );
+		} else {
+			api.ApplicationStorage.set( 'avatar-check', currentPart );
+			await self.setAvatar( current );
+		}
 		
 		function loadCurrent() {
-			return new Promise(( resolve, reject ) => {
+			return new Promise( resolve => {
 				const conf = {
 					module : 'system',
 					method : 'getsetting',
@@ -445,11 +421,12 @@ var hello = null;
 		}
 		
 		function loadCheck() {
-			return new Promise(( resolve, reject ) => {
+			return new Promise( resolve => {
 				api.ApplicationStorage.get( 'avatar-check' )
 					.then( checkBack )
 					.catch( err => {
 						console.log( 'getUserAvatar - loadCheck storage err', err );
+						resolve( null );
 					});
 				
 				function checkBack( checkObj ) {
@@ -469,7 +446,7 @@ var hello = null;
 	
 	ns.Hello.prototype.loadCommonFragments = function() {
 		const self = this;
-		return new Promise(( resolve, reject ) => {
+		return new Promise( resolve => {
 			let commonLoaded = false;
 			let mainLoaded = false;
 			let liveLoaded = false;
@@ -799,7 +776,6 @@ var hello = null;
 		const self = this;
 		new library.component.GuestAccount( self.conn, permissions, onclose );
 		function onclose() {
-			console.log( 'hello.guestAccount.onclose' );
 			self.quit();
 		}
 		
@@ -992,39 +968,26 @@ var hello = null;
 	}
 	
 	// current is a fallback for when/if cache is inconsitent
-	ns.Hello.prototype.setAvatar = function( avatar, current ) {
+	ns.Hello.prototype.setAvatar = async function( avatar, current ) {
 		const self = this;
 		self.avatarStatus = avatar;
-		return new Promise(( resolve, reject ) => {
-			if ( false === avatar ) {
-				clearCache()
-					.then( done )
-					.catch( reject );
-				return;
-			}
-			
-			if ( null == avatar ) {
-				loadFromCache()
-					.then( done )
-					.catch( reject );
-				return;
-			}
-			
-			hello.identity.updateAvatar( avatar );
-			api.ApplicationStorage.set( 'avatar', avatar )
-				.then( setBack )
-				.catch( err => {
-					console.log( 'Hello.setAvatar - set err', err );
-				} );
-			
-			function setBack( res ) {
-				done();
-				resolve();
-			}
-			
-		});
+		if ( false === avatar ) {
+			await clearCache();
+			update();
+			return;
+		}
 		
-		function done() {
+		if ( null == avatar ) {
+			await loadFromCache( current );
+			update();
+			return;
+		}
+		
+		hello.identity.updateAvatar( avatar );
+		await api.ApplicationStorage.set( 'avatar', avatar );
+		update();
+		
+		function update() {
 			if ( null == self.avatarStatus )
 				return;
 			
@@ -1035,40 +998,21 @@ var hello = null;
 				self.main.updateAvatar();
 		}
 		
-		function clearCache() {
-			return new Promise(( resolve, reject ) => {
-				hello.identity.updateAvatar( null );
-				api.ApplicationStorage.set( 'avatar', null )
-					.then( clearBack )
-					.catch( err => {
-						console.log( 'Hello.setAvatar - clearCache err', err );
-					});
-				
-				function clearBack( res ) {
-					resolve();
-				}
-			});
+		async function clearCache() {
+			hello.identity.updateAvatar( null );
+			await api.ApplicationStorage.set( 'avatar', null );
 		}
 		
-		function loadFromCache() {
-			return new Promise(( resolve, reject ) => {
-				api.ApplicationStorage.get( 'avatar' )
-					.then( loadBack )
-					.catch( err => {
-						console.log( 'Hello.setAvatar - loadFromCache err', err );
-					});
-				
-				function loadBack( res ) {
-					if ( !res.data ) {
-						api.ApplicationStorage.set( 'avatar', current );
-						self.avatarStatus = current;
-						res.data = current;
-					}
-					
-					hello.identity.updateAvatar( res.data );
-					resolve();
-				}
-			});
+		async function loadFromCache( current ) {
+			let res = null;
+			res = await api.ApplicationStorage.get( 'avatar' );
+			if ( !res || !res.data ) {
+				api.ApplicationStorage.set( 'avatar', current );
+				self.avatarStatus = current;
+				hello.identity.updateAvatar( current );
+			}
+			
+			hello.identity.updateAvatar( res.data );
 		}
 	}
 	
@@ -1788,84 +1732,3 @@ var hello = null;
 })( library.system );
 
 hello = new window.Hello( window.Application, window.localconfig );
-
-// Mobile check from the Friend API --------------------------------------------
-
-/*
-function checkMobile()
-{
-	var check = false;
-	(function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
-	return check;
-}
-
-function checkTablet() 
-{
-	var check = false;
-	(function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
-	return check;
-}
-
-// Are we on a mobile browser?
-function checkMobileBrowser()
-{
-	if( !document.body ) return setTimeout( checkMobileBrowser, 50 );
-	window.isMobile = checkMobile();
-	window.isTablet = checkTablet();
-	if( window.isMobile ) window.isTablet = false;
-	if( !window.isMobile && !window.isTablet )
-	{
-		if( window.isTouch || !document.getElementsByTagName( 'head' )[0].getAttribute( 'touchdesktop' ) )
-		{
-			window.isMobile = ( window.Workspace && window.innerWidth <= 760 ) && (
-				navigator.userAgent.toLowerCase().indexOf( 'android' ) > 0 ||
-				navigator.userAgent.toLowerCase().indexOf( 'phone' ) > 0 ||
-				navigator.userAgent.toLowerCase().indexOf( 'pad' ) > 0 ||
-				navigator.userAgent.toLowerCase().indexOf( 'bowser' ) > 0 );
-			
-			if( ( window.isMobile || navigator.userAgent.indexOf( 'Mobile' ) > 0 ) && window.innerWidth >= 1024 )
-			{
-				window.isTablet = true;
-				window.isMobile = false;
-			}
-		}
-	}
-	// Ipads are always mobiles
-	if( navigator.userAgent.toLowerCase().indexOf( 'ipad' ) > 0 )
-	{
-		//console.log( 'IPAD! ' + navigator.userAgent );
-		window.isMobile = true;
-	}
-	
-	window.isTouch = !!('ontouchstart' in window);
-	if( window.isMobile )
-	{
-		document.body.setAttribute( 'mobile', 'mobile' );
-	}
-	else if( window.isTablet )
-	{
-		document.body.setAttribute( 'tablet', 'tablet' );
-	}
-	else
-	{
-		document.body.removeAttribute( 'tablet' );
-	}
-	if( navigator.userAgent.toLowerCase().indexOf( 'playstation' ) > 0 )
-	{
-		document.body.setAttribute( 'settopbox', 'playstation' );
-		window.isSettopBox = 'playstation';
-		if (typeof console  != "undefined") 
-			if (typeof console.log != 'undefined')
-				console.olog = console.log;
-			else
-				console.olog = function() {};
-		console.log = function(message) {
-			console.olog(message);
-			Notify( { title: 'Playstation error', text: message } );
-		};
-		console.error = console.debug = console.info =  console.log
-	}
-	return window.isMobile;
-}
-
-*/
