@@ -365,13 +365,13 @@ var hello = null;
 		}
 		
 		check = await loadCheck();
+		const currentPart = getPart( current );
 		if ( !check ) {
 			api.ApplicationStorage.set( 'avatar-check', currentPart );
 			await self.setAvatar( current );
 			return;
 		}
 		
-		const currentPart = getPart( current );
 		if ( currentPart === check ) {
 			await self.setAvatar( null, current );
 		} else {
