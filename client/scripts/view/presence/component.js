@@ -533,6 +533,7 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.updateIdentity = function( update ) {
 		const self = this;
+		console.log( 'updateIdentity', update );
 		const id = update.data;
 		const cId = id.clientId;
 		self.identities[ cId ] = id;

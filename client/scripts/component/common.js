@@ -674,13 +674,21 @@ inherits from EventEmitter
 (function( ns, undefined ) {
 	ns.IdCache = function( parentConn, identities ) {
 		const self = this;
+		library.component.EventEmitter.call( self, eSink );
 		self.conn = null;
-		self.ids =  identities || {};
+		self.ids =  {};
 		self.idList = [];
 		self.loading = {};
 		
-		self.init( parentConn );
+		self.init( parentConn, identities );
+		
+		function eSink( ...args ) {
+			console.log( 'IdCache, no handler for', args );
+		}
 	}
+	
+	ns.IdCache.prototype = Object.create(
+		library.component.EventEmitter.prototype );
 	
 	// Public
 	
@@ -788,22 +796,77 @@ inherits from EventEmitter
 	
 	ns.IdCache.prototype.update = function( update ) {
 		const self = this;
-		const user = update.data;
-		const cId = user.clientId;
-		const current = self.ids[ cId ];
+		const cId = update.clientId;
+		let current = self.ids[ cId ];
 		if ( !current ) {
 			self.get( cId );
 			return;
 		}
 		
-		if ( 'avatar' === update.type )
-			current.avatar = user.avatar;
+		if ( current.lastUpdate > update.lastUpdate ) {
+			console.log( 'stale update', {
+				update : update,
+				cache  : current,
+			});
+			return null;
+		}
 		
-		if ( 'online' === update.type )
-			current.isOnline = user.isOnline;
+		const key = update.key;
+		const value = update.value;
+		current[ key ] = value;
 		
-		if ( 'fIsDisabled' === update.type )
-			current.fIsDisabled = update.fIsDisabled;
+		self.emit( 'update', current, key );
+	}
+	
+	ns.IdCache.prototype.refresh = async function() {
+		const self = this;
+		const timeMap = {};
+		self.idList.forEach( cId => {
+			const id = self.ids[ cId ];
+			timeMap[ cId ] = id.lastUpdate;
+		});
+		
+		const refresh = {
+			type : 'refresh',
+			data : timeMap,
+		}
+		
+		let updated = null;
+		try {
+			updated = await self.conn.request( refresh )
+		} catch( ex ) {
+			console.log( 'IdCache.refresh - request fail', ex );
+			return null;
+		}
+		
+		if ( !updated || !updated.length )
+			return;
+		
+		updated.forEach( id => self.diff( id ));
+	}
+	
+	ns.IdCache.prototype.diff = function( update ) {
+		const self = this;
+		const cId = update.clientId;
+		const curr = self.ids[ cId ];
+		if ( !curr ) {
+			self.add( update );
+			return;
+		}
+		
+		curr.lastUpdate = update.lastUpdate; // we dont want this one to trigger an update;
+		const tests = Object.keys( update );
+		const changes = tests.filter( key => {
+			return update[ key ] !== curr[ key ];
+		});
+		
+		if ( !changes.length ) // wat
+			return;
+		
+		self.ids[ cId ] = update;
+		changes.forEach( key => {
+			self.emit( 'update', update, key );
+		});
 	}
 	
 	ns.IdCache.prototype.read = function( clientId ) {
@@ -822,11 +885,14 @@ inherits from EventEmitter
 	
 	// Pri<ate
 	
-	ns.IdCache.prototype.init = function( parentConn ) {
+	ns.IdCache.prototype.init = function( parentConn, identities ) {
 		const self = this;
 		self.conn = new library.component.RequestNode( 'identity', parentConn );
 		self.conn.on( 'add', e => self.add( e ));
 		self.conn.on( 'update', e => self.update( e ));
+		
+		self.ids = identities;
+		self.idList = Object.keys( identities );
 	}
 	
 	ns.IdCache.prototype.add = function( id ) {
@@ -834,7 +900,17 @@ inherits from EventEmitter
 		if ( !id || !id.clientId )
 			return;
 		
+		const cId = id.clientId;
+		const curr = self.ids[ cId ];
+		if ( !curr )
+			self.idList.push( cId );
+		
 		self.ids[ id.clientId ] = id;
+		
+	}
+	
+	ns.IdCache.prototype.remove = function( cId ) {
+		const self = this;
 	}
 	
 })( library.component );

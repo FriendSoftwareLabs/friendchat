@@ -1000,13 +1000,17 @@ library.module = library.module || {};
 	
 	// from server
 	
-	ns.Presence.prototype.handleAccountInit = function( state ) {
+	ns.Presence.prototype.handleAccountInit = async function( state ) {
 		const self = this;
+		if ( self.idc ) {
+			await self.idc.refresh();
+		}
+		else {
+			self.setupIDC( state.identities );
+		}
+		
 		if ( self.initialized )
 			return;
-		
-		if ( !self.idc )
-			self.idc = new library.component.IdCache( self.acc, state.identities );
 		
 		self.initialized = true;
 		updateAccount( state.account );
@@ -1015,7 +1019,6 @@ library.module = library.module || {};
 			data : self.accountId,
 		};
 		self.toView( uid );
-		
 		self.setupRooms( state.rooms );
 		self.handleContactInit( state.contacts );
 		//self.setupDormant();
@@ -1041,6 +1044,12 @@ library.module = library.module || {};
 				
 			}
 		}
+	}
+	
+	ns.Presence.prototype.setupIDC = function( ids ) {
+		const self = this;
+		self.idc = new library.component.IdCache( self.acc, ids );
+		self.idc.on( 'update', ( id, key ) => self.handleIdUpdated( id, key ));
 	}
 	
 	ns.Presence.prototype.handleAccount = function( accountId ) {
@@ -1104,7 +1113,7 @@ library.module = library.module || {};
 			self.acc,
 			cEventSink
 		);
-		self.contactEvents.on( 'online', e => self.handleContactOnline( e ));
+		//self.contactEvents.on( 'online', e => self.handleContactOnline( e ));
 		
 		function cEventSink() {
 			console.log( 'Presence.contactEventSink', arguments );
@@ -1209,32 +1218,21 @@ library.module = library.module || {};
 		}
 	}
 	
-	ns.Presence.prototype.handleContactOnline = function( event ) {
+	ns.Presence.prototype.handleContactOnline = function( contactId, isOnline ) {
 		const self = this;
-		const clientId = event.clientId;
-		const userState = event.data;
-		const online = {
-			clientId : clientId,
-			isOnline : !!userState,
-		};
-		self.idc.update({
-			type : 'online',
-			data : online,
-		});
-		
-		if ( clientId === self.accountId )
+		if ( contactId === self.accountId )
 			return;
 		
-		const contact = self.contacts[ clientId ];
+		const contact = self.contacts[ contactId ];
 		if ( contact )
-			contact.setOnline( userState );
+			contact.setOnline( isOnline );
 		
 		self.roomIds.forEach( rId => {
 			const room = self.rooms[ rId ];
 			if ( !room )
 				return;
 			
-			room.setUserOnline( clientId, userState );
+			room.setUserOnline( contactId, isOnline );
 		});
 		
 	}
@@ -1465,25 +1463,37 @@ library.module = library.module || {};
 		self.removeRoom( roomId );
 	}
 	
-	ns.Presence.prototype.handleIdUpdate = function( event ) {
+	ns.Presence.prototype.handleIdUpdate = function( update ) {
 		const self = this;
-		const clientId = event.data.clientId;
-		self.idc.update( event );
+		self.idc.update( update );
+	}
+	
+	ns.Presence.prototype.handleIdUpdated = function( id, key ) {
+		const self = this;
+		const userId = id.clientId;
+		if ( key && ( 'isOnline' === key )) {
+			self.handleContactOnline( userId, id.isOnline );
+		}
 		
-		if ( clientId == self.accountId ) {
+		const uptd = {
+			type : key,
+			data : id,
+		};
+		
+		if ( userId == self.accountId ) {
 			self.contactIds.forEach( cId => {
 				const contact = self.contacts[ cId ];
-				contact.updateIdentity( event );
+				contact.updateIdentity( uptd );
 			});
 		} else {
-			const contact = self.contacts[ clientId ];
+			const contact = self.contacts[ userId ];
 			if ( contact && contact.updateIdentity )
-				contact.updateIdentity( event );
+				contact.updateIdentity( uptd );
 		}
 		
 		self.roomIds.forEach( rId => {
 			const room = self.rooms[ rId ];
-			room.updateIdentity( event );
+			room.updateIdentity( uptd );
 		});
 	}
 	
