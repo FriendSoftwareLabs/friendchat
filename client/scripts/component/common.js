@@ -891,6 +891,9 @@ inherits from EventEmitter
 		self.conn.on( 'add', e => self.add( e ));
 		self.conn.on( 'update', e => self.update( e ));
 		
+		if ( !identities )
+			return;
+		
 		self.ids = identities;
 		self.idList = Object.keys( identities );
 	}
