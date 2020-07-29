@@ -751,10 +751,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.setUserOnline = function( userId, isOnline ) {
 		const self = this;
-		console.log( 'PresenceRoom.setUserOnline', {
-			userId   : userId,
-			isOnline : isOnline,
-		});
 		if ( userId === self.userId )
 			return;
 		

@@ -840,7 +840,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.handleOnline = function( userId ) {
 		const self = this;
-		console.trace( 'UserCtrl.handleOnline', userId );
 		const uid = userId;
 		const user = self.users[ uid ];
 		if ( !user )
@@ -855,7 +854,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.handleOffline = function( userId ) {
 		const self = this;
-		console.log( 'UserCtrl.handleOffline', userId );
 		let user = self.users[ userId ];
 		if ( !user )
 			return;
@@ -864,7 +862,6 @@ var hello = window.hello || {};
 		if ( -1 != oIdx )
 			self.onlines.splice( oIdx, 1 );
 		
-		console.log( 'onlines', self.onlines );
 		self.setUserToGroup( userId );
 	}
 	
@@ -926,12 +923,6 @@ var hello = window.hello || {};
 		
 		let isOnline = checkOnline( userId );
 		let groupId = null;
-		console.log( 'setUserToGroup', {
-			userId   : userId,
-			isOnline : isOnline,
-			isAdmin  : user.isAdmin,
-			isGuest  : user.isGuest,
-		});
 		if ( user.isAuthed ) {
 			if ( isOnline )
 				groupId = 'online';
@@ -994,7 +985,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.updateIdentity = function( update ) {
 		const self = this;
-		console.log( 'updateIdentity', update );
 		const id = update.data;
 		const cId = id.clientId;
 		self.identities[ cId ] = id;
@@ -1018,10 +1008,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.moveUserToGroup = function( userId, groupId ) {
 		const self = this;
-		console.log( 'moveUsertoGroup', {
-			uid : userId,
-			gid : groupId,
-		});
 		if ( !groupId )
 			groupId = 'bug';
 		
@@ -2999,13 +2985,6 @@ var hello = window.hello || {};
 		}
 		
 		const curr = self.currentStacking;
-		console.log( 'updateStacking', {
-			num : num,
-			curr : curr,
-			new : stacking,
-			hidenum : hideNum,
-			plist : self.peerList,
-		});
 		// has stacking, different from new stacking
 		if (( null != curr ) && ( curr !== stacking )) {
 			// remove current
@@ -3027,11 +3006,9 @@ var hello = window.hello || {};
 		
 		self.peerCount.textContent = '+' + hideNum;
 		const showToIndex = ( num - hideNum ) - 1;
-		console.log( 'showToIndex', showToIndex );
 		self.peerList.forEach(( pId, index ) => {
 			const el = document.getElementById( pId );
 			const hide = index > showToIndex;
-			console.log( 'hide?', [ index, hide ]);
 			el.classList.toggle( 'hidden', hide );
 		});
 	}

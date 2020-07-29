@@ -31,7 +31,6 @@ library.component = library.component || {};
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		console.log( 'live.UI', window.View );
 		self.conn = conn;
 		self.userId = liveConf.userId;
 		self.isPrivate = liveConf.isPrivate;
@@ -142,6 +141,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.setModePresentation = function( presenterId, isPresenter ) {
 		const self = this;
+		console.log( 'setModePresentation', presenterId );
 		if ( isPresenter )
 			presenterId = 'selfie';
 		
@@ -154,6 +154,7 @@ library.component = library.component || {};
 			self.menu.disable( 'mode-presentation' );
 		
 		self.menu.setState( 'mode-presentation', true );
+		self.updateMenuItems();
 		self.updateDisplayMode();
 	}
 	
@@ -168,6 +169,7 @@ library.component = library.component || {};
 		
 		self.presenterId = null;
 		self.updateDisplayMode();
+		self.updateMenuItems();
 	}
 	
 	ns.UI.prototype.setModeFollowSpeaker = function( isActive ) {
@@ -176,6 +178,7 @@ library.component = library.component || {};
 			return;
 		
 		self.showThumbs = isActive;
+		self.updateMenuItems();
 		self.updateDisplayMode();
 	}
 	
@@ -1096,7 +1099,29 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateHasVideo = function( peerId, hasVideo ) {
 		const self = this;
-		return;
+		if ( 'selfie' !== peerId )
+			return;
+		
+		self.updateMenuItems();
+	}
+	
+	ns.UI.prototype.updateMenuItems = function() {
+		const self = this;
+		const selfie = self.peers[ 'selfie' ];
+		if ( !selfie )
+			return;
+		
+		const hasVideo = selfie.hasVideo;
+		let enable = hasVideo;
+		const isMode = ( !!self.presenterId || !!self.showThumbs );
+		if ( isMode )
+			enable = false;
+		
+		if ( enable )
+			self.menu.enable( 'popped' );
+		else
+			self.menu.disable( 'popped' );
+		
 	}
 	
 	ns.UI.prototype.onDrag = function( type, peerId ) {
@@ -2294,7 +2319,7 @@ library.component = library.component || {};
 			items : [
 				mute,
 				blind,
-				focus,
+				//focus,
 			],
 		};
 		
@@ -4037,12 +4062,10 @@ library.component = library.component || {};
 		if ( self.hasVideo ) {
 			self.menu.enable( 'blind' );
 			self.menu.enable( 'screen-mode' );
-			self.menu.enable( 'popped' );
 		}
 		else {
 			self.menu.disable( 'blind' );
 			self.menu.disable( 'screen-mode' );
-			self.menu.disable( 'popped' );
 		}
 	}
 	

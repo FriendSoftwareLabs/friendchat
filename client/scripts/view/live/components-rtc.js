@@ -799,7 +799,7 @@ library.rtc = library.rtc || {};
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = true;
+		self.spam = false;
 		
 		self.init();
 	}

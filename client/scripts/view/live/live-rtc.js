@@ -2467,7 +2467,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.restart();
 		
-		
 		function unFocus() {
 			self.log( 'peer.unfocus' );
 		}
