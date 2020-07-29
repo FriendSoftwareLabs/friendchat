@@ -531,16 +531,6 @@ var hello = window.hello || {};
 		return self.addId( id );
 	}
 	
-	ns.UserCtrl.prototype.updateIdentity = function( update ) {
-		const self = this;
-		console.log( 'updateIdentity', update );
-		const id = update.data;
-		const cId = id.clientId;
-		self.identities[ cId ] = id;
-		if ( 'avatar' === update.type )
-			self.addUserCss( cId, id.avatar );
-	}
-	
 	ns.UserCtrl.prototype.updateAll = function( state ) {
 		const self = this;
 		removeOld( state.users );
@@ -848,9 +838,10 @@ var hello = window.hello || {};
 		console.log( 'closeGroups - NYI', self.groups );
 	}
 	
-	ns.UserCtrl.prototype.handleOnline = function( id ) {
+	ns.UserCtrl.prototype.handleOnline = function( userId ) {
 		const self = this;
-		const uid = id.clientId;
+		console.trace( 'UserCtrl.handleOnline', userId );
+		const uid = userId;
 		const user = self.users[ uid ];
 		if ( !user )
 			return;
@@ -859,19 +850,22 @@ var hello = window.hello || {};
 			return;
 		
 		self.onlines.push( uid );
-		user.isAdmin = id.isAdmin;
 		self.setUserToGroup( uid );
 	}
 	
 	ns.UserCtrl.prototype.handleOffline = function( userId ) {
 		const self = this;
+		console.log( 'UserCtrl.handleOffline', userId );
 		let user = self.users[ userId ];
-		if ( !user || !user.isAuthed ) {
+		if ( !user )
 			return;
-		}
 		
-		self.onlines = self.onlines.filter( uid => userId !== uid );
-		self.moveUserToGroup( userId, 'offline' );
+		const oIdx = self.onlines.indexOf( userId );
+		if ( -1 != oIdx )
+			self.onlines.splice( oIdx, 1 );
+		
+		console.log( 'onlines', self.onlines );
+		self.setUserToGroup( userId );
 	}
 	
 	ns.UserCtrl.prototype.handleJoin = function( event ) {
@@ -932,6 +926,12 @@ var hello = window.hello || {};
 		
 		let isOnline = checkOnline( userId );
 		let groupId = null;
+		console.log( 'setUserToGroup', {
+			userId   : userId,
+			isOnline : isOnline,
+			isAdmin  : user.isAdmin,
+			isGuest  : user.isGuest,
+		});
 		if ( user.isAuthed ) {
 			if ( isOnline )
 				groupId = 'online';
@@ -960,8 +960,8 @@ var hello = window.hello || {};
 		self.moveUserToGroup( user.id, groupId );
 		
 		function checkOnline( userId ) {
-			const index = self.onlines.indexOf( userId );
-			if ( -1 !== index )
+			const oIdx = self.onlines.indexOf( userId );
+			if ( -1 !== oIdx )
 				return true;
 			else
 				return false;
@@ -992,6 +992,16 @@ var hello = window.hello || {};
 		self.identities[ cId ] = id;
 	}
 	
+	ns.UserCtrl.prototype.updateIdentity = function( update ) {
+		const self = this;
+		console.log( 'updateIdentity', update );
+		const id = update.data;
+		const cId = id.clientId;
+		self.identities[ cId ] = id;
+		if ( 'avatar' === update.type )
+			self.addUserCss( cId, id.avatar );
+	}
+	
 	ns.UserCtrl.prototype.handleAuth = function( event ) {
 		const self = this;
 		console.log( 'presence.handleAuth - NYI', event );
@@ -1008,6 +1018,10 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.moveUserToGroup = function( userId, groupId ) {
 		const self = this;
+		console.log( 'moveUsertoGroup', {
+			uid : userId,
+			gid : groupId,
+		});
 		if ( !groupId )
 			groupId = 'bug';
 		

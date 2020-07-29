@@ -749,25 +749,28 @@ library.contact = library.contact || {};
 		self.openChat();
 	}
 	
-	ns.PresenceRoom.prototype.setUserOnline = function( userId, userState ) {
+	ns.PresenceRoom.prototype.setUserOnline = function( userId, isOnline ) {
 		const self = this;
-		if ( !userState ) {
+		console.log( 'PresenceRoom.setUserOnline', {
+			userId   : userId,
+			isOnline : isOnline,
+		});
+		if ( userId === self.userId )
+			return;
+		
+		if ( !isOnline ) {
 			self.setUserOffline( userId );
 			return;
 		}
-		
-		if ( userId === self.userId )
-			return;
 		
 		let current = self.users[ userId ];
 		if ( !current )
 			return;
 		
-		current.isAdmin = userState.isAdmin;
 		self.onlineList.push( userId );
 		const online = {
 			type : 'online',
-			data : userState,
+			data : userId,
 		};
 		self.toChat( online );
 		self.updateViewUsers();
@@ -873,17 +876,16 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.setUserOffline = function( userId ) {
 		const self = this;
-		self.onlineList = self.onlineList.filter( notUID );
+		const uIdx = self.onlineList.indexOf( userId );
+		if ( -1 !== uIdx )
+			self.onlineList.splice( uIdx, 1 );
+		
 		const offline = {
 			type : 'offline',
 			data : userId,
 		};
 		self.toChat( offline );
 		self.updateViewUsers();
-		
-		function notUID( id ) {
-			return id !== userId;
-		}
 	}
 	
 	ns.PresenceRoom.prototype.updateActive = function() {

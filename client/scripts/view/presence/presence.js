@@ -675,7 +675,7 @@ library.view = library.view || {};
 		
 		el.parentNode.removeChild( el );
 	}
-
+	
 	ns.Presence.prototype.handleState = function( state ) {
 		const self = this;
 		self.users.updateAll( state );
