@@ -1555,8 +1555,10 @@ library.component = library.component || {};
 	ns.UI.prototype.updateThumbsGrid = async function( force ) {
 		const self = this;
 		const isActive = self.checkIsThumbsActive();
-		if ( !isActive )
+		if ( !isActive ) {
+			
 			return;
+		}
 		
 		self.peerIds.forEach( moveToThumbs );
 		
@@ -1569,35 +1571,13 @@ library.component = library.component || {};
 		if ( null != self.lastSpeaker )
 			lastSpeaker = self.peers[ self.lastSpeaker ];
 		
-		
-		if ( !isActive ) {
-			
-			/*
-			if ( lastSpeaker ) {
-				lastSpeaker.showIsSpeaking( false );
-				if ( lastSpeaker.isInThumbs )
-					self.updatePeerMode( self.lastSpeaker );
-				
-			}
-			
-			if ( currSpeaker ) {
-				currSpeaker.showIsSpeaking( false );
-				
-				if ( currSpeaker.isInThumbs )
-					self.updatePeerMode( self.currentSpeaker );
-				
-			}
-			*/
-			return;
-		}
-		
-		
 		if ( !currSpeaker && lastSpeaker ) {
 			if ( self.gridSwap ) {
 				if ( self.gridSwap.in == self.lastSpeaker ) {
 					console.log( 'updateThumbsGrid - already swapping to lastSpeaker' );
 					return;
-				}
+				} else
+					await self.clearGridSwap();
 			}
 			
 			self.showInMain( lastSpeaker );
@@ -1912,24 +1892,18 @@ library.component = library.component || {};
 		if ( swap.resId )
 			pIn.off( swap.resId );
 		
-		if ( 'selfie' !== peerIn )
-			pIn.setFastStats( false );
+		pIn.setFastStats( false );
 		
-		//const unFade = [
-			pOut.setFaded( false );
-			pIn.setFaded( false );
-		//];
-		//await Promise.all( unFade );
+		pOut.setFaded( false );
+		pIn.setFaded( false );
 		
 		const isActive = self.checkIsThumbsActive();
 		if ( !isActive )
 			return;
 		
-		//const move = [
-			self.showInThumbs( pOut );
-			self.showInMain( pIn );
-		//];
-		//await Promise.all( move );
+		self.showInThumbs( pOut );
+		self.showInMain( pIn );
+		
 		return;
 	}
 	
@@ -2181,6 +2155,7 @@ library.component = library.component || {};
 		self.isSpeaker = isSpeaker;
 		self.el.classList.toggle( 'is-speaking', isSpeaker );
 		//self.setFastStats( true );
+		self.updateStatsRate();
 	}
 	
 	ns.Peer.prototype.showIsSpeaking = function( isSpeaker ) {
@@ -2265,7 +2240,7 @@ library.component = library.component || {};
 	ns.Peer.prototype.updateStatsRate = function() {
 		const self = this;
 		let rate = null;
-		if ( self.showAsSpeaker )
+		if ( self.showAsSpeaker || self.isSpeaker )
 			rate = 50;
 		if ( self.fastRefresh )
 			rate = 20;
@@ -3587,7 +3562,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleAudioLevel = function( level ) {
 		const self = this;
-		//console.log( 'handleAudioLevel', level );
+		console.log( 'handleAudioLevel', [ self.identity.name, level ]);
 		self.updateAvatarVolume( level );
 	}
 	

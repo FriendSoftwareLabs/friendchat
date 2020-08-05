@@ -201,10 +201,10 @@ library.rtc = library.rtc || {};
 		self.onSpeaking = onSpeaking;
 		
 		self.isSpeaking = false;
-		self.speakingLimit = 20;
+		self.speakingLimit = 16;
 		self.speakingTicks = 5;
 		self.notSpeakingLimit = 5;
-		self.notSpeakingTicks = 30;
+		self.notSpeakingTicks = 20;
 		self.notSpeakingWait = 1000 * 2;
 		self.notSpeakingTimeout = null;
 		self.init();
@@ -1031,14 +1031,6 @@ library.rtc = library.rtc || {};
 			signal : self.conn ? self.conn.signalingState : '',
 		};
 		return state;
-	}
-	
-	ns.Session.prototype.setStatsRate = function( rate ) {
-		const self = this;
-		if ( !self.stats )
-			return;
-		
-		self.stats.setRate( rate );
 	}
 	
 	ns.Session.prototype.setDefaultCodec = function( useDefault ) {

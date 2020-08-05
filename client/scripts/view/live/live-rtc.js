@@ -2478,10 +2478,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.setStatsRate = function( rate ) {
 		const self = this;
-		if ( !self.session )
+		if ( !self.stats )
 			return;
 		
-		self.session.setStatsRate( rate );
+		self.stats.setRate( rate );
 	}
 	
 	ns.Peer.prototype.checkFailed = function() {
