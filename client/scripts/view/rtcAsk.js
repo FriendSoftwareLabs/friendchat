@@ -33,14 +33,16 @@ library.view = library.view || {};
 		if ( fupConf )
 			console.log( 'view.RtcAsk - fupconf', fupConf );
 		
-		var self = this;
+		const self = this;
+		self.defaultName = null;
+		self.userName = null;
 		
 		self.init();
 		
 	}
 	
 	ns.RtcAsk.prototype.init = function() {
-		var self = this;
+		const self = this;
 		View.setBody();
 		self.view = window.View;
 		self.bindEvents();
@@ -52,8 +54,7 @@ library.view = library.view || {};
 	}
 	
 	ns.RtcAsk.prototype.initialize = function( data ) {
-		var self = this;
-		console.log( 'view.askRtc.initialize', data );
+		const self = this;
 		setMessage( data.message );
 		if ( data.guestLink ) {
 			self.guestLink = data.guestLink;
@@ -83,7 +84,6 @@ library.view = library.view || {};
 		}
 		
 		function showSessionWarning() {
-			console.log( 'show session warning, i guess' );
 			var element = document.getElementById( 'session-warning' );
 			element.classList.remove( 'hidden' );
 		}
@@ -98,7 +98,7 @@ library.view = library.view || {};
 	}
 	
 	ns.RtcAsk.prototype.startTimeSince = function() {
-		var self = this;
+		const self = this;
 		self.sinceEl = document.getElementById( 'time-since' );
 		self.sinceInterval = window.setInterval( updateTimePassed, 10000 );
 		function updateTimePassed() {
@@ -149,11 +149,21 @@ library.view = library.view || {};
 		const guestBtn = document.getElementById( 'open-guest' );
 		const cancelBtn = document.getElementById( 'deny' );
 		form.addEventListener( 'submit', submit, false );
+		self.nameInput.addEventListener( 'focus', nameFocus, false );
+		self.nameInput.addEventListener( 'blur', nameBlur, false );
 		self.toggleAdvBtn.addEventListener( 'click', toggleAdvanced, false );
 		simpleAudio.addEventListener( 'click', allowAudio, false );
 		simpleVideo.addEventListener( 'click', allowVideo, false );
 		guestBtn.addEventListener( 'click', guest, false );
 		cancelBtn.addEventListener( 'click', cancel, false );
+		
+		function nameFocus( e ) {
+			self.handleNameFocus();
+		}
+		
+		function nameBlur( e ) {
+			self.handleNameBlur( e );
+		}
 		
 		function toggleAdvanced( e ) { self.toggleAdvanced(); }
 		function allowAudio( e ) { self.allowAudio(); }
@@ -163,10 +173,45 @@ library.view = library.view || {};
 		function cancel( e ) { self.cancel( e ); }
 	}
 	
+	ns.RtcAsk.prototype.handleNameFocus = function() {
+		const self = this;
+		if ( !self.userName ) {
+			self.nameInput.setAttribute( 'placeholder', '' );
+			return;
+		}
+		
+		self.nameInput.select();
+	}
+	
+	ns.RtcAsk.prototype.handleNameBlur = function() {
+		const self = this;
+		const curr = self.checkName();
+		if ( curr )
+			return;
+		
+		self.nameInput.setAttribute( 'placeholder', self.defaultName );
+	}
+	
+	ns.RtcAsk.prototype.checkName = function() {
+		const self = this;
+		let curr = self.nameInput.value;
+		curr = curr.trim();
+		if ( !curr || !curr.length ) {
+			if ( self.userName )
+				self.userName = null;
+			
+			return;
+		}
+		
+		self.userName = curr;
+		return curr;
+	}
+	
 	ns.RtcAsk.prototype.submit = function( e ) {
-		var self = this;
+		const self = this;
 		e.preventDefault();
 		e.stopPropagation();
+		self.checkName();
 		const perms = self.getAdvPermissions( e );
 		const response = {
 			accept       : true,
@@ -177,14 +222,14 @@ library.view = library.view || {};
 	
 	ns.RtcAsk.prototype.showNameOption = function( name ) {
 		const self = this;
-		self.useName = name;
-		self.nameInput.value = name;
+		self.defaultName = name;
+		//self.userName = name;
+		self.nameInput.setAttribute( 'placeholder', name );
 		self.name.classList.toggle( 'hidden', false );
 	}
 	
 	ns.RtcAsk.prototype.toggleAdvanced = function() {
 		const self = this;
-		console.log( 'toggleAdvanced', self.showAdvanced );
 		self.showAdvanced = !self.showAdvanced;
 		self.advOpts.classList.toggle( 'hidden', !self.showAdvanced );
 		self.confirm.classList.toggle( 'hidden', !self.showAdvanced );
@@ -193,7 +238,6 @@ library.view = library.view || {};
 	
 	ns.RtcAsk.prototype.allowAudio = function() {
 		const self = this;
-		console.log( 'allowAudio' );
 		const perms = {
 			send : {
 				audio : true,
@@ -213,7 +257,6 @@ library.view = library.view || {};
 	
 	ns.RtcAsk.prototype.allowVideo = function() {
 		const self = this;
-		console.log( 'allowVideo' );
 		const perms = {
 			send : {
 				audio : true,
@@ -238,34 +281,22 @@ library.view = library.view || {};
 	}
 	
 	ns.RtcAsk.prototype.cancel = function( e ) {
-		var self = this;
+		const self = this;
 		self.respond({ accept : false });
 	}
 	
 	ns.RtcAsk.prototype.respond = function( data ) {
 		const self = this;
-		if ( self.useName )
-			data.name = getName();
-		
-		console.log( 'respond', data );
+		data.name = self.userName || self.defaultName;
 		const response = {
 			type : 'response',
 			data : data,
 		};
 		self.send( response );
-		
-		function getName() {
-			let name = self.nameInput.value;
-			name = name.trim();
-			if ( !name || !name.length )
-				return self.useName;
-			
-			return name;
-		}
 	}
 	
 	ns.RtcAsk.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		self.view.sendMessage( msg );
 	}
 	
