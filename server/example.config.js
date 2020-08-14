@@ -21,11 +21,12 @@
 var server = {
 	dev   : false,
 	mysql : {
-		host : 'hello_database_host',
-		port : 3306,
-		user : 'hello_database_user',
-		pass : 'hello_database_password',
-		name : 'hello_database_name',
+		socket : null,
+		host   : 'hello_database_host',
+		port   : 3306,
+		user   : 'hello_database_user',
+		pass   : 'hello_database_password',
+		name   : 'hello_database_name',
 	},
 	tls : {
 		keyPath  : 'path_to_key.pem',

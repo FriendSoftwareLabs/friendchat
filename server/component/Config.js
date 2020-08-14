@@ -28,12 +28,12 @@ var ns = {};
 
 (function( ns, undefined ) {
 	ns.Config = function() {
-		var self = this;
+		const self = this;
 		self.init();
 	}
 	
 	ns.Config.prototype.init = function() {
-		var self = this;
+		const self = this;
 		var config = self.setMissing( confObj, exampleConfObj );
 		self.server = config.server;
 		self.shared = config.shared;
@@ -41,7 +41,7 @@ var ns = {};
 	}
 	
 	ns.Config.prototype.get = function() {
-		var self = this;
+		const self = this;
 		var conf = {
 			server : self.server,
 			shared : self.shared,
@@ -54,12 +54,10 @@ var ns = {};
 		return sync( dest, src );
 		
 		function sync( dest, src ) {
-			if ( typeof( dest ) === 'undefined' ) {
-				dest = src;
-				return dest;
-			}
+			if ( undefined === dest )
+				return src;
 			
-			if (( typeof( src ) !== 'object' ) || ( src === null ))
+			if (( src == null ) || ( typeof( src ) !== 'object' ))
 				return dest;
 			
 			var srcKeys = Object.keys( src );
