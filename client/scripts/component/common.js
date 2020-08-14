@@ -374,8 +374,8 @@ inherits from EventEmitter
 			return;
 		}
 		
-		const isResponse = self._requests[ reqId ];
-		if ( !!isResponse )
+		const isResponse = ( !!event.error || !!event.response );
+		if ( isResponse )
 			self.handleResponse( event );
 		else
 			self.handleRequest( event );
