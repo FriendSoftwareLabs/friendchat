@@ -312,11 +312,14 @@ var hello = null;
 		self.timeNow( 'honst config loaded' );
 		library.tool.mergeObjects( self.config, hostConf );
 		self.config.appName = self.config.appName || 'Friend Chat';
+		
+		/* BA server needs live things
 		if ( hello.app.friendApp ) {
 			console.log( 'hello - friendApp', hello.app.friendApp );
 			if ( 'iOS' === hello.app.friendApp.platform )
 				hello.config.hideLive = true;
 		}
+		*/
 		
 		//hello.config.hideLive = true;
 		self.app.setConfig( hello.config );
@@ -637,6 +640,7 @@ var hello = null;
 	
 	ns.Hello.prototype.showConnStatus = function( state ) {
 		const self = this;
+		console.log( 'hello.showConnStatus', state );
 		const event = {
 			type : 'conn-state',
 			data : state,
@@ -877,6 +881,7 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
+		console.log( 'hello.updateConnState', state );
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
 		if (   'error' === state.type
@@ -1106,6 +1111,14 @@ var hello = null;
 	
 	ns.Hello.prototype.handlePushNotie = function( event, view ) {
 		const self = this;
+		console.log( 'handlePushNotie', {
+			event    : event,
+			view     : view,
+			loaded   : self.loaded,
+			isOnline : self.isOnline,
+			service  : self.service,
+			resumeTO : self.resumeTimeout,
+		});
 		if ( !self.loaded ) {
 			self.registerOnLoaded( onLoaded );
 			return;
@@ -1135,6 +1148,7 @@ var hello = null;
 		}
 		
 		if ( !self.service && !view ) {
+			console.log( 'creating fake view for', event );
 			self.fakeView = true;
 			const roomName = event.title;
 			extra.isPrivate = true;
@@ -1194,6 +1208,10 @@ var hello = null;
 	
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
+		console.log( 'Hello.handleAppResume', {
+			e        : event,
+			isONline : self.isOnline,
+		});
 		if ( !self.isOnline ) {
 			console.log( 'hello.handleAppResume - already reconnecting' );
 			return;
@@ -1235,6 +1253,11 @@ var hello = null;
 	
 	ns.Hello.prototype.doResume = function() {
 		const self = this;
+		console.log( 'doResume', {
+			isOnline : self.isOnline,
+			reTO     : self.resumeTimeout,
+			resCB    : self.resumeCallbacks,
+		} );
 		if ( !self.isOnline || ( null != self.resumeTimeout ))
 			return;
 		

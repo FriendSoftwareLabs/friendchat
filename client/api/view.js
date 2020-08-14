@@ -1244,7 +1244,13 @@ window.View = new api.View();
 	ns.ConnState.prototype.init = function() {
 		const self = this;
 		self.build();
-		self.conn = new library.component.EventNode( 'conn-state', window.View, eventSink );
+		self.conn = new library.component.EventNode(
+			'conn-state',
+			window.View,
+			eventSink,
+			null,
+			true
+		);
 		self.conn.on( 'load', load );
 		self.conn.on( 'connect', connect );
 		self.conn.on( 'session', session );

@@ -543,6 +543,7 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		msg.type = 'native-view';
 		msg.viewId = self.id;
+		console.log( 'NativeView._send', msg );
 		self.app.sendMessage( msg );
 	}
 	
@@ -864,6 +865,7 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
+		console.log( 'unhandled app event', msg );
 		self.appMessage( msg );
 	}
 	
@@ -1012,8 +1014,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleRefreshTheme = function( msg ) {
 		const self = this;
-		var vIds = Object.keys( self.views );
-		vIds.forEach( sendTheme );
+		self.viewIds.forEach( sendTheme );
 		function sendTheme( vId ) {
 			var view = self.views[ vId ];
 			var cmd = {
@@ -1106,6 +1107,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.appWakeup = function( event ) {
 		const self = this;
+		console.log( 'appWakeup', event );
 		if ( self.logSock )
 			self.logSock.reconnect();
 		
@@ -1164,6 +1166,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.authId = null; // ^^^
 		self.callbacks = {};
 		self.views = {};
+		self.viewIds = [];
 		
 		self.deviceType = null;
 		
@@ -1248,8 +1251,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.toAllViews = function( event ) {
 		const self = this;
-		vids = Object.keys( self.views );
-		vids.forEach( sendTo );
+		self.viewIds.forEach( sendTo );
 		function sendTo( vId ) {
 			let view = self.views[ vId ];
 			view.sendMessage( event );
@@ -1334,8 +1336,7 @@ var friend = window.friend || {}; // already instanced stuff
 	// close all views, does not quit the application
 	ns.Application.prototype.close = function()	{
 		const self = this;
-		var viewIds = Object.keys( self.views );
-		viewIds.forEach( callClose );
+		self.viewIds.forEach( callClose );
 		function callClose( viewId ) {
 			var view = self.views[ viewId ];
 			if ( !view || !view.close )
@@ -1357,7 +1358,9 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.addView = function( view ) {
 		const self = this;
-		self.views[ view.id ] = view;
+		const vId = view.id;
+		self.views[ vId ] = view;
+		self.viewIds.push( vId );
 	}
 	
 	ns.Application.prototype.getView = function( viewId ) {
@@ -1367,12 +1370,13 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.removeView = function( viewId ) {
 		const self = this;
-		var view = self.views[ viewId ];
+		const view = self.views[ viewId ];
 		if ( !view )
 			return;
 		
 		self.release( viewId );
 		delete self.views[ viewId ];
+		self.viewIds = Object.keys( self.views );
 	}
 	
 	ns.Application.prototype.setFragments = function( fragStr ) {

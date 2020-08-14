@@ -1264,6 +1264,7 @@ library.contact = library.contact || {};
 				sessionId : self.live.id,
 			},
 		};
+		console.log( 'PresenceRoom.restoreLive', restore );
 		self.send( restore );
 	}
 	
@@ -2801,6 +2802,11 @@ library.contact = library.contact || {};
 			self.onChatMessage( msg );
 			if ( !from )
 				return;
+			
+			if ( !self.parser ) {
+				console.log( 'PresenceContact.onMessage - no parser yet', event );
+				return;
+			}
 			
 			self.parser.work( event.message );
 		}

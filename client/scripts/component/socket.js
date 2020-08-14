@@ -77,6 +77,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'Socket.reconnect', self.session );
 		self.allowReconnect = true;
 		self.doReconnect( true );
 	}
@@ -287,6 +288,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
 		const self = this;
+		console.log( 'WS.handleOpen' );
 		self.clearConnectTimeout();
 		self.setState( 'open', e );
 		// ..waiting for authenticate challenge
@@ -294,14 +296,14 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		const self = this;
-		console.log( 'ws closed', e );
+		console.log( 'WS handleClosed', e );
 		self.setState( 'close', e );
 		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		const self = this;
-		console.log( 'ws error', e );
+		console.log( 'WS handleError', e );
 		self.setState( 'error', e );
 	}
 	

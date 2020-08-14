@@ -417,7 +417,8 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.reconnect = function() {
 		const self = this;
-		mids = Object.keys( self.active );
+		const mids = Object.keys( self.active );
+		console.log( 'ModuleCtrl.reconnect', mids );
 		mids.forEach( mId => {
 			let mod = self.active[ mId ];
 			mod.reconnect();
@@ -452,6 +453,7 @@ library.rtc = library.rtc || {};
 			
 			return false;
 		});
+		console.log( 'ModuleCtrl.getPresence', pres );
 		return pres;
 	}
 	
@@ -1698,6 +1700,7 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
+		console.log( 'Conection.connect' );
 		if ( self.socket )
 			self.clear();
 		
@@ -1715,10 +1718,11 @@ library.rtc = library.rtc || {};
 		}
 		
 		self.host = url;
+		const auth = hello.getAuthBundle();
 		self.socket = new library.component.Socket({
-			url : url,
+			url        : url,
 			protocol   : 'text',
-			authBundle : hello.getAuthBundle(),
+			authBundle : auth,
 			onmessage  : onMessage,
 			onstate    : onState,
 			onend      : onEnd,
@@ -1731,6 +1735,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.reconnect = function( callback ) {
 		const self = this;
+		console.log( 'Connection.reconect' );
 		if ( callback )
 			self.readyCallback = callback;
 		
@@ -1799,7 +1804,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketOpen = function( data ) {
 		const self = this;
-		hello.log.add( 'Connection open' );
+		console.log( 'COnnection.socketOpen', data );
 		self.onstate({
 			type : 'open',
 		});
@@ -1826,7 +1831,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketClosed = function( e ) {
 		const self = this;
-		hello.log.notify( 'Socket closed' );
+		console.log( 'Connection.socketClosed' );
 		self.onstate({
 			type : 'error',
 			data : 'Connection to ' + self.host + ' closed',
@@ -1835,6 +1840,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketTimeout = function( e ) {
 		const self = this;
+		console.log( 'Connection.socketTimeout' );
 		self.onstate({
 			type : 'error',
 			data : 'Connect attempt timed out: ' + self.host,
@@ -1857,6 +1863,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketReconnecting = function( reTime ) {
 		const self = this;
+		console.log( 'Connection.reconnecting', reTime );
 		self.onstate({
 			type : 'wait-reconnect',
 			data : {
@@ -1868,6 +1875,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleEnd = function( data ) {
 		const self = this;
+		console.log( 'Connection.handleEnd' );
 		self.clear();
 		let err = {
 			type : 'end',

@@ -33,6 +33,7 @@ ns.Socket = function( conf ) {
 	events.Emitter.call( self );
 	self.id = conf.id;
 	self.conn = conf.conn;
+	log( 'Socket', self.id );
 	
 	self.pingInterval = null; // holds the 'setInterval' id for pings
 	self.pingStep = 1000 * 15; // 10 sec - time between pings sent
@@ -64,6 +65,7 @@ ns.Socket.prototype.send = function( msg ) {
 
 ns.Socket.prototype.setSession = function( sessionId, parentId ) {
 	const self = this;
+	log( 'setSession', [ sessionId, parentId ]);
 	if ( sessionId ) {
 		self.sessionId = sessionId;
 		self.parentId = parentId;
@@ -99,6 +101,7 @@ ns.Socket.prototype.attach = function( conn ) {
 		return;
 	}
 	
+	log( 'attach', [ self.id, self.sessionId ]);
 	if ( self.conn )
 		self.cleanup();
 	
@@ -111,6 +114,7 @@ ns.Socket.prototype.attach = function( conn ) {
 
 ns.Socket.prototype.detach = function() {
 	const self = this;
+	log( 'detach', [ self.id, self.sessionId ]);
 	self.cleanup();
 	const conn = self.conn;
 	delete self.conn;
@@ -382,7 +386,7 @@ ns.Socket.prototype.connError = function( event ) {
 
 ns.Socket.prototype.connClose = function( event ) {
 	const self = this;
-	log( 'connClose', event );
+	log( 'connClose', [ self.id, self.sessionId ] );
 	self.handleClose();
 }
 
