@@ -72,8 +72,17 @@ library.component = library.component || {};
 	ns.UI.prototype.setBrowser = function( browser ) {
 		const self = this;
 		self.browser = browser;
-		if ( 'chrome' !== self.browser )
-			self.screenShareBtn.classList.toggle( 'hidden', true );
+		
+		if ( 'DESKTOP' !== window.View.deviceType )
+			return;
+		
+		const b = self.browser;
+		if ( 'chrome' === b
+			|| 'firefox' === b
+			|| 'safari' === b
+		) {
+			self.screenShareBtn.classList.toggle( 'hidden', false );
+		}
 	}
 	
 	ns.UI.prototype.setAudioSink = function( deviceId ) {
@@ -3562,7 +3571,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleAudioLevel = function( level ) {
 		const self = this;
-		console.log( 'handleAudioLevel', [ self.identity.name, level ]);
+		//console.log( 'handleAudioLevel', [ self.identity.name, level ]);
 		self.updateAvatarVolume( level );
 	}
 	

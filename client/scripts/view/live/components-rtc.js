@@ -2957,7 +2957,7 @@ library.rtc = library.rtc || {};
 				return;
 			}
 			
-			self.getMedia( conf )
+			self.getUserMedia( conf )
 				.then( mediaBack )
 				.catch( mediaError );
 			
@@ -2973,82 +2973,80 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
-	ns.Media.prototype.shareScreen = function( screenId ) {
+	ns.Media.prototype.shareScreen = async function() {
 		const self = this;
+		console.trace( 'MEdia.shareScreen', {
+			svt : self.shareVTrackId,
+		});
+		if ( self.shareVTrackId )
+			return true;
+		
 		const shareMedia = new window.MediaStream();
-		getScreen( screenId );
+		const shareConf = self.mediaConf.share;
+		if ( !shareConf )
+			shareConf = {
+				frameRate : 24,
+			};
 		
-		function getScreen( screenId ) {
-			const shareConf = self.mediaConf.share || {};
-			const mandatory = {
-				chromeMediaSource   : 'desktop',
-				chromeMediaSourceId : screenId,
-			};
-			if ( shareConf.frameRate )
-				mandatory.maxFrameRate = shareConf.frameRate;
-			
-			const conf = {
-				audio : false,
-				video : {
-					mandatory : mandatory,
-				},
-			};
-			self.getMedia( conf, true )
-				.then( screenBack )
-				.catch( screenFail );
-			
-			function screenBack( media ) {
-				const track = media.getVideoTracks()[ 0 ];
-				//self.shareSourceId = screenId;
-				self.shareVTrackId = track.id;
-				shareMedia.addTrack( track );
-				addAudio();
-			}
-			
-			function screenFail( err ) {
-				console.log( 'Media.shareScreen - share track failed', err );
-			}
+		console.log( 'shareScreen - shareConf', shareConf );
+		const dConf = {
+			audio : false,
+			video : {
+				frameRate : shareConf.frameRate || 24,
+			},
+		};
+		
+		console.log( 'shareScreen - media conf', dConf );
+		let dMedia = null;
+		try {
+			dMedia = await window.navigator.mediaDevices.getDisplayMedia( dConf, true )
+		} catch( ex ) {
+			console.log( 'getDisplayMedia failed', ex );
+			return false;
 		}
 		
-		function addAudio() {
-			if ( !needAudio()) {
-				self.updateMedia( shareMedia );
-				return;
-			}
-			
-			self.devices.getByType()
-				.then( devsBack )
-				.catch( devsFail );
-			
-			function devsFail( err ) {
-				console.log( 'Media.shareScreen - addAudio devsFail', err );
-				self.emitError( 'ERR_GET_DEVICES' );
-			}
-			
-			function devsBack( available ) {
-				let conf = {
-					audio : self.mediaConf.audio || {},
-					video : false,
-				};
-				conf = self.setDevice( 'audio', available, conf );
-				
-				self.clearMedia();
-				self.getMedia( conf )
-					.then( audioBack )
-					.catch( audioFail );
-				
-				function audioBack( media ) {
-					let tracks = media.getAudioTracks();
-					shareMedia.addTrack( tracks[ 0 ]);
-					self.updateMedia( shareMedia );
-				}
-				
-				function audioFail( err ) {
-					console.log( 'Media.shareScreen - addAudio media fail', err );
-					self.emitError( 'ERR_MEDIA_FAILED' );
-				}
-			}
+		const track = dMedia.getVideoTracks()[ 0 ];
+		self.shareVTrackId = track.id;
+		shareMedia.addTrack( track );
+		
+		// done if there already is a audio track
+		if ( !needAudio()) {
+			self.updateMedia( shareMedia );
+			return true;
 		}
+		
+		// add audio track
+		let devs = null;
+		try {
+			devs = await self.devices.getByType();
+		} catch( ex ) {
+			console.log( 'Media.shareScreen - addAudio devsFail', err );
+			self.emitError( 'ERR_GET_DEVICES' );
+			return false;
+		}
+		
+		let aConf = {
+			audio : self.mediaConf.audio || {},
+			video : false,
+		};
+		console.log( 'shareScreen - audio conf', aConf );
+		aConf = self.setDevice( 'audio', available, aConf );
+		self.clearMedia();
+		
+		let aMedia = null;
+		try {
+			aMedia = await self.getUserMedia( aConf );
+		} catch( ex ) {
+			console.log( 'Media.shareScreen - addAudio media fail', err );
+			self.emitError( 'ERR_MEDIA_FAILED' );
+			return false;
+		}
+		
+		let tracks = media.getAudioTracks();
+		shareMedia.addTrack( tracks[ 0 ]);
+		self.updateMedia( shareMedia );
+		
+		return true;
 		
 		function needAudio() {
 			const send = self.permissions.send;
@@ -3156,7 +3154,7 @@ library.rtc = library.rtc || {};
 			'pixel'   : [ 128, 96, 4 ],
 			'low'     : [ 256, 192, 4 ],
 			'medium'  : [ 480, 360, 12 ],
-			'normal'  : [ 640, 480, 24 ],
+			'normal'  : [ 960, 720, 24 ],
 			'high'    : [ 1280, 960, 60 ],
 		};
 		
@@ -3170,6 +3168,7 @@ library.rtc = library.rtc || {};
 		
 		self.shareQualityKeys = [ 'frameRate' ];
 		self.shareQualityMap = {
+			'pixel'   : [ 1 ],
 			'low'     : [ 1 ],
 			'medium'  : [ 5 ],
 			'normal'  : [ 15 ],
@@ -3277,6 +3276,13 @@ library.rtc = library.rtc || {};
 		
 		function constrainScreenShare( track ) {
 			const q = self.shareQualityMap[ self.quality.level ];
+			console.trace( 'constrainScreenShare', {
+				t  : track,
+				q  : q,
+				qm : self.shareQualityMap,
+				ql : self.quality.level,
+			});
+			
 			const frameRate = q[ 0 ] || 120;
 			const conf = {
 			};
@@ -3361,7 +3367,7 @@ library.rtc = library.rtc || {};
 		return conf;
 	}
 	
-	ns.Media.prototype.getMedia = function( conf, noFallback ) {
+	ns.Media.prototype.getUserMedia = function( conf, noFallback ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
 			if ( !conf.audio && !conf.video ) {
@@ -3434,6 +3440,10 @@ library.rtc = library.rtc || {};
 				}
 			}
 		});
+	}
+	
+	ns.Media.prototype.getScreenMedia = async function() {
+		const self = this;
 	}
 	
 	ns.Media.prototype.setCurrentDevices = function( media ) {
@@ -3541,13 +3551,16 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.bindTrack = function( track ) {
 		const self = this;
+		console.log( 'bindTrack', track );
 		track.onended = onEnded;
 		
 		function onEnded() {
 			track.onended = null;
+			const tId = track.id;
+			const kind = track.kind;
 			self.emit( 'track-ended', {
-				id    : track.id,
-				kind  : track.kind,
+				id    : tId,
+				kind  : kind,
 				label : track.label  || track.labelExtra,
 			});
 		}
@@ -3555,6 +3568,10 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.releaseTrack = function( track ) {
 		const self = this;
+		const tId = track.id;
+		if ( self.shareVTrackId && ( tId === self.shareVTrackId ))
+			self.shareVTrackId = null;
+		
 		track.onended = null;
 		try {
 			track.stop();

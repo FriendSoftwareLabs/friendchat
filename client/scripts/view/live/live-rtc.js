@@ -552,6 +552,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleMode = function( mode ) {
 		const self = this;
+		console.log( 'handleMode', mode );
 		if ( mode && self.mode ) {
 			if ( mode.type === self.mode.type )
 				return;
@@ -1568,17 +1569,19 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.setupProxy();
 		
 		//
+		/*
 		self.extConn = self.view.addExtConnPane( onExtConnShare );
 		function onExtConnShare( e ) {
 			self.extConn.close();
 			self.toggleShareScreen();
 		}
+		*/
 		
+		/*
 		self.screenShare = new library.rtc.ScreenShare();
 		self.screenShare.checkIsAvailable()
 			.then( shareCheckBack )
 			.catch( shareCheckErr );
-		
 		function shareCheckBack( isAvailable ) {
 			self.screenShareAvailable = !!isAvailable;
 		}
@@ -1586,6 +1589,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function shareCheckErr( err ) {
 			self.screenShareAvailable = false;
 		}
+		*/
 		
 		self.bindMenu();
 		self.sources = new library.rtc.MediaDevices();
@@ -1766,7 +1770,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.handleTrackEnded = function( track ) {
 		const self = this;
-		if ( self.isScreenSharing ) {
+		console.log( 'Selfie.handleTrackEnded', track );
+		if ( self.isScreenSharing && ( 'video' === track.kind )) {
 			self.toggleShareScreen();
 			return;
 		}
@@ -1855,6 +1860,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'device-select', devices );
 	}
 	
+	/*
 	ns.Selfie.prototype.openScreenExtInstall = function() {
 		const self = this;
 		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/\
@@ -1876,8 +1882,35 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.screenShareAvailable = false;
 		}
 	}
+	*/
 	
-	ns.Selfie.prototype.toggleShareScreen = function() {
+	ns.Selfie.prototype.toggleShareScreen = async function() {
+		const self = this;
+		console.trace( 'toggleShareScreen', {
+			isSS : self.isScreenSharing,
+		});
+		if ( self.isScreenSharing )
+			unShare();
+		else
+			share();
+		
+		async function unShare() {
+			self.isScreenSharing = false;
+			self.media.unshareScreen();
+			self.setupStream();
+			self.emit( 'screen-share', false );
+		}
+		
+		async function share() {
+			self.isScreenSharing = true;
+			const ok = await self.media.shareScreen();
+			console.log( 'share, res', ok );
+			self.emit( 'screen-share', self.isScreenSharing );
+		}
+	}
+	
+	/*
+	ns.Selfie.prototype.oldTogggleShareScreen = function() {
 		const self = this;
 		if ( !self.screenShareAvailable ) {
 			self.openScreenExtInstall();
@@ -1923,6 +1956,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 		}
 	}
+	*/
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
 		const self = this;
@@ -2031,7 +2065,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		let quality = self.mediaQuality;
-		
 		quality = self.getFollowSpeakerQuality( quality );
 		
 		//
@@ -2085,7 +2118,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.streamBack = callback;
 		if ( self.isScreenSharing )
-			self.media.shareScreen( self.chromeSourceId );
+			self.media.shareScreen();
 		else
 			self.media.create( preferedDevices );
 	}
@@ -3649,10 +3682,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleMeta = function( meta ) {
 		const self = this;
-		self.log( 'handleMeta', {
+		console.log( 'handleMeta', {
 			meta   : meta,
 			state  : self.state,
 			isHost : self.isHost,
+			peer   : self.identity.name,
 		});
 		if ( !self.isHost )
 			self.sendMeta();
