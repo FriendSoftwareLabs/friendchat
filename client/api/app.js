@@ -570,44 +570,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Filedialog.prototype.init = function() {
 		const self = this;
-		return;
-		
-		
-		var targetview = false;
-		var triggerFunction = false;
-		var type = false;
-		var filename = '';
-		
-		// We have flags
-		for( var a in object )
-		{
-			switch( a )
-			{
-				case 'triggerFunction':
-					triggerFunction = object[a];
-					break;
-				case 'path':
-					path = object[a];
-					break;
-				case 'type':
-					type = object[a];
-					break;
-				case 'filename':
-					filename = object[a];
-					break;
-				case 'title':
-					title = object[a];
-					break;
-			}
-		}
-		
-		if ( !triggerFunction )
-			return;
-		
-		if ( !type )
-			type = 'open';
-		
-		var callbackId = self.app.setCallback( triggerFunction );
 	}
 	
 	ns.Filedialog.prototype.send = function( type, path, file ) {

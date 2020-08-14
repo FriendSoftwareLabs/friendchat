@@ -466,8 +466,9 @@ library.view = library.view || {};
 					return;
 				
 				console.log( 'setting.pass.save', pass );
-				throw new Error( 'confirmedPassword is somewhat broken, callback is deprectaed ( saveBack )' );
-				self.save( setting, pass, saveBack );
+				throw new Error( 'confirmedPassword is somewhat broken,'
+					+ ' callback is deprectaed ( saveBack )' );
+				//self.save( setting, pass, saveBack );
 			}
 			
 			function saveBack( response ) {

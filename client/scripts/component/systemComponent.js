@@ -210,7 +210,7 @@ library.component = library.component || {};
 			e.preventDefault();
 			e.stopPropagation();
 			self.optionsContainer.classList.remove( 'show' );
-			ns.app._window.removeEventListener( 'click', arguments.callee );
+			//ns.app._window.removeEventListener( 'click', arguments.callee );
 		}
 	}
 	

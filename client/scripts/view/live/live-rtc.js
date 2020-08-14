@@ -434,9 +434,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.handleAppEvent = function( event ) {
 		const self = this;
 		console.log( 'rtc.handleAppEvent - NYI', event );
-		return;
-		
-		self.broadcast( event );
 	}
 	
 	ns.RTC.prototype.saveSetting = function( setting, value ) {
@@ -666,40 +663,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.updateMobileRestrictions = function() {
 		const self = this;
 		self.mobilePerms = null;
-		return;
-		
-		if ( !self.isMobile )
-			return;
-		
-		/*
-		if ( 1 < self.peerIds.length )
-			restrict();
-		else
-			restore();
-		*/
-		
-		if ( self.isRestricted )
-			return;
-		
-		self.isRestricted = true;
-		restrict();
-		
-		self.updatePermissions();
-		
-		function restrict() {
-			self.mobilePerms = {
-				receive : {
-					video : false,
-				},
-				send : {
-					video : false,
-				},
-			};
-		}
-		
-		function restore() {
-			self.mobilePerms = null;
-		}
 	}
 	
 	ns.RTC.prototype.updatePermissions = function() {
@@ -875,8 +838,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.setupAdmin = function() {
 		const self = this;
 		console.log( 'setupAdmin - NYI', self );
-		return;
-		
+		/*
 		self.menu.enable( 'settings' );
 		self.menu.on( 'settings', settings );
 		self.settings = self.ui.addSettings( onsave );
@@ -889,6 +851,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function onsave( setting, value ) {
 			self.saveSetting( setting, value );
 		}
+		*/
 	}
 	
 	ns.RTC.prototype.syncPeers = function( peerIds ) {
@@ -1662,35 +1625,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			'source'
 		);
 		
-		self.on( 'selfie', e => self.updatePublishedMedia());
-		
-		/*
-		self.session = new library.rtc.Session({
-			type      : type,
-			isHost    : self.isHost,
-			rtc       : self.rtcConf,
-			signal    : self.signal,
-			//modifySDP : modSDP,
-		});
-		*/
-		
 		self.session.on( 'stats', e => console.log( 'session stats', e ));
 		self.session.on( 'state', e => console.log( 'session state', e ));
 		self.session.on( 'error', e => console.log( 'session error', e ));
 		
+		self.on( 'selfie', e => self.updatePublishedMedia());
 		self.updatePublishedMedia();
-		/*
-		self.session.on( 'track-add'   , e => self.trackAdded( e ));
-		self.session.on( 'track-remove', e => self.trackRemoved( e ));
-		self.session.on( 'nostream'    , sendNoStream );
-		self.session.on( 'datachannel' , dataChannel );
-		
-		function sendNoStream( e ) { self.sendNoStream( type ); }
-		function stateChange( e ) { self.handleSessionStateChange( e, type ); }
-		function statsUpdate( e ) { self.handleFullStats( e, type ); }
-		function sessionError( e ) { self.handleSessionError( e, type ); }
-		function dataChannel( e ) { self.bindDataChannel( e ); }
-		*/
 	}
 	
 	ns.Selfie.prototype.updatePublishedMedia = function() {
@@ -1762,10 +1702,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			callback( error, media );
 		}
 		
+		/*
 		if ( self.isScreenSharing ) {
-			//self.menu.setState( 'toggle-screen-share', true );
-			//self.toggleScreenMode( 'contain' );
+			self.menu.setState( 'toggle-screen-share', true );
+			self.toggleScreenMode( 'contain' );
 		}
+		*/
 	}
 	
 	ns.Selfie.prototype.handleTrackEnded = function( track ) {
@@ -1863,8 +1805,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	/*
 	ns.Selfie.prototype.openScreenExtInstall = function() {
 		const self = this;
-		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/\
-			ipakdgondpoahmhclacfgekboimhgpap' );
+		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/'
+			+ 'ipakdgondpoahmhclacfgekboimhgpap' );
 		
 		self.extConn.show();
 		self.screenShare.connect()
@@ -3117,110 +3059,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.session.renegotiate();
 	}
 	
-	ns.Peer.prototype.modifySDP = function( SDPObj, type ) {
-		const self = this;
-		return SDPObj;
-		
-		if ( 'video' === type )
-			return SDPObj;
-		
-		if ( 'normal' === self.selfie.currentQuality.level )
-			return SDPObj;
-		
-		var opusConf = self.selfie.getOpusConf();
-		if ( !opusConf )
-			return SDPObj;
-		
-		var str = SDPObj.sdp;
-		var lines = str.split( '\r\n' );
-		lines = modOpus( lines, opusConf );
-		
-		SDPObj.sdp = lines.join( '\r\n' );
-		return SDPObj;
-		
-		function modOpus( lines, conf ) {
-			var opusIndex = getIndex( lines );
-			if ( -1 === opusIndex ) {
-				self.log( 'could not find opus in line', lines );
-				return lines;
-			}
-			
-			var mediaId = getMediaId( lines[ opusIndex ]);
-			var fmtpIndex = checkForFMTP( lines, mediaId );
-			var fmtpKV = conf;
-			var fmtpLine = null;
-			if ( -1 === fmtpIndex ) {
-				fmtpLine = buildFmtpLine( lines, fmtpKV, mediaId );
-				lines.splice( opusIndex + 1, 0, fmtpLine );
-			}
-			else {
-				fmtpLine = buildFmtpLine( lines, fmtpKV, mediaId, fmtpIndex );
-				lines[ fmtpIndex ] = fmtpLine;
-			}
-			
-			return lines;
-			
-			function getIndex( lines ) {
-				var opi = -1;
-				lines.some( findOpus );
-				return opi;
-				
-				function findOpus( line, index ) {
-					inLine = line.indexOf( 'opus/48000' );
-					if ( -1 !== inLine ) {
-						opi = index;
-						return true;
-					}
-					
-					return false;
-				}
-			}
-			
-			function getMediaId( str ) {
-				var match = str.match( /rtpmap:([\d]+)\s/ )
-				if ( !match )
-					return false;
-				
-				return match[ 1 ];
-			}
-			
-			function checkForFMTP( lines, mId ) {
-				var str = 'fmtp:' + mId;
-				var rx = new RegExp( str );
-				var fmtpIndex = -1;
-				lines.some( match );
-				return fmtpIndex;
-				
-				function match( line, index ) {
-					var match = line.match( rx );
-					if ( match ) {
-						fmtpIndex = index;
-						return true;
-					}
-					
-					return false;
-				}
-			}
-			
-			function buildFmtpLine( lines, fmtpKV, mediaId, index ) {
-				var line = '';
-				if ( null != index )
-					line = lines[ index ] + ';';
-				else
-					line = 'a=fmtp:' + mediaId + ' ';
-				
-				var keys = Object.keys( fmtpKV );
-				keys.forEach( add );
-				return line;
-				
-				function add( key ) {
-					var value = fmtpKV[ key ];
-					line += key + '=' + value + ';';
-				}
-			}
-		}
-	}
-	
 	ns.Peer.prototype.handleSignalPing = function( pingTime ) {
 		var self = this;
 		if (( 0 === pingTime ) || ( null === pingTime ))
@@ -3438,31 +3276,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.streamAdded = function( stream ) {
 		const self = this;
 		self.log( 'Peer.streamAdded - legacy event ABORT ABORT ABORT', stream );
-		return;
-		
-		self.remoteMedia = stream;
-		var tracks = self.remoteMedia.getTracks();
-		self.receiving.audio = false;
-		self.receiving.video = false;
-		tracks.forEach( checkType );
-		self.toggleBlind( self.isBlind );
-		self.toggleMute( self.isMute );
-		var conf = {
-			isVideo : self.receiving.video,
-			isAudio : self.receiving.audio,
-			stream : stream,
-		};
-		
-		self.emit( 'legacy-stream', conf );
-		self.emitStreamState( 'nominal' );
-		
-		function checkType( track ) {
-			var type = track.kind;
-			if ( 'audio' === type )
-				self.receiving.audio = true;
-			if ( 'video' === type )
-				self.receiving.video = true;
-		}
 	}
 	
 	ns.Peer.prototype.trackAdded = function( track ) {
@@ -3907,7 +3720,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !stats || !stats.inbound )
 			return;
 		
-		return;
+		/*
 		self.log( 'checkStats', stats );
 		const trans = stats.transport;
 		const inn = stats.inbound;
@@ -3976,6 +3789,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					self.refreshVideo();
 			}
 		}
+		*/
 	}
 	
 	ns.Peer.prototype.refreshAudio = function() {
@@ -4349,8 +4163,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.session.on( 'datachannel' , dataChannel );
 		
 		self.showSelfie();
-		
-		function modSDP( e ) { return self.modifySDP( e, type ); }
 		
 		function sendNoStream( e ) { self.sendNoStream( type ); }
 		function stateChange( e ) { self.handleSessionStateChange( e, type ); }

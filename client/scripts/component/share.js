@@ -285,11 +285,11 @@ library.component = library.component || {};
 	
 	ns.ShareView.prototype.sendEmailLink = function( email, link ) {
 		const self = this;
-		var msg = {
+		const msg = {
 			type : 'email',
 			data : {
 				email : email,
-				link, link,
+				link  : link,
 			},
 		};
 		
@@ -644,8 +644,7 @@ library.component = library.component || {};
 	
 	ns.ShareLink.prototype.setCopy = function( id ) {
 		const self = this;
-		return;
-		
+		/*
 		const element = document.getElementById( id );
 		if ( !element )
 			return;
@@ -653,12 +652,12 @@ library.component = library.component || {};
 		element.classList.toggle( 'previously-copied', true );
 		element.classList.toggle( 'on-clipboard', true );
 		self.copyId = id;
+		*/
 	}
 	
 	ns.ShareLink.prototype.clearCopy = function() {
 		const self = this;
-		return;
-		
+		/*
 		if ( !self.copyId )
 			return;
 		
@@ -668,6 +667,7 @@ library.component = library.component || {};
 		
 		element.classList.toggle( 'on-clipboard', false );
 		self.copyId = null;
+		*/
 	}
 	
 	ns.ShareLink.prototype.send = function( msg ) {

@@ -586,23 +586,6 @@ library.rtc = library.rtc || {};
 	ns.ModuleControl.prototype.handleNoModule = function() {
 		const self = this;
 		console.log( 'handleNoModule - NYI' );
-		
-		return;
-		
-		/*
-		if ( self.firstLogin ) {
-			self.handleFirstLogin();
-		}
-		*/
-		
-		var description = {
-			type : 'treeroot',
-			name : 'Treeroot',
-		};
-		self.view.send({
-			type : 'askaddmodule',
-			data : description,
-		});
 	}
 	
 	ns.ModuleControl.prototype.handleFirstLogin = function() {
@@ -1101,6 +1084,7 @@ library.rtc = library.rtc || {};
 		const self = this;
 		return;
 		
+		/*
 		if ( !hello.dormant )
 			return;
 		
@@ -1121,6 +1105,7 @@ library.rtc = library.rtc || {};
 		function close() {
 			self.leave();
 		}
+		*/
 	}
 	
 	ns.RtcControl.prototype.closeDormant = function() {
@@ -1695,10 +1680,8 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.connect = function( callback ) {
 		const self = this;
-		if( !hello.config || !hello.config.host ) {
+		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
-			return;
-		}
 		
 		console.log( 'Conection.connect' );
 		if ( self.socket )

@@ -1031,10 +1031,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.proxy )
 			self.proxy.close();
 		
-		if ( self.menu ) {
-			
-		}
-		
 		self.release(); // clear event emitter
 		
 		delete self.local;

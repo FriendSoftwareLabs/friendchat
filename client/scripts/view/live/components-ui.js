@@ -929,24 +929,6 @@ library.component = library.component || {};
 	ns.ChatTease.prototype.showMessage = function( message, from ) {
 		const self = this;
 		self.showMessageNum();
-		return;
-		
-		/*
-		console.log( 'showMessage', [
-			message,
-			from,
-		]);
-		let conf = {
-			message : message,
-			from    : from,
-		};
-		self.teaseMsg = hello.template.getElement( 'chat-tease-tmpl', conf );
-		self.teaseContainer.innerHTML = '';
-		self.teaseContainer.appendChild( self.teaseMsg );
-		self.teaseUnread++;
-		self.teaseNum.textContent = '(' + self.teaseUnread + ')';
-		self.el.classList.toggle( 'hidden', false );
-		*/
 	}
 	
 	ns.ChatTease.prototype.setActive = function( active ) {
@@ -961,12 +943,6 @@ library.component = library.component || {};
 	ns.ChatTease.prototype.clear = function() {
 		const self = this;
 		self.clearMessageNum();
-		return;
-		
-		self.teaseUnread = 0;
-		self.teaseNum.textContent = '';
-		self.teaseContainer.innerHTML = '';
-		self.el.classList.toggle( 'hidden', true );
 	}
 	
 	// Priv

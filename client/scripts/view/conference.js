@@ -139,7 +139,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'initialize', initialize );
 		self.view.on( 'message', message );
 		self.view.on( 'log', log );
@@ -181,7 +181,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.initialize = function( data ) {
-		var self = this;
+		const self = this;
 		var state = data.state;
 		self.user = state.user;
 		
@@ -258,7 +258,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.handleLog = function( log ) {
-		var self = this;
+		const self = this;
 		var el = self.msgBuilder.log( log );
 		if ( !el )
 			return;
@@ -267,7 +267,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.handleMessage = function( data ) {
-		var self = this;
+		const self = this;
 		var element = self.msgBuilder.message( data );
 		self.highlight.check( data.message, element );
 		self.messages.appendChild( element );
@@ -275,7 +275,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.handleAction = function( data, isRealtime ) {
-		var self = this;
+		const self = this;
 		var element = self.msgBuilder.action( data );
 		self.highlight.check( data.message, element );
 		self.messages.appendChild( element );
@@ -283,17 +283,15 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.handleNotification = function( data, isRealtime ) {
-		var self = this;
+		const self = this;
 		var el = self.msgBuilder.notification( data );
 		self.messages.appendChild( el );
 	}
 	
 	ns.Conference.prototype.bindNameDblClick = function( element ) {
-		var self = this;
-		if ( !element ) {
+		const self = this;
+		if ( !element )
 			throw new Error( 'bindNameDblClick - no el' );
-			return;
-		}
 		
 		element.addEventListener( 'dblclick', doubleClick, false );
 		function doubleClick( e ) {
@@ -303,7 +301,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.join = function( user ) {
-		var self = this;
+		const self = this;
 		var meta = self.buildParticipant( user );
 		self.addParticipant( user );
 		var conf = {
@@ -315,7 +313,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.part = function( data ) {
-		var self = this;
+		const self = this;
 		if ( !self.participants[ data.who ]) {
 			console.log( 'conference.part - participant not found', data );
 			return;
@@ -331,7 +329,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.quit = function( data ) {
-		var self = this;
+		const self = this;
 		if ( !self.participants[ data.who ]) {
 			console.log( 'conference.quit - participant not found', data );
 			return;
@@ -375,7 +373,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.updateUser = function( update ) {
-		var self = this;
+		const self = this;
 		var change = {
 			current : self.user.name,
 			update  : update.name,
@@ -387,7 +385,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.updateNick = function( data ) {
-		var self = this;
+		const self = this;
 		var current = self.participants[ data.current ];
 		var update = self.buildParticipant({ name : data.update });
 		if ( !current || !update ) {
@@ -408,7 +406,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.setTopic = function( data ) {
-		var self = this;
+		const self = this;
 		self.topic = {
 			from : data.from,
 			topic : data.topic,
@@ -423,7 +421,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.topicMsg = function( data ) {
-		var self = this;
+		const self = this;
 		var conf = {
 			type : 'topic',
 			message : data.from + ' ' + View.i18n('i18n_changed_topic_to') + ': ' + data.topic,
@@ -433,12 +431,12 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.setMode = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'conference.setMode', data );
 	}
 	
 	ns.Conference.prototype.setUserMode = function( data ) {
-		var self = this;
+		const self = this;
 		var target = data.target.name;
 		self.updateParticipantMode( data.target );
 		const mode = data.mode;
@@ -460,7 +458,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.systemMsg = function( conf ) {
-		var self = this;
+		const self = this;
 		const klass = conf.klassType || conf.type;
 		var icon = self.systemMsgIconMap[ conf.type ] || self.systemMsgIconDefault;
 		var type = self.systemMsgKlassMap[ klass ] || klass;
@@ -474,7 +472,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.addMsg = function( tmpl, conf, isRealtime ) {
-		var self = this;
+		const self = this;
 		if ( conf.time )
 			conf.time = library.tool.getChatTime( conf.time );
 		
@@ -484,7 +482,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.moreParticipants = function( participants ) {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( self.participantsContainerId );
 		participants = participants.filter( noExists );
 		participants = participants.map( buildUser );
@@ -535,7 +533,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		self.settingsBtn = document.getElementById( 'settings-btn' );
 		self.showHideBtn = document.getElementById( 'showhide-btn' );
 		self.inputForm = document.getElementById( 'input-form' );
@@ -632,7 +630,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.handleWindowResize = function( e ) {
-		var self = this;
+		const self = this;
 		if ( self.resizeTimeout ) {
 			self.oneLastResize = true;
 			return;
@@ -658,7 +656,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.showSettings = function() {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'settings',
 		};
@@ -666,7 +664,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.showhideToggle = function( force ) {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( 'participants-container', force );
 		if ( null == force ) {
 			container.classList.toggle( 'hide' );
@@ -676,7 +674,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.sendMessage = function( str ) {
-		var self = this;
+		const self = this;
 		if ( !str || !str.length ) {
 			done();
 			return;
@@ -696,12 +694,12 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		self.view.sendMessage( msg );
 	}
 	
 	ns.Conference.prototype.addParticipant = function( meta ) {
-		var self = this;
+		const self = this;
 		meta.mode = meta.mode || ''; // empty string mode is default
 		if ( exists( meta.name )) {
 			console.log( 'aready added', meta );
@@ -730,12 +728,12 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.checkParticipantExists = function( name ) {
-		var self = this;
+		const self = this;
 		return !!self.participants[ name ];
 	}
 	
 	ns.Conference.prototype.addToMode = function( meta, element, dontReorder ) {
-		var self = this;
+		const self = this;
 		if ( !element )
 			element = document.getElementById( meta.id );
 		
@@ -763,7 +761,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.reorderInMode = function( meta, element ) {
-		var self = this;
+		const self = this;
 		if ( !element )
 			element = document.getElementById( meta.id );
 		
@@ -808,7 +806,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.removeFromMode = function( meta ) {
-		var self = this;
+		const self = this;
 		var mode = self.modeData[ meta.mode ];
 		if ( !mode ) {
 			console.log( 'removeFromMode - invalid mode', meta );
@@ -831,7 +829,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.sortByName = function( mode ) {
-		var self = this;
+		const self = this;
 		var modeObj = self.modeData[ mode ];
 		if ( !modeObj || !modeObj.order )
 			return;
@@ -874,7 +872,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.updateModeInfo = function() {
-		var self = this;
+		const self = this;
 		var mods = self.modeData[ 'm' ];
 		var voice = self.modeData[ 'v' ];
 		var peons = self.modeData[ '' ];
@@ -885,7 +883,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.updateParticipantMode = function( update ) {
-		var self = this;
+		const self = this;
 		var newMode = update.mode;
 		var meta = self.participants[ update.name ];
 		self.removeFromMode( meta );
@@ -921,12 +919,12 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.updateParticipantName = function( name, update ) {
-		var self = this;
+		const self = this;
 		//console.log( 'updateParticipantName', { n : name, u : update });
 	}
 	
 	ns.Conference.prototype.removeParticipant = function( name ) {
-		var self = this;
+		const self = this;
 		var meta = self.participants[ name ];
 		if ( !meta ) {
 			console.log( 'conference.removeParticipant - not found', name );
@@ -948,7 +946,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.setParticipantCss = function( meta ) {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( 'participant-css' );
 		var cssConf = {
 			participantId : meta.id,
@@ -959,14 +957,14 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.removeParticipantCss = function( meta ) {
-		var self = this;
+		const self = this;
 		var cssId = meta.id + '-style';
 		var cssElement = document.getElementById( cssId );
 		cssElement.parentNode.removeChild( cssElement );
 	}
 	
 	ns.Conference.prototype.buildParticipantElement = function( meta ) {
-		var self = this;
+		const self = this;
 		var container = document.getElementById( 'participants' );
 		var modeStyle = self.getModeStyle( meta.mode );
 		var conf = {
@@ -1003,7 +1001,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.participantDoubleClick = function( element ) {
-		var self = this;
+		const self = this;
 		var nameElement = element.querySelector( '.name' );
 		var name = nameElement.textContent.trim();
 		var meta = self.participants[ name ];
@@ -1011,7 +1009,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.openPrivateView = function( meta ) {
-		var self = this;
+		const self = this;
 		if ( meta.name === self.user.name )
 			return;
 		
@@ -1023,14 +1021,14 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.buildParticipant = function( user ) {
-		var self = this;
+		const self = this;
 		user.id = self.getHtmlId( user.name );
 		user.mode = user.mode || '';
 		return user;
 	}
 	
 	ns.Conference.prototype.getHtmlId = function( name ) {
-		var self = this;
+		const self = this;
 		if ( !name || !name.split )
 			return;
 		// repalce html/css unfriendly characters
@@ -1045,7 +1043,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.getModeStyle = function( mode ) {
-		var self = this;
+		const self = this;
 		if ( !mode || !mode.length )
 			mode = '';
 		
@@ -1059,7 +1057,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.tryAutoComplete = function( e ) {
-		var self = this;
+		const self = this;
 		var key = e.code || e.key;
 		if ( 'Tab' !== key ) // 9 is tab key
 			return;

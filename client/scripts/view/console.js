@@ -102,7 +102,6 @@ library.view = library.view || {};
 		self.slashBtn.addEventListener( 'click', toggleInputType, false );
 		
 		function toggleInputType( e ) { self.toggleInputType( e ); }
-		function toggleInputType( e ) { self.toggleInputType( e ); }
 	}
 	
 	ns.Console.prototype.toggleInputType = function( e ) {

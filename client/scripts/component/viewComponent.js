@@ -534,15 +534,15 @@ library.component = library.component || {};
 	ns.BottomScroller.prototype.onMutation = function( mutations ) {
 		const self = this;
 		self.reposition();
-		return;
 		
-		
+		/*
 		mutations.forEach( handle );
 		function handle( mutation ) {
 			var isAdded = !!mutation.addedNodes.length;
 			if ( isAdded )
 				self.bindLoad( mutation.addedNodes );
 		}
+		*/
 	}
 	
 	ns.BottomScroller.prototype.bindLoad = function( nodes ) {
@@ -1107,7 +1107,7 @@ library.component = library.component || {};
 	
 	ns.LinkExpand.prototype.work = function( el ) {
 		const self = this;
-		var links = el.querySelectorAll( 'a' );
+		const links = el.querySelectorAll( 'a' );
 		Array.prototype.forEach.call( links, expand );
 		
 		function expand( a ) {
@@ -1122,11 +1122,11 @@ library.component = library.component || {};
 				if ( !handler )
 					return;
 				
-				var content = handler( a, mime );
-				if ( !content )
+				var conf = handler( a, mime );
+				if ( !conf )
 					return null;
 				
-				self.replace( a, content );
+				self.replace( a, conf );
 			}
 			
 			function failed( err ) {
@@ -1250,102 +1250,102 @@ library.component = library.component || {};
 	}
 	
 	// Evaluate content and add a "link"
-	ns.LinkExpand.prototype.replace = function( a, content ) {
+	ns.LinkExpand.prototype.replace = function( a, conf ) {
 		const self = this;
-		var src = a.href;
-		var file = null;
-		var fileMatch = src.match( /\/([-_%\w\s]+\.[\w]+)$/i);
+		const content = conf.content;
+		const onClick = conf.onClick;
+		const src = a.href;
+		const fileMatch = src.match( /\/([-_%\w\s]+\.[\w]+)$/i);
+		let file = null;
 		if ( fileMatch )
 			file = fileMatch[ 1 ];
 		else
 			file = src;
 		
 		file = window.decodeURIComponent( file );
-		
-		var conf = {
-			href    : a.href,
-			file    : file
+		const elConf = {
+			href : a.href,
+			file : file
 		};
 		
-		var el = self.template.getElement( 'link-expand-tmpl', conf );
-		el.querySelector( '.link-expand-content' ).appendChild( content );
-		var parent = a.parentNode;
+		const el = self.template.getElement( 'link-expand-tmpl', elConf );
+		el.querySelector( '.link-expand-content' )
+			.appendChild( content );
+		
+		const parent = a.parentNode;
 		parent.removeChild( a );
-		
-		if( el.querySelector( '.link-expand-image' ) && content.secretOnClickFunction )
-		{
-			var as = el.getElementsByTagName( 'a' );
-			for( var a = 0; a < as.length; a++ ) {
-				as[ a ].href = 'javascript:void(0)';
-				as[ a ].onclick = content.secretOnClickFunction;
-				break;
-			}
-		}
-		
 		parent.appendChild( el );
+		
+		if ( null == onClick )
+			return;
+		
+		const headA = el.querySelector( '.link-expand-ui a' );
+		if ( null == headA )
+			return;
+		
+		headA.addEventListener( 'click', onClick, false );
 	}
 	
-	ns.LinkExpand.prototype.expandImage = function( a ) {
+	ns.LinkExpand.prototype.expandImage = function( a, mime ) {
 		const self = this;
-		var src = a.href;
-		var conf = {
+		const src = a.href;
+		const conf = {
 			src : src,
 		};
-		var htmlElement = self.template.getElement( 'image-expand-tmpl', conf );
-		function clFunc( e )
-		{
+		const htmlElement = self.template.getElement( 'image-expand-tmpl', conf );
+		htmlElement.addEventListener( 'click', onClick, false );
+		return {
+			content : htmlElement,
+			onClick : onClick,
+		}
+		
+		function onClick( e ) {
 			e.preventDefault();
 			e.stopPropagation();
-			
-			self.getMIME( src )
-				.then( success )
-				.catch( failed );
-			return
-			
-			function failed()
-			{
-				return false;
-			}
-			function success( mime ) {
-				if( mime.type == 'image' )
-				{
-					window.View.sendBase( {
-						type: 'dos',
-						method: 'openWindowByFilename',
-						args: { fileInfo: { Path: src }, ext: 'jpg' }
-					} );
-				}
-			}
+			window.View.sendBase({
+				type   : 'dos',
+				method : 'openWindowByFilename',
+				args   : {
+					fileInfo: {
+						Path: src
+					},
+					ext: 'jpg',
+				},
+			});
 		}
-		htmlElement.addEventListener( 'click', clFunc, false );
-		htmlElement.secretOnClickFunction = clFunc;
-		return htmlElement;
 	}
 	
-	ns.LinkExpand.prototype.expandAudio = function( a ) {
+	ns.LinkExpand.prototype.expandAudio = function( a, mime ) {
 		const self = this;
-		var src = a.href;
-		var conf = {
+		const src = a.href;
+		const conf = {
 			src : src,
 		};
-		var htmlElement = self.template.getElement( 'audio-expand-tmpl', conf );
-		return htmlElement;
+		const htmlElement = self.template.getElement( 'audio-expand-tmpl', conf );
+		return {
+			content : htmlElement,
+		};
 	}
 	
-	ns.LinkExpand.prototype.expandVideo = function( a ) {
+	ns.LinkExpand.prototype.expandVideo = function( a, mime ) {
 		const self = this;
-		var src = a.href;
-		var conf = {
+		const src = a.href;
+		const conf = {
 			src : src,
 		};
-		var htmlElement = self.template.getElement( 'video-expand-tmpl', conf );
-		return htmlElement;
+		const htmlElement = self.template.getElement( 'video-expand-tmpl', conf );
+		return {
+			content : htmlElement,
+		};
 	}
 	
 	ns.LinkExpand.prototype.expandFile = function( a, mime ) {
 		const self = this;
-		return '';
+		return {
+			content : '',
+		};
 		
+		/*
 		typeClass = 'File';
 		if ( mime && mime.ext )
 			typeClass = 'Type' + mime.ext.toUpperCase();
@@ -1355,17 +1355,22 @@ library.component = library.component || {};
 		};
 		var htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
 		return htmlElement;
+		*/
 	}
 	
 	ns.LinkExpand.prototype.expandText = function( a, mime ) {
 		const self = this;
-		return null;
+		return {
+			content : null,
+		};
 		//return a.href;
 	}
 	
 	ns.LinkExpand.prototype.expandOther = function( a, mime ) {
 		const self = this;
-		return null;
+		return {
+			content : null,
+		};
 		//return a.href;
 	}
 	

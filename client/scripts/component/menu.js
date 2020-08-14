@@ -260,10 +260,8 @@ library.component = library.component || {};
 	
 	ns.Menu.prototype.addFolder = function( item, parentId, beforeId ) {
 		var self = this;
-		if ( self.folders[ item.id ]) {
+		if ( self.folders[ item.id ])
 			throw new Error( 'Menu.addFolder - id already in use: ' + item.id );
-			return;
-		}
 		
 		var folderId = friendUP.tool.uid( item.id );
 		var folder = {
@@ -277,11 +275,9 @@ library.component = library.component || {};
 	}
 	
 	ns.Menu.prototype.addItem = function( item, folderId, beforeId ) {
-		var self = this;
-		if ( self.items[ item.id ]) {
+		const self = this;
+		if ( self.items[ item.id ])
 			throw new Error( 'Menu.addItem - id alread used: ' + item.id );
-			return;
-		}
 		
 		self.items[ item.id ] = item;
 		if ( !folderId )
@@ -592,24 +588,16 @@ library.component = library.component || {};
 		
 		var el = document.getElementById( conf.elId );
 		return el;
-		
-		if ( !el ) {
-			console.log( 'Menu.toggleFolder - no element for', conf );
-			return;
-		}
-		
-		el.classList.toggle( 'hidden', !show );
-		return el;
 	}
 	
 	ns.Menu.prototype.toggleItem = function( id, enable ) {
 		var self = this;
 		var item = self.getItem( id );
-		if( item )
-		{
-			var el = document.getElementById( item.elId );
-			el.classList.toggle( 'hidden', !enable );
-		}
+		if( !item )
+			return;
+		
+		var el = document.getElementById( item.elId );
+		el.classList.toggle( 'hidden', !enable );
 	}
 	
 	ns.Menu.prototype.toggleToggle = function( id, isOn ) {

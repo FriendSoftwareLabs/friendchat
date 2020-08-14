@@ -64,14 +64,6 @@ library.component = library.component || {};
 	ns.UIStream.prototype.setAudioSink = function( deviceId ) {
 		const self = this;
 		self.audioSinkId = deviceId;
-		return;
-		
-		const pids = Object.keys( self.peers );
-		pids.forEach( setSinkId );
-		function setSinkId( peerId ) {
-			let peer = self.peers[ peerId ];
-			peer.setAudioSink( self.audioSinkId );
-		}
 	}
 	
 	ns.UIStream.prototype.setQuality = function( qualityLevel ) {

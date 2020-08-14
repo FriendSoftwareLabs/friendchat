@@ -4,9 +4,8 @@
 # Copies the modified files in the friendchat/server directory to
 # the proper location in Friend build directory structure.
 
-
 NORESTART=0
-if [ -n "$1" ]; then
+if [ -z "$SERVICE" ]; then
 	NORESTART=1
 fi
 

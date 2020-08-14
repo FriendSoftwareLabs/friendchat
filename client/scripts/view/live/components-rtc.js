@@ -1716,8 +1716,8 @@ library.rtc = library.rtc || {};
 		const self = this;
 		self.log( 'iceCandidateReceived', candidate );
 		if ( !candidate ) {
-			self.log( 'iceCandidateReceived - null candidate\
-			 - other side is done sending', candidate );
+			self.log( 'iceCandidateReceived - null candidate'
+			 + '- other side is done sending', candidate );
 			return;
 		}
 		var ICECandidate = new window.RTCIceCandidate( candidate );

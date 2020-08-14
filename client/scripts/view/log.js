@@ -99,24 +99,11 @@ library.view = library.view || {};
 	ns.Log.prototype.addWaiting = function( msg ) {
 		var self = this;
 		console.log( 'log.addWaiting - NYI', msg );
-		return;
-		
-		var data = self.getGeneric( msg, 'waiting' );
-		data.tmplId = 'waiting-logmessage-tmpl';
-		var element = self.add( data );
-		setTimer( element, msg.time );
-		
-		function setTimer( element, timeLeft ) {
-			console.log( 'setTimer', { e : element, tl : timeLeft });
-		}
 	}
 	
 	ns.Log.prototype.addRunForTheHills = function( msg ) {
 		var self = this;
 		console.log( 'log.addRunForTheHills - NYI', msg );
-		return;
-		var data = self.getGeneric( msg );
-		self.add( data );
 	}
 	
 	ns.Log.prototype.getGeneric = function( msg, alertLevel ) {

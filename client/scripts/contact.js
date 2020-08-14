@@ -952,12 +952,6 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.renameRoom = function( name ) {
 		const self = this;
 		throw new Error( 'PresenceRoom.renameRoom - should not be used, use settings' );
-		
-		const rename = {
-			type : 'rename',
-			data : name,
-		};
-		self.send( rename );
 	}
 	
 	ns.PresenceRoom.prototype.startVideo = function() {
@@ -1791,7 +1785,7 @@ library.contact = library.contact || {};
 			
 			self.identities[ uId ] = id;
 			self.users[ uId ] = user;
-			if ( -1 === self.userIds.indexOf( uId ));
+			if ( -1 === self.userIds.indexOf( uId ))
 				self.userIds.push( uId );
 			
 			const join = {
@@ -4046,11 +4040,7 @@ library.contact = library.contact || {};
 	
 	ns.IrcPrivMsg.prototype.handleHighlight = function() {
 		const self = this;
-		return;
-		if ( !hello.account.settings.msgAlert )
-			return;
-		
-		hello.playMsgAlert();
+		console.log( 'IrcPrivMsg.handleHighlight - not handling highlight lol' );
 	}
 	
 	ns.IrcPrivMsg.prototype.getLog = function() {
@@ -4064,12 +4054,6 @@ library.contact = library.contact || {};
 	ns.IrcPrivMsg.prototype.fromChat = function( msg ) {
 		const self = this;
 		self.sendMessage( msg );
-		return;
-		/*
-		if ( msg[ 0 ] === '/' )
-		else
-			self.sendMessage( msg );
-		*/
 	}
 	
 	ns.IrcPrivMsg.prototype.sendCommand = function( msg ) {

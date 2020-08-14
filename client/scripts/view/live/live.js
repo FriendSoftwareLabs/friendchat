@@ -80,8 +80,9 @@ library.component = library.component || {};
 	
 	ns.Init.prototype.preInit = function( initConf ) {
 		const self = this;
-		throw new Error( 'no u' );
+		throw new Error( 'live.Init.preInit' );
 		
+		/*
 		const honk = document.getElementById( 'honk' );
 		honk.play()
 			.then( honkOk )
@@ -110,6 +111,7 @@ library.component = library.component || {};
 			console.log( 'pClick', e );
 			self.preInit( initConf );
 		}
+		*/
 	}
 	
 	ns.Init.prototype.initialize = function( data ) {

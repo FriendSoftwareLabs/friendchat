@@ -30,14 +30,14 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Confirm ))
 			return new ns.Confirm();
 		
-		var self = this;
+		const self = this;
 		self.view = window.View;
 		
 		self.init();
 	}
 	
 	ns.Confirm.prototype.init = function() {
-		var self = this;
+		const self = this;
 		View.setBody();
 		self.bindView();
 		self.bindEvents();
@@ -45,7 +45,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Confirm.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'initialize', initialize );
 		self.view.on( 'close', close );
 		
@@ -54,7 +54,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Confirm.prototype.initialize = function( data ) {
-		var self = this;
+		const self = this;
 		console.log( 'view.Confirm.initialize', data );
 		
 		var title = document.getElementById( 'title' );
@@ -67,13 +67,13 @@ library.view = library.view || {};
 	}
 	
 	ns.Confirm.prototype.close = function() {
-		self = this;
+		const self = this;
 		console.log( 'view.Confirm.close' );
 		self.view.close();
 	}
 	
 	ns.Confirm.prototype.bindEvents = function() {
-		var self = this;
+		const self = this;
 		var form = document.getElementById( 'form' );
 		var denyBtn = document.getElementById( 'deny' );
 		
@@ -85,18 +85,18 @@ library.view = library.view || {};
 	}
 	
 	ns.Confirm.prototype.confirm = function( e ) {
-		var self = this;
+		const self = this;
 		e.preventDefault();
 		self.response( 'confirm' );
 	}
 	ns.Confirm.prototype.deny = function( e ) {
-		var self = this;
+		const self = this;
 		e.preventDefault();
 		self.response( 'deny' );
 	}
 	
 	ns.Confirm.prototype.response = function( msg ) {
-		var self = this;
+		const self = this;
 		self.view.sendMessage({
 			type : 'response',
 			data : msg,

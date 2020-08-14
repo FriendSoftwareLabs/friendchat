@@ -886,13 +886,13 @@ library.component = library.component || {};
 			'i18n_host_could_not_be_reached',
 			
 		'WARN_AUDIO_SINK_NOT_ALLOWED'   :
-			'i18n_setting_audio_output_was_rejected_by_browser_\
-you_might_not_be_able_to_hear_anyone_please_check_your\
-_browser_audio_permissions',
+			'i18n_setting_audio_output_was_rejected_by_browser_'
+			+ 'you_might_not_be_able_to_hear_anyone_please_check_your'
+			+ '_browser_audio_permissions',
 
 		'WARN_GUM_BLOCKED'             :
-			'i18n_media_access_is_blocked_in_browser_\
-if_this_is_not_inteninal_check_your_browser_settings_for_this_site',
+			'i18n_media_access_is_blocked_in_browser_'
+			+ 'if_this_is_not_inteninal_check_your_browser_settings_for_this_site',
 			
 		'WARN_STUN_ERRORS'             :
 			'i18n_stun_servers_could_not_be_reached_limited_connectivity',
@@ -916,16 +916,16 @@ if_this_is_not_inteninal_check_your_browser_settings_for_this_site',
 			'i18n_nm_its_fine',
 		
 		'INFO_GUM_BLOCKED'             :
-			'i18n_mic_and_camera_is_blocked_in_the_browser_check_your_settings_\
-for_this_site_if_this_is_not_intended',
+			'i18n_mic_and_camera_is_blocked_in_the_browser_check_your_settings_'
+			+ 'for_this_site_if_this_is_not_intended',
 			
 		'INFO_GUM_BLOCKED_AUDIO'       :
-			'i18n_microhpone_is_blocked_in_the_browser_check_your_settings_for_\
-this_site_if_this_is_not_intended',
+			'i18n_microhpone_is_blocked_in_the_browser_check_your_settings_for_'
+			+ 'this_site_if_this_is_not_intended',
 			
 		'INFO_GUM_BLOCKED_VIDEO'       :
-			'i18n_camera_is_blocked_in_the_browser_check_your_settings_for_this_\
-site_if_this_is_not_intended',
+			'i18n_camera_is_blocked_in_the_browser_check_your_settings_for_this_'
+			+ 'site_if_this_is_not_intended',
 			
 	};
 	

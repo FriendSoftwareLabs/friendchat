@@ -492,7 +492,7 @@ inherits from EventEmitter
 	}
 	
 	ns.SubView.prototype.allOff = function() {
-		self = this;
+		const self = this;
 		self.subscriber = {};
 	}
 	
@@ -1072,17 +1072,6 @@ inherits from EventEmitter
 	ns.CallStatus.prototype.setStatus = function( status ) {
 		const self = this;
 		self.el.classList.toggle( 'hidden', false );
-		return;
-		
-		self.status.classList.toggle( 'hidden', false );
-		if ( self.statusKlass === status )
-			return;
-		
-		if ( self.statusKlass )
-			self.status.classList.toggle( self.statusKlass, false );
-		
-		self.status.classList.toggle( status, true );
-		self.statusKlass = status;
 	}
 	
 	ns.CallStatus.prototype.clearCurrent = function() {

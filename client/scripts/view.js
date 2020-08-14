@@ -320,7 +320,7 @@ library.view = library.view || {};
 	}
 	
 	ns.About.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -336,7 +336,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Loading ))
 			return new ns.Loading( onreconnect, onclose );
 		
-		var self = this;
+		const self = this;
 		self.onreconnect = onreconnect;
 		self.onclose = onclose;
 		
@@ -382,7 +382,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Loading.prototype.setState = function( state ) {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -429,7 +429,7 @@ library.view = library.view || {};
 	// Public
 	
 	ns.IMChat.prototype.setTitle = function( title ) {
-		var self = this;
+		const self = this;
 		self.view.setTitle( title );
 	}
 	
@@ -452,7 +452,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.IMChat.prototype.init = function() {
-		var self = this;
+		const self = this;
 		self.viewConf.runConf = self.viewConf.runConf || {};
 		self.viewConf.runConf.chatType = self.chatType;
 		// drag and drop handler
@@ -491,7 +491,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IMChat.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'exit', exit );
 		self.view.on( 'message', self.onmessage );
 		self.view.on( 'highlight', handleHighlight );
@@ -530,17 +530,17 @@ library.view = library.view || {};
 	}
 	
 	ns.IMChat.prototype.activate = function() {
-		var self = this;
+		const self = this;
 		self.view.activate();
 	}
 	
 	ns.IMChat.prototype.toggleVoice = function() {
-		var self = this;
+		const self = this;
 		console.log( 'viewmodel.IMChat.toggleVoice - NYI' );
 	}
 	
 	ns.IMChat.prototype.setEncryptAvailable = function( isAvailable ) {
-		var self = this;
+		const self = this;
 		show = {
 			type : 'showencrypt',
 			data : isAvailable,
@@ -549,7 +549,7 @@ library.view = library.view || {};
 	}
 	
 	ns.IMChat.prototype.toggleEncrypt = function( isOn ) {
-		var self = this;
+		const self = this;
 		var toggle = {
 			type : 'encrypt',
 			data : isOn,
@@ -558,17 +558,17 @@ library.view = library.view || {};
 	}
 	
 	ns.IMChat.prototype.on = function( event, handler ) {
-		var self = this;
+		const self = this;
 		console.log( 'appView.IMChat.on - NYI', { e: event, h: handler });
 	}
 	
 	ns.IMChat.prototype.off = function( event ) {
-		var self = this;
+		const self = this;
 		console.log( 'appView.IMChat.off - NYI', { e: event });
 	}
 	
 	ns.IMChat.prototype.send = function( msg ) {
-		self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -576,13 +576,13 @@ library.view = library.view || {};
 	}
 	
 	ns.IMChat.prototype.closed = function() {
-		var self = this;
+		const self = this;
 		self.view = null;
 		self.onclose();
 	}
 	
 	ns.IMChat.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.close();
 	}
@@ -797,7 +797,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Live.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'local-setting', localSetting );
 		self.view.on( 'drag-n-drop', heyYouDroppedThis );
 		self.view.on( 'close'      , ohOkayThen );
@@ -833,8 +833,8 @@ library.view = library.view || {};
 		api.ApplicationStorage.get( 'live-settings' )
 			.then( getBack )
 			.catch( e => {
-				console.log( 'app.Live.storeLocalSetting - \
-					applicationStorage uncaught error', e );
+				console.log( 'app.Live.storeLocalSetting - '
+					+ 'applicationStorage uncaught error', e );
 			});
 		
 		function getBack( res ) {
@@ -854,8 +854,8 @@ library.view = library.view || {};
 			api.ApplicationStorage.set( 'live-settings', settings )
 				.then( saveBack )
 				.catch( e => {
-					console.log( 'app.Live.storeLocalSetting - \
-						applicationStorage uncaught error', e );
+					console.log( 'app.Live.storeLocalSetting - '
+						+ 'applicationStorage uncaught error', e );
 				});
 			self.settingsQueue = null;
 			function saveBack( res ) {
@@ -865,7 +865,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Live.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.view ) {
 			self.initQueue.push( msg );
 			return;
@@ -903,7 +903,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.FormView ))
 			return new ns.FormView( conf );
 		
-		var self = this;
+		const self = this;
 		self.file = conf.file;
 		self.inputMap = conf.inputMap;
 		self.windowConf = conf.windowConf;
@@ -914,7 +914,7 @@ library.view = library.view || {};
 	}
 	
 	ns.FormView.prototype.init = function() {
-		var self = this;
+		const self = this;
 		const initData = {
 			inputMap : self.inputMap,
 		};
@@ -936,7 +936,7 @@ library.view = library.view || {};
 	}
 	
 	ns.FormView.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'submit', self.submitHandler );
 		self.view.on( 'exit', exit );
 		self.view.on( 'close', closed );
@@ -946,32 +946,32 @@ library.view = library.view || {};
 	}
 	
 	ns.FormView.prototype.closed = function() {
-		var self = this;
+		const self = this;
 		self.view = null;
 		if ( self.onclose )
 			self.onclose();
 	}
 	
 	ns.FormView.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.close();
 	}
 	
 	ns.FormView.prototype.on = function( event, handler ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.on( event, handler );
 	}
 	
 	ns.FormView.prototype.off = function( event ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.off( event );
 	}
 	
 	ns.FormView.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.send( msg );
 	}
@@ -984,7 +984,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.ComponentForm ))
 			return new ns.ComponentForm( conf );
 		
-		var self = this;
+		const self = this;
 		self.file = conf.file;
 		self.windowConf = conf.windowConf;
 		self.onready = conf.onready;
@@ -995,7 +995,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ComponentForm.prototype.init = function() {
-		var self = this;
+		const self = this;
 		const initData = {
 		};
 		
@@ -1016,12 +1016,12 @@ library.view = library.view || {};
 	}
 	
 	ns.ComponentForm.prototype.submit = function( formData ) {
-		var self = this;
+		const self = this;
 		self.onsubmit( formData );
 	}
 	
 	ns.ComponentForm.prototype.response = function( resObj ) {
-		var self = this;
+		const self = this;
 		var responseEvent = {
 			type : 'response',
 			data : resObj,
@@ -1030,24 +1030,24 @@ library.view = library.view || {};
 	}
 	
 	ns.ComponentForm.prototype.toView = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.send( msg );
 	}
 	
 	ns.ComponentForm.prototype.exit = function() {
-		var self = this;
+		const self = this;
 		self.close();
 	}
 	
 	ns.ComponentForm.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.close();
 	}
 	
 	ns.ComponentForm.prototype.closed = function() {
-		var self = this;
+		const self = this;
 		self.view = null;
 		self.onclose();
 	}
@@ -1060,7 +1060,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Settings ))
 			return new ns.Settings( conf );
 		
-		var self = this;
+		const self = this;
 		self.type = conf.type;
 		self.title = conf.title;
 		self.settings = conf.settings;
@@ -1074,7 +1074,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.init = function() {
-		var self = this;
+		const self = this;
 		var filePath = 'html/settings/' + self.type + '.html';
 		var windowConf = self.windowConf || {
 			title : Application.i18n('i18n_settings') + ' - ' + ( self.title || self.type ),
@@ -1114,7 +1114,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.selectFile = function( data ) {
-		var self = this;
+		const self = this;
 		self.view.showFiledialog( data, selected );
 		function selected( res ) {
 			var selected = {
@@ -1126,29 +1126,29 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.pepareSave = function( data ) {
-		var self = this;
+		const self = this;
 		var setting = data.setting;
 		self.clearBuffer( setting );
 		self.save( data );
 	}
 	
 	ns.Settings.prototype.save = function( data ) {
-		var self = this;
+		const self = this;
 		self.onsave( data );
 	}
 	
 	ns.Settings.prototype.setBuffer = function( data ) {
-		var self = this;
+		const self = this;
 		self.buffer[ data.setting ] = data.value;
 	}
 	
 	ns.Settings.prototype.clearBuffer = function( setting ) {
-		var self = this;
+		const self = this;
 		self.buffer[ setting ] = null;
 	}
 	
 	ns.Settings.prototype.flushBuffer = function() {
-		var self = this;
+		const self = this;
 		var bufferKeys = Object.keys( self.buffer );
 		bufferKeys = bufferKeys.filter( hasValue );
 		bufferKeys.forEach( save );
@@ -1166,7 +1166,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.saved = function( data ) {
-		var self = this;
+		const self = this;
 		var wrap = {
 			type : 'saved',
 			data : data,
@@ -1175,27 +1175,27 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.isDone = function() {
-		var self = this;
+		const self = this;
 		self.flushBuffer();
 		self.close();
 		self.onclose( true );
 	}
 	
 	ns.Settings.prototype.handleClose = function() {
-		var self = this;
+		const self = this;
 		self.flushBuffer();
 		self.view = null;
 		self.onclose( true );
 	}
 	
 	ns.Settings.prototype.close = function() {
-		var self = this;
+		const self = this;
 		self.view.close();
 		self.view = null;
 	}
 	
 	ns.Settings.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -1211,7 +1211,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Console ))
 			return new ns.Console( conf );
 		
-		var self = this;
+		const self = this;
 		self.view = null;
 		self.onmessage = conf.message;
 		self.onclose = conf.onclose;
@@ -1219,7 +1219,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Console.prototype.init = function() {
-		var self = this;
+		const self = this;
 		const filePath = 'html/console.html';
 		const windowConf = {
 			title : Application.i18n('i18n_console'),
@@ -1272,12 +1272,12 @@ library.view = library.view || {};
 	}
 	
 	ns.Console.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		self.onmessage( msg );
 	}
 	
 	ns.Console.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -1285,7 +1285,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Console.prototype.close = function() {
-		var self = this;
+		const self = this;
 		delete self.onmessage;
 		if ( self.view )
 			self.view.close();
@@ -1307,7 +1307,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.Conference ))
 			return new ns.Conference( conf );
 		
-		var self = this;
+		const self = this;
 		self.onmessage = conf.onmessage;
 		self.settingsHandler = conf.onsettings;
 		self.privateHandler = conf.onprivate;
@@ -1343,7 +1343,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.Conference.prototype.init = function() {
-		var self = this;
+		const self = this;
 		var dropConf = {
 			toView : toView,
 			toChat : toChat,
@@ -1403,7 +1403,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'message', message );
 		self.view.on( 'settings', toggleSettings );
 		self.view.on( 'private', openPrivate );
@@ -1418,7 +1418,7 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.handleFileDrop = function( data ) {
-		var self = this;
+		const self = this;
 		var file = new api.File( data.path );
 		file.expose( linkBack );
 		function linkBack( res ) {
@@ -1429,19 +1429,19 @@ library.view = library.view || {};
 	}
 	
 	ns.Conference.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.send( msg );
 	}
 	
 	ns.Conference.prototype.viewClosed = function( event ) {
-		var self = this;
+		const self = this;
 		self.view = null;
 		self.closeHandler( event );
 	}
 	
 	ns.Conference.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.close();
 	}
@@ -1455,14 +1455,14 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.RtcAsk ))
 			return new ns.RtcAsk( conf );
 		
-		var self = this;
+		const self = this;
 		self.conf = conf;
 		self.callback = askBack;
 		self.init();
 	}
 	
 	ns.RtcAsk.prototype.init = function() {
-		var self = this;
+		const self = this;
 		const windowConf = {
 			title : 'Live invite',
 			width : 400,
@@ -1482,14 +1482,14 @@ library.view = library.view || {};
 	}
 	
 	ns.RtcAsk.prototype.response = function( msg ) {
-		var self = this;
+		const self = this;
 		self.callback( msg );
 		self.callback = null;
 		self.close();
 	}
 	
 	ns.RtcAsk.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.send( msg );
 	}
@@ -1503,7 +1503,7 @@ library.view = library.view || {};
 	}
 	
 	ns.RtcAsk.prototype.close = function() {
-		var self = this;
+		const self = this;
 		self.view.close();
 	}
 	
@@ -1575,7 +1575,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.TreerootUsers ))
 			return new ns.TreerootUsers( conf );
 		
-		var self = this;
+		const self = this;
 		self.onsubscribe = conf.onsubscribe;
 		self.onclose = conf.onclose;
 		self.view = null;
@@ -1586,7 +1586,7 @@ library.view = library.view || {};
 	// Public
 	
 	ns.TreerootUsers.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -1595,7 +1595,7 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootUsers.prototype.setUserList = function( userlist ) {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'userlist',
 			data : userlist,
@@ -1606,7 +1606,7 @@ library.view = library.view || {};
 	// Private
 	
 	ns.TreerootUsers.prototype.init = function() {
-		var self = this;
+		const self = this;
 		const filePath = 'html/treerootUsers.html';
 		const windowConf = {
 			title : Application.i18n('i18n_add_contacts'),
@@ -1635,12 +1635,12 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootUsers.prototype.subscribe = function( data ) {
-		var self = this;
+		const self = this;
 		self.onsubscribe( data );
 	}
 	
 	ns.TreerootUsers.prototype.done = function() {
-		var self = this;
+		const self = this;
 		const onclose = self.onclose;
 		delete self.onclose;
 		if ( onclose )
@@ -1648,7 +1648,7 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootUsers.prototype.remove = function( sub ) {
-		var self = this;
+		const self = this;
 		var msg = {
 			type : 'remove',
 			data : sub,
@@ -1657,12 +1657,12 @@ library.view = library.view || {};
 	}
 	
 	ns.TreerootUsers.prototype.response = function( msg ) {
-		var self = this;
+		const self = this;
 		console.log( 'treerootUSers.response', msg );
 	}
 	
 	ns.TreerootUsers.prototype.toView = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.send( msg );
 	}
@@ -1674,7 +1674,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.AddImage ))
 			return new ns.AddImage( conf );
 		
-		var self = this;
+		const self = this;
 		self.onimage = conf.onimage;
 		self.onclose = conf.onclose;
 		
@@ -1682,7 +1682,7 @@ library.view = library.view || {};
 	}
 	
 	ns.AddImage.prototype.init = function() {
-		var self = this;
+		const self = this;
 		const filePath = 'html/addImage.html';
 		const winConf = {
 			title : Application.i18n('i18n_add_image'),
@@ -1704,14 +1704,14 @@ library.view = library.view || {};
 	}
 	
 	ns.AddImage.prototype.bindView = function() {
-		var self = this;
+		const self = this;
 		self.view.on( 'image', onImage );
 		
 		function onImage( msg ) { self.onimage( msg ); }
 	}
 	
 	ns.AddImage.prototype.viewClosed = function() {
-		var self = this;
+		const self = this;
 		const onclose = self.onclose;
 		delete self.onclose;
 		if ( onclose )
@@ -1719,7 +1719,7 @@ library.view = library.view || {};
 	}
 	
 	ns.AddImage.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		
@@ -1735,7 +1735,7 @@ library.view = library.view || {};
 		if ( !( this instanceof ns.ShareInvite ))
 			return new ns.ShareInvite( conf );
 		
-		var self = this;
+		const self = this;
 		self.onmessage = conf.onmessage;
 		self.onclose = conf.onclose;
 		
@@ -1743,7 +1743,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ShareInvite.prototype.init =function() {
-		var self = this;
+		const self = this;
 		const filePath = 'html/shareInvite.html';
 		const windowConf = {
 			title : Application.i18n('i18n_share_invite_link'),
@@ -1767,7 +1767,7 @@ library.view = library.view || {};
 	}
 	
 	ns.ShareInvite.prototype.sendEmail = function( msg ) {
-		var self = this;
+		const self = this;
 		var modConf = {
 			module : 'system',
 			method : 'systemmail',
@@ -1803,19 +1803,19 @@ library.view = library.view || {};
 	}
 	
 	ns.ShareInvite.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.send( msg );
 	}
 	
 	ns.ShareInvite.prototype.onClose = function() {
-		var self = this;
+		const self = this;
 		self.view = null;
 		self.onclose();
 	}
 	
 	ns.ShareInvite.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.close();
 	}
@@ -1825,7 +1825,7 @@ library.view = library.view || {};
 // Treeroot crypto warning
 (function( ns, undefined ) {
 	ns.CryptoWarning = function( conf ) {
-		var self = this;
+		const self = this;
 		self.initBundle = conf.initBundle;
 		self.onaccept = conf.onaccept;
 		self.onclose = conf.onclose;
@@ -1836,7 +1836,7 @@ library.view = library.view || {};
 	}
 	
 	ns.CryptoWarning.prototype.init = function() {
-		var self = this;
+		const self = this;
 		const filePath = 'html/cryptoWarning.html';
 		const windowConf = {
 			title : Application.i18n('i18n_encryption_warning'),
@@ -1859,7 +1859,7 @@ library.view = library.view || {};
 	}
 	
 	ns.CryptoWarning.prototype.closed = function() {
-		var self = this;
+		const self = this;
 		self.view = null;
 		var onclose = self.onclose;
 		delete self.onclose;
@@ -1871,20 +1871,20 @@ library.view = library.view || {};
 	}
 	
 	ns.CryptoWarning.prototype.send = function( msg ) {
-		var self = this;
+		const self = this;
 		if ( self.view )
 			self.view.send( msg );
 	}
 	
 	ns.CryptoWarning.prototype.cleanup = function() {
-		var self = this;
+		const self = this;
 		delete self.onaccept;
 		delete self.onclose;
 		delete self.initBundle;
 	}
 	
 	ns.CryptoWarning.prototype.close = function() {
-		var self = this;
+		const self = this;
 		if ( !self.view )
 			return;
 		

@@ -290,8 +290,6 @@ library.view = library.view || {};
 	
 	// Public
 	
-	
-	
 	// Implement in module
 	
 	/*
@@ -304,9 +302,12 @@ library.view = library.view || {};
 	ns.BaseModule.prototype.getMenuOptions = function() {
 		const self = this;
 		throw new Error( 'BaseModule.getMenuOptions - implement for module' );
+		
+		/* example
 		return [
 			self.menuActions[ 'settings' ],
 		];
+		*/
 	}
 	
 	/*
@@ -321,6 +322,8 @@ library.view = library.view || {};
 	ns.BaseModule.prototype.setLogoCss = function() {
 		const self = this;
 		throw new Error( 'BaseModule.setLogoCss - implement for module' );
+		
+		/* example
 		// Two options exist, feel free to add more. These are defined in main.html
 		const tmplId = 'fa-icon-logo-css-tmpl' || 'image-logo-css-tmpl';
 		// template conf
@@ -329,6 +332,7 @@ library.view = library.view || {};
 		};
 		self.insertLogoCss( tmplId, conf, self.roomsId );
 		self.insertLogoCss( tmplId, conf, self.contactsId );
+		*/
 	}
 	
 	/*
@@ -466,6 +470,7 @@ library.view = library.view || {};
 	ns.BaseModule.prototype.buildContactsElement = function() {
 		const self = this;
 		throw new Error( 'BaseModule.buildContactsElement - implement in module' );
+		/* example
 		const tmplId = self.tmplId || 'base-module-tmpl';
 		const conf = {
 			clientId    : self.contactsId,
@@ -478,6 +483,7 @@ library.view = library.view || {};
 		const element = hello.template.getElement( tmplId, conf );
 		const container = document.getElementById( self.containers.contacts );
 		container.appendChild( element );
+		*/
 	}
 	
 	/*
@@ -489,10 +495,12 @@ library.view = library.view || {};
 	ns.BaseModule.prototype.buildRoomsElement = function() {
 		const self = this;
 		throw new Error( 'BaseModule.buildRoomsElement - implement in module' );
+		/* example
 		self.roomsId = null;
 		self.roomsFoldit = null;
 		self.roomsConnState = null;
 		self.roomItemsId = null;
+		*/
 	}
 	
 	/*
@@ -503,9 +511,10 @@ library.view = library.view || {};
 	ns.BaseModule.prototype.bindModuleEvents = function() {
 		const self = this;
 		throw new Error( 'BaseModule.bindModuleEvents - implement in module' );
-		
+		/* example
 		self.mod.on( 'event-name', handler );
 		function handler( event ) {}
+		*/
 	}
 	
 	
@@ -573,7 +582,7 @@ library.view = library.view || {};
 		const self = this;
 		throw new Error( 'BaseModule.close - implement for module' );
 		
-		self.closeBaseModule();
+		//self.closeBaseModule();
 	}
 	
 	// Private

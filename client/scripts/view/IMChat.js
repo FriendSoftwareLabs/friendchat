@@ -113,7 +113,7 @@ library.component = library.component || {};
 		function action( e ) { self.handleAction( e ); }
 		function notification( e ) { self.handleNotification( e ); }
 		function initialize( e ) { self.initialize( e ); }
-		function updateState( e ) { self.updateState };
+		function updateState( e ) { self.updateState( e ); }
 		function setFocus( e ) { self.handleFocus( e ); }
 		function updateIdentity( e ) { self.updateIdentity( e ); }
 		function updateUser( e ) { self.updateUser( e ); }

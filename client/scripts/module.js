@@ -2341,8 +2341,8 @@ library.module = library.module || {};
 		let time = library.tool.getChatTime( e.time || Date.now());
 		self.queryUser(
 			'retry', 
-			'Could not log in, secure key exchange failed - \
-			please provide timestamp to sokken: ' + time,
+			'Could not log in, secure key exchange failed -'
+				+ 'please provide timestamp to sokken: ' + time,
 			{
 				retry  : 'Retry procedure',
 				cancel : 'Provide a new password',
@@ -2562,8 +2562,7 @@ library.module = library.module || {};
 	ns.Treeroot.prototype.updateOnlyOneClient = function( data ) {
 		const self = this;
 		console.log( 'updateOnlyOneClient - NYI', data )
-		return;
-		self.module.settings.onlyOneClient = data.value;
+		//self.module.settings.onlyOneClient = data.value;
 	}
 	
 	ns.Treeroot.prototype.updateLogLimit = function( data ) {
@@ -2911,16 +2910,6 @@ library.module = library.module || {};
 				else
 					reject();
 			}
-		});
-		
-		if ( !self.subscribeView )
-			return;
-		
-		self.subscribeView.response({
-			type : 'success',
-			data : {
-				message : 'request sent',
-			},
 		});
 	}
 	

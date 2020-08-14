@@ -715,8 +715,8 @@ library.rtc = library.rtc || {};
 			
 			function checkIsBlocked( a, v ) {
 				if ( 'DESKTOP' !== window.View.deviceType ) {
-					console.log( "InitCheck device check - \
-						checkIsBlocked - well, we're on mobile so who tf knowns v0v" );
+					console.log( "InitCheck device check - "
+						+ "checkIsBlocked - well, we're on mobile so who tf knowns v0v" );
 					return null;
 				}
 				

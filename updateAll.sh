@@ -1,5 +1,22 @@
 #!/bin/sh
 
+SERVICE="true"
+MINIFY="true"
+for argval in "$@"; do
+	echo "$argval"
+	if [ "$argval" = "ns" ]; then
+		SERVICE=""
+	fi
+	
+if [ "$argval" = "nm" ]; then
+		MINIFY=""
+	fi
+	
+done
+
+echo "SERVICE: $SERVICE"
+echo "MINIFY: $MINIFY"
+
 FRIEND=""
 
 if [ -f "fup.path" ]; then
@@ -47,7 +64,7 @@ if [ "$FRIEND" != "$FRIEND_CHECK" ]; then
 fi
 
 cd server/
-. ./update.sh $1
+. ./update.sh
 cd ..
 
 cd client/

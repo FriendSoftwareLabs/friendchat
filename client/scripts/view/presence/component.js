@@ -789,10 +789,8 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.bindConn = function() {
 		const self = this;
-		if ( !self.conn ) {
+		if ( !self.conn )
 			throw new Error( 'UserCtrl.bindConn - no conn' );
-			return;
-		}
 		
 		self.conn.on( 'online', online );
 		self.conn.on( 'offline', offline );

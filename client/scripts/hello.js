@@ -718,9 +718,10 @@ var hello = null;
 		}
 		
 		if ( 'live-host' === conf.type ) {
-			console.log( 'live-host - NYI', conf )
+			console.log( 'live-host - no longer implemented', conf )
 			return;
 			
+			/*
 			self.loggedIn = true;
 			var identity = {
 				name :  library.tool.getName(),
@@ -743,6 +744,7 @@ var hello = null;
 				};
 				hello.app.postOut( msg );
 			}
+			*/
 		}
 		
 		console.log( 'unknown data for API user', self.config.run );

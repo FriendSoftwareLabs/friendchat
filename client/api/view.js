@@ -38,12 +38,12 @@ var friend = window.friend || {};
 		self.eventInit();
 		
 		function eventSink( type, data ) {
-			return;
-			
+			/*
 			console.log( 'View.eventSink', {
 				type : type,
 				data : data,
 			});
+			*/
 		}
 	}
 	
@@ -370,9 +370,6 @@ var friend = window.friend || {};
 			if ( 'interactive' === document.readyState ) {
 				self.setIsLoading( true );
 			}
-			
-			if ( 'complete' === document.readyState ) {
-			}
 		}
 	}
 	
@@ -388,9 +385,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.setIsLoading = function( isLoading ) {
 		const self = this;
-		return;
-		
-		document.body.classList.toggle( 'Loading', isLoading );
+		//document.body.classList.toggle( 'Loading', isLoading );
 	}
 	
 	ns.View.prototype.buildFileUrl = function( path ) {
