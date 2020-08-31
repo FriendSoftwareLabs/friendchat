@@ -1670,7 +1670,7 @@ window.View = new api.View();
 		return items;
 		
 		function getTransItems( trans ) {
-			const items = lööp( trans.items );
+			const items = loopIt( trans.items );
 			let files = items.map( item => {
 				if ( 'file' !== item.kind )
 					return null;
@@ -1684,18 +1684,18 @@ window.View = new api.View();
 		}
 		
 		function getTransFiles( trans ) {
-			const files = lööp( trans.files );
+			const files = loopIt( trans.files );
 			//console.log( 'getTransFiles', files )
 			return files;
 		}
 		
-		function lööp( weird ) {
+		function loopIt( weird ) {
 			let list = [];
 			let i = weird.length;
 			while( i ) {
 				--i;
 				const item = weird[ i ];
-				//console.log( 'lööp item', item );
+				//console.log( 'loopIt item', item );
 				list.push( item );
 			}
 			
