@@ -838,8 +838,10 @@ var hello = null;
 		}
 		
 		function success( account ) {
+			console.log( 'hello.doRelogin - success' );
 			self.triedRelogin = false;
 			self.module.reconnect();
+			self.activity.reconnect();
 		}
 		
 		function fail( ) {
@@ -937,6 +939,9 @@ var hello = null;
 		
 		if ( self.module )
 			self.module.setIsOnline( self.isOnline );
+		
+		if ( self.activity )
+			self.activity.setIsOnline( self.isOnline );
 		
 		if ( self.isOnline ) {
 			try {
@@ -1126,6 +1131,7 @@ var hello = null;
 			return;
 			
 			function onLoaded() {
+				console.log( 'hello pushie onLoaded', event );
 				self.handlePushNotie( event );
 			}
 		}
@@ -1425,20 +1431,7 @@ var hello = null;
 				doSetup();
 			} else {
 				self.accSettings = accSettings;
-				loadRecentHistory();
-			}
-		}
-		
-		function loadRecentHistory() {
-			api.ApplicationStorage.get( 'recent-history' )
-				.then( recentBack )
-				.catch( e => {
-					console.log( 'app.Main.init - loadRecentHistory get err', e );
-				});
-			
-			function recentBack( res ) {
-				 self.recentHistory = res.data || {};
-				//self.recentHistory = {};
+				self.recentHistory = {};
 				doSetup();
 			}
 		}
@@ -1518,8 +1511,9 @@ var hello = null;
 		self.view.on( 'quit', doQuit );
 		self.view.on( 'logout', logout );
 		//self.view.on( 'conn-state', connState );
-		self.view.on( 'recent-save', recentSave );
-		self.view.on( 'recent-remove', recentRemove );
+		
+		//self.view.on( 'recent-save', recentSave );
+		//self.view.on( 'recent-remove', recentRemove );
 		
 		function receiveMessage( e ) { self.receiveMessage( e ); }
 		function startLive( e ) { self.startLive(); }
@@ -1695,15 +1689,26 @@ var hello = null;
 			account    : account,
 		});
 		
-		hello.module = new library.system.ModuleControl({
-			parentView : self.view,
-		});
+		hello.module = new library.system.ModuleControl(
+			self.view
+		);
 		
-		hello.rtc = new library.system.RtcControl( self.view );
+		hello.activity = new library.system.Activity(
+			hello.conn,
+			self.view
+		);
+		
+		hello.rtc = new library.system.RtcControl(
+			self.view
+		);
 	}
 	
 	ns.Main.prototype.closeThings = function() {
 		const self = this;
+		if ( hello.activity ) {
+			hello.activity.close();
+			hello.activity = null;
+		}
 		
 		if ( hello.module ) {
 			hello.module.close();

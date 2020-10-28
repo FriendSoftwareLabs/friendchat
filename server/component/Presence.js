@@ -714,7 +714,6 @@ ns.ServerConn.prototype.emitState = function( state ) {
 
 ns.ServerConn.prototype.handleOpen = function() {
 	const self = this;
-	connLog( 'handleOpen' );
 	self.connected = true;
 	self.isConnecting = false;
 	self.connectAttempt = 0;
@@ -730,7 +729,6 @@ ns.ServerConn.prototype.handleOpen = function() {
 
 ns.ServerConn.prototype.handleClose = function() {
 	const self = this;
-	connLog( 'handleClose' );
 	const status = {
 		type : 'offline',
 		data : Date.now(),
@@ -744,7 +742,6 @@ ns.ServerConn.prototype.handleClose = function() {
 
 ns.ServerConn.prototype.handleError = function( err ) {
 	const self = this;
-	connLog( 'handleError', err );
 	self.handleDisconnect( err );
 }
 

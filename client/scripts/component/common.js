@@ -39,8 +39,15 @@ to listeners registered through this interface
 		self.eventListeners = {};
 		
 		self._eventEmitterInit();
+		
+		if ( self._eventsDebug ) {
+			try {
+				throw new Error( 'trace' );
+			} catch( ex ) {
+				console.log( 'EventEmitter debug trace', ex );
+			}
+		}
 	}
-	
 	
 	// Added to objects public interface
 	
@@ -68,8 +75,8 @@ to listeners registered through this interface
 		const self = this;
 		const onceieId = self.on( event, onceie );
 		
-		function onceie( arrrgs ) {
-			const args = self._getArgs( arguments );
+		function onceie( ...args ) {
+			//const args = self._getArgs( arguments );
 			listener.apply( null, args );
 			self.off( onceieId );
 		}
@@ -131,9 +138,9 @@ to listeners registered through this interface
 	// emit can take any number of arguments
 	// the first MUST be the event type / listener id
 	// all extra arguments will be passed on to the handler
-	ns.EventEmitter.prototype.emit = function() {
+	ns.EventEmitter.prototype.emit = function( ...args ) {
 		const self = this;
-		const args = self._getArgs( arguments );
+		//const args = self._getArgs( arguments );
 		const event = args.shift();
 		const listenerIds = self.eventToListener[ event ];
 		let caught = true;
@@ -261,7 +268,7 @@ inherits from EventEmitter
 	// insert event, as if its coming from root ( emit to branches )
 	ns.EventNode.prototype.handle = function( event ) {
 		const self = this;
-		self.emit( event.type, event.data );
+		return self.emit( event.type, event.data );
 	}
 	
 	ns.EventNode.prototype.close = function() {
@@ -289,7 +296,7 @@ inherits from EventEmitter
 		
 		if ( self.conn && self.type ) {
 			self.conn.on( self.type, handle );
-			function handle( e ) { self.handle( e ); }
+			function handle( ...args ) { self.handle( ...args ); }
 		}
 		
 		if ( self.onsend )
@@ -369,16 +376,14 @@ inherits from EventEmitter
 	ns.RequestNode.prototype.handle = function( event ) {
 		const self = this;
 		const reqId = event.requestId;
-		if ( !reqId ) {
-			self.emit( event.type, event.data );
-			return;
-		}
+		if ( !reqId )
+			return self.emit( event.type, event.data );
 		
-		const isResponse = ( !!event.error || !!event.response );
-		if ( isResponse )
-			self.handleResponse( event );
+		const isRequest = ( undefined === event.response );
+		if ( isRequest )
+			return self.handleRequest( event );
 		else
-			self.handleRequest( event );
+			return self.handleResponse( event );
 	}
 	
 	ns.RequestNode.prototype.handleRequest = function( event ) {

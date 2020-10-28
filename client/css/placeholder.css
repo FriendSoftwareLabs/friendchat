@@ -1,0 +1,12 @@
+@charset "UTF-8";
+@font-face {
+	font-family: "Redacted";
+	src: url("/webclient/apps/FriendChat/res/redacted-regular.woff2") format("woff2"),
+		url("/webclient/apps/FriendChat/res/redacted-regular.woff") format("woff");
+}
+
+#hello .placeholder-text {
+	font-family : "Redacted";
+	color       : #888;
+	opacity     : 0.5;
+}

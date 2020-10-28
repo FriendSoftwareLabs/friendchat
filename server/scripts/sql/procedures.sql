@@ -19,6 +19,9 @@ DROP PROCEDURE IF EXISTS account_set;
 DROP PROCEDURE IF EXISTS account_touch;
 DROP PROCEDURE IF EXISTS account_update;
 DROP PROCEDURE IF EXISTS account_remove;
+DROP PROCEDURE IF EXISTS activity_set;
+DROP PROCEDURE IF EXISTS activity_get;
+DROP PROCEDURE IF EXISTS activity_remove_item;
 DROP PROCEDURE IF EXISTS module_get;
 DROP PROCEDURE IF EXISTS modules_get;
 DROP PROCEDURE IF EXISTS module_set;
@@ -192,6 +195,57 @@ WHERE account.clientId = `clientId`;
 
 DELETE FROM settings_json
 WHERE settings_json.clientId = `clientId`;
+
+END//
+
+#
+# ACTIVITY
+
+# SET / UPDATE
+CREATE PROCEDURE activity_set(
+	IN clientId VARCHAR( 191 ),
+	IN timestamp BIGINT,
+	IN event TEXT,
+	IN accountId VARCHAR( 191 )
+)
+BEGIN
+
+INSERT INTO activity (
+	`clientId`,
+	`timestamp`,
+	`event`,
+	`accountId`
+) VALUES (
+	`clientId`,
+	`timestamp`,
+	`event`,
+	`accountId`
+) ON DUPLICATE KEY UPDATE
+	timestamp = `timestamp`,
+	event = `event`;
+
+END//
+
+# GET
+CREATE PROCEDURE activity_get(
+	IN accountId VARCHAR( 191 )
+)
+BEGIN
+
+SELECT a.clientId, a.event FROM activity AS a
+WHERE a.accountId=`accountId`
+ORDER BY a.timestamp;
+
+END//
+
+# REMOVE
+CREATE PROCEDURE activity_remove_item(
+	IN clientId VARCHAR( 191 )
+)
+BEGIN
+
+DELETE FROM activity
+WHERE activity.clientId = `clientId`;
 
 END//
 

@@ -133,9 +133,9 @@ var hello = window.hello || {};
 		);
 		
 		// Recent conversations
-		self.recent = new library.view.Recent(
-			'recent-events',
-			self.recentHistory,
+		self.activity = new library.view.Activity(
+			window.View,
+			'activity-events',
 			hello.template
 		);
 		
@@ -145,22 +145,22 @@ var hello = window.hello || {};
 		}
 		
 		// tabs
-		const recent = document.getElementById( 'recent-events' );
-		const recentBtn = document.getElementById( 'show-recent' );
+		const activity = document.getElementById( 'activity-events' );
+		const activityBtn = document.getElementById( 'show-activity' );
 		const rooms = document.getElementById( 'rooms' );
 		const roomsBtn = document.getElementById( 'show-rooms' );
 		const contacts = document.getElementById( 'contacts' );
 		const contactsBtn = document.getElementById( 'show-contacts' );
 		
-		recentBtn.addEventListener( 'click', recentClick, false );
+		activityBtn.addEventListener( 'click', recentClick, false );
 		roomsBtn.addEventListener( 'click', roomsClick, false );
 		contactsBtn.addEventListener( 'click', contactsClick, false );
 		
-		setActive( recent, recentBtn );
+		setActive( activity, activityBtn );
 		
 		function recentClick( e ) {
 			btnClick();
-			setActive( recent, recentBtn, true );
+			setActive( activity, activityBtn, true );
 		}
 		
 		function roomsClick( e ) {
@@ -236,7 +236,7 @@ var hello = window.hello || {};
 	ns.ModuleControl.prototype.setGuide = function() {
 		const self = this;
 		self.guide = new library.component.InfoBox({
-			containerId : 'recent-events',
+			containerId : 'activity-items',
 			element     : null,
 		});
 	}
@@ -496,37 +496,40 @@ var hello = window.hello || {};
 
 // Rececnt conversations
 (function( ns, undefined ) {
-	ns.Recent = function(
+	ns.Activity = function(
+		pConn,
 		containerId,
-		recentHistory,
-		template
+		template,
 	) {
 		const self = this;
 		self.template = template;
-		self.history = recentHistory;
 		
+		self.conn = null;
+		self.history = null;
 		self.modules = {};
 		self.items = {};
+		self.itemIds = [];
 		self.itemOrder = null;
 		
 		self.loadingDone = false;
 		
-		self.init( containerId );
+		self.init( pConn, containerId );
 	}
 	
 	// Public
 	
-	ns.Recent.prototype.close = function() {
+	ns.Activity.prototype.close = function() {
 		const self = this;
 		if ( self.itemOrder )
 			self.itemOrder.close();
 		
-		self.releaseModules();
+		//self.releaseModules();
+		
 		delete self.template;
 		delete self.history;
 		delete self.splash;
-		delete self.noRecent;
-		delete self.active;
+		delete self.noActivity;
+		delete self.itemsContainer;
 		delete self.inactive;
 		delete self.modules;
 		delete self.items;
@@ -540,124 +543,81 @@ var hello = window.hello || {};
 		el.parentNode.removeChild( el );
 	}
 	
-	ns.Recent.prototype.registerModule = function( module ) {
-		const self = this;
-		const moduleId = module.id;
-		if ( self.modules[ moduleId ])
-			self.releaseModule( moduleId );
-		
-		self.modules[ moduleId ] = {
-			module   : module,
-			addId    : null,
-			removeId : null,
-			items    : {},
-		};
-		const mod = self.modules[ moduleId ];
-		mod.addId = module.on( 'add', item => self.handleItemAdd( moduleId, item ));
-		mod.removeId = module.on( 'remove', itemId => self.handleItemRemove( moduleId, itemId ));
-		
-		if ( self.loadingDone )
-			return;
-		
-		if ( null != self.loadingTimeout )
-			return;
-		
-		self.loadingTimeout = window.setTimeout( wellWereWaiting, 1000 * 10 );
-		function wellWereWaiting() {
-			self.loadingTimeout = null;
-			self.doneLoading();
-			self.toggleNoRecent();
-		}
-	}
-	
-	ns.Recent.prototype.releaseModule = function( moduleId ) {
-		const self = this;
-		const mod = self.modules[ moduleId ];
-		if ( !mod )
-			return;
-		
-		itemIds = Object.keys( mod.items );
-		itemIds.forEach( iId => self.handleItemRemove( moduleId, iId ));
-		
-		delete self.modules[ moduleId ];
-		const module = mod.module;
-		module.off( mod.addId );
-		module.off( mod.removeId );
-		module.close();
-	}
-	
 	// Private
 	
-	ns.Recent.prototype.init = function( containerId ) {
+	ns.Activity.prototype.init = function( parentConn, containerId ) {
 		const self = this;
-		const container = document.getElementById( containerId );
-		const tmplConf = {
-			
-		};
-		self.el = self.template.getElement( 'recent-convos-tmpl', tmplConf );
-		container.appendChild( self.el );
-		self.active = document.getElementById( 'recent-active' );
-		self.inactive = document.getElementById( 'recent-inactive' );
-		self.itemOrder = new library.component.ListOrder( 'recent-active', null );
+		self.conn = new library.component.EventNode( 'activity', parentConn, aSink );
+		self.conn.on( 'loaded'  , e => self.handleLoaded(   e ));
+		self.conn.on( 'reload'  , e => self.handleReload(   e ));
+		self.conn.on( 'message' , e => self.handleMessage(  e ));
+		self.conn.on( 'live'    , e => self.handleLive(     e ));
+		self.conn.on( 'request' , e => self.handleRequest(  e ));
+		self.conn.on( 'identity', e => self.handleIdUpdate( e ));
+		self.conn.on( 'update'  , e => self.handleUpdate(   e ));
+		self.conn.on( 'remove'  , e => self.handleRemove(   e ));
 		
-		self.splash = document.getElementById( 'recent-splash' );
+		function aSink( ...args ) {
+			console.log( 'main.Activity aSink', args );
+		}
+		
+		self.containerId = containerId;
+		const container = document.getElementById( containerId );
+		const tmplConf = {};
+		self.el = self.template.getElement( 'activity-tmpl', tmplConf );
+		container.appendChild( self.el );
+		self.itemsContainer = document.getElementById( 'activity-items' );
+		self.itemOrder = new library.component.ListOrder( 'activity-items', [ 'time' ]);
+		
+		self.splash = document.getElementById( 'activity-splash' );
 		//self.waiting = document.getElementById( 'recent-waiting' );
-		self.noRecent = document.getElementById( 'no-recent-convos' );
+		self.noActivity = document.getElementById( 'no-activity-items' );
 		
 		self.welcomeBox = document.getElementById( 'welcome-box' );
 		const welcomeClose = document.getElementById( 'welcome-box-close' );
 		welcomeClose.addEventListener( 'click', closeWelcome, false );
-		if ( !self.history ) {
-			showWelcome();
-			return;
-		}
-		
-		const things = Object.keys( self.history );
-		if ( things.length )
-			self.toggleNoRecent( true );
-		else
-			showWelcome();
 		
 		//
 		function closeWelcome() {
-			self.toggleNoRecent();
-		}
-		
-		function showWelcome() {
-			self.doneLoading();
-			if ( !self.welcomeBox )
-				return;
-			
-			self.welcomeBox.classList.toggle( 'hidden', false );
+			self.closeWelcome();
 		}
 	}
 	
-	ns.Recent.prototype.toggleNoRecent = function( waitingForHistory ) {
+	ns.Activity.prototype.closeWelcome = function() {
+		const self =  this;
+		self.welcomeBox.parentNode.removeChild( self.welcomeBox );
+		delete self.welcomeBox;
+		
+		self.noActivity.classList.toggle( 'hidden', false );
+	}
+	
+	ns.Activity.prototype.toggleItemsList = function( force ) {
 		const self = this;
-		if ( self.welcomeBox ) {
-			self.welcomeBox.parentNode.removeChild( self.welcomeBox );
-			delete self.welcomeBox;
-		}
-		
-		if ( waitingForHistory ) {
-			self.isWaiting = true;
-			//self.waiting.classList.toggle( 'hidden', false );
+		if (( null == force ) && ( self.itemIds.length > 1 ))
 			return;
-		}
 		
-		if ( self.isWaiting ) {
-			//self.waiting.classList.toggle( 'hidden', true );
-			self.isWaiting = false;
-			self.doneLoading();
-		}
+		if ( self.welcomeBox )
+			self.closeWelcome();
 		
-		if ( self.active.firstChild )
-			self.noRecent.classList.toggle( 'hidden', true );
+		let show = null;
+		if ( null != force )
+			show = force;
 		else
-			self.noRecent.classList.toggle( 'hidden', false );
+			show = !!self.itemIds.length;
+		
+		if ( self.itemIds.length )
+			self.splash.classList.toggle( 'hidden', true );
+		else
+			self.splash.classList.toggle( 'hidden', false );
 	}
 	
-	ns.Recent.prototype.doneLoading = function() {
+	ns.Activity.prototype.setLoading = function() {
+		const self = this;
+		self.loadingDone = false;
+		window.View.showLoading( true );
+	}
+	
+	ns.Activity.prototype.doneLoading = function() {
 		const self = this;
 		if ( null != self.loadingTimeout )
 			window.clearTimeout( self.loadingTimeout );
@@ -667,59 +627,123 @@ var hello = window.hello || {};
 		window.View.showLoading( false );
 	}
 	
-	ns.Recent.prototype.releaseModules = function() {
+	ns.Activity.prototype.handleReload = function( events ) {
 		const self = this;
-		if ( !self.modules )
+		/*
+		if ( !events || !events.length )
 			return;
 		
-		const ids = Object.keys( self.modules );
-		ids.forEach( id => self.releaseModule( id ));
+		events.forEach( item => self.conn.handle( item ));
+		*/
 	}
 	
-	ns.Recent.prototype.handleItemAdd = function( moduleId, source ) {
+	ns.Activity.prototype.handleLoaded = function() {
 		const self = this;
-		const mod = self.modules[ moduleId ];
-		if ( !mod )
-			return;
-		
-		if ( 'query' === source.type ) {
-			self.addQuery( moduleId, source );
+		window.setTimeout( show, 300 );
+		function show() {
+			self.doneLoading();
+		}
+	}
+	
+	ns.Activity.prototype.handleUpdate = function( uptd ) {
+		const self = this;
+		const item = self.items[ uptd.id ];
+		if ( !item ) {
+			console.log( 'main.Activity.handleUpdate - no item for', uptd );
 			return;
 		}
 		
-		let Item = null;
-		if ( 'room' === source.type )
-			Item = library.view.RecentRoom;
-		else
-			Item = library.view.RecentItem;
+		item.update( uptd.options );
 		
-		const cId = source.id;
-		if ( mod.items[ cId ])
-			self.handleItemRemove( moduleId, cId );
+		uptd.timestamp = null;
+		self.updateItem( uptd );
+	}
+	
+	ns.Activity.prototype.handleIdUpdate = function( e ) {
+		const self = this;
+		const id = e.id;
+		const item = self.items[ id ];
+		if ( !item ) {
+			console.log( 'main.Activity.handleIdUpdate - no item for id', {
+				e     : e,
+				items : self.items,
+			});
+			return;
+		}
 		
-		const iId = friendUP.tool.uid( 'recent' );
-		const item = new Item(
-			iId,
-			cId,
-			moduleId,
-			source,
-			'recent-inactive',
-			self.template,
-			onActive
+		item.updateIdentity( e.identity );
+	}
+	
+	ns.Activity.prototype.handleMessage = function( msg ) {
+		const self = this;
+		msg.icon = 'msg';
+		const org = msg.message;
+		const tip = org.slice( 0, 5 );
+		let trans = null;
+		if ( 'i18n_' === tip );
+			trans = window.View.i18n( org );
+		
+		if ( org !== trans )
+			msg.message = trans;
+		
+		const id = msg.id;
+		let item = self.items[ id ];
+		if ( !item )
+			item = self.addRoomItem( msg );
+		
+		item.updateMessage( msg );
+		self.updateItem( msg );
+	}
+	
+	ns.Activity.prototype.handleLive = function( live ) {
+		const self = this;
+		live.icon = 'live';
+		//live.message = View.i18n( live.message );
+		const id = live.id;
+		let item = self.items[ id ];
+		if ( !item )
+			item = self.addRoomItem( live );
+		
+		item.updateLive( live );
+		self.updateItem( live );
+	}
+	
+	ns.Activity.prototype.handleRequest = function( req ) {
+		const self = this;
+		const id = req.id;
+		let item = self.items[ id ];
+		if ( null != item )
+			return;
+		
+		const parentId = 'activity-items';
+		item = new library.view.ActivityRequest(
+			parentId,
+			self.conn,
+			req
 		);
-		mod.items[ cId ] = item;
-		self.items[ iId ] = item;
-		self.checkHistory( iId );
-		const pri = item.getPriorityConf();
-		if ( 0 !== pri.priority )
-			self.updateIsActive( iId, true );
 		
-		function onActive( isActive ) {
-			self.updateIsActive( iId, isActive );
-		}
+		req.priority = 1;
+		self.setItem( item, req );
 	}
 	
-	ns.Recent.prototype.addQuery = function( modId, source ) {
+	ns.Activity.prototype.handleRemove = function( id ) {
+		const self = this;
+		const item = self.items[ id ];
+		if ( !item ) {
+			console.log( 'main.Activity.handleRemove - no item for', {
+				id    : id,
+				items : self.items,
+			});
+			return;
+		}
+		
+		delete self.items[ id ];
+		item.close();
+		
+		self.toggleItemsList();
+	}
+	
+	ns.Activity.prototype.addQuery = function( modId, source ) {
 		const self = this;
 		const mod = self.modules[ modId ];
 		if ( !mod )
@@ -745,56 +769,64 @@ var hello = window.hello || {};
 		self.itemOrder.add( priConf );
 	}
 	
-	ns.Recent.prototype.updateIsActive = function( itemId, isActive ) {
+	ns.Activity.prototype.addRoomItem = function( conf ) {
 		const self = this;
-		if ( isActive )
-			self.toActive( itemId );
+		let Item = null;
+		if ( 'contact' == conf.type )
+			Item = library.view.ActivityContact;
 		else
-			self.toInactive( itemId );
+			Item = library.view.ActivityRoom;
+		
+		const parentId = 'activity-items';
+		const item = new Item(
+			parentId,
+			self.conn,
+			conf,
+			conf.opts
+		);
+		
+		self.setItem( item, conf );
+		
+		return item;
 	}
 	
-	ns.Recent.prototype.toActive = function( itemId, isHistory ) {
+	ns.Activity.prototype.setItem = function( item, conf ) {
 		const self = this;
-		const item = self.items[ itemId ];
-		if ( !item ) {
-			console.log( 'Recent.toActive - no item for', itemId );
-			return;
-		}
+		const id = conf.id;
+		self.items[ id ] = item;
+		self.itemIds.push( id );
 		
-		//self.active.appendChild( item.el );
-		self.toggleNoRecent();
+		const priConf = {
+			clientId : id,
+			priority : conf.priority || 0,
+			time     : conf.timestamp,
+		};
+		self.itemOrder.add( priConf );
 		
-		if ( !isHistory )
-			self.saveToHistory( itemId );
-		
-		if ( self.itemOrder.checkIsFirstItem( itemId )) {
-			return;
-		}
-		
-		const conf = item.getPriorityConf();
-		self.itemOrder.add( conf );
-		return;
-		
+		self.toggleItemsList();
 	}
 	
-	ns.Recent.prototype.toInactive = function( itemId ) {
+	ns.Activity.prototype.updateItem = function( conf ) {
 		const self = this;
-		self.itemOrder.remove( itemId );
-		moveToInactive( itemId );
-		//self.removeFromItemOrder( itemId );
-		self.removeFromHistory( itemId );
-		self.toggleNoRecent();
+		const opts = conf.options;
+		const id = conf.id;
+		const priConf = {
+			clientId : id,
+			//time     : conf.timestamp,
+		};
 		
-		function moveToInactive( id ) {
-			const itemEl = document.getElementById( id );
-			if ( !itemEl )
-				return;
-			
-			self.inactive.appendChild( itemEl );
-		}
+		if ( null != conf.timestamp )
+			priConf.time = conf.timestamp;
+		
+		if ( opts && ( null != opts.priority ))
+			priConf.priority = opts.priority;
+		if ( null != conf.priority )
+			priConf.priority = conf.priority;
+		
+		self.itemOrder.update( priConf );
 	}
 	
-	ns.Recent.prototype.handleItemRemove = function( moduleId, sourceId ) {
+	ns.Activity.prototype.handleItemRemove = function( moduleId, sourceId ) {
 		const self = this;
 		const mod = self.modules[ moduleId ];
 		if ( !mod )
@@ -811,12 +843,12 @@ var hello = window.hello || {};
 		item.close();
 	}
 	
-	ns.Recent.prototype.removeFromItemOrder = function( itemId ) {
+	ns.Activity.prototype.removeFromItemOrder = function( itemId ) {
 		const self = this;
 		self.itemOrder.remove( itemId );
 	}
 	
-	ns.Recent.prototype.checkHistory = function( itemId ) {
+	ns.Activity.prototype.checkHistory = function( itemId ) {
 		const self = this;
 		const item = self.items[ itemId ];
 		if ( !item )
@@ -836,36 +868,740 @@ var hello = window.hello || {};
 		self.toActive( itemId, true );
 	}
 	
-	ns.Recent.prototype.saveToHistory = function( itemId ) {
+	ns.Activity.prototype.send = function( event ) {
 		const self = this;
-		let item = self.items[ itemId ];
-		if ( !item )
-			return;
-		
-		const lastEvent = item.getLastEvent();
-		self.sendHistory( 'recent-save', itemId, lastEvent );
+		console.log( 'main.Activity.send - NYI', event );
 	}
 	
-	ns.Recent.prototype.removeFromHistory = function( itemId ) {
+})( library.view );
+
+/* base activity, must be extended */
+(function( ns, undefined ) {
+	ns.ActivityItem = function( containerId, conn, tmplConf ) {
 		const self = this;
-		self.sendHistory( 'recent-remove', itemId );
+		self.id = tmplConf.id;
+		self.conn = conn;
+		
+		self.build( containerId, tmplConf );
+		self.bind();
+		
+		self.initItem();
 	}
 	
-	ns.Recent.prototype.sendHistory = function( type, itemId, lastEvent ) {
+	ns.ActivityItem.prototype.build = function( cId, tmplConf ) {
 		const self = this;
-		const  item = self.items[ itemId ];
-		if ( !item )
-			return;
+		if ( null == self.tmplId )
+			throw new Error( 'ActivityItem - a template id must be defined' );
 		
-		const event = {
-			type : type,
-			data : {
-				moduleId  : item.moduleId,
-				clientId  : item.clientId,
-				lastEvent : lastEvent || null,
+		const container = document.getElementById( cId );
+		if ( null == container ) {
+			console.log( 'main.ActivityItem.build - no container for id', cId );
+			return;
+		}
+		
+		if ( !tmplConf )
+			throw new Error( 'main.ActivityItem.build - template config is required' );
+		
+		self.el = hello.template.getElement( self.tmplId, tmplConf );
+		container.appendChild( self.el );
+	}
+	
+	ns.ActivityItem.prototype.bind = function() {
+		const self = this;
+		throw new Error( 'ActivityItem.bind - implement in item' );
+	}
+	
+	// "Public"
+	
+	ns.ActivityItem.prototype.update = function( options ) {
+		const self = this;
+		const keys = Object.keys( options );
+		keys.forEach( key => {
+			const value = options[ key ];
+			self.updates.emit( key, value );
+		});
+	}
+	
+	ns.ActivityItem.prototype.updateIdentity = function( id ) {
+		const self = this;
+		throw new Error( 'ActivityItem.updateIdentity - implement in item')
+	}
+	
+	ns.ActivityItem.prototype.updateMessage = function() {
+		const self = this;
+		throw new Error( 'ActivityItem.updateMessage - implement in item' );
+	}
+	
+	ns.ActivityItem.prototype.updateLive = function() {
+		const self = this;
+		throw new Error( 'ActivityItem.updateLive - implement in item' );
+	}
+	
+	ns.ActivityItem.prototype.close = function() {
+		const self = this;
+		if ( self.updates )
+			self.updates.closeEventEmitter();
+	}
+	
+	// "Private"
+	
+	ns.ActivityItem.prototype.iconMap = {
+		'ph'   : 'fa-cube',
+		'msg'  : 'fa-comment',
+		'live' : 'fa-video-camera',
+	};
+	
+	ns.ActivityItem.prototype.initItem = function() {
+		const self = this;
+		self.updates = new library.component.EventEmitter( uptdSink );
+		
+		function uptdSink( ...args ) {
+			//console.log( 'ActivityItem updates sink', args );
+		}
+	}
+	
+	ns.ActivityItem.prototype.buildOnlineStatus = function() {
+		const self = this;
+		const conf = {
+			containerId : self.status,
+			type        : 'led',
+			cssClass    : 'led-online-status PadBorder',
+			statusMap   : {
+				offline   : 'Off',
+				online    : 'On',
 			},
 		};
-		View.send( event );
+		self.status = new library.component.StatusIndicator( conf );
+	}
+	
+	ns.ActivityItem.prototype.buildRoomStatus = function() {
+		const self = this;
+		const conf = {
+			containerId : self.status,
+			type        : 'led',
+			cssClass    : 'led-participants-status PadBorder',
+			statusMap   : {
+				empty     : 'Off',
+				users     : 'Available',
+			},
+			display     : '-',
+		};
+		self.status = new library.component.StatusDisplay( conf );
+	}
+	
+	ns.ActivityItem.prototype.buildUnreadStatus = function() {
+		const self = this;
+		const conf = {
+			containerId : self.unread,
+			type        : 'led',
+			cssClass    : 'led-unread-status',
+			statusMap   : {
+				'false'   : 'Off',
+				'true'    : 'Available',
+			},
+			display : '',
+			tooltip : View.i18n( 'i18n_unread_messages' ),
+		};
+		self.unread = new library.component.StatusDisplay( conf );
+		self.unread.hide();
+	}
+	
+	ns.ActivityItem.prototype.buildMentionStatus = function() {
+		const self = this;
+		const conf = {
+			containerId : self.mention,
+			type        : 'led',
+			cssClass    : 'led-unread-status',
+			statusMap   : {
+				'false'   : 'Off',
+				'true'    : 'Action',
+			},
+			display : '',
+			tooltip : View.i18n( 'i18n_you_have_been_mentioned' ),
+		};
+		self.mention = new library.component.StatusDisplay( conf );
+		self.mention.hide();
+	}
+	
+	ns.ActivityItem.prototype.setEventIcon = function( iconId ) {
+		const self = this;
+		if ( iconId === self.currentIconId )
+			return;
+		
+		if ( null != self.currentIconId ) {
+			const curr = self.getEventIcon( self.currentIconId );
+			self.icon.classList.toggle( curr, false );
+		}
+		
+		const uptd = self.getEventIcon( iconId );
+		self.icon.classList.toggle( uptd, true );
+		self.currentIconId = iconId;
+	}
+	
+	ns.ActivityItem.prototype.getEventIcon = function( iconId ) {
+		const self = this;
+		if ( null == iconId )
+			return self.iconMap[ 'msg' ];
+		
+		return self.iconMap[ iconId ];
+	}
+	
+	ns.ActivityItem.prototype.send = function( event ) {
+		const self = this;
+		const wrap = {
+			type : 'item-event',
+			data : {
+				source : self.id,
+				event  : event,
+			},
+		};
+		self.conn.send( wrap );
+	}
+	
+	ns.ActivityItem.prototype.sendOpen = function() {
+		const self = this;
+		const open = {
+			type : 'open',
+			data : Date.now(),
+		};
+		self.send( open );
+	}
+	
+	
+})( library.view );
+
+// ActivityRoom
+(function( ns, undefined ) {
+	ns.ActivityRoom = function( containerId, conn, conf ) {
+		const self = this;
+		const tmplConf = self.setup( conf );
+		library.view.ActivityItem.call( self, containerId, conn, tmplConf );
+		
+		self.init( conf );
+	}
+	
+	ns.ActivityRoom.prototype =
+		Object.create( library.view.ActivityItem.prototype );
+		
+	ns.ActivityRoom.prototype.tmplId = 'activity-room-tmpl';
+	
+	ns.ActivityRoom.prototype.bind = function() {
+		const self = this;
+		const el = self.el;
+		self.avatar = el.querySelector( '.avatar' );
+		self.avatarIcon = self.avatar.querySelector( 'i' );
+		const info = el.querySelector( '.activity-info' );
+		self.name = info.querySelector( '.name-bar .name' );
+		self.time = info.querySelector( '.name-bar .last-msg-time' );
+		self.icon = info.querySelector( '.activity-state .last-event-icon i' );
+		self.lastMsgName = info.querySelector( '.activity-state .last-msg-name' );
+		self.message = info.querySelector( '.activity-state .last-message' );
+		
+		self.el.addEventListener( 'click', bodyClick, false );
+		
+		function bodyClick( e ) {
+			self.sendOpen();
+		}
+	}
+	
+	// Public
+	
+	ns.ActivityRoom.prototype.updateMessage = function( msg ) {
+		const self = this;
+		self.setEventIcon( 'msg' );
+		self.lastMsgName.textContent = msg.from;
+		self.message.textContent = msg.message;
+		const time = library.tool.getChatTime( msg.timestamp );
+		self.time.textContent = time;
+		if ( msg.options )
+			self.update( msg.options );
+	}
+	
+	ns.ActivityRoom.prototype.updateLive = function( live ) {
+		const self = this;
+		self.setEventIcon( 'live' );
+		self.lastMsgName.textContent = '';
+		const text = View.i18n( live.message || 'i18n_this_ones_missing_fucko' );
+		self.message.textContent = text;
+		const time = library.tool.getChatTime( live.timestamp );
+		self.time.textContent = time;
+		if ( live.options )
+			self.update( live.options );
+	}
+	
+	ns.ActivityRoom.prototype.updateIdentity = function( id ) {
+		const self = this;
+		self.identity = id;
+		self.name.textContent = id.name;
+		if ( id && id.avatar ) {
+			const ava = "url('" + id.avatar + "')";
+			self.avatar.style[ 'background-image' ] = ava;
+			self.avatarIcon.classList.toggle( 'hidden', true );
+		}
+		
+		self.el.classList.toggle( 'placeholder-text', false );
+	}
+	
+	ns.ActivityRoom.prototype.close = function() {
+		const self = this;
+		if ( self.updates )
+			self.updates.closeEventEmitter();
+		
+		if ( self.unread )
+			self.unread.close();
+		
+		if ( self.mention )
+			self.mention.close();
+		
+		if ( self.live )
+			self.live.close();
+		
+		delete self.updateds;
+		delete self.unread;
+		delete self.mention;
+		delete self.live;
+		
+		if ( self.el )
+			self.el.parentNode.removeChild( self.el );
+		
+		delete self.el;
+	}
+	
+	// Private
+	
+	ns.ActivityRoom.prototype.init = function( conf ) {
+		const self = this;
+		self.buildLiveIndicator();
+		self.buildUnreadStatus();
+		self.buildMentionStatus();
+		
+		self.updates.on( 'unread', e => self.handleUnread( e ));
+		self.updates.on( 'mentions', e => self.handleMention( e ));
+		self.updates.on( 'live', e => self.handleLiveNum( e ));
+		self.updates.on( 'live-state', e => self.handleLiveState( e ));
+	}
+	
+	ns.ActivityRoom.prototype.handleUnread = function( unread ) {
+		const self = this;
+		if ( !unread ) {
+			self.unread.hide();
+			self.unread.set( 'false' );
+			self.unread.setDisplay( '' );
+		} else {
+			self.unread.show();
+			self.unread.set( 'true' );
+			self.unread.setDisplay( unread );
+		}
+	}
+	
+	ns.ActivityRoom.prototype.handleMention = function( mentions ) {
+		const self = this;
+		if ( !mentions ) {
+			self.mention.hide();
+			self.mention.set( 'false' );
+			self.mention.setDisplay( '' );
+		} else {
+			self.mention.show();
+			self.mention.set( 'true' );
+			self.mention.setDisplay( mentions );
+		}
+	}
+	
+	ns.ActivityRoom.prototype.handleLiveNum = function( num ) {
+		const self = this;
+		self.liveNum = num;
+		self.updateLiveDisplay();
+	}
+	
+	ns.ActivityRoom.prototype.handleLiveState = function( state ) {
+		const self = this;
+		self.liveState = state;
+		self.updateLiveDisplay();
+	}
+	
+	ns.ActivityRoom.prototype.updateLiveDisplay = function() {
+		const self = this;
+		let state = 'empty';
+		if ( !!self.liveNum )
+			state = 'others';
+		if ( 'user' == self.liveState )
+			state = 'user';
+		if ( 'client' == self.liveState )
+			state = 'user';
+		
+		if ( 'empty' == state ) {
+			self.live.hide();
+			self.live.set( state );
+		} else {
+			self.live.show();
+			self.live.set( state );
+		}
+	}
+	
+	ns.ActivityRoom.prototype.setup = function( conf ) {
+		const self = this;
+		const opts = conf.opts || {};
+		const id = conf.identity;
+		if ( id )
+			self.identity = id;
+		
+		const name = !!id ? id.name : 'Place Holdername';
+		const avatar = !!id ? id.avatar : '';
+		const placeholder = !!id ? '' : 'placeholder-text';
+		const roomIcon = ( id && id.avatar ) ? 'hidden' : '';
+		self.live = friendUP.tool.uid( 'live' );
+		self.unread = friendUP.tool.uid( 'unread' );
+		self.mention = friendUP.tool.uid( 'mention' );
+		const tmplConf = {
+			id            : conf.id,
+			placeholder   : placeholder,
+			avatar        : avatar,
+			roomIcon      : roomIcon,
+			name          : name,
+			lastMsgTime   : '',
+			lastEventIcon : '',
+			lastName      : '',
+			lastMsg       : '',
+			liveId        : self.live,
+			unreadId      : self.unread,
+			mentionId     : self.mention,
+		};
+		
+		return tmplConf;
+	}
+	
+	ns.ActivityRoom.prototype.buildLiveIndicator = function() {
+		const self = this;
+		const conf = {
+			containerId : self.live,
+			type        : 'icon',
+			cssClass    : 'fa-video-camera',
+			statusMap   : {
+				'empty'   : 'Off',
+				'others'  : '',
+				'user'    : 'Available',
+			},
+		};
+		self.live = new library.component.StatusIndicator( conf );
+		self.live.on( 'click', () => openLive());
+		self.live.hide();
+		
+		function openLive() {
+			const live = {
+				type : 'live',
+			};
+			self.send( live );
+		}
+	}
+	
+})( library.view );
+
+// ActivityRoom
+( function( ns, undefined ) {
+	ns.ActivityContact = function( containerId, conn, conf, opts ) {
+		const self = this;
+		library.view.ActivityRoom.call( self, containerId, conn, conf, opts );
+	}
+	
+	ns.ActivityContact.prototype = 
+		Object.create( library.view.ActivityRoom.prototype );
+	
+	ns.ActivityContact.prototype.tmplId = 'activity-contact-tmpl';
+	
+	ns.ActivityContact.prototype.updateIdentity = function( id ) {
+		const self = this;
+		self.identity = id;
+		self.name.textContent = id.name;
+		if ( id && id.avatar ) {
+			const ava = "url('" + id.avatar + "')";
+			self.avatar.style[ 'background-image' ] = ava;
+			self.avatarIcon.classList.toggle( 'hidden', true );
+		}
+		
+		self.el.classList.toggle( 'placeholder-text', false );
+		
+		self.checkIdOnline();
+	}
+	
+	ns.ActivityContact.prototype.setup = function( conf ) {
+		const self = this;
+		const opts = conf.opts || {};
+		const id = conf.identity;
+		if ( id )
+			self.identity = id;
+		
+		const time = library.tool.getChatTime( conf.timestamp );
+		const name = !!id ? id.name : 'Place Holdername';
+		const avatar = !!id ? id.avatar : '';
+		const placeholder = !!id ? '' : 'placeholder-text';
+		const roomIcon = ( id && id.avatar ) ? 'hidden' : '';
+		self.status = friendUP.tool.uid( 'status' );
+		self.callStatus = friendUP.tool.uid( 'call' );
+		self.unread = friendUP.tool.uid( 'unread' );
+		self.mention = friendUP.tool.uid( 'mention' );
+		const tmplConf = {
+			id            : conf.id,
+			placeholder   : placeholder,
+			avatar        : avatar,
+			statusId      : self.status,
+			roomIcon      : roomIcon,
+			name          : name,
+			lastMsgTime   : '',
+			lastEventIcon : '',
+			lastName      : '',
+			lastMsg       : '',
+			unreadId      : self.unread,
+			mentionId     : self.mention,
+			callStatusId  : self.callStatus,
+		};
+		
+		return tmplConf;
+	}
+	
+	ns.ActivityContact.prototype.close = function() {
+		const self = this;
+		if ( self.updates )
+			self.updates.closeEventEmitter();
+		
+		if ( self.status )
+			self.status.close();
+		
+		if ( self.unread )
+			self.unread.close();
+		
+		if ( self.mention )
+			self.mention.close();
+		
+		if ( self.callStatus )
+			self.callStatus.close();
+		
+		delete self.updateds;
+		delete self.status;
+		delete self.unread;
+		delete self.mention;
+		delete self.callStatus;
+		
+		if ( self.el )
+			self.el.parentNode.removeChild( self.el );
+		
+		delete self.el;
+	}
+	
+	// Pr1<>73
+	
+	ns.ActivityContact.prototype.init = function( conf ) {
+		const self = this;
+		self.buildOnlineStatus();
+		self.buildUnreadStatus();
+		self.buildMentionStatus();
+		self.buildCallStatus();
+		
+		self.checkIdOnline();
+		
+		self.updates.on( 'status'    , e => self.handleStatus(    e ));
+		self.updates.on( 'unread'    , e => self.handleUnread(    e ));
+		self.updates.on( 'mentions'  , e => self.handleMention(   e ));
+		self.updates.on( 'live'      , e => self.handleLiveNum(   e ));
+		self.updates.on( 'live-state', e => self.handleLiveState( e ));
+	}
+	
+	ns.ActivityContact.prototype.checkIdOnline = function() {
+		const self = this;
+		let online = false;
+		if ( self.identity )
+			online = self.identity.isOnline;
+		
+		if ( !online )
+			self.handleStatus( 'offline' );
+		else
+			self.handleStatus( 'online' );
+	}
+	
+	ns.ActivityContact.prototype.handleStatus = function( status ) {
+		const self = this;
+		if ( 'offline' == status )
+			self.status.hide();
+		else
+			self.status.show();
+		
+		self.status.set( status );
+	}
+	
+	ns.ActivityContact.prototype.updateLiveDisplay = function() {
+		const self = this;
+		const ls = self.liveState;
+		if ( !self.callStatus || !ls )
+			return;
+		
+		self.callStatus.setUserLive( ls.user );
+		self.callStatus.setContactLive( ls.contact );
+		
+	}
+	
+	ns.ActivityContact.prototype.buildCallStatus = function() {
+		const self = this;
+		self.callStatus = new library.component.CallStatus( self.callStatus );
+		self.callStatus.on( 'video', () => startVideo());
+		self.callStatus.on( 'audio', () => startVoice());
+		self.callStatus.on( 'show', () => showLive());
+		
+		function startVideo() {
+			sendLive( 'video' );
+		}
+		
+		function startVoice() {
+			sendLive( 'audio' );
+		}
+		
+		function showLive() {
+			sendLive( 'show' );
+		}
+		
+		function sendLive( conf ) {
+			const live = {
+				type : 'live',
+				data : conf,
+			};
+			
+			const wrap = {
+				type : 'item-event',
+				data : {
+					source : self.id,
+					event  : live,
+				},
+			};
+			
+			self.conn.send( wrap );
+		}
+	}
+	
+})( library.view );
+
+// Activity request
+(function( ns, undefined ) {
+	ns.ActivityRequest = function( containerId, conn, conf ) {
+		const self = this;
+		self.id = conf.id;
+		self.conn = conn;
+		
+		self.init( containerId, conf );
+	}
+	
+	ns.ActivityRequest.prototype.tmplId = 'activity-request-tmpl';
+	ns.ActivityRequest.prototype.btnTmplId = 'activity-request-btn-tmpl';
+	
+	ns.ActivityRequest.prototype.close = function() {
+		const self = this;
+		delete self.conn;
+		delete self.id;
+		
+		if ( self.el )
+			self.el.parentNode.removeChild( self.el );
+		
+		delete self.el;
+	}
+	
+	ns.ActivityRequest.prototype.build = function( cId, tmplConf ) {
+		const self = this;
+		const container = document.getElementById( cId );
+		if ( null == container ) {
+			console.log( 'main.ActivityItem.build - no container for id', cId );
+			return;
+		}
+		
+		if ( !tmplConf )
+			throw new Error( 'main.ActivityItem.build - template config is required' );
+		
+		self.el = hello.template.getElement( self.tmplId, tmplConf );
+		container.appendChild( self.el );
+	}
+	
+	ns.ActivityRequest.prototype.bind = function( conf ) {
+		const self = this;
+		const butts = conf.responses;
+		butts.forEach( key => {
+			const butt = self.el.querySelector( '.response-container .' + key );
+			butt.addEventListener( 'click', bClick, false );
+			function bClick() {
+				self.sendResponse( key );
+			}
+		});
+		
+	}
+	
+	ns.ActivityRequest.prototype.init = function( containerId, conf ) {
+		const self = this;
+		self.buttonMap = {
+			'join'    : e => self.buildJoin( e ),
+			'decline' : e => self.buildDecline( e ),
+		};
+		
+		const tmplConf = self.setup( conf );
+		self.build( containerId, tmplConf );
+		self.bind( conf );
+	}
+	
+	ns.ActivityRequest.prototype.sendResponse = function( response ) {
+		const self = this;
+		const event = {
+			type : 'response',
+			data : response,
+		};
+		
+		const wrap = {
+			type : 'item-event',
+			data : {
+				source : self.id,
+				event  : event,
+			},
+		};
+		self.conn.send( wrap );
+	}
+	
+	ns.ActivityRequest.prototype.setup = function( conf ) {
+		const self = this;
+		const btns = conf.responses;
+		const btnHtmls = btns.map( btnKey => {
+			const handler = self.buttonMap[ btnKey ];
+			const htmlStr = handler();
+			return htmlStr;
+		});
+		const buttonHtml = btnHtmls.join( '' );
+		const tmplConf = {
+			id      : conf.id,
+			type    : conf.type || 'room',
+			avatar  : conf.identity.avatar,
+			message : conf.message,
+			buttons : buttonHtml,
+		};
+		
+		return tmplConf;
+	}
+	
+	ns.ActivityRequest.prototype.buildJoin = function() {
+		const self = this;
+		const conf = {
+			type       : 'join',
+			btnKlasses : 'Accept',
+			title      : 'Join',
+			faKlass    : 'fa-check',
+			btnText    : 'Join',
+		};
+		const html = hello.template.get( self.btnTmplId, conf );
+		return html;
+	}
+	
+	ns.ActivityRequest.prototype.buildDecline = function() {
+		const self = this;
+		const conf = {
+			type       : 'decline',
+			btnKlasses : '',
+			title      : 'Decline',
+			faKlass    : 'fa-close',
+			btnText    : 'Decline',
+		};
+		const html = hello.template.get( self.btnTmplId, conf );
+		return html;
 	}
 	
 })( library.view );
@@ -999,11 +1735,6 @@ var hello = window.hello || {};
 	}
 	
 	// Private
-	
-	ns.RecentItem.prototype.iconMap = {
-		'message' : 'fa-comment',
-		'live'    : 'fa-video-camera',
-	};
 	
 	ns.RecentItem.prototype.init = function( containerId ) {
 		const self = this;

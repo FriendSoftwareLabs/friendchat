@@ -4,6 +4,7 @@
 
 ALTER DATABASE CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `activity`;
 DROP TABLE IF EXISTS `settings_json`;
 DROP TABLE IF EXISTS `contact`;
 DROP TABLE IF EXISTS `identity`;
@@ -74,6 +75,19 @@ CREATE TABLE `identity` (
 		ON UPDATE CASCADE
 ) ENGINE=INNODB CHARACTER SET=utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+CREATE TABLE `activity` (
+	`_id`       INT NOT NULL auto_increment,
+	`clientId`  VARCHAR(191) NOT NULL,
+	`timestamp` BIGINT NOT NULL,
+	`event`     TEXT,
+	`accountId` VARCHAR(191) NOT NULL,
+	PRIMARY KEY( _id ),
+	UNIQUE KEY ( clientId, accountId ),
+	FOREIGN KEY( accountId ) REFERENCES account( clientId )
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+) ENGINE=INNODB CHARACTER SET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 CREATE TABLE `db_history` (
 	`_id`     INT UNSIGNED NOT NULL auto_increment,
 	`version` INT UNSIGNED NOT NULL,
@@ -88,7 +102,7 @@ INSERT INTO `db_history`(
 	`patch`,
 	`comment`
 ) VALUES (
-	1,
-	14,
+	2,
+	0,
 	'table version'
 );

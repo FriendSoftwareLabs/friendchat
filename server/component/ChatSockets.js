@@ -93,7 +93,7 @@ ns.ChatSockets.prototype.send = function( msg, socketId ) {
 	socket.send( wrap );
 }
 
-ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
+ns.ChatSockets.prototype.loadAccounts = async function( msg, socketId ) {
 	const self = this;
 	const userId = self.socketToUserId[ socketId ];
 	if ( !userId ) {
@@ -104,40 +104,25 @@ ns.ChatSockets.prototype.loadAccounts = function( msg, socketId ) {
 	}
 	
 	const dbAccount = new DbAccount( self.state.db, userId );
-	dbAccount.on( 'ready', dbReady );
-	dbAccount.on( 'error', dbError );
-	function dbError( err ) {
-		log( 'loadAccounts.dbError', err );
-		msg.response = {
-			status : 500,
-			message : 'db failed'
-		};
-		done();
-		return;
-	}
+	const accounts = await dbAccount.get( null );
+	done();
 	
-	function dbReady() {
-		dbAccount.get( null, accountsBack );
-	}
-	
-	function accountsBack( accounts ) {
+	function done() {
+		if( dbAccount )
+			dbAccount.close();
+		
 		msg.response = {
 			status : 200,
 			data : accounts,
-		},
-		done();
-	}
-	
-	function done() {
-		dbAccount.conn.release();
+		};
+		
 		self.send( msg, socketId );
 	}
 }
 
-ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
+ns.ChatSockets.prototype.createAccount = async function( msg, socketId ) {
 	const self = this;
 	log( 'createAccount', msg );
-	let dbAccount = null;
 	const args = msg.data;
 	const ret = {
 		status : 403,
@@ -158,41 +143,32 @@ ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
 		return;
 	}
 	
-	dbAccount = new DbAccount( self.state.db, userId );
-	dbAccount.once( 'ready', dbReady );
-	
-	function dbReady() {
-		dbAccount.set( args, setBack );
-	}
-	
-	function setBack( clientId ) {
-		if ( !clientId ) {
-			log( 'account.create - could not insert', msg );
-			ret.message = 'denied - probably exists';
-			done();
-			return;
-		}
-		
-		dbAccount.get( clientId, getBack );
-	}
-	
-	function getBack( account ) {
-		if ( !account ) {
-			log( 'createaccount - could not load account', account );
-			ret.message = 'could not load account';
-			done();
-			return;
-		}
-		
-		ret.success = true;
-		ret.status = 200;
-		ret.data = account;
+	const dbAccount = new DbAccount( self.state.db, userId );
+	const clientId = await dbAccount.set( args );
+	if ( !clientId ) {
+		log( 'account.create - could not insert', msg );
+		ret.message = 'denied - probably exists';
 		done();
+		return;
 	}
+	
+	const account = await dbAccount.get( clientId );
+	
+	if ( !account ) {
+		log( 'createaccount - could not load account', account );
+		ret.message = 'could not load account';
+		done();
+		return;
+	}
+	
+	ret.success = true;
+	ret.status = 200;
+	ret.data = account;
+	done();
 	
 	function done() {
 		if( dbAccount )
-			dbAccount.conn.release();
+			dbAccount.close();
 		
 		msg.data = null;
 		msg.response = ret;
@@ -200,11 +176,10 @@ ns.ChatSockets.prototype.createAccount = function( msg, socketId ) {
 	}
 }
 
-ns.ChatSockets.prototype.removeAccount = function( msg, socketId ) {
+ns.ChatSockets.prototype.removeAccount = async function( msg, socketId ) {
 	const self = this;
-	var args = msg.data;
-	var dbAccount = null;
-	var ret = {
+	const args = msg.data;
+	const ret = {
 		success : false,
 		status : 403
 	};
@@ -224,49 +199,39 @@ ns.ChatSockets.prototype.removeAccount = function( msg, socketId ) {
 		return;
 	}
 	
-	dbAccount = new DbAccount( self.state.db, userId );
-	dbAccount.once( 'ready', dbReady );
-	function dbReady() {
-		dbAccount.getAccountId( args.name, idBack );
-	}
-	
-	function idBack( clientId ) {
-		if( !clientId ) {
-			ret.message = "wrong password, probably";
-			done();
-			return;
-		}
-		
-		dbAccount.remove( clientId, removeBack );
-	}
-	
-	function removeBack( clientId ) {
-		if ( !clientId ) {
-			ret.success = false;
-			ret.status = 400;
-			done();
-			return;
-		}
-		
-		ret.success = clientId;
-		ret.status = 200;
+	const dbAccount = new DbAccount( self.state.db, userId );
+	let clientId = await dbAccount.getAccountId( args.name );
+	if( !clientId ) {
+		ret.message = "doesnt exist, probably";
 		done();
+		return;
 	}
+	
+	clientId = null;
+	clientId = await dbAccount.remove( clientId );
+	if ( !clientId ) {
+		ret.success = false;
+		ret.status = 400;
+		done();
+		return;
+	}
+
+	ret.success = clientId;
+	ret.status = 200;
+	done();
 	
 	function done() {
 		if( dbAccount )
-			dbAccount.conn.release();
+			dbAccount.close();
 		
 		self.send( msg, socketId );
 	}
 }
 
-ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
+ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	const self = this;
-	var args = msg.data;
-	var dbAccount = null;
+	const args = msg.data;
 	args.password = null; // pasword deprecated
-	
 	if ( !args.name ) {
 		msg.response = {
 			status : 400,
@@ -284,89 +249,66 @@ ns.ChatSockets.prototype.accountLogin = function( msg, socketId ) {
 		return;
 	}
 	
-	dbAccount = new DbAccount( self.state.db, userId );
-	dbAccount.on( 'ready', dbReady );
-	dbAccount.on( 'error', dbError );
-	function dbError( err ){
-		log( 'postLogin.dbError', err );
+	const dbAccount = new DbAccount( self.state.db, userId );
+	const accountId = await dbAccount.getAccountId( args.name );
+	if ( !accountId ) {
 		msg.response = {
-			status : 500,
-			message : 'db le derpette',
+			status : 403,
+			message : 'auth fail',
 		};
 		done();
 		return;
 	}
 	
-	function dbReady() {
-		dbAccount.getAccountId( args.name, idBack );
+	const dbAcc = await dbAccount.get( accountId );
+	if ( !dbAcc ) {
+		msg.response = 'could not load account?';
+		done();
+		return;
 	}
 	
-	function idBack( accountId ) {
-		if ( !accountId ) {
-			msg.response = {
-				status : 403,
-				message : 'auth fail',
-			};
-			done();
-			return;
-		}
+	if ( !dbAcc.clientId || !dbAcc.name )
+		throw new Error( 'account.login - critical - missing clientId and/or name' );
+	
+	let account = self.state.account[ dbAcc.clientId ];
+	// fresh login, need an account instance
+	if ( !account ) {
+		dbAcc.onclose = removeAccount;
+		account = new Account( dbAcc, self.state.db );
+		self.state.account[ account.clientId ] = account;
 		
-		loadAccount( accountId );
-	}
-	function loadAccount( accountId ) {
-		dbAccount.get( accountId, doLogin );
-	}
-	function doLogin( dbAcc ) {
-		if ( !dbAcc ) {
-			msg.response = 'could not load account?';
-			done();
-			return;
-		}
-		
-		if ( !dbAcc.clientId || !dbAcc.name )
-			throw new Error( 'account.login - critical - missing clientId and/or name' );
-		
-		let account = self.state.account[ dbAcc.clientId ];
-		
-		// fresh login, need an account instance
-		if ( !account ) {
-			dbAcc.onclose = removeAccount;
-			account = new Account( dbAcc, self.state.db );
-			self.state.account[ account.clientId ] = account;
-			
-			function removeAccount() {
-				self.unsetAccount( account.clientId );
-			}
-		}
-		
-		// hand over socket to account
-		const socket = self.getSocket( socketId );
-		if ( !socket ) {
+		function removeAccount() {
 			self.unsetAccount( account.clientId );
-			return;
 		}
-		
-		socket.release( 'msg' );
-		self.setSession( socket, account.clientId );
-		account.attachSession( socket );
-		
-		// setting last login
-		dbAccount.touch( account.clientId );
-		
-		msg.response = {
-			status : 200,
-			success : true,
-			data : dbAcc,
-		};
-		done();
 	}
+	
+	// hand over socket to account
+	const socket = self.getSocket( socketId );
+	if ( !socket ) {
+		self.unsetAccount( account.clientId );
+		return;
+	}
+	
+	socket.release( 'msg' );
+	self.setSession( socket, account.clientId );
+	account.attachSession( socket );
+	
+	// setting last login
+	await dbAccount.touch( account.clientId );
+	
+	msg.response = {
+		status : 200,
+		success : true,
+		data : dbAcc,
+	};
+	done();
 	
 	function done() {
 		const loggedInIds = Object.keys( self.state.account );
 		const loggedInList = loggedInIds.map( getName );
 		
-		if( dbAccount && dbAccount.conn )
-			dbAccount.conn.release();
+		if( dbAccount )
+			dbAccount.close();
 		
 		self.send( msg, socketId );
 		

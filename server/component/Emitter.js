@@ -60,6 +60,14 @@ ns.Emitter = function( eventSink, debug ) {
 	self._eventsDebug = debug || false;
 	self._emitterEvent2ListenerId = {};
 	self._emitterListeners = {};
+	
+	if ( self._eventsDebug ) {
+		try {
+			throw new Error( 'Emitter.debug trace' );
+		} catch( ex ) {
+			log( 'trace', ex );
+		}
+	}
 }
 
 // first argument must be the event type, a string,
@@ -185,14 +193,21 @@ ns.Emitter.prototype.emitterClose = function() {
 */
 
 const nLog = require( './Log' )( 'EventNode' );
-ns.EventNode = function( type, conn, sink, proxyType, debug ) {
+ns.EventNode = function(
+	type,
+	conn,
+	sink,
+	proxyType,
+	debug
+) {
 	const self = this;
 	self._eventNodeType = type;
-	self._eventNodeConn = conn;
+	self._eventNodeConn = null;
+	self._eventNodeSendFn = null;
 	self._eventNodeProxyType = proxyType;
 	ns.Emitter.call( self, sink, debug );
 	
-	self._eventNodeInit();
+	self._eventNodeInit( conn );
 }
 
 util.inherits( ns.EventNode, ns.Emitter );
@@ -209,18 +224,18 @@ ns.EventNode.prototype.send = function( event, sourceId, altType ) {
 		type : altType || self._eventNodeType,
 		data : event,
 	};
+	if ( self._eventsDebug )
+		nLog( 'send', wrap, 3 );
+	
 	self.sendEvent( wrap, sourceId );
 }
 
-ns.EventNode.prototype.handle = function( event, sourceId ) {
+ns.EventNode.prototype.handle = function( ...args ) {
 	const self = this;
 	if ( self._eventsDebug )
-		nLog( 'handle', {
-			event : event,
-			sourceId : sourceId,
-		}, 3 );
+		nLog( 'handle', args );
 	
-	self._handleEvent.apply( self, arguments );
+	self._handleEvent( ...args );
 }
 
 ns.EventNode.prototype.close = function() {
@@ -230,20 +245,47 @@ ns.EventNode.prototype.close = function() {
 
 // Private
 
-ns.EventNode.prototype._eventNodeInit = function() {
+ns.EventNode.prototype._eventNodeInit = function( conn ) {
 	const self = this;
 	if ( self._eventsDebug )
 		nLog( 'init', self._eventNodeType );
 	
-	if ( !self._eventNodeConn )
+	const isFunc = ( 'function' === typeof( conn ));
+	if ( isFunc ) {
+		self._eventNodeSendFn = conn;
+		self.sendEvent = sendOnFun;
+		return;
+	}
+	
+	if ( !conn )
+		self.sendEvent = () => {};
 		return;
 	
+	self._eventNodeConn = conn;
+	self.sendEvent = sendOnConn;
 	self._eventNodeConn.on( self._eventNodeType, rcvEvent );
-	function rcvEvent() {
+	
+	function sendOnFun( ...args ) {
+		if ( self._eventsDebug )
+			nLog( 'sendOnFun', args, 3 );
+		
+		if ( self._eventNodeSendFn )
+			self._eventNodeSendFn( ...args );
+	}
+	
+	function sendOnConn( ...args ) {
+		if ( self._eventsDebug )
+			nLog( 'sendOnConn', args, 3 );
+		
+		if ( self._eventNodeConn )
+			self._eventNodeConn.send( ...args );
+	}
+	
+	function rcvEvent( ...args ) {
 		if ( self._eventsDebug )
 			nLog( 'rcvEvent', args, 3 );
 		
-		self._handleEvent.apply( self, arguments );
+		self._handleEvent( ...args );
 	}
 }
 
@@ -258,10 +300,12 @@ ns.EventNode.prototype._handleEvent = function( ...args ) {
 	self.emit.apply( self, args );
 }
 
+/*
 ns.EventNode.prototype.sendEvent = function( e, sId ) {
 	const self = this;
 	self._eventNodeConn.send( e, sId, self._eventNodeProxyType );
 }
+*/
 
 ns.EventNode.prototype._eventNodeClose = function() {
 	const self = this;
@@ -271,6 +315,7 @@ ns.EventNode.prototype._eventNodeClose = function() {
 	
 	delete self._eventNodeConn;
 	delete self._eventNodeType;
+	delete self._eventNodeSendFn;
 }
 
 
@@ -282,13 +327,20 @@ ns.EventNode.prototype._eventNodeClose = function() {
 
 */
 
-ns.RequestNode = function( type, conn, eventSink, proxyType ) {
+ns.RequestNode = function(
+	type,
+	conn,
+	eventSink,
+	proxyType,
+	debug
+) {
 	const self = this;
 	ns.EventNode.call( self,
 		type,
 		conn,
 		eventSink,
 		proxyType,
+		debug
 	);
 	
 	self._requests = {};
@@ -300,15 +352,13 @@ util.inherits( ns.RequestNode, ns.EventNode );
 ns.RequestNode.prototype.request = async function( request, sourceId ) {
 	const self = this;
 	return new Promise(( resolve, reject ) => {
-		function sendRequest( type, data ) {
-			const reqId = uuid.get( 'req' );
-			self._requests[ reqId ] = handleResponse;
-			request.requestId = reqId;
-			self.send(
-				request,
-				sourceId
-			);
-		}
+		const reqId = uuid.get( 'req' );
+		self._requests[ reqId ] = handleResponse;
+		request.requestId = reqId;
+		self.send(
+			request,
+			sourceId
+		);
 		
 		function handleResponse( error, response ) {
 			delete self._requests[ reqId ];
@@ -344,15 +394,14 @@ ns.RequestNode.prototype._handleEvent = async function( ...args ) {
 		return;
 	}
 	
-	const isResponse = self._requests[ reqId ];
-	const sourceId = args.shift();
-	if ( !isResponse )
-		self._handleRequest( event, sourceId );
+	const isResponse = ( !!event.error || !!event.response );
+	if ( isResponse )
+		self._handleResponse( event, ...args );
 	else
-		self._handleResponse( event, sourceId );
+		self._handleRequest( event, ...args );
 }
 
-ns.RequestNode.prototype._handleRequest = async function( event, sourceId ) {
+ns.RequestNode.prototype._handleRequest = async function( event, ...args ) {
 	const self = this;
 	const reqId = event.requestId;
 	let response = null;
@@ -368,7 +417,7 @@ ns.RequestNode.prototype._handleRequest = async function( event, sourceId ) {
 		response  : response,
 		error     : error,
 	};
-	self.send( res, sourceId );
+	self.send( res, ...args );
 }
 
 ns.RequestNode.prototype._handleResponse = function( res, sourceId ) {

@@ -1078,20 +1078,22 @@ figureClass,
 
 
 <!-- STATUS INDICATOR LED
-ledShapeClass
+ledShapeClass,
+tooltip,
 -->
 <script id ="status-indicator-led-tmpl" type="text/html">
-<div class="status-indicator led-status LED <%= ledShapeClass %>">
+<div class="status-indicator led-status LED <%= ledShapeClass %>" title="<%= tooltip %>">
 	<div class="">
 	</div>
 </div>
 </script>
 
 <!-- STATUS INDICATOR ICON
-faClass
+faClass,
+tooltip,
 -->
 <script id="status-indicator-icon-tmpl" type="text/html">
-<div class="status-indicator icon-status center-child LED">
+<div class="status-indicator icon-status center-child LED" title="<%= tooltip %>">
 	<i class="fa fa-fw <%= faClass %>">
 	</i>
 </div>
@@ -1099,9 +1101,10 @@ faClass
 
 <!-- STATUS DISPLAY LED
 ledShapeClass
+tooltip,
 -->
 <script id ="status-display-led-tmpl" type="text/html">
-<div class="status-display group row">
+<div class="status-display group row" title="<%= tooltip %>">
 	<div class="led-status LED <%= ledShapeClass %>">
 		<div class="center-child">
 			<div class="display-area">
@@ -1112,10 +1115,11 @@ ledShapeClass
 </script>
 
 <!-- STATUS DISPLAY ICON
-faClass
+faClass,
+tooltip,
 -->
 <script id="status-display-icon-tmpl" type="text/html">
-<div class="status-display group row">
+<div class="status-display group row" title="<%= tooltip %>">
 	<div class="icon-status center-child LED">
 		<i class="fa fa-fw <%= faClass %>">
 		</i>

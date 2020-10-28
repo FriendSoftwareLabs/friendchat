@@ -321,7 +321,20 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleMinimized = function( isMinimized ) {
 		const self = this;
+		if ( isMinimized === self.isMinimized )
+			return;
+		
 		self.isMinimized = isMinimized;
+		self.emit( 'minimized', !!self.isMinimized );
+	}
+	
+	ns.View.prototype.handleMaximized = function( isMaximized ) {
+		const self = this;
+		if ( isMaximized === self.isMaximized )
+			return;
+		
+		self.isMaximized = isMaximized;
+		self.emit( 'maximized', self.isMaximized );
 	}
 	
 	ns.View.prototype.handleNotification = function( notie ) {
@@ -792,6 +805,7 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 		
 		const msg = friendUP.tool.parse( e.data );
+		//console.log( 'app.receiveEvent', msg );
 		if ( !msg ) {
 			console.log( 'app.receiveEvent - no msg for event', e );
 			return;
@@ -1056,14 +1070,14 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		let flag = msg.flag;
 		let value = msg.value;
-		if ( !flag )
+		if ( null == flag )
 			return;
 		
 		if ( 'minimized' === flag )
-			view.isMinimized = !!value;
+			view.handleMinimized( value );
 		
 		if ( 'maximized' === flag )
-			view.isMaximized = !!value;
+			view.handleMaximized( value );
 		
 	}
 	
@@ -1270,6 +1284,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.returnCallback = function( error, result, callbackId ) {
 		const self = this;
+		console.log( 'returnCallback', [ error, result, callbackId ]);
 		const event = {
 			type       : 'system',
 			command    : 'callback',

@@ -496,8 +496,8 @@ library.component = library.component || {};
 	ns.PresenceService.prototype.handleNotification = function( extra, view ) {
 		const self = this;
 		console.log( 'PresenceService.handleNotification', {
-			e : extra,
-			v : !!view,
+			extra : extra,
+			view : !!view,
 		});
 		
 		const roomId = extra.roomId;

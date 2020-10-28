@@ -20,10 +20,10 @@
 *****************************************************************************©*/
 
 var mySQL = require('mysql2');
-var fs = require( 'fs' );
+var __fs = require( 'fs' );
 var log = require('./Log')( 'MysqlPool' );
 var pLog = require( './Log' )( 'mysql-patcher' );
-var childProcess = require( 'child_process' );
+var __childProcess = require( 'child_process' );
 
 var ns = {};
 
@@ -124,12 +124,46 @@ ns.MysqlPool.prototype.panic = function() {
 	self.pool.destroy();
 }
 
+ns.MysqlPool.prototype.query = async function( query, values ) {
+	const self = this;
+	let conn = await self.getConnection();
+	if ( !conn )
+		throw new Error( 'ERR_NO_CONN' );
+	
+	let res = null;
+	try {
+		res = await conn.promise().query( query, values );
+	} catch( ex ) {
+		log( 'query ex', ex );
+		throw new Error( 'ERR_QUERY_EX' );
+	} finally {
+		conn.release();
+	}
+	
+	return res[ 0 ];
+}
+
 ns.MysqlPool.prototype.getConnection = function( callback ) {
 	const self = this;
-	if ( self.pool )
+	if ( callback ) {
 		self.pool.getConnection( callback );
-	else
-		callback( false );
+		return;
+	}
+	
+	return new Promise(( resolve, reject ) => {
+		if ( self.pool )
+			self.pool.getConnection( connBack );
+		else
+			resolve( null );
+		
+		function connBack( err, conn ) {
+			if ( err ) {
+				log( 'getConnection - err', err );
+				resolve( null );
+			} else
+				resolve( conn );
+		}
+	});
 }
 
 // export module
@@ -164,8 +198,11 @@ ns.Patches.prototype.init = function() {
 			return;
 		}
 		
-		self.check( patchesDone );
+		self.check()
+			.then( patchesDone )
+			.catch( e => pLog( 'no u' ));
 	}
+	
 	function patchesDone( success ) {
 		self.done( success );
 	}
@@ -189,7 +226,7 @@ ns.Patches.prototype.updateProcedures = function( procsDone ) {
 		env : env,
 	};
 	var cmd = 'sh ' + self.procsScriptPath;
-	childProcess.exec( cmd, opts, execBack );
+	__childProcess.exec( cmd, opts, execBack );
 	function execBack( error, stdout, stderr ) {
 		if ( error ) {
 			showErr();
@@ -210,127 +247,143 @@ ns.Patches.prototype.updateProcedures = function( procsDone ) {
 	}
 }
 
-ns.Patches.prototype.check = function( checkDone ) {
-	var self =this;
+ns.Patches.prototype.check = async function( checkDone ) {
+	const self =this;
 	self.patchList = null;
 	self.dbState = null;
-	run();
 	
-	function run() {
-		self.getPatchList( patchBack );
-	}
-	function patchBack( err, patchList ) {
-		if ( err ) {
-			pLog( 'error reading files', err );
-			done( false );
-			return;
-		}
-		
-		if ( !patchList.length ) {
-			done( true );
-			return;
-		}
-		
-		self.patchList = patchList;
-		self.getDbVersion( versionBack );
+	const patchList =  await self.getPatchList();
+	if ( null == patchList ) {
+		pLog( 'check - no patchList, abort' );
+		return false;
 	}
 	
-	function versionBack( err, dbState ) {
-		if ( err ) {
-			pLog( 'error reading db state', err );
-			done( false );
-			return;
-		}
-		
-		self.dbState = dbState;
-		checkUpToDate();
+	if ( 0 === patchList.length )
+		return true;
+	
+	self.patchList = patchList;
+	const dbState = await self.getDbVersion();
+	if ( null == dbState ) {
+		pLog( 'check - no db state, abort' );
+		return false;
 	}
+	
+	pLog( 'db version', dbState );
+	self.dbState = dbState;
+	if ( checkUpToDate())
+		return true;
+	
+	let success = null;
+	try {
+		success = await self.applyPatches();
+	} catch( ex ) {
+		log( 'check - applyPatches ex', ex );
+		return false;
+	}
+	
+	if ( !success ) {
+		pLog( 'Patches - failed to apply patches', {
+			patches : self.patchList,
+			dbState : self.dbState,
+		}, 3 );
+		return false;
+	}
+	
+	return true;
+	
 	function checkUpToDate() {
-		var lastPatch = self.patchList[ self.patchList.length -1 ];
-		if ( lastPatch.patch == self.dbState.patch ) {
-			done( true );
-			return;
+		const lastPatch = self.patchList[ self.patchList.length -1 ];
+		const db = self.dbState;
+		if ( lastPatch.version !== db.version )
+			return false;
+		
+		if ( lastPatch.patch !== db.patch ) {
+			return false;
 		}
 		
-		self.applyPatches( done );
-	}
-	function done( success ) {
-		checkDone( success );
+		return true;
 	}
 }
 
-ns.Patches.prototype.getPatchList =function( resultBack ) {
+ns.Patches.prototype.getPatchList = async function() {
 	const self = this;
-	fs.readdir( self.patchDirectory, readBack );
-	function readBack( err, fileList ) {
-		if ( err ) {
-			resultBack( err );
-			return;
+	let fileList = __fs.readdirSync( self.patchDirectory );
+	/*
+	try {
+		fileList = await __fs.readdirSync( self.patchDirectory );
+	} catch( ex ) {
+		pLog( 'getPatchList - readdir ex', {
+			dir : self.patchDirectory,
+			ex  : ex,
+		}, 3 );
+		return null;
+	}
+	*/
+	const parsed = fileList.map( parse );
+	const patchList = parsed.filter( is );
+	patchList.sort( byVersionThenPatch );
+	return patchList;
+	
+	function parse( file ) {
+		if ( !file )
+			return null;
+		
+		var patch = self.tokenize( file );
+		if ( !patch )
+			return null;
+		
+		patch.filename = file;
+		return patch;
+	}
+	
+	function is( patch ) {
+		if ( !patch )
+			return false;
+		return true;
+	}
+	
+	function byVersionThenPatch( a, b ) {
+		if ( a.version === b.version )
+			return comparePatch( a, b );
+		
+		return sort( a.version, b.version );
+		
+		function comparePatch( a, b ) { return sort( a.patch, b.patch ) }
+		function sort( a, b ) {
+			if ( a < b )
+				return -1;
+			return 1;
 		}
-		
-		var parsed = fileList.map( parse );
-		var patchList = parsed.filter( is );
-		patchList.sort( byVersionThenPatch );
-		resultBack( null, patchList );
-		
-		function parse( file ) {
-			if ( !file )
-				return null;
-			
-			var patch = self.tokenize( file );
-			if ( !patch )
-				return null;
-			
-			patch.filename = file;
-			return patch;
-		}
-		
-		function is( patch ) {
-			if ( !patch )
-				return false;
-			return true;
-		}
-		
-		function byVersionThenPatch( a, b ) {
-			if ( a.version === b.version )
-				return comparePatch( a, b );
-			
-			return sort( a.version, b.version );
-			
-			function comparePatch( a, b ) { return sort( a.patch, b.patch ) }
-			function sort( a, b ) {
-				if ( a < b )
-					return -1;
-				return 1;
+	}
+}
+
+ns.Patches.prototype.getDbVersion = function() {
+	const self = this;
+	return new Promise(( resolve, reject ) => {
+		const query = "SELECT * FROM db_history ORDER BY `_id` DESC LIMIT 1";
+		self.db.query( query, queryBack );
+		function queryBack( err, rows ) {
+			if ( err ) {
+				reject( err );
+				return;
 			}
+			
+			if ( !rows.length ) {
+				pLog( 'no rows' );
+				const dbState = {
+					version : 0,
+					patch   : 0,
+				};
+			
+				resolve ( dbState );
+			}
+			
+			const str = JSON.stringify( rows[ 0 ]);
+			const state = JSON.parse( str );
+			delete state[ '_id' ];
+			resolve( state );
 		}
-	}
-}
-
-ns.Patches.prototype.getDbVersion = function( resultBack ) {
-	const self = this;
-	var query = "SELECT * FROM db_history ORDER BY `_id` DESC LIMIT 1";
-	self.db.query( query, queryBack );
-	function queryBack( err, rows ) {
-		if ( err ) {
-			resultBack( err, null );
-			return;
-		}
-		
-		var dbState = {
-			version : 0,
-			patch : 0,
-		};
-		
-		if ( !rows.length ) {
-			pLog( 'no rows' );
-			resultBack( null, dbState );
-			return;
-		}
-		
-		var dbState = rows[ 0 ];
-		resultBack( null, dbState );
-	}
+	});
 }
 
 ns.Patches.prototype.tokenize = function( filename ) {
@@ -384,13 +437,25 @@ ns.Patches.prototype.tokenize = function( filename ) {
 	}
 }
 
-ns.Patches.prototype.applyPatches = function( doneBack ) {
+ns.Patches.prototype.applyPatches = async function() {
 	const self = this;
-	var success = false;
-	var lastApplied = self.dbState.patch;
-	var notApplied = self.patchList.filter( isGreaterThanDb );
+	let success = false;
+	const notApplied = self.patchList.filter( patch => isGreaterThanDb( patch ));
+	pLog( 'applyPatches - no yet applied', notApplied );
+	if ( !notApplied || !notApplied.length )
+		return true;
 	
-	applyPatch( 0, applied );
+	//const iter = notApplied.values();
+	for ( const patch of notApplied ) {
+		let res = await applyPatch( patch );
+		pLog( 'patch res', res );
+		if ( !res )
+			return false;
+	}
+	
+	return true;
+	
+	/*
 	function applied( lastIndex ) {
 		var nextIndex = lastIndex + 1;
 		if ( notApplied[ nextIndex ] ) {
@@ -400,115 +465,126 @@ ns.Patches.prototype.applyPatches = function( doneBack ) {
 		
 		done( true );
 	}
+	*/
 	
-	function applyPatch( index, appliedBack ) {
-		var patch = notApplied[ index ];
-		var queries;
-		readPatch( patch.filename, prepareContents );
-		function prepareContents( err, file ) {
-			queries = file.split( ';' );
-			queries = queries.map( cleanup ).filter( is );
-			if ( !queries.length )
-				queriesDone( true );
-			
-			runQueries( queriesDone );
-			
-			function cleanup( query ) { return query.trim(); }
-			function is( query ) {
-				if ( !query )
-					return false;
-				return true;
-			}
+	async function applyPatch( patch ) {
+		pLog( 'applyPatch', patch );
+		let queries, file;
+		file = readPatch( patch.filename );
+		if ( !file )
+			return false;
+		
+		queries = file.split( ';' );
+		queries = queries.map( cleanup ).filter( is );
+		pLog( 'queries', queries );
+		if ( !queries.length )
+			return false;
+		
+		/*
+		if ( !queries.length )
+			queriesDone( true );
+		*/
+		
+		function cleanup( query ) { return query.trim(); }
+		function is( query ) {
+			if ( !query )
+				return false;
+			return true;
 		}
 		
-		function runQueries( runBack ) {
-			var executed = new Array( queries.length );
-			queries.forEach( execute );
-			
-			function execute( query, index ) {
-				executed[ index ] = false;
+		for ( const query of queries ) {
+			let res = await execute( query );
+			pLog( 'query res', res );
+			if ( !res )
+				return false;
+		}
+		
+		await setPatchHistory( patch );
+		
+		return true;
+		
+		function execute( query ) {
+			pLog( 'execute', query );
+			return new Promise(( resolve, reject ) => {
 				try {
-					self.db.query( query, queryBack );
+					self.db.query( query, executeBack );
 				} catch( e ) {
 					pLog( 'stopped applying patches because', e );
 					pLog( 'error in patch', patch );
-					runBack( false );
+					resolve( false );
 				}
 				
-				function queryBack( err, res ) {
-					if ( err )
-						throw new Error( 'error running query: ' + query + ' -- ERR: ' + err );
+				function executeBack( err, res ) {
+					if ( err ) {
+						pLog( 'error running query: ' + query + ' -- ERR: ' + err );
+						resolve( false );
+						return;
+					}
 					
 					pLog( 'applied db patch:', patch );
-					sayDone( index );
+					resolve( true );
 				}
-			}
-			
-			function sayDone( index ) {
-				executed[ index ] = true;
-				checkAllDone();
-			}
-			
-			function checkAllDone() {
-				var allDone = executed.every( isDone );
-				if ( allDone ) {
-					runBack( true );
-				}
-				
-				function isDone( item ) {
-					return !!item;
-				}
-			}
+			});
 		}
 		
-		function queriesDone( success ) {
-			if ( !success ) {
-				pLog( 'one or more queries failed', patch )
-				// DO rollback ?
-				done( false );
-				return;
-			}
-			
-			setPatchHistory();
-		}
-		
-		function setPatchHistory() {
-			var query = "INSERT INTO db_history( version, patch, comment )"
-				+ " VALUES( " + patch.version + ", " + patch.patch + ", '" + patch.comment + "' )";
-			self.db.query( query, queryBack  );
-			function queryBack( err, res ) {
-				if ( err ) {
-					pLog( 'failed to update history', err );
-					done( false );
-					return;
+		function setPatchHistory( patch ) {
+			pLog( 'setPatchHistory', patch );
+			return new Promise(( resolve, reject ) => {
+				const query = "INSERT INTO db_history( version, patch, comment )"
+					+ " VALUES( "
+					+ patch.version + ", "
+					+ patch.patch   + ", '"
+					+ patch.comment + "' )";
+				
+				try {
+					self.db.query( query, historyBack  );
+				} catch( ex ) {
+					pLog( 'failed to update db history for patch', patch );
+					resolve( false );
 				}
 				
-				appliedBack( index );
-			}
+				function historyBack( err, res ) {
+					if ( err ) {
+						pLog( 'failed to update history', err );
+						resolve( false );
+						return;
+					}
+					
+					resolve( true );
+				}
+			});
 		}
 	}
 	
-	function readPatch( filename, contentBack ) {
-		var filepath = self.patchDirectory + filename;
-		readFile( filepath, contentBack );
+	function readPatch( filename ) {
+		const filepath = self.patchDirectory + filename;
+		return readFile( filepath );
 	}
 	
-	function readProcedures( callback ) {
-		readFile( self.procsScriptPath, callback );
-	}
-	
-	function readFile( path, callback ) {
-		var opt = { encoding : 'utf8' };
-		fs.readFile( path, opt, callback );
+	function readFile( path ) {
+		let file = null;
+		const opt = { encoding : 'utf8' };
+		try {
+			file = __fs.readFileSync( path, opt );
+		} catch( ex ) {
+			pLog( 'readFile ex', ex );
+		}
+		
+		pLog( 'readFile', file );
+		return file;
 	}
 	
 	function isGreaterThanDb( patch ) {
-		if ( patch.patch > lastApplied )
+		if ( patch.version < self.dbState.version )
+			return false;
+		
+		if ( patch.version > self.dbState.version )
 			return true;
-		return false;
+		
+		if ( patch.patch <= self.dbState.patch )
+			return false;
+		
+		return true;
 	}
 	
-	function done( success ) {
-		doneBack( success );
-	}
 }

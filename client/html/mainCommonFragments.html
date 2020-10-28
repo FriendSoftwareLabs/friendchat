@@ -132,17 +132,17 @@ faIcon,
 </div>
 </script>
 
-<!-- Recent conversations
+<!-- Activity
 -->
-<script id="recent-convos-tmpl" type="text/html">
-<div id="recent-convos" class="module bar column">
+<script id="activity-tmpl" type="text/html">
+<div id="activity" class="module bar column">
     <div class="module-head fortify">
         <div class="module-title">
             {i18n_recent_conversations}
         </div>
     </div>
-    <div id="recent-splash" class="">
-        <div id="welcome-box" class="Padding welcome-box hidden">
+    <div id="activity-splash" class="BackgroundDefault">
+        <div id="welcome-box" class="Padding welcome-box">
             <div class="Padding Borders Box">
                 <span id="welcome-box-close" class="MousePointer IconSmall FloatRight fa-remove">
                 </span>
@@ -178,42 +178,37 @@ faIcon,
                 </p>
             </div>
         </div>
-        <div id="no-recent-convos" class="Padding hidden">
+        <div id="no-activity-items" class="Padding hidden">
             <div class="Padding Box">
                 <p>{i18n_there_are_no_recent_conversations_or_events}</p>
             </div>
         </div><!--
-       	<div id="recent-waiting" class="center-child hidden">
-       		<div class="recent-waiting-spinny busy-loading">
+       	<div id="activity-waiting" class="center-child hidden">
+       		<div class="activity-waiting-spinny busy-loading">
        			<i class="fa fa-fw fa-spinner fa-pulse"></i>
        		</div>
        	</div>
     --></div>
-    <div id="recent-active" class="ZebraList Interactive expand SmoothScrolling"></div>
-    <div id="recent-inactive" class="hidden">
+    <div id="activity-items" class="ZebraList Interactive expand SmoothScrolling"></div>
+    <!--
+    <div id="activity-inactive" class="hidden">
+    -->
     </div>
 </div>
 </script>
 
-<!-- Recent conversations item
+<!-- Activity room
 id,
-avatar,
-statusId,
-name,
-lastMsgTime,
-lastMsg,
-unreadId,
-callStatusId
 -->
-<script id="recent-item-tmpl" type="text/html">
-<div id="<%= id %>" class="recent-item group row">
+<script id="activity-roooooom-tmpl" type="text/html">
+<div id="<%= id %>" class="activity-item activity-room group row">
 	<div class="avatar fortify"
 		style="background-image:url(&#39;<%= avatar %>&#39;)"
 	>
 		<div id="<%= statusId %>" class="avatar-status">
 		</div>
 	</div>
-	<div class="recent-info expand">
+	<div class="activity-info expand">
 		<div class="name-bar group row">
 			<div class="name">
 				<%= name %>
@@ -222,7 +217,7 @@ callStatusId
 				<%= lastMsgTime %>
 			</div>
 		</div>
-		<div class="recent-state group row">
+		<div class="activity-state group row">
 			<div class="last-event-icon fortify">
 				<i class="fa fa-fw <%= lastEventIcon %>"></i>
 			</div>
@@ -239,34 +234,32 @@ callStatusId
 		</div>
 	</div>
 	<div id="<%= callStatusId %>">
-	</div><!--
-	<div class="item-menu Button IconButton fortify center-child">
-		<i class="fa fa-fw fa-ellipsis-v"></i>
-	</div>-->
+	</div>
 </div>
 </script>
 
-<!-- Recent conversations room
+<!-- Activity contact item
 id,
 avatar,
 statusId,
 name,
 lastMsgTime,
-lastEventIcon,
 lastName,
 lastMsg,
-liveId,
+mentionId,
 unreadId,
+callStatusId
 -->
-<script id="recent-room-tmpl" type="text/html">
-<div id="<%= id %>" class="recent-item recent-room group row">
+<script id="activity-contact-tmpl" type="text/html">
+<div id="<%= id %>" class="activity-item activity-contact group row <%= placeholder %>">
 	<div class="avatar fortify center-child"
 		style="background-image:url(&#39;<%= avatar %>&#39;)"
 	>
-		<i class="fa fa-fw fa-users <%= iconHidden %>"></i>
-		<div id="<%= statusId %>" class=avatar-status></div>
+		<i class="fa fa-fw fa-user <%= roomIcon %>"></i>
+		<div id="<%= statusId %>" class="avatar-status">
+		</div>
 	</div>
-	<div class="recent-info expand">
+	<div class="activity-info expand">
 		<div class="name-bar group row">
 			<div class="name">
 				<%= name %>
@@ -275,7 +268,67 @@ unreadId,
 				<%= lastMsgTime %>
 			</div>
 		</div>
-		<div class="recent-state group row">
+		<div class="activity-state group row">
+			<div class="last-event-icon fortify">
+				<i class="fa fa-fw <%= lastEventIcon %>"></i>
+			</div>
+			<div class="last-msg-name fortify">
+				<%= lastName %>
+			</div>
+			<div class="last-message expand">
+				<%= lastMsg %>
+			</div><!--
+			<div class="min-height-dummy">
+				&puncsp;
+			</div>
+			--><div class="more-state group row fortify">
+				<div id="<%= mentionId %>" class="unread-num">
+				</div>
+				<div id="<%= unreadId %>" class="unread-num">
+				</div>
+			</div>
+			
+		</div>
+	</div>
+	<div id="<%= callStatusId %>">
+	</div><!--
+	<div class="item-menu Button IconButton fortify center-child">
+		<i class="fa fa-fw fa-ellipsis-v"></i>
+	</div>-->
+</div>
+</script>
+
+<!-- Activity conversations room
+id,
+placeholder,
+avatar,
+roomIcon
+name,
+lastMsgTime,
+lastEventIcon,
+lastName,
+lastMsg,
+liveId,
+unreadId,
+mentionId,
+-->
+<script id="activity-room-tmpl" type="text/html">
+<div id="<%= id %>" class="activity-item activity-room group row <%= placeholder %>">
+	<div class="avatar fortify center-child"
+		style="background-image:url(&#39;<%= avatar %>&#39;)"
+	>
+		<i class="fa fa-fw fa-users <%= roomIcon %>"></i>
+	</div>
+	<div class="activity-info expand">
+		<div class="name-bar group row">
+			<div class="name">
+				<%= name %>
+			</div>
+			<div class="last-msg-time fortify">
+				<%= lastMsgTime %>
+			</div>
+		</div>
+		<div class="activity-state group row">
 			<div class="last-event-icon fortify">
 				<i class="fa fa-fw <%= lastEventIcon %>"></i>
 			</div>
@@ -291,6 +344,8 @@ unreadId,
 		 --><div class="more-state group row fortify">
 				<div id="<%= liveId %>" class="unread-num">
 				</div>
+				<div id="<%= mentionId %>" class="unread-num">
+				</div>
 				<div id="<%= unreadId %>" class="unread-num">
 				</div>
 			</div>
@@ -301,6 +356,41 @@ unreadId,
 	</div>-->
 </div>
 </script>
+
+<!-- activity request
+id,
+type,
+avatar,
+message,
+buttons,
+-->
+<script id="activity-request-tmpl" type="text/html">
+<div id="<%= id %>" class="activity-request activity-<%= type %> group row">
+	<div class="avatar fortify" style="background-image:url(&#39;<%= avatar %>&#39;)">
+	</div>
+	<div class="activity-info expand">
+		<%= message %>
+	</div>
+	<div class="response-container group row fortify">
+		<%= buttons %>
+	</div>
+</div>
+</script>
+
+<!-- activity request button
+type,
+btnKlasses,
+title,
+faKlass,
+btnText,
+-->
+<script id="activity-request-btn-tmpl" type="text/html">
+<button type="button" class="button <%= type %> <%= btnKlasses %>" title="<%= title %>">
+	<i class="fa fa-fw <%= faKlass %>"></i>
+	<%= btnText %>
+</button>
+</script>
+
 
 <!-- query item
 id,

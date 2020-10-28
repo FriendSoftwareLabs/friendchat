@@ -411,7 +411,6 @@ html body #tab-bar .Button
     line-height: 1.8em;
 }
 
-#recent-active .query-item,
 .conferences .query-item,
 .contacts .query-item {
     position: relative;
@@ -479,23 +478,37 @@ html body #tab-bar .Button
     opacity: 0;
 }
 
-/* Rececnt conversations */
+/* Activity */
 
-#recent-convos {
+#activity {
     height : 100%;
+    position: relative;
 }
 
-.recent-info {
-    padding  : 0 0.5em;
-    overflow : hidden;
+#activity-splash {
+    position: absolute;
+    height: 100%;
+    transition: opacity 0.2s;
 }
 
-.recent-waiting-spinny {
+.activity-info {
+    padding     : 0 0.5em;
+    overflow    : hidden;
+    line-height : 1.8em;
+}
+
+.fadeSplash {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.activity-waiting-spinny {
     padding   : 2em 0;
     font-size : 180%;
 }
 
-#hello .recent-item {
+#hello .activity-item,
+#hello .activity-request {
     padding-top    : 0.4em;
     padding-bottom : 0.2em;
     padding-left   : 0.7em;
@@ -511,19 +524,19 @@ html body #tab-bar .Button
 }
 
 .room .avatar,
-.recent-room .avatar {
+.activity-room .avatar {
     border-radius : 2px;
 }
 
-.recent-item .recent-info {
+.activity-item .activity-info {
     overflow : hidden;
 }
 
-.recent-item .more-state {
+.activity-item .more-state {
     max-height : 1.9em;
 }
 
-.recent-item .name {
+.activity-item .name {
     font-size     : 110%;
     font-weight   : bold;
     white-space   : nowrap;
@@ -531,21 +544,21 @@ html body #tab-bar .Button
     overflow      : hidden;
 }
 
-.recent-item .last-msg-time {
+.activity-item .last-msg-time {
     font-size  : 90%;
     font-style : italic;
     opacity    : 0.8;
 }
 
-.recent-item .last-event-icon {
+.activity-item .last-event-icon {
     opacity : 0.5;
 }
 
-.recent-item .min-height-dummy {
+.activity-item .min-height-dummy {
     line-height : 2em;
 }
 
-.recent-item .last-msg-name {
+.activity-item .last-msg-name {
     max-width     : 7em;
     line-height   : 2em;
     overflow      : hidden;
@@ -555,7 +568,7 @@ html body #tab-bar .Button
     margin-left   : 0.2em;
 }
 
-.recent-item .last-message {
+.activity-item .last-message {
     margin-left   : 0.3em;
     line-height   : 2em;
     overflow      : hidden;
@@ -563,7 +576,7 @@ html body #tab-bar .Button
     white-space   : nowrap;
 }
 
-.recent-item .more-state > div {
+.activity-item .more-state > div {
     margin-left : 0.3em;
 }
 
@@ -600,7 +613,7 @@ html body #tab-bar .Button
 
 #hello .accept-video,
 #hello .accept-audio {
-    padding : 0.4em;
+    padding : 0.6em;
 }
 
 #hello .accept-video {

@@ -393,8 +393,6 @@ i18n_your_contacts : Your contacts
 i18n_have_fun : Have fun!
 i18n_there_are_no_recent_conversations_or_events : There are no recent conversations or events
 i18n_you_have_no_eligible_contacts : You have no eligible contacts
-i18n_the_person_of_interest_must_be_online_to_receive_the_invite : The person of interest must be online to receive the invite
-i18n_only_online_user_are_listed : Only online users are listed
 i18n_authorized : Authorized
 i18n_share_this_room : Share this room
 i18n_select_media : Select media
@@ -443,3 +441,8 @@ i18n_saving_file_to : Saving file to
 i18n_high : High
 i18n_reload : Reload
 i18n_join_video_call : Join video call.
+i18n_you_joined_the_call : You joined the call
+i18n_you_left_the_call : You left the call
+i18n_joined_room : Joined room
+i18n_unread_messages : Unread messages
+i18n_you_have_been_mentioned : You have been mentioned

@@ -23,6 +23,7 @@ var log = require( './Log' )( 'Account' );
 //var MsgHandler = require( './MsgHandler' );
 var ModCtrl = require( './ModCtrl' );
 var DbAccount = require( './DbAccount' );
+var Activity = require( './Activity' );
 
 var ns = {};
 
@@ -42,25 +43,34 @@ ns.Account = function( conf, dbPool ) {
 	self.sessionKeys = [];
 	self.mods = null;
 	self.msgMap = null;
+	self.activity = null;
 	
 	self.init();
 }
 
 ns.Account.prototype.init = function() {
 	const self = this;
+	self.dbAccount = new DbAccount( self.db, self.userId, self.clientId );
+	self.activity = new Activity( onSend, self.dbAccount );
+	function onSend( event, sId ) {
+		self.toClient( event, sId );
+	}
+	
 	if ( !self.isFirstLogin && null == self.advancedUI )
 		self.advancedUI = true;
 	
 	self.setupModCtrl( self.advancedUI );
 	
 	self.msgMap = {
-		'ping'    : keepAlive,
-		'module'  : moduleEvent,
-		'account' : accountMsg,
+		'ping'     : keepAlive,
+		'module'   : moduleEvent,
+		'account'  : accountMsg,
+		'activity' : activityEvent,
 	};
 	function keepAlive( e, sessionId ) { self.keepAlive( e, sessionId ); }
 	function moduleEvent( e, sessionId ) { self.mods.receiveMsg( e, sessionId ); }
 	function accountMsg( e, sessionId ) { self.accountMsg( e, sessionId ); }
+	function activityEvent( ...args ) { self.activity.handle( ...args ); }
 	
 	self.accountMsgMap = {
 		'ready'    : clientReady,
@@ -114,7 +124,7 @@ ns.Account.prototype.removeSession = function( sessionId ) {
 
 ns.Account.prototype.receiveMsg = function( msg, sessionId ) {
 	const self = this;
-	var handler = self.msgMap[ msg.type ];
+	const handler = self.msgMap[ msg.type ];
 	if ( handler ) {
 		handler( msg.data, sessionId );
 		return;
@@ -125,7 +135,10 @@ ns.Account.prototype.receiveMsg = function( msg, sessionId ) {
 	if ( !msg ) // if a handler is found for the event, it gets eaten and null is returned
 		return;
 	
-	//log( 'receiveMsg - unknown event', msg, 4 );
+	log( 'receiveMsg - unknown event', {
+		msg : msg,
+		sid : sessionId,
+	}, 2 );
 }
 
 ns.Account.prototype.keepAlive = function( data, sessionId ) {
@@ -158,47 +171,26 @@ ns.Account.prototype.clientReady = function( firstLoginConf, sessionId ) {
 		self.mods.initializeClient( sessionId );
 }
 
-ns.Account.prototype.getSettings = function( sessionId ) {
+ns.Account.prototype.getSettings = async function( sessionId ) {
 	const self = this;
-	const dbAccount = new DbAccount( self.db, self.userId );
-	dbAccount.once( 'ready', dbReady );
-	function dbReady( err ) {
-		dbAccount.get( self.clientId, accountBack );
-	}
-	function accountBack( account ) {
-		const msg  = {
-			type : 'settings',
-			data : account,
-		};
-		self.sendAccountMsg( msg, sessionId );
-		dbAccount.conn.release();
-	}
+	const account = await self.dbAccount.get( self.clientId );
+	const msg  = {
+		type : 'settings',
+		data : account,
+	};
+	self.sendAccountMsg( msg, sessionId );
 }
 
-ns.Account.prototype.saveSetting = function( data, sessionId ) {
+ns.Account.prototype.saveSetting = async function( data, sessionId ) {
 	const self = this;
-	const dbAccount = new DbAccount( self.db, self.userId );
-	dbAccount.once( 'ready', dbReady );
-	function dbReady( err ) {
-		data.clientId = self.clientId;
-		dbAccount.updateSetting( data, updateBack );
-	}
-	
-	function updateBack( success ) {
-		data.success = success;
-		done();
-	}
-	
-	function done() {
-		if ( dbAccount )
-			dbAccount.conn.release();
-		
-		var wrap = {
-			type : 'setting',
-			data : data,
-		};
-		self.sendAccountMsg( wrap );
-	}
+	data.clientId = self.clientId;
+	const success = await self.dbAccount.updateSetting( data );
+	data.success = success;
+	var wrap = {
+		type : 'setting',
+		data : data,
+	};
+	self.sendAccountMsg( wrap );
 }
 
 ns.Account.prototype.updateClientSetting = function( update ) {
@@ -256,6 +248,15 @@ ns.Account.prototype.close = function() {
 	
 	self.sessions = {};
 	self.sessionKeys = [];
+	
+	if ( self.activity )
+		self.activity.close();
+	
+	if ( self.dbAccount )
+		self.dbAccount.close();
+	
+	delete self.activity;
+	delete self.dbAccount;
 	delete self.db;
 	delete self.onclose;
 	delete self.clientId;

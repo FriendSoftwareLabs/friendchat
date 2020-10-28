@@ -33,15 +33,15 @@ ns.MsgProxy = function( conf ) {
 	
 	const self = this;
 	self.moduleId = conf.moduleId;
-	events.RequestNode.call( self, conf.moduleId, null );
-	self.sendMsg = conf.send;
+	events.RequestNode.call( self, conf.moduleId, conf.send );
+	//self.sendMsg = conf.send;
 }
 
 util.inherits( ns.MsgProxy, events.RequestNode );
 
-ns.MsgProxy.prototype.receiveMsg = function( msg, socketId ) {
+ns.MsgProxy.prototype.receiveMsg = function( ...args ) {
 	const self = this;
-	self._handleEvent.apply( self, arguments );
+	self._handleEvent( ...args );
 	//self.emit( msg.type, msg.data, socketId );
 }
 
@@ -75,6 +75,7 @@ ns.MsgProxy.prototype.send = function( msg, socketId, altId ) {
 }
 */
 
+/*
 ns.MsgProxy.prototype.sendEvent = function( e, sId ) {
 	const self = this;
 	if ( !self.sendMsg )
@@ -82,6 +83,7 @@ ns.MsgProxy.prototype.sendEvent = function( e, sId ) {
 	
 	self.sendMsg( e, sId );
 }
+*/
 
 module.exports = ns.MsgProxy;
 

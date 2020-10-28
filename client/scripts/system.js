@@ -398,12 +398,9 @@ library.rtc = library.rtc || {};
 
 // MODULE CONTROL
 (function( ns, undefined ) {
-	ns.ModuleControl = function( conf ) {
-		if ( !( this instanceof ns.ModuleControl ))
-			return new ns.ModuleControl( conf );
-		
+	ns.ModuleControl = function( parentView ) {
 		const self = this;
-		self.parentView = conf.parentView;
+		self.parentView = parentView;
 		//self.firstLogin = conf.firstLogin;
 		self.active = {};
 		self.moduleMap = null;
@@ -529,7 +526,6 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.create = function( module ) {
 		const self = this;
-		console.log( 'ModuleControl.create', module );
 		if ( module )
 			self.doCreate( module );
 		else
@@ -543,34 +539,50 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		var Module = self.moduleMap[ modConf.type ];
+		const modId = modConf.clientId;
+		const Module = self.moduleMap[ modConf.type ];
 		if ( !Module ) {
 			console.log( 'app.ModuleControl.add - not a real module ', modConf );
 			return;
 		}
 		
-		if ( self.active[ modConf.clientId ]) {
+		if ( self.active[ modId ]) {
 			console.log( 'module already added', modConf );
 			return;
 		}
 		
-		var conf = {
+		let activity = null;
+		try {
+			activity = new library.system.ActivityModule( modId, hello.activity );
+		} catch( ex ) {
+			console.log( 'asd', ex );
+		}
+		const conf = {
 			module     : modConf,
 			parentView : self.parentView,
-			onremove   : onRemove,
 		};
 		
-		var mod = new Module( conf );
-		self.active[ mod.clientId ] = mod;
-		hello.items.addSource( mod.clientId, mod );
-		var viewConf = {
+		const mod = new Module( conf, activity, onRemove );
+		hello.activity.registerModule( modId, mod, activity );
+		
+		/*
+		window.setTimeout( reg, 10000 );
+		function reg() {
+			console.log( 'reg', modId );
+			
+		}
+		*/
+		
+		self.active[ modId ] = mod;
+		hello.items.addSource( modId, mod );
+		const viewConf = {
 			identity : mod.identity,
-			module : mod.module,
+			module   : mod.module,
 		};
 		self.addToView( viewConf );
 		
 		function onRemove() {
-			self.remove( modConf.clientId );
+			self.remove( modId );
 		}
 	}
 	
@@ -720,6 +732,7 @@ library.rtc = library.rtc || {};
 		module.close();
 		delete self.active[ moduleId ];
 		self.removeFromView( moduleId );
+		hello.activity.removeModule( moduleId );
 	}
 	
 	ns.ModuleControl.prototype.removeFromView = function( id ) {
@@ -2769,3 +2782,918 @@ Searchable collection(s) of users, rooms and other odds and ends
 	}
 	
 })( library.system );
+
+
+// Activity
+(function( ns, undefined ) {
+	ns.Activity = function( ws, view ) {
+		const self = this;
+		self.conn = null;
+		self.view = null;
+		self.modules = {};
+		self.items = {};
+		self.itemIds = [];
+		self.cIdMap = {};
+		self.removed = {};
+		self.waitForItem = {};
+		self.localOpts = {};
+		
+		self.init( ws, view );
+	}
+	
+	// Public
+	
+	ns.Activity.prototype.registerModule = function( moduleId, chatMod, moduleInterface ) {
+		const self = this;
+		self.modules[ moduleId ] = {
+			'module'  : chatMod,
+			'modFace' : moduleInterface,
+		};
+		self.updateIdentities( moduleId );
+	}
+	
+	ns.Activity.prototype.removeModule = function( moduleId ) {
+		const self = this;
+		const mod = self.modules[ moduleId ];
+		if ( null == mod )
+			return;
+		
+		delete self.modules[ moduleId ];
+		mod.modFace.close();
+	}
+	
+	ns.Activity.prototype.reconnect = function() {
+		const self = this;
+		console.log( 'app.Activity.reconnect' );
+		self.load();
+	}
+	
+	ns.Activity.prototype.setIsOnline = function( isOnline ) {
+		const self = this;
+		console.log( 'app.Activity.setIsOnline', isOnline );
+		if ( !isOnline )
+			return;
+		
+		self.load();
+	}
+	
+	ns.Activity.prototype.send = function( event ) {
+		const self = this;
+		self.conn.send( event );
+	}
+	
+	ns.Activity.prototype.request = function( request ) {
+		const self = this;
+		return self.conn.request( request );
+	}
+	
+	ns.Activity.prototype.close = function() {
+		const self = this;
+		if ( self.conn )
+			self.conn.close();
+		if ( self.view )
+			self.view.close();
+		
+		delete self.conn;
+		delete self.view;
+	}
+	
+	// Used by module interface
+	
+	ns.Activity.prototype.sendEvent = async function( type, event ) {
+		const self = this;
+		const cId = event.clientId;
+		const id = window.MD5( cId );
+		const time = event.timestamp;
+		const isFresh = self.checkIsFresh( id, time );
+		if ( !isFresh ) {
+			console.log( 'app.Activity.sendEvent - duplicate', {
+				type  : type,
+				event : event,
+			});
+			/*
+			const opts = event.options;
+			if ( !!opts && opts.broadcast )
+				// send update to server maybe ?
+			*/
+			
+			return;
+		}
+		
+		event.id = id;
+		const wrap = {
+			type : type,
+			data : event,
+		};
+		
+		const res = self.conn.request( wrap );
+		return res;
+	}
+	
+	ns.Activity.prototype.sendUpdate = async function( type, event ) {
+		const self = this;
+		const cId = event.clientId;
+		let item = self.cIdMap[ cId ];
+		if ( !item ) {
+			try {
+				item = await waitForAdd( cId );
+			} catch( ex ) {
+				return false;
+			}
+			//item = self.cIdMap[ cId ]
+		}
+		
+		const id = item.data.id;
+		event.id = id;
+		self.updateLocalOpts( id, event.options );
+		const uptd = {
+			type : type,
+			data : event,
+		};
+		
+		if ( event.options.broadcast ) {
+			let res = null;
+			try {
+				res = await self.conn.request( uptd );
+			} catch( ex ) {
+				console.log( 'app.Activity.sendUpdate - broadcast ex', ex );
+			}
+			return true;
+		}
+		
+		self.view.send( uptd );
+		return true;
+		
+		function waitForAdd( cId ) {
+			return new Promise(( resolve, reject ) => {
+				const timeout = window.setTimeout( timedOut, 4000 );
+				const waitId = friendUP.tool.uid( 'wait' );
+				const waiter = {
+					clientId : cId,
+					resolve  : resolve,
+					timeout  : timeout,
+				};
+				
+				let waiting = self.waitForItem[ cId ];
+				if ( !waiting ) {
+					waiting = {
+						waitId : waiter,
+					};
+					self.waitForItem[ cId ] = waiting;
+				} else
+					waiting[ waitId ] = waiter;
+				
+				function timedOut() {
+					reject();
+					
+					const waiting = self.waitForItem[ cId ];
+					if ( !waiting )
+						return;
+					
+					delete waiting[ waitId ];
+				};
+			});
+		}
+	}
+	
+	ns.Activity.prototype.sendRequest = async function( req ) {
+		const self = this;
+		const cId = req.clientId;
+		const id = window.MD5( cId );
+		const item = self.items[ id ];
+		if ( null != item )
+			return cId;
+		
+		req.id = id;
+		const event = {
+			type : 'request',
+			data : req,
+		};
+		
+		let res = null;
+		try {
+			res = await self.conn.request( event );
+		} catch( ex ) {
+			console.log( 'app.Activity.sendRequest - ex', ex );
+			return null;
+		}
+		
+		return cId;
+	}
+	
+	ns.Activity.prototype.readItem = async function( clientId ) {
+		const self = this;
+		let item = null;
+		let opts = null;
+		item = self.cIdMap[ clientId ];
+		if ( null == item )
+			return null;
+		
+		const id = item.data.id;
+		opts = self.localOpts[ id ];
+		itemC = copy( item );
+		optsC = copy( opts );
+		if ( optsC )
+			itemC.data.options = optsC;
+		
+		return itemC;
+		
+		function copy( obj ) {
+			if ( null == obj )
+				return null;
+			
+			let c = JSON.stringify( obj );
+			c = JSON.parse( c );
+			return c;
+		}
+	}
+	
+	ns.Activity.prototype.sendRemove = async function( clientId ) {
+		const self = this;
+		const item = self.cIdMap[ clientId ];
+		if ( null == item )
+			return null;
+		
+		const id = item.data.id;
+		self.setRemoved( id );
+		const remove = {
+			type : 'remove',
+			data : id,
+		};
+		
+		let res = null;
+		try {
+			res = await self.conn.request( remove );
+		} catch( ex ) {
+			console.log( 'Activity.sendRemove - query ex', ex );
+			return false;
+		}
+		
+		return res;
+	}
+	
+	// Private
+	
+	ns.Activity.prototype.init = function( ws, view ) {
+		const self = this;
+		hello.timeNow( 'Activity init' );
+		self.conn = new library.component.RequestNode(
+			'activity',
+			ws,
+			wsSink,
+			null,
+		);
+		self.conn.on( 'message', ( ...args ) => self.handleMessage( ...args ));
+		self.conn.on( 'live'   , ( ...args ) => self.handleLive(    ...args ));
+		self.conn.on( 'request', ( ...args ) => self.handleRequest( ...args ));
+		self.conn.on( 'update' , ( ...args ) => self.handleUpdate(  ...args ));
+		self.conn.on( 'remove' , ( ...args ) => self.handleRemove(  ...args ));
+		
+		self.view = new library.component.EventNode(
+			'activity',
+			view,
+			viewSink,
+			null,
+		);
+		self.view.on( 'item-event', e => self.handleItemEvent( e ));
+		
+		self.load();
+		
+		function wsSink( ...args ) {
+			console.log( 'Activity wsSink', args );
+		}
+		
+		function viewSink( ...args ) {
+			console.log( 'Activity viewSink', args );
+		}
+	}
+	
+	ns.Activity.prototype.setItem = function( id, event ) {
+		const self = this;
+		const lock = self.removed[ id ];
+		if ( null != lock ) {
+			console.log( 'app.Activity.setItem - item marked as removed', id );
+			return;
+		}
+		
+		const conf = event.data;
+		const cId = conf.clientId;
+		self.items[ id ] = event;
+		self.cIdMap[ cId ] = event;
+		const idx = self.itemIds.indexOf( id );
+		if ( -1 === idx )
+			self.itemIds.push( id );
+		
+		resolveWaiting();
+		
+		self.view.send( event );
+		
+		function resolveWaiting() {
+			const waiting = self.waitForItem[ cId ];
+			if ( null == waiting )
+				return;
+			
+			delete self.waitForItem[ cId ];
+			wIds = Object.keys( waiting );
+			wIds.forEach( wId => {
+				const waiter = waiting[ wId ];
+				window.clearTimeout( waiter.timeout );
+				waiter.resolve( event );
+			});
+		}
+	}
+	
+	ns.Activity.prototype.removeItem = function( id ) {
+		const self = this;
+		const item = self.items[ id ];
+		if ( null == item )
+			return;
+		
+		const cId = item.clientId;
+		//const mod = self.getModule( item.modId );
+		delete self.items[ id ];
+		delete self.cIdMap[ cId ];
+		self.setRemoved( id );
+		const remove = {
+			type : 'remove',
+			data : id,
+		};
+		self.view.send( remove );
+	}
+	
+	ns.Activity.prototype.setRemoved = function( id ) {
+		const self = this;
+		const lock = self.removed[ id ];
+		if ( null != lock )
+			window.clearTimeout( lock );
+		
+		self.removed[ id ] = window.setTimeout( unlock, 3000 );
+		
+		function unlock() {
+			delete self.removed[ id ];
+		}
+	}
+	
+	ns.Activity.prototype.unsetRemoved = function( id ) {
+		const self = this;
+		const lock = self.removed[ id ];
+		if ( null == lock )
+			return;
+		
+		window.clearTimeout( lock );
+	}
+	
+	ns.Activity.prototype.updateLocalOpts = function( id, opts ) {
+		const self = this;
+		let local = self.localOpts[ id ];
+		if ( null == local ) {
+			local = {};
+			self.localOpts[ id ] = local;
+		}
+		
+		const keys = Object.keys( opts );
+		keys.forEach( key => {
+			if ( 'broadcast' === key )
+				return;
+			
+			const value = opts[ key ];
+			local[ key ] = value;
+		});
+	}
+	
+	ns.Activity.prototype.compareToLocalOpts = function( event ) {
+		const self = this;
+		const id = event.id;
+		const opts = event.options;
+		const local = self.localOpts[ id ];
+		if ( null == local ) {
+			local = {};
+			self.localOpts[ id ] = local;
+		}
+		
+		update( 'unread', opts, local );
+		update( 'mentions', opts, local );
+		
+		return event;
+		
+		function update( key, opts, local ) {
+			const opt = opts[ key ];
+			if ( null == opt )
+				return;
+			
+			const loc = local[ key ];
+			if ( null == loc ) {
+				local[ key ] = opt;
+				return;
+			}
+			
+			if ( opt === loc )
+				return;
+			
+			if ( 0 === loc ) {
+				opts[ key ] = 0;
+				return;
+			}
+			
+			if ( opt < loc ) {
+				opts[ key ] = loc;
+				return;
+			}
+			
+			local[ key ] = opt;
+		}
+	}
+	
+	ns.Activity.prototype.load = async function() {
+		const self = this;
+		hello.timeNow( 'Activity - start load' );
+		if ( self.itemIds && self.itemIds.length )
+			sendReload();
+		
+		const load = {
+			type : 'load',
+			data : Date.now(),
+		};
+		let res = null;
+		try {
+			res = await self.conn.request( load );
+		} catch( ex ) {
+			console.log( 'Activity.load - request failed', ex );
+		}
+		
+		hello.timeNow( 'Activity - load back' );
+		const items = res.items || {};
+		const state = res.state || {};
+		
+		const ids = Object.keys( items );
+		let stale = discoverStale( self.itemIds, ids );
+		if ( null != stale )
+			stale.forEach( id => self.removeItem( id ));
+		
+		const list = ids.map( id => items[ id ]);
+		if ( !list || !list.length ) {
+			sendLoaded();
+			return;
+		}
+		
+		for ( event of list ) {
+			const type = event.type;
+			const data = event.data;
+			const  id = data.id;
+			const opts = state[ id ];
+			
+			if ( 'message' === type )
+				await self.handleMessage( event.data );
+			if ( 'live' === type )
+				await self.handleLive( event.data );
+			if ( 'request' === type )
+				await self.handleRequest( event.data );
+			
+			if ( opts )
+				self.updateLocalOpts( id, opts );
+		}
+		
+		sendLoaded();
+		
+		function sendLoaded() {
+			const loaded = {
+				type : 'loaded',
+			};
+			self.view.send( loaded );
+		}
+		
+		function sendReload() {
+			const re = {
+				type : 'reload',
+			};
+			self.view.send( re );
+		}
+		
+		function discoverStale( curr, fresh ) {
+			if ( !curr || !curr.length )
+				return null;
+			
+			const stale = curr.filter( cId => {
+				return !fresh.some( fId => fId === cId );
+			});
+			
+			return stale;
+		}
+	}
+	
+	ns.Activity.prototype.getMod = function( mId ) {
+		const self = this;
+		return self.modules[ mId ];
+	}
+	
+	ns.Activity.prototype.getModule = function( mId ) {
+		const self = this;
+		const mod = self.getMod( mId );
+		if ( !mod )
+			return null;
+		
+		return mod.module;
+	}
+	
+	ns.Activity.prototype.getItemModFace = function( itemId ) {
+		const self = this;
+		const item = self.items[ itemId ];
+		if ( !item ) {
+			console.log( 'Activity.getItemModFace - no item for', {
+				itemId : itemId,
+				items  : self.items,
+			});
+			return null;
+		}
+		
+		const conf = item.data;
+		const mId = conf.modId;
+		const mod = self.getMod( mId );
+		if ( !mod )
+			return null;
+		
+		return mod.modFace;
+	}
+	
+	ns.Activity.prototype.checkIsFresh = function( id, timestamp ) {
+		const self = this;
+		const item = self.items[ id ];
+		
+		// no item
+		if ( null == item )
+			return true;
+		
+		const event = item.data;
+		// new item is newer
+		if ( timestamp > event.timestamp )
+			return true;
+		
+		// current item is same or newer
+		return false;
+	}
+	
+	ns.Activity.prototype.updateIdentities = function( moduleId ) {
+		const self = this;
+		const cIds = self.itemIds.map( id => {
+			const item = self.items[ id ];
+			const d = item.data;
+			if ( d.modId === moduleId )
+				return {
+					itemId   : id,
+					clientId : d.clientId,
+				};
+			else
+				return null;
+		}).filter( i => null != i );
+		
+		if ( !cIds || !cIds.length )
+			return;
+		
+		const mod = self.getModule( moduleId );
+		cIds.forEach( i => {
+			update( i );
+		});
+		
+		async function update( i ) {
+			let id = null;
+			try {
+				id = await mod.getIdentity( i.clientId );
+			} catch( ex ) {
+				console.log( 'Activity.updateIdentities - mod.getIdentity ex', ex );
+				return;
+			}
+			
+			const uptd = {
+				type : 'identity',
+				data : {
+					id       : i.itemId,
+					identity : id,
+				},
+			};
+			self.view.send( uptd );
+		}
+	}
+	
+	ns.Activity.prototype.handleMessage = async function( msg ) {
+		const self = this;
+		const id = msg.id;
+		msg.identity = await self.lookupIdentity( msg.clientId, msg.modId );
+		const event = {
+			type : 'message',
+			data : msg,
+		};
+		
+		self.setItem( id, event );
+	}
+	
+	ns.Activity.prototype.handleLive = async function( live ) {
+		const self = this;
+		const id = live.id;
+		live.identity = await self.lookupIdentity( live.clientId, live.modId );
+		const event = {
+			type : 'live',
+			data : live,
+		};
+		
+		self.setItem( id, event );
+	}
+	
+	ns.Activity.prototype.handleRequest = async function( req ) {
+		const self = this;
+		const id = req.id;
+		req.identity = await self.lookupIdentity( req.clientId, req.modId );
+		const event = {
+			type : 'request',
+			data : req,
+		};
+		
+		self.setItem( id, event );
+	}
+	
+	ns.Activity.prototype.handleUpdate = async function( uptd ) {
+		const self = this;
+		uptd = self.compareToLocalOpts( uptd );
+		uptd.options.broadcast = false;
+		try {
+			self.sendUpdate( 'update', uptd );
+		} catch( ex ) {
+			console.log( 'handleUpdate ex', ex );
+		}
+	}
+	
+	ns.Activity.prototype.handleRemove = async function( id ) {
+		const self = this;
+		self.removeItem( id );
+	}
+	
+	ns.Activity.prototype.lookupIdentity = async function( cId, mId ) {
+		const self = this;
+		const cache = await api.ApplicationStorage.get( cId );
+		if ( cache && cache.data )
+			return cache.data;
+		
+		const mod = self.getModule( mId );
+		if ( !mod )
+			return null;
+		
+		let id = null;
+		try {
+			id = await mod.getIdentity( cId );
+		} catch( ex ) {
+			console.log( 'app.Activity.lookupIdentity - mod ex', ex );
+			throw Error( 'ERR_NO_IDENTITY' );
+		}
+		
+		if ( null == id )
+			throw new Error( 'Activity.lookupIdentity - mods must return a valid id, '
+			+ 'or throw an exception indicating the id is no longer valid' );
+		
+		const basicId = {
+			clientId : id.clientId,
+			name     : id.name,
+			avatar   : id.avatar,
+		};
+		api.ApplicationStorage.set( cId, basicId );
+		return id;
+	}
+	
+	ns.Activity.prototype.handleItemEvent = function( e ) {
+		const self = this;
+		const sId = e.source;
+		const event = e.event;
+		const item = self.items[ sId ];
+		const conf = item.data;
+		const mod = self.getItemModFace( sId );
+		if ( !mod )
+			return;
+		
+		mod.emit( event.type, conf.clientId, event.data );
+	}
+	
+})( library.system );
+
+
+// ActivityModule
+(function( ns, undefined ) {
+	ns.ActivityModule = function( moduleId, activity ) {
+		const self = this;
+		self.id = moduleId;
+		self.activity = activity;
+		library.component.EventEmitter.call( self, eventSink );
+		
+		self.init();
+		
+		function eventSink( ...args ) {
+			console.log( 'app.ActivityModule eventSink', args );
+		}
+	}
+	
+	ns.ActivityModule.prototype =
+		Object.create( library.component.EventEmitter.prototype	);
+	
+	// Public
+	
+	/*
+		all functions take a options object
+		options  : <object> {
+			global      : <boolean> this options object should be passed to all clients
+			priority    : <number> 1-9, 0 where 1 is highest prio. 0 / null is no prio
+				items of same priority will be grouped together then ordered by time
+			
+			unread      : <number>
+			mentions    : <number>
+			live-number : <number> participants in a live session
+			live-state  : 'none' | 'others' | 'incoming' | 'user' | 'client'
+			status      : 'online' | 'offline'
+		}
+	
+	*/
+	
+	/* message
+		
+		type      : 'room' | 'contact'
+		clientId  : <uuid string>
+		fromName  : <string> name of sender
+		preview   : <string> preview of message
+		timestamp : <timestmap> in ms
+		options   : see options description
+		
+		Returns a Promise
+		resolves to:
+			true - item was added or updated,
+			false - item already exists and is more recent
+		
+	*/
+	ns.ActivityModule.prototype.message = async function(
+		type,
+		clientId,
+		priority,
+		fromName,
+		preview,
+		timestamp,
+		options
+	) {
+		const self = this;
+		if ( null == fromName )
+			fromName = '';
+		if ( null == preview )
+			preview = '';
+		if ( null == timestamp )
+			timestamp = Date.now();
+		
+		const msg = {
+			modId     : self.id,
+			type      : type,
+			clientId  : clientId,
+			priority  : priority,
+			from      : fromName,
+			message   : preview,
+			timestamp : timestamp,
+		};
+		
+		const res = await self.activity.sendEvent( 'message', msg );
+		if ( options )
+			self.update( clientId, options );
+		
+		return res;
+	}
+	
+	/* live
+		
+		type        : 'room' | 'contact'
+		clientId    : <uuid string>
+		infoMessage : <string> | null
+		options     : see options description
+		
+		Returns a Promise
+		resolves to:
+			true - item was added or updated,
+			false - item already exists and is more recent
+	*/
+	ns.ActivityModule.prototype.live = async function(
+		type,
+		clientId,
+		priority,
+		infoMessage,
+		timestamp,
+		options
+	) {
+		const self = this;
+		const live = {
+			modId     : self.id,
+			type      : type,
+			clientId  : clientId,
+			priority  : priority,
+			message   : infoMessage,
+			timestamp : timestamp,
+		};
+		
+		const res = await self.activity.sendEvent( 'live', live );
+		if ( options )
+			self.update( clientId, options );
+		
+		return res;
+	}
+	
+	/* update
+		
+		Use to update state on an already existing item
+		
+		clientId : <uuid string>
+		options  : see options description
+		
+		Returns a Promise
+		WILL THROW AN ERROR if item does not yet exists
+	*/
+	ns.ActivityModule.prototype.update = function( clientId, options ) {
+		const self = this;
+		const uptd = {
+			modId     : self.id,
+			clientId  : clientId,
+			options   : options,
+			timestamp : Date.now(),
+		};
+		
+		return self.activity.sendUpdate( 'update', uptd );
+	}
+	
+	
+	/* read
+		
+		Returns the current state for the reference
+		
+		clientId <uuid string> reference to item
+		
+		returns a Promise that resolves to the item
+	*/
+	ns.ActivityModule.prototype.read = function( clientId ) {
+		const self = this;
+		return self.activity.readItem( clientId, self.id );
+	}
+	
+	/* remove
+		
+		Remove an item from activity, ie when a contact is removed or
+		when leaving a room
+		
+		clientId : <uuid string>
+		
+		returns a Promise, probably
+	*/
+	ns.ActivityModule.prototype.remove = function( clientId ) {
+		const self = this;
+		return self.activity.sendRemove( clientId );
+	}
+	
+	/* request
+	
+		This item will show a message and a set of buttons.
+		When the user clicks a button the item will be removed
+		and this interface will a emit an event with relevant
+		info in all clients
+		
+		clientId  : <uuid string> id for this request
+		message   : <string> describe the request
+		responses : [ <response_key>, .. ] list of responses available to user
+		timestamp : <unixtime ms>
+		
+		returns a Promise that resolves to:
+			false ,          the request could not be added
+			eventId <string> the id of the event that will be emitted
+		
+	*/
+	ns.ActivityModule.prototype.request = function(
+		clientId,
+		message,
+		responses,
+		timestamp,
+	) {
+		const self = this;
+		const req = {
+			modId     : self.id,
+			clientId  : clientId,
+			message   : message,
+			responses : responses,
+			timestamp : timestamp,
+		};
+		
+		return self.activity.sendRequest( req );
+	}
+	
+	ns.ActivityModule.prototype.close = function() {
+		const self = this;
+		if ( self.activity )
+			self.activity.release( self.id );
+		
+		delete self.activity;
+	}
+	
+	// Private
+	
+	ns.ActivityModule.prototype.init = function() {
+		const self = this;
+		//self.activity.on( self.id, ...args => self.emit( ...args ));
+	}
+	
+})( library.system );
+

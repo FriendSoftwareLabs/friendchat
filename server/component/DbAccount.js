@@ -20,7 +20,6 @@
 *****************************************************************************©*/
 
 var log = require('./Log')('DbAccount');
-var util = require('util');
 var events = require('events');
 var uuid = require( './UuidPrefix' )( 'account' );
 var conf = require( './Config' );
@@ -30,74 +29,66 @@ var nativeKeys = {
 	'name' : true,
 };
 
-this.DbAccount = function( pool, userId ) {
+this.DbAccount = function( pool, friendId, accountId ) {
 	if ( !pool )
 		throw new Error( 'missing params' );
 	
-	var self = this;
-	self.conn = null;
-	self.userId = String( userId ) || null;
-	
-	pool.getConnection( setConnection );
-	function setConnection( err, conn ) {
-		if (err) {
-			self.emit('err', err);
-			return;
-		}
-		
-		self.conn = conn;
-		self.emit( 'ready', '' );
-	}
+	const self = this;
+	self.pool = pool;
+	self.friendId = String( friendId ) || null;
+	self.accountId = accountId;
 }
 
-util.inherits( this.DbAccount, events.EventEmitter );
+this.DbAccount.prototype.close = function() {
+	const self = this;
+	delete self.pool;
+	delete self.friendId;
+}
 
-
-this.DbAccount.prototype.get = function( clientId, callback ) {
-	var self = this;
-	if ( !self.userId )
-		throw new Error( 'account.get - self.userId not set' );
+this.DbAccount.prototype.get = async function( clientId ) {
+	const self = this;
+	if ( !self.friendId )
+		throw new Error( 'account.get - self.friendId not set' );
 	
-	var values = [ self.userId ];
+	const values = [ self.friendId ];
 	if ( clientId )
 		values.push( clientId );
 	else
 		values.push( null );
-
-	var query = self.buildCall( 'account_get', values.length );
-	self.conn.query( query, values, getBack );
-	function getBack( err, rows ) {
-		if ( err ) {
-			log( 'account.get - error', err );
-			callback( false );
-			return;
-		}
-		
-		var accounts = rows[ 0 ];
-		accounts = accounts.map( parseSettings );
-		accounts = accounts.map( setDefaults );
-		
-		if ( clientId )
-			callback( accounts[ 0 ]);
-		else
-			callback( accounts );
-		
-		function parseSettings( account ) {
-			var settingsObj = parse( account.settings ) || {};
-			account.settings = settingsObj;
-			return account;
-		}
-		
-		function setDefaults( account ) {
-			account = global.config.setMissing( account, accountDefaults );
-			return account;
-		}
+	
+	const query = self.buildCall( 'account_get', values.length );
+	let res = null;
+	try {
+		res = await self.pool.query( query, values );
+	} catch( ex ) {
+		log( 'get - query ex', ex );
+		return false;
+	}
+	
+	let accounts = res[ 0 ];
+	accounts = accounts.map( parseSettings );
+	accounts = accounts.map( setDefaults );
+	
+	if ( clientId )
+		return accounts[ 0 ];
+	else
+		return accounts;
+	
+	function parseSettings( account ) {
+		const settingsObj = parse( account.settings ) || {};
+		account.settings = settingsObj;
+		return account;
+	}
+	
+	function setDefaults( account ) {
+		account = global.config.setMissing( account, accountDefaults );
+		return account;
 	}
 }
 
-this.DbAccount.prototype.set = function( account, callback ) {
-	var self = this;
-	var fields = [
+this.DbAccount.prototype.set = async function( account ) {
+	const self = this;
+	const fields = [
 		'clientId',
 		'userId',
 		'name',
@@ -106,91 +97,85 @@ this.DbAccount.prototype.set = function( account, callback ) {
 	
 	account.clientId = uuid.v4();
 	account.settings = stringify( accountDefaults.settings );
-	var values = [];
+	const values = [];
 	fields.forEach( add );
 	function add( field, index ) {
 		values[ index ] = account[ field ];
 	}
 	
-	var query = self.buildCall( 'account_set', values.length );
-	self.conn.query( query, values, setBack );
-	function setBack( err, result ) {
-		if ( err) {
-			log( 'account.set - query error', err );
-			callback( false );
-			return;
-		}
-		
-		callback( account.clientId );
+	const query = self.buildCall( 'account_set', values.length );
+	let res = null;
+	try {
+		res = await self.pool.query( query, values );
+	} catch( ex ) {
+		log( 'set - query ex', ex );
+		return false;
 	}
+	
+	return account.clientId;
 }
 
-this.DbAccount.prototype.touch = function( clientId, callback ) { // callback is optional
-	var self = this;
-	var values = [ clientId ];
-	var query = self.buildCall( 'account_touch', values.length );
-	self.conn.query( query, values, touchBack );
-	function touchBack( err, result ) {
-		if ( err ) {
-			log( 'account.touch - error', err );
-			if ( callback )
-				callback( false );
-			return;
-		}
-		
-		if ( callback )
-			callback( true );
+this.DbAccount.prototype.touch = async function( clientId ) {
+	const self = this;
+	const values = [ clientId ];
+	const query = self.buildCall( 'account_touch', values.length );
+	try {
+		await self.pool.query( query, values );
+	} catch( ex ) {
+		log( 'touch - query ex', ex );
+		return false;
 	}
+	
+	return true;
 }
 
-this.DbAccount.prototype.getAccountId = function( name, callback ) {
-	var self = this;
-	var values = [
-		self.userId,
+this.DbAccount.prototype.getAccountId = async function( name ) {
+	const self = this;
+	const values = [
+		self.friendId,
 		name,
 	];
-	var query = self.buildCall( 'account_get_id', values.length );
-	self.conn.query( query, values, accIdBack );
-	function accIdBack( err, rows ) {
-		if ( err ) {
-			log( 'account.getAccountId - error', err );
-			callback( false );
-			return;
-		}
-		
-		var account = rows[ 0 ][ 0 ];
-		if ( !account ) {
-			log( 'getAccountId - no account', values );
-			callback( false );
-			return;
-		}
-		
-		callback( account.clientId );
+	const query = self.buildCall( 'account_get_id', values.length );
+	let res;
+	try {
+		res = await self.pool.query( query, values );
+	} catch( ex ) {
+		log( 'getAccountId - query ex', ex );
+		return false;
 	}
+	
+	const account = res[ 0 ][ 0 ];
+	if ( !account ) {
+		log( 'getAccountId - no account', {
+			values : values,
+			res    : res,
+		});
+		return false;
+	}
+	
+	return account.clientId;
 }
 
-this.DbAccount.prototype.update = function( account, callback ) {
-	var self = this;
+this.DbAccount.prototype.update = async function( account ) {
+	const self = this;
 	if ( !account.clientId )
 		throw new Error( 'dbAccount.update - clientId required' );
 	
-	var keys = [
+	const keys = [
 		'clientId',
 		'settings',
 	];
-	var values = keys.map( add );
-	var query = self.buildCall( 'account_update', values.length );
-	self.conn.query( query, values, queryBack );
-	
-	function queryBack( err, res ) {
-		if ( err ) {
-			log( 'update.queryBack - error', err );
-			callback( false );
-			return;
-		}
-		
-		callback( true );
+	const values = keys.map( add );
+	const query = self.buildCall( 'account_update', values.length );
+	let res = null;
+	try {
+		res = await self.pool.query( query, values );
+	} catch( ex ) {
+		log( 'update - query ex', ex );
+		return false;
 	}
+	
+	return true;
 	
 	function add( key ) {
 		var value = account[ key ];
@@ -201,78 +186,144 @@ this.DbAccount.prototype.update = function( account, callback ) {
 	}
 }
 
-this.DbAccount.prototype.updateSetting = function( data, callback ) {
-	var self = this;
-	var clientId = data.clientId
-	var account = {
+this.DbAccount.prototype.updateSetting = async function( data ) {
+	const self = this;
+	const clientId = data.clientId
+	const account = {
 		clientId : clientId,
 	};
 	if ( isNative( data.setting )) {
 		account[ data.setting ] = data.value;
-		update( account );
-	}
-	else
-		loadFirst();
-	
-	function update( account ) {
-		self.update( account, updateBack );
+		return await self.update( account );
 	}
 	
-	function loadFirst() {
-		self.get( clientId, getBack );
-		function getBack( row ) {
-			if ( !row ) {
-				callback( false );
-				return;
-			}
-			addSetting( row );
-		}
-		
-		function addSetting( row ) {
-			var settings = row.settings || {};
-			settings[ data.setting ] = data.value;
-			account.settings = stringify( settings );
-			update( account );
-		}
-	}
-	
-	function updateBack() {
-		callback( true );
-	}
+	let row = null;
+	row = await self.get( clientId );
+	if ( !row )
+		return false;
+
+	const settings = row.settings || {};
+	settings[ data.setting ] = data.value;
+	account.settings = stringify( settings );
+	return await self.update( account );
 	
 	function isNative( key ) { return !!nativeKeys[ key ]; }
 }
 
-this.DbAccount.prototype.updatePass = function( currentPass, newPass, callback ) {
-	var self = this;
+this.DbAccount.prototype.updatePass = async function( currentPass, newPass ) {
+	const self = this;
+	throw new Error( 'DbAccount.updatePass - not yet implemented' );
 }
 
-this.DbAccount.prototype.remove = function( clientId, callback ) {
-	var self = this;
-	var values = [ clientId ];
-	var query = self.buildCall( 'account_remove', values.length );
-	self.conn.query( query, values, removeBack );
-	function removeBack( err, res ) {
-		if ( err ) {
-			log( 'account.remove - err', err );
-			callback( false );
-			return;
-		}
-		
-		callback( clientId );
+this.DbAccount.prototype.remove = async function( clientId ) {
+	const self = this;
+	const values = [ clientId ];
+	const query = self.buildCall( 'account_remove', values.length );
+	let res = null;
+	try {
+		res = await self.pool.query( query, values, removeBack );
+	} catch( ex ) {
+		log( 'remove - query ex', ex );
+		return false;
 	}
+	
+	return clientId;
 }
+
+// activuty
+
+this.DbAccount.prototype.setActivity = async function( activityId, timestamp, event ) {
+	const self = this;
+	if ( !activityId || !timestamp ) {
+		log( 'setActivity - invalid things', [ activityId, timestamp ]);
+		resolve( false );
+		return;
+	}
+	
+	const eventStr = stringify( event );
+	if ( !eventStr || !eventStr.length ) {
+		log( 'setActivity - invalid event', event );
+		resolve( false );
+		return;
+	}
+	
+	const values = [
+		activityId,
+		timestamp,
+		eventStr,
+		self.accountId,
+	];
+	const query = self.buildCall( 'activity_set', values.length );
+	let res = null;
+	try {
+		res = await self.pool.query( query, values );
+	} catch( ex ) {
+		log( 'setActivity - query ex', ex );
+		return false;
+	}
+	
+	return eventStr;
+}
+
+this.DbAccount.prototype.getActivity = async function() {
+	const self = this;
+	const values = [ self.accountId ];
+	const query = self.buildCall( 'activity_get', values.length );
+	let res = null;
+	try {
+		res = await self.pool.query( query, values );
+	} catch( ex ) {
+		log( 'getActivity - query ex', ex );
+		return null;
+	}
+	
+	const rows = res[ 0 ];
+	const items = {};
+	rows.map( row => {
+		const id = row.clientId;
+		const eventStr = row.event;
+		const event = parse( eventStr );
+		items[ id ] = event;
+	});
+	return items;
+}
+
+this.DbAccount.prototype.removeActivity = async function( activityId ) {
+	const  self = this;
+	if ( null == activityId )
+		throw new Error( '' );
+	const values = [
+		activityId,
+	];
+	const query = self.buildCall( 'activity_remove_item', values.length );
+	let res = null;
+	try {
+		res = await self.pool.query( query, values );
+	} catch( ex ) {
+		log( 'removeActivity - query ex', ex );
+		return false;
+	}
+	
+	return true;
+}
+
+this.DbAccount.prototype.clearActivities = async function( accountId ) {
+	const self = this;
+	log( 'clearActivities - NYI', accountId );
+}
+
+// things
 
 this.DbAccount.prototype.buildCall = function( procName, paramsLength ) {
-	var self = this;
-	var phStr = self.getPlaceholderString( paramsLength );
-	var call = "CALL " + procName + "(" + phStr + ")";
+	const self = this;
+	const phStr = self.getPlaceholderString( paramsLength );
+	const call = "CALL " + procName + "(" + phStr + ")";
 	return call;
 }
 
 this.DbAccount.prototype.getPlaceholderString = function( length ) {
-	var arr = new Array( length );
-	var str = arr.join( '?,' );
+	const arr = new Array( length );
+	let str = arr.join( '?,' );
 	str += '?';
 	return str;
 }

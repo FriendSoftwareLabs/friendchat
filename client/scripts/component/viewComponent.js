@@ -254,6 +254,7 @@ library.component = library.component || {};
 		self.containerId = conf.containerId;
 		self.type = conf.type;
 		self.cssClass = conf.cssClass;
+		self.tooltip = conf.tooltip || '';
 		self.inner = null;
 		self.statusMap = conf.statusMap;
 		self.state = 'hamsters';
@@ -341,6 +342,7 @@ library.component = library.component || {};
 		const tmplId = self.typeTmplMap[ 'icon' ];
 		const conf = {
 			faClass : self.cssClass,
+			tooltip : self.tooltip,
 		};
 		self.el = hello.template.getElement( tmplId, conf );
 		container.appendChild( self.el );
@@ -352,6 +354,7 @@ library.component = library.component || {};
 		const tmplId = self.typeTmplMap[ 'led' ];
 		const conf = {
 			ledShapeClass : self.cssClass,
+			tooltip       : self.tooltip,
 		};
 		self.el = hello.template.getElement( tmplId, conf );
 		container.appendChild( self.el );

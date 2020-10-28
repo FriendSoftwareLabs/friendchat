@@ -26,7 +26,7 @@ library.module = library.module || {};
 
 // BASEMODULE
 (function( ns, undefined ) {
-	ns.BaseModule = function( conf ) {
+	ns.BaseModule = function( conf, activity, onremove ) {
 		if ( !( this instanceof ns.BaseModule ))
 			return new ns.BaseModule( conf );
 		
@@ -34,7 +34,8 @@ library.module = library.module || {};
 		self.module = conf.module;
 		self.parentView = conf.parentView;
 		self.clientId = self.module.clientId;
-		self.onremove = conf.onremove;
+		self.activity = activity;
+		self.onremove = onremove;
 		
 		self.identity = null;
 		self.rooms = {};
@@ -93,6 +94,14 @@ library.module = library.module || {};
 		//console.log( 'BaseModule.updateAvatar() - implement in module to handle', avatar );
 	}
 	
+	/*
+		takes a id<uuid string> and returns a promise
+		that resolves to a identity object
+	*/
+	ns.BaseModule.prototype.getIdentity = async function( clientId ) {
+		throw new Error( 'BaseModule.getIdentity - implement in module' );
+	}
+	
 	// Private
 	
 	ns.BaseModule.prototype.initBaseModule = function() {
@@ -101,7 +110,9 @@ library.module = library.module || {};
 		self.conn = new library.component.RequestNode(
 			self.clientId,
 			hello.conn,
-			eventSink
+			eventSink,
+			null,
+			true
 		);
 		
 		function eventSink( type, data ) {
@@ -478,6 +489,9 @@ library.module = library.module || {};
 		self.roomIds = Object.keys( self.rooms );
 		if ( room.close )
 			room.close();
+		
+		if ( self.activity )
+			self.activity.remove( clientId );
 	}
 	
 	ns.BaseModule.prototype.setLocalData = function( data, callback ) {
@@ -550,6 +564,7 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.baseClose = function() {
 		const self = this;
+		delete self.activity;
 		self.cleanContacts();
 		self.cleanRooms();
 		self.conn.close();
@@ -562,17 +577,16 @@ library.module = library.module || {};
 
 // Presence
 (function( ns, undefined ) {
-	ns.Presence = function( conf ) {
-		if ( !( this instanceof ns.Presence ))
-			return new ns.Presence( conf );
-		
+	ns.Presence = function( ...args ) {
 		const self = this;
-		library.module.BaseModule.call( self, conf );
+		library.module.BaseModule.call( self, ...args );
 		
 		self.type = 'presence';
 		self.roomRequests = {};
 		self.openChatWaiting = [];
 		self.hiddenContacts = {};
+		self.getIdentityBacklog = {};
+		self.invites = {};
 		self.init();
 	}
 	
@@ -586,9 +600,29 @@ library.module = library.module || {};
 		self.sendModuleInit();
 	}
 	
+	ns.Presence.prototype.getIdentity = async function( clientId ) {
+		const self = this;
+		const id = await self.lookupIdentity( clientId );
+		if ( null != id )
+			return id;
+		
+		return await waitFor( clientId );
+		
+		function waitFor( cId ) {
+			return new Promise(( resolve, reject ) => {
+				self.getIdentityBacklog[ cId ] = resolveId;
+				function resolveId( id ) {
+					if ( null == id )
+						reject( 'ERR_NO_ID' );
+					else
+						resolve( id );
+				}
+			});
+		}
+	}
+	
 	ns.Presence.prototype.updateAvatar = function( avatar ) {
 		const self = this;
-		console.log( 'Presence.updateAvatar - send to presence', avatar );
 		if ( !self.initialized )
 			return;
 		
@@ -764,21 +798,18 @@ library.module = library.module || {};
 	ns.Presence.prototype.openChat = function( conf, view ) {
 		const self = this;
 		if ( !self.initialized ) {
-			console.log( 'Presence.openChat - not initialize, queueueueing' );
 			self.queueEvent( 'openChat', [ conf, view ] );
 			return;
 		}
 		
 		const item = self.getTypeItem( conf.id, conf.type );
 		if ( !item ) {
-			console.log( 'Presence.openChat - chat not found for, queueueueueing', conf );
 			conf.view = view || null;
 			self.openChatWaiting.push( conf );
 			return;
 		}
 		
 		if ( !item.openChat ) {
-			console.log( 'Presence.openChat - item not ready' );
 			conf.view = view || null;
 			self.openChatWaiting.push( conf );
 			return;
@@ -847,6 +878,12 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.init = function() {
 		const self = this;
+		// activity
+		self.activity.on( 'open'    , ( cId, event ) => self.handleActivityOpen( cId, event ));
+		self.activity.on( 'live'    , ( cId, event ) => self.handleActivityLive( cId, event ));
+		self.activity.on( 'menu'    , ( cId, event ) => self.handleActivityMenu( cId, event ));
+		self.activity.on( 'response', ( cId, event ) => self.handleActivityResponse( cId, event ));
+		
 		// server
 		self.conn.on( 'initialize', e => self.initialize( e ));
 		self.conn.on( 'account', handleAccount );
@@ -869,6 +906,70 @@ library.module = library.module || {};
 		self.setup();
 	}
 	
+	ns.Presence.prototype.handleActivityOpen = function( clientId, data ) {
+		const self = this;
+		const room = self.getTypeItem( clientId );
+		if ( !room ) {
+			console.log( 'app.Presence.handleActivityOpen - no room for', [ clientId, data ]);
+			return null;
+		}
+		
+		room.openChat();
+	}
+	
+	ns.Presence.prototype.handleActivityLive = function( clientId, permissions ) {
+		const self = this;
+		const room = self.getTypeItem( clientId );
+		if ( !room ) {
+			console.log( 'app.Presence.handleActivityLive - no room for', [ clientId, data ]);
+			return;
+		}
+		
+		if ( 'video' === permissions ) {
+			room.startVideo();
+			return;
+		}
+		
+		if ( 'audio' === permissions ) {
+			room.startAudio();
+			return;
+		}
+		
+		if ( 'show' === permissions ) {
+			room.joinLive();
+			return;
+		}
+		
+		if ( null == permissions )
+			room.startVideo();
+		else
+			room.setupLive( permissions );
+	}
+	
+	ns.Presence.prototype.handleActivityMenu = function( clientId, data ) {
+		const self = this;
+		console.log( 'handleActivityMenu - NYI', [ clientId, data ]);
+	}
+	
+	ns.Presence.prototype.handleActivityResponse = function( responseId, response ) {
+		const self = this;
+		const invite = self.invites[ responseId ];
+		if ( !invite ) {
+			self.activity.remove( responseId );
+			return;
+		}
+		
+		const accept = 'join' === response ? true : false;
+		const res = {
+			accepted : accept,
+			roomId   : invite.roomId,
+			token    : responseId,
+		};
+		
+		self.handleInviteResponse( res );
+		self.activity.remove( responseId );
+	}
+	
 	ns.Presence.prototype.getTypeItem = function( cId, type ) {
 		const self = this;
 		let item = null;
@@ -881,9 +982,9 @@ library.module = library.module || {};
 		
 		function byType( cId, type ) {
 			if ( 'room' === type )
-				return self.rooms[ cId ];
+				return self.rooms[ cId ] || null;
 			else
-				return self.contacts[ cId ];
+				return self.contacts[ cId ] || null;
 		}
 		
 		function madness( cId ) {
@@ -1009,8 +1110,15 @@ library.module = library.module || {};
 			self.setupIDC( state.identities );
 		}
 		
-		if ( self.initialized )
+		self.handleIdBacklog();
+		
+		self.updateInvites( state.invites );
+		
+		if ( self.initialized ) {
+			self.updateRooms( state.rooms );
+			self.updateContacts( state.contacts );
 			return;
+		}
 		
 		self.initialized = true;
 		updateAccount( state.account );
@@ -1052,6 +1160,49 @@ library.module = library.module || {};
 		self.idc.on( 'update', ( id, key ) => self.handleIdUpdated( id, key ));
 	}
 	
+	ns.Presence.prototype.handleIdBacklog = function() {
+		const self = this;
+		const list = Object.keys( self.getIdentityBacklog );
+		if ( !list || !list.length )
+			return;
+		
+		list.forEach( cId => self.checkIdBacklog( cId ));
+	}
+	
+	ns.Presence.prototype.checkIdBacklog = async function( cId ) {
+		const self = this;
+		const resolveFn = self.getIdentityBacklog[ cId ];
+		if ( !resolveFn )
+			return;
+		
+		const id = await self.lookupIdentity( cId );
+		if ( !id )
+			return;
+		
+		delete self.getIdentityBacklog[ cId ];
+		resolveFn( id );
+	}
+	
+	ns.Presence.prototype.lookupIdentity = async function( cId ) {
+		const self = this;
+		let item = self.rooms[ cId ];
+		if ( item )
+			return item.getIdentity();
+		
+		item = self.contacts[ cId ];
+		if ( item )
+			return item.getIdentity();
+		
+		item = self.invites[ cId ];
+		if ( item )
+			return item.room;
+		
+		if ( self.idc )
+			return await self.idc.get( cId );
+		else
+			return null;
+	}
+	
 	ns.Presence.prototype.handleAccount = function( accountId ) {
 		const self = this;
 		if ( self.accountId ) {
@@ -1063,15 +1214,17 @@ library.module = library.module || {};
 		self.acc = new library.component.RequestNode(
 			accountId,
 			self.conn,
-			accEventSink
+			accEventSink,
+			null,
+			true,
 		);
 		//self.req = new library.component.RequestNode( self.acc, accReqEventSink );
 		
 		self.bindAcc();
 		self.initializeAccount();
 		
-		function accEventSink() { console.log( 'Presence.accEventSink', arguments ); }
-		function accReqEventSink() { console.log( 'Presence.accReqEventSink', arguments ); }
+		function accEventSink( ...args ) { console.log( 'Presence.accEventSink', args ); }
+		function accReqEventSink( ...args ) { console.log( 'Presence.accReqEventSink', args ); }
 	}
 	
 	ns.Presence.prototype.initializeAccount = function() {
@@ -1150,23 +1303,34 @@ library.module = library.module || {};
 		}
 	}
 	
-	ns.Presence.prototype.handleContactAdd = function( contact ) {
+	ns.Presence.prototype.updateContact = function( contact ) {
+		const self = this;
+		const cId = contact.clientId;
+		const room = self.contacts[ cId ];
+		if ( !room )
+			return false;
+		
+		let isReconnecting = false;
+		if ( room.reconnect ) // room might be a <bool>
+			isReconnecting = room.reconnect();
+		
+		if ( !isReconnecting ) {
+			room.updateRelation( contact.relation );
+			room.updateState( contact.state );
+		}
+		
+		return true;
+	}
+	
+	ns.Presence.prototype.handleContactAdd = async function( contact ) {
 		const self = this;
 		if ( !self.idc )
 			return;
 		
 		let cId = contact.clientId;
-		let room = self.contacts[ cId ];
-		if ( room ) {
-			let isReconnecting = false;
-			if ( room.reconnect )
-				isReconnecting = room.reconnect();
-			
-			if ( !isReconnecting && contact.relation )
-				room.updateRelation( contact.relation );
-			
+		let room = self.updateContact( contact );
+		if ( room )
 			return;
-		}
 		
 		// prevents setting the contact twice, this fn is async
 		self.contacts[ cId ] = true;
@@ -1177,45 +1341,42 @@ library.module = library.module || {};
 			self.module.port,
 		);
 		
-		self.idc.get( contact.clientId )
-			.then( idBack )
-			.catch();
-		
-		function idBack( identity ) {
-			if ( !identity ) {
-				console.log( 'no id for', {
-					contact : contact,
-					self    : self,
-				});
-				return;
-			}
-			
-			contact.identity = identity;
-			const conf = {
-				moduleId   : self.clientId,
-				contact    : contact,
-				parentConn : self.acc,
-				parentView : self.parentView,
-				idCache    : self.idc,
-				host       : host,
-				user       : self.identity,
-				userId     : self.accountId,
-			};
-			
-			room = new library.contact.PresenceContact( conf );
-			self.contacts[ cId ] = room;
-			self.contactIds.push( cId );
-			const viewConf = room.getViewConf();
-			const cAdd = {
-				type : 'contact-add',
-				data : viewConf,
-			};
-			self.toView( cAdd );
-			
-			const waitConf = self.checkOpenChatWaiting( cId );
-			if ( waitConf )
-				room.openChat( waitConf.view || null );
+		const identity = await self.idc.get( contact.clientId );
+		if ( !identity ) {
+			console.log( 'no id for', {
+				contact : contact,
+				self    : self,
+			});
+			return;
 		}
+		
+		contact.identity = identity;
+		const conf = {
+			moduleId   : self.clientId,
+			contact    : contact,
+			parentConn : self.acc,
+			parentView : self.parentView,
+			idCache    : self.idc,
+			activity   : self.activity,
+			host       : host,
+			user       : self.identity,
+			userId     : self.accountId,
+		};
+		
+		room = new library.contact.PresenceContact( conf );
+		self.contacts[ cId ] = room;
+		self.contactIds.push( cId );
+		const viewConf = room.getViewConf();
+		const cAdd = {
+			type : 'contact-add',
+			data : viewConf,
+		};
+		self.toView( cAdd );
+		
+		self.checkIdBacklog( cId );
+		const waitConf = self.checkOpenChatWaiting( cId );
+		if ( waitConf )
+			room.openChat( waitConf.view || null );
 	}
 	
 	ns.Presence.prototype.handleContactOnline = function( contactId, isOnline ) {
@@ -1261,22 +1422,44 @@ library.module = library.module || {};
 		delete self.contacts[ clientId ];
 		self.contactIds = Object.keys( self.contacts );
 		contact.close();
-		const cAdd = {
+		const cRem = {
 			type : 'contact-remove',
 			data : clientId,
 		};
-		self.toView( cAdd );
+		self.toView( cRem );
+		if ( self.activity )
+			self.activity.remove( clientId );
 	}
 	
 	ns.Presence.prototype.handleContactEvent = function( wrap ) {
 		const self = this;
-		let cId = wrap.contactId;
-		let event = wrap.event;
-		let contact = self.contacts[ cId ];
+		const cId = wrap.contactId;
+		const event = wrap.event;
+		const contact = self.contacts[ cId ];
 		if ( !contact )
 			return;
 		
 		contact.handleEvent( event );
+	}
+	
+	ns.Presence.prototype.updateInvites = function( fresh ) {
+		const self = this;
+		if ( null == fresh )
+			fresh = {};
+		
+		const fIds = Object.keys( fresh );
+		const cIds = Object.keys( self.invites );
+		const stale = cIds.filter( cId => {
+			return !fIds.some( fId => fId == cId );
+		});
+		
+		if ( stale && stale.length )
+			stale.forEach( sId => self.removeRoomInvite( sId ));
+		
+		fIds.forEach( fId => {
+			const inv = fresh[ fId ];
+			self.showRoomInvite( inv );
+		});
 	}
 	
 	ns.Presence.prototype.handleInvite = function( event ) {
@@ -1294,38 +1477,124 @@ library.module = library.module || {};
 		console.log( 'Presence.handleInvite - unknown event', event );
 	}
 	
-	ns.Presence.prototype.showRoomInvite = function( invite ) {
+	ns.Presence.prototype.showRoomInvite = async function( invite ) {
 		const self = this;
-		self.idc.get( invite.fromId )
-			.then( fromBack )
-			.catch( fromErr );
-		
-		function fromBack( from ) {
-			invite.from = from;
-			const inv = {
-				type : 'invite-add',
-				data : invite,
-			};
-			self.view.send( inv );
+		const token = invite.token;
+		if ( null != self.invites[ token ]) {
+			console.log( 'already have invite', {
+				invite  : invite,
+				invites : self.invites,
+			});
+			return;
 		}
 		
-		function fromErr( e ) {
-			console.log( 'fromErr', e );
+		const roomId = invite.roomId;
+		if ( null != self.rooms[ roomId ]) {
+			console.log( 'already in room for invite', {
+				invite : invite,
+				rooms  : self.rooms,
+			});
+			return;
+		}
+		
+		let from = null;
+		try {
+			from = await self.idc.get( invite.createdBy );
+		} catch( ex ) {
+			console.log( 'app.Presence.showRoomInvite - idc.get failed', ex );
+			return;
+		}
+		
+		invite.from = from;
+		self.invites[ token ] = invite;
+		
+		const inv = {
+			type : 'invite-add',
+			data : invite,
+		};
+		self.view.send( inv );
+		
+		if ( !self.activity )
+			return;
+		
+		const req = [
+			token,
+			from.name + ' has invited you to #' + invite.room.name,
+			[ 'join', 'decline' ],
+			Date.now(),
+		];
+		
+		try {
+			await self.activity.request( ...req );
+		} catch( ex ) {
+			console.log( 'app.Presence.showRoomInvite - activity.request ex', ex );
+			return;
 		}
 	}
 	
 	ns.Presence.prototype.removeRoomInvite = function( invId ) {
 		const self = this;
-		console.log( 'Presence.removeRoomInvite', invId );
+		const invite = self.invites[ invId ];
+		delete self.invites[ invId ];
+		const rem = {
+			type : 'invite-remove',
+			data : invId,
+		};
+		self.view.send( rem )
+		
+		if ( !self.activity )
+			return;
+		
+		self.activity.remove( invId );
 	}
 	
-	ns.Presence.prototype.handleInviteResponse = function( res ) {
+	ns.Presence.prototype.handleInviteResponse = async function( res ) {
 		const self = this;
+		const invite = self.invites[ res.token ];
 		const inv = {
 			type : 'invite-response',
 			data : res,
 		};
-		self.toAccount( inv );
+		let retValue = null;
+		try {
+			retValue = await self.acc.request( inv );
+		} catch( ex ) {
+			console.log( 'handleInviteResponse - req ex', ex );
+			return false;
+		}
+		
+		if ( retValue ) {
+			console.log( 'handleInviteResponse - sus return value', retValue );
+			return false;
+		}
+		
+		const room = invite.room;
+		const show = [
+			'room',
+			room.clientId,
+			1,
+			'',
+			'i18n_joined_room',
+			Date.now(),
+		];
+		
+		self.activity.message( ...show );
+		
+		return true;
+	}
+	
+	ns.Presence.prototype.updateRooms = function( rooms ) {
+		const self = this;
+		console.log( 'Presence.updateRooms - NYI', rooms );
+	}
+	
+	ns.Presence.prototype.updateContacts = function( contacts ) {
+		const self = this;
+		console.log( 'Presence.updateContacts - NYI', contacts );
+		if ( null == contacts )
+			return;
+		
+		
 	}
 	
 	ns.Presence.prototype.handleLoadHidden = function() {
@@ -1653,6 +1922,7 @@ library.module = library.module || {};
 			parentConn : self.acc,
 			parentView : self.parentView,
 			idCache    : self.idc,
+			activity   : self.activity,
 			host       : host,
 			user       : self.identity,
 			userId     : self.accountId,
@@ -1671,6 +1941,7 @@ library.module = library.module || {};
 		
 		room.on( 'contact', contactEvent );
 		
+		self.checkIdBacklog( cId );
 		const waitConf = self.checkOpenChatWaiting( cId );
 		if ( waitConf )
 			room.openChat( waitConf.view );
@@ -1871,12 +2142,9 @@ library.module = library.module || {};
 
 // TREEROOT
 (function( ns, undefined) {
-	ns.Treeroot = function( conf ) {
-		if ( !( this instanceof ns.Treeroot ))
-			return new ns.Treeroot( conf );
-		
+	ns.Treeroot = function( ...args ) {
 		const self = this;
-		library.module.BaseModule.call( self, conf );
+		library.module.BaseModule.call( self, ...args );
 		
 		self.type = 'treeroot';
 		self.subscribeView = null;
@@ -3136,11 +3404,8 @@ library.module = library.module || {};
 
 // IRC
 (function( ns, undefined ) {
-	ns.IRC = function( conf ) {
-		if ( !( this instanceof ns.IRC ))
-			return new ns.IRC( conf );
-		
-		library.module.BaseModule.call( this, conf );
+	ns.IRC = function( ...args ) {
+		library.module.BaseModule.call( this, ...args );
 		
 		const self = this;
 		self.type = 'irc';
@@ -3775,10 +4040,10 @@ library.module = library.module || {};
 
 // Telegram
 (function( ns, undefined ) {
-	ns.Telegram = function( conf ) {
+	ns.Telegram = function( ...args ) {
 		const self = this;
 		
-		library.module.BaseModule.call( self, conf );
+		library.module.BaseModule.call( self, ...args );
 		
 		self.init();
 	}
