@@ -486,9 +486,10 @@ html body #tab-bar .Button
 }
 
 #activity-splash {
-    position: absolute;
-    height: 100%;
-    transition: opacity 0.2s;
+    position   : absolute;
+    height     : 100%;
+    width      : 100%;
+    transition : opacity 0.2s;
 }
 
 .activity-info {

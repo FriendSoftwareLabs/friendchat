@@ -574,8 +574,10 @@ var hello = window.hello || {};
 		self.noActivity = document.getElementById( 'no-activity-items' );
 		
 		self.welcomeBox = document.getElementById( 'welcome-box' );
+		/*
 		const welcomeClose = document.getElementById( 'welcome-box-close' );
 		welcomeClose.addEventListener( 'click', closeWelcome, false );
+		*/
 		
 		//
 		function closeWelcome() {
