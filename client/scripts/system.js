@@ -3165,7 +3165,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		const self = this;
 		const id = event.id;
 		const opts = event.options;
-		const local = self.localOpts[ id ];
+		let local = self.localOpts[ id ];
 		if ( null == local ) {
 			local = {};
 			self.localOpts[ id ] = local;
