@@ -2351,17 +2351,11 @@ library.view = library.view || {};
 		self.conn.on( 'live-state', e => self.updateLiveDisplay( e ));
 	}
 	
-	ns.PresenceContact.prototype.updateLiveDisplay = function( opts ) {
+	ns.PresenceContact.prototype.updateLiveDisplay = function( ls ) {
 		const self = this;
-		const ls = opts[ 'live-state' ];
-		if ( null == ls )
-			return;
-		
 		console.log( 'view.PresenceContact.updateLiveDisplay', ls );
-		
 		self.liveStatus.setUserLive( ls.user );
 		self.liveStatus.setContactLive( ls.contact );
-		
 	}
 	
 	ns.PresenceContact.prototype.handleOnline = function( isOnline ) {

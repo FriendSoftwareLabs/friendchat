@@ -3028,7 +3028,7 @@ library.contact = library.contact || {};
 			const opts = {
 				'live-state' : self.liveState,
 			};
-			self.liveToView( opts );
+			toView( self.liveState );
 			self.activity.live(
 				self.roomType,
 				self.clientId,
@@ -3045,7 +3045,7 @@ library.contact = library.contact || {};
 			const opts = {
 				'live-state' : self.liveState,
 			};
-			self.liveToView( opts );
+			toView( self.liveState );
 			self.activity.live(
 				self.roomType,
 				self.clientId,
@@ -3055,28 +3055,40 @@ library.contact = library.contact || {};
 				opts
 			);
 		}
+		
+		function toView( state ) {
+			if ( !self.view )
+				return;
+			
+			self.view.send({
+				type : 'live-state',
+				data : state,
+			});
+		}
 	}
 	
 	ns.PresenceContact.prototype.handleLiveOpen = function( event ) {
 		const self = this;
 		const liveId = event.clientId;
-		const userJoin = {
-			type : 'user-join',
-		};
-		self.liveToView( userJoin );
-		
 		self.liveState.user = true;
 		const isClient = checkClientLive( liveId );
 		const state = isClient ? 'client' : 'user';
-		if ( state === self.liveState.description )
-			return;
-		
-		self.liveState.description = state;
-		
-		if ( !isClient ) {
-			self.updateLiveState();
+		console.log( 'handleLiveOpen', {
+			event    : event,
+			live     : self.liveState,
+			state    : state,
+			isClient : isClient,
+		});
+		if ( state === self.liveState.description ) {
+			console.log( 'aborting' );
 			return;
 		}
+		
+		self.liveState.description = state;
+		self.updateLiveState();
+		
+		if ( !isClient )
+			return;
 		
 		const opts = {
 			'live-state' : self.liveState,
@@ -3114,7 +3126,6 @@ library.contact = library.contact || {};
 			self.liveState.description = state;
 			self.updateLiveState();
 			tellActivity( true );
-			updateView();
 			close();
 			return;
 		}
@@ -3131,7 +3142,6 @@ library.contact = library.contact || {};
 			return;
 		
 		self.liveState.description = state;
-		tellActivity();
 		self.updateLiveState();
 		close();
 		
@@ -3145,12 +3155,6 @@ library.contact = library.contact || {};
 		return;
 		*/
 		//
-		function updateView() {
-			const userLeave = {
-				type : 'user-leave',
-			};
-			self.liveToView( userLeave );
-		}
 		
 		function close() {
 			if ( !self.live )
@@ -3165,44 +3169,37 @@ library.contact = library.contact || {};
 			const opts = {
 				'live-state' : self.liveState,
 			};
-			
-			if ( isClose ) {
-				self.activity.live(
-					self.roomType,
-					self.clientId,
-					self.priority,
-					'i18n_you_left_the_call',
-					Date.now(),
-					opts
-				);
-			} else
-				self.activity.update( self.clientId, opts );
-				
+			self.activity.live(
+				self.roomType,
+				self.clientId,
+				self.priority,
+				'i18n_you_left_the_call',
+				Date.now(),
+				opts
+			);
 		}
 	}
 	
 	ns.PresenceContact.prototype.updateLiveState = function() {
 		const self = this;
-		const opts = {
-			'live-state' : self.liveState,
-		};
-		
-		self.liveToView( opts );
+		console.log( 'updateLiveState', self.liveState );
+		if ( self.view )
+			self.view.send({
+				type : 'live-state',
+				data : self.liveState,
+			});
 		
 		if ( null == self.activity )
 			return;
 		
+		const opts = {
+			'live-state' : self.liveState,
+		};
 		self.activity.update( self.clientId, opts );
 	}
 	
 	ns.PresenceContact.prototype.liveToView = function( event ) {
 		const self = this;
-		if ( self.view )
-			self.view.send({
-				type : 'live-state',
-				data : event,
-			});
-		
 		if ( self.chatView )
 			self.chatView.send({
 				type : 'live',
