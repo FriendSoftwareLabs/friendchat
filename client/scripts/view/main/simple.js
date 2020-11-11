@@ -595,6 +595,10 @@ var hello = window.hello || {};
 	
 	ns.Activity.prototype.toggleItemsList = function( force ) {
 		const self = this;
+		console.log( 'toggleItemList', {
+			force   : force,
+			itemIds : self.itemIds,
+		});
 		if (( null == force ) && ( self.itemIds.length > 1 ))
 			return;
 		
@@ -621,6 +625,7 @@ var hello = window.hello || {};
 	
 	ns.Activity.prototype.doneLoading = function() {
 		const self = this;
+		console.log( 'doneLoading' );
 		if ( null != self.loadingTimeout )
 			window.clearTimeout( self.loadingTimeout );
 		
@@ -641,6 +646,7 @@ var hello = window.hello || {};
 	
 	ns.Activity.prototype.handleLoaded = function() {
 		const self = this;
+		console.log( 'handleLoaded' );
 		window.setTimeout( show, 300 );
 		function show() {
 			self.doneLoading();

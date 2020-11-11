@@ -3236,6 +3236,8 @@ Searchable collection(s) of users, rooms and other odds and ends
 			return;
 		}
 		
+		try {
+			
 		for ( event of list ) {
 			const type = event.type;
 			const data = event.data;
@@ -3252,10 +3254,14 @@ Searchable collection(s) of users, rooms and other odds and ends
 			if ( opts )
 				self.updateLocalOpts( id, opts );
 		}
+		} catch( ex ) {
+			console.log( 'load item loop ex', ex );
+		}
 		
 		sendLoaded();
 		
 		function sendLoaded() {
+			console.log( 'sendLoaded' );
 			const loaded = {
 				type : 'loaded',
 			};
@@ -3263,6 +3269,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 		
 		function sendReload() {
+			console.log( 'sendReload' );
 			const re = {
 				type : 'reload',
 			};

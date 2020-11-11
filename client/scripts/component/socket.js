@@ -132,6 +132,7 @@ library.component = library.component || {};
 			throw new Error( 'no url provided for socket' );
 		}
 		
+		hello.timeNow( 'ws connect' );
 		self.clearConnectTimeout();
 		self.setState( 'connect', self.url );
 		var protocol = self.protocol.length ? self.protocol : null;
@@ -288,7 +289,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
 		const self = this;
-		console.log( 'WS.handleOpen' );
+		hello.timeNow( 'ws open' );
 		self.clearConnectTimeout();
 		self.setState( 'open', e );
 		// ..waiting for authenticate challenge
@@ -322,6 +323,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
 		const self = this;
+		hello.timeNow( 'ws handleAuth' );
 		if ( null == success ) {
 			self.sendAuth();
 			return;
@@ -344,6 +346,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		const self = this;
+		hello.timeNow( 'ws handleSession' );
 		self.session = sessionId;
 		if ( !self.session ) {
 			self.ended();

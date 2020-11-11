@@ -515,10 +515,10 @@ var hello = null;
 				self.loadRequestDelay = null;
 			}
 			
-			load( success, loadErr );
-			self.loadTimeout = window.setTimeout( loadingTimeout, 1000 * 15 );
+			sendReq( success, loadErr );
+			self.loadTimeout = window.setTimeout( loadRetry, 1000 * 5 );
 			
-			function load( success, loadErr ) {
+			function sendReq( success, loadErr ) {
 				self.showConnStatus({
 					type : 'load',
 					data : Date.now(),
@@ -534,16 +534,17 @@ var hello = null;
 				self.hostConfRequest = library.tool.asyncRequest( conf );
 			}
 			
-			function loadingTimeout() {
-				console.log( 'loading host config timed out', self.hostConfRequest );
+			function loadRetry() {
+				console.log( 'loading host config aborted or timed out', self.hostConfRequest );
 				try {
 					self.hostConfRequest.abort();
 				} catch( e ) {
-					console.log( 'loadingTimeout - exp while aborting request', e );
+					console.log( 'loadRetry - exp while aborting request', e );
 				}
 				
+				console.log( 'loadRetry' );
 				self.hostConfRequest = null;
-				let delay = 1000 * 5;
+				let delay = 1000 * 3;
 				let reconnectTime = Date.now() + delay;
 				self.showConnStatus({
 					type : 'wait-reconnect',
@@ -559,7 +560,7 @@ var hello = null;
 			}
 			
 			function success( response ) {
-				hasLoadRes();
+				clearLoadTimeout();
 				if ( !response ) {
 					const errMsg = Application.i18n( 'i18n_host_config_failed' ) + ' ' + url;
 					self.showError( errMsg );
@@ -581,15 +582,16 @@ var hello = null;
 			}
 			
 			function loadErr( err ) {
-				hasLoadRes();
+				clearLoadTimeout();
 				err = err || 'ERR_LOAD_HOST_CONF';
 				console.log( 'loadErr', err );
 				const errMsg = Application.i18n( 'i18n_host_config_failed_error' ) + ' ' + url;
 				self.showError( errMsg );
-				reject( err );
+				loadRetry();
+				//reject( err );
 			}
 			
-			function hasLoadRes() {
+			function clearLoadTimeout() {
 				if ( !self.loadTimeout )
 					return;
 				
@@ -880,7 +882,10 @@ var hello = null;
 	
 	ns.Hello.prototype.reconnect = function() {
 		const self = this;
-		self.conn.reconnect();
+		if ( self.conn )
+			self.conn.reconnect();
+		else
+			self.runUser();
 	}
 	
 	ns.Hello.prototype.updateConnState = function( state ) {

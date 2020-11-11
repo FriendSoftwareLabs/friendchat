@@ -194,6 +194,7 @@ ns.SocketManager.prototype.authenticate = function( bundle, socket ) {
 	self.authRequest( token, authBack );
 	function authBack( data ) {
 		if ( !data ) {
+			log( 'authenticate - no data??', bundle, 3 );
 			close();
 			return;
 		}
@@ -243,6 +244,7 @@ ns.SocketManager.prototype.authRequest = function( token, callback ) {
 		authid  : token.authId,
 	};
 	
+	const start = Date.now();
 	const req = {
 		path    : '/system.library/module/',
 		data    : data,
@@ -252,6 +254,13 @@ ns.SocketManager.prototype.authRequest = function( token, callback ) {
 	fcRequest.post( req );
 	
 	function success( data ) {
+		const end = Date.now();
+		const ms = end - start;
+		log( 'authRequest timing', {
+			id : token.authId,
+			ms : ms,
+			s  : ( ms / 1000 ),
+		});
 		callback( data );
 	}
 	
@@ -289,6 +298,7 @@ ns.SocketManager.prototype.checkSession = function( sessionId, socket ) {
 	const self = this;
 	const session = self.getSession( sessionId );
 	if ( !session ) {
+		log( 'checkSession - no session found', sessionId );
 		socket.unsetSession()
 			.then( e => {
 				socket.close();
@@ -322,9 +332,9 @@ ns.SocketManager.prototype.replaceSession = function( session, socket ) {
 	const self = this;
 	if ( !socket || !session ) {
 		log( 'replaceSession - missing stuffs', {
-			soId : !!socket,
-			seId : !!session,
-		});
+			socket  : !!socket,
+			session : !!session,
+		}, 3 );
 		if ( socket )
 			self.removeSocket( socket.id );
 		
