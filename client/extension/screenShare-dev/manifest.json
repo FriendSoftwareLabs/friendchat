@@ -1,0 +1,32 @@
+{
+	"name"                   : "Friend Screenshare Dev",
+	"author"                 : "Friend Software Labs",
+	"version"                : "1.0.6",
+	"manifest_version"       : 2,
+	"minimum_chrome_version" : "34",
+	"description"            : "Share your screen in FriendChat",
+	"homepage_url"           : "https://friendup.cloud/",
+	"background"             : {
+		"scripts"                : [ "background.js" ],
+		"persistent"             : false
+	},
+	"content_scripts"        : [
+		{
+			"matches"            : [
+				"https://*/*"
+			],
+			"js"                 : [ "content.js" ],
+			"all_frames"         : false,
+			"run_at"             : "document_end"
+		}
+	],
+	"permissions"            : [
+		"desktopCapture",
+		"tabs",
+		"https://*/*"
+	],
+	"icons" : {
+		"16"  : "icon_16.png",
+		"128" : "icon_128.png"
+	}
+}
