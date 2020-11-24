@@ -54,7 +54,7 @@ library.component = library.component || {};
 		self.reconnectDelay = 200; // ms
 		self.reconnectAttempt = 0; // delay is multiplied with attempts
 		                           //to find how long the next delay is
-		self.reconnectMaxAttempts = 7; // 0 to keep hammering
+		self.reconnectMaxAttempts = 0; // 0 to keep hammering
 		self.reconnectScale = {
 			min : 5,
 			max : 8,
