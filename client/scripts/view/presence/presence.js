@@ -633,6 +633,21 @@ library.view = library.view || {};
 		self.handleOnline( isOnline );
 	}
 	
+	ns.Presence.prototype.updateContactTitle = function( update ) {
+		const self = this;
+		console.log( 'updateContactTitle', {
+			contactId : self.contactId,
+			update    : update,
+		});
+		const id = update.data;
+		const cId = id.clientId;
+		if ( cId !== self.contactId )
+			return;
+		
+		const nameEl = self.titleEl.querySelector( '.title-name' );
+		nameEl.textContent = id.name;
+	}
+	
 	ns.Presence.prototype.setGroupTitle = function() {
 		const self = this;
 		if ( !self.room ) {
@@ -811,7 +826,10 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleIdUpdate = function( update ) {
 		const self = this;
+		console.log( 'view.presence.handleIdUpdate', update );
 		self.users.updateIdentity( update );
+		if ( self.isPrivate )
+			self.updateContactTitle( update );
 	}
 	
 	// things

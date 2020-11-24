@@ -415,7 +415,6 @@ library.rtc = library.rtc || {};
 	ns.ModuleControl.prototype.reconnect = function() {
 		const self = this;
 		const mids = Object.keys( self.active );
-		console.log( 'ModuleCtrl.reconnect', mids );
 		mids.forEach( mId => {
 			let mod = self.active[ mId ];
 			mod.reconnect();
@@ -450,7 +449,6 @@ library.rtc = library.rtc || {};
 			
 			return false;
 		});
-		console.log( 'ModuleCtrl.getPresence', pres );
 		return pres;
 	}
 	
@@ -552,11 +550,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		let activity = null;
-		try {
-			activity = new library.system.ActivityModule( modId, hello.activity );
-		} catch( ex ) {
-			console.log( 'asd', ex );
-		}
+		activity = new library.system.ActivityModule( modId, hello.activity );
 		const conf = {
 			module     : modConf,
 			parentView : self.parentView,
@@ -1696,7 +1690,6 @@ library.rtc = library.rtc || {};
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
 		
-		console.log( 'Conection.connect' );
 		if ( self.socket )
 			self.clear();
 		
@@ -1731,7 +1724,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.reconnect = function( callback ) {
 		const self = this;
-		console.log( 'Connection.reconect' );
 		if ( callback )
 			self.readyCallback = callback;
 		
@@ -1800,7 +1792,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketOpen = function( data ) {
 		const self = this;
-		console.log( 'COnnection.socketOpen', data );
 		self.onstate({
 			type : 'open',
 		});
@@ -1827,7 +1818,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketClosed = function( e ) {
 		const self = this;
-		console.log( 'Connection.socketClosed' );
 		self.onstate({
 			type : 'error',
 			data : 'Connection to ' + self.host + ' closed',
@@ -1836,7 +1826,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketTimeout = function( e ) {
 		const self = this;
-		console.log( 'Connection.socketTimeout' );
 		self.onstate({
 			type : 'error',
 			data : 'Connect attempt timed out: ' + self.host,
@@ -1871,7 +1860,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleEnd = function( data ) {
 		const self = this;
-		console.log( 'Connection.handleEnd' );
 		self.clear();
 		let err = {
 			type : 'end',
@@ -2797,6 +2785,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		self.removed = {};
 		self.waitForItem = {};
 		self.localOpts = {};
+		self.loaded = false;
 		
 		self.init( ws, view );
 	}
@@ -2809,6 +2798,10 @@ Searchable collection(s) of users, rooms and other odds and ends
 			'module'  : chatMod,
 			'modFace' : moduleInterface,
 		};
+		
+		if ( !self.loaded )
+			return;
+		
 		self.updateIdentities( moduleId );
 	}
 	
@@ -2824,13 +2817,11 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'app.Activity.reconnect' );
 		self.load();
 	}
 	
 	ns.Activity.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
-		console.log( 'app.Activity.setIsOnline', isOnline );
 		if ( !isOnline )
 			return;
 		
@@ -2867,10 +2858,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 		const time = event.timestamp;
 		const isFresh = self.checkIsFresh( id, time );
 		if ( !isFresh ) {
-			console.log( 'app.Activity.sendEvent - duplicate', {
-				type  : type,
-				event : event,
-			});
 			/*
 			const opts = event.options;
 			if ( !!opts && opts.broadcast )
@@ -2905,13 +2892,16 @@ Searchable collection(s) of users, rooms and other odds and ends
 		
 		const id = item.data.id;
 		event.id = id;
-		self.updateLocalOpts( id, event.options );
+		const opts = event.options;
+		if ( opts )
+			self.updateLocalOpts( id, opts );
+		
 		const uptd = {
 			type : type,
 			data : event,
 		};
 		
-		if ( event.options.broadcast ) {
+		if ( opts && opts.broadcast ) {
 			let res = null;
 			try {
 				res = await self.conn.request( uptd );
@@ -3068,27 +3058,34 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 	}
 	
-	ns.Activity.prototype.setItem = function( id, event ) {
+	ns.Activity.prototype.setItem = async function( conf, type ) {
 		const self = this;
+		const id = conf.id;
 		const lock = self.removed[ id ];
 		if ( null != lock ) {
 			console.log( 'app.Activity.setItem - item marked as removed', id );
 			return;
 		}
 		
-		const conf = event.data;
 		const cId = conf.clientId;
+		const identity = await self.lookupIdentity( cId, conf.modId );
+		conf.identity = identity;
+		
+		const event = {
+			type : type,
+			data : conf,
+		};
 		self.items[ id ] = event;
 		self.cIdMap[ cId ] = event;
 		const idx = self.itemIds.indexOf( id );
 		if ( -1 === idx )
 			self.itemIds.push( id );
 		
-		resolveWaiting();
+		resolveWaiting( cId, event );
 		
 		self.view.send( event );
 		
-		function resolveWaiting() {
+		function resolveWaiting( cId, event ) {
 			const waiting = self.waitForItem[ cId ];
 			if ( null == waiting )
 				return;
@@ -3145,6 +3142,9 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.updateLocalOpts = function( id, opts ) {
 		const self = this;
+		if ( null == opts )
+			return;
+		
 		let local = self.localOpts[ id ];
 		if ( null == local ) {
 			local = {};
@@ -3206,6 +3206,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.load = async function() {
 		const self = this;
+		self.loaded = false;
 		hello.timeNow( 'Activity - start load' );
 		if ( self.itemIds && self.itemIds.length )
 			sendReload();
@@ -3236,32 +3237,37 @@ Searchable collection(s) of users, rooms and other odds and ends
 			return;
 		}
 		
-		try {
-			
-		for ( event of list ) {
+		const waitingFor = list.map( event => {
 			const type = event.type;
 			const data = event.data;
-			const  id = data.id;
-			const opts = state[ id ];
-			
+			let p = null;
 			if ( 'message' === type )
-				await self.handleMessage( event.data );
+				p = self.handleMessage( data );
 			if ( 'live' === type )
-				await self.handleLive( event.data );
+				p = self.handleLive( data );
 			if ( 'request' === type )
-				await self.handleRequest( event.data );
+				p = self.handleRequest( data );
 			
-			if ( opts )
-				self.updateLocalOpts( id, opts );
-		}
-		} catch( ex ) {
-			console.log( 'load item loop ex', ex );
-		}
+			return p;
+		});
 		
+		await Promise.all( waitingFor );
+		
+		list.forEach( event => {
+			const data = event.data;
+			const id = data.id;
+			const opts = state[ id ];
+			if ( null == opts )
+				return;
+			else
+				self.updateLocalOpts( id, opts );
+		});
+		
+		self.loaded = true;
 		sendLoaded();
+		self.updateIdentities();
 		
 		function sendLoaded() {
-			console.log( 'sendLoaded' );
 			const loaded = {
 				type : 'loaded',
 			};
@@ -3269,7 +3275,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 		
 		function sendReload() {
-			console.log( 'sendReload' );
 			const re = {
 				type : 'reload',
 			};
@@ -3341,80 +3346,82 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.updateIdentities = function( moduleId ) {
 		const self = this;
-		const cIds = self.itemIds.map( id => {
-			const item = self.items[ id ];
-			const d = item.data;
-			if ( d.modId === moduleId )
-				return {
-					itemId   : id,
-					clientId : d.clientId,
-				};
-			else
-				return null;
-		}).filter( i => null != i );
+		if ( null == moduleId )
+			updateAll();
+		else
+			updateForModule( moduleId );
 		
-		if ( !cIds || !cIds.length )
-			return;
+		function updateAll() {
+			const mIds = Object.keys( self.modules );
+			mIds.forEach( mId => {
+				updateForModule( mId );
+			});
+		}
 		
-		const mod = self.getModule( moduleId );
-		cIds.forEach( i => {
-			update( i );
-		});
+		function updateForModule( mId ) {
+			const cIds = getModuleCIds( mId );
+			if ( !cIds || !cIds.length )
+				return;
+			
+			const mod = self.getModule( mId );
+			cIds.forEach( i => {
+				update( i, mod );
+			});
+		}
 		
-		async function update( i ) {
-			let id = null;
+		async function update( i, mod ) {
+			let identity = null;
+			identity = await self.getIdentity( i.clientId, mod );
+			/*
 			try {
-				id = await mod.getIdentity( i.clientId );
+				identity = await mod.getIdentity( i.clientId );
 			} catch( ex ) {
 				console.log( 'Activity.updateIdentities - mod.getIdentity ex', ex );
+				self.remove( i.id );
 				return;
 			}
+			*/
 			
 			const uptd = {
 				type : 'identity',
 				data : {
-					id       : i.itemId,
-					identity : id,
+					id       : i.id,
+					identity : identity,
 				},
 			};
 			self.view.send( uptd );
 		}
+		
+		function getModuleCIds( mId ) {
+			const cIds = self.itemIds.map( id => {
+				const item = self.items[ id ];
+				const d = item.data;
+				if ( d.modId === mId )
+					return {
+						id       : id,
+						clientId : d.clientId,
+					};
+				else
+					return null;
+			}).filter( i => null != i );
+			
+			return cIds;
+		}
 	}
 	
-	ns.Activity.prototype.handleMessage = async function( msg ) {
+	ns.Activity.prototype.handleMessage = function( msg ) {
 		const self = this;
-		const id = msg.id;
-		msg.identity = await self.lookupIdentity( msg.clientId, msg.modId );
-		const event = {
-			type : 'message',
-			data : msg,
-		};
-		
-		self.setItem( id, event );
+		return self.setItem( msg, 'message' );
 	}
 	
-	ns.Activity.prototype.handleLive = async function( live ) {
+	ns.Activity.prototype.handleLive = function( live ) {
 		const self = this;
-		const id = live.id;
-		live.identity = await self.lookupIdentity( live.clientId, live.modId );
-		const event = {
-			type : 'live',
-			data : live,
-		};
-		
-		self.setItem( id, event );
+		return self.setItem( live, 'live' );
 	}
 	
-	ns.Activity.prototype.handleRequest = async function( req ) {
+	ns.Activity.prototype.handleRequest = function( req ) {
 		const self = this;
-		const id = req.id;
-		req.identity = await self.lookupIdentity( req.clientId, req.modId );
-		const event = {
-			type : 'request',
-			data : req,
-		};
-		
-		self.setItem( id, event );
+		return self.setItem( req, 'request' );
 	}
 	
 	ns.Activity.prototype.handleUpdate = async function( uptd ) {
@@ -3439,29 +3446,96 @@ Searchable collection(s) of users, rooms and other odds and ends
 		if ( cache && cache.data )
 			return cache.data;
 		
+		if( !self.loaded )
+			return null;
+		
+		let id = null;
 		const mod = self.getModule( mId );
 		if ( !mod )
 			return null;
 		
+		id = await self.getIdentity( cId, mod );
+		if ( null == id )
+			return null;
+		
+		return id;
+	}
+	
+	ns.Activity.prototype.getIdentity = async function( clientId, mod ) {
+		const self = this;
 		let id = null;
+		let item = null;
 		try {
-			id = await mod.getIdentity( cId );
+			id = await getIdMaybeTimeout( clientId, mod );
 		} catch( ex ) {
-			console.log( 'app.Activity.lookupIdentity - mod ex', ex );
-			throw Error( 'ERR_NO_IDENTITY' );
+			item = self.cIdMap[ clientId ];
+			console.log( 'app.Activity.getIdentity - ex', {
+				ex   : ex,
+				item : item,
+			});
 		}
 		
-		if ( null == id )
-			throw new Error( 'Activity.lookupIdentity - mods must return a valid id, '
-			+ 'or throw an exception indicating the id is no longer valid' );
+		if ( null == id ) {
+			item = self.cIdMap[ clientId ];
+			self.removeItem( item.data.id );
+			return;
+		}
 		
+		self.cacheIdentity( id );
+		return id;
+		
+		function getIdMaybeTimeout( cId, mod ) {
+			return new Promise(( resolve, reject ) => {
+				let hasFinished = false;
+				let timeId = window.setTimeout( timedOut, 1000 * 30 );
+				mod.getIdentity( cId )
+					.then( hasResult )
+					.catch( err );
+					
+				function timedOut() {
+					timeId = null;
+					done( null );
+				}
+				
+				function hasResult( id ) {
+					if ( null != timeId )
+						window.clearTimeout( timeId );
+					
+					done( id );
+				}
+				
+				function done( id ) {
+					if ( hasFinished )
+						return;
+					
+					hasFinished = true;
+					resolve( id );
+				}
+				
+				function err( ex ) {
+					console.log( 'err', ex );
+					if ( null != timeId )
+						window.clearTimeout( timeId );
+					
+					if ( hasFinished )
+						return;
+					
+					reject( ex );
+				}
+			});
+		}
+	}
+	
+	ns.Activity.prototype.cacheIdentity = function( id ) {
+		const self = this;
+		const cId = id.clientId;
 		const basicId = {
-			clientId : id.clientId,
+			clientId : cId,
 			name     : id.name,
 			avatar   : id.avatar,
 		};
+		
 		api.ApplicationStorage.set( cId, basicId );
-		return id;
 	}
 	
 	ns.Activity.prototype.handleItemEvent = function( e ) {
@@ -3560,7 +3634,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		
 		const res = await self.activity.sendEvent( 'message', msg );
 		if ( options )
-			self.update( clientId, options );
+			self.updateItem( clientId, options );
 		
 		return res;
 	}
@@ -3597,12 +3671,12 @@ Searchable collection(s) of users, rooms and other odds and ends
 		
 		const res = await self.activity.sendEvent( 'live', live );
 		if ( options )
-			self.update( clientId, options );
+			self.updateItem( clientId, options );
 		
 		return res;
 	}
 	
-	/* update
+	/* updateItem
 		
 		Use to update state on an already existing item
 		
@@ -3610,9 +3684,8 @@ Searchable collection(s) of users, rooms and other odds and ends
 		options  : see options description
 		
 		Returns a Promise
-		WILL THROW AN ERROR if item does not yet exists
 	*/
-	ns.ActivityModule.prototype.update = function( clientId, options ) {
+	ns.ActivityModule.prototype.updateItem = function( clientId, options ) {
 		const self = this;
 		const uptd = {
 			modId     : self.id,
@@ -3624,6 +3697,24 @@ Searchable collection(s) of users, rooms and other odds and ends
 		return self.activity.sendUpdate( 'update', uptd );
 	}
 	
+	/* updateIdentity
+	
+		Use to update an items identity
+		clientId : <uuid string>
+		identity : <identity object>
+		
+	*/
+	ns.ActivityModule.prototype.updateIdentity = function( clientId, identity ) {
+		const self = this;
+		const uptd = {
+			modId     : self.id,
+			clientId  : clientId,
+			identity  : identity,
+			timestamp : Date.now(),
+		};
+		
+		return self.activity.sendUpdate( 'identity', uptd );
+	}
 	
 	/* read
 		

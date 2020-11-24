@@ -1245,7 +1245,6 @@ library.view = library.view || {};
 (function( ns, undefined ) {
 	ns.Presence = function( conf ) {
 		const self = this;
-		console.log( 'main.Presence', conf );
 		self.userId = conf.userId;
 		
 		library.view.BaseModule.call( self, conf );
@@ -1518,10 +1517,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleInviteRemove = function( invId ) {
 		const self = this;
-		console.log( 'main.Presence.handleInviteRemove', {
-			iId     : invId,
-			queries : self.invites,
-		});
 		const inv = self.invites[ invId ];
 		if ( null == inv )
 			return;
@@ -2009,7 +2004,6 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.handleMsgWaiting = function( state ) {
 		const self = this;
-		console.log( 'handleMsgWaiting', state );
 		if ( null == state.unread )
 			return;
 		
@@ -2353,7 +2347,6 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.updateLiveDisplay = function( ls ) {
 		const self = this;
-		console.log( 'view.PresenceContact.updateLiveDisplay', ls );
 		self.liveStatus.setUserLive( ls.user );
 		self.liveStatus.setContactLive( ls.contact );
 	}

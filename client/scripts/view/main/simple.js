@@ -595,10 +595,6 @@ var hello = window.hello || {};
 	
 	ns.Activity.prototype.toggleItemsList = function( force ) {
 		const self = this;
-		console.log( 'toggleItemList', {
-			force   : force,
-			itemIds : self.itemIds,
-		});
 		if (( null == force ) && ( self.itemIds.length > 1 ))
 			return;
 		
@@ -625,7 +621,6 @@ var hello = window.hello || {};
 	
 	ns.Activity.prototype.doneLoading = function() {
 		const self = this;
-		console.log( 'doneLoading' );
 		if ( null != self.loadingTimeout )
 			window.clearTimeout( self.loadingTimeout );
 		
@@ -646,7 +641,6 @@ var hello = window.hello || {};
 	
 	ns.Activity.prototype.handleLoaded = function() {
 		const self = this;
-		console.log( 'handleLoaded' );
 		window.setTimeout( show, 300 );
 		function show() {
 			self.doneLoading();
@@ -1187,6 +1181,8 @@ var hello = window.hello || {};
 		self.updates.on( 'mentions', e => self.handleMention( e ));
 		self.updates.on( 'live', e => self.handleLiveNum( e ));
 		self.updates.on( 'live-state', e => self.handleLiveState( e ));
+		self.updates.on( 'message', e => self.handleMessage( e ));
+		self.updates.on( 'from', e => self.handleFrom( e ));
 	}
 	
 	ns.ActivityRoom.prototype.handleUnread = function( unread ) {
@@ -1246,6 +1242,16 @@ var hello = window.hello || {};
 		}
 	}
 	
+	ns.ActivityRoom.prototype.handleMessage = function( message ) {
+		const self = this;
+		console.log( 'handleMessage - NYI', message );
+	}
+	
+	ns.ActivityRoom.prototype.handleFrom = function( from ) {
+		const self = this;
+		console.log( 'handleFrom - NYI', from );
+	}
+	
 	ns.ActivityRoom.prototype.setup = function( conf ) {
 		const self = this;
 		const opts = conf.opts || {};
@@ -1276,6 +1282,7 @@ var hello = window.hello || {};
 		};
 		
 		return tmplConf;
+		
 	}
 	
 	ns.ActivityRoom.prototype.buildLiveIndicator = function() {

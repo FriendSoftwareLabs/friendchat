@@ -986,8 +986,15 @@ var hello = window.hello || {};
 		const id = update.data;
 		const cId = id.clientId;
 		self.identities[ cId ] = id;
-		if ( 'avatar' === update.type )
+		
+		const prop = update.type;
+		if ( 'avatar' === prop )
 			self.addUserCss( cId, id.avatar );
+		
+		if ( 'name' === prop ) {
+			const user = self.get( cId );
+			user.updateName( id.name );
+		}
 	}
 	
 	ns.UserCtrl.prototype.handleAuth = function( event ) {

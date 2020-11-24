@@ -507,9 +507,15 @@ library.component = library.component || {};
 			return;
 		}
 		
-		self.presence.openChat({
+		const conf = {
 			id : roomId,
-		}, view );
+		};
+		
+		self.presence.openChat(
+			conf,
+			true,
+			view
+		);
 	}
 	
 	ns.PresenceService.prototype.send = function( event ) {

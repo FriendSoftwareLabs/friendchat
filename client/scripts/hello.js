@@ -542,7 +542,6 @@ var hello = null;
 					console.log( 'loadRetry - exp while aborting request', e );
 				}
 				
-				console.log( 'loadRetry' );
 				self.hostConfRequest = null;
 				let delay = 1000 * 3;
 				let reconnectTime = Date.now() + delay;
@@ -642,7 +641,6 @@ var hello = null;
 	
 	ns.Hello.prototype.showConnStatus = function( state ) {
 		const self = this;
-		console.log( 'hello.showConnStatus', state );
 		const event = {
 			type : 'conn-state',
 			data : state,
@@ -663,7 +661,6 @@ var hello = null;
 		
 		const conf = self.config.run;
 		if ( 'live-invite' === conf.type ) {
-			console.log( 'live-invite', conf );
 			const data = conf.data;
 			if ( data.name && data.permissions ) {
 				const opts = {
@@ -840,7 +837,6 @@ var hello = null;
 		}
 		
 		function success( account ) {
-			console.log( 'hello.doRelogin - success' );
 			self.triedRelogin = false;
 			self.module.reconnect();
 			self.activity.reconnect();
@@ -890,7 +886,6 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
-		console.log( 'hello.updateConnState', state );
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
 		if (   'error' === state.type
@@ -1123,6 +1118,7 @@ var hello = null;
 	
 	ns.Hello.prototype.handlePushNotie = function( event, view ) {
 		const self = this;
+		/*
 		console.log( 'handlePushNotie', {
 			event    : event,
 			view     : view,
@@ -1131,6 +1127,7 @@ var hello = null;
 			service  : self.service,
 			resumeTO : self.resumeTimeout,
 		});
+		*/
 		if ( !self.loaded ) {
 			self.registerOnLoaded( onLoaded );
 			return;
@@ -1161,7 +1158,6 @@ var hello = null;
 		}
 		
 		if ( !self.service && !view ) {
-			console.log( 'creating fake view for', event );
 			self.fakeView = true;
 			const roomName = event.title;
 			extra.isPrivate = true;
@@ -1221,10 +1217,6 @@ var hello = null;
 	
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
-		console.log( 'Hello.handleAppResume', {
-			e        : event,
-			isONline : self.isOnline,
-		});
 		if ( !self.isOnline ) {
 			console.log( 'hello.handleAppResume - already reconnecting' );
 			return;
@@ -1266,11 +1258,6 @@ var hello = null;
 	
 	ns.Hello.prototype.doResume = function() {
 		const self = this;
-		console.log( 'doResume', {
-			isOnline : self.isOnline,
-			reTO     : self.resumeTimeout,
-			resCB    : self.resumeCallbacks,
-		} );
 		if ( !self.isOnline || ( null != self.resumeTimeout ))
 			return;
 		

@@ -447,7 +447,7 @@ library.contact = library.contact || {};
 		if ( !!message )
 			return self.recentMessage( message, from, time, opts );
 		else
-			return self.activity.update( self.clientId, opts );
+			return self.activity.updateItem( self.clientId, opts );
 		
 	}
 	
@@ -458,7 +458,7 @@ library.contact = library.contact || {};
 			broadcast : true,
 			unread    : self.messagesWaiting,
 		};
-		return self.activity.update( self.clientId, opts );
+		return self.activity.updateItem( self.clientId, opts );
 	}
 	
 	ns.Contact.prototype.mentionWaiting = function( isWaiting, message, from, time ) {
@@ -477,7 +477,7 @@ library.contact = library.contact || {};
 			mentions  : self.mentionsWaiting,
 		};
 		
-		return self.activity.update( self.clientId, opts );
+		return self.activity.updateItem( self.clientId, opts );
 	}
 	
 	ns.Contact.prototype.setMentions = function( mentions ) {
@@ -487,7 +487,7 @@ library.contact = library.contact || {};
 			broadcast : true,
 			mentions  : self.mentionsWaiting,
 		};
-		return self.activity.update( self.clientId, opts );
+		return self.activity.updateItem( self.clientId, opts );
 	}
 	
 	ns.Contact.prototype.sendMessage = function( str ) {
@@ -892,6 +892,15 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updateIdentity = function( update ) {
 		const self = this;
+		const id = update.data;
+		const cId = id.clientId;
+		if ( self.clientId === cId ) {
+			self.identity = id;
+			self.activity.updateIdentity( cId, id );
+			//if ( 'name' === update.type )
+			
+		}
+		
 		const event = {
 			type : 'identity-update',
 			data : update,
@@ -1103,8 +1112,10 @@ library.contact = library.contact || {};
 		self.setupLive( permissions );
 	}
 	
-	ns.PresenceRoom.prototype.openChat = function( preView ) {
+	ns.PresenceRoom.prototype.openChat = function( notification, preView ) {
 		const self = this;
+		self.hasNotification = !!notification;
+		
 		if ( self.chatView ) {
 			self.chatView.show();
 			return;
@@ -1112,7 +1123,8 @@ library.contact = library.contact || {};
 		
 		if ( !self.initialized ) {
 			self.openChatPending = {
-				view : preView || null,
+				notification : notification,
+				view         : preView || null,
 			};
 			return;
 		}
@@ -1285,7 +1297,7 @@ library.contact = library.contact || {};
 		hello.focusMain();
 	}
 	
-	ns.PresenceRoom.prototype.handleInitialize = function( state ) {
+	ns.PresenceRoom.prototype.handleInitialize = async function( state ) {
 		const self = this;
 		self.users = state.users || {};
 		self.userIds = Object.keys( self.users );
@@ -1299,93 +1311,98 @@ library.contact = library.contact || {};
 		
 		self.setSettings( state.settings );
 		
-		self.getIdentities( self.userIds )
-			.then( idsBack )
-			.catch( e => console.log( e ));
+		let ids = null;
+		try {
+			ids = await self.getIdentities( self.userIds );
+		} catch( ex ) {
+			console.log( 'handleInitalize - getIdentities boop', ex );
+			return;
+		}
 		
-		function idsBack( ids ) {
-			ids.forEach( id => {
-				const cId = id.clientId;
-				self.identities[ cId ] = id;
+		ids.forEach( id => {
+			const cId = id.clientId;
+			self.identities[ cId ] = id;
+		});
+		
+		if ( self.workgroups ) {
+			self.setWorkgroupMembers();
+			if ( !selfIsUser())
+				self.valueAddedRoom = true;
+		}
+		
+		let user = null;
+		try {
+			user = self.idc.get( self.userId );
+		} catch( ex ) {
+			console.log( 'handleInitialize - get ex', ex );
+		}
+		
+		if ( !user ) {
+			console.log( 'PresenceRoom.handleInitialize - no id for user', {
+				uid  : self.userId,
+				idc  : self.idc,
+				self : self,
 			});
-			
-			if ( self.workgroups ) {
-				self.setWorkgroupMembers();
-				if ( !selfIsUser())
-					self.valueAddedRoom = true;
-			}
-			
-			self.idc.get( self.userId )
-				.then( selfBack )
-				.catch( e => console.log( e ));
+			return;
 		}
 		
-		function selfBack( user ) {
-			if ( !user ) {
-				console.log( 'PresenceRoom.handleInitialize - no id for user', {
-					uid  : self.userId,
-					idc  : self.idc,
-					self : self,
-				});
-				return;
-			}
-			
-			const roomUser = self.users[ self.userId ];
-			const isAuthed = roomUser ? roomUser.isAuthed : false;
-			const viewUpdate = {
-				type : 'init',
-				data : {
-					name        : self.identity.name,
-					isOwner     : self.userId === self.ownerId,
-					isAdmin     : user.isAdmin,
-					isAuthed    : isAuthed,
-					persistent  : self.persistent,
-				},
-			};
-			self.toView( viewUpdate );
-			
-			self.updateViewUsers();
-			self.updateIdentities();
-			self.updateRelation( state.relation );
-			self.updateAtStrings();
-			
-			self.initialized = true;
-			// update main view with # of peers in a live session
-			const uptdPeers = {
-				type : 'peers',
-				data : state.peers,
-			};
-			self.onLive( uptdPeers );
-			
-			if ( self.chatView )
-				self.chatView.send({
-					type : 'state',
-					data : state,
-				});
-			
-			if ( self.goLivePending ) {
-				let liveConf = self.goLivePending;
-				delete self.goLivePending;
-				self.joinLive( liveConf );
-			}
-			else if ( self.live ) {
-				self.restoreLive();
-			}
-			
-			if ( self.openChatPending ) {
-				const pend = self.openChatPending;
-				self.openChatPending = null;
-				self.openChat( pend.view );
-			}
-			
-			self.updateActive();
+		const roomUser = self.users[ self.userId ];
+		const isAuthed = roomUser ? roomUser.isAuthed : false;
+		const viewUpdate = {
+			type : 'init',
+			data : {
+				name        : self.identity.name,
+				isOwner     : self.userId === self.ownerId,
+				isAdmin     : user.isAdmin,
+				isAuthed    : isAuthed,
+				persistent  : self.persistent,
+			},
+		};
+		self.toView( viewUpdate );
+		
+		self.updateViewUsers();
+		self.updateIdentities();
+		self.updateAtStrings();
+		await self.updateRelation( state.relation );
+		
+		self.initialized = true;
+		// update main view with # of peers in a live session
+		const uptdPeers = {
+			type : 'peers',
+			data : state.peers,
+		};
+		self.onLive( uptdPeers );
+		
+		if ( self.chatView )
+			self.chatView.send({
+				type : 'state',
+				data : state,
+			});
+		
+		if ( self.goLivePending ) {
+			let liveConf = self.goLivePending;
+			delete self.goLivePending;
+			self.joinLive( liveConf );
 		}
+		else if ( self.live ) {
+			self.restoreLive();
+		}
+		
+		if ( self.openChatPending ) {
+			const pend = self.openChatPending;
+			self.openChatPending = null;
+			self.openChat(
+				pend.notification,
+				pend.view
+			);
+		}
+		
+		self.updateActive();
 		
 		function selfIsUser() {
 			const is = !!self.users[ self.userId ];
 			return is;
 		}
-		
 	}
 	
 	ns.PresenceRoom.prototype.restoreLive = function() {
@@ -1426,16 +1443,31 @@ library.contact = library.contact || {};
 		if ( !self.lastMessage )
 			return;
 		
-		if ( relation.unread 
-			&& !( self.chatView && !self.chatView.checkMinimized())
-		) {
+		if ( checkHasActivity( relation )) {
 			const msg = self.lastMessage.data;
 			self.recentMessage( msg.message, msg.from, msg.time );
-			self.setUnreadMessages( relation.unread );
-			self.setMentions( relation.mentions );
+			if ( self.chatView && !self.chatView.checkMinimized()) {
+				self.setUnreadMessages( 0 );
+				self.setMentions( 0 );
+			} else {
+				self.setUnreadMessages( relation.unread );
+				self.setMentions( relation.mentions );
+			}
 		} else {
 			self.setUnreadMessages( 0 );
 			self.setMentions( 0 );
+		}
+		
+		function checkHasActivity( rel ) {
+			if ( self.hasNotification ) {
+				self.hasNotification = false;
+				return true;
+			}
+			
+			if ( !rel.unread )
+				return false;
+			
+			return true;
 		}
 	}
 	
@@ -2113,6 +2145,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.onMessage = function( msg ) {
 		const self = this;
+		self.hasNotification = false;
 		let fromSelf = false;
 		if ( msg.fromId === self.userId )
 			fromSelf = true;
@@ -2392,7 +2425,7 @@ library.contact = library.contact || {};
 			};
 			
 			if ( self.activity )
-				self.activity.update( self.clientId, opts );
+				self.activity.updateItem( self.clientId, opts );
 		}
 		
 		function notPID( peerId ) {
@@ -2506,7 +2539,7 @@ library.contact = library.contact || {};
 		};
 		
 		if ( !isClient ) {
-			self.activity.update( self.clientId, opts );
+			self.activity.updateItem( self.clientId, opts );
 			return;
 		}
 		
@@ -2565,7 +2598,7 @@ library.contact = library.contact || {};
 			const opts = {
 				'live-state' : state
 			};
-			self.activity.update( self.clientId, opts );
+			self.activity.updateItem( self.clientId, opts );
 		}
 		
 		function close( sendLeave ) {
@@ -2731,6 +2764,13 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.updateIdentity = function( update ) {
 		const self = this;
+		const id = update.data;
+		const cId = id.clientId;
+		if ( self.clientId === cId ) {
+			self.identity = id;
+			self.activity.updateIdentity( cId, id );
+		}
+		
 		const event = {
 			type : 'identity-update',
 			data : update,
@@ -2827,9 +2867,9 @@ library.contact = library.contact || {};
 			status : status,
 		};
 		try {
-			await self.activity.update( self.clientId, uptd );
+			await self.activity.updateItem( self.clientId, uptd );
 		} catch( ex ) {
-			console.log( 'PresenceContact.setOnline - activity.update ex', ex );
+			console.log( 'PresenceContact.setOnline - activity.updateItem ex', ex );
 		}
 	}
 	
@@ -2897,16 +2937,34 @@ library.contact = library.contact || {};
 				activityItem.data.options
 			);
 		
-		if ( !!rel.unread
-			&& !( self.chatView && !self.chatView.checkMinimized() )
-		) {
+		if ( null == self.lastMessage )
+			return;
+		
+		if ( checkHasActivity( rel )) {
 			const msg = self.lastMessage.data;
 			self.recentMessage( msg.message, msg.from, msg.time );
-			self.setUnreadMessages( rel.unread );
-			self.setMentions( rel.mentions );
+			if ( self.chatView && !self.chatView.checkMinimized()) {
+				self.setUnreadMessages( 0 );
+				self.setMentions( 0 );
+			} else {
+				self.setUnreadMessages( relation.unread );
+				self.setMentions( relation.mentions );
+			}
 		} else {
 			self.setUnreadMessages( 0 );
 			self.setMentions( 0 );
+		}
+		
+		function checkHasActivity( rel ) {
+			if ( self.hasNotification ) {
+				self.hasNotification = false;
+				return true;
+			}
+			
+			if ( !rel.unread )
+				return false;
+			
+			return true;
 		}
 	}
 	
@@ -3073,12 +3131,6 @@ library.contact = library.contact || {};
 		self.liveState.user = true;
 		const isClient = checkClientLive( liveId );
 		const state = isClient ? 'client' : 'user';
-		console.log( 'handleLiveOpen', {
-			event    : event,
-			live     : self.liveState,
-			state    : state,
-			isClient : isClient,
-		});
 		if ( state === self.liveState.description ) {
 			console.log( 'aborting' );
 			return;
@@ -3182,7 +3234,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.updateLiveState = function() {
 		const self = this;
-		console.log( 'updateLiveState', self.liveState );
 		if ( self.view )
 			self.view.send({
 				type : 'live-state',
@@ -3195,7 +3246,7 @@ library.contact = library.contact || {};
 		const opts = {
 			'live-state' : self.liveState,
 		};
-		self.activity.update( self.clientId, opts );
+		self.activity.updateItem( self.clientId, opts );
 	}
 	
 	ns.PresenceContact.prototype.liveToView = function( event ) {
@@ -3297,24 +3348,32 @@ library.contact = library.contact || {};
 	}
 	*/
 	
-	ns.PresenceContact.prototype.openChat = function( preView ) {
+	ns.PresenceContact.prototype.openChat = function( notification, preView ) {
 		const self = this;
 		if ( !self.isOpen ) {
 			self.openChatPending = {
-				view : preView || null,
+				notification : notification,
+				view         : preView || null,
 			};
 			self.open();
 		} else {
-			if ( !preView && self.openChatPending )
-				preView = self.openChatPending.view;
-			
-			self.openChatView( preView );
+			const pending = self.openChatPending;
+			if ( pending ) {
+				delete self.openChatPending;
+				self.openChatView(
+					pending.notification,
+					pending.view
+				);
+			 }
+			 else
+				self.openChatView();
 		}
 	}
 	
-	ns.PresenceContact.prototype.openChatView = function( preView ) {
+	ns.PresenceContact.prototype.openChatView = function( notification, preView ) {
 		const self = this;
 		self.openChatPending = false;
+		self.hasNotification = !!notification;
 		self.resetCounters();
 		
 		if ( self.chatView ) {
@@ -3381,6 +3440,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.onMessage = function( event ) {
 		const self = this;
+		self.hasNotification = false;
 		let fromSelf = false;
 		if ( event.fromId === self.userId )
 			fromSelf = true;

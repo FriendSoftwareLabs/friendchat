@@ -602,20 +602,50 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.getIdentity = async function( clientId ) {
 		const self = this;
-		const id = await self.lookupIdentity( clientId );
+		let id = await self.lookupIdentity( clientId );
 		if ( null != id )
 			return id;
 		
-		return await waitFor( clientId );
+		id = await waitFor( clientId );
+		if ( null == id ) {
+			console.log( 'throw' );
+			throw 'ERR_NO_ID';
+		}
+		
+		return id;
 		
 		function waitFor( cId ) {
 			return new Promise(( resolve, reject ) => {
-				self.getIdentityBacklog[ cId ] = resolveId;
-				function resolveId( id ) {
-					if ( null == id )
-						reject( 'ERR_NO_ID' );
+				let waiters = self.getIdentityBacklog[ cId ];
+				if ( null == waiters ) {
+					waiters = {
+						timeout : null,
+						list    : [],
+					};
+					waiters.timeout = window.setTimeout( noIdFound, 1000 * 20 );
+					self.getIdentityBacklog[ cId ] = waiters;
+				}
+				
+				waiters.list.push( resolveIdentity );
+				function resolveIdentity( id ) {
+					if ( !id )
+						resolve( null );
 					else
 						resolve( id );
+				}
+				
+				function noIdFound() {
+					const waiters = self.getIdentityBacklog[ cId ];
+					console.log( 'noIdFound', {
+						cId     : cId,
+						waiters : waiters,
+					});
+					if ( !waiters )
+						return;
+					
+					waiters.list.forEach( fun => {
+						fun( null );
+					});
 				}
 			});
 		}
@@ -795,7 +825,7 @@ library.module = library.module || {};
 		});
 	}
 	
-	ns.Presence.prototype.openChat = function( conf, view ) {
+	ns.Presence.prototype.openChat = function( conf, notification, view ) {
 		const self = this;
 		if ( !self.initialized ) {
 			self.queueEvent( 'openChat', [ conf, view ] );
@@ -803,19 +833,14 @@ library.module = library.module || {};
 		}
 		
 		const item = self.getTypeItem( conf.id, conf.type );
-		if ( !item ) {
+		if ( !item || !item.openChat ) {
+			conf.notification = !!notification;
 			conf.view = view || null;
 			self.openChatWaiting.push( conf );
 			return;
 		}
 		
-		if ( !item.openChat ) {
-			conf.view = view || null;
-			self.openChatWaiting.push( conf );
-			return;
-		}
-		
-		item.openChat( view );
+		item.openChat( notification, view );
 	}
 	
 	ns.Presence.prototype.goLiveAudio = function( conf ) {
@@ -1162,17 +1187,17 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleIdBacklog = function() {
 		const self = this;
-		const list = Object.keys( self.getIdentityBacklog );
-		if ( !list || !list.length )
+		const waitingList = Object.keys( self.getIdentityBacklog );
+		if ( !waitingList || !waitingList.length )
 			return;
 		
-		list.forEach( cId => self.checkIdBacklog( cId ));
+		waitingList.forEach( cId => self.checkIdBacklog( cId ));
 	}
 	
 	ns.Presence.prototype.checkIdBacklog = async function( cId ) {
 		const self = this;
-		const resolveFn = self.getIdentityBacklog[ cId ];
-		if ( !resolveFn )
+		const waiters = self.getIdentityBacklog[ cId ];
+		if ( !waiters )
 			return;
 		
 		const id = await self.lookupIdentity( cId );
@@ -1180,7 +1205,10 @@ library.module = library.module || {};
 			return;
 		
 		delete self.getIdentityBacklog[ cId ];
-		resolveFn( id );
+		window.clearTimeout( waiters.timeout );
+		waiters.list.forEach( fun => {
+			fun( id );
+		});
 	}
 	
 	ns.Presence.prototype.lookupIdentity = async function( cId ) {
@@ -1481,19 +1509,13 @@ library.module = library.module || {};
 		const self = this;
 		const token = invite.token;
 		if ( null != self.invites[ token ]) {
-			console.log( 'already have invite', {
-				invite  : invite,
-				invites : self.invites,
-			});
+			// already have invite
 			return;
 		}
 		
 		const roomId = invite.roomId;
 		if ( null != self.rooms[ roomId ]) {
-			console.log( 'already in room for invite', {
-				invite : invite,
-				rooms  : self.rooms,
-			});
+			// alreay have room
 			return;
 		}
 		
