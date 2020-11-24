@@ -549,7 +549,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleMode = function( mode ) {
 		const self = this;
-		console.log( 'handleMode', mode );
 		if ( mode && self.mode ) {
 			if ( mode.type === self.mode.type )
 				return;
@@ -602,10 +601,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const presenterId = self.mode.data.owner;
 		const isPresenter = ( presenterId === self.userId );
+		/*
 		if ( !isPresenter ) {
 			self.mode.data.wasMuted = !!self.selfie.isMute;
 			self.selfie.toggleMute( true );
 		}
+		*/
 		
 		self.ui.setModePresentation( presenterId, isPresenter );
 		
@@ -640,8 +641,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.clearModePresentation = function() {
 		const self = this;
+		/*
 		if (  null != self.mode.data.wasMuted )
 			self.selfie.toggleMute( self.mode.data.wasMuted );
+		*/
 		
 		self.ui.clearModePresentation();
 		self.modePerms = null;
@@ -824,15 +827,53 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 	}
 	
-	ns.RTC.prototype.sendModeToggle = function( modeId ) {
+	ns.RTC.prototype.sendModeToggle = function( modeId, enable ) {
 		const self = this;
 		const mode = {
 			type : 'mode',
 			data : {
-				type : modeId,
+				type   : modeId,
+				enable : enable,
 			},
 		};
 		self.conn.send( mode );
+	}
+	
+	ns.RTC.prototype.screenSharePresentationToggle = function( isSharing ) {
+		const self = this;
+		if ( isSharing )
+			enable();
+		else
+			disable();
+		
+		function enable() {
+			if ( null == self.mode ) {
+				sendToggle( true );
+				return;
+			}
+			
+			if ( 'presentation' == self.mode.type )
+				return;
+			
+			sendToggle( true );
+		}
+		
+		function disable() {
+			if ( null == self.mode )
+				return;
+			
+			if ( 'presentation' != self.mode.type )
+				return;
+			
+			if ( self.userId != self.mode.data.owner )
+				return;
+			
+			sendToggle( false );
+		}
+		
+		function sendToggle( enable ) {
+			self.sendModeToggle( 'presentation', enable );
+		}
 	}
 	
 	ns.RTC.prototype.setupAdmin = function() {
@@ -1204,6 +1245,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function broadcastScreenMode( mode ) { broadcast( 'screen-mode', mode ); }
 		function broadcastScreenShare( isSharing ) {
 			broadcast( 'screen-share', isSharing );
+			self.screenSharePresentationToggle( isSharing );
 		}
 		
 		function systemMute( isMute ) {
@@ -1712,7 +1754,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.handleTrackEnded = function( track ) {
 		const self = this;
-		console.log( 'Selfie.handleTrackEnded', track );
 		if ( self.isScreenSharing && ( 'video' === track.kind )) {
 			self.toggleShareScreen();
 			return;
@@ -1846,7 +1887,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		async function share() {
 			self.isScreenSharing = true;
 			const ok = await self.media.shareScreen();
-			console.log( 'share, res', ok );
 			self.emit( 'screen-share', self.isScreenSharing );
 		}
 	}
@@ -2362,7 +2402,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		library.rtc.Selfie.call( self, conf, callback );
 		
-		console.log( 'Source', self );
 	}
 	
 	ns.Source.prototype = Object.create( library.rtc.Selfie.prototype );
@@ -3495,12 +3534,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleMeta = function( meta ) {
 		const self = this;
-		console.log( 'handleMeta', {
-			meta   : meta,
-			state  : self.state,
-			isHost : self.isHost,
-			peer   : self.identity.name,
-		});
 		if ( !self.isHost )
 			self.sendMeta();
 		
@@ -4073,7 +4106,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const id = self.identity;
 		const name = id.name;
 		const nameStr = name + ': ' + str;
-		console.log( nameStr, obj );
 	}
 	
 })( library.rtc );
@@ -4083,10 +4115,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Sink = function( conf ) {
 		const self = this;
 		library.rtc.Peer.call( self, conf );
-		
 		self.isHost = false;
 		
-		self.log( 'Sink' );
 	}
 	
 	ns.Sink.prototype = Object.create( library.rtc.Peer.prototype );

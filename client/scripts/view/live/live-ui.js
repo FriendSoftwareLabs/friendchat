@@ -150,7 +150,6 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.setModePresentation = function( presenterId, isPresenter ) {
 		const self = this;
-		console.log( 'setModePresentation', presenterId );
 		if ( isPresenter )
 			presenterId = 'selfie';
 		
@@ -392,7 +391,7 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.clearCurrentMode = function() {
 		const self = this;
-		console.log( 'clearCurrentMode' );
+		console.log( 'clearCurrentMode - NYI' );
 	}
 	
 	ns.UI.prototype.updateDisplayMode = async function() {

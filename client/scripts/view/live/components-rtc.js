@@ -2983,16 +2983,11 @@ library.rtc = library.rtc || {};
 		
 		const shareMedia = new window.MediaStream();
 		const shareConf = self.mediaConf.share;
-		if ( !shareConf )
-			shareConf = {
-				frameRate : 24,
-			};
-		
 		console.log( 'shareScreen - shareConf', shareConf );
 		const dConf = {
 			audio : false,
 			video : {
-				frameRate : shareConf.frameRate || 24,
+				frameRate : shareConf.frameRate,
 			},
 		};
 		
@@ -3170,8 +3165,8 @@ library.rtc = library.rtc || {};
 		self.shareQualityMap = {
 			'pixel'   : [ 1 ],
 			'low'     : [ 1 ],
-			'medium'  : [ 5 ],
-			'normal'  : [ 15 ],
+			'medium'  : [ 2 ],
+			'normal'  : [ 4 ],
 			'high'    : [ 24 ],
 		};
 		
@@ -3243,11 +3238,12 @@ library.rtc = library.rtc || {};
 		self.shareQualityKeys.forEach(( key, index ) => {
 			let value = arr[ index ];
 			if ( null == value )
-				value = 60;
+				value = 24;
 			
 			share[ key ] = value;
 		});
 		self.mediaConf.share = share;
+		console.log( 'setShareQuality', self.mediaConf.share );
 	}
 	
 	ns.Media.prototype.reconstrainTracks = function() {
@@ -3276,14 +3272,8 @@ library.rtc = library.rtc || {};
 		
 		function constrainScreenShare( track ) {
 			const q = self.shareQualityMap[ self.quality.level ];
-			console.trace( 'constrainScreenShare', {
-				t  : track,
-				q  : q,
-				qm : self.shareQualityMap,
-				ql : self.quality.level,
-			});
 			
-			const frameRate = q[ 0 ] || 120;
+			const frameRate = q[ 0 ];
 			const conf = {
 			};
 			
@@ -3291,6 +3281,13 @@ library.rtc = library.rtc || {};
 				ideal : frameRate,
 				max   : frameRate,
 			};
+			console.trace( 'constrainScreenShare', {
+				t    : track,
+				q    : q,
+				qm   : self.shareQualityMap,
+				ql   : self.quality.level,
+				conf : conf,
+			});
 			return track.applyConstraints( conf );
 		}
 		
