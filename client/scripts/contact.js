@@ -2947,8 +2947,8 @@ library.contact = library.contact || {};
 				self.setUnreadMessages( 0 );
 				self.setMentions( 0 );
 			} else {
-				self.setUnreadMessages( relation.unread );
-				self.setMentions( relation.mentions );
+				self.setUnreadMessages( rel.unread );
+				self.setMentions( rel.mentions );
 			}
 		} else {
 			self.setUnreadMessages( 0 );
