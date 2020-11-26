@@ -1118,6 +1118,7 @@ var hello = null;
 	
 	ns.Hello.prototype.handlePushNotie = function( event, view ) {
 		const self = this;
+		console.trace( 'handlePushNotie', event );
 		/*
 		console.log( 'handlePushNotie', {
 			event    : event,
@@ -1184,6 +1185,7 @@ var hello = null;
 	
 	ns.Hello.prototype.handleNotie = function( event ) {
 		const self = this;
+		console.trace( 'handleNotie', event );
 		if ( !event || !event.extra ) {
 			console.trace( 'hello.handleNotie - invalid event', event );
 			return false;

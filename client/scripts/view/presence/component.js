@@ -2337,7 +2337,6 @@ var hello = window.hello || {};
 		if ( !self.contactId )
 			return;
 		
-		
 		if ( 'message' == event.type ) {
 			confirmMessage( event.data );
 			return;
