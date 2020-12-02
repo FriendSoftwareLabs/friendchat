@@ -1144,6 +1144,7 @@ var hello = window.hello || {};
 		self.envelopes = {};
 		self.envelopeOrder = [];
 		self.supressConfirm = false;
+		self.userLastMsg = null;
 		
 		self.init( parentConn, workgroups );
 	}
@@ -1194,6 +1195,16 @@ var hello = window.hello || {};
 			self.linkEx.work( msgEl );
 		
 		self.confirmEvent( 'message', msg.msgId );
+	}
+	
+	ns.MsgBuilder.prototype.editLastUserMessage = function() {
+		const self = this;
+		if ( null == self.userLastMsg )
+			return false;
+		
+		const last = self.userLastMsg;
+		console.log( 'editLastMessage', last );
+		self.editMessage( last.msgId );
 	}
 	
 	ns.MsgBuilder.prototype.editMessage = function( itemId ) {
@@ -1277,6 +1288,7 @@ var hello = window.hello || {};
 		const edit = new library.component.MultiInput( multiConf );
 		edit.setValue( msg.message );
 		edit.on( 'submit', onSubmit );
+		edit.focus();
 		
 		subBtn.addEventListener( 'click', subClick, false );
 		cancelBtn.addEventListener( 'click', cancelClick, false );
@@ -1385,6 +1397,8 @@ var hello = window.hello || {};
 				'BackgroundHeavy',
 				'Rounded'
 			);
+			
+			self.input.focus();
 		}
 	}
 	
@@ -1806,6 +1820,12 @@ var hello = window.hello || {};
 		const self = this;
 		if ( self.exists( event.msgId ))
 			return;
+		
+		console.log( 'handleMsg', event );
+		if ( event.fromId === self.userId ) {
+			console.log( 'setting userLastMsg', event );
+			self.userLastMsg = event;
+		}
 		
 		const time = self.parseTime( event.time );
 		const envelope = self.getEnvelope( time.envelope );

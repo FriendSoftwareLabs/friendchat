@@ -852,14 +852,14 @@ library.component = library.component || {};
 	ns.InputHistory.prototype.init = function() {
 		const self = this;
 		self.actionMap = {
-			'ArrowUp'        : maybeShowOlder,
+			//'ArrowUp'        : maybeShowOlder,
 			'shiftArrowUp'   : older,
 			'shiftArrowDown' : newer,
 			'ctrlArrowUp'    : oldest,
 			'ctrlArrowDown'  : newest,
 		};
 		
-		function maybeShowOlder() { return self.maybeShowOlder(); }
+		//function maybeShowOlder() { return self.maybeShowOlder(); }
 		function older()          { return self.showOlder(); }
 		function newer()          { return self.showNewer(); }
 		function oldest()         { return self.showOldest(); }
@@ -910,11 +910,15 @@ library.component = library.component || {};
 	
 	ns.InputHistory.prototype.maybeShowOlder = function() {
 		const self = this;
+		return true;
+		
+		/*
 		const value = self.input.value;
 		if ( value )
 			return true;
 		
 		return self.showOlder();
+		*/
 	}
 	
 	ns.InputHistory.prototype.showOlder = function() {
@@ -1639,8 +1643,12 @@ library.component = library.component || {};
 	
 	ns.MultiInput.prototype.handleAUp = function( e ) {
 		const self = this;
-		const used = self.emit( 'arrow', 'up' );
+		const value = self.ta.value;
+		const used = self.emit( 'arrow', 'up', value );
 		if ( !used )
+			return true;
+		
+		if ( '' != self.currentTAHeight )
 			return true;
 		
 		e.preventDefault();
@@ -1651,7 +1659,8 @@ library.component = library.component || {};
 	
 	ns.MultiInput.prototype.handleADown = function( e ) {
 		const self = this;
-		const used = self.emit( 'arrow', 'down' );
+		const value = self.ta.value;
+		const used = self.emit( 'arrow', 'down', value );
 		if ( !used )
 			return true;
 		

@@ -414,7 +414,7 @@ library.view = library.view || {};
 		self.input.on( 'state' , e => self.handleInputState( e ));
 		self.input.on( 'change', e => self.handleInputChange( e ));
 		self.input.on( 'tab'   , e => self.handleInputTab( e ));
-		self.input.on( 'arrow' , e => self.handleInputArrow( e ));
+		self.input.on( 'arrow' , ( e, v ) => self.handleInputArrow( e, v ));
 		self.input.on( 'enter' , e => self.handleInputEnter( e ));
 		self.input.on( 'submit', e => self.handleInputSubmit( e ));
 		
@@ -937,13 +937,23 @@ library.view = library.view || {};
 		self.expandAtString( at, ' ' );
 	}
 	
-	ns.Presence.prototype.handleInputArrow = function( direction ) {
+	ns.Presence.prototype.handleInputArrow = function( direction, value ) {
 		const self = this;
-		if ( '' == self.inputMode )
-			return false;
-		
+		//console.log( 'handleInputArrow', [ direction, value ]);
 		if ( 'notify' == self.inputMode )
 			return self.selectInNotify( direction );
+		
+		if ( !value && ( 'up' === direction )) {
+			self.msgBuilder.editLastUserMessage();
+			return true;
+		}
+		
+		return false;
+		
+		/*
+		if ( '' == self.inputMode )
+			return false;
+		*/
 	}
 	
 	ns.Presence.prototype.selectInNotify = function( direction ) {
