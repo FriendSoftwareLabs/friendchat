@@ -2732,9 +2732,18 @@ var hello = window.hello || {};
 		//bind
 		self.parent.addEventListener( 'wheel', checkTop, true );
 		self.parent.addEventListener( 'touchend', checkTop, false );
+		self.messages.addEventListener( 'scroll', checkTop, false );
 		function checkTop( e ) {
 			//e.stopPropagation();
-			self.checkIsScrolledUp( e );
+			self.lastScrollEvent = e;
+			if ( null != self.checkTimeout )
+				return;
+			
+			self.checkTimeout = window.setTimeout( check, 200 );
+			function check() {
+				self.checkTimeout = null;
+				self.checkIsScrolledUp( self.lastScrollEvent );
+			}
 		}
 	}
 	
