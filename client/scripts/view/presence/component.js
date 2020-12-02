@@ -1663,7 +1663,7 @@ var hello = window.hello || {};
 		function setTargets() {
 			const targetsEl = self.msgTargetEl.querySelector( '.msg-target-targets' );
 			targetsEl.innerHTML = null;
-			wTIds = Object.keys( self.msgTargets );
+			const wTIds = Object.keys( self.msgTargets );
 			wTIds.some( wId => {
 				if ( 'all_groups' === wId || 'all_members' === wId ) {
 					setSpecial( wId );
