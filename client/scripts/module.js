@@ -1135,8 +1135,8 @@ library.module = library.module || {};
 			self.setupIDC( state.identities );
 		}
 		
+		console.log( 'handleAccountInit', state );
 		self.handleIdBacklog();
-		
 		self.updateInvites( state.invites );
 		
 		if ( self.initialized ) {
@@ -1472,6 +1472,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.updateInvites = function( fresh ) {
 		const self = this;
+		console.log( 'updateInvites', fresh );
 		if ( null == fresh )
 			fresh = {};
 		
@@ -1507,6 +1508,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.showRoomInvite = async function( invite ) {
 		const self = this;
+		console.log( 'showRoomInvite', invite );
 		const token = invite.token;
 		if ( null != self.invites[ token ]) {
 			// already have invite

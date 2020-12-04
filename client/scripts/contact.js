@@ -1997,41 +1997,44 @@ library.contact = library.contact || {};
 			self.live.setTitle( name );
 	}
 	
-	ns.PresenceRoom.prototype.handleJoin = function( user ) {
+	ns.PresenceRoom.prototype.handleJoin = async function( user ) {
 		const self = this;
+		console.log( 'handleJoin', user );
 		const uId = user.clientId;
-		self.idc.get( uId )
-			.then( idBack )
-			.catch( e => console.log( 'handleJoin - faield to fetch id', e ));
-		
-		function idBack( id ) {
-			if ( !id ) {
-				console.log( 'handleJoin - no id for', {
-					user : user,
-					self : self,
-				});
-				return;
-			}
-			
-			self.identities[ uId ] = id;
-			self.users[ uId ] = user;
-			if ( -1 === self.userIds.indexOf( uId ))
-				self.userIds.push( uId );
-			
-			const join = {
-				type : 'join',
-				data : {
-					user : user,
-					id   : id,
-				},
-			};
-			self.toChat( join );
-			
-			if ( id.isOnline )
-				self.onlineList.push( uId );
-			
-			self.updateViewUsers();
+		let id = null;
+		try {
+			id = await self.idc.get( uId )
+		} catch( ex ) {
+			console.log( 'handleJoin - faield to fetch id', ex );
 		}
+		
+		if ( !id ) {
+			console.log( 'handleJoin - no id for', {
+				user : user,
+				self : self,
+			});
+			return;
+		}
+		
+		console.log( 'handleJoin - identity', id );
+		self.identities[ uId ] = id;
+		self.users[ uId ] = user;
+		if ( -1 === self.userIds.indexOf( uId ))
+			self.userIds.push( uId );
+		
+		const join = {
+			type : 'join',
+			data : {
+				user : user,
+				id   : id,
+			},
+		};
+		self.toChat( join );
+		
+		if ( id.isOnline )
+			self.onlineList.push( uId );
+		
+		self.updateViewUsers();
 	}
 	
 	ns.PresenceRoom.prototype.handleLeave = function( userId ) {

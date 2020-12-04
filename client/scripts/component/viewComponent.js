@@ -3388,10 +3388,13 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			if ( self.debug )
 				console.log( 'allowReorder', self.needsReorder );
 			
-			if ( self.needsReorder.length )
-				self.needsReorder.forEach( pri => {
-					self.doReorder( pri );
-				});
+			if ( !self.needsReorder.length )
+				return;
+			
+			self.needsReorder.sort();
+			self.needsReorder.forEach( pri => {
+				self.doReorder( pri );
+			});
 			
 			self.needsReorder = [];
 		}
@@ -3571,6 +3574,13 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			else
 				prevPrio = index;
 		});
+		
+		if ( self.debug )
+			console.log( 'getNextPri', {
+				basePrio : basePrio,
+				prio     : self.prio,
+				nextPrio : nextPrio,
+			});
 		
 		return nextPrio || 0;
 	}

@@ -630,7 +630,7 @@ var hello = window.hello || {};
 	) {
 		const self = this;
 		self.build();
-		self.groupList = new library.component.ListOrder( 'user-groups' );
+		self.groupList = new library.component.ListOrder( 'user-groups', [ 'name' ]);
 		self.initBaseGroups();
 		self.setWorkgroups( workgroups );
 		self.addIdentities( identities );
@@ -865,13 +865,14 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.handleJoin = function( event ) {
 		const self = this;
+		console.log( 'view.UserCtrl.handleJoin', event );
 		const user = event.user;
-		const uid = user.clientId;
+		const uId = user.clientId;
 		let id = event.id;
 		if ( id )
 			self.addId( id );
 		
-		if ( null != self.users[ uid ] ) {
+		if ( null != self.users[ uId ] ) {
 			console.log( 'UserCtrl.addUser - user already present ( hueuhueh )', {
 				user  : user,
 				users : self.users,
@@ -880,7 +881,7 @@ var hello = window.hello || {};
 		}
 		
 		if ( !id )
-			id = self.identities[ uid ];
+			id = self.identities[ uId ];
 		
 		if ( !id ) {
 			console.log( 'UserCtrl.handleJoin - no id for user', {
@@ -893,19 +894,19 @@ var hello = window.hello || {};
 		}
 		
 		const userItem = new library.component.GroupUser(
-			uid,
+			uId,
 			self.conn,
 			user,
 			id,
 			self.template
 		);
-		self.users[ uid ] = userItem;
-		self.userIds.push( uid );
+		self.users[ uId ] = userItem;
+		self.userIds.push( uId );
 		self.addUserCss( userItem.id, userItem.avatar );
 		if ( id.isOnline )
-			self.handleOnline( id );
+			self.handleOnline( uId );
 		
-		self.setUserToGroup( uid );
+		self.setUserToGroup( uId );
 	}
 	
 	ns.UserCtrl.prototype.setUserToGroup = function( userId ) {

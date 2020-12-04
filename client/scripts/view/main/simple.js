@@ -713,6 +713,11 @@ var hello = window.hello || {};
 	ns.Activity.prototype.handleRequest = function( req ) {
 		const self = this;
 		const id = req.id;
+		if ( null == req.identity ) {
+			console.log( 'view.Activity.handleRequest - no identity, dropping', req );
+			return;
+		}
+		
 		let item = self.items[ id ];
 		if ( null != item )
 			return;
@@ -1496,6 +1501,7 @@ var hello = window.hello || {};
 (function( ns, undefined ) {
 	ns.ActivityRequest = function( containerId, conn, conf ) {
 		const self = this;
+		console.log( 'ActivityRequest', [ containerId, conn, conf ]);
 		self.id = conf.id;
 		self.conn = conn;
 		
