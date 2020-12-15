@@ -411,12 +411,12 @@ library.component = library.component || {};
 	
 	ns.DeviceSelect.prototype = 
 		Object.create( library.component.Overlay.prototype );
-		
+	
 	// Public
-		
-	ns.DeviceSelect.prototype.showDevices = function( devices ) {
+	
+	ns.DeviceSelect.prototype.showDevices = function( devices, permissions ) {
 		const self = this;
-		self.ui.showDevices( devices );
+		self.ui.showDevices( devices, permissions );
 	}
 	
 	ns.DeviceSelect.prototype.close = function() {

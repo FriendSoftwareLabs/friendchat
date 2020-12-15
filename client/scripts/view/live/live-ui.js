@@ -104,9 +104,9 @@ library.component = library.component || {};
 		});
 	}
 	
-	ns.UI.prototype.showDeviceSelect = function( currentDevices ) {
+	ns.UI.prototype.showDeviceSelect = function( currentDevices, permissions ) {
 		const self = this;
-		self.settingsUI.showDevices( currentDevices )
+		self.settingsUI.showDevices( currentDevices, permissions )
 		self.settingsUI.show();
 	}
 	
@@ -188,6 +188,12 @@ library.component = library.component || {};
 		self.showThumbs = isActive;
 		self.updateMenuItems();
 		self.updateDisplayMode();
+	}
+	
+	ns.UI.prototype.updateVideoPermission = function( sendVideo ) {
+		const self = this;
+		self.videoBtn.classList.toggle( 'inverted', !sendVideo );
+		self.videoBtn.classList.toggle( 'icon-slash', !sendVideo );
 	}
 	
 	ns.UI.prototype.setUseRoundBois = function( useRoundBois ) {
@@ -771,7 +777,7 @@ library.component = library.component || {};
 			console.log( 'live - no peer found for ', peerId );
 			return;
 		}
-		
+		1
 		let model = peer.peer;
 		//model.release( 'video' );
 		if ( 'selfie' === peerId ) {
@@ -1059,7 +1065,6 @@ library.component = library.component || {};
 		
 		self.isVoiceOnly = isVoiceOnly;
 		
-		self.videoBtn.classList.toggle( 'inverted', isVoiceOnly );
 		self.gridContainer.classList.toggle( 'hidden', isVoiceOnly );
 		self.listContainer.classList.toggle( 'expand', isVoiceOnly );
 		self.listContainer.classList.toggle( 'fortify', !isVoiceOnly );
@@ -3142,7 +3147,7 @@ library.component = library.component || {};
 		//self.updateStream();
 		self.updateButtonVisibility();
 		self.toggleStream();
-		self.emit( 'video', self.hasVideo );
+		self.emitHasStream();
 	}
 	
 	ns.Peer.prototype.handleAudio = function( available ) {
@@ -3457,7 +3462,7 @@ library.component = library.component || {};
 			return;
 		}
 		
-		if ( self.localBlind || self.remoteBlind || !self.hasVideo )
+		if ( self.localBlind || self.remoteBlind || ( !self.hasVideo && !self.screenShare ))
 			toggle( false );
 		else
 			toggle( true );
@@ -3476,6 +3481,12 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.Peer.prototype.emitHasStream = function() {
+		const self = this;
+		const hasStream = ( self.hasVideo || self.screenShare );
+		self.emit( 'video', hasStream );
+	}
+	
 	ns.Peer.prototype.handleScreenMode = function( screenMode ) {
 		const self = this;
 		self.screenMode = screenMode;
@@ -3486,7 +3497,9 @@ library.component = library.component || {};
 		const self = this;
 		self.screenShare = isActive;
 		self.updateQualityLevel();
+		self.toggleStream();
 		self.doResize();
+		self.emitHasStream();
 	}
 	
 	ns.Peer.prototype.updateRTC = function( event ) {
@@ -3906,10 +3919,7 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.handleVideoClick = function() {
 		const self = this;
-		if ( self.hasVideo )
-			self.peer.toggleBlind();
-		else
-			self.peer.toggleVideo();
+		self.peer.toggleVideo();
 	}
 	
 	ns.Selfie.prototype.setupMenu = function() {
@@ -4028,8 +4038,8 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.resetState = function() {
 		const self = this;
-		var isMuted = false;
-		var isBlinded = false;
+		const isMuted = false;
+		const isBlinded = false;
 		self.toggleMuteState( isMuted );
 		self.toggleBlindState( isBlinded );
 	}
@@ -4101,7 +4111,8 @@ library.component = library.component || {};
 		const self = this;
 		//self.menu.setState( 'mute', isMuted );
 		self.audioBtn.classList.toggle( 'inverted', isMuted );
-		self.audioBtn.classList.toggle( 'danger', isMuted );
+		self.audioBtn.classList.toggle( 'icon-slash', isMuted );
+		//self.audioBtn.classList.toggle( 'danger', isMuted );
 		self.poppedMuteBtn.classList.toggle( 'danger', isMuted );
 		self.toggleMuteState( isMuted );
 	}

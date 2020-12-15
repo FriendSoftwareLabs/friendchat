@@ -156,6 +156,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function devicesBack( permissions, devices ) {
 			self.permissions.send = permissions;
+			self.updateStdPermissions( self.permissions );
 			if ( devices )
 				self.updateMenuSendReceive( self.permissions, devices );
 			
@@ -372,8 +373,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		self.ui.on( 'close', e => self.close());
 		self.ui.on( 'device-select', e => self.showSourceSelect());
-		self.ui.on( 'use-devices'  , e => self.selfie.useDevices( e ));
+		self.ui.on( 'use-devices'  , e => self.setDevices( e ));
 		self.ui.on( 'share-screen' , e => self.selfie.toggleShareScreen());
+	}
+	
+	ns.RTC.prototype.setDevices = function( devs ) {
+		const self = this;
+		self.updateDevicePermissions( devs );
+		self.selfie.useDevices( devs );
 	}
 	
 	ns.RTC.prototype.bindMenu = function() {
@@ -682,7 +689,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.refreshMeta();
 		
 		function getStdCopy() {
-			if ( !self.stdPerms )
+			if ( null == self.stdPerms )
 				self.stdPerms = JSON.stringify( self.permissions );
 			
 			return JSON.parse( self.stdPerms );
@@ -707,6 +714,56 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( null != r.video )
 					std.receive.video = r.video;
 			}
+			
+			return std;
+		}
+	}
+	
+	ns.RTC.prototype.updateDevicePermissions = function( devs ) {
+		const self = this;
+		if ( null == devs )
+			return;
+		
+		const change = {
+			send : {},
+		};
+		
+		if ( null != devs.audioinput )
+			change.send.audio = !!devs.audioinput;
+		if ( null != devs.videoinput )
+			change.send.video = !!devs.videoinput;
+		
+		self.updateStdPermissions( change );
+	}
+	
+	ns.RTC.prototype.updateStdPermissions = function( change ) {
+		const self = this;
+		const send = self.permissions.send;
+		const recv = self.permissions.receive;
+		self.permissions.send = update( send, change.send );
+		self.permissions.receive = update( recv, change.receive );
+		
+		let stdP = null;
+		if ( null == self.stdPerms )
+			self.stdPerms = JSON.stringify( self.permissions );
+		
+		stdP = JSON.parse( self.stdPerms );
+		stdP.send = update( stdP.send, change.send );
+		stdP.recevie = update( stdP.receive, change.receive );
+		self.stdPerms = JSON.stringify( stdP );
+		
+		self.updatePermissions();
+		self.ui.updateVideoPermission( self.permissions.send.video );
+		
+		function update( std, change ) {
+			if ( null == change )
+				return std;
+			
+			if ( null != change.audio )
+				std.audio = !!change.audio;
+			
+			if ( null != change.video )
+				std.video = !!change.video;
 			
 			return std;
 		}
@@ -1222,20 +1279,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.ui.addPeer( self.selfie );
-		self.selfie.on( 'leave'           , onLeave );
-		self.selfie.on( 'error'           , error );
-		self.selfie.on( 'audio-sink'      , audioSink );
-		self.selfie.on( 'mute'            , broadcastMute );
-		self.selfie.on( 'blind'           , broadcastBlind );
-		self.selfie.on( 'screen-mode'     , broadcastScreenMode );
-		self.selfie.on( 'screen-share'    , broadcastScreenShare );
-		self.selfie.on( 'system-mute'     , systemMute );
+		self.selfie.on( 'leave'             , onLeave );
+		self.selfie.on( 'error'             , error );
+		self.selfie.on( 'audio-sink'        , audioSink );
+		self.selfie.on( 'mute'              , broadcastMute );
+		self.selfie.on( 'blind'             , broadcastBlind );
+		self.selfie.on( 'screen-mode'       , broadcastScreenMode );
+		self.selfie.on( 'screen-share'      , broadcastScreenShare );
+		self.selfie.on( 'system-mute'       , systemMute );
 		//self.selfie.on( 'tracks-available', broadcastTracksAvailable );
-		self.selfie.on( 'reflow'          , handleReflow );
-		self.selfie.on( 'quality'         , setQuality );
-		self.selfie.on( 'restart'         , restart );
-		self.selfie.on( 'save'            , e => self.saveLocalSetting( e.setting, e.value ));
-		self.selfie.on( 'device-select'   , e => self.ui.showDeviceSelect( e ));
+		self.selfie.on( 'reflow'            , handleReflow );
+		self.selfie.on( 'quality'           , setQuality );
+		self.selfie.on( 'restart'           , restart );
+		self.selfie.on( 'save'              , e => self.saveLocalSetting( e.setting, e.value ));
+		self.selfie.on( 'device-select'     , ( d, p ) => self.ui.showDeviceSelect( d, p ));
+		self.selfie.on( 'permissions-update', e => self.updateStdPermissions( e ));
 		
 		function onLeave() { self.leave(); }
 		function error( e ) { self.handleSelfieError( e ); }
@@ -1459,18 +1517,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 	}
 	
-	ns.Selfie.prototype.setModeFollowSpeaker = function( setActive ) {
+	ns.Selfie.prototype.setModeFollowSpeaker = function( isActive ) {
 		const self = this;
-		self.modeFollowSpeaker = setActive;
+		self.modeFollowSpeaker = isActive;
 		self.updateFollowSpeaker();
 	}
 	
 	// receive defaults to same as send
 	ns.Selfie.prototype.toggleVideo = function( send, receive ) {
 		const self = this;
-		if ( null == receive )
-			receive = send;
-		
 		const pSend = self.permissions.send;
 		const pRec = self.permissions.receive;
 		
@@ -1479,13 +1534,32 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		else
 			pSend.video = send;
 		
+		const change = {
+			send    : {},
+			receive : {},
+		};
+		change.send.video = pSend.video;
+		
+		if ( true == pSend.video ) {
+			pRec.video = true;
+			change.receive.video = true;
+		}
+		
+		self.emit( 'permissions-update', change );
+		
+		//pRec.video = pSend.video;
+		/*
 		if ( null == receive )
 			pRec.video = !pRec.video;
 		else
 			pRec.video = receive;
+		*/
 		
 		self.menu.setState( 'send-video', pSend.video );
 		self.menu.setState( 'receive-video', pRec.video );
+		if ( self.isScreenSharing )
+			return;
+		
 		self.emitVoiceOnly();
 		self.setupStream( streamUp )
 		function streamUp( err, media ) {
@@ -1541,9 +1615,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( ignoreSysMute )
 			self.ignoreSystemMute = ignoreSysMute;
 		
-		//self.supported = navigator.mediaDevices.getSupportedConstraints();
-		//console.log( 'supported', self.supported );
-		
 		// IsSpeaking
 		self.speaking = new library.rtc.IsSpeaking(
 			null,
@@ -1572,29 +1643,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		//
 		if ( 'star' == self.topology )
 			self.setupProxy();
-		
-		//
-		/*
-		self.extConn = self.view.addExtConnPane( onExtConnShare );
-		function onExtConnShare( e ) {
-			self.extConn.close();
-			self.toggleShareScreen();
-		}
-		*/
-		
-		/*
-		self.screenShare = new library.rtc.ScreenShare();
-		self.screenShare.checkIsAvailable()
-			.then( shareCheckBack )
-			.catch( shareCheckErr );
-		function shareCheckBack( isAvailable ) {
-			self.screenShareAvailable = !!isAvailable;
-		}
-		
-		function shareCheckErr( err ) {
-			self.screenShareAvailable = false;
-		}
-		*/
 		
 		self.bindMenu();
 		self.sources = new library.rtc.MediaDevices();
@@ -1840,32 +1888,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		const devices = self.media.getCurrentDevices() || null;
 		devices.audiooutput = self.currentAudioOut;
-		self.emit( 'device-select', devices );
+		const sPStr = JSON.stringify( self.permissions.send );
+		const sendPerms = JSON.parse( sPStr );
+		self.emit( 'device-select', devices, sendPerms );
 	}
-	
-	/*
-	ns.Selfie.prototype.openScreenExtInstall = function() {
-		const self = this;
-		window.open( 'https://chrome.google.com/webstore/detail/friend-screen-share/'
-			+ 'ipakdgondpoahmhclacfgekboimhgpap' );
-		
-		self.extConn.show();
-		self.screenShare.connect()
-			.then( connected )
-			.catch( connectErr );
-		
-		function connected( err, res ) {
-			self.screenShareAvailable = true;
-			self.extConn.setConnected( true );
-		}
-		
-		function connectErr( err ) {
-			console.log( 'openScreenExtInstall - connectErr', err );
-			self.close();
-			self.screenShareAvailable = false;
-		}
-	}
-	*/
 	
 	ns.Selfie.prototype.toggleShareScreen = async function() {
 		const self = this;
@@ -1885,60 +1911,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		async function share() {
-			self.isScreenSharing = true;
 			const ok = await self.media.shareScreen();
+			if ( !ok )
+				return;
+			
+			self.isScreenSharing = true;
 			self.emit( 'screen-share', self.isScreenSharing );
 		}
 	}
-	
-	/*
-	ns.Selfie.prototype.oldTogggleShareScreen = function() {
-		const self = this;
-		if ( !self.screenShareAvailable ) {
-			self.openScreenExtInstall();
-			return;
-		}
-		
-		if ( self.chromeSourceId )
-			unshare();
-		else
-			share();
-		
-		function unshare() {
-			self.chromeSourceId = null;
-			self.chromeSourceOpts = null;
-			//self.menu.setState( 'toggle-screen-share', false );
-			self.isScreenSharing = false;
-			//self.toggleScreenMode( 'cover' );
-			self.media.unshareScreen();
-			self.setupStream();
-			self.emit( 'screen-share', false );
-		}
-		
-		function share() {
-			self.screenShare.getSourceId()
-				.then( sourceBack )
-				.catch( sourceErr );
-			
-			function sourceBack( res ) {
-				if ( !res || !res.sid )
-					return;
-				
-				self.chromeSourceId = res.sid;
-				self.chromeSourceOpts = res.opts;
-				//self.menu.setState( 'toggle-screen-share', true );
-				self.isScreenSharing = true;
-				//self.toggleScreenMode( 'contain' );
-				self.media.shareScreen( res.sid );
-				self.emit( 'screen-share', true );
-			}
-			
-			function sourceErr( err ) {
-				console.log( 'Selfie.toggleShareScreen - getSourceId err', err );
-			}
-		}
-	}
-	*/
 	
 	ns.Selfie.prototype.setMediaSources = function( devices ) {
 		const self = this;
@@ -1946,23 +1926,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		let send = self.permissions.send;
-		if ( null != devices.audioinput )
-			send.audio = !!devices.audioinput;
-		
-		if ( null != devices.videoinput )
-			send.video = !!devices.videoinput;
-		
 		if ( self.menu ) {
 			self.menu.setState( 'send-audio', send.audio );
 			self.menu.setState( 'send-video', send.video );
 		}
 		
+		self.savePreferedDevices( devices );
 		self.setupStream( streamBack, devices );
 		function streamBack( err, res ) {
 			if ( err )
 				return;
 			
-			self.savePreferedDevices( devices );
 			if ( devices.audiooutput )
 				self.setAudioSink( devices );
 		}
@@ -2100,7 +2074,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.streamBack = callback;
 		if ( self.isScreenSharing )
-			self.media.shareScreen();
+			self.media.shareScreen( preferedDevices );
 		else
 			self.media.create( preferedDevices );
 	}
@@ -3197,15 +3171,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !fresh )
 			fresh = self.selfie.getStream();
 		
+		
+		const rcv = self.receive;
+		const pSend = self.permissions.send;
+		const send = {
+			audio : pSend.audio,
+			video : pSend.video || self.selfie.isScreenSharing,
+		};
+		
 		self.log( 'Peer.updateTracks', {
 			fresh : fresh.getTracks(),
 			media : self.media.getTracks(),
 			rcv   : self.receive,
-			send  : self.permissions.send,
+			send  : send,
 		});
 		
-		const rcv = self.receive;
-		const send = self.permissions.send;
 		const currAT = self.media.getAudioTracks()[ 0 ];
 		const currVT = self.media.getVideoTracks()[ 0 ];
 		const freshAT = !fresh ? null : fresh.getAudioTracks()[ 0 ];
@@ -3425,8 +3405,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.sendTracksAvailable = function() {
 		const self = this;
-		self.log( 'Peer.sendTracksAvailable', self.media );
 		const tracks = self.media.getTracks();
+		self.log( 'Peer.sendTracksAvailable', tracks );
 		const available = {
 			audio : false,
 			video : false,
@@ -3507,7 +3487,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.buildMeta = function() {
 		const self = this;
-		const send = self.permissions.send;
+		const pSend = self.permissions.send;
+		const send = {
+			audio : pSend.audio,
+			video : pSend.video,
+		};
+		
+		if ( self.selfie.isScreenSharing )
+			send.video = true;
+		
 		let rec = null;
 		if ( null != self.isFocus ) {
 			rec = {
@@ -3846,7 +3834,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.refreshMeta = function() {
 		const self = this;
 		const meta = self.buildMeta();
-		self.log( 'refreshMeta', meta );
+		self.log( 'refreshMeta', JSON.stringify( meta ));
 		const conf = {
 			meta : meta,
 		};
@@ -4106,6 +4094,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const id = self.identity;
 		const name = id.name;
 		const nameStr = name + ': ' + str;
+		console.log( nameStr, obj );
 	}
 	
 })( library.rtc );

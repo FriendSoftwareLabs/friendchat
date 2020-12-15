@@ -283,6 +283,17 @@ body #live {
 	background-color : transparent;
 }
 
+.icon-slash {}
+.icon-slash:after {
+	position         : absolute;
+	content          : "";
+	height           : 1.5em;
+	width            : 0.15em;
+	background-color : #fff;
+	transform        : rotate( 36deg );
+	border-right     : 0.15em solid black;
+}
+
 .btn.round-bg.danger {
 	color            : #fff;
 	background-color : #9a3126;

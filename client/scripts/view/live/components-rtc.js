@@ -95,7 +95,7 @@ library.rtc = library.rtc || {};
 	// Public
 	
 	/*
-	[ device, ]
+	[ device, .. ]
 	*/
 	ns.MediaDevices.prototype.get = function() {
 		const self = this;
@@ -2848,10 +2848,7 @@ library.rtc = library.rtc || {};
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
-		self.permissions = permissions || {
-			audio : true,
-			video : true,
-		};
+		self.permissions = permissions;
 		self.preferedDevices = preferedDevices || {};
 		self.devices = deviceSource;
 		if ( !self.devices )
@@ -2921,7 +2918,7 @@ library.rtc = library.rtc || {};
 				current.forEach( t => {
 					const ts = t.getSettings();
 					const type = t.kind;
-					if ( !conf[ type ])
+					if ( false == conf[ type ])
 						return;
 					
 					if ( self.shareVTrackId && 'video' == type ) {
@@ -2931,7 +2928,7 @@ library.rtc = library.rtc || {};
 					
 					const devType = type + 'input';
 					const pref = self.preferedDevices[ devType ];
-										
+					
 					if ( null == pref ) {
 						delete conf[ type ];
 						return;
@@ -2973,17 +2970,14 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
-	ns.Media.prototype.shareScreen = async function() {
+	ns.Media.prototype.shareScreen = async function( preferedDevices ) {
 		const self = this;
-		console.trace( 'MEdia.shareScreen', {
-			svt : self.shareVTrackId,
-		});
+		self.updatePreferedDevices( preferedDevices );
 		if ( self.shareVTrackId )
 			return true;
 		
 		const shareMedia = new window.MediaStream();
 		const shareConf = self.mediaConf.share;
-		console.log( 'shareScreen - shareConf', shareConf );
 		const dConf = {
 			audio : false,
 			video : {
@@ -2991,12 +2985,12 @@ library.rtc = library.rtc || {};
 			},
 		};
 		
-		console.log( 'shareScreen - media conf', dConf );
 		let dMedia = null;
 		try {
 			dMedia = await window.navigator.mediaDevices.getDisplayMedia( dConf, true )
 		} catch( ex ) {
 			console.log( 'getDisplayMedia failed', ex );
+			self.currentConf = null;
 			return false;
 		}
 		
@@ -3024,7 +3018,6 @@ library.rtc = library.rtc || {};
 			audio : self.mediaConf.audio || {},
 			video : false,
 		};
-		console.log( 'shareScreen - audio conf', aConf );
 		aConf = self.setDevice( 'audio', available, aConf );
 		self.clearMedia();
 		
@@ -3372,6 +3365,10 @@ library.rtc = library.rtc || {};
 				return;
 			}
 			
+			if ( !self.checkConfHasChange( conf ))
+				return;
+			
+			self.currentConf = conf;
 			window.navigator.mediaDevices.getUserMedia( conf )
 				.then( success )
 				.catch( failure );
@@ -3397,6 +3394,7 @@ library.rtc = library.rtc || {};
 				if ( self.giveUp || noFallback ) {
 					self.simpleConf = null;
 					self.giveUp = false;
+					self.currentConf = null;
 					reject( errData );
 					return;
 				} else
@@ -3408,6 +3406,7 @@ library.rtc = library.rtc || {};
 			function mediaCreated( media ) {
 				self.simpleConf = null;
 				self.giveUp = false;
+				self.currentConf = null;
 				resolve( media );
 			}
 			
@@ -3437,6 +3436,16 @@ library.rtc = library.rtc || {};
 				}
 			}
 		});
+	}
+	
+	ns.Media.prototype.checkConfHasChange = function( fresh ) {
+		const self = this;
+		if ( null == self.currentConf )
+			return true;
+		
+		const curr = self.currentConf;
+		// add things here lol
+		return false;
 	}
 	
 	ns.Media.prototype.getScreenMedia = async function() {
@@ -3548,7 +3557,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.bindTrack = function( track ) {
 		const self = this;
-		console.log( 'bindTrack', track );
 		track.onended = onEnded;
 		
 		function onEnded() {

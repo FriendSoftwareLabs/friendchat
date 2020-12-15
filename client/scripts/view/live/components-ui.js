@@ -1131,10 +1131,13 @@ library.component = library.component || {};
 	
 	// Public
 	
-	ns.SourceSelect.prototype.showDevices = function( currentDevices ) {
+	ns.SourceSelect.prototype.showDevices = function( currentDevices, permissions ) {
 		const self = this;
-		console.log( 'showDevices - currentDevices', currentDevices );
-		self.refreshDevices( currentDevices );
+		console.log( 'showDevices - currentDevices', {
+			currDev : currentDevices,
+			perms   : permissions,
+		});
+		self.refreshDevices( currentDevices, permissions );
 	}
 	
 	ns.SourceSelect.prototype.showGetUserMediaError = function( data ) {
@@ -1293,15 +1296,20 @@ library.component = library.component || {};
 		self.supportsSinkId = true;
 	}
 	
-	ns.SourceSelect.prototype.refreshDevices = function( current ) {
+	ns.SourceSelect.prototype.refreshDevices = function( devs, perms ) {
 		const self = this;
 		self.clear();
 		self.clearErrors();
 		self.toggleExplain( true );
 		self.toggleSelects( true );
 		
-		if ( current )
-			self.currentDevices = current;
+		if ( null != devs )
+			self.currentDevices = devs;
+		if ( null != perms )
+			self.currentPermissions =  {
+				audioinput : perms.audio,
+				videoinput : perms.video,
+			};
 		
 		self.sources.getByType()
 			.then( show )
@@ -1608,7 +1616,7 @@ library.component = library.component || {};
 		const dIds = Object.keys( devices );
 		const options = dIds.map( dId => {
 			const dev = devices[ dId ];
-			const optStr = buildOption( dev );
+			const optStr = buildOption( dev, type );
 			return optStr;
 		});
 		
@@ -1616,6 +1624,7 @@ library.component = library.component || {};
 			type           : type,
 			devices        : devices,
 			currentDevices : self.currentDevices,
+			permissions    : self.currentPermissions,
 		});
 		const selectConf = {
 			type : type,
@@ -1626,7 +1635,7 @@ library.component = library.component || {};
 		
 		return selectElement;
 		
-		function buildOption( item ) {
+		function buildOption( item, type ) {
 			let selected = '';
 			let label = null
 			if ( item.label )
@@ -1634,14 +1643,19 @@ library.component = library.component || {};
 			else
 				label = item.labelExtra || 'please report me, i shouldnt happen';
 			
+			const enabled = self.currentPermissions[ type ];
+			console.log( 'buildOptions', {
+				item    : item,
+				type    : type,
+				enabled : enabled,
+				devs    : self.currentDevices,
+			});
 			// if there is a device dfined..
-			if ( self.currentDevices && self.currentDevices[ item.kind ]) {
+			if ( enabled && self.currentDevices && self.currentDevices[ item.kind ]) {
 				const currDev = self.currentDevices[ item.kind ];
 				// ..check if its this one
-				console.log( 'checkSelected', {
-					prefered : currDev,
-					item     : item,
-				});
+				
+				console.log( 'checkSelected dev', currDev );
 				
 				if ( currDev.label === item.label )
 					selected = 'selected';
