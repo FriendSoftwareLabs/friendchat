@@ -1594,7 +1594,7 @@ library.view = library.view || {};
 		}
 		
 		if ( self.hiddenContacts[ cId ]) {
-			hEl = document.getElementById( cId );
+			const hEl = document.getElementById( cId );
 			hEl.parentNode.removeChild( hEl );
 			delete self.hiddenContacts[ cId ];
 		}

@@ -433,8 +433,8 @@ i18n_hide : Hide
 i18n_account_disabled : Account disabled
 i18n_members : Members
 i18n_you_cant_reply_to_this_conversation : You can&#39;t reply to this conversation
-i18n_this_account_has_been_disabled_in_friend : This account has been disabled in Friend
-i18n_the_user_can_no_longer_read_messages :  The user can no longer read messages
+i18n_this_account_has_been_disabled: This account has been disabled
+i18n_the_user_can_not_log_in_and_can_no_longer_read_messages :  The user can not log in and can no longer read messages
 i18n_file_upload : File upload
 i18n_creating_folder : Creating folder
 i18n_saving_file_to : Saving file to

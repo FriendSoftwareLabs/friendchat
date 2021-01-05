@@ -547,7 +547,7 @@ library.view = library.view || {};
 		
 		// top info
 		const elDisabled = hello.template.getElement( 'contact-disabled-tmpl', {});
-		const title = document.getElementById( self.titleId );
+		const title = document.getElementById( 'room-status' );
 		title.appendChild( elDisabled );
 		
 		// input replacement

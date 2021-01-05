@@ -18,7 +18,6 @@
 
 #room-title {
 	flex        : 1 0;
-	overflow    : hidden;
 	min-width   : 1em;
 	white-space : nowrap;
 }
