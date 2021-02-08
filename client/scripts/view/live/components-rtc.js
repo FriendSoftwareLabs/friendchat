@@ -2985,6 +2985,7 @@ library.rtc = library.rtc || {};
 			},
 		};
 		
+		console.log( 'shareConf', shareConf );
 		let dMedia = null;
 		try {
 			dMedia = await window.navigator.mediaDevices.getDisplayMedia( dConf, true )
@@ -3156,10 +3157,10 @@ library.rtc = library.rtc || {};
 		
 		self.shareQualityKeys = [ 'frameRate' ];
 		self.shareQualityMap = {
-			'pixel'   : [ 1 ],
-			'low'     : [ 1 ],
-			'medium'  : [ 2 ],
-			'normal'  : [ 4 ],
+			'pixel'   : [ 0.5 ],
+			'low'     : [ 0.5 ],
+			'medium'  : [ 1 ],
+			'normal'  : [ 2 ],
 			'high'    : [ 24 ],
 		};
 		
