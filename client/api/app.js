@@ -1555,6 +1555,35 @@ var friend = window.friend || {}; // already instanced stuff
 		self.logSock = new api.LogSock( host, name );
 	}
 	
+	ns.Application.prototype.testAllowPlaySounds = async function() {
+		const self = this;
+		const test = new api.PlaySound();
+		await test.initialize( 'webclient/apps/FriendChat/res/honkies.wav' );
+		const success = await doTest( test );
+		test.close();
+		
+		return success;
+		
+		async function doTest( test ) {
+			return new Promise(( resolve, reject ) => {
+				window.setTimeout( doTest, 5000 );
+				async function doTest() {
+					console.log( 'doTest' );
+					let success = false;
+					try {
+						success = await test.play();
+					} catch( ex ) {
+						console.log( 'testAllowPlaySounds play ex', ex );
+						resolve( false );
+					}
+					
+					console.log( 'testAllowPlaySounds success?', success );
+					resolve( true );
+				}
+			});
+		}
+	}
+	
 })( fupLocal );
 
 window.Application = new fupLocal.Application();
@@ -2186,71 +2215,113 @@ api.DoorFun.prototype.init = function() {
 //
 // NYI
 
-// SoundAlert
+// PlaySound
 (function( ns, undefined ) {
-	ns.SoundAlert = function( filePath ) {
-		if ( !( this instanceof ns.SoundAlert ))
-			return new ns.SoundAlert( filePath );
+	ns.PlaySound = function( filePath ) {
+		if ( !( this instanceof ns.PlaySound ))
+			return new ns.PlaySound( filePath );
 		
 		const self = this;
 		self.path = filePath;
 		self.actx = null;
 		self.fileBuffer = null;
-		self.playTimeout = 1000 * 2;
-		self.playTimeoutId = null;
+		self.source = null;
 		
 		self.init();
 	}
 	
-	ns.SoundAlert.prototype.play = function() {
+	ns.PlaySound.prototype.initialize = async function( path ) {
+		const self = this;
+		self.path = path;
+		return await self.setup();
+	}
+	
+	ns.PlaySound.prototype.play = async function() {
 		const self = this;
 		if ( !self.fileBuffer ) {
 			return;
 		}
-		if ( self.playTimeoutId )
+		if ( self.source )
 			return;
 		
-		var source = self.actx.createBufferSource();
-		source.buffer = self.fileBuffer;
-		source.connect( self.actx.destination );
-		source.start();
-		self.playTimeoutId = window.setTimeout( canPlayAgain, self.playTimeout );
-		function canPlayAgain() {
-			self.playTimeoutId = null;
+		try {
+			await play();
+		} catch( ex ) {
+			console.log( 'PlaySound.play ex', ex );
+			return false;
 		}
-	}
-	
-	ns.SoundAlert.prototype.close = function() {
-		const self = this;
-		if ( self.actx )
-			self.actx.close();
 		
-		if ( self.playTimeoutId  ) {
-			window.clearTimeout( self.playTimeoutId );
-			self.playTimeoutId = null;
+		return true;
+		
+		function play() {
+			return new Promise(( resolve, reject ) => {
+				const source = self.actx.createBufferSource();
+				self.source = source;
+				source.buffer = self.fileBuffer;
+				source.connect( self.actx.destination );
+				source.start();
+				source.addEventListener( 'ended', onEnd );
+				function onEnd( e ) {
+					//console.log( 'onEnd', e );
+					self.source = null;
+					resolve( true );
+				}
+			});
 		}
 	}
 	
-	ns.SoundAlert.prototype.init = function() {
+	ns.PlaySound.prototype.close = function() {
 		const self = this;
-		self.loadFile( loadBack );
-		function loadBack( file ) {
-			if ( !file )
-				return;
-			
-			if ( !window.AudioContext )
-				return;
-			
-			self.actx = new window.AudioContext();
+		if ( self.source ) {
 			try {
-				self.actx.decodeAudioData( file )
-					.then( decoded )
-					.catch( wellShit );
-			} catch ( e ) {
-				console.log( 'api.SoundAlert.init - decodaeAudioData derped', e );
-				return;
+				self.source.stop();
+			} catch( ex ) {
+				console.log( 'PlaySound.close - source.stop ex', ex );
 			}
+			
+			self.source = null;
 		}
+		
+		if ( self.actx ) {
+			try {
+				self.actx.close();
+			} catch( ex ) {
+				console.log( 'PlaySound.close  - actx.close ex', ex );
+			}
+			
+			self.actx = null;
+		}
+	}
+	
+	ns.PlaySound.prototype.init = function() {
+		const self = this;
+		if ( null == self.path )
+			return;
+		else
+			self.setup();
+	}
+	
+	ns.PlaySound.prototype.setup = async function() {
+		const self = this;
+		const file = await self.loadFile();
+		if ( !file )
+			return;
+		
+		if ( !window.AudioContext )
+			return;
+		
+		self.actx = new window.AudioContext();
+		let buff = null;
+		try {
+			buff = await self.actx.decodeAudioData( file );
+		} catch ( ex ) {
+			console.log( 'api.PlaySound.init - decodaeAudioData derped', ex );
+			return false;
+		}
+		
+		//console.log( 'buff', buff );
+		self.fileBuffer = buff;
+		return true;
 		
 		function decoded( buff ) {
 			self.fileBuffer = buff;
@@ -2261,21 +2332,236 @@ api.DoorFun.prototype.init = function() {
 		}
 	}
 	
-	ns.SoundAlert.prototype.loadFile = function( callback ) {
+	ns.PlaySound.prototype.loadFile = async function() {
 		const self = this;
-		var req = new XMLHttpRequest();
-		req.open( 'GET', self.path, true );
-		req.responseType = 'arraybuffer';
-		req.onload = loaded;
-		req.send();
+		return await load();
 		
-		function loaded( res ) {
-			const self = this;
-			if ( 200 !== req.status )
-				callback( null );
-			
-			callback( req.response );
+		function load() {
+			return new Promise(( resolve, reject ) => {
+				var req = new XMLHttpRequest();
+				//console.log( 'load', self.path );
+				req.open( 'GET', self.path, true );
+				req.responseType = 'arraybuffer';
+				req.onload = loaded;
+				req.send();
+				
+				function loaded( res ) {
+					if ( 200 !== req.status ) {
+						resolve( null );
+						return;
+					}
+					
+					resolve( req.response );
+				}
+			});
 		}
+	}
+	
+})( api );
+
+
+// IncommingCall
+(function( ns, undefined ) {
+	ns.IncommingCall = function() {
+		const self = this;
+		self.calls = {};
+		self.init();
+	}
+	
+	ns.IncommingCall.prototype.ringTones = {
+		'default' : {
+			r       : 'webclient/apps/FriendChat/res/Ring.ogg',
+			pattern : 'rrr__',
+			repeats : 0,
+		},
+		'levans_pop' : {
+			d       : 'webclient/apps/FriendChat/res/levans_pop.webm',
+			pattern : 'd',
+			repeats : 0,
+		},
+		'popcat' : {
+			p       : 'webclient/apps/FriendChat/res/pop_cat.mp3',
+			pattern : 'pp____',
+			repeats : 2,
+		},
+	}
+	
+	// Public
+	
+	ns.IncommingCall.prototype.showCall = function( id, identity, ringTone ) {
+		const self = this;
+		if ( null != self.calls[ id ]) {
+			console.log( ' IncommingCall.showCall - already active', {
+				id    : id,
+				calls : self.calls,
+			});
+			return;
+		}
+		
+		//console.log( 'IncommingCall.showCall', [ id, identity, ringTone ]);
+		if ( null == self.ringTones[ ringTone ])
+			ringTone = 'default';
+		
+		const call = {
+			id       : id,
+			identity : identity,
+			ringTone : ringTone,
+		};
+		self.calls[ id ] = call;
+		self.start( id );
+	}
+	
+	ns.IncommingCall.prototype.hideCall = function( id ) {
+		const self = this;
+		//console.log( 'IncommingCall.hideCall', id );
+		self.stop( id );
+	}
+	
+	// Pri>ate
+	
+	ns.IncommingCall.prototype.init = async function() {
+		const self = this;
+		//let canPlay = await window.application.testAllowPlaySounds();
+		
+	}
+	
+	ns.IncommingCall.prototype.start = async function( id ) {
+		const self = this;
+		const call = self.calls[ id ];
+		const ringConf = self.ringTones[ call.ringTone ];
+		const pattern = ringConf.pattern;
+		const sounds = await soundsFromPattern( ringConf );
+		
+		call.pIndex = 0;
+		call.loops = 0;
+		call.playing = getNext( pattern, call.pIndex, sounds );
+		call.playing.play()
+			.then( played )
+			.catch( end );
+		
+		function played( success ) {
+			/*
+			console.log( 'played', {
+				success : success,
+				call    : call,
+				conf    : ringConf,
+			});
+			*/
+			if ( !success ) {
+				end();
+				return;
+			}
+			
+			// call has been removed
+			if ( null == self.calls[ id ]) {
+				//console.log( '1' );
+				end();
+				return;
+			}
+			
+			if (( null == ringConf.repeats ) || ( false === ringConf.repeats )) {
+				//console.log( '2' );
+				end();
+				return;
+			}
+			
+			call.pIndex++;
+			if ( call.pIndex == pattern.length ) {
+				call.pIndex = 0;
+				call.loops++;
+			}
+			
+			if (( 0 !== ringConf.repeats ) && ( call.loops >= ringConf.repeats )) {
+				//console.log( 'bummer' );
+				end();
+				return;
+			}
+			
+			call.playing = getNext( pattern, call.pIndex, sounds );
+			if ( null == call.playing ) {
+				//console.log( 'wait' );
+				doWait()
+					.then( played );
+			}
+			else {
+				//console.log( 'play', call.playing );
+				call.playing.play()
+					.then( played )
+					.catch( end );
+			}
+		}
+		
+		async function soundsFromPattern( conf ) {
+			const p = conf.pattern.split( '' );
+			const pile = {};
+			const loadings = p.map( id => {
+				//console.log( 'loadings', id );
+				if ( '_' == id )
+					return null;
+				
+				if ( null != pile[ id ])
+					return null;
+				
+				//console.log( 'build for', id );
+				const path = conf[ id ];
+				const s = new api.PlaySound();
+				pile[ id ] = s;
+				return s.initialize( path );
+			}).filter( item => !!item );
+			
+			await Promise.all( loadings );
+			//console.log( 'soundsFromPattern', pile );
+			return pile;
+		}
+		
+		function getNext( pattern, index, sounds ) {
+			//console.log( 'getNext', index );
+			const id = pattern[ index ];
+			return sounds[ id ] || null;
+		}
+		
+		function doWait() {
+			//console.log( 'doWait' );
+			return new Promise(( resolve, reject ) => {
+				call.waiting = window.setTimeout( waitDone, 250 );
+				function waitDone() {
+					//console.log( 'waitDone' );
+					resolve( true );
+				}
+			});
+		}
+		
+		function end( asd ) {
+			//console.trace( 'end', [ asd, id, call ]);
+			self.stopPlaying( id );
+		}
+	}
+	
+	ns.IncommingCall.prototype.stop = function( id ) {
+		const self = this;
+		const call = self.calls[ id ];
+		//console.log( 'IncommingCall.stop', call );
+		if ( null == call )
+			return;
+		
+		self.stopPlaying( id );
+		delete self.calls[ id ];
+	}
+	
+	ns.IncommingCall.prototype.stopPlaying = function( id ) {
+		const self = this;
+		const call = self.calls[ id ];
+		if ( call.playing ) {
+			call.playing.close();
+			call.playing = null;
+		}
+		
+		if ( call.waiting ) {
+			window.clearTimeout( call.waiting );
+			call.waiting = null;
+		}
+		
+		call.played = null;
 	}
 	
 })( api );
@@ -2288,7 +2574,7 @@ api.DoorFun.prototype.init = function() {
 	
 	ns.Calendar.prototype.addEvent = function( conf, messageToUser, callback ) {
 		const self = this;
-		var event = {
+		const event = {
 			Date        : conf.Date,
 			Title       : conf.Title,
 			Description : conf.Description,

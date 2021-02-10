@@ -161,6 +161,9 @@ var hello = null;
 	ns.Hello.prototype.run = function( fupConf ) {
 		const self = this;
 		self.timeNow( 'run' );
+		console.log( 'api.inc', api );
+		self.incommingCall = new api.IncommingCall();
+		//self.app.testAllowPlaySounds();
 		self.app.setSingleInstance( true );
 		self.main = new library.system.Main();
 		self.listenSystemEvents();
@@ -178,11 +181,11 @@ var hello = null;
 		self.config.protocol = document.location.protocol + '//';
 		
 		try {
-			self.msgAlert = new api.SoundAlert(
+			self.msgAlert = new api.PlaySound(
 				'webclient/apps/FriendChat/res/Friend_Hello.wav' );
 		} catch( ex ) {
 			self.msgAlert = null;
-			console.log( 'failed to initialize SoundAlert', ex );
+			console.log( 'failed to initialize PlaySound', ex );
 		}
 		
 		self.timeNow( 'loadCommonFragments' );

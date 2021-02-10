@@ -3085,6 +3085,7 @@ library.contact = library.contact || {};
 		}
 		
 		function postIncoming() {
+			hello.incommingCall.showCall( self.clientId, self.identity );
 			self.liveState.description = 'incoming';
 			const opts = {
 				'live-state' : self.liveState,
@@ -3103,6 +3104,7 @@ library.contact = library.contact || {};
 		}
 		
 		function postMissed() {
+			hello.incommingCall.hideCall( self.clientId );
 			const opts = {
 				'live-state' : self.liveState,
 			};
@@ -3237,6 +3239,8 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.updateLiveState = function() {
 		const self = this;
+		console.log( 'updateLiveState', self.clientId );
+		hello.incommingCall.hideCall( self.clientId );
 		if ( self.view )
 			self.view.send({
 				type : 'live-state',
@@ -3263,9 +3267,9 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.postCallNotification = function() {
 		const self = this;
-		const incCall = Application.i18n( 'i18n_incoming_call' );
+		//const incCall = Application.i18n( 'i18n_incoming_call' );
 		const callNotie = Application.i18n( 'i18n_join_video_call' );
-		api.Say( incCall );
+		//api.Say( incCall );
 		const notie = {
 			title         : self.identity.name,
 			text          : callNotie,
