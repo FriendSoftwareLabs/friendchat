@@ -226,6 +226,8 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fromView.on( 'minimized', mini );
 		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
 		//self.app.on( self.id, viewEvent );
+		
+		windowConf.requireDoneLoading = true;
 		self.app.sendMessage({
 			type   : 'view',
 			viewId : self.id,

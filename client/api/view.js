@@ -444,6 +444,10 @@ var friend = window.friend || {};
 		self.sendBase({
 			type: 'notify',
 		});
+		
+		self.sendViewEvent({
+			method : 'doneloadingbody',
+		});
 	}
 	
 	ns.View.prototype.loadFragments = function() {
