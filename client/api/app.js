@@ -2369,29 +2369,36 @@ api.DoorFun.prototype.init = function() {
 
 // IncommingCall
 (function( ns, undefined ) {
-	ns.IncommingCall = function() {
+	ns.IncommingCall = function( ringTones ) {
 		const self = this;
+		console.log( 'IncommingCall', ringTones );
+		self.ringTones = ringTones;
+		
+		self.defaultRing = 'default';
 		self.calls = {};
+		
 		self.init();
 	}
 	
+	/*
 	ns.IncommingCall.prototype.ringTones = {
 		'default' : {
 			r       : 'webclient/apps/FriendChat/res/Ring.ogg',
 			pattern : 'rrr__',
-			repeats : 0,
+			loops   : 0,
 		},
 		'levans_pop' : {
 			d       : 'webclient/apps/FriendChat/res/levans_pop.webm',
 			pattern : 'd',
-			repeats : 0,
+			loops   : 0,
 		},
 		'popcat' : {
 			p       : 'webclient/apps/FriendChat/res/pop_cat.mp3',
 			pattern : 'pp____',
-			repeats : 2,
+			loops   : 2,
 		},
 	}
+	*/
 	
 	// Public
 	
@@ -2407,7 +2414,7 @@ api.DoorFun.prototype.init = function() {
 		
 		//console.log( 'IncommingCall.showCall', [ id, identity, ringTone ]);
 		if ( null == self.ringTones[ ringTone ])
-			ringTone = 'default';
+			ringTone = self.defaultRing;
 		
 		const call = {
 			id       : id,
@@ -2424,6 +2431,21 @@ api.DoorFun.prototype.init = function() {
 		self.stop( id );
 	}
 	
+	ns.IncommingCall.prototype.setDefault = function( ringTone ) {
+		const self = this;
+		console.log( 'setDefault', ringTone );
+		const ring = self.ringTones[ ringTone ];
+		if ( !ring ) {
+			console.log( 'IncommingCall.setDefault - could not find', {
+				ringTone  : ringTone,
+				available : self.ringTones,
+			});
+			return;
+		}
+		
+		self.defaultRing = ringTone;
+	}
+	
 	// Pri>ate
 	
 	ns.IncommingCall.prototype.init = async function() {
@@ -2436,6 +2458,7 @@ api.DoorFun.prototype.init = function() {
 		const self = this;
 		const call = self.calls[ id ];
 		const ringConf = self.ringTones[ call.ringTone ];
+		console.log( 'start', ringConf );
 		const pattern = ringConf.pattern;
 		const sounds = await soundsFromPattern( ringConf );
 		
@@ -2447,13 +2470,11 @@ api.DoorFun.prototype.init = function() {
 			.catch( end );
 		
 		function played( success ) {
-			/*
 			console.log( 'played', {
 				success : success,
 				call    : call,
 				conf    : ringConf,
 			});
-			*/
 			if ( !success ) {
 				end();
 				return;
@@ -2466,7 +2487,7 @@ api.DoorFun.prototype.init = function() {
 				return;
 			}
 			
-			if (( null == ringConf.repeats ) || ( false === ringConf.repeats )) {
+			if (( null == ringConf.loops ) || ( false === ringConf.loops )) {
 				//console.log( '2' );
 				end();
 				return;
@@ -2478,7 +2499,7 @@ api.DoorFun.prototype.init = function() {
 				call.loops++;
 			}
 			
-			if (( 0 !== ringConf.repeats ) && ( call.loops >= ringConf.repeats )) {
+			if (( 0 !== ringConf.loops ) && ( call.loops >= ringConf.loops )) {
 				//console.log( 'bummer' );
 				end();
 				return;

@@ -26,6 +26,7 @@ var hello = null;
 // HELLO
 (function( ns, undefined ) {
 	ns.Hello = function( app, conf ) {
+		console.log( 'hello', conf );
 		const self = this;
 		self.app = app;
 		self.config = conf;
@@ -140,6 +141,14 @@ var hello = null;
 		self.lastTiming = now;
 	}
 	
+	ns.Hello.prototype.setRingTone = function( ring ) {
+		const self = this;
+		if ( null == self.incommingCall )
+			return;
+		
+		self.incommingCall.setDefault( ring );
+	}
+	
 	// Private
 	
 	ns.Hello.prototype.init = function() {
@@ -162,7 +171,7 @@ var hello = null;
 		const self = this;
 		self.timeNow( 'run' );
 		console.log( 'api.inc', api );
-		self.incommingCall = new api.IncommingCall();
+		self.incommingCall = new api.IncommingCall( self.config.ringTones );
 		//self.app.testAllowPlaySounds();
 		self.app.setSingleInstance( true );
 		self.main = new library.system.Main();
