@@ -985,7 +985,7 @@ var hello = window.hello || {};
 		const conf = {
 			containerId : self.status,
 			type        : 'led',
-			cssClass    : 'led-online-status PadBorder',
+			cssClass    : 'led-online-status PadBackground',
 			statusMap   : {
 				offline   : 'Off',
 				online    : 'On',
@@ -999,7 +999,7 @@ var hello = window.hello || {};
 		const conf = {
 			containerId : self.status,
 			type        : 'led',
-			cssClass    : 'led-participants-status PadBorder',
+			cssClass    : 'led-participants-status PadBackground',
 			statusMap   : {
 				empty     : 'Off',
 				users     : 'Available',
@@ -1898,7 +1898,7 @@ var hello = window.hello || {};
 		self.status = new library.component.StatusIndicator({
 			containerId : self.status,
 			type        : 'led',
-			cssClass    : 'led-online-status PadBorder',
+			cssClass    : 'led-online-status PadBackground',
 			statusMap   : {
 				offline   : 'Off',
 				online    : 'On',
@@ -2212,7 +2212,7 @@ var hello = window.hello || {};
 		const conf = {
 			containerId : self.status,
 			type        : 'led',
-			cssClass    : 'led-participants-status PadBorder',
+			cssClass    : 'led-participants-status PadBackground',
 			statusMap   : {
 				empty     : 'Off',
 				users     : 'Available',

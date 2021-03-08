@@ -266,8 +266,9 @@ library.component = library.component || {};
 		library.component.EventEmitter.prototype );
 	
 	ns.StatusIndicator.prototype.typeTmplMap = {
-		'led' : 'status-indicator-led-tmpl',
-		'icon' : 'status-indicator-icon-tmpl',
+		'led'     : 'status-indicator-led-tmpl',
+		'icon'    : 'status-indicator-icon-tmpl',
+		'icon-bg' : 'status-indicator-icon-bg-tmpl',
 	};
 	
 	// Public

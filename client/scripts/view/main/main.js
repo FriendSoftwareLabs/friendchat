@@ -2741,7 +2741,8 @@ library.view = library.view || {};
 		self.onlineStatus = new library.component.StatusIndicator({
 			containerId : self.onlineStatus,
 			type        : 'led',
-			cssClass    : 'led-online-status PadBorder',
+			cssClass    : 'led-online-status PadBackground',
+			//cssClass    : 'fa-circle',
 			statusMap   : {
 				offline   : 'Off',
 				online    : 'On',
