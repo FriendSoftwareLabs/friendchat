@@ -545,7 +545,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		if ( self.active[ modId ]) {
-			console.log( 'module already added', modConf );
+			//console.log( 'module already added', modConf );
 			return;
 		}
 		
@@ -2822,6 +2822,10 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
+		if ( isOnline === self.isOnline )
+			return;
+		
+		self.isOnline = isOnline;
 		if ( !isOnline )
 			return;
 		
@@ -2951,8 +2955,13 @@ Searchable collection(s) of users, rooms and other odds and ends
 		const cId = req.clientId;
 		const id = window.MD5( cId );
 		const item = self.items[ id ];
-		if ( null != item )
+		if ( null != item ) {
+			console.log( 'sendRequest - found item', {
+				req  : req,
+				item : item,
+			});
 			return cId;
+		}
 		
 		req.id = id;
 		const event = {
@@ -2998,28 +3007,14 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 	}
 	
-	ns.Activity.prototype.sendRemove = async function( clientId ) {
+	ns.Activity.prototype.removeClientItem = async function( clientId ) {
 		const self = this;
 		const item = self.cIdMap[ clientId ];
 		if ( null == item )
 			return null;
 		
 		const id = item.data.id;
-		self.setRemoved( id );
-		const remove = {
-			type : 'remove',
-			data : id,
-		};
-		
-		let res = null;
-		try {
-			res = await self.conn.request( remove );
-		} catch( ex ) {
-			console.log( 'Activity.sendRemove - query ex', ex );
-			return false;
-		}
-		
-		return res;
+		return await self.sendRemove( id );
 	}
 	
 	// Private
@@ -3098,6 +3093,25 @@ Searchable collection(s) of users, rooms and other odds and ends
 				waiter.resolve( event );
 			});
 		}
+	}
+	
+	ns.Activity.prototype.sendRemove = async function( id ) {
+		const self = this;
+		self.setRemoved( id );
+		const remove = {
+			type : 'remove',
+			data : id,
+		};
+		
+		let res = null;
+		try {
+			res = await self.conn.request( remove );
+		} catch( ex ) {
+			console.log( 'Activity.sendRemove - query ex', ex );
+			return false;
+		}
+		
+		return res;
 	}
 	
 	ns.Activity.prototype.removeItem = function( id ) {
@@ -3233,6 +3247,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		
 		const list = ids.map( id => items[ id ]);
 		if ( !list || !list.length ) {
+			self.loaded = true;
 			sendLoaded();
 			return;
 		}
@@ -3381,6 +3396,10 @@ Searchable collection(s) of users, rooms and other odds and ends
 				return;
 			}
 			*/
+			if ( null == identity ) {
+				console.log( 'Activity.updateIdentities - no id', i );
+				return;
+			}
 			
 			const uptd = {
 				type : 'identity',
@@ -3476,9 +3495,12 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 		
 		if ( null == id ) {
+			if ( !self.isOnline )
+				return null;
+			
 			item = self.cIdMap[ clientId ];
-			self.removeItem( item.data.id );
-			return;
+			self.sendRemove( item.data.id );
+			return null;
 		}
 		
 		self.cacheIdentity( id );
@@ -3740,7 +3762,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	*/
 	ns.ActivityModule.prototype.remove = function( clientId ) {
 		const self = this;
-		return self.activity.sendRemove( clientId );
+		return self.activity.removeClientItem( clientId );
 	}
 	
 	/* request

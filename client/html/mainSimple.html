@@ -47,7 +47,7 @@
 		</div>
 	</div>
 	<div id="foot" class="fortify BorderTop">
-		<div id="tab-bar" class="group row">
+		<div class="tab-bar group row">
 			<div id="show-activity" class="Button IconButton expand center-child">
 				<i class="fa fa-fw fa-comment"></i>
 			</div>
@@ -147,7 +147,8 @@ connStateId,
 itemsId,
 hiddenId,
 hiddenItemsId,
-
+underCarpetId,
+loadCoverId,
 -->
 <script id="simple-presence-contacts-tmpl" type="text/html">
 <div id="<%= roomsId %>" class="module bar column BorderBottom">
@@ -179,7 +180,40 @@ hiddenItemsId,
 			</div>
 		</div>
 	</div>
+	<div id="<%= filterId %>" class="TabContainer contact-filter group row center BackgroundDefault">
+		<div class="show-relations Tab TabActive 
+			group row contact-filter-item expand allow-wrap center"
+		>
+			<i class="fa fa-fw fa-comment"></i>
+			<div>
+				{i18n_you_talked_to}
+			</div>
+		</div>
+		<div class="show-online Tab contact-filter-item expand group center allow-wrap row">
+			<i class="fa fa-fw fa-circle"></i>
+			<div>
+				<span>
+					{i18n_online}
+				</span>
+				<span class="show-online-num">
+					(0)
+				</span>
+			</div>
+		</div>
+		<div class="show-all Tab contact-filter-item group row center allow-wrap expand">
+			<i class="fa fa-fw fa-list-ul"></i>
+			<div>
+				{i18n_all_contacts}
+			</div>
+		</div>
+	</div>
 	<div id="<%= itemsId %>" class="contacts ZebraList Interactive">
+	</div>
+	<div id="<%= underCarpetId %>" class="hidden">
+		<div id="<%= loadCoverId %>" class="contacts-load-cover BackgroundDefault group column">
+			<div class="load-cover-spinner busy-loading">
+			</div>
+		</div>
 	</div>
 </div>
 </script>

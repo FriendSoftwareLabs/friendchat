@@ -395,19 +395,30 @@ var hello = window.hello || {};
 		const tmplId = 'simple-presence-contacts-tmpl';
 		self.hiddenId = friendUP.tool.uid( 'able' );
 		self.hiddenItemsId = friendUP.tool.uid( 'able' );
+		self.contactFilter = friendUP.tool.uid( 'filter' );
+		self.underCarpetId = friendUP.tool.uid( 'carpet' );
+		self.loadCoverId = friendUP.tool.uid( 'cover' );
 		const conf = {
 			roomsId       : self.contactsId,
 			title         : title,
 			connStateId   : self.contactsConnState,
+			filterId      : self.contactFilter,
 			itemsId       : self.contactItemsId,
 			hiddenId      : self.hiddenId,
 			hiddenItemsId : self.hiddenItemsId,
+			underCarpetId : self.underCarpetId,
+			loadCoverId   : self.loadCoverId,
 		};
 		const el = hello.template.getElement(  tmplId, conf );
 		const cont = document.getElementById( self.containers.contact );
 		cont.appendChild( el );
 		
+		self.contactsContainer = document.getElementById( self.contactItemsId );
+		self.underCarpet = document.getElementById( self.underCarpetId );
+		self.loadCover = document.getElementById( self.loadCoverId );
+		
 		self.bindHidden();
+		self.bindFilter();
 	}
 	
 	ns.Presence.prototype.initStatus = function() {
@@ -567,7 +578,7 @@ var hello = window.hello || {};
 		self.el = self.template.getElement( 'activity-tmpl', tmplConf );
 		container.appendChild( self.el );
 		self.itemsContainer = document.getElementById( 'activity-items' );
-		self.itemOrder = new library.component.ListOrder( 'activity-items', [ 'time' ]);
+		self.itemOrder = new library.component.ListOrder( 'activity-items', [ 'time' ] );
 		
 		self.splash = document.getElementById( 'activity-splash' );
 		//self.waiting = document.getElementById( 'recent-waiting' );
@@ -713,10 +724,12 @@ var hello = window.hello || {};
 	ns.Activity.prototype.handleRequest = function( req ) {
 		const self = this;
 		const id = req.id;
+		/*
 		if ( null == req.identity ) {
 			console.log( 'view.Activity.handleRequest - no identity, dropping', req );
 			return;
 		}
+		*/
 		
 		let item = self.items[ id ];
 		if ( null != item )
@@ -1501,7 +1514,6 @@ var hello = window.hello || {};
 (function( ns, undefined ) {
 	ns.ActivityRequest = function( containerId, conn, conf ) {
 		const self = this;
-		console.log( 'ActivityRequest', [ containerId, conn, conf ]);
 		self.id = conf.id;
 		self.conn = conn;
 		
@@ -1510,6 +1522,20 @@ var hello = window.hello || {};
 	
 	ns.ActivityRequest.prototype.tmplId = 'activity-request-tmpl';
 	ns.ActivityRequest.prototype.btnTmplId = 'activity-request-btn-tmpl';
+	
+	// Public
+	
+	ns.ActivityRequest.prototype.updateIdentity = function( id ) {
+		const self = this;
+		if ( !id || !id.avatar )
+			return;
+		
+		const avaEl = self.el.querySelector( '.avatar' );
+		const avaIcon = avaEl.querySelector( 'i' );
+		const ava = "url('" + id.avatar + "')";
+		avaEl.style[ 'background-image' ] = ava;
+		avaIcon.classList.toggle( 'hidden', true );
+	}
 	
 	ns.ActivityRequest.prototype.close = function() {
 		const self = this;
@@ -1588,12 +1614,17 @@ var hello = window.hello || {};
 			return htmlStr;
 		});
 		const buttonHtml = btnHtmls.join( '' );
+		let avatar = '';
+		if ( conf.identity )
+			avatar = conf.identity.avatar;
+		
 		const tmplConf = {
-			id      : conf.id,
-			type    : conf.type || 'room',
-			avatar  : conf.identity.avatar,
-			message : conf.message,
-			buttons : buttonHtml,
+			id       : conf.id,
+			type     : conf.type || 'room',
+			avatar   : avatar,
+			roomIcon : !!avatar ? 'hidden' : '',
+			message  : conf.message,
+			buttons  : buttonHtml,
 		};
 		
 		return tmplConf;

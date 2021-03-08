@@ -129,7 +129,6 @@ ns.Activity.prototype.handleRequest = async function( req, sourceId ) {
 	const self = this;
 	const fresh = self.checkIsFresh( req );
 	const id = req.id;
-	
 	const wrap = {
 		type : 'request',
 		data : req,
@@ -153,6 +152,8 @@ ns.Activity.prototype.handleUpdate = async function( uptd, sourceId ) {
 	const opts = uptd.options;
 	const unread = self.updateOptionNum( id, 'unread', opts );
 	const mentions = self.updateOptionNum( id, 'mentions', opts );
+	if ( null != opts.priority )
+		self.updateItemPriority( id, opts.priority );
 	
 	const res = {
 		type : 'update',
@@ -227,6 +228,16 @@ ns.Activity.prototype.updateUnread = function( id, opts ) {
 ns.Activity.prototype.updateMentions = function( id, opts ) {
 	const self = this;
 	return self.updateOptionNum( id, 'mentions', opts );
+}
+
+ns.Activity.prototype.updateItemPriority = function( id, prio ) {
+	const self = this;
+	const item = self.items[ id ];
+	log( 'updateItemPriority', {
+		id : id,
+		prio : prio,
+		item : item,
+	});
 }
 
 ns.Activity.prototype.updateOptionNum = function( id, key, opts ) {

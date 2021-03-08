@@ -201,6 +201,7 @@ body {
     bottom           : 0;
     left             : 0;
     background-color : rgba( 0, 0, 0, 0.5 );
+    z-index          : 9999;
 }
 
 /* top bar: avatar, search, menu */
@@ -232,26 +233,21 @@ body {
 
 /* Gui tabs */
 
-#tab-bar {
+.tab-bar {
 
 }
 
-
-#tab-bar .Button
-{
-    height: 3em;
-    transition: background-color,color 0.25s,0.25s;
-}
-
-html body #tab-bar .Button
+html body .tab-bar .Button
 {
     margin: 0;
     padding: 0;
 	border-radius: 0;
+    height: 3em;
+    transition: background-color,color 0.25s,0.25s;
 }
 
 /* Todo: Use theme color here */
-#tab-bar .active
+.tab-bar .active
 {
     color: #008DD4;
 }
@@ -378,6 +374,8 @@ html body #tab-bar .Button
 /* CONTACTCs */
 
 .contacts {
+    overflow: hidden;
+    position: relative;
 }
 
 .active {
@@ -400,6 +398,34 @@ html body #tab-bar .Button
 
 .inactive {
     
+}
+
+#hello .contact-filter {
+    padding  : 0.2em 1em;
+    position : sticky;
+    z-index  : 2;
+    top      : 0;
+}
+
+.contact-filter-item {
+    
+}
+
+.contact-filter-select {
+    
+}
+
+.contacts-load-cover {
+    position: absolute;
+    top    : 0;
+    right  : 0;
+    bottom : 0;
+    left   : 0;
+    z-index: 1;
+}
+
+.load-cover-spinner {
+    margin-top : 2em;
 }
 
 
@@ -437,6 +463,14 @@ html body #tab-bar .Button
 .contact .name,
 .query-item .query-msg {
     margin-left : 1em;
+}
+
+.contact .name {
+    line-height : 2.7em;
+}
+
+.name .ph-span {
+    margin-right: 0.3em;
 }
 
 .query-item .query-msg {

@@ -19,6 +19,10 @@
 
 'use strict';
 
+// requiredoneloading : true;
+
+// doneloadingbody
+
 var api = api || {};
 var friendUP = window.friendUP || {};
 var Doors = window.Doors || {};
@@ -31,23 +35,21 @@ var friend = window.friend || {};
 			return new ns.ViewEvent();
 		
 		const self = this;
-		library.component.EventEmitter.call( self, eventSink );
+		library.component.RequestNode.call( self, null, null, eventSink );
 		
 		self.listener = {};
 		
 		self.eventInit();
 		
 		function eventSink( type, data ) {
-			/*
 			console.log( 'View.eventSink', {
 				type : type,
 				data : data,
 			});
-			*/
 		}
 	}
 	
-	ns.ViewEvent.prototype = Object.create( library.component.EventEmitter.prototype );
+	ns.ViewEvent.prototype = Object.create( library.component.RequestNode.prototype );
 	
 	ns.ViewEvent.prototype.eventInit = function() {
 		var self = this;
@@ -78,9 +80,9 @@ var friend = window.friend || {};
 		};
 		
 		self.notifyMap = {
-			'activateview' : activated,
+			'activateview'   : activated,
 			'deactivateview' : deactivated,
-			'setviewflag' : setViewFlag,
+			'setviewflag'    : setViewFlag,
 		};
 		
 		function activated( e ) { self.activated( e ); }
@@ -120,17 +122,19 @@ var friend = window.friend || {};
 		
 		const handler = self.eventMap[ msg.command ];
 		if ( !handler ) {
-			self.viewEvent( msg );
+			self.handle( msg );
 			return;
 		}
 		
 		handler( msg );
 	}
 	
+	/*
 	ns.ViewEvent.prototype.viewEvent = function( msg ) {
 		const self = this;
 		self.emit( msg.type, msg.data );
 	}
+	*/
 	
 	ns.ViewEvent.prototype.notify = function( msg ) {
 		const self = this;
@@ -530,7 +534,8 @@ var friend = window.friend || {};
 			self.queueInputFocusCheck();
 		}
 		
-		// resize listening
+		// things listening
+		//document.addEventListener( 'scroll', e => self.handleScroll( e ), false );
 		window.addEventListener( 'resize', e => self.handleResize( e ), false );
 		window.addEventListener( 'dragover', onDragover, false );
 		window.addEventListener( 'drop', onDrop, false );
@@ -578,6 +583,11 @@ var friend = window.friend || {};
 			self.pendingResizeEvent = null;
 			self.handleResize( pending );
 		}
+	}
+	
+	ns.View.prototype.handleScroll = function( e ) {
+		const self = this;
+		console.log( 'handleScroll, not handling lol', e );
 	}
 	
 	ns.View.prototype.appConfUpdate = function( update ) {
@@ -671,9 +681,9 @@ var friend = window.friend || {};
 		var themedScrollbars = self.themePath + '/scrollbars.css';
 		var compiledTheme = self.themePath + '/theme_compiled.css';
 		var css = {
-			'css-font-awesome' : '/webclient/css/font-awesome.min.css',
+			'css-font-awesome'      : '/webclient/css/font-awesome.min.css',
 			'css-system-scrollbars' : themedScrollbars,
-			'css-system-theme' : compiledTheme,
+			'css-system-theme'      : compiledTheme,
 		};
 		
 		if ( self.viewTheme )
@@ -920,7 +930,7 @@ var friend = window.friend || {};
 		if ( self.isActive )
 			return;
 		
-		self.viewEvent({
+		self.handle({
 			type : 'focus',
 			data : true,
 		});
@@ -935,7 +945,7 @@ var friend = window.friend || {};
 		if ( !self.isActive )
 			return;
 		
-		self.viewEvent({
+		self.handle({
 			type : 'focus',
 			data : false,
 		});

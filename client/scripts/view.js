@@ -29,25 +29,20 @@ library.view = library.view || {};
 (function( ns, undefined ) {
 	ns.PresenceChat = function( state, roomTitle, isPrivate ) {
 		const self = this;
-		library.component.EventEmitter.call( self, eventsink );
-		
 		self.roomTitle = roomTitle || null;
 		self.isPrivate = !!isPrivate;
 		
 		self.drop = null;
 		
 		self.init( state );
-		
-		function eventsink( e ) {
-			//console.log( 'PresenceChat - eventsink', e );
-		}
 	}
 	
 	ns.PresenceChat.prototype =
-		Object.create( library.component.EventEmitter.prototype );
+		Object.create( library.component.RequestNode.prototype );
 		
 	// Public
 	
+	/*
 	ns.PresenceChat.prototype.send = function( event ) {
 		const self = this;
 		if ( !self.view )
@@ -55,6 +50,7 @@ library.view = library.view || {};
 		
 		self.view.send( event );
 	}
+	*/
 	
 	ns.PresenceChat.prototype.setTitle = function( title ) {
 		const self = this;
@@ -161,15 +157,37 @@ library.view = library.view || {};
 			filePath,
 			windowConf,
 			initData,
-			eventSink,
+			viewSink,
 			closed
 		);
 		
+		library.component.RequestNode.call( self,
+			null,
+			null,
+			eventSink,
+			onSend
+		);
+		function eventSink( e ) {
+			console.log( 'PresenceChat - eventsink', e );
+		}
+		
+		function onSend( e ) {
+			//console.log( 'onSend', e );
+			self.view.send( e );
+		}
+		
 		self.view.on( 'drag-n-drop', droppings );
 		self.view.on( 'attach-files', attach );
+		//self.view.on( 'get-identity', e => self.handleGetId( e ));
 		function droppings( e ) { self.drop.handle( e ); }
-		function eventSink( type, data ) {
-			self.emit( type, data );
+		function viewSink( type, data ) {
+			//console.log( 'app.PC.viewSink', [ type, data ]);			
+			return self.handle({
+				type : type,
+				data : data,
+			});
+			
+			//self.emit( type, data );
 		}
 		
 		function closed( e ) {
@@ -205,6 +223,8 @@ library.view = library.view || {};
 			}
 		}
 	}
+	
+	//ns.PresenceChat.prototype.
 	
 	ns.PresenceChat.prototype.getTitle = function() {
 		const self = this;

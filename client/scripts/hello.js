@@ -1671,7 +1671,7 @@ var hello = null;
 	ns.Main.prototype.initSubViews = function() {
 		const self = this;
 		if ( self.notification ) {
-			console.log( 'initSubViews - already initialized' );
+			//console.log( 'initSubViews - already initialized' );
 			return;
 		}
 		

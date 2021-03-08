@@ -112,7 +112,6 @@ library.module = library.module || {};
 			hello.conn,
 			eventSink,
 			null,
-			true
 		);
 		
 		function eventSink( type, data ) {
@@ -151,10 +150,21 @@ library.module = library.module || {};
 		self.connectionErrorMap = {};
 		
 		// view stuff
+		/*
 		self.view = new library.component.SubView({
 			parent : self.parentView,
 			type   : self.clientId,
 		});
+		*/
+		self.view = new library.component.EventNode(
+			self.clientId,
+			self.parentView,
+			viewSink,
+		);
+		
+		function viewSink( ...args ) {
+			self.viewSink( ...args );
+		}
 		
 		self.view.on( 'settings', getSettings );
 		self.view.on( 'reconnect', reconnect );
@@ -171,6 +181,14 @@ library.module = library.module || {};
 		self.updateMap = {};
 		self.setName();
 		self.setIdentity();
+	}
+	
+	ns.BaseModule.prototype.viewSink = function( type, data ) {
+		const self = this;
+		console.log( 'BaseModule.viewSink', {
+			type : type,
+			data : data,
+		});
 	}
 	
 	ns.BaseModule.prototype.initialize = function() {
@@ -586,6 +604,8 @@ library.module = library.module || {};
 		self.openChatWaiting = [];
 		self.hiddenContacts = {};
 		self.getIdentityBacklog = {};
+		self.contactsOnline = [];
+		self.currentFilter = 'relations';
 		self.invites = {};
 		self.init();
 	}
@@ -763,7 +783,7 @@ library.module = library.module || {};
 				clientId : clientId,
 			};
 			const req = {
-				type : 'contact-add',
+				type : 'relation-add',
 				data : add,
 			};
 			self.acc.request( req )
@@ -899,6 +919,35 @@ library.module = library.module || {};
 		console.log( 'Presence.leave - NYI', roomId );
 	}
 	
+	ns.Presence.prototype.viewSink = function( type, ...args ) {
+		const self = this;
+		if ( checkIsContact( type, self.contactsOnline )) {
+			handleAction( type, args[ 0 ]);
+			return;
+		}
+		
+		if ( checkIsContact( type, self.contactsAll )) {
+			handleAction( type, args[ 0 ]);
+			return;
+		}
+		
+		function checkIsContact( cId, list ) {
+			if ( !list || !list.length )
+				return;
+			
+			const cIdx = list.indexOf( cId );
+			if ( -1 == cIdx )
+				return false;
+			
+			return true;
+		}
+		
+		function handleAction( cId, action ) {
+			action.data = cId;
+			self.handleContactAction( action );
+		}
+	}
+	
 	// Private
 	
 	ns.Presence.prototype.init = function() {
@@ -923,9 +972,10 @@ library.module = library.module || {};
 		self.view.on( 'invite-response', invResponse );
 		self.view.on( 'load-hidden', e => self.handleLoadHidden( e ));
 		self.view.on( 'open-hidden', e => self.handleOpenHidden( e ));
+		self.view.on( 'filter', e => self.handleFilter( e ));
 		
 		function createRoom( e ) { self.handleCreateRoom( e ); }
-		function contact( e ) { self.handleContactAction( e ); }
+		function contact( e ) { self.sendContactAction( e ); }
 		function invResponse( e ) { self.handleInviteResponse( e ); }
 		
 		self.setup();
@@ -1135,13 +1185,14 @@ library.module = library.module || {};
 			self.setupIDC( state.identities );
 		}
 		
-		console.log( 'handleAccountInit', state );
 		self.handleIdBacklog();
 		self.updateInvites( state.invites );
 		
 		if ( self.initialized ) {
 			self.updateRooms( state.rooms );
-			self.updateContacts( state.contacts );
+			self.updateContacts( state.relations );
+			self.contactsOnline = state.contacts;
+			self.updateFilterOnline();
 			return;
 		}
 		
@@ -1153,7 +1204,9 @@ library.module = library.module || {};
 		};
 		self.toView( uid );
 		self.setupRooms( state.rooms );
-		self.handleContactInit( state.contacts );
+		self.handleRelationsInit( state.relations );
+		self.contactsOnline = state.contacts;
+		self.updateFilterOnline();
 		//self.setupDormant();
 		self.flushQueue();
 		
@@ -1243,10 +1296,8 @@ library.module = library.module || {};
 			accountId,
 			self.conn,
 			accEventSink,
-			null,
-			true,
+			null
 		);
-		//self.req = new library.component.RequestNode( self.acc, accReqEventSink );
 		
 		self.bindAcc();
 		self.initializeAccount();
@@ -1267,11 +1318,13 @@ library.module = library.module || {};
 	ns.Presence.prototype.bindAcc = function() {
 		const self = this;
 		self.acc.on( 'initialize', initialize );
-		self.acc.on( 'contact-init', contactInit );
-		self.acc.on( 'contact-list', contactList );
-		self.acc.on( 'contact-add', contactAdd );
-		self.acc.on( 'contact-remove', contactRemove );
-		//self.acc.on( 'contact-event', contactEvent );
+		self.acc.on( 'relation-init', relationsInit );
+		self.acc.on( 'relation-add', e => self.handleRelationAdd( e ));
+		self.acc.on( 'relation-remove', e => self.handleRelationRemove( e ));
+		self.acc.on( 'contact-list', e => self.handleOnlineList( e ));
+		self.acc.on( 'contact-add', e => self.handleOnlineAdd( e ));
+		self.acc.on( 'contact-remove', e => self.handleOnlineRemove( e ));
+		//self.acc.on( 'online-event', contactEvent );
 		self.acc.on( 'invite', handleInvite );
 		self.acc.on( 'rooms', setupRooms );
 		self.acc.on( 'join', joinedRoom );
@@ -1279,10 +1332,7 @@ library.module = library.module || {};
 		self.acc.on( 'identity-update', e => self.handleIdUpdate( e ));
 		
 		function initialize( e ) { self.handleAccountInit( e ); }
-		function contactInit( e ) { self.handleContactInit( e ); }
-		function contactList( e ) { self.handleContactList( e ); }
-		function contactAdd( e ) { self.handleContactAdd( e ); }
-		function contactRemove( e ) { self.handleContactRemove( e ); }
+		function relationsInit( e ) { self.handleRelationsInit( e ); }
 		//function contactEvent( e ) { self.handleContactEvent( e ); }
 		function handleInvite( e ) { self.handleInvite( e ); }
 		function setupRooms( e ) { self.setupRooms( e ); }
@@ -1294,29 +1344,23 @@ library.module = library.module || {};
 			self.acc,
 			cEventSink
 		);
-		//self.contactEvents.on( 'online', e => self.handleContactOnline( e ));
+		//self.contactEvents.on( 'online', e => self.handleUserOnline( e ));
 		
 		function cEventSink() {
 			console.log( 'Presence.contactEventSink', arguments );
 		}
 	}
 	
-	ns.Presence.prototype.handleContactInit = function( contacts ) {
+	ns.Presence.prototype.handleRelationsInit = function( relations ) {
 		const self = this;
-		const ids = Object.keys( contacts );
-		const list = ids.map( id => contacts[ id ]);
-		list.forEach( item => self.handleContactAdd( item ));
-		
-		/*
-		const cList = {
-			type : 'contact-list',
-			data : list,
-		};
-		self.toView( cList );
-		*/
+		const ids = Object.keys( relations );
+		ids.forEach( cId => {
+			const rel = relations[ cId ];
+			self.handleRelationAdd( rel );
+		});
 	}
 	
-	ns.Presence.prototype.handleContactList = function( list ) {
+	ns.Presence.prototype.handleOnlineList = function( list ) {
 		const self = this;
 		list.forEach( add );
 		/*
@@ -1327,8 +1371,55 @@ library.module = library.module || {};
 		self.toView( cList );
 		*/
 		function add( con ) {
-			self.handleContactAdd( con );
+			self.handleRelationAdd( con );
 		}
+	}
+	
+	ns.Presence.prototype.handleOnlineAdd = async function( user ) {
+		const self = this;
+		const cId = user.clientId;
+		self.contactsOnline.push( cId );
+		self.updateFilterOnline();
+		const id = await self.idc.get( cId );
+		self.updateFilter( 'add', id );
+	}
+	
+	ns.Presence.prototype.handleOnlineRemove = function( clientId ) {
+		const self = this;
+		const idx = self.contactsOnline.indexOf( clientId );
+		if ( -1 == idx )
+			return;
+		
+		self.contactsOnline.splice( idx, 1 );
+		self.updateFilter( 'remove', clientId );
+		self.updateFilterOnline();
+	}
+	
+	ns.Presence.prototype.updateFilter = function( action, data ) {
+		const self = this;
+		if ( 'relations' == self.currentFilter )
+			return;
+		
+		const uptd = {
+			type : 'update-list',
+			data : {
+				type : action,
+				data : {
+					select : self.currentFilter,
+					data   : data,
+				},
+			},
+		};
+		self.filterToView( uptd );
+	}
+	
+	ns.Presence.prototype.updateFilterOnline = function() {
+		const self = this;
+		const uptd = {
+			type : 'update-online',
+			data : self.contactsOnline.length,
+		};
+		self.filterToView( uptd );
 	}
 	
 	ns.Presence.prototype.updateContact = function( contact ) {
@@ -1350,7 +1441,7 @@ library.module = library.module || {};
 		return true;
 	}
 	
-	ns.Presence.prototype.handleContactAdd = async function( contact ) {
+	ns.Presence.prototype.handleRelationAdd = async function( contact ) {
 		const self = this;
 		if ( !self.idc )
 			return;
@@ -1407,10 +1498,20 @@ library.module = library.module || {};
 			room.openChat( waitConf.view || null );
 	}
 	
-	ns.Presence.prototype.handleContactOnline = function( contactId, isOnline ) {
+	ns.Presence.prototype.handleUserOnline = function( contactId, isOnline ) {
 		const self = this;
 		if ( contactId === self.accountId )
 			return;
+		
+		/*
+		console.log( 'handleUserOnline', [ contactId, isOnline, self.contactsOnline ]);
+		const oIdx = self.contactsOnline.indexOf( contactId );
+		if ( isOnline && ( -1 == oIdx ))
+			self.contactsOnline.push( contactId );
+		if ( !isOnline && ( -1 != oIdx ))
+			self.contactsOnline.splice( oIdx, 1 );
+		console.log( 'contactsOnline', self.contactsOnline );
+		*/
 		
 		const contact = self.contacts[ contactId ];
 		if ( contact )
@@ -1441,7 +1542,7 @@ library.module = library.module || {};
 		return conf;
 	}
 	
-	ns.Presence.prototype.handleContactRemove = function( clientId ) {
+	ns.Presence.prototype.handleRelationRemove = function( clientId ) {
 		const self = this;
 		const contact = self.contacts[ clientId ];
 		if ( !contact )
@@ -1472,22 +1573,20 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.updateInvites = function( fresh ) {
 		const self = this;
-		console.log( 'updateInvites', fresh );
 		if ( null == fresh )
-			fresh = {};
+			fresh = [];
 		
-		const fIds = Object.keys( fresh );
-		const cIds = Object.keys( self.invites );
-		const stale = cIds.filter( cId => {
-			return !fIds.some( fId => fId == cId );
+		const currIds = Object.keys( self.invites );
+		const stale = currIds.filter( currId => {
+			const notInFresh = !fresh.some( fInv => fInv.token == currId );
+			return notInFresh;
 		});
 		
 		if ( stale && stale.length )
 			stale.forEach( sId => self.removeRoomInvite( sId ));
 		
-		fIds.forEach( fId => {
-			const inv = fresh[ fId ];
-			self.showRoomInvite( inv );
+		fresh.forEach( fInv => {
+			self.showRoomInvite( fInv );
 		});
 	}
 	
@@ -1508,15 +1607,16 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.showRoomInvite = async function( invite ) {
 		const self = this;
-		console.log( 'showRoomInvite', invite );
 		const token = invite.token;
 		if ( null != self.invites[ token ]) {
 			// already have invite
+			console.log( 'already ahve invite', token );
 			return;
 		}
 		
 		const roomId = invite.roomId;
 		if ( null != self.rooms[ roomId ]) {
+			console.log( 'already have room', token );
 			// alreay have room
 			return;
 		}
@@ -1531,6 +1631,7 @@ library.module = library.module || {};
 		
 		invite.from = from;
 		self.invites[ token ] = invite;
+		self.checkIdBacklog( token );
 		
 		const inv = {
 			type : 'invite-add',
@@ -1538,8 +1639,10 @@ library.module = library.module || {};
 		};
 		self.view.send( inv );
 		
-		if ( !self.activity )
+		if ( !self.activity ) {
+			console.log( 'no activity, skip sending invite' );
 			return;
+		}
 		
 		const req = [
 			token,
@@ -1720,6 +1823,103 @@ library.module = library.module || {};
 		}
 	}
 	
+	ns.Presence.prototype.handleFilter = function( event ) {
+		const self = this;
+		if ( 'select' == event.type )
+			self.handleFilterSelect( event.data );
+		
+		if ( 'load-identities' == event.type )
+			self.handleFilterLoadIds( event.data );
+	}
+	
+	ns.Presence.prototype.handleFilterSelect = async function( select ) {
+		const self = this;
+		const id = select.id;
+		self.currentFilter = id;
+		if ( 'relations' == id ) {
+			prepare( id, self.contactIds );
+			return true;
+		}
+		
+		if ( 'online' == id ) {
+			//prepare( id, self.contactsOnline );
+			let ids = await self.idc.getList( self.contactsOnline );
+			ids.sort(( a, b ) => {
+				const an = a.name.toLowerCase();
+				const bn = b.name.toLowerCase();
+				if ( an > bn )
+					return 1;
+				else
+					return -1;
+			});
+			
+			const idList = ids.map( id => id.clientId );
+			prepare( id, idList );
+			populate( id, ids );
+			return true;
+		}
+		
+		if ( 'all' == id ) {
+			const getAll = {
+				type : 'contact-list',
+				data : null,
+			};
+			let allList = null;
+			try {
+				allList = await self.acc.request( getAll );
+			} catch( ex ) {
+				console.log( 'handleFilterSelect - contact-list ex', ex );
+			}
+			self.contactsAll = allList;
+			prepare( 'all', allList );
+			return true;
+		}
+		
+		function prepare( select, list ) {
+			const prep = {
+				type : 'prepare-list',
+				data : {
+					select : select,
+					ids    : list,
+				},
+			};
+			self.filterToView( prep );
+		}
+		
+		function populate( select, identies ) {
+			const pop = {
+				type : 'populate-items',
+				data : {
+					select : select,
+					ids    : identies,
+				}
+			};
+			self.filterToView( pop );
+		}
+	}
+	
+	ns.Presence.prototype.handleFilterLoadIds = async function( event ) {
+		const self = this;
+		const ids = await self.idc.getList( event.list );
+		const res = {
+			type : 'populate-items',
+			data : {
+				select : event.select,
+				ids    : ids,
+			},
+		};
+		self.filterToView( res );
+	}
+	
+	ns.Presence.prototype.filterToView = function( event ) {
+		const self = this;
+		const filter = {
+			type : 'filter',
+			data : event,
+		};
+		self.toView( filter );
+	}
+	
 	ns.Presence.prototype.setupRooms = function( rooms ) {
 		const self = this;
 		if ( !rooms || !rooms.length )
@@ -1765,7 +1965,7 @@ library.module = library.module || {};
 		const self = this;
 		const userId = id.clientId;
 		if ( key && ( 'isOnline' === key )) {
-			self.handleContactOnline( userId, id.isOnline );
+			self.handleUserOnline( userId, id.isOnline );
 		}
 		
 		const uptd = {
@@ -1852,7 +2052,7 @@ library.module = library.module || {};
 		self.createRoom();
 	}
 	
-	ns.Presence.prototype.handleContactAction = function( action ) {
+	ns.Presence.prototype.sendContactAction = function( action ) {
 		const self = this;
 		const event = {
 			type : 'contact',
@@ -1972,33 +2172,46 @@ library.module = library.module || {};
 		
 		return room;
 		
-		function contactEvent( e ) { self.handleGroupContactAction( e ); }
+		function contactEvent( e ) { self.handleContactAction( e ); }
 	}
 	
-	ns.Presence.prototype.handleGroupContactAction = function( event ) {
+	ns.Presence.prototype.handleContactAction = function( event ) {
 		const self = this;
 		if ( 'open' === event.type )
 			self.openContactChat( event.data );
-		
+		if ( 'open-chat' === event.type )
+			self.openContactChat( event.data );
+		if ( 'live-video' === event.type )
+			self.openContactVideo( event.data );
+		if ( 'live-audio' === event.type )
+			self.openContactAudio( event.data );
 	}
 	
-	ns.Presence.prototype.openContactChat = function( contactId ) {
+	ns.Presence.prototype.openContactChat = async function( contactId ) {
 		const self = this;
-		const contact = self.contacts[ contactId ];
-		if ( contact && contact.openChat ) {
-			contact.openChat();
+		const contact = await self.getContact( contactId );
+		if ( null == contact )
 			return;
-		}
 		
-		const waitConf = {
-			id : contactId,
-		};
-		self.openChatWaiting.push( waitConf );
-		let start = {
-			type : 'start',
-			data : contactId,
-		};
-		self.handleContactAction( start );
+		contact.openChat();
+	}
+	
+	ns.Presence.prototype.openContactVideo = async function( contactId ) {
+		const self = this;
+		const contact = await self.getContact( contactId );
+		if ( null == contact )
+			return;
+		
+		contact.startVideo();
+	}
+	
+	ns.Presence.prototype.openContactAudio = async function( contactId ) {
+		const self = this;
+		const contact = await self.getContact( contactId );
+		if ( null == contact )
+			return;
+		
+		contact.startAudio();
 	}
 	
 	ns.Presence.prototype.joinLiveSession = function( roomId, sessConf ) {
@@ -2924,6 +3137,7 @@ library.module = library.module || {};
 	
 	ns.Treeroot.prototype.addContact = function( data ) {
 		const self = this;
+		console.log( 'addContact', data );
 		const contact = data.contact;
 		const cState = data.cState;
 		if ( !contact ) {

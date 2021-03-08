@@ -44,8 +44,6 @@ library.view = library.view || {};
 	
 	// Public
 	
-	
-	
 	// Private
 	
 	ns.Subscriber.prototype.init = function() {
@@ -1251,6 +1249,10 @@ library.view = library.view || {};
 		
 		self.invites = {};
 		self.hiddenContacts = {};
+		self.temps = {};
+		self.tempIds = [];
+		
+		self.filterCurrent = 'relations';
 		
 		self.init();
 	}
@@ -1267,6 +1269,10 @@ library.view = library.view || {};
 			self.contactItemsId,
 			[ 'online', 'name' ]
 		);
+		self.onlineOrder = new library.component.ListOrder(
+			self.contactItemsId,
+			[ 'name' ]
+		);
 		
 		self.queryMap[ 'account-ask' ] = askForAccount;
 		self.queryMap[ 'account-create' ] = createAccount;
@@ -1275,6 +1281,11 @@ library.view = library.view || {};
 		function askForAccount( e ) { self.askForAccount( e ); }
 		function createAccount( e ) { self.createAccount( e ); }
 		function loginInvalid( e ) { self.loginInvalid( e ); }
+		
+		const scrollBox = document.getElementById( 'contacts' );
+		scrollBox.addEventListener( 'scroll', e => {
+			self.handleScrollBox( e );
+		});
 		
 		self.bindModuleEvents();
 	}
@@ -1299,11 +1310,13 @@ library.view = library.view || {};
 		const tmplId = 'presence-contacts-tmpl';
 		self.hiddenId = friendUP.tool.uid( 'hidden' );
 		self.hiddenItemsId = friendUP.tool.uid( 'hidden' );
+		self.contactFilter = friendUP.tool.uid( 'filter' );
 		const conf = {
 			roomsId       : self.contactsId,
 			folditId      : self.contactsFoldit,
 			title         : self.getTitleString( 'contact' ),
 			connStateId   : self.contactsConnState,
+			filterId      : self.contactFilter,
 			itemsId       : self.contactItemsId,
 			hiddenId      : self.hiddenId,
 			hiddenItemsId : self.hiddenItemsId,
@@ -1313,7 +1326,10 @@ library.view = library.view || {};
 		const container = document.getElementById( self.containers.contact );
 		container.appendChild( el );
 		
+		self.contactsContainer = document.getElementById( self.contactItemsId );
+		
 		self.bindHidden();
+		self.bindFilter();
 	}
 	
 	ns.Presence.prototype.bindHidden = function() {
@@ -1327,6 +1343,70 @@ library.view = library.view || {};
 			self.unloadHidden();
 		}
 	}
+	
+	ns.Presence.prototype.bindFilter = function() {
+		const self = this;
+		self.contactFilter = window.document.getElementById( self.contactFilter );
+		self.filterRelations = self.contactFilter.querySelector( '.show-relations' );
+		self.filterOnline = self.contactFilter.querySelector( '.show-online' );
+		self.filterAll = self.contactFilter.querySelector( '.show-all' );
+		self.filterCurrentBtn = self.filterRelations;
+		
+		self.filterRelations.addEventListener( 'click', relClick, false );
+		self.filterOnline.addEventListener( 'click', onClick, false );
+		self.filterAll.addEventListener( 'click', allClick, false );
+		
+		function relClick( e ) {
+			changeTo( 'relations', self.filterRelations );
+		}
+		
+		function onClick( e ) {
+			changeTo( 'online', self.filterOnline );
+		}
+		
+		function allClick( e ) {
+			changeTo( 'all', self.filterAll );
+		}
+		
+		function changeTo( select, btn ) {
+			if ( null != self.filterCurrentBtn )
+				toggleKlasses( self.filterCurrentBtn, false );
+			
+			self.filterCoverBox();
+			self.filterCleanupCurrent();
+			self.filterCurrent = select;
+			self.filterCurrentBtn = btn;
+			toggleKlasses( btn, true );
+			
+			sendSelect( select );
+			
+			function toggleKlasses( el, on ) {
+				//el.classList.toggle( 'contact-filter-select', on );
+				el.classList.toggle( 'TabActive', on );
+			}
+		}
+		
+		function sendSelect( id ) {
+			self.currentFilter = id;
+			const select = {
+				type : 'select',
+				data : {
+					id : id,
+				},
+			};
+			self.sendFilter( select );
+		}
+	}
+	
+	ns.Presence.prototype.sendFilter = function( event ) {
+		const self = this;
+		const filter = {
+			type : 'filter',
+			data : event,
+		};
+		self.send( filter );
+	}
+	
 	
 	ns.Presence.prototype.setLogoCss = function() {
 		const self = this;
@@ -1354,9 +1434,10 @@ library.view = library.view || {};
 		self.mod.on( 'contact-list', contactList );
 		self.mod.on( 'contact-add', contactAdd );
 		self.mod.on( 'contact-remove', contactRemove );
-		self.mod.on( 'invite-add', inviteAdd );
-		self.mod.on( 'invite-remove', inviteRemove );
-		self.mod.on( 'hidden-list', e => self.handleHiddenList( e ));
+		self.mod.on( 'invite-add'    , e => self.handleInviteAdd( e ));
+		self.mod.on( 'invite-remove' , e => self.handleInviteRemove( e ));
+		self.mod.on( 'hidden-list'   , e => self.handleHiddenList( e ));
+		self.mod.on( 'filter'        , e => self.handleFilter( e ));
 		
 		function userId( e ) { self.userId = e; }
 		function joinedRoom( e ) { self.handleRoomJoin( e ); }
@@ -1364,8 +1445,6 @@ library.view = library.view || {};
 		function contactList( e ) { self.handleContactList( e ); }
 		function contactAdd( e ) { self.handleContactAdd( e ); }
 		function contactRemove( e ) { self.handleContactRemove( e ); }
-		function inviteAdd( e ) { self.handleInviteAdd( e ); }
-		function inviteRemove( e ) { self.handleInviteRemove( e ); }
 	}
 	
 	ns.Presence.prototype.updateTitle = function() {
@@ -1440,7 +1519,6 @@ library.view = library.view || {};
 	ns.Presence.prototype.handleContactAdd = function( contact ) {
 		const self = this;
 		self.addContact( contact );
-		
 	}
 	
 	ns.Presence.prototype.handleContactRemove = function( clientId ) {
@@ -1454,6 +1532,375 @@ library.view = library.view || {};
 		delete self.contacts[ clientId ];
 		self.contactIds = Object.keys( self.contacts );
 		contact.close();
+	}
+	
+	ns.Presence.prototype.checkExists = function( clientId ) {
+		const self = this;
+		let item = null;
+		item = self.contacts[ clientId ];
+		if ( item )
+			return item;
+		item = self.rooms[ clientId ];
+		if ( item )
+			return item;
+		item = self.invites[ clientId ];
+		if ( item )
+			return item;
+		item = self.temps[ clientId ];
+		if ( item )
+			return item;
+		
+		return false;
+	}
+	
+	ns.Presence.prototype.handleFilter = function( event ) {
+		const self = this;
+		if ( 'update-online' == event.type ) {
+			const onlineNum = self.filterOnline.querySelector( '.show-online-num' );
+			onlineNum.textContent = '(' + event.data + ')';
+		}
+		
+		if ( 'prepare-list' == event.type ) {
+			self.filterPrepareList( event.data );
+			return;
+		}
+		
+		if ( 'populate-items' == event.type ) {
+			self.filterPopulate( event.data );
+			return;
+		}
+		
+		if ( 'update-list' == event.type ) {
+			self.filterUpdate( event.data );
+			return;
+		}
+	}
+	
+	ns.Presence.prototype.filterCoverBox = function() {
+		const self = this;
+		const box = self.contactsContainer;
+		let height = box.clientHeight;
+		if ( 100 > height )
+			height = 100;
+		
+		box.style.height = height + 'px';
+		box.appendChild( self.loadCover );
+		box.classList.toggle( 'ZebraList', false );
+	}
+	
+	ns.Presence.prototype.filterUncoverBox = function() {
+		const self = this;
+		window.setTimeout( doUncover, 350 );
+		function doUncover() {
+			self.contactsContainer.classList.toggle( 'ZebraList', true );
+			const box = self.contactsContainer;
+			self.underCarpet.appendChild( self.loadCover );
+			box.style.height = null;
+		}
+	}
+	
+	ns.Presence.prototype.filterCleanupCurrent = function() {
+		const self = this;
+		const curr = self.filterCurrent;
+		if ( 'relations' == curr )
+			self.filterHideRelations();
+		if ( 'online' == curr )
+			self.filterRemoveOnline();
+		if ( 'all' == curr )
+			self.filterRemoveAll();
+		
+	}
+	
+	ns.Presence.prototype.filterPrepareList = function( event ) {
+		const self = this;
+		const select = event.select;
+		if ( select != self.currentFilter ) {
+			console.log( 'filterPrepareList - filter missmatch, dropping', {
+				current : self.currentFilter,
+				event   : event,
+			});
+			return;
+		}
+		
+		if ( 'relations' == select ) {
+			self.contactIds.forEach( cId => {
+				const contact = self.contacts[ cId ];
+				contact.setOrder( self.contactOrder );
+				contact.show();
+			});
+			self.filterUncoverBox();
+		}
+		
+		if ( 'online' == select ) {
+			self.filterSetOnline( event.ids );
+		}
+		
+		if ( 'all' == select ) {
+			self.filterSetAll( event.ids );
+		}
+	}
+	
+	ns.Presence.prototype.filterSetOnline = function( list ) {
+		const self = this;
+		list.forEach(( cId, index ) => {
+			self.filterSetTemp( cId, true, null );
+		});
+		self.filterUncoverBox();
+	}
+	
+	ns.Presence.prototype.filterSetAll = function( list ) {
+		const self = this;
+		self.allIds = list;
+		self.filterAllAddScrollBuffer();
+		self.filterUncoverBox();
+	}
+	
+	ns.Presence.prototype.handleScrollBox = function( e ) {
+		const self = this;
+		if ( 'all' != self.currentFilter )
+			return;
+		
+		if ( null != self.scrollTimeout )
+			return;
+		
+		self.scrollTimeout = window.setTimeout( doScrollThings, 200 );
+		function doScrollThings() {
+			self.filterAllAddScrollBuffer();
+			self.scrollTimeout = null;
+		}
+	}
+	
+	ns.Presence.prototype.filterAllAddScrollBuffer = function() {
+		const self = this;
+		const scrollBox = document.getElementById( 'contacts' );
+		const container = document.getElementById( self.contactsId );
+		if ( enoughOverflow())
+			return;
+		
+		let index = 0;
+		if ( null == self.filterFirstIndex )
+			self.filterFirstIndex = index;
+		
+		if ( self.filterLastIndex )
+			index = self.filterLastIndex + 1;
+		
+		let loadIds = [];
+		let moar = true;
+		const total = self.allIds.length;
+		while( moar ) {
+			const cId = self.allIds[ index ];
+			if ( !cId ) {
+				moar = false;
+				continue;
+			}
+			
+			const wasSet = self.filterSetTemp( cId );
+			if ( wasSet ) // it is not set if it already exists as a relation
+				loadIds.push( cId );
+			else {
+				self.filterPlaceInList( cId );
+			}
+			
+			self.filterLastIndex = index;
+			index++;
+			moar = !enoughOverflow();
+			if ( index > total )
+				moar = false;
+		}
+		
+		loadIds = loadIds.filter( cId => !!cId );
+		if ( !loadIds.length )
+			return;
+		
+		self.filterLoadIdList( loadIds );
+		
+		function enoughOverflow() {
+			if ( self.tempIds.length < 20 )
+				return false;
+			
+			const visible = scrollBox.clientHeight;
+			const full = scrollBox.scrollHeight;
+			const content = container.scrollHeight;
+			const topOverflow = scrollBox.scrollTop;
+			const bottomOverflow = full - visible - topOverflow;
+			const buffer = bottomOverflow - ( full - content );
+			const res = ( buffer > visible );
+			/*
+			console.log( 'enoughOverflow', {
+				visible : visible,
+				full    : full,
+				top     : topOverflow,
+				bottom  : bottomOverflow ,
+				content : content,
+				buffer  : buffer,
+				returns : res,
+			});
+			*/
+			return res;
+		}
+		
+	}
+	
+	ns.Presence.prototype.filterLoadIdList = function( idList ) {
+		const self = this;
+		const load = {
+			type : 'load-identities',
+			data : {
+				select : 'all',
+				list   : idList,
+			},
+		};
+		
+		self.sendFilter( load );
+	}
+	
+	ns.Presence.prototype.filterPlaceInList = function( cId ) {
+		const self = this;
+		const index = self.allIds.indexOf( cId );
+		const afterId = self.allIds[ index-1 ];
+		const contact = self.checkExists( cId );
+		if ( afterId )
+			setAfter( cId, afterId );
+		else
+			append( cId );
+		
+		function setAfter( cId, afterId ) {
+			const after = document.getElementById( afterId );
+			if ( after )
+				contact.moveAfter( after );
+			else
+				append( cId );
+		}
+		
+		function append( cId ) {
+			const container = document.getElementById( self.contactItemsId );
+			contact.appendTo( container );
+		}
+	}
+	
+	ns.Presence.prototype.filterHideRelations = function() {
+		const self = this;
+		self.contactIds.forEach( cId => {
+			const contact = self.contacts[ cId ];
+			contact.setOrder( null );
+			contact.hide( self.underCarpet );
+		});
+	}
+	
+	ns.Presence.prototype.filterRemoveOnline = function() {
+		const self = this;
+		self.filterHideRelations();
+		self.tempIds.forEach( cId => {
+			const tmp = self.temps[ cId ];
+			delete self.temps[ cId ];
+			if ( tmp )
+				tmp.close();
+		});
+		self.tempIds = [];
+	}
+	
+	ns.Presence.prototype.filterRemoveAll = function() {
+		const self = this;
+		self.filterHideRelations();
+		self.filterFirstIndex = null;
+		self.filterLastIndex = null;
+		self.tempIds.forEach( cId => {
+			const tmp = self.temps[ cId ];
+			delete self.temps[ cId ];
+			if ( tmp )
+				tmp.close();
+		});
+		self.tempIds = [];
+	}
+	
+	ns.Presence.prototype.filterSetTemp = function( cId, online, id ) {
+		const self = this;
+		const contact = self.checkExists( cId );
+		if ( contact ) {
+			moveContact( cId, online );
+			return false;
+		}
+		else {
+			setTemp( cId, online, id );
+			return true;
+		}
+		
+		function moveContact( cId, online ) {
+			const contact = self.contacts[ cId ];
+			if ( !contact )
+				return;
+			
+			if ( online )
+				contact.setOrder( self.onlineOrder );
+			
+			contact.show();
+		}
+		
+		function setTemp( cId, online, id ) {
+			const conf = {
+				clientId    : cId,
+				userId      : self.userId,
+				containerId : self.contactItemsId,
+				contact     : id || {},
+			};
+			
+			if ( online ) {
+				if ( id )
+					id.isOnline = true;
+				conf.order = self.onlineOrder;
+			}
+			
+			const temp = new library.view.PresenceTemp( conf, self.mod );
+			self.temps[ cId ] = temp;
+			self.tempIds.push( cId );
+		}
+	}
+	
+	ns.Presence.prototype.filterPopulate = function( pop ) {
+		const self = this;
+		const ids = pop.ids;
+		ids.forEach( id => {
+			const cId = id.clientId;
+			const temp = self.temps[ cId ];
+			if ( !temp )
+				return;
+			
+			temp.updateIdentity( id );
+		});
+	}
+	
+	ns.Presence.prototype.filterUpdate = function( event ) {
+		const self = this;
+		const action = event.type;
+		const conf = event.data;
+		if ( 'add' == action ) {
+			const id = conf.data;
+			self.filterSetTemp( id.clientId, true, id );
+			return;
+		}
+		
+		if ( 'remove' == action ) {
+			const cId = conf.data;
+			self.filterRemoveTemp( cId );
+		}
+	}
+	
+	ns.Presence.prototype.filterRemoveTemp = function( cId ) {
+		const self = this;
+		let temp = self.contacts[ cId ];
+		if ( temp ) {
+			temp.hide();
+			temp.setOrder( null );
+			return;
+		}
+		
+		temp = self.temps[ cId ];
+		if ( !temp )
+			return;
+		
+		delete self.temps[ cId ];
+		temp.close();
+		self.tempIds = Object.keys( self.temps );
 	}
 	
 	ns.Presence.prototype.handleInviteAdd = function( invite ) {
@@ -1500,7 +1947,6 @@ library.view = library.view || {};
 			name     : room.name,
 		};
 		self.roomOrder.add( orderConf );
-		self.emit( 'add', item );
 		
 		function handleResponse( res ) {
 			const invRes = {
@@ -1583,15 +2029,8 @@ library.view = library.view || {};
 	ns.Presence.prototype.addContact = function( conf ) {
 		const self = this;
 		const cId = conf.clientId;
-		if ( cId === self.userId ) {
-			console.log( 'Presence.addContact - is self, not adding' );
+		if ( cId === self.userId )
 			return;
-		}
-		
-		if ( self.contacts[ cId ]) {
-			console.log( 'Presence.addContact - already added', cId );
-			return;
-		}
 		
 		if ( self.hiddenContacts[ cId ]) {
 			const hEl = document.getElementById( cId );
@@ -1599,18 +2038,34 @@ library.view = library.view || {};
 			delete self.hiddenContacts[ cId ];
 		}
 		
+		const exists = self.checkExists( cId );
+		if ( exists ) {
+			if ( self.contacts[ cId ])
+				return;
+			else
+				self.filterRemoveTemp( cId );
+		}
+		
+		let order = self.contactOrder;
+		if ( 'all' == self.currentFilter )
+			order = null;
+		if ( 'online' == self.currentFilter )
+			order = self.onlineOrder;
+		
 		const contactConf = {
 			menuActions : self.menuActions,
-			containerId : self.contactItemsId,
+			containerId : self.underCarpetId,
 			userId      : self.userId,
 			contact     : conf,
-			order       : self.contactOrder,
+			order       : order,
 		};
 		const contact = new library.view.PresenceContact( contactConf, window.View );
 		self.contacts[ cId ] = contact;
 		self.contactIds.push( cId );
 		self.emit( 'add', contact );
-		//self.contactOrder.add( conf.identity );
+		
+		if ( 'all' == self.currentFilter )
+			self.filterPlaceInList( cId );
 	}
 	
 	ns.Presence.prototype.handleContactJoin = function( conf ) {
@@ -1756,8 +2211,8 @@ library.view = library.view || {};
 			msgWaitingId : self.msgWaiting,
 		};
 		var container = document.getElementById( self.containerId );
-		var el = hello.template.getElement( tmplId, conf );
-		container.appendChild( el );
+		self.el = hello.template.getElement( tmplId, conf );
+		container.appendChild( self.el );
 	}
 	
 	ns.PresenceRoom.prototype.buildRoomStatus = function() {
@@ -1815,7 +2270,7 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.bindUI = function() {
 		const self = this;
-		const el = document.getElementById( self.clientId );
+		const el = self.el;
 		
 		self.showSetNameBtn = el.querySelector( '.show-set-name' );
 		self.setNameForm = el.querySelector( '.room-name-form' );
@@ -2072,8 +2527,8 @@ library.view = library.view || {};
 			self.updateLiveDisplay( false );
 		}
 		
-		function peers( peers ) {
-			self.livePeers = peers;
+		function peers( data ) {
+			self.livePeers = data.peerIds;
 			const isInPeerList = self.checkIsInPeerList( self.userId );
 			self.userIsLive = isInPeerList ? true : false;
 			self.updateLiveDisplay();
@@ -2241,8 +2696,8 @@ library.view = library.view || {};
 			msgWaitingId : self.msgWaiting,
 		};
 		const container = document.getElementById( self.containerId );
-		const el = hello.template.getElement( tmplId, conf );
-		container.appendChild( el );
+		self.el = hello.template.getElement( tmplId, conf );
+		container.appendChild( self.el );
 	}
 	
 	ns.PresenceContact.prototype.init = function( contact ) {
@@ -2251,13 +2706,13 @@ library.view = library.view || {};
 		self.buildLive();
 		self.buildMsgWaiting();
 		
+		self.bindLive();
+		
 		self.conn.on( 'online', isOnline );
 		self.conn.on( 'relation', relation );
 		self.conn.on( 'message', message );
 		self.conn.on( 'msg-waiting', msgWaiting );
 		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
-		
-		self.bindLive();
 		
 		function isOnline( e ) { self.handleOnline( e ); }
 		function relation( e ) { self.handleRelation( e ); }
@@ -2269,7 +2724,9 @@ library.view = library.view || {};
 			name     : self.identity.name,
 			online   : self.identity.isOnline,
 		};
-		self.order.add( orderConf );
+		if ( self.order )
+			self.order.add( orderConf );
+		
 		self.handleOnline( self.identity.isOnline );
 		
 		if ( !contact.relation )
@@ -2360,7 +2817,9 @@ library.view = library.view || {};
 			online   : self.isOnline,
 			name     : self.identity.name,
 		};
-		self.order.update( orderConf );
+		if ( self.order )
+			self.order.update( orderConf );
+		
 		self.emit( 'online', isOnline );
 		if ( isOnline ) {
 			self.onlineStatus.set( 'online' );
@@ -2425,6 +2884,145 @@ library.view = library.view || {};
 			data : null,
 		};
 		self.send( notie );
+	}
+	
+})( library.view );
+
+(function( ns, undefiend ) {
+	ns.PresenceTemp = function( conf, conn ) {
+		console.log( 'PresenceTemp', conf );
+		const self = this;
+		self.type = 'temp-contact';
+		self.data = {
+			clientId : conf.clientId,
+			priority : 0,
+			identity : conf.contact || {},
+		};
+		self.userId = conf.userId;
+		self.order = conf.order;
+		self.isOnline = false;
+		
+		library.view.BaseContact.call( self, conf, conn );
+		
+		self.init(  );
+	}
+	
+	ns.PresenceTemp.prototype = Object.create( library.view.BaseContact.prototype );
+	
+	ns.PresenceTemp.prototype.phAvas = [
+		'greenbear',
+		'redbear',
+	];
+	
+	ns.PresenceTemp.prototype.updateIdentity = function( id ) {
+		const self = this;
+		console.log( 'PresenceTemp.updateIdentity', id );
+		if ( null != id )
+			self.identity = id;
+		
+		self.updateName();
+		self.updateAvatar();
+		self.updateOnline();
+	}
+	
+	ns.PresenceTemp.prototype.updateOnline = function() {
+		const self = this;
+		console.log( 'updateOnline', self.identity.isOnline );
+		const isOnline = self.identity.isOnline;
+		if ( !isOnline && ( null == self.onlineStatus ))
+			return;
+		
+		console.log( 'updateOnline, the things', isOnline );
+		if ( null == self.onlineStatus )
+			self.buildStatus();
+		
+		let line = '';
+		if ( isOnline ) {
+			line = 'online';
+			self.onlineStatus.show();
+		}
+		else {
+			line = 'offline';
+			self.onlineStatus.hide();
+		}
+		
+		self.onlineStatus.set( line );
+	}
+	
+	ns.PresenceTemp.prototype.buildStatus = function() {
+		const self = this;
+		self.onlineStatus = new library.component.StatusIndicator({
+			containerId : self.onlineStatusId,
+			type        : 'led',
+			cssClass    : 'led-online-status PadBorder',
+			statusMap   : {
+				offline   : 'Off',
+				online    : 'On',
+			},
+		});
+	}
+	
+	ns.PresenceTemp.prototype.buildElement = function() {
+		const self = this;
+		const phAva = self.phAvas[ getRnd( 2 )];
+		self.onlineStatusId = friendUP.tool.uid( 'status' );
+		const tmplId = 'presence-temp-tmpl';
+		const conf = {
+			clientId     : self.clientId,
+			statusId     : self.onlineStatusId,
+			phAva        : phAva,
+			phName       : getString( 4, 10 ),
+			phAlsoName   : getString( 7, 15 ),
+		};
+		const container = document.getElementById( self.containerId );
+		self.el = hello.template.getElement( tmplId, conf );
+		container.appendChild( self.el );
+		
+		function getString( min, max ) {
+			const len = getRnd( max, min );
+			const arr = new Array( len );
+			arr.fill( 'x' );
+			return arr.join( '' );
+		}
+		
+		function getRnd( max, min ) {
+			const rnd = Math.random();
+			let res = 0;
+			if ( min )
+				res = Math.floor( rnd * ( max - min ) + min );
+			else
+				res = Math.floor( rnd * max );
+			console.log( 'rnd', [ res, max, min ]);
+			return res;
+		}
+	}
+	
+	ns.PresenceTemp.prototype.getMenuOptions = function() {
+		const self = this;
+		const opts = [];
+		opts.push( self.menuActions[ 'open-chat' ]);
+		if ( !window.View.appConf.hideLive ) {
+			opts.push( self.menuActions[ 'live-video' ]);
+			opts.push( self.menuActions[ 'live-audio' ]);
+		}
+		return opts;
+	}
+	
+	/*
+	ns.PresenceTemp.prototype.bindItem = function() {
+		const self = this;
+		self.el.addEventListener( 'click', click, false );
+		function click( e ) {
+			self.openChat();
+		}
+	}
+	*/
+	
+	ns.PresenceTemp.prototype.init = function( canOnline ) {
+		const self = this;
+		console.log( 'tmp init' );
+		if ( null != self.identity.name )
+			self.updateIdentity();
 	}
 	
 })( library.view );

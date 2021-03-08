@@ -315,6 +315,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.conn.on( 'quality'        , quality );
 		self.conn.on( 'mode'           , mode );
 		self.conn.on( 'join'           , join );
+		self.conn.on( 'peers'          , e => self.handlePeers( e ));
 		self.conn.on( 'leave'          , leave );
 		self.conn.on( 'close'          , close );
 		
@@ -787,6 +788,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		const peerId = peer.peerId;
 		self.closePeer( peerId );
+	}
+	
+	ns.RTC.prototype.handlePeers = function( e ) {
+		const self = this;
+		console.log( 'Live.RTC.handlePeers', e );
 	}
 	
 	ns.RTC.prototype.handleClosed = function() {

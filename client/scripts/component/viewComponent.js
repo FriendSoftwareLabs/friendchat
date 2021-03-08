@@ -378,14 +378,13 @@ library.component = library.component || {};
 			return;
 		}
 		
-		
 		stateKey = stateKey.toString();
 		const current = self.statusMap[ self.state ];
 		const update = self.statusMap[ stateKey ];
 		if ( current === update )
 			return;
 		
-		if ( current.length )
+		if ( current && current.length )
 			self.inner.classList.toggle( current, false );
 		
 		if ( null == update ) {
@@ -2558,7 +2557,7 @@ itemList - optional, list of DOM elements to show in the list
 		inputContainerId,
 		listContainerId,
 		filterProps,
-		itemList,
+		itemList
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
@@ -3189,6 +3188,9 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		if ( self.debug )
 			console.log( 'update', itemConf );
 		
+		if ( null != itemConf.priority )
+			self.changePrio( itemConf );
+		
 		self.updateInPrio( itemConf );
 	}
 	
@@ -3260,6 +3262,34 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		}
 	}
 	
+	ns.ListOrder.prototype.changePrio = function( conf ) {
+		const self = this;
+		const cId = conf.clientId;
+		const item = self.items[ cId ];
+		if ( !item ) {
+			console.log( 'changePrio - no item for', {
+				conf  : conf,
+				items : self.items,
+			});
+			return;
+		}
+		
+		const freshPri = self.normalizePriority( conf.priority );
+		const currPri = item.pri;
+		
+		if ( currPri === freshPri )
+			return;
+		
+		const prio = self.prio[ currPri ];
+		const index = self.getItemIndex( cId );
+		
+		prio.splice( index, 1 );
+		item.priority = freshPri;
+		item.clientId = cId;
+		const noReorder = true;
+		self.addToPrio( item, noReorder );
+	}
+	
 	ns.ListOrder.prototype.getItem = function( id ) {
 		const self = this;
 		let getItem = null;
@@ -3301,7 +3331,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		*/
 	}
 	
-	ns.ListOrder.prototype.addToPrio = function( conf ) {
+	ns.ListOrder.prototype.addToPrio = function( conf, noReorder ) {
 		const self = this;
 		const pri = self.normalizePriority( conf.priority );
 		const id = conf.clientId;
@@ -3331,6 +3361,9 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			return;
 		}
 		*/
+		if ( noReorder )
+			return;
+		
 		const el = document.getElementById( id );
 		self.list.appendChild( el );
 		self.reorder( pri );
@@ -3368,8 +3401,12 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	ns.ListOrder.prototype.reorder = function( pri  ) {
 		const self = this;
 		if ( self.debug )
-			console.log( 'reorder', pri );
-		
+			console.log( 'reorder', {
+				pri          : pri,
+				ontimeout    : !!self.reorderTimeout,
+				needsReorder : self.needsReorder,
+			});
+				
 		if ( null != self.reorderTimeout ) {
 			window.clearTimeout( self.reorderTimeout );
 			self.reorderTimeout = window.setTimeout( allowReorder, 250 );

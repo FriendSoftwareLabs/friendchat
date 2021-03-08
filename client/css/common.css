@@ -37,6 +37,15 @@ body#hello.hi {
 	background-color : transparent;
 }
 
+#hello .TabContainer {
+	width : 100%;
+}
+
+.TabContainer .Tab,
+.TabContainer .TabActive {
+	display: inherit;
+}
+
 .led-status {
 	position: relative;
 	overflow: hidden;
@@ -171,7 +180,7 @@ body i.fa {
 	display: inline-block;
 }
 
-/* color codez - TODO use friendUP themes ones */
+/* color codes - TODO use friendUP themes ones */
 .good {
 	color : rgb( 81, 144, 57 );
 }
@@ -260,7 +269,6 @@ body i.fa {
 	from { background-color : rgb( 152, 59, 37 ); }
 	to { background-color : rgb( 239, 101, 59 ); }
 }
-
 
 /* flex */
 
@@ -439,11 +447,11 @@ html body .displayNone {
 }
 
 .hello-style * {
-	box-sizing: border-box;
+	box-sizing : border-box;
 }
 
 .input-wrap {
-	
+	position : relative;
 }
 
 .input-wrap input {
@@ -515,13 +523,19 @@ html body .displayNone {
 .led-online-status {
     height : 1.2em;
     width : 1.2em;
-    border-radius: 0.7em;
+    border-radius: 100%;
+}
+
+.led-userlist-status {
+	height: 0.6em;
+	width : 0.6em;
+	border-radius: 100%;
 }
 
 .led-participants-status {
     height : 1.44em;
     width : unset;
-    border-radius: 0.8em;
+    border-radius: 100%;
 }
 
 .led-participants-status > div {

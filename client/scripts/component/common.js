@@ -21,7 +21,7 @@
 
 window.library = window.library || {};
 window.hello = window.hello || {};
-library.component = library.component || {};
+window.library.component = window.library.component || {};
 
 /* EVENT EMITTER
 
@@ -301,7 +301,7 @@ inherits from EventEmitter
 		
 		if ( self.onsend )
 			self.sendEvent = sendOnHandler;
-		else
+		if ( self.conn )
 			self.sendEvent = sendOnConn;
 		
 		function sendOnHandler( event ) {
@@ -325,14 +325,16 @@ inherits from EventEmitter
 		type,
 		conn,
 		eventSink,
-		onSend
+		onSend,
+		debug
 	) {
 		const self = this;
 		ns.EventNode.call( self,
 			type,
 			conn,
 			eventSink,
-			onSend
+			onSend,
+			debug
 		);
 		
 		self._requests = {};
@@ -349,6 +351,9 @@ inherits from EventEmitter
 			const reqId = friendUP.tool.uid( 'req' );
 			self._requests[ reqId ] = handleResponse;
 			request.requestId = reqId;
+			self.send( request );
+			
+			return;
 			const reqWrap = {
 				type      : self.type,
 				data      : request,
@@ -375,6 +380,9 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.handle = function( event ) {
 		const self = this;
+		if ( self._eventsDebug )
+			console.log( 'RequestNode.handle', event );
+		
 		const reqId = event.requestId;
 		if ( !reqId )
 			return self.emit( event.type, event.data );
@@ -391,7 +399,7 @@ inherits from EventEmitter
 		const reqId = event.requestId;
 		const request = event.data;
 		try {
-			self.callListener( request )
+			self.callListener( event )
 				.then( response )
 				.catch( error );
 		} catch( ex ) {
@@ -412,10 +420,11 @@ inherits from EventEmitter
 		}
 		
 		function error( err ) {
+			console.log( 'error', err );
 			const errRes = {
 				requestId : reqId,
 				response  : null,
-				error     : data,
+				error     : err,
 			};
 			self.send( errRes );
 		}
@@ -438,26 +447,30 @@ inherits from EventEmitter
 		handler( err, res );
 	}
 	
-	ns.RequestNode.prototype.callListener = function( req ) {
+	ns.RequestNode.prototype.callListener = async function( req ) {
 		const self = this;
 		const type = req.type;
 		const data = req.data;
 		const listeners = self.eventToListener[ type ];
-		if ( !listeners || !listeners.length )
-			return error( 'ERR_NO_LISTENER' );
+		if ( self._eventsDebug )
+			console.log( 'callListener', {
+				req : req,
+				sink : self._eventSink,
+			});
 		
-		if ( listeners.length !== 1 )
-			return error( 'ERR_MULTIPLE_LISTENERS' );
+		if ( listeners && listeners.length > 1 )
+			throw 'ERR_MULTIPLE_LISTENERS';
+		
+		if ( !listeners || !listeners.length ) {
+			if ( null == self._eventSink )
+				throw 'ERR_NO_LISTENER';
+			
+			return self._eventSink( type, data );
+		}
 		
 		const lId = listeners[ 0 ];
 		const listener = self.eventListeners[ lId ];
 		return listener( data );
-		
-		function error( errMsg ) {
-			return new Promise(( resolve, reject ) => {
-				reject( errMsg );
-			});
-		}
 	}
 	
 })( library.component );
@@ -746,7 +759,7 @@ inherits from EventEmitter
 			
 			function idSad( err ) {
 				clear( clientId );
-				console.log( 'IdCache.get idSad', err );
+				console.log( 'IdCache.get err', err );
 				reject( 'ERR_ERR_ERR' );
 			}
 			
@@ -852,6 +865,9 @@ inherits from EventEmitter
 	
 	ns.IdCache.prototype.diff = function( update ) {
 		const self = this;
+		if ( null == update )
+			return;
+		
 		const cId = update.clientId;
 		const curr = self.ids[ cId ];
 		if ( !curr ) {

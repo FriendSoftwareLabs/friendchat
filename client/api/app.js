@@ -55,12 +55,10 @@ var friend = window.friend || {}; // already instanced stuff
 		htmlPath,
 		windowConf,
 		initData,
-		eventsink,
+		eventSink,
 		onclose
 	) {
 		const self = this;
-		EventEmitter.call( self, eventsink );
-		
 		self.path = htmlPath;
 		self.windowConf = windowConf || {};
 		self.initData = initData;
@@ -71,10 +69,10 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		self.viewName = self.id;
 		
-		self.initView();
+		self.initView( eventSink );
 	}
 	
-	ns.View.prototype = Object.create( EventEmitter.prototype );
+	ns.View.prototype = Object.create( library.component.RequestNode.prototype );
 	
 	// Public
 	
@@ -183,7 +181,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	// Private
 	
-	ns.View.prototype.initView = function() {
+	ns.View.prototype.initView = function( eventSink ) {
 		const self = this;
 		if ( self.path ) {
 			const filename = self.path
@@ -217,7 +215,7 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( null != self.app.appSettings )
 			viewConf.appSettings = self.app.appSettings;
 		
-		self.fromView = new library.component.EventNode( self.id, self.app );
+		self.fromView = new library.component.RequestNode( self.id, self.app );
 		self.fromView.on( 'app', e => self.toApp( e ));
 		self.fromView.on( 'log-sock', e => self.toLogSock( e ));
 		self.fromView.on( 'conn-state', e => self.toConnState( e ));
@@ -225,7 +223,12 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fromView.on( 'ready', ready );
 		self.fromView.on( 'minimized', mini );
 		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
-		//self.app.on( self.id, viewEvent );
+		
+		library.component.RequestNode.call( self,
+			null,
+			self.fromView,
+			eventSink,
+		);
 		
 		windowConf.requireDoneLoading = true;
 		self.app.sendMessage({
@@ -264,7 +267,9 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.toApp = function( event ) {
 		const self = this;
-		self.emit( event.type, event.data );
+		//console.log( 'toApp', event );
+		self.handle( event );
+		//self.emit( event.type, event.data );
 	}
 	
 	ns.View.prototype.toLogSock = function( args ) {

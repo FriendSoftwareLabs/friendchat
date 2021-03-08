@@ -67,11 +67,12 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.handleAccount = function( loginEvent ) {
 		const self = this;
+		console.log( 'handleAccount', loginEvent );
 		const accId = loginEvent.data;
 		self.accountId = accId;
-		self.acc = new library.component.RequestNode( accId, self.conn, accSink );
-		self.acc.on( 'initialize', initialize );
-		self.acc.on( 'join', joinedRoom );
+		self.acc = new library.component.RequestNode( accId, self.conn, accSink, null, true );
+		self.acc.on( 'initialize', e => self.handleInit( e ));
+		self.acc.on( 'join'      , e => self.handleJoinedRoom( e ));
 		
 		const init = {
 			type : 'initialize',
@@ -79,13 +80,12 @@ library.component = library.component || {};
 		};
 		self.send( init );
 		
-		function accSink() { console.log( 'GuestAccount.accSink', arguments ); }
-		function initialize( e ) { self.handleInit( e ); }
-		function joinedRoom( e ) { self.handleJoinedRoom( e ); }
+		function accSink( ...args ) { console.log( 'GuestAccount.accSink', args ); }
 	}
 	
 	ns.GuestAccount.prototype.handleInit = function( state ) {
 		const self = this;
+		console.log( 'guest.handleInit', state );
 		if ( self.account )
 			return;
 		
@@ -106,6 +106,7 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.handleJoinedRoom = function( event ) {
 		const self = this;
+		console.log( 'Guest.handleJoinedRoom', event );
 		const conf = event.joined;
 		self.roomId = conf.clientId;
 		const roomConf = {

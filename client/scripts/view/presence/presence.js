@@ -273,10 +273,14 @@ library.view = library.view || {};
 			toggle( force );
 		
 		function toggle( show ) {
-			self.messagesEl.classList.toggle( 'SmoothScrolling', !show );
+			//self.usersEl.classList.toggle( 'hidden', !show );
+			self.msgBuilder.pauseSmoothScrolling();
+			
+			//self.messagesEl.classList.toggle( 'SmoothScrolling', !show );
 			self.usersEl.classList.toggle( 'users-hide', !show );
 			const btnIcon = self.toggleUsersBtn.querySelector( 'i' );
-			btnIcon.classList.toggle( 'DangerText', !show );
+			btnIcon.classList.toggle( 'AvailableText', show );
+			self.users.setUserListActive( show );
 		}
 	}
 	
@@ -292,24 +296,30 @@ library.view = library.view || {};
 		self.conn.on( 'online'         , online );
 		self.conn.on( 'offline'        , offline );
 		self.conn.on( 'chat'           , chat );
-		self.conn.on( 'live'           , live );
 		self.conn.on( 'persistent'     , persistent );
 		self.conn.on( 'title'          , title );
-		self.conn.on( 'at-strings'     , e => self.updateAtStrings( e ));
+		self.conn.on( 'mention-list'   , e => self.setMentionParsing( e ));
+		self.conn.on( 'at-list'        , e => self.setAtParsing( e ));
 		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
 		
-		function initialize( e ) { self.handleInitialize( e ); }
+		function initialize( e ) {
+			try {
+				self.handleInitialize( e );
+			} catch( ex ) {
+				console.log( 'initalize ex', ex );
+			}
+		}
 		function state( e      ) { self.handleState( e ); }
 		function online( e     ) { self.handleOnline( true ); }
 		function offline( e    ) { self.handleOnline( false ); }
 		function chat( e       ) { self.handleChat( e ); }
-		function live( e       ) { self.handleLive( e ); }
 		function persistent( e ) { self.handlePersistent( e ); }
 		function title( e      ) { self.handleTitle( e ); }
 	}
-	
-	ns.Presence.prototype.handleInitialize = function( conf ) {
+	 
+	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
+		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		/*
 		if ( 'DESKTOP' !== window.View.deviceType )
 			self.backBtn.classList.toggle( 'hidden', false );
@@ -345,17 +355,24 @@ library.view = library.view || {};
 		//
 		self.users = new UserCtrl(
 			self.conn,
-			state.users,
-			state.identities,
-			state.onlineList,
+			state.userList,
+			state.adminList,
+			state.recentList,
+			state.guestList,
+			state.peerList,
 			state.workgroups,
 			state.room,
 			state.guestAvatar,
 			'users-position',
-			friend.template,
 			state.config
 		);
-		self.user = self.users.getId( self.userId );
+		
+		window.setTimeout( doInit, 1000 );
+		function doInit() {
+			self.users.initialize();
+			if ( state.config && state.config.showUserList && !isMobile )
+				self.toggleUserList( true );
+		}
 		
 		//
 		if ( !window.View.appConf.hideLive ) {
@@ -363,9 +380,8 @@ library.view = library.view || {};
 				'live-status-container',
 				self.users,
 				self.userId,
-				friend.template
 			);
-			self.liveStatus.update( state.peers );
+			self.liveStatus.update( state.peerList );
 			self.liveStatus.on( 'show', e => self.goLive( e ));
 			self.liveStatus.on( 'join', e => self.goLive( e ));
 		}
@@ -374,7 +390,6 @@ library.view = library.view || {};
 		self.logFetcher = new library.component.LogFetcher(
 			'message-container',
 			'messages',
-			friend.template,
 			onFetch
 		);
 		
@@ -399,12 +414,12 @@ library.view = library.view || {};
 		
 		// message parsing
 		self.parser = new library.component.parse.Parser();
-		self.setAtParsing( state.atStrings );
+		self.setMentionParsing( state.mentionList );
+		self.setAtParsing( state.atList );
 		self.parser.use( 'LinkStd' );
 		self.parser.use( 'Emojii', conf.emojii );
 		
 		// multiline input
-		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		const inputConf = {
 			containerId     : 'input-container',
 			templateManager : friend.template,
@@ -430,7 +445,6 @@ library.view = library.view || {};
 			self.input,
 			self.parser,
 			self.linkExpand,
-			friend.template
 		);
 		
 		// input history
@@ -450,7 +464,6 @@ library.view = library.view || {};
 		self.emojiis = new library.component.EmojiiPanel(
 			//'emojii-panel-button',
 			'foot',
-			friend.template,
 			emoElementMap,
 			onEmojii
 		);
@@ -499,40 +512,78 @@ library.view = library.view || {};
 		
 		window.View.ready();
 		window.View.showLoading( false );
+		self.user = await self.users.getIdentity( self.userId );
 		self.sendChatEvent({
 			type : 'log',
 			data : null,
 		});
 	}
 	
-	ns.Presence.prototype.setAtParsing = function( atStrings ) {
+	ns.Presence.prototype.setMentionParsing = function( mentions ) {
 		const self = this;
-		const mentions = atStrings || [];
 		const mentionConf = {
-			atStrings : atStrings,
+			atStrings : mentions,
 		};
 		
-		if ( self.mentionPId )
+		if ( self.mentionPId ) {
 			self.parser.update( self.mentionPId, mentionConf );
-		else
-			mentionConf.cssKlass = 'Action';
+			return;
+		}
 		
-		let names = self.users.getUserNames( self.userId );
-		let groups = self.users.getGroupNames();
-		let ats = names.concat( groups );
-		ats = ats.filter( a => !mentions.some( u => u === a ));
+		mentionConf.cssKlass = 'Action';
+		self.mentionPId = self.parser.use( 'AtThings', mentionConf, true );
+	}
+	
+	ns.Presence.prototype.setAtParsing = function( ats ) {
+		const self = this;
+		self.atList = ats;
+		self.atList.sort( byAN );
+		if ( !self.isPrivate )
+			self.atList = [ 'everyone', 'admins', 'active', 'guests', ...self.atList ];
+		
 		const atConf = {
-			atStrings : ats,
+			atStrings : self.atList,
 		};
-		if ( self.atPId )
-			self.parser.update( self.atPId, atConf );
-		else
-			atConf.cssKlass = 'ActionText';
 		
-		if ( null == self.mentionPId )
-			self.mentionPId = self.parser.use( 'AtThings', mentionConf, true );
-		if ( null == self.atPId )
-			self.atPId = self.parser.use( 'AtThings', atConf, true );
+		if ( self.atPId ) {
+			self.parser.update( self.atPId, atConf );
+			return;
+		}
+		
+		atConf.cssKlass = 'ActionText';
+		self.atPId = self.parser.use( 'AtThings', atConf, true );
+		
+		function byAN( nameA, nameB ) {
+			if ( !nameA || !nameB )
+				return 0;
+			
+			const a = nameA.toLowerCase();
+			const b = nameB.toLowerCase();
+			let sort = 0;
+			let more = true;
+			let i = 0;
+			while( more ) {
+				const ai = a[ i ];
+				const bi = b[ i ];
+				i++;
+				
+				if ( i == a.length ) {
+					more = false;
+					continue;
+				}
+				
+				if ( ai === bi )
+					continue;
+				
+				more = false;
+				if ( ai > bi )
+					sort = 1;
+				else
+					sort = -1;
+			}
+			
+			return sort;
+		}
 	}
 	
 	ns.Presence.prototype.handleHidden = function( state ) {
@@ -597,23 +648,24 @@ library.view = library.view || {};
 		
 	}
 	
-	ns.Presence.prototype.setContactTitle = function() {
+	ns.Presence.prototype.setContactTitle = async function() {
 		const self = this;
 		if ( self.titleId )
 			self.clearTitle();
 		
 		self.titleId = friendUP.tool.uid( 'title' );
 		const stateId = friendUP.tool.uid( 'cstate' );
-		const user = self.users.getId( self.contactId );
+		const user = await self.users.getIdentity( self.contactId );
 		if ( !user ) {
 			console.log( 'setContactTitle - no user', self );
 			return;
 		}
 		
+		const avatarKlass = await self.users.getAvatarKlass( self.contactId );
 		const conf = {
 			id             : self.titleId,
 			statusId       : stateId,
-			avatarCssKlass : self.users.getAvatarKlass( self.contactId ),
+			avatarCssKlass : avatarKlass,
 			contactName    : user.name,
 		};
 		self.titleEl = friend.template.getElement( 'contact-title-tmpl', conf );
@@ -622,23 +674,19 @@ library.view = library.view || {};
 		const statusConf = {
 			containerId : stateId,
 			type        : 'led',
-			cssClass    : 'led-online-status PadBorder',
+			cssClass    : 'led-online-status PadBackground',
 			statusMap   : {
 				offline   : 'Off',
 				online    : 'On',
 			},
 		};
 		self.contactStatus = new library.component.StatusIndicator( statusConf );
-		const isOnline = self.users.checkIsOnline( self.contactId );
+		const isOnline = user.isOnline;
 		self.handleOnline( isOnline );
 	}
 	
 	ns.Presence.prototype.updateContactTitle = function( update ) {
 		const self = this;
-		console.log( 'updateContactTitle', {
-			contactId : self.contactId,
-			update    : update,
-		});
 		const id = update.data;
 		const cId = id.clientId;
 		if ( cId !== self.contactId )
@@ -648,7 +696,7 @@ library.view = library.view || {};
 		nameEl.textContent = id.name;
 	}
 	
-	ns.Presence.prototype.setGroupTitle = function() {
+	ns.Presence.prototype.setGroupTitle = async function() {
 		const self = this;
 		if ( !self.room ) {
 			console.log( 'view.Presence.setGroupTitle - no identity', self );
@@ -666,7 +714,7 @@ library.view = library.view || {};
 			self.clearTitle();
 		
 		self.titleId = friendUP.tool.uid( 'title' );
-		const avatarKlass = self.users.getAvatarKlass( id.clientId );
+		const avatarKlass = await self.users.getAvatarKlass( id.clientId );
 		const conf = {
 			id             : self.titleId,
 			roomName       : self.room.name,
@@ -789,6 +837,7 @@ library.view = library.view || {};
 		self.users.setState( uid, state, isTyping );
 	}
 	
+	/*
 	ns.Presence.prototype.handleLive = function( event ) {
 		const self = this;
 		if ( !event.data || !event.data.peerId )
@@ -803,6 +852,7 @@ library.view = library.view || {};
 		
 		self.users.setState( uid, state, add );
 	}
+	*/
 	
 	ns.Presence.prototype.handlePersistent = function( event ) {
 		const self = this;
@@ -819,14 +869,8 @@ library.view = library.view || {};
 		nameEl.textContent = title;
 	}
 	
-	ns.Presence.prototype.updateAtStrings = function( update ) {
-		const self = this;
-		self.setAtParsing( update.atStrings );
-	}
-	
 	ns.Presence.prototype.handleIdUpdate = function( update ) {
 		const self = this;
-		console.log( 'view.presence.handleIdUpdate', update );
 		self.users.updateIdentity( update );
 		if ( self.isPrivate )
 			self.updateContactTitle( update );
@@ -874,15 +918,18 @@ library.view = library.view || {};
 		
 		function showNotify( str ) {
 			self.inputMode = 'notify';
-			let names = self.users.getUserNames( self.userId );
+			//let names = self.users.getUserNames( self.userId );
+			let names = self.atList;
 			if ( !self.isPrivate ) {
 				//
-				names.unshift( 'everyone' );
+				//names = [ 'everyone', 'admins', 'active', 'guests', ...names ];
 				
 				//
+				/*
 				const groups = self.users.getGroupNames();
 				if ( groups && groups.length )
 					names = names.concat( groups );
+				*/
 			}
 			
 			self.notify.show( names, str );
@@ -939,7 +986,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleInputArrow = function( direction, value ) {
 		const self = this;
-		//console.log( 'handleInputArrow', [ direction, value ]);
 		if ( 'notify' == self.inputMode )
 			return self.selectInNotify( direction );
 		
@@ -1097,19 +1143,15 @@ library.view = library.view || {};
 //
 (function( ns, undefined ) {
 	ns.WorkGroup = function(
+		worgId,
 		conf,
-		containerId,
-		userSource,
-		templateManager,
-		onClick,
+		containerId
 	) {
 		const self = this;
-		self.onClick = onClick;
 		library.component.UserGroup.call( self,
+			worgId,
 			conf,
 			containerId,
-			userSource,
-			templateManager
 		);
 	}
 	
@@ -1120,7 +1162,6 @@ library.view = library.view || {};
 	ns.WorkGroup.prototype.baseClose = library.component.UserGroup.prototype.close;
 	ns.WorkGroup.prototype.close = function() {
 		const self = this;
-		delete self.onClick;
 		self.baseClose();
 	}
 	
@@ -1129,20 +1170,24 @@ library.view = library.view || {};
 	ns.WorkGroup.prototype.init = function() {
 		const self = this;
 		const elConf = {
-			clientId     : self.clientId,
+			clientId     : self.id,
 			name         : self.name,
 			sectionKlass : self.sectionKlass,
 			usersId      : self.usersId,
 		};
-		self.el = self.template.getElement( 'user-group-tmpl', elConf );
+		console.log( 'WorkGroup el conf', elConf );
+		self.el = hello.template.getElement( 'user-group-tmpl', elConf );
 		const container = document.getElementById( self.containerId );
 		if ( !container )
 			throw new Error( 'UserGroup.init - invalid container id: ' + self.containerId );
 		
 		container.appendChild( self.el );
+		self.usersEl = document.getElementById( self.usersId );
 		self.head = self.el.querySelector( '.section-head' );
 		//self.head.addEventListener( 'click', headClick, false );
 		self.head.addEventListener( 'click', groupPoke, false );
+		self.itemList = new library.component.ListOrder( self.usersId, [ 'name' ]);
+		self.updateVisible();
 		/*
 		if ( 'DESKTOP' === window.View.deviceType )
 			self.head.addEventListener( 'click', groupPoke, false );
@@ -1150,8 +1195,6 @@ library.view = library.view || {};
 			self.head.addEventListener( 'touchend', groupPoke, false );
 		*/
 		
-		self.usersEl = document.getElementById( self.usersId );
-		self.updateVisible();
 		
 		function groupPoke( e ) {
 			//e.stopPropagation();
@@ -1167,8 +1210,7 @@ library.view = library.view || {};
 	
 	ns.WorkGroup.prototype.handleClick = function( e ) {
 		const self = this;
-		if ( self.onClick )
-			self.onClick( self.clientId );
+		self.emit( 'click', self.id );
 	}
 	
 })( library.view );
@@ -1178,21 +1220,18 @@ library.view = library.view || {};
 (function( ns, undefined ) {
 	ns.WorkUser = function(
 		clientId,
-		user,
-		id,
-		tmplManager,
+		conf,
 		onClick
 	) {
 		const self = this;
+		self.userId = conf.userId;
 		self.onClick = onClick;
+		
 		library.component.GroupUser.call( self,
 			clientId,
 			null,
-			user,
-			id,
-			tmplManager
+			conf
 		);
-		
 	}
 	
 	ns.WorkUser.prototype = Object.create( library.component.GroupUser.prototype );
@@ -1212,7 +1251,7 @@ library.view = library.view || {};
 		const self = this;
 		e.preventDefault();
 		if ( self.onClick )
-			self.onClick( self.id );
+			self.onClick( self.userId );
 	}
 	
 })( library.view );
@@ -1221,36 +1260,53 @@ library.view = library.view || {};
 (function( ns, undefined ) {
 	ns.UserWorkCtrl = function(
 		conn,
-		users,
-		identities,
-		onlineList,
+		userList,
+		adminList,
+		recentList,
+		guestList,
+		peerList,
 		workgroups,
 		room,
 		guestAvatar,
 		containerId,
-		templateManager,
 		serverConfig
 	) {
 		const self = this;
 		self.conf = serverConfig;
 		self.members = {};
+		self.userToMembers = {};
 		self.works = {};
+		self.workIds = [];
 		self.rooms = null;
 		self.subGroups = [];
 		library.component.UserCtrl.call( self,
 			conn,
-			users,
-			identities,
-			onlineList,
+			userList,
+			adminList,
+			recentList,
+			guestList,
+			peerList,
 			workgroups,
 			room,
 			guestAvatar,
 			containerId,
-			templateManager
+			serverConfig
 		);
 	}
 	
 	ns.UserWorkCtrl.prototype = Object.create( library.component.UserCtrl.prototype );
+	
+	ns.UserWorkCtrl.prototype.initialize = async function() {
+		const self = this;
+		const noClick = true;
+		self.showWorkgroup( self.workId, noClick );
+		self.subGroups.forEach( wId => self.showWorkgroup( wId ));
+		if ( self.superId && !self.conf.supersSubHideSuper )
+			self.showWorkgroup( self.superId );
+		
+		await self.populateUserList();
+		self.isInitialized = true;
+	}
 	
 	// Public
 	
@@ -1278,7 +1334,7 @@ library.view = library.view || {};
 		self.userIds.forEach( uId => {
 			allIds[ uId ] = true;
 		});
-			
+		
 		self.workIds.forEach( wId => {
 			const worg = self.members[ wId ];
 			const uIds = Object.keys( worg );
@@ -1292,7 +1348,7 @@ library.view = library.view || {};
 		
 		const ids = Object.keys( allIds );
 		const names = ids.map( uId => {
-			const id = self.identities[ uId ];
+			const id = self.getSync( uId );
 			return id.name;
 		});
 		
@@ -1321,16 +1377,18 @@ library.view = library.view || {};
 	
 	// Private
 	
-	ns.UserWorkCtrl.prototype.init = function( workgroups, users, ids, room ) {
+	ns.UserWorkCtrl.prototype.init = async function(
+		workgroups,
+		room
+	) {
 		const self = this;
+		console.log( 'UserWorkCtrl, room', room );
 		self.room = room;
 		self.build();
 		self.groupList = new library.component.ListOrder( 'user-groups' );
-		self.initBaseGroups();
-		self.addIdentities( ids );
-		self.setWorkgroups( workgroups );
-		self.addUsers( users );
 		self.addId( room );
+		self.initGroups();
+		self.initWorkgroups( workgroups );
 		self.bindConn();
 		
 		self.conn.on( 'workgroup-sub-rooms', e => self.handleSubRooms( e ));
@@ -1339,24 +1397,26 @@ library.view = library.view || {};
 		//function worgMembers( e ) { self.handleWorgMembers( e ); }
 	}
 	
-	ns.UserWorkCtrl.prototype.initBaseGroups = function() {
+	ns.UserWorkCtrl.prototype.initGroups = function() {
 		const self = this;
-		self.worgPri = 2;
 		self.superPri = 1;
+		self.worgPri = 2;
+		self.basePri = 3;
 		self.subPri = 4;
 		const base = [
 			{
 				clientId     : 'all_groups',
 				name         : View.i18n( 'i18n_all_groups' ),
-				sectionKlass : 'Action clickie',
-				priority     : 3,
+				sectionKlass : 'base-group group-all',
+				priority     : self.basePri,
 			},
 		];
 		
 		base.forEach( worg => {
 			let wId = worg.clientId;
 			self.groupsAvailable[ wId ] = worg;
-			self.addWorkGroup( worg.clientId );
+			self.setupWorkgroup( worg.clientId );
+			self.showWorkgroup( worg.clientId );
 		});
 	}
 	
@@ -1365,6 +1425,7 @@ library.view = library.view || {};
 		if ( !subIds )
 			subIds = [];
 		
+		console.log( 'handleSubRooms', self.isInitialized );
 		const curr = self.subGroups;
 		const remove = curr.filter( notInSubs );
 		const add = subIds.filter( notInCurr );
@@ -1372,7 +1433,12 @@ library.view = library.view || {};
 		add.forEach( wId => {
 			const subWorg = self.groupsAvailable[ wId ];
 			subWorg.priority = self.subPri;
-			self.addWorkGroup( wId, 'Available' );
+			self.setupWorkgroup( wId, 'base-group group-work' );
+			if ( !self.isInitialized )
+				return;
+			
+			self.showWorkgroup( wId );
+			self.setWorkMembers( wId );
 		});
 		self.subGroups = subIds;
 		
@@ -1387,11 +1453,13 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.UserWorkCtrl.prototype.handleWorgMembers = function( event ) {
+	ns.UserWorkCtrl.prototype.handleWorgMembers = async function( event ) {
 		const self = this;
+		console.log( 'handleWorgMembers', event );
 		const workId = event.workId;
 		const members = event.members;
-		const ids = event.identities;
+		self.workMembers[ workId ] = members;
+		//const ids = event.identities;
 		/*
 		ids.forEach( id => {
 			cId = id.clientId;
@@ -1399,53 +1467,44 @@ library.view = library.view || {};
 				self.identities[ cId ] = id;
 		});
 		*/
-		self.addIdentities( ids );
-		self.setWorkMembers( event.workId, event.members );
+		//self.addIdentities( ids );
+		await self.setWorkMembers( workId );
 	}
 	
-	ns.UserWorkCtrl.prototype.setWorkgroups = function( conf ) {
+	ns.UserWorkCtrl.prototype.initWorkgroups = function( conf ) {
 		const self = this;
-		if ( !conf || !conf.available )
+		console.log( 'initWorkgroups', conf );
+		if ( null == conf ) {
+			console.log( 'UserWorkCtrl.initWorkgroups - no conf ???' );
 			return;
+		}
 		
-		const superId = conf.superId;
 		self.workId = conf.workId;
 		self.superId = conf.superId;
 		self.addUserCss( self.workId, self.room.avatar );
 		self.addRooms( conf.rooms );
-		const users = conf.users;
-		/*
-		if ( users )
-			users.forEach( user => self.addUserCss( user.clientId, user.avatar ));
-		*/
 		
-		const members = conf.members;
-		const groups = conf.available;
-		const gIds = Object.keys( groups );
-		gIds.forEach( setGAvailable );
-		const uGrp = self.groupsAvailable[ self.workId ];
-		uGrp.priority = self.worgPri;
-		self.addUserGroup( self.workId, 'Accept' );
-		
-		if ( superId && !( self.conf && self.conf.subsHaveSuperView )) {
-			const superWorg = self.groupsAvailable[ superId ];
-			superWorg.priority = self.superPri;
-			self.addWorkGroup( superId, 'Action' );
-			self.setWorkMembers( superId, members[ superId ] );
-			const groupEl = document.getElementById( self.workId );
-			const el = document.getElementById( superId );
-			self.el.insertBefore( el, groupEl );
-		}
-		
-		self.handleSubRooms( conf.subIds, conf.members );
-		self.subGroups.forEach( wId => {
-			self.setWorkMembers( wId, members[ wId ]);
+		self.workMembers = conf.members;
+		const ava = conf.available;
+		const wIds = Object.keys( ava );
+		wIds.forEach( wId => {
+			const worg = ava[ wId ];
+			self.addWorgAvailable( worg );
 		});
 		
-		function setGAvailable( gId ) {
-			const group = groups[ gId ];
-			self.groupsAvailable[ gId ] = group;
-		}
+		self.addUserGroup();
+		self.addSuperGroup();
+		self.handleSubRooms( conf.subIds );
+	}
+	
+	ns.UserWorkCtrl.prototype.populateUserList = async function() {
+		const self = this;
+		console.log( 'populateUserList' );
+		await self.setUsers();
+		//await self.setWorkMembers( self.workId );
+		await self.setSuperMembers();
+		const subWaits = self.subGroups.map( wId => self.setWorkMembers( wId ));
+		await Promise.all( subWaits );
 	}
 	
 	ns.UserWorkCtrl.prototype.addRooms = function( rooms ) {
@@ -1453,6 +1512,7 @@ library.view = library.view || {};
 		if ( !rooms )
 			return;
 		
+		console.log( 'addRooms', rooms );
 		self.rooms = rooms;
 		const rIds = Object.keys( rooms );
 		rIds.forEach( rId => {
@@ -1461,16 +1521,55 @@ library.view = library.view || {};
 		});
 	}
 	
-	ns.UserWorkCtrl.prototype.addWorkGroup = function( worgId, sectionKlass ) {
+	ns.UserWorkCtrl.prototype.addUserGroup = function() {
 		const self = this;
-		if ( self.works[ worgId ]) {
-			console.log( 'addWorkGroup - already added', worgId );
+		const userGroup = self.groupsAvailable[ self.workId ];
+		userGroup.priority = self.worgPri;
+		
+		const noClick = true;
+		const sectionKlass = 'base-group group-users';
+		self.setupWorkgroup( self.workId, sectionKlass, noClick );
+	}
+	
+	ns.UserWorkCtrl.prototype.addSuperGroup = function() {
+		const self = this;
+		if ( null == self.superId )
+			return;
+		
+		if ( self.conf.supersSubHideSuper )
+			return;
+		
+		const superWorg = self.groupsAvailable[ self.superId ];
+		superWorg.priority = self.superPri;
+		self.setupWorkgroup( self.superId, 'base-group group-other' );
+	}
+	
+	ns.UserWorkCtrl.prototype.setSuperMembers = async function() {
+		const self = this;
+		if ( null == self.superId )
+			return;
+		
+		if ( self.conf.supersSubHideSuper )
+			return;
+		
+		await self.setWorkMembers( self.superId );
+		//const groupEl = document.getElementById( self.workId );
+		//const el = document.getElementById( self.superId );
+		//self.el.insertBefore( el, groupEl );
+	}
+	
+	ns.UserWorkCtrl.prototype.setupWorkgroup = function( worgId, sectionKlass, noClick ) {
+		const self = this;
+		console.log( 'setupWorkgroup', worgId );
+		let group = self.getGroup( worgId );
+		if ( group ) {
+			console.log( 'setupWorkgroup - already added', worgId );
 			return;
 		}
 		
 		const worg = self.groupsAvailable[ worgId ];
 		if ( !worg ) {
-			console.log( 'addWorkGroup - no worg for', {
+			console.log( 'setupWorkgroup - no worg for', {
 				wId : worgId,
 				ava : self.groupsAvailable,
 			});
@@ -1478,26 +1577,35 @@ library.view = library.view || {};
 		}
 		
 		if ( null == worg.sectionKlass )
-			worg.sectionKlass = sectionKlass || 'Available';
+			worg.sectionKlass = sectionKlass;
 		
-		worg.sectionKlass = worg.sectionKlass + ' MousePointer clickie';
+		if ( !noClick )
+			worg.sectionKlass = worg.sectionKlass + ' MousePointer clickie';
 		
 		if ( !self.members[ worgId ])
 			self.members[ worgId ] = {};
 		
-		let members = self.members[ worgId ];
-		let group = new library.view.WorkGroup(
+	}
+	
+	ns.UserWorkCtrl.prototype.showWorkgroup = function( wId, noClick ) {
+		const self = this;
+		const worg = self.groupsAvailable[ wId ];
+		console.log( 'showWorgGroup', {
+			wId     : wId,
+			worg    : worg,
+		});
+		const group = new library.view.WorkGroup(
+			wId,
 			worg,
 			self.el.id,
-			members,
-			self.template,
-			onClick
 		);
 		
-		let cId = group.clientId;
-		self.works[ cId ] = group;
-		self.workIds = Object.keys( self.works );
+		const gId = group.id;
+		self.works[ gId ] = group;
+		self.workIds.push( gId );
 		self.groupList.add( worg );
+		if ( !noClick )
+			group.on( 'click', onClick );
 		
 		function onClick( id ) {
 			const target = {
@@ -1510,7 +1618,7 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.removeWorkgroup = function( worgId ) {
 		const self = this;
-		const group = self.works[ worgId ];
+		const group = self.getGroup( worgId );
 		if ( !group ) {
 			console.log( 'no group for', {
 				wId     : worgId,
@@ -1527,19 +1635,45 @@ library.view = library.view || {};
 		self.workIds = Object.keys( self.works );
 	}
 	
-	ns.UserWorkCtrl.prototype.setWorkMembers = function( worgId, idList ) {
+	ns.UserWorkCtrl.prototype.setUsers = async function() {
 		const self = this;
-		idList = idList || [];
-		let group = self.works[ worgId ];
+		console.log( 'addUsers - userList', self.userList );
+		const waitU = self.userList.map( uId => {
+			return self.buildUser( uId );
+		});
+		await Promise.all( waitU );
+	}
+	
+	ns.UserWorkCtrl.prototype.setUserToGroup = function( userId ) {
+		const self = this;
+		console.log( 'setUserToGroup', userId );
+		self.moveUserToGroup( userId, self.workId );
+	}
+	
+	ns.UserWorkCtrl.prototype.setWorkMembers = async function( worgId ) {
+		const self = this;
+		let idList = self.workMembers[ worgId ] || [];
+		let group = self.getGroup( worgId );
 		let members = self.members[ worgId ];
+		console.log( 'setWorkMembers', {
+			wId    : worgId,
+			idList : idList,
+			membs  : members,
+			group  : group,
+		});
 		if ( !group ) {
 			console.log( 'UserWrokCtrl.setWorkMembers - no group', {
 				worgId : worgId,
 				idList : idList,
-				self : self,
+				self   : self,
 			});
 			return;
 		}
+		
+		const idWaits = idList.map( cId => {
+			return self.getIdentity( cId );
+		});
+		await Promise.all( idWaits );
 		
 		const mIds = Object.keys( members );
 		let remove = mIds.filter( notInIdList );
@@ -1548,23 +1682,50 @@ library.view = library.view || {};
 			if ( members[ cId ])
 				return;
 			
-			const identity = self.identities[ cId ];
+			const memberId = friendUP.tool.uid( 'mem' );
+			let uToM = self.userToMembers[ cId ];
+			if ( null == uToM ) {
+				uToM = {
+					list     : [ memberId ],
+				};
+				uToM[ memberId ] = worgId;
+				self.userToMembers[ cId ] = uToM;
+			} else {
+				uToM.list.push( memberId );
+				uToM[ memberId ] = worgId;
+			}
+			
+			const identity = self.getIdSync( cId );
+			identity.isAuthed = true;
 			const conf = {
-				/* can we live without?
-				isAuthed   : true,
-				workgroups : [ worgId ],
-				*/
+				clientId   : memberId,
+				userId     : identity.clientId,
+				name       : identity.name,
+				workgroups : identity.workgroups,
 			};
+			console.log( 'setWorkMember', {
+				cId  : cId,
+				conf : conf,
+				u2m  : self.userToMembers[ cId ],
+			});
 			let user = new library.view.WorkUser(
-				cId,
+				memberId,
 				conf,
-				identity,
-				self.template,
 				onClick
 			);
 			members[ cId ] = user;
+			self.users[ memberId ] = user;
+			self.userIds.push( memberId );
+			self.detached.appendChild( user.el );
 			//self.addUserCss( cId, identity.avatar );
-			group.attach( cId );
+			group.attach( user );
+			let status = null;
+			if ( identity.isOnline )
+				status = 'online';
+			else
+				status = 'offline';
+			
+			user.setStatus( status );
 		});
 		
 		function notInIdList( mId ) {
@@ -1580,6 +1741,29 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.UserWorkCtrl.prototype.getUser = function( userId ) {
+		const self = this;
+		const list = [];
+		const user = self.users[ userId ];
+		const u2m = self.userToMembers[ userId ];
+		if ( user )
+			list.push( user );
+		if ( u2m )
+			u2m.list.forEach( mId => {
+				const user = self.users[ mId ];
+				list.push( user );
+			});
+		
+		console.log( 'getUser', {
+			userId : userId,
+			users  : self.users,
+			u2m    : u2m,
+			list   : list,
+		});
+		
+		return list;
+	}
+	
 	ns.UserWorkCtrl.prototype.removeMember = function( userId, worgId ) {
 		const self = this;
 		const members = self.members[ worgId ];
@@ -1590,7 +1774,7 @@ library.view = library.view || {};
 		if ( !user )
 			return;
 		
-		const group = self.works[ worgId ];
+		const group = self.getGroup( worgId );
 		if ( !group )
 			return;
 		
@@ -1622,14 +1806,38 @@ library.view = library.view || {};
 		}
 		
 		const isInWorg = user.workgroups.some( worgId => worgId === self.workId );
-		if ( !isInWorg ) {
-			console.log( 'wtf?=', {
-				u : user,
-				w : self.workId,
+		if ( isInWorg ) {
+			self.moveUserToGroup( userId, self.workId );
+		} else {
+			console.log( 'user is in subroom', {
+				uw : user.workgroups,
+				groups : self.groups,
+				wid : self.workId,
 			});
+			let toId = null;
+			user.workgroups.some( wId => {
+				console.log( 'wId', wId );
+				const grp = self.getGroup( wId );
+				if ( !grp )
+					return false;
+				
+				toId = wId;
+				return true;
+			});
+			self.moveUserToGroup( userId, toId );
 		}
+	}
+	
+	ns.UserWorkCtrl.prototype.getGroup = function( groupId ) {
+		const self = this;
+		if ( !groupId )
+			return null;
 		
-		self.moveUserToGroup( user.id, self.workId );
+		console.log( 'getGrtoup', {
+			gid   : groupId,
+			works : self.works,
+		});
+		return self.works[ groupId ];
 	}
 	
 	ns.UserWorkCtrl.prototype.toggleSpecials = function() {
@@ -1657,8 +1865,7 @@ library.view = library.view || {};
 		workgroups,
 		input,
 		parser,
-		linkExpand,
-		templateManager
+		linkExpand
 	) {
 		const self = this;
 		library.component.MsgBuilder.call( self,
@@ -1671,32 +1878,41 @@ library.view = library.view || {};
 			workgroups,
 			input,
 			parser,
-			linkExpand,
-			templateManager
+			linkExpand
 		);
 	}
 	
 	ns.WorkMsgBuilder.prototype =
 		Object.create( library.component.MsgBuilder.prototype );
 		
-	ns.WorkMsgBuilder.prototype.getEditer = function( msg ) {
+	ns.WorkMsgBuilder.prototype.getEditer = async function( msg ) {
 		const self = this;
 		const uId = msg.editBy;
-		const user = self.users.getId( uId );
+		const user = await self.users.getIdentity( uId );
 		if ( user )
 			return user;
 		
-		const room = self.users.getId( self.roomId );
+		const room = self.users.getIdSync( self.roomId );
 		if ( room )
 			return room;
 		
 		return null;
 	}
 	
-	ns.WorkMsgBuilder.prototype.handleMsg = function( event ) {
+	ns.WorkMsgBuilder.prototype.handleMsg = async function( event ) {
 		const self = this;
 		if ( self.exists( event.msgId ))
 			return;
+		
+		// makes sure identity is available sync
+		const fromId = event.fromId;
+		const id = await self.users.getIdentity( fromId );
+		
+		//
+		if ( event.fromId === self.userId ) {
+			console.log( 'setting userLastMsg', event );
+			self.userLastMsg = event;
+		}
 		
 		const time = self.parseTime( event.time );
 		const envelope = self.getEnvelope( time.envelope );
@@ -1728,9 +1944,8 @@ library.view = library.view || {};
 		const tmplId = 'work-msg-tmpl';
 		const msg = conf.event;
 		const uId = msg.fromId;
-		const fromId = self.users.getId( uId );
-		const fromUser = self.users.get( uId );
-		const selfUser = self.users.get( self.userId );
+		const fromUser = self.users.getIdSync( uId );
+		const selfUser = self.users.getIdSync( self.userId );
 		const mId = msg.msgId;
 		if ( !msg.targets ) {
 			console.log( 'MsgBuilder.buildWorkMsg - no targets', conf );
@@ -1862,7 +2077,7 @@ library.view = library.view || {};
 			message          : message,
 			msgActions       : actionsHtml,
 		};
-		const el = self.template.getElement( tmplId, msgConf );
+		const el = hello.template.getElement( tmplId, msgConf );
 		if ( self.linkEx )
 			self.linkEx.work( el );
 		
@@ -1871,7 +2086,7 @@ library.view = library.view || {};
 		function buildTargetEls( targets ) {
 			return targets.map( target => {
 				let tarStr = target; //source + ' -> ' + target;
-				let html = self.template.get( 'work-msg-target-tmpl', { target : tarStr });
+				let html = hello.template.get( 'work-msg-target-tmpl', { target : tarStr });
 				return html;
 			});
 		}
@@ -1886,9 +2101,11 @@ library.view = library.view || {};
 				return;
 			
 			targets.forEach( uId => {
-				const user = self.users.getId( uId );
-				if ( !user )
+				const user = self.users.getIdSync( uId );
+				if ( !user ) {
+					console.log( 'setToUsers - no user for', uId );
 					return;
+				}
 				
 				targetNames.push( user.name );
 			});
@@ -1913,7 +2130,7 @@ library.view = library.view || {};
 			function setNames( worg, targets ) {
 				const wId = worg.clientId;
 				targets.forEach( uId => {
-					const user = self.users.getId( uId );
+					const user = self.users.getIdSync( uId );
 					let uName = '';
 					if ( !user ) {
 						console.log( 'setNames - no user for', {

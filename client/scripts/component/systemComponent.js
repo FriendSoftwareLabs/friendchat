@@ -21,7 +21,9 @@
 
 var library = window.library || {};
 var hello = window.hello || {};
-library.component = library.component || {};
+window.library.component = window.library.component || {};
+
+console.log( 'systemComponents', Object.keys( library.component ));
 
 // EventHandler
 (function( ns, undefined ) {

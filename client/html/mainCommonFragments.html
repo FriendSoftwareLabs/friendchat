@@ -363,12 +363,16 @@ mentionId,
 id,
 type,
 avatar,
+roomIcon,
 message,
 buttons,
 -->
 <script id="activity-request-tmpl" type="text/html">
 <div id="<%= id %>" class="activity-request activity-<%= type %> group row">
-	<div class="avatar fortify" style="background-image:url(&#39;<%= avatar %>&#39;)">
+	<div class="avatar fortify center-child"
+		style="background-image:url(&#39;<%= avatar %>&#39;)"
+	>
+		<i class="fa fa-fw fa-users <%= roomIcon %>"></i>
 	</div>
 	<div class="activity-info expand">
 		<%= message %>
@@ -408,10 +412,10 @@ queryMsg,
 		<%= queryMsg %>
 	</div>
 	<div class="response-container group row fortify">
-		<button type="button" class="button accept" title="Graciously accept">
+		<button type="button" class="button Accept" title="Graciously accept">
 			<i class="fa fa-fw fa-check"></i>
 		</button>
-		<button type="button" class="button danger reject" tittle="Politely decline">
+		<button type="button" class="button reject" tittle="Politely decline">
 			<i class="fa fa-fw fa-close"></i>
 		</button>
 	</div>
@@ -1002,6 +1006,30 @@ name,
 </div>
 </script>
 
+<!-- PRESENCE TEMP CONTACT
+clientId,
+phAva,
+statusId,
+phName,
+phAlsoName,
+-->
+<script id="presence-temp-tmpl" type="text/html">
+<div id="<%= clientId %>" class="contact temp group row MousePointer">
+	<div class="avatar fortify"
+		style="background-image:url(&#39;/webclient/apps/FriendChat/gfx/<%= phAva %>.png&#39;)"
+	>
+		<div id="<%= statusId %>" class="avatar-status">
+		</div>
+	</div>
+	<div class="name expand placeholder-text">
+		<span class="ph-span"><%= phName %></span>
+		<span class="ph-span"><%= phAlsoName %></span>
+	</div>
+	<div class="item-menu Button IconButton fortify center-child">
+		<i class="fa fa-fw fa-ellipsis-v"></i>
+	</div>
+</div>
+</script>
 
 <!-- PRESENCE QUERY HAS ACCOUNT
 id,

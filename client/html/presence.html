@@ -125,7 +125,7 @@
 	
 -->
 <script id="users-desktop-tmpl" type="text/html">
-	<div id="users-container" class="fortify group column cover BackgroundDefault">
+	<div id="users-container" class="fortify group column cover BackgroundDefault users-hide">
 		<div id="users-header" class="group row start BorderBottom">
 		</div>
 		<div id="users-position" class="expand BackgroundHeavy">
@@ -667,17 +667,55 @@ usersId
 	<div class="section-head <%= sectionKlass %>">
 		<%= name %>
 	</div>
-	<div id="<%= usersId %>" class="ZebraList Interactive">
+	<div id="<%= usersId %>" class="group-items">
+	</div>
+</div>
+</script>
+
+<!-- UserGroupOther
+clientId,
+name,
+sectionKlass,
+usersId
+-->
+<script id="user-group-other-tmpl" type="text/html">
+<div id="<%= clientId %>" class="user-group">
+	<div class="section-head <%= sectionKlass %>">
+		<%= name %>
+	</div>
+	<div class="other">
+		<button class="other-show Button group row">
+			<div class="expand">
+				{i18n_show_everyone}
+			</div>
+			<i class="fa fa-fw fa-caret-down fortify"></i>
+		</button>
+		<div class="other-filter hidden group row">
+			<div class="input-wrap">
+				<input class="other-filter-input" type="text" placeholder="{i18n_filter}">
+				<div id="other-filter-clear" class="center-child">
+					<i class="fa fa-fw fa-search"></i>
+				</div>
+			</div>
+			<button class="other-filter-hide Button">
+				<i class="fa fa-fw fa-caret-up"></i>
+			</button>
+		</div>
+	</div>
+	<div id="<%= usersId %>" class="group-items">
 	</div>
 </div>
 </script>
 
 <!-- GroupUser
 id,
+statusId,
 name,
 -->
 <script id="user-list-item-tmpl" type="text/html">
-<div id="<%= id %>" class="user-item group row MousePointer">
+<div id="<%= id %>" class="user-item group row MousePointer ListItemPlain">
+	<div id="<%= statusId %>" class=user-status>
+	</div>
 	<div class="name expand">
 		<%= name %>
 	</div>

@@ -26,15 +26,12 @@ library.view = library.view || {};
 // BASE CONTACT
 (function( ns, undefined ) {
 	ns.BaseContact = function( conf, conn ) {
-		if ( !( this instanceof ns.BaseContact ))
-			return new ns.BaseContact( conf );
-		
 		const self = this;
 		library.component.EventEmitter.call( self, eventSink );
 		self.clientId = self.data.clientId;
-		self.id = self.clientId;
 		self.priority = self.data.priority;
 		self.identity = self.data.identity;
+		self.id = self.clientId;
 		self.containerId = conf.containerId;
 		self.menuActions = conf.menuActions;
 		
@@ -50,6 +47,28 @@ library.view = library.view || {};
 	ns.BaseContact.prototype = Object.create( library.component.EventEmitter.prototype );
 	
 	// Public
+	
+	ns.BaseContact.prototype.show = function() {
+		const self = this;
+		self.el.classList.toggle( 'hidden', false );
+	}
+	
+	ns.BaseContact.prototype.hide = function( hideInBox ) {
+		const self = this;
+		self.el.classList.toggle( 'hidden', true );
+		if ( hideInBox )
+			hideInBox.appendChild( self.el );
+	}
+	
+	ns.BaseContact.prototype.moveAfter = function( afterEl ) {
+		const self = this;
+		afterEl.after( self.el );
+	}
+	
+	ns.BaseContact.prototype.appendTo = function( parentEl ) {
+		const self = this;
+		parentEl.appendChild( self.el );
+	}
 	
 	ns.BaseContact.prototype.getName = function() {
 		const self = this;
@@ -88,13 +107,11 @@ library.view = library.view || {};
 	
 	ns.BaseContact.prototype.startVideo = function( perms ) {
 		const self = this;
-		//self.startLive( 'video', perms );
 		self.handleAction( 'live-video', perms );
 	}
 	
 	ns.BaseContact.prototype.startVoice = function( perms ) {
 		const self = this;
-		//self.startLive( 'audio', perms );
 		self.handleAction( 'live-audio', perms );
 	}
 	
@@ -104,6 +121,25 @@ library.view = library.view || {};
 			type : action,
 			data : data,
 		});
+	}
+	
+	ns.BaseContact.prototype.setOrder = function( replacement ) {
+		const self = this;
+		if ( self.order )
+			self.order.remove( self.clientId );
+		
+		if ( !replacement ) {
+			self.order = null;
+			return;
+		}
+		
+		self.order = replacement;
+		const conf = {
+			clientId : self.clientId,
+			name     : self.getName(),
+			online   : self.getOnline(),
+		};
+		self.order.add( conf );
 	}
 	
 	ns.BaseContact.prototype.getMenuOptions = function() {
@@ -116,7 +152,9 @@ library.view = library.view || {};
 		const self = this;
 		self.setupConn( parentConn );
 		self.lastMessage = self.data.lastMessage || null;
-		self.menuActions = new library.component.MiniMenuActions();
+		if ( null == self.menuActions )
+			self.menuActions = new library.component.MiniMenuActions();
+		
 		self.buildElement(); // must be defined for each contact
 		self.bindItem();
 	}
@@ -149,7 +187,13 @@ library.view = library.view || {};
 			return;
 		}
 		
-		nameEl.textContent = self.identity.name;
+		const name = self.identity.name;
+		if ( name && name.length )
+			nameEl.textContent = self.identity.name;
+		else
+			nameEl.textContent = 'placeholder';
+		
+		nameEl.classList.toggle( 'placeholder-text', !name );
 	}
 	
 	ns.BaseContact.prototype.updateAvatar = function() {
@@ -161,16 +205,16 @@ library.view = library.view || {};
 			return;
 		}
 		
-		const ava = self.identity.avatar || '';
+		const ava = self.identity.avatar || '/webclient/apps/FriendChat/gfx/redbear.png';
 		avatarEl.style[ 'background-image' ] = "url('" + ava + "')";
 	}
 	
 	ns.BaseContact.prototype.bindItem = function() {
 		const self = this;
-		var element = document.getElementById( self.clientId );
-		self.itemMenu = element.querySelector( '.item-menu' );
+		const el = self.el;
+		self.itemMenu = el.querySelector( '.item-menu' );
 		
-		element.addEventListener( 'click', click, false );
+		el.addEventListener( 'click', click, false );
 		if ( self.itemMenu ) {
 			if ( 'DESKTOP' === window.View.deviceType )
 				self.itemMenu.addEventListener( 'click', menuClick, false );
@@ -233,6 +277,8 @@ library.view = library.view || {};
 	ns.BaseContact.prototype.close = function() {
 		const self = this;
 		self.conn.close();
+		delete self.conn;
+		delete self.el;
 		
 		var element = document.getElementById( self.clientId );
 		element.parentNode.removeChild( element );
@@ -246,9 +292,6 @@ library.view = library.view || {};
 // BASEMODULE
 (function( ns, undefined ) {
 	ns.BaseModule = function( conf ) {
-		if ( !( this instanceof ns.BaseModule ))
-			return new ns.BaseModule( conf );
-		
 		const self = this;
 		library.component.EventEmitter.call( self, eventSink );
 		

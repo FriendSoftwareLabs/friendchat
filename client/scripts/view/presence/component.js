@@ -26,82 +26,105 @@ var hello = window.hello || {};
 // UserGroup
 (function( ns, undefined ) {
 	ns.UserGroup = function(
+		id,
 		conf,
-		containerId,
-		userSource,
-		templateManager
+		containerId
 	) {
 		const self = this;
-		self.clientId = conf.clientId;
-		self.type = conf.clientId;
+		library.component.EventEmitter.call( self );
+		
+		self.id = id;
+		self.type = id
+		self.baseType = conf.clientId;
 		self.name = conf.name;
 		self.usersId = conf.clientId + '-users';
 		self.sectionKlass = conf.sectionKlass;
 		self.containerId = containerId;
-		self.userSource = userSource;
-		self.template = templateManager;
 		
 		self.items = {};
-		self.itemList = [];
+		self.itemIds = [];
 		
+		self.isVisible = false;
 		self.el = null;
 		
 		self.init();
 	}
 	
+	ns.UserGroup.prototype = Object.create( library.component.EventEmitter.prototype );
+	
 	// Public
+	
+	ns.UserGroup.prototype.getOrderConf = function() {
+		const self = this;
+		const conf = {
+			clientId : self.id,
+			name     : self.name,
+		};
+		return conf;
+	}
 	
 	ns.UserGroup.prototype.setList = function( idList ) {
 		const self = this;
 		console.log( 'UserGroup.setList - NYI', idList );
 	}
 	
-	ns.UserGroup.prototype.attach = function( id ) {
+	ns.UserGroup.prototype.updateName = function( name ) {
 		const self = this;
-		const item = self.userSource[ id ];
-		if ( !item ) {
-			console.log( 'UserGroup.attach - no item for id', {
-				id : id,
-				items : self.userSource,
-			});
-			return false;
-		}
+		console.log( 'UserGroup.updateName - NYI', name );
+	}
+	
+	ns.UserGroup.prototype.attach = function( item ) {
+		const self = this;
+		if ( !item )
+			throw new Error( 'UserGroup.attach' );
 		
+		const id = item.id;
 		item.group = self.type;
 		if ( self.items[ id ])
 			return;
 		
 		self.items[ id ] = item;
-		self.itemList.push( id );
-		self.sort( id );
-		self.reorder( id );
+		self.itemIds.push( id );
+		const orderConf = item.getOrderConf();
+		self.itemList.add( orderConf );
+		//self.sort( id );
+		//self.reorder( id );
+		self.updateVisible();
+		if ( item.on ) {
+			item.on( 'visible', e => {
+				self.updateVisible();
+			});
+		}
+		
+		return item;
+	}
+	
+	ns.UserGroup.prototype.detach = function( itemId ) {
+		const self = this;
+		if ( !self.items[ itemId ])
+			return;
+		
+		const item = self.items[ itemId ];
+		item.group = null;
+		delete self.items[ itemId ];
+		self.itemIds = Object.keys( self.items );
+		self.itemList.remove( itemId );
+		if ( item.release ) {
+			item.release( 'visible' );
+		}
+		
 		self.updateVisible();
 		return item;
 	}
 	
-	ns.UserGroup.prototype.detach = function( id ) {
+	ns.UserGroup.prototype.detachAll = function() {
 		const self = this;
-		if ( !self.items )
-			return;
-		
-		const item = self.items[ id ];
-		if ( !item ) {
-			console.log( 'UserGroup.attach - no item for id', {
-				id : id,
-				items : self.items,
-			});
-			return null;
-		}
-		
-		item.group = null;
-		delete self.items[ id ];
-		self.itemList = self.itemList.filter( notId );
-		self.updateVisible();
-		return item;
-		
-		function notId( itemId ) {
-			return itemId !== id;
-		}
+		const detached = self.itemIds.map( itemId => {
+			const item = self.items[ itemId ];
+			self.detach( itemId );
+			return itemId;
+		});
+		return detached;
 	}
 	
 	ns.UserGroup.prototype.remove = function( id ) {
@@ -117,15 +140,35 @@ var hello = window.hello || {};
 	
 	ns.UserGroup.prototype.close = function() {
 		const self = this;
+		if ( self.visibleTimeout )
+			window.clearTimeout( self.visibleTimeout );
 		
 		if ( self.el )
 			self.el.parentNode.removeChild( self.el );
 		
 		delete self.el;
-		delete self.userSource;
-		delete self.template;
 		delete self.items;
-		delete self.itemList;
+		delete self.itemIds;
+	}
+	
+	ns.UserGroup.prototype.showItem = function( cId ) {
+		const self = this;
+		const item = self.items[ cId ];
+		if ( null == item )
+			return;
+		
+		item.show();
+		self.updateVisible();
+	}
+	
+	ns.UserGroup.prototype.hideItem = function( cId ) {
+		const self = this;
+		const item = self.items[ cId ];
+		if ( null == item )
+			return;
+		
+		item.hide();
+		self.updateVisible();
 	}
 	
 	// Private
@@ -133,99 +176,203 @@ var hello = window.hello || {};
 	ns.UserGroup.prototype.init =  function() {
 		const self = this;
 		const elConf = {
-			clientId     : self.clientId,
+			clientId     : self.id,
 			name         : self.name,
 			sectionKlass : self.sectionKlass,
 			usersId      : self.usersId,
 		};
-		self.el = self.template.getElement( 'user-group-tmpl', elConf );
+		self.el = hello.template.getElement( 'user-group-tmpl', elConf );
 		const container = document.getElementById( self.containerId );
 		if ( !container )
 			throw new Error( 'UserGroup.init - invalid container id: ' + self.containerId );
 		
 		container.appendChild( self.el );
 		self.usersEl = document.getElementById( self.usersId );
+		self.itemList = new library.component.ListOrder( self.usersId, [ 'name' ]);
 		self.updateVisible();
 	}
 	
 	ns.UserGroup.prototype.updateVisible = function() {
 		const self = this;
-		const hasItems = !!self.itemList.length;
-		self.el.classList.toggle( 'hidden', !hasItems );
+		if ( null != self.visibleTimeout )
+			return;
+		
+		self.visibleTimeout = window.setTimeout( refreshVisible, 100 );
+		return;
+		
+		function refreshVisible() {
+			self.visibleTimeout = null;
+			let hasItems = false;
+			hasItems = self.itemIds.some( iId => {
+				const item = self.items[ iId ];
+				return !!item.isVisible;
+			});
+			
+			if ( self.isVisible === hasItems )
+				return;
+			
+			self.el.classList.toggle( 'hidden', !hasItems );
+			//self.el.classList.toggle( 'hidden', false );
+			self.isVisible = hasItems;
+			self.emit( 'visible', hasItems );
+		}
+		
 	}
 	
-	ns.UserGroup.prototype.sort = function( id ) {
-		const self = this;
-		self.itemList.sort( byName );
-		function byName( idA, idB ) {
-			let a = self.items[ idA ];
-			let b = self.items[ idB ];
+})( library.component );
 
-			if ( a.name === b.name )
-				return 0;
-			
-			let ni = 0; // name character index
-			let res = 0;
-			do {
-				res = compare( a, b, ni );
-				ni++;
-			} while ( res === 0 );
-			
-			return res;
-			
-			function compare( a, b, ni ) {
-				let aN = a.name[ ni ];
-				let bN = b.name[ ni ];
-				if ( aN === bN )
-					return 0;
-				
-				if ( aN < bN )
-					return -1;
-				else
-					return 1;
-			}
+
+( function( ns, undefined ) {
+	ns.UserGroupOther = function(
+		id,
+		conf,
+		containerId
+	) {
+		const self = this;
+		library.component.UserGroup.call( self,
+			id,
+			conf,
+			containerId
+		);
+		
+	}
+	
+	ns.UserGroupOther.prototype = Object.create(
+		library.component.UserGroup.prototype
+	);
+	
+	// Public
+	
+	// Private
+	
+	ns.UserGroupOther.prototype.init = function() {
+		const self = this;
+		self.isVisible = true;
+		const elConf = {
+			clientId     : self.id,
+			name         : self.name,
+			sectionKlass : self.sectionKlass,
+			usersId      : self.usersId,
+		};
+		self.el = hello.template.getElement( 'user-group-other-tmpl', elConf );
+		const container = document.getElementById( self.containerId );
+		if ( !container )
+			throw new Error( 'UserGroup.init - invalid container id: ' + self.containerId );
+		
+		container.appendChild( self.el );
+		self.bindOther();
+		self.usersEl = document.getElementById( self.usersId );
+		self.itemList = new library.component.ListOrder( self.usersId, [ 'name' ]);
+		self.updateVisible();
+	}
+	
+	ns.UserGroupOther.prototype.bindOther = function() {
+		const self = this;
+		const other = self.el.querySelector( '.other' );
+		self.otherShow = other.querySelector( '.other-show' );
+		self.otherFilter = other.querySelector( '.other-filter' );
+		self.otherHide = self.otherFilter.querySelector( '.other-filter-hide' );
+		self.filterInput = self.otherFilter.querySelector( '.other-filter-input' );
+		self.filterState = document.getElementById( 'other-filter-clear' );
+		
+		self.otherShow.addEventListener( 'click', show, false );
+		self.otherHide.addEventListener( 'click', hide, false );
+		self.filterInput.addEventListener( 'keyup', keyUp, false );
+		self.filterState.addEventListener( 'click', clear, false );
+		
+		function show( e ) {
+			e.stopPropagation();
+			toggle( true );
+		}
+		
+		function hide( e ) {
+			e.stopPropagation();
+			toggle( false );
+			self.clearFilter();
+		}
+		
+		function toggle( show ) {
+			self.setShowOther( show );
+			self.emit( 'show-other', self.showOther );
+		}
+		
+		function keyUp( e ) {
+			self.handleKeyUp( e );
+		}
+		
+		function clear( e ) {
+			self.clearFilter();
 		}
 	}
 	
-	ns.UserGroup.prototype.reorder = function( id ) {
+	ns.UserGroupOther.prototype.setShowOther = function( show ) {
 		const self = this;
-		if ( id )
-			reorderItem( id );
-		else
-			applyListOrder();
+		self.showOther = show;
+		self.otherShow.classList.toggle( 'hidden', self.showOther );
+		self.otherFilter.classList.toggle( 'hidden', !self.showOther );
+		self.updateVisible();
+	}
+	
+	ns.UserGroupOther.prototype.updateVisible = function() {
+		const self = this;
+		console.log( 'UserGroupOther.updateVisible', self.isVisible );
+	}
+	
+	ns.UserGroupOther.prototype.handleKeyUp = function( e ) {
+		const self = this;
+		if ( null != self.filterTimeout )
+			return;
 		
-		function reorderItem( id ){
-			const item = self.items[ id ];
-			if ( !item || !item.el )
-				return;
-			
-			const index = self.itemList.indexOf( id );
-			if ( -1 === index ) {
-				throw new Error( 'did you forget to add the id to the itemList?' );
-			}
-			
-			if (( index + 1 ) === self.itemList.length ) {
-				// id is last item in the list
-				self.usersEl.appendChild( item.el );
-				return;
-			}
-			
-			const beforeIndex = index + 1; // before is the item we will insert before
-			const beforeId = self.itemList[ beforeIndex ];
-			const beforeItem = self.items[ beforeId ];
-			const beforeEl = beforeItem.el || null; // better safe than sorry
-			self.usersEl.insertBefore( item.el, beforeEl );
+		self.filterTimeout = window.setTimeout( emitFilter, 200 );
+		self.updateFilterState();
+		
+		function emitFilter() {
+			self.filterTimeout = null;
+			self.updateFilterState();
+			self.emitFilter();
+		}
+	}
+	
+	ns.UserGroupOther.prototype.emitFilter = function() {
+		const self = this;
+		const value = self.filterInput.value;
+		const str = value.trim();
+		self.emit( 'filter', str );
+	}
+	
+	ns.UserGroupOther.prototype.clearFilter = function() {
+		const self = this;
+		if ( null != self.filterTimeout ) {
+			window.clearTimeout( self.filterTimeout );
+			self.filterTimeout = null;
 		}
 		
-		function applyListOrder() {
-			self.itemList.forEach( append );
-			function append( id ) {
-				const item = self.items[ id ];
-				if ( !item || item.el )
-					return;
-				
-				self.usersEl.appendChild( item.el );
-			}
+		self.filterInput.value = '';
+		self.updateFilterState();
+		self.emitFilter();
+	}
+	
+	ns.UserGroupOther.prototype.updateFilterState = function() {
+		const self = this;
+		const icon = self.filterState.querySelector( 'i' );
+		let value = self.filterInput.value;
+		value = value.trim();
+		if ( value && value.length )
+			setActive();
+		else
+			setEmpty();
+		
+		function setActive() {
+			toggle( true );
+		}
+		
+		function setEmpty() {
+			toggle( false );
+		}
+		
+		function toggle( active ) {
+			icon.classList.toggle( 'fa-search', !active );
+			icon.classList.toggle( 'fa-close', active );
 		}
 	}
 	
@@ -235,38 +382,56 @@ var hello = window.hello || {};
 // GroupUser
 (function( ns, undefined ) {
 	ns.GroupUser = function(
-		clientId,
+		userId,
 		conn,
-		user,
-		id,
-		tmplManager
+		conf,
 	) {
 		const self = this;
-		self.id = clientId;
+		self.id = userId;
 		self.conn = conn;
-		self.name = id.name;
-		self.avatar = id.avatar;
-		self.isAdmin = !!id.isAdmin;
-		self.isAuthed = !!user.isAuthed;
-		self.isGuest = !!id.isGuest;
-		self.workgroups = user.workgroups;
-		self.state = user.state || '';
-		self.template = tmplManager;
+		self.name = conf.name;
+		//self.avatar = id.avatar;
+		self.isAdmin = !!conf.isAdmin;
+		self.isAuthed = !!conf.isAuthed;
+		self.isGuest = !!conf.isGuest;
+		self.workgroups = conf.workgroups;
+		self.state = conf.state || '';
 		
 		self.el = null;
 		self.group = null;
 		self.states = {};
+		self.status = null;
+		self.isVisible = true;
 		
 		self.init();
 	}
 	
 	// Public
 	
+	ns.GroupUser.prototype.show = function() {
+		const self = this;
+		self.setVisible( true );
+	}
+	
+	ns.GroupUser.prototype.hide = function() {
+		const self = this;
+		self.setVisible( false );
+	}
+	
 	ns.GroupUser.prototype.updateName = function( name ) {
 		const self = this;
 		self.name = name;
 		const nameEl = self.el.querySelector( '.name' );
 		nameEl.textContent = name;
+	}
+	
+	ns.GroupUser.prototype.getOrderConf = function() {
+		const self = this;
+		const conf = {
+			clientId : self.id,
+			name     : self.name,
+		};
+		return conf;
 	}
 	
 	// add defaults to true
@@ -304,15 +469,25 @@ var hello = window.hello || {};
 		}
 	}
 	
+	ns.GroupUser.prototype.setStatus = function( status ) {
+		const self = this;
+		if ( null == self.status )
+			self.buildStatus();
+		
+		self.status.set( status );
+	}
+	
 	ns.GroupUser.prototype.close = function() {
 		const self = this;
+		if ( self.status )
+			self.status.close();
+		
 		if ( self.el && self.el.parentNode )
 			self.el.parentNode.removeChild( self.el );
 		
-		delete self.id;
 		delete self.conn;
-		delete self.template;
 		delete self.group;
+		delete self.status;
 		delete self.el;
 	}
 	
@@ -330,6 +505,7 @@ var hello = window.hello || {};
 	
 	ns.GroupUser.prototype.init = function() {
 		const self = this;
+		self.statusId = friendUP.tool.uid( 'status' );
 		self.el = buildElement();
 		bindElement();
 		if ( self.state )
@@ -339,10 +515,11 @@ var hello = window.hello || {};
 		
 		function buildElement() {
 			const conf = {
-				id     : self.id,
-				name   : self.name,
+				id       : self.id,
+				statusId : self.statusId,
+				name     : self.name,
 			};
-			const el = self.template.getElement( 'user-list-item-tmpl', conf );
+			const el = hello.template.getElement( 'user-list-item-tmpl', conf );
 			return el;
 		}
 
@@ -364,6 +541,19 @@ var hello = window.hello || {};
 				self.handleClick( e );
 			}
 		}
+	}
+	
+	ns.GroupUser.prototype.buildStatus = function() {
+		const self = this;
+		self.status = new library.component.StatusIndicator({
+			containerId : self.statusId,
+			type        : 'led',
+			cssClass    : 'led-userlist-status',
+			statusMap   : {
+				offline : 'Off',
+				online  : 'On',
+			},
+		});
 	}
 	
 	ns.GroupUser.prototype.handleTyping = function( add ) {
@@ -390,40 +580,68 @@ var hello = window.hello || {};
 		});
 	}
 	
+	ns.GroupUser.prototype.setVisible = function( show ) {
+		const self = this;
+		self.isVisible = show;
+		self.el.classList.toggle( 'hidden', !show );
+	}
+	
 })( library.component );
 
 // UserCtrl
 (function( ns, undefined ) {
 	ns.UserCtrl = function(
 		conn,
-		users,
-		identities,
-		onlineList,
+		userList,
+		adminList,
+		recentList,
+		guestList,
+		peerList,
 		workgroups,
 		room,
 		guestAvatar,
 		containerId,
-		templateManager
+		config
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
-
+		/*
+		console.log( 'UserCtrl', {
+			users  : userList,
+			admins : adminList,
+			recent : recentList,
+			guests : guestList,
+			peers  : peerList,
+			worgs  : workgroups,
+			room   : room,
+			config : config,
+		});
+		*/
 		self.conn = conn;
-		self.users = {};
-		self.userIds = [];
-		self.onlines = onlineList;
+		self.userList = userList || [];
+		self.adminList = adminList || [];
+		self.recentList = recentList || [];
+		self.guestList = guestList || [];
+		self.peerList = peerList || [];
 		self.identities = {};
 		self.containerId = containerId;
-		self.template = templateManager;
 		
+		self.users = {};
+		self.userIds = [];
+		self.baseGroups = {};
+		self.baseGroupIds = [];
 		self.groups = {};
 		self.groupIds = [];
 		self.groupsAvailable = {};
+		self.groupsAssigned = {};
+		self.groupsAssignedIds = [];
+		self.worgPri = 4;
+		
+		self.showOther = false;
+		self.userListActive = false;
 		
 		self.init(
 			workgroups,
-			users,
-			identities,
 			room,
 			guestAvatar
 		);
@@ -431,7 +649,23 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype = Object.create( library.component.EventEmitter.prototype );
 	
+	ns.UserCtrl.prototype.initialize = async function( workgroups ) {
+		const self = this;
+		//await self.setWorkgroups( workgroups );
+		const worgWaits = self.groupsAssignedIds.map( wId => self.showWorgAssigned( wId ));
+		await Promise.all( worgWaits );
+		
+		await self.setUserList();
+		self.updateLiveState( self.peerList );
+		self.isInitialized = true;
+	}
+	
 	// Public
+	
+	ns.UserCtrl.prototype.setUserListActive = function( isActive ) {
+		const self = this;
+		self.userListActive = isActive;
+	}
 	
 	ns.UserCtrl.prototype.get = function( userId ) {
 		const self = this;
@@ -462,27 +696,44 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.getGroupNames = function() {
 		const self = this;
-		const gIds = self.groupIds.filter( id => {
-			if ( 'offline' == id
-				|| 'online' == id
-				|| 'bug' == id
-				|| 'admins' == id
-			) {
-				return false;
-			}
-			
-			return true;
+		const baseNames = [
+			'admins',
+			'guests',
+			'active'
+		].map( bId => {
+			const bg = self.baseGroups[ bId ];
+			return bg.name;
 		});
 		
-		const names = gIds.map( id => {
+		const groupNames = self.groupsAssignedIds.map( id => {
 			const grp = self.groupsAvailable[ id ];
 			return grp.name;
 		});
 		
+		const names = [ ...baseNames, ...groupNames ];
 		return names;
 	}
 	
-	ns.UserCtrl.prototype.getId = function( clientId ) {
+	ns.UserCtrl.prototype.getGroups = function( worgId ) {
+		const self = this;
+		const base = self.baseGroups[ worgId ];
+		if ( base )
+			return [ base ];
+		
+		const groups = [];
+		const activeId = self.getActiveId( worgId );
+		const otherId = self.getOtherId( worgId );
+		const active = self.groups[ activeId ];
+		const other = self.groups[ otherId ];
+		if ( active )
+			groups.push( active );
+		if ( other )
+			groups.push( other );
+		
+		return groups;
+	}
+	
+	ns.UserCtrl.prototype.getIdSync = function( clientId ) {
 		const self = this;
 		const id = self.identities[ clientId ];
 		return id || null;
@@ -495,21 +746,16 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.checkIsOnline = function( userId ) {
 		const self = this;
-		return self.onlines.some( oId => oId === userId );
+		throw new Error( 'checkIsOnline' );
+		return self.onlineList.some( oId => oId === userId );
 	}
 	
 	ns.UserCtrl.prototype.setState = function( userId, state, isSet ) {
 		const self = this;
 		const user = self.users[ userId ];
-		if ( !user ) {
-			console.log( 'UserCtrl.setState - no user for uid', {
-				uid : userId,
-				users : self.users,
-			});
-			return;
-		}
+		if ( user )
+			user.setState( state, isSet );
 		
-		user.setState( state, isSet );
 		self.emit( 'state', {
 			state  : state,
 			isSet  : isSet,
@@ -519,6 +765,9 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addIdentities = function( idMap ) {
 		const self = this;
+		if ( null == idMap )
+			return;
+		
 		const cIds = Object.keys( idMap );
 		cIds.forEach( cId => {
 			const id = idMap[ cId ];
@@ -533,12 +782,16 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.updateAll = function( state ) {
 		const self = this;
-		removeOld( state.users );
-		addNew( state.users );
-		updateOnline( state.online );
-		updateLive( state.peers );
+		removeOld( state.userList );
+		addNew( state.userList );
+		updateOnline( state.onlineList );
+		self.updateLiveState( state.peerList );
+		self.updateGuests( state.guestList );
 		
 		function removeOld( fresh ) {
+			if ( null == fresh )
+				return;
+			
 			let current = Object.keys( self.users );
 			let remove = current.filter( uid => {
 				if ( null == fresh[ uid ] )
@@ -551,6 +804,9 @@ var hello = window.hello || {};
 		}
 		
 		function addNew( fresh ) {
+			if ( null == fresh )
+				return;
+			
 			let freshIds = Object.keys( fresh );
 			let add = freshIds.filter( fid => {
 				if ( null == self.users[ fid ])
@@ -567,6 +823,9 @@ var hello = window.hello || {};
 		}
 		
 		function updateOnline( fresh ) {
+			if ( null == fresh )
+				return;
+			
 			let uids = Object.keys( self.users );
 			uids.forEach( uid => {
 				if ( fresh.some( fid => fid === uid ))
@@ -576,23 +835,13 @@ var hello = window.hello || {};
 			});
 		}
 		
-		function updateLive( peers ) {
-			let uids = Object.keys( self.users );
-			uids.forEach( uid => {
-				let isLive = false;
-				if ( peers.some( pid => pid === uid ))
-					isLive = true;
-				
-				self.setState( uid, 'live', isLive );
-			});
-		}
 	}
 	
-	ns.UserCtrl.prototype.getAvatarKlass = function( clientId ) {
+	ns.UserCtrl.prototype.getAvatarKlass = async function( clientId ) {
 		const self = this;
-		const user = self.get( clientId );
-		if ( user && user.isGuest )
-			return clientId = 'guest-user-klass';
+		const id = await self.getIdentity( clientId );
+		if ( id && id.isGuest )
+			return 'guest-user-klass';
 		
 		return self.getUserCssKlass( clientId );
 	}
@@ -605,15 +854,17 @@ var hello = window.hello || {};
 		if ( self.el )
 			self.el.parentNode.removeChild( self.el );
 		
+		/*
 		if ( self.conn )
 			self.conn.close();
+		*/
 		
 		delete self.detached;
 		delete self.el;
 		delete self.conn;
 		delete self.users;
 		delete self.userIds;
-		delete self.onlines;
+		delete self.onlineList;
 		delete self.groups;
 		delete self.groupIds;
 		delete self.groupsAvailable;
@@ -622,78 +873,129 @@ var hello = window.hello || {};
 	// Private
 	
 	ns.UserCtrl.prototype.init = function(
-		workgroups,
-		users,
-		identities,
+		worgs,
 		room,
 		guestAvatar
 	) {
 		const self = this;
 		self.build();
-		self.groupList = new library.component.ListOrder( 'user-groups', [ 'name' ]);
+		//self.groupList = new library.component.ListOrder( 'user-groups', [ 'name' ]);
 		self.initBaseGroups();
-		self.setWorkgroups( workgroups );
-		self.addIdentities( identities );
-		self.addUsers( users );
+		self.initWorkgroups( worgs );
 		self.addId( room );
 		self.addUserCss( 'guest-user', guestAvatar );
 		self.addUserCss( 'default-user', guestAvatar );
 		self.bindConn();
+		//self.addActive();
 	}
 	
 	ns.UserCtrl.prototype.build = function() {
 		const self = this;
 		const container = document.getElementById( self.containerId );
 		const conf = {};
-		self.el = self.template.getElement( 'user-ctrl-tmpl', conf );
+		self.el = hello.template.getElement( 'user-ctrl-tmpl', conf );
 		container.appendChild( self.el );
 		self.detached = document.getElementById( 'user-ctrl-detached' );
 	}
 	
 	ns.UserCtrl.prototype.initBaseGroups = function() {
 		const self = this;
-		self.worgPri = 4;
 		const base = [
-			{
-				clientId     : 'offline',
-				name         : View.i18n( 'i18n_offline' ),
-				sectionKlass : 'BackgroundHeavy',
-				priority     : 0
-			},
 			{
 				clientId     : 'admins',
 				name         : View.i18n( 'i18n_admins' ),
-				sectionKlass : 'Action',
-				priority     : 1
-			},
-			{
-				clientId     : 'online',
-				name         : View.i18n( 'i18n_online' ),
-				sectionKlass : 'Accept',
-				priority     : 3
+				sectionKlass : 'base-group group-admins',
 			},
 			{
 				clientId     : 'guests',
 				name         : View.i18n( 'i18n_guests' ),
-				sectionKlass : 'Warning',
-				priority     : 2
+				sectionKlass : 'base-group group-guests',
 			},
 			{
-				clientId     : 'bug',
-				name         : View.i18n( 'i18n_bug' ),
-				sectionKlass : 'Danger',
-				priority     : 0
+				clientId     : 'active',
+				name         : View.i18n( 'i18n_active' ),
+				sectionKlass : 'base-group group-active',
+			},
+			{
+				clientId     : 'other',
+				name         : View.i18n( 'i18n_other' ),
+				sectionKlass : 'base-group group-other',
 			},
 		];
 		
-		base.forEach( worg => {
-			let wId = worg.clientId;
-			self.groupsAvailable[ wId ] = worg;
-			self.addUserGroup( worg.clientId );
+		base.forEach( section => {
+			self.addBaseGroup( section );
 		});
 	}
 	
-	ns.UserCtrl.prototype.setWorkgroups = function( conf ) {
+	ns.UserCtrl.prototype.initWorkgroups = function( worgs ) {
+		const self = this;
+		if ( null == worgs )
+			return;
+		
+		self.workId = worgs.workId;
+		
+		// available
+		const ava = worgs.available;
+		const avaIds = Object.keys( ava );
+		avaIds.forEach( wId => {
+			let worg = ava[ wId ];
+			self.addWorgAvailable( worg );
+		});
+		
+		// assigned
+		const ass = worgs.assigned;
+		ass.forEach( worg => {
+			self.addWorgAssigned( worg );
+		});
+	}
+	
+	ns.UserCtrl.prototype.addWorgAvailable = function( worg ) {
+		const self = this;
+		const wId = worg.clientId;
+		worg.priority = worg.priority || self.worgPri;
+		self.groupsAvailable[ wId ] = worg;
+	}
+	
+	ns.UserCtrl.prototype.addWorgAssigned = function( worg ) {
+		const self = this;
+		const wId = worg.clientId;
+		if ( self.groupsAssigned[ wId ]) {
+			return;
+		}
+		
+		self.groupsAssigned[ wId ] = worg;
+		self.groupsAssignedIds.push( wId );
+		if ( !self.isInitialized )
+			return;
+		
+		self.showWorgAssigned( wId );
+	}
+	
+	ns.UserCtrl.prototype.removeWorgAssigned = function( wId ) {
+		const self = this;
+		const worgs = self.getGroups( wId );
+		delete self.groupsAssigned[ wId ];
+		self.groupsAssignedIds = Object.keys( self.groupsAssigned );
+		if ( !worgs || !worgs.length )
+			return;
+		
+		worgs.forEach( worg => {
+			const wId = worg.id;
+			const detached = worg.detachAll();
+			detached.forEach( uId => self.setUserToGroup( uId ));
+			
+			const parent = self.getGroups( worg.group )[ 0 ];
+			if ( parent )
+				parent.detach( wId );
+			
+			worg.close();
+			delete self.groups[ wId ];
+			self.groupIds = Object.keys( self.groups );
+		});
+	}
+	
+	ns.UserCtrl.prototype.setWorkgroups = async function( conf ) {
 		const self = this;
 		if ( !conf || !conf.assigned )
 			return;
@@ -706,60 +1008,186 @@ var hello = window.hello || {};
 			let worg = ava[ wId ];
 			self.addWorgAvailable( worg );
 		});
-		ass.forEach( worg => self.addUserGroup( worg.clientId ));
+		ass.forEach( worg => self.showWorgAssigned( wId ));
 	}
 	
-	ns.UserCtrl.prototype.addWorgAvailable = function( worg ) {
+	ns.UserCtrl.prototype.addBaseGroup = function( conf ) {
 		const self = this;
-		const wId = worg.clientId;
-		worg.priority = worg.priority || self.worgPri;
-		self.groupsAvailable[ wId ] = worg;
-	}
-	
-	ns.UserCtrl.prototype.addUserGroup = function( groupId, sectionKlass ) {
-		const self = this;
-		if ( !groupId )
-			return;
+		const id = conf.clientId;
+		let Group = library.component.UserGroup;
+		if ( 'other' == id )
+			Group = library.component.UserGroupOther;
 		
-		const wId = groupId;
+		const group = new Group(
+			id,
+			conf,
+			'user-groups',
+		);
+		
+		self.baseGroups[ id ] = group;
+		self.baseGroupIds.push( id );
+		if ( 'other' == id ) {
+			group.on( 'show-other', e => self.handleShowOther( e ));
+			group.on( 'filter', str => self.handleOtherFilter( str ));
+		}
+	}
+	
+	ns.UserCtrl.prototype.handleShowOther = function( show ) {
+		const self = this;
+		self.showOther = show;
+		if ( show )
+			self.addOther();
+		else
+			self.removeOther();
+	}
+	
+	ns.UserCtrl.prototype.addOther = function() {
+		const self = this;
+		self.userList.map( uId => {
+			return self.buildUser( uId );
+		});
+	}
+	
+	ns.UserCtrl.prototype.removeOther = function() {
+		const self = this;
+		self.userList.forEach( uId => {
+			const user  = self.users[ uId ];
+			if ( null == user )
+				return;
+			
+			const oIdx = user.group.indexOf( 'other' );
+			if ( 0 != oIdx )
+				return;
+			
+			self.unsetUser( uId );
+		});
+	}
+	
+	ns.UserCtrl.prototype.handleOtherFilter = function( filter ) {
+		const self = this;
+		if ( filter && filter.length )
+			filter = filter.toLowerCase();
+		
+		self.userList.forEach( uId => {
+			const user = self.users[ uId ];
+			if (( null == user ) || ( null == user.group ))
+				return;
+			
+			const oIdx = user.group.indexOf( 'other' );
+			if ( 0 != oIdx )
+				return;
+			
+			const name = user.name.toLowerCase();
+			const fIdx = name.indexOf( filter );
+			if ( -1 == fIdx )
+				hide( uId );
+			else
+				setVisible( uId );
+		});
+		
+		function setVisible( uId ) {
+			const user = self.users[ uId ];
+			if ( user.isVisible )
+				return;
+			
+			const group = self.getGroup( user.group );
+			group.showItem( uId );
+		}
+		
+		function hide( uId ) {
+			const user = self.users[ uId ];
+			if ( !user.isVisible )
+				return;
+			
+			const group = self.getGroup( user.group );
+			group.hideItem( uId );
+		}
+	}
+	
+	ns.UserCtrl.prototype.showWorgAssigned = async function( wId ) {
+		const self = this;
 		const worg = self.groupsAvailable[ wId ];
 		if ( self.groups[ wId ]) {
-			//self.groupList.update( worg );
 			return;
 		}
 		
 		if ( null == worg.sectionKlass )
-			worg.sectionKlass = sectionKlass || 'Available';
+			worg.sectionKlass = '';
 		
-		let group = new library.component.UserGroup(
-			worg,
-			self.el.id,
-			self.users,
-			self.template,
-		);
+		setActive( worg );
+		setOther( worg );
 		
-		self.groupList.add( worg );
-		self.groups[ wId ] = group;
-		self.groupIds.push( wId );
+		function setActive( conf ) {
+			const id = self.getActiveId( conf.clientId );
+			const item = set( id, conf, self.baseGroups[ 'active' ]);
+			self.baseGroups[ 'active' ].attach( item );
+		}
+		
+		function setOther( conf ) {
+			const id = self.getOtherId( conf.clientId );
+			const item = set( id, conf, self.baseGroups[ 'other']);
+			self.baseGroups[ 'other' ].attach( item );
+		}
+		
+		function set( id, conf, parentGroup ) {
+			const group = new library.component.UserGroup(
+				id,
+				conf,
+				'user-ctrl-detached',
+			);
+			
+			self.groups[ id ] = group;
+			self.groupIds.push( id );
+			
+			return group;
+		}
+	}
+	
+	ns.UserCtrl.prototype.getActiveId = function( worgId ) {
+		const self = this;
+		return 'active-' + worgId;
+	}
+	
+	ns.UserCtrl.prototype.getOtherId = function( worgId ) {
+		const self = this;
+		return 'other-' + worgId;
 	}
 	
 	ns.UserCtrl.prototype.removeUserGroup = function( worgId ) {
 		const self = this;
-		self.groupList.remove( worgId );
+		//self.groupList.remove( worgId );
 	}
 	
-	ns.UserCtrl.prototype.addUsers = function( users ) {
+	ns.UserCtrl.prototype.setUserList = async function() {
 		const self = this;
-		if ( !users )
+		if ( self.adminList ) {
+			const waitA = self.adminList.map( aId => {
+				return self.buildUser( aId );
+			});
+			await Promise.all( waitA );
+		}
+		
+		if ( self.recentList ) {
+			const waitR = self.recentList.map( rId => {
+				return self.buildUser( rId );
+			});
+			await Promise.all( waitR );
+		}
+		
+		if ( self.guestList ) {
+			const waitG = self.guestList.map( gId => {
+				return self.buildUser( gId );
+			});
+			await Promise.all( waitG );
+		}
+		
+		if ( !self.showOther )
 			return;
 		
-		let uids = Object.keys( users );
-		uids.forEach( uid => {
-			const event = {
-				user : users[ uid ],
-			};
-			self.handleJoin( event );
+		const waitU = self.userList.map( uId => {
+			return self.buildUser( uId );
 		});
+		await Promise.all( waitU );
 	}
 	
 	ns.UserCtrl.prototype.addId = function( id ) {
@@ -768,23 +1196,9 @@ var hello = window.hello || {};
 			return false;
 		
 		const cId = id.clientId;
-		if ( self.identities[ cId ]) {
-			update( id );
-			return true;
-		}
-		
 		self.identities[ cId ] = id;
 		self.addUserCss( cId, id.avatar );
 		return true;
-		
-		function update( id ) {
-			const cId = id.clientId;
-			const curr = self.identities[ cId ];
-			curr.isOnline = id.isOnline;
-			curr.avatar = id.avatar;
-			curr.isAdmin = id.isAdmin;
-			curr.isGuest = id.isGuest;
-		}
 	}
 	
 	ns.UserCtrl.prototype.bindConn = function() {
@@ -798,9 +1212,12 @@ var hello = window.hello || {};
 		self.conn.on( 'leave', leave );
 		self.conn.on( 'identity', identity );
 		self.conn.on( 'auth', auth );
+		self.conn.on( 'live', e => self.handleLive( e ));
 		self.conn.on( 'workgroups-assigned', worgsAssigned );
 		self.conn.on( 'workgroup-added', worgAvailable );
 		self.conn.on( 'workgroup-removed', e => self.handleWorgRemoved( e ));
+		self.conn.on( 'recent-add', e => self.handleRecentAdd( e ));
+		self.conn.on( 'recent-remove', e => self.handleRecentRemove( e ));
 		
 		function online( e ) { self.handleOnline( e ); }
 		function offline( e ) { self.handleOffline( e ); }
@@ -824,6 +1241,8 @@ var hello = window.hello || {};
 		self.conn.release( 'identity' );
 		self.conn.release( 'auth' );
 		self.conn.release( 'workgroup' );
+		self.conn.release( 'recent-add' );
+		self.conn.release( 'recent-remove' );
 	}
 	
 	ns.UserCtrl.prototype.closeUsers = function() {
@@ -839,74 +1258,98 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.handleOnline = function( userId ) {
 		const self = this;
 		const uid = userId;
-		const user = self.users[ uid ];
-		if ( !user )
-			return;
-		
-		if ( self.onlines.some( oid => oid === uid ))
-			return;
-		
-		self.onlines.push( uid );
-		self.setUserToGroup( uid );
+		const users = self.getUser( userId );
+		users.forEach( u => u.setStatus( 'online' ));
+		//user.setStatus( 'online' );
+		//self.setUserToGroup( uid );
 	}
 	
 	ns.UserCtrl.prototype.handleOffline = function( userId ) {
 		const self = this;
-		let user = self.users[ userId ];
-		if ( !user )
-			return;
-		
-		const oIdx = self.onlines.indexOf( userId );
-		if ( -1 != oIdx )
-			self.onlines.splice( oIdx, 1 );
-		
-		self.setUserToGroup( userId );
+		const users = self.getUser( userId );
+		users.forEach( u => u.setStatus( 'offline' ));
+		//user.setStatus( 'offline' );
+		//self.setUserToGroup( userId );
 	}
 	
-	ns.UserCtrl.prototype.handleJoin = function( event ) {
+	ns.UserCtrl.prototype.getUser = function( userId ) {
 		const self = this;
-		console.log( 'view.UserCtrl.handleJoin', event );
-		const user = event.user;
+		const list = [];
+		const user = self.users[ userId ];
+		if ( null == user )
+			return list;
+		
+		list.push( user );
+		return list;
+	}
+	
+	ns.UserCtrl.prototype.handleJoin = async function( conf ) {
+		const self = this;
+		const user = conf.user;
 		const uId = user.clientId;
-		let id = event.id;
-		if ( id )
-			self.addId( id );
+		const uIdx = self.userList.indexOf( uId );
+		if ( -1 != uIdx )
+			return;
 		
-		if ( null != self.users[ uId ] ) {
-			console.log( 'UserCtrl.addUser - user already present ( hueuhueh )', {
-				user  : user,
-				users : self.users,
-			});
+		self.userList.push( uId );
+		/*
+		if ( user.isAdmin )
+			self.addAdmin
+		*/
+		//await self.getIdentity( uId );
+		if ( user.isRecent )
+			self.recentAdd( uId );
+		
+		if ( user.isGuest )
+			self.guestAdd( uId );
+		
+		if ( self.showOther ) {
+			self.buildUser( uId );
 			return;
 		}
 		
-		if ( !id )
-			id = self.identities[ uId ];
-		
-		if ( !id ) {
-			console.log( 'UserCtrl.handleJoin - no id for user', {
-				event : event,
-				user : user,
-				id : id,
-				ids : self.identities,
-			});
+		if ( !user.isAdmin && !user.isRecent && !user.isGuest )
 			return;
-		}
+		
+		self.buildUser( uId );
+	}
+	
+	ns.UserCtrl.prototype.updateUserPosition = async function( userId ) {
+		const self = this;
+		const user = self.users[ userId ];
+		if ( !user )
+			return await self.buildUser( userId );
+		else
+			self.setUserToGroup( userId );
+		
+	}
+	
+	ns.UserCtrl.prototype.buildUser = async function( userId ) {
+		const self = this;
+		if ( self.users[ userId ])
+			return;
+		
+		self.users[ userId ] = true;
+		let id = await self.getIdentity( userId );
 		
 		const userItem = new library.component.GroupUser(
-			uId,
+			userId,
 			self.conn,
-			user,
 			id,
-			self.template
 		);
-		self.users[ uId ] = userItem;
-		self.userIds.push( uId );
-		self.addUserCss( userItem.id, userItem.avatar );
+		self.users[ userId ] = userItem;
+		self.userIds.push( userId );
+		self.detached.appendChild( userItem.el );
 		if ( id.isOnline )
-			self.handleOnline( uId );
+			userItem.setStatus( 'online' );
+		else
+			userItem.setStatus( 'offline' );
 		
-		self.setUserToGroup( uId );
+		self.setUserToGroup( userId );
+		const pIdx = self.peerList.indexOf( userId );
+		const isLive = ( -1 != pIdx );
+		if ( isLive )
+			self.setState( userId, 'live', true );
 	}
 	
 	ns.UserCtrl.prototype.setUserToGroup = function( userId ) {
@@ -914,60 +1357,60 @@ var hello = window.hello || {};
 		const user = self.users[ userId ];
 		if ( !user ) {
 			console.log( 'setUSertoGroup - no user for', {
-				uid : userId,
+				uid   : userId,
 				users : self.users,
 			});
 			return;
 		}
 		
-		let isOnline = checkOnline( userId );
 		let groupId = null;
-		if ( user.isAuthed ) {
-			if ( isOnline )
-				groupId = 'online';
-			else
-				groupId = 'offline';
-		}
-		
-		if ( user.isAdmin && isOnline )
+		const isActive = self.checkIsActive( userId );
+		if ( user.isAdmin )
 			groupId = 'admins';
 		
 		if ( user.isGuest )
 			groupId = 'guests';
 		
 		if ( !groupId && user.workgroups ) {
-			let available = user.workgroups.filter( wgId => !!self.groups[ wgId ]);
+			let available = user.workgroups.filter( wgId => !!self.groupsAssigned[ wgId ]);
 			groupId = available[ 0 ];
-			if ( !self.groups[ groupId ]) {
-				console.log( 'UserCtrl.handleJoin - no group for workgroup', {
-					u : user,
-					g : self.groups,
-				});
-				groupId = null;
+			if ( groupId ) {
+				if ( isActive )
+					groupId = self.getActiveId( groupId );
+				else {
+					if ( self.showOther )
+						groupId = self.getOtherId( groupId );
+					else
+						groupId = null;
+				}
 			}
 		}
 		
-		self.moveUserToGroup( user.id, groupId );
-		
-		function checkOnline( userId ) {
-			const oIdx = self.onlines.indexOf( userId );
-			if ( -1 !== oIdx )
-				return true;
-			else
-				return false;
+		if ( !groupId ) {
+			if ( isActive )
+				groupId = 'active';
+			else {
+				if ( self.showOther )
+					groupId = 'other';
+				else
+					groupId = null;
+			}
 		}
+		
+		if ( null == groupId )
+			self.unsetUser( userId );
+		else
+			self.moveUserToGroup( user.id, groupId );
 	}
 	
 	ns.UserCtrl.prototype.handleLeave = function( userId ) {
 		const self = this;
-		const user = self.users[ userId ];
-		if ( !user )
+		const uIdx = self.userList.indexOf( userId );
+		if ( -1 == uIdx )
 			return;
 		
-		self.removeFromGroup( userId );
-		delete self.users[ userId ];
-		self.userIds = Object.keys( self.users );
-		user.close();
+		self.unsetUser( userId );
+		self.userList.splice( uIdx, 1 );
 	}
 	
 	ns.UserCtrl.prototype.handleIdentity = function( id ) {
@@ -977,16 +1420,22 @@ var hello = window.hello || {};
 			return;
 		}
 		
+		self.addId( id );
+		
+		/*
 		const cId = id.clientId;
 		self.addUserCss( cId, id.avatar );
 		self.identities[ cId ] = id;
+		*/
 	}
 	
 	ns.UserCtrl.prototype.updateIdentity = function( update ) {
 		const self = this;
 		const id = update.data;
 		const cId = id.clientId;
-		self.identities[ cId ] = id;
+		if ( null == self.identities[ cId ])
+			self.addId( id );
+		//self.identities[ cId ] = id;
 		
 		const prop = update.type;
 		if ( 'avatar' === prop )
@@ -996,6 +1445,36 @@ var hello = window.hello || {};
 			const user = self.get( cId );
 			user.updateName( id.name );
 		}
+		
+		if ( 'isOnline' === prop ) {
+			if ( id.isOnline )
+				self.handleOnline( cId );
+			else
+				self.handleOffline( cId );
+		}
+	}
+	
+	ns.UserCtrl.prototype.getIdentity = async function( userId ) {
+		const self = this;
+		let id = self.identities[ userId ];
+		if ( null != id )
+			return id;
+		
+		const req = {
+			type : 'get-identity',
+			data : userId,
+		};
+		try {
+			id = await self.conn.request( req );
+		} catch( ex ) {
+			console.log( 'UserCtrl.getIdentity - ex', ex );
+			id = null;
+		}
+		
+		if ( null != id )
+			self.addId( id );
+		
+		return id;
 	}
 	
 	ns.UserCtrl.prototype.handleAuth = function( event ) {
@@ -1003,13 +1482,69 @@ var hello = window.hello || {};
 		console.log( 'presence.handleAuth - NYI', event );
 	}
 	
-	ns.UserCtrl.prototype.handleWorgsAssigned = function( wgs ) {
+	ns.UserCtrl.prototype.updateLiveState = function( peerList ) {
 		const self = this;
-		if ( !wgs || !wgs.forEach )
+		peerList = peerList || [];
+		const current = self.peerList;
+		current.forEach( uId => {
+			self.setState( uId, 'live', false );
+		});
+		
+		self.peerList = peerList;
+		peerList.forEach( uId => {
+			self.setState( uId, 'live', true );
+		});
+		
+		self.emit( 'peers', self.peerList );
+	}
+	
+	ns.UserCtrl.prototype.handleLive = function( update ) {
+		const self = this;
+		if ( !update || !update.data )
 			return;
 		
-		wgs.forEach( add );
-		function add( wg ) { self.addUserGroup( wg.clientId ); }
+		const peer = update.data;
+		const uId = peer.peerId;
+		const event = update.type; // 'join' or 'leave'
+		let join = true;
+		const uIdx = self.peerList.indexOf( uId );
+		if ( event === 'leave' ) {
+			join = false;
+			remove( uId, uIdx );
+		} else
+			add( uId, uIdx );
+		
+		self.setState( uId, 'live', join );
+		
+		function remove( uId, uIdx ) {
+			if ( -1 == uIdx )
+				return;
+			
+			self.peerList.splice( uIdx, 1 );
+		}
+		
+		function add( uId, uIdx ) {
+			if ( -1 != uIdx )
+				return;
+			
+			self.peerList.push( uId );
+		}
+	}
+	
+	ns.UserCtrl.prototype.updateGuests = function( guests ) {
+		const self = this;
+		console.log( 'updateGuests', guests );
+		
+	}
+	
+	ns.UserCtrl.prototype.handleWorgsAssigned = function( wgs ) {
+		const self = this;
+		const assIds = wgs.map( ass => ass.clientId );
+		const remove = self.groupsAssignedIds.filter( currId => {
+			return !assIds.some( assId => assId == currId );
+		});
+		remove.forEach( wId => self.removeWorgAssigned( wId ));
+		wgs.forEach( wg => self.addWorgAssigned( wg ));
 	}
 	
 	ns.UserCtrl.prototype.moveUserToGroup = function( userId, groupId ) {
@@ -1025,33 +1560,56 @@ var hello = window.hello || {};
 			});
 			return;
 		}
+		const curr = self.getGroup( user.group );
+		const to = self.getGroup( groupId );
 		
-		if ( user.group && ( user.group !== groupId ))
-			detachFromGroup( user );
+		if ( user.group === groupId ) {
+			return;
+		}
 		
-		const group = self.groups[ groupId ];
-		if ( !group ) {
+		if ( curr )
+			curr.detach( userId );
+		
+		if ( !to ) {
 			console.log( 'UserCtrl.moveUserToGroup - invalid groupId', {
 				type   : groupId,
 				groups : self.groups,
+				base   : self.baseGroups,
 			});
 			return;
 		}
 		
-		group.attach( user.id );
+		to.attach( user );
+	}
+	
+	ns.UserCtrl.prototype.getGroup = function( groupId ) {
+		const self = this;
 		
-		function detachFromGroup( user ) {
-			const detachGrp = self.groups[ user.group ];
-			if ( !detachGrp )
-				return;
-			
-			detachGrp.detach( user.id );
-		}
+		if ( null == groupId )
+			return null;
+		
+		return self.groups[ groupId ] || self.baseGroups[ groupId ] || null;
+	}
+	
+	ns.UserCtrl.prototype.unsetUser = function( userId ) {
+		const self = this;
+		self.removeFromGroup( userId );
+		const user = self.users[ userId ];
+		delete self.users[ userId ];
+		if ( !user )
+			return;
+		
+		self.userIds = Object.keys( self.users );
+		user.close();
 	}
 	
 	ns.UserCtrl.prototype.removeFromGroup = function( userId ) {
 		const self = this;
 		const user = self.users[ userId ];
+		if ( null == user ) {
+			return;
+		}
+		
 		if ( !user ) {
 			console.log( 'UserCtrl.removeFromGroup - no user', {
 				uid   : userId,
@@ -1060,7 +1618,7 @@ var hello = window.hello || {};
 			return;
 		}
 		
-		const group = self.groups[ user.group ];
+		const group = self.getGroup( user.group );
 		if ( !group ) {
 			console.log( 'UserCtrl.removeFromGroup - no group for user', {
 				user   : user,
@@ -1070,6 +1628,68 @@ var hello = window.hello || {};
 		}
 		
 		group.remove( userId );
+	}
+	
+	ns.UserCtrl.prototype.checkIsActive = function( userId ) {
+		const self = this;
+		return self.recentList.some( uId => uId === userId );
+	}
+	
+	ns.UserCtrl.prototype.handleRecentAdd = function( userId ) {
+		const self = this;
+		const added = self.recentAdd( userId );
+		self.updateUserPosition( userId );
+	}
+	
+	ns.UserCtrl.prototype.recentAdd = function( userId ) {
+		const self = this;
+		const rIdx = self.recentList.indexOf( userId );
+		if ( -1 != rIdx )
+			return false;
+		
+		self.recentList.push( userId );
+		return true;
+	}
+	
+	ns.UserCtrl.prototype.handleRecentRemove = function( userId ) {
+		const self = this;
+		const idx = self.recentList.indexOf( userId );
+		self.recentList.splice( idx, 1 );
+		try {
+			self.setUserToGroup( userId );
+		} catch( ex ) {
+			console.log( 'setToGroup ex', ex );
+		}
+	}
+	
+	ns.UserCtrl.prototype.recentRemove = function( userId ) {
+		const self = this;
+		const rIdx = self.recentList.indexOf( userId );
+		if ( -1 == rIdx )
+			return false;
+		
+		self.recentList.splice( rIdx, 1 );
+		return true;
+	}
+	
+	ns.UserCtrl.prototype.guestAdd = function( userId ) {
+		const self = this;
+		const gIdx = self.guestList.indexOf( userId );
+		if ( -1 != gIdx )
+			return false;
+		
+		self.guestList.push( userId );
+		return true;
+	}
+	
+	ns.UserCtrl.prototype.guestRemove = function( userId ) {
+		const self = this;
+		const gIdx = self.guestList.indexOf( userId );
+		if ( -1 == gIdx )
+			return false;
+		
+		self.guestList.splice( gIdx, 1 );
+		return true;
 	}
 	
 	ns.UserCtrl.prototype.addUserCss = function( userId, avatar ) {
@@ -1126,7 +1746,6 @@ var hello = window.hello || {};
 		input,
 		parser,
 		linkExpand,
-		templateManager
 	) {
 		const self = this;
 		self.containerId = containerId;
@@ -1139,7 +1758,6 @@ var hello = window.hello || {};
 		self.input = input;
 		self.parser = parser || null;
 		self.linkEx = linkExpand || null;
-		self.template = templateManager;
 		
 		self.conn = null
 		self.envelopes = {};
@@ -1204,7 +1822,6 @@ var hello = window.hello || {};
 			return false;
 		
 		const last = self.userLastMsg;
-		console.log( 'editLastMessage', last );
 		self.editMessage( last.msgId );
 	}
 	
@@ -1244,6 +1861,24 @@ var hello = window.hello || {};
 		}
 	}
 	
+	
+	ns.MsgBuilder.prototype.pauseSmoothScrolling = function() {
+		const self = this;
+		if ( null != self.smoothPause ) 
+			window.clearTimeout( self.smoothPause );
+		else
+			self.setSmoothScrolling( false );
+		
+		self.smoothPause = window.setTimeout( reEnableSmooth, 1000 );
+		function reEnableSmooth() {
+			self.smoothPause = null;
+			self.setSmoothScrolling( true );
+		}
+	}
+	
+	
+	// Priv
+	
 	ns.MsgBuilder.prototype.doEdit =  function( event ) {
 		const self = this;
 		const msg = event.data;
@@ -1276,7 +1911,7 @@ var hello = window.hello || {};
 			multiId      : multiId,
 			reasonHidden : reasonHidden,
 		};
-		const editEl = self.template.getElement( 'edit-msg-ui-tmpl', editConf );
+		const editEl = hello.template.getElement( 'edit-msg-ui-tmpl', editConf );
 		const reasonInput = editEl.querySelector( '.edit-reason-input' );
 		const subBtn = editEl.querySelector( '.actions .edit-submit' );
 		const cancelBtn = editEl.querySelector( '.actions .edit-cancel' );
@@ -1284,7 +1919,7 @@ var hello = window.hello || {};
 		
 		const multiConf = {
 			containerId     : multiId,
-			templateManager : self.template,
+			templateManager : hello.template,
 		};
 		const edit = new library.component.MultiInput( multiConf );
 		edit.setValue( msg.message );
@@ -1480,7 +2115,6 @@ var hello = window.hello || {};
 		delete self.onEdit;
 		delete self.parser;
 		delete self.linkEx;
-		delete self.template;
 	}
 	
 	// Private
@@ -1517,7 +2151,7 @@ var hello = window.hello || {};
 			throw new Error( 'MsgBuilder.init - container element not found for id: '
 				+ self.containerId );
 		
-		if ( !self.users || !self.template ) {
+		if ( !self.users || !hello.template ) {
 			console.log( 'MsgBuilder - missing things', self );
 			throw new Error( 'MsgBuilder - missing things ^^^' );
 		}
@@ -1639,7 +2273,7 @@ var hello = window.hello || {};
 				id      : self.msgTargetId,
 				inputId : inputId,
 			};
-			self.msgTargetEl = self.template.getElement( 'msg-target-box-tmpl', conf );
+			self.msgTargetEl = hello.template.getElement( 'msg-target-box-tmpl', conf );
 			self.container.appendChild( self.msgTargetEl );
 			const cancelBtn = self.msgTargetEl.querySelector( '.edit-cancel' );
 			const sendBtn = self.msgTargetEl.querySelector( '.send' );
@@ -1661,7 +2295,7 @@ var hello = window.hello || {};
 			
 			const multiConf = {
 				containerId     : inputId,
-				templateManager : self.template,
+				templateManager : hello.template,
 			};
 			self.msgTargetInput = new library.component.MultiInput( multiConf );
 			self.msgTargetInput.on( 'submit', onSubmit );
@@ -1717,7 +2351,7 @@ var hello = window.hello || {};
 				const conf = {
 					name : name,
 				};
-				const el = self.template.getElement( 'msg-target-tmpl', conf );
+				const el = hello.template.getElement( 'msg-target-tmpl', conf );
 				targetsEl.appendChild( el );
 				const cancelBtn = el.querySelector( '.target-cancel' );
 				cancelBtn.addEventListener( 'click', cancel, false );
@@ -1817,12 +2451,18 @@ var hello = window.hello || {};
 		return !!el;
 	}
 	
-	ns.MsgBuilder.prototype.handleMsg = function( event ) {
+	ns.MsgBuilder.prototype.handleMsg = async function( event ) {
 		const self = this;
 		if ( self.exists( event.msgId ))
 			return;
 		
-		console.log( 'handleMsg', event );
+		//console.log( 'handleMsg', event );
+		
+		// makes sure identity is available sync
+		const fromId = event.fromId;
+		const id = await self.users.getIdentity( fromId );
+		
+		//
 		if ( event.fromId === self.userId ) {
 			console.log( 'setting userLastMsg', event );
 			self.userLastMsg = event;
@@ -1863,7 +2503,7 @@ var hello = window.hello || {};
 		return el;
 	}
 	
-	ns.MsgBuilder.prototype.handleLog = function( log ) {
+	ns.MsgBuilder.prototype.handleLog = async function( log ) {
 		const self = this;
 		let events = log.data.events;
 		let newIds = log.data.ids;
@@ -1871,13 +2511,13 @@ var hello = window.hello || {};
 		if ( newIds )
 			self.users.addIdentities( newIds );
 		
-		self.toggleSmooth( false );
+		self.pauseSmoothScrolling();
 		self.supressConfirm = true;
 		
 		if ( 'before' === log.type )
-			self.handleLogBefore( events );
+			await self.handleLogBefore( events );
 		else
-			self.handleLogAfter( events );
+			await self.handleLogAfter( events );
 		
 		self.supressConfirm = false;
 		let lMId = self.getLastMsgId();
@@ -1885,17 +2525,21 @@ var hello = window.hello || {};
 		if ( relations )
 			self.updateRelationState( relations );
 		
-		window.setTimeout( tglsmt, 1000 );
-		function tglsmt() {
-			self.toggleSmooth( true );
-			
-		}
 	}
 	
-	ns.MsgBuilder.prototype.handleLogBefore = function( items ) {
+	ns.MsgBuilder.prototype.handleLogBefore = async function( items ) {
 		const self = this;
 		if ( null == items.length )
 			return;
+		
+		let fromIds = {};
+		items.forEach( item => {
+			const fId = item.data.fromId;
+			fromIds[ fId ] = true;
+		});
+		fromIds = Object.keys( fromIds );
+		const idWaits = fromIds.map( fId => self.users.getIdentity( fId ));
+		await Promise.all( idWaits );
 		
 		let lastSpeakerId = null;
 		let lastIndex = ( items.length - 1 );
@@ -1964,7 +2608,7 @@ var hello = window.hello || {};
 		//return el;
 	}
 	
-	ns.MsgBuilder.prototype.handleLogAfter = function( items ) {
+	ns.MsgBuilder.prototype.handleLogAfter = async function( items ) {
 		const self = this;
 		if ( !items )
 			return;
@@ -1983,7 +2627,7 @@ var hello = window.hello || {};
 		return event.fromId === envelope.lastSpeakerId;
 	}
 	
-	ns.MsgBuilder.prototype.toggleSmooth = function( setSmooth ) {
+	ns.MsgBuilder.prototype.setSmoothScrolling = function( setSmooth ) {
 		const self = this;
 		if ( !self.container )
 			return;
@@ -2028,8 +2672,8 @@ var hello = window.hello || {};
 		const msg = conf.event;
 		const uId = msg.fromId;
 		const mId = msg.msgId;
-		const user = self.users.get( self.userId );
-		const from = self.users.get( uId );
+		const user = self.users.getIdSync( self.userId );
+		const from = self.users.getIdSync( uId );
 		const isGuest = uId == null ? true : false;
 		
 		let name = '';
@@ -2078,7 +2722,7 @@ var hello = window.hello || {};
 			message    : message,
 			msgActions : actionsHtml,
 		};
-		const el = self.template.getElement( tmplId, msgConf );
+		const el = hello.template.getElement( tmplId, msgConf );
 		if ( self.linkEx )
 			self.linkEx.work( el );
 		
@@ -2095,7 +2739,7 @@ var hello = window.hello || {};
 			forwardHidden : forwardHidden,
 			gradHidden    : gradHidden,
 		};
-		const html = self.template.get( 'msg-actions-tmpl', conf );
+		const html = hello.template.get( 'msg-actions-tmpl', conf );
 		return html;
 		
 		function set( canDo ) {
@@ -2107,7 +2751,7 @@ var hello = window.hello || {};
 		const self = this;
 	}
 	
-	ns.MsgBuilder.prototype.setEdit = function( msg ) {
+	ns.MsgBuilder.prototype.setEdit = async function( msg ) {
 		const self = this;
 		const mId = msg.msgId;
 		const eId = msg.editId;
@@ -2117,7 +2761,7 @@ var hello = window.hello || {};
 			return;
 		}
 		
-		const editer = self.getEditer( msg );
+		const editer = await self.getEditer( msg );
 		const reason = msg.editReason;
 		const time = self.getClockStamp( msg.editTime );
 		let name = '';
@@ -2141,14 +2785,14 @@ var hello = window.hello || {};
 			time   : time,
 			reason : reason,
 		};
-		editEl = self.template.getElement( 'edit-info-tmpl', conf );
+		editEl = hello.template.getElement( 'edit-info-tmpl', conf );
 		editContEl.appendChild( editEl );
 	}
 	
 	ns.MsgBuilder.prototype.getEditer = function( msg ) {
 		const self = this;
 		const cId = msg.editBy;
-		return self.users.getId( cId );
+		return self.users.getIdentity( cId );
 	}
 	
 	ns.MsgBuilder.prototype.bindItem = function( itemId ) {
@@ -2197,7 +2841,7 @@ var hello = window.hello || {};
 			return envelope;
 		
 		envelope = envConf;
-		const el = self.template.getElement( 'time-envelope-tmpl', envConf );
+		const el = hello.template.getElement( 'time-envelope-tmpl', envConf );
 		envelope.el = el;
 		self.envelopes[ envelope.id ] = envelope;
 		self.envelopeOrder.push( envelope.id );
@@ -2445,7 +3089,7 @@ var hello = window.hello || {};
 				id   : cId,
 				time : time || '',
 			};
-			const el = self.template.getElement( 'confirm-state-tmpl', conf );
+			const el = hello.template.getElement( 'confirm-state-tmpl', conf );
 			const msgEl = document.getElementById( msgId );
 			const container = msgEl.querySelector( '.confirm-state' );
 			container.appendChild( el );
@@ -2476,7 +3120,7 @@ var hello = window.hello || {};
 			const conf = {
 				id   : cId,
 			};
-			const el = self.template.getElement( 'confirm-state-inline-tmpl', conf );
+			const el = hello.template.getElement( 'confirm-state-inline-tmpl', conf );
 			const msgEl = document.getElementById( msgId );
 			const container = msgEl.querySelector( '.confirm-state-inline' );
 			container.appendChild( el );
@@ -2525,7 +3169,7 @@ var hello = window.hello || {};
 		const conf = {
 			time : time,
 		};
-		cInfoEl = self.template.getElement( 'confirm-info-tmpl', conf );
+		cInfoEl = hello.template.getElement( 'confirm-info-tmpl', conf );
 		
 		extEl.appendChild( cInfoEl );
 	}
@@ -2583,14 +3227,12 @@ var hello = window.hello || {};
 (function( ns, undefined ) {
 	ns.EmojiiPanel = function(
 		parentId,
-		templateManager,
 		emojiiMap,
 		onemojii
 	) {
 		const self = this;
 		
 		self.parentId = parentId;
-		self.template = templateManager;
 		self.emojiiMap = emojiiMap;
 		self.onemojii = onemojii;
 		
@@ -2623,7 +3265,6 @@ var hello = window.hello || {};
 		if ( self.el )
 			self.el.parentNode.removeChild( self.el );
 		
-		delete self.template;
 		delete self.emojiiMap;
 		delete self.onemojii;
 		delete self.el;
@@ -2636,7 +3277,7 @@ var hello = window.hello || {};
 		const conf = {
 			id : friendUP.tool.uid( 'emojii' ),
 		};
-		self.el = self.template.getElement( 'emojii-panel-tmpl', conf );
+		self.el = hello.template.getElement( 'emojii-panel-tmpl', conf );
 		const parent = document.getElementById( self.parentId );
 		if ( !parent )
 			throw new Error( 'EmojiiPanel - no element found for parentId' );
@@ -2658,7 +3299,7 @@ var hello = window.hello || {};
 		emoKeys.forEach( buildAndBind );
 		function buildAndBind( key ) {
 			const value = self.emojiiMap[ key ];
-			const itemEl = self.template.getElement( 'emojii-item-tmpl', { itml : value });
+			const itemEl = hello.template.getElement( 'emojii-item-tmpl', { itml : value });
 			itemEl.addEventListener( 'click', emoClick, false );
 			self.el.appendChild( itemEl );
 			
@@ -2677,13 +3318,11 @@ var hello = window.hello || {};
 	ns.LogFetcher = function(
 		parentId,
 		messagesId,
-		templateManager,
 		onFetch
 	) {
 		const self = this;
 		self.parentId = parentId;
 		self.messagesId = messagesId;
-		self.template = templateManager;
 		self.onfetch = onFetch;
 		
 		self.locked = false;
@@ -2712,7 +3351,6 @@ var hello = window.hello || {};
 	
 	ns.LogFetcher.prototype.close = function() {
 		const self = this;
-		delete self.template;
 		delete self.parentId;
 		delete self.messagesId;
 		delete self.onfetch;
@@ -2744,7 +3382,7 @@ var hello = window.hello || {};
 		const infoConf = {
 			id : self.infoId,
 		};
-		self.info = self.template.getElement( 'log-fetch-tmpl', infoConf );
+		self.info = hello.template.getElement( 'log-fetch-tmpl', infoConf );
 		self.messages.appendChild( self.info );
 		self.infoFetch = self.info.querySelector( '.log-fetch-msg' );
 		self.infoNone = self.info.querySelector( '.log-no-logs' );
@@ -2816,7 +3454,6 @@ var hello = window.hello || {};
 		containerId,
 		users,
 		userId,
-		tmplManager
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
@@ -2824,7 +3461,6 @@ var hello = window.hello || {};
 		self.containerId = containerId;
 		self.users = users;
 		self.userId = userId;
-		self.template = tmplManager;
 		
 		self.peerIdMap = {};
 		self.peerList = [];
@@ -2839,6 +3475,7 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.update = function( userList ) {
 		const self = this;
+		userList = userList || [];
 		userList.forEach( uId => self.addPeer( uId ));
 	}
 	
@@ -2862,7 +3499,6 @@ var hello = window.hello || {};
 		
 		delete self.users;
 		delete self.userId;
-		delete self.template;
 		delete self.containerId;
 	}
 	
@@ -2878,7 +3514,7 @@ var hello = window.hello || {};
 			peersId : self.peers,
 			peerCountId : self.peerCount,
 		};
-		self.el = self.template.getElement( 'live-status-tmpl', elConf );
+		self.el = hello.template.getElement( 'live-status-tmpl', elConf );
 		const container = document.getElementById( self.containerId );
 		container.appendChild( self.el );
 		self.videoBtn = self.el.querySelector( '.live-status-icon.video' );
@@ -2927,18 +3563,18 @@ var hello = window.hello || {};
 			self.removePeer( event.userId );
 	}
 	
-	ns.LiveStatus.prototype.addPeer = function( userId ) {
+	ns.LiveStatus.prototype.addPeer = async function( userId ) {
 		const self = this;
 		if ( self.peerIdMap[ userId ])
 			return;
 		
 		const peerId = friendUP.tool.uid( 'peer' );
-		const avatarKlass = self.users.getAvatarKlass( userId );
+		const avatarKlass = await self.users.getAvatarKlass( userId );
 		const peer = {
 			id          : peerId,
 			avatarKlass : avatarKlass,
 		};
-		const peerEl = self.template.getElement( 'live-status-peer-tmpl', peer );
+		const peerEl = hello.template.getElement( 'live-status-peer-tmpl', peer );
 		self.peerIdMap[ userId ] = peerId;
 		self.peers.insertBefore( peerEl, self.peerCount );
 		//self.peers.appendChild( self.peerCount );
@@ -3197,7 +3833,7 @@ var hello = window.hello || {};
 	
 	ns.InputHelper.prototype.bind = function() {
 		const self = this;
-		//console.log( 'InputHelper.bind' );
+		
 	}
 	
 	ns.InputHelper.prototype.setOptions = function( list ) {

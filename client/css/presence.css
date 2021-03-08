@@ -95,12 +95,22 @@ body[mobile] #emojii-panel-button
 }
 */
 
+.base-group {
+	padding :  0em 0.5em;
+}
+
 .user-group {
 	margin-bottom : 0.3em;
+	padding : 0.2em 0em;
 }
 
 .section-head {
 	font-weight : bold;
+	padding : 0.2em;
+	padding-left : 0.6em;
+}
+
+.section-head .section-head {
 	font-size   : 90%;
 	opacity     : 0.85;
 	text-align  : center;
@@ -111,21 +121,97 @@ body[mobile] #emojii-panel-button
 	opacity : 1;
 }
 
+
+.group-items {
+	padding-top : 0.2em;
+}
+
+.user-item {
+	padding-left: 0.4em;
+}
+
+.user-status {
+	margin-top : 0.2em;
+}
+
+.user-item .name {
+	padding-left : 0.4em;
+}
+
+#hello .user-item .Off {
+	background-color : #9e9e9e;
+}
+
+.base-group {
+	color         : #fff;
+	border-radius : 0.1em;
+}
+
+.base-group.group-admins,
+.base-group.group-work {
+	background-color : #2980B9;
+}
+
+.base-group.group-active,
+.base-group.group-users {
+	background-color : #27AE60;
+}
+
+.base-group.group-guests,
+.base-group.group-all {
+	background-color : #8E44AD;
+}
+
+.base-group.group-other {
+	background-color : #F39C12;
+}
+
+.user-group .Button {
+	display     : flex;
+	line-height : 1.1em;
+}
+
+.user-group .other-show {
+	width : 100%;
+}
+
+#other .other {
+	padding-top : 0.3em;
+}
+
+#other-filter-clear {
+	position : absolute;
+	top      : 0;
+	right    : 0;
+	padding  : 0 0.4em;
+	font-size: 0.8em;
+	opacity  : 0.8;
+	height   : 100%;
+}
+
+.other-filter input {
+	line-height : 1.6em;
+}
+
+.other-filter .input-wrap {
+	margin-right : 0.2em;
+}
+
 #message-container { position : relative }
 
 #messages {
-	position : absolute;
-	bottom : 0px;
-	max-height : 100%;
-	width : 100%;
-	overflow : auto;
-	padding-bottom: 0.5em;
+	position       : absolute;
+	bottom         : 0px;
+	max-height     : 100%;
+	width          : 100%;
+	overflow       : auto;
+	padding-bottom : 0.5em;
 }
 
 .log-fetch {
-	padding : 0em 1em;
+	padding     : 0em 1em;
 	padding-top : 1em;
-	height : 3em;
+	height      : 3em;
 }
 
 .log-fetch-msg,
@@ -431,12 +517,13 @@ body[mobile] #emojii-panel-button
 }
 
 #user-groups {
-	position: absolute;
-	top: 0;
-	right : 0;
-	bottom : 0;
-	left : 0;
-	overflow-x: hidden;
+	position   : absolute;
+	top        : 0;
+	right      : 0;
+	bottom     : 0;
+	left       : 0;
+	overflow-x : hidden;
+	padding    : 0.2em 0.2em;
 }
 
 #emojii-panel-button,
@@ -445,7 +532,7 @@ body[mobile] #emojii-panel-button
 }
 
 .user-item {
-	line-height: 2em;
+	line-height: 1.5em;
 }
 
 .user-item .name {
