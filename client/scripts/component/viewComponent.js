@@ -3572,7 +3572,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 				});
 			
 			list.forEach( item => {
-				id = item.id;
+				const id = item.id;
 				const el = document.getElementById( id );
 				if ( !el ) {
 					console.log( 'listOrder.applyOrder, apply - no el for', {

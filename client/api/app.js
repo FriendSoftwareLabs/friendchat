@@ -1396,7 +1396,7 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		function parseTranslations( file ) {
 			const lines = file.split( '\n' );
-			onlyValid = lines.filter( cleanLines );
+			const onlyValid = lines.filter( cleanLines );
 			const translations = {};
 			onlyValid.forEach( setKeyValue );
 			self.translations = translations;

@@ -874,6 +874,8 @@ var friend = window.friend || {};
 				callback({
 					result : false
 				});
+				if( document.getElementById( 'cameraimageFI' ) )
+					document.getElementById( 'cameraimageFI' ).value = '';
 				return;
 			}
 			
@@ -908,10 +910,14 @@ var friend = window.friend || {};
 					type: 'drag-n-drop',
 					data: list,
 				});
+				if( document.getElementById( 'cameraimageFI' ) )
+					document.getElementById( 'cameraimageFI' ).value = '';
 			}
 			
 			function pasteErr( err ) {
 				console.log( 'camera pasteErr', err );
+				if( document.getElementById( 'cameraimageFI' ) )
+					document.getElementById( 'cameraimageFI' ).value = '';
 			}
 		};
 		

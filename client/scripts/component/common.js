@@ -753,8 +753,9 @@ inherits from EventEmitter
 			
 			function idBack( id ) {
 				clear( clientId );
-				self.add( id );
-				resolve( id );
+				const frozen = self.add( id );
+				console.log( 'idBack, f', [ clientId, frozen ]);
+				resolve( frozen );
 			}
 			
 			function idSad( err ) {
@@ -821,6 +822,10 @@ inherits from EventEmitter
 			return;
 		}
 		
+		console.log( 'IdCache.update', {
+			update  : update,
+			current : current,
+		});
 		if ( current.lastUpdate > update.lastUpdate ) {
 			console.log( 'stale update', {
 				update : update,
@@ -831,9 +836,15 @@ inherits from EventEmitter
 		
 		const key = update.key;
 		const value = update.value;
-		current[ key ] = value;
-		
-		self.emit( 'update', current, key );
+		const str = JSON.stringify( current );
+		const fresh = JSON.parse( str );
+		fresh[ key ] = value;
+		console.log( 'uptd', {
+			str   : str,
+			fresh : fresh,
+		});
+		const frozen = self.add( fresh );
+		self.emit( 'update', frozen, key );
 	}
 	
 	ns.IdCache.prototype.refresh = async function() {
@@ -875,18 +886,25 @@ inherits from EventEmitter
 			return;
 		}
 		
-		curr.lastUpdate = update.lastUpdate; // we dont want this one to trigger an update;
+		//curr.lastUpdate = update.lastUpdate; // we dont want this one to trigger an update;
 		const tests = Object.keys( update );
 		const changes = tests.filter( key => {
+			if ( 'lastUpdate' == key )
+				return false;
+			
+			if ( 'fLastUpdate' == key )
+				return false;
+			
 			return update[ key ] !== curr[ key ];
 		});
 		
 		if ( !changes.length ) // wat
 			return;
 		
-		self.ids[ cId ] = update;
+		const frozen = self.add( update );
+		console.log( 'changes', changes );
 		changes.forEach( key => {
-			self.emit( 'update', update, key );
+			self.emit( 'update', frozen, key );
 		});
 	}
 	
@@ -924,13 +942,14 @@ inherits from EventEmitter
 		if ( !id || !id.clientId )
 			return;
 		
-		const cId = id.clientId;
+		const frozen = Object.freeze( id );
+		const cId = frozen.clientId;
 		const curr = self.ids[ cId ];
 		if ( !curr )
 			self.idList.push( cId );
 		
-		self.ids[ id.clientId ] = id;
-		
+		self.ids[ cId ] = frozen;
+		return frozen;
 	}
 	
 	ns.IdCache.prototype.remove = function( cId ) {

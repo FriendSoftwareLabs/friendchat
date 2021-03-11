@@ -536,7 +536,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.setAtParsing = function( ats ) {
 		const self = this;
-		self.atList = ats;
+		self.atList = ats || [];
 		self.atList.sort( byAN );
 		if ( !self.isPrivate )
 			self.atList = [ 'everyone', 'admins', 'active', 'guests', ...self.atList ];
@@ -1382,7 +1382,10 @@ library.view = library.view || {};
 		room
 	) {
 		const self = this;
-		console.log( 'UserWorkCtrl, room', room );
+		console.log( 'UserWorkCtrl', {
+			worgs : workgroups,
+			room  : room,
+		});
 		self.room = room;
 		self.build();
 		self.groupList = new library.component.ListOrder( 'user-groups' );
@@ -1418,6 +1421,24 @@ library.view = library.view || {};
 			self.setupWorkgroup( worg.clientId );
 			self.showWorkgroup( worg.clientId );
 		});
+	}
+	
+	ns.UserWorkCtrl.prototype.handleJoin = async function( conf ) {
+		const self = this;
+		console.log( 'UserWorkCtrl.handleJoin', conf );
+		const user = conf.user;
+		const uId = user.clientId;
+		const uIdx = self.userList.indexOf( uId );
+		if ( -1 != uIdx )
+			return;
+		
+		self.userList.push( uId );
+		self.addUserToWorgs( user );
+		
+		if ( user.isRecent )
+			self.recentAdd( uId );
+		
+		self.buildUser( uId, user.workgroups );
 	}
 	
 	ns.UserWorkCtrl.prototype.handleSubRooms = function( subIds ) {
@@ -1644,11 +1665,13 @@ library.view = library.view || {};
 		await Promise.all( waitU );
 	}
 	
+	/*
 	ns.UserWorkCtrl.prototype.setUserToGroup = function( userId ) {
 		const self = this;
 		console.log( 'setUserToGroup', userId );
 		self.moveUserToGroup( userId, self.workId );
 	}
+	*/
 	
 	ns.UserWorkCtrl.prototype.setWorkMembers = async function( worgId ) {
 		const self = this;
@@ -1805,14 +1828,14 @@ library.view = library.view || {};
 			return;
 		}
 		
-		const isInWorg = user.workgroups.some( worgId => worgId === self.workId );
-		if ( isInWorg ) {
+		const isInRoom = user.workgroups.some( worgId => worgId === self.workId );
+		if ( isInRoom ) {
 			self.moveUserToGroup( userId, self.workId );
 		} else {
 			console.log( 'user is in subroom', {
-				uw : user.workgroups,
-				groups : self.groups,
-				wid : self.workId,
+				uw     : user.workgroups,
+				groups : self.members,
+				wid    : self.workId,
 			});
 			let toId = null;
 			user.workgroups.some( wId => {
@@ -1941,6 +1964,7 @@ library.view = library.view || {};
 	
 	ns.WorkMsgBuilder.prototype.buildWorkMsg = function( conf ) {
 		const self = this;
+		console.log( 'buildWorkMsg', conf );
 		const tmplId = 'work-msg-tmpl';
 		const msg = conf.event;
 		const uId = msg.fromId;
@@ -1986,6 +2010,15 @@ library.view = library.view || {};
 		const twIds = Object.keys( msg.targets );
 		let targetNames = [];
 		let targetHtmls = [];
+		
+		console.log( 'target things', {
+			msg : msg,
+			fromSuper : fromSuper,
+			fromSub : fromSub,
+			fromThis : fromThis,
+			targets : msg.targets,
+			twIds    : twIds,
+		});
 		
 		if ( fromThis ) {
 			if ( !fromUser ) {

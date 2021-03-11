@@ -1206,18 +1206,18 @@ var hello = window.hello || {};
 		if ( !self.conn )
 			throw new Error( 'UserCtrl.bindConn - no conn' );
 		
-		self.conn.on( 'online', online );
-		self.conn.on( 'offline', offline );
-		self.conn.on( 'join', join );
-		self.conn.on( 'leave', leave );
-		self.conn.on( 'identity', identity );
-		self.conn.on( 'auth', auth );
-		self.conn.on( 'live', e => self.handleLive( e ));
-		self.conn.on( 'workgroups-assigned', worgsAssigned );
-		self.conn.on( 'workgroup-added', worgAvailable );
-		self.conn.on( 'workgroup-removed', e => self.handleWorgRemoved( e ));
-		self.conn.on( 'recent-add', e => self.handleRecentAdd( e ));
-		self.conn.on( 'recent-remove', e => self.handleRecentRemove( e ));
+		self.conn.on( 'online'             , online );
+		self.conn.on( 'offline'            , offline );
+		self.conn.on( 'join'               , join );
+		self.conn.on( 'leave'              , leave );
+		self.conn.on( 'identity'           , identity );
+		self.conn.on( 'auth'               , auth );
+		self.conn.on( 'live'               , e => self.handleLive( e ));
+		self.conn.on( 'workgroups-assigned', e => self.handleWorgsAssigned( e ));
+		self.conn.on( 'workgroup-added'    , e => self.addWorgAvailable( e ));
+		self.conn.on( 'workgroup-removed'  , e => self.handleWorgRemoved( e ));
+		self.conn.on( 'recent-add'         , e => self.handleRecentAdd( e ));
+		self.conn.on( 'recent-remove'      , e => self.handleRecentRemove( e ));
 		
 		function online( e ) { self.handleOnline( e ); }
 		function offline( e ) { self.handleOffline( e ); }
@@ -1225,8 +1225,6 @@ var hello = window.hello || {};
 		function leave( e ) { self.handleLeave( e ); }
 		function identity( e ) { self.handleIdentity( e ); }
 		function auth( e ) { self.handleAuth( e ); }
-		function worgsAssigned( e ) { self.handleWorgsAssigned( e ); }
-		function worgAvailable( e ) { self.addWorgAvailable( e ); }
 	}
 	
 	ns.UserCtrl.prototype.releaseConn = function() {
@@ -1240,7 +1238,11 @@ var hello = window.hello || {};
 		self.conn.release( 'leave' );
 		self.conn.release( 'identity' );
 		self.conn.release( 'auth' );
-		self.conn.release( 'workgroup' );
+		//self.conn.release( 'workgroup' );
+		self.conn.release( 'live' );
+		self.conn.release( 'workgroups-assigned' );
+		self.conn.release( 'workgroup-added' );
+		self.conn.release( 'workgroup-removed' );
 		self.conn.release( 'recent-add' );
 		self.conn.release( 'recent-remove' );
 	}
@@ -1285,6 +1287,7 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.handleJoin = async function( conf ) {
 		const self = this;
+		console.log( 'UserCtrl.handleJoin', conf );
 		const user = conf.user;
 		const uId = user.clientId;
 		const uIdx = self.userList.indexOf( uId );
@@ -1292,11 +1295,12 @@ var hello = window.hello || {};
 			return;
 		
 		self.userList.push( uId );
+		self.addUserToWorgs( user );
 		/*
 		if ( user.isAdmin )
 			self.addAdmin
 		*/
-		//await self.getIdentity( uId );
+		
 		if ( user.isRecent )
 			self.recentAdd( uId );
 		
@@ -1314,6 +1318,14 @@ var hello = window.hello || {};
 		self.buildUser( uId );
 	}
 	
+	ns.UserCtrl.prototype.addUserToWorgs = function( user ) {
+		const self = this;
+		console.log( 'addUserToWorgs', {
+			user : user,
+			worgs : self.workgroups,
+		});
+	}
+	
 	ns.UserCtrl.prototype.updateUserPosition = async function( userId ) {
 		const self = this;
 		const user = self.users[ userId ];
@@ -1324,13 +1336,15 @@ var hello = window.hello || {};
 		
 	}
 	
-	ns.UserCtrl.prototype.buildUser = async function( userId ) {
+	ns.UserCtrl.prototype.buildUser = async function( userId, worgs ) {
 		const self = this;
 		if ( self.users[ userId ])
 			return;
 		
 		self.users[ userId ] = true;
 		let id = await self.getIdentity( userId );
+		if ( null != worgs )
+			id.workgroups = worgs;
 		
 		const userItem = new library.component.GroupUser(
 			userId,
@@ -2368,7 +2382,7 @@ var hello = window.hello || {};
 				if ( !userId )
 					delete self.msgTargets[ worgId ];
 				else {
-					wTs = self.msgTargets[ worgId ];
+					const wTs = self.msgTargets[ worgId ];
 					self.msgTargets[ worgId ] = wTs.filter( tId => tId != userId );
 					if ( self.msgTargets[ worgId ].length )
 						return;
@@ -2382,7 +2396,6 @@ var hello = window.hello || {};
 				
 			}
 		}
-		
 	}
 	
 	ns.MsgBuilder.prototype.sendMsgTarget = function() {
@@ -2532,14 +2545,7 @@ var hello = window.hello || {};
 		if ( null == items.length )
 			return;
 		
-		let fromIds = {};
-		items.forEach( item => {
-			const fId = item.data.fromId;
-			fromIds[ fId ] = true;
-		});
-		fromIds = Object.keys( fromIds );
-		const idWaits = fromIds.map( fId => self.users.getIdentity( fId ));
-		await Promise.all( idWaits );
+		await self.prefetchIds( items );
 		
 		let lastSpeakerId = null;
 		let lastIndex = ( items.length - 1 );
@@ -2614,6 +2620,37 @@ var hello = window.hello || {};
 			return;
 		
 		items.forEach( item => self.handle( item ));
+	}
+	
+	ns.MsgBuilder.prototype.prefetchIds = async function( items ) {
+		const self = this;
+		let prefetchIds = {};
+		items.forEach( item => {
+			const msg = item.data;
+			console.log( 'prefetch', msg );
+			const fId = msg.fromId;
+			prefetchIds[ fId ] = true;
+			if ( null == msg.targets )
+				return;
+			
+			const tIds = Object.keys( msg.targets );
+			tIds.forEach( tId => {
+				const t = msg.targets[ tId ];
+				console.log( 'target', t );
+				if ( null == t.length )
+					return;
+				
+				t.forEach( cId => {
+					prefetchIds[ cId ] = true;
+				});
+			});
+		});
+		prefetchIds = Object.keys( prefetchIds );
+		console.log( 'prefetch ids', prefetchIds );
+		const idWaits = prefetchIds.map( fId => self.users.getIdentity( fId ));
+		await Promise.all( idWaits );
+		
+		return true;
 	}
 	
 	ns.MsgBuilder.prototype.isLastSpeaker = function( event, envelope ) {

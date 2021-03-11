@@ -2785,7 +2785,8 @@ Searchable collection(s) of users, rooms and other odds and ends
 		self.removed = {};
 		self.waitForItem = {};
 		self.localOpts = {};
-		self.loaded = false;
+		self.isLoaded = false;
+		self.isOnline = true;
 		
 		self.init( ws, view );
 	}
@@ -2799,7 +2800,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 			'modFace' : moduleInterface,
 		};
 		
-		if ( !self.loaded )
+		if ( !self.isLoaded )
 			return;
 		
 		self.updateIdentities( moduleId );
@@ -2822,6 +2823,11 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
+		console.log( 'Activity.setIsOnline', {
+			curr : self.isOnline,
+			uptd : isOnline,
+		});
+		
 		if ( isOnline === self.isOnline )
 			return;
 		
@@ -2990,8 +2996,8 @@ Searchable collection(s) of users, rooms and other odds and ends
 		
 		const id = item.data.id;
 		opts = self.localOpts[ id ];
-		itemC = copy( item );
-		optsC = copy( opts );
+		const itemC = copy( item );
+		const optsC = copy( opts );
 		if ( optsC )
 			itemC.data.options = optsC;
 		
@@ -3086,7 +3092,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 				return;
 			
 			delete self.waitForItem[ cId ];
-			wIds = Object.keys( waiting );
+			const wIds = Object.keys( waiting );
 			wIds.forEach( wId => {
 				const waiter = waiting[ wId ];
 				window.clearTimeout( waiter.timeout );
@@ -3097,6 +3103,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.sendRemove = async function( id ) {
 		const self = this;
+		console.log( 'sendRemove', id );
 		self.setRemoved( id );
 		const remove = {
 			type : 'remove',
@@ -3116,6 +3123,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.removeItem = function( id ) {
 		const self = this;
+		console.log( 'Activity.removeItem', id );
 		const item = self.items[ id ];
 		if ( null == item )
 			return;
@@ -3220,7 +3228,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.load = async function() {
 		const self = this;
-		self.loaded = false;
+		self.isLoaded = false;
 		hello.timeNow( 'Activity - start load' );
 		if ( self.itemIds && self.itemIds.length )
 			sendReload();
@@ -3247,7 +3255,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		
 		const list = ids.map( id => items[ id ]);
 		if ( !list || !list.length ) {
-			self.loaded = true;
+			self.isLoaded = true;
 			sendLoaded();
 			return;
 		}
@@ -3278,7 +3286,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 				self.updateLocalOpts( id, opts );
 		});
 		
-		self.loaded = true;
+		self.isLoaded = true;
 		sendLoaded();
 		self.updateIdentities();
 		
@@ -3456,6 +3464,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.handleRemove = async function( id ) {
 		const self = this;
+		console.log( 'handleRemove', id );
 		self.removeItem( id );
 	}
 	
@@ -3465,7 +3474,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		if ( cache && cache.data )
 			return cache.data;
 		
-		if( !self.loaded )
+		if( !self.isLoaded )
 			return null;
 		
 		let id = null;
@@ -3495,6 +3504,13 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 		
 		if ( null == id ) {
+			console.log( 'Activity.getIdentity, no id', {
+				cId      : clientId,
+				mod      : mod,
+				item     : item,
+				isOnline : self.isOnline,
+				isLoaded : self.isLoaded,
+			});
 			if ( !self.isOnline )
 				return null;
 			

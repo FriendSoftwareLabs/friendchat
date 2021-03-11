@@ -1219,7 +1219,7 @@ library.module = library.module || {};
 			if ( id.avatar !== self.identity.avatar )
 				updateAvatar();
 			
-			cId = id.clientId;
+			const cId = id.clientId;
 			self.identity = id;
 			
 			function updateName() {
@@ -1514,8 +1514,10 @@ library.module = library.module || {};
 		*/
 		
 		const contact = self.contacts[ contactId ];
-		if ( contact )
+		if ( contact ) {
+			console.log( 'contact.setOnline', contact );
 			contact.setOnline( isOnline );
+		}
 		
 		self.roomIds.forEach( rId => {
 			const room = self.rooms[ rId ];
@@ -1958,6 +1960,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleIdUpdate = function( update ) {
 		const self = this;
+		console.log( 'handleIdUpdate', update );
 		self.idc.update( update );
 	}
 	
