@@ -1,5 +1,3 @@
-'use strict';
-
 /*©agpl*************************************************************************
 *                                                                              *
 * This file is part of FRIEND UNIFYING PLATFORM.                               *
@@ -19,6 +17,7 @@
 *                                                                              *
 *****************************************************************************©*/
 
+'use strict';
 var log = require( './Log' )( 'FcRequest' );
 var https = require( 'https' );
 var querystring = require( 'querystring' );
@@ -38,9 +37,9 @@ ns.FcRequest = function( conf ) {
 
 ns.FcRequest.prototype.init = function() {
 	var self = this;
-	if ( typeof( self.host ) === 'undefined' )
+	if ( null == self.host )
 		throw new Error( 'FcRequest.host is not set' );
-	if ( typeof( self.port ) === 'undefined' )
+	if ( null == self.port )
 		throw new Error( 'FcRequest.port is not set' );
 }
 
@@ -71,10 +70,17 @@ ns.FcRequest.prototype.post = function( conf ) {
 	}
 }
 
-ns.FcRequest.prototype.response = function( data, conf ) {
-	var self = this;
-	var data = data.split( 'ok<!--separate-->' ).join( '' ); // derp
-	var data = parse( data );
+ns.FcRequest.prototype.response = function( response, conf ) {
+	const self = this;
+	const ok = response.indexOf( 'ok<!--separate-->' ); // derp
+	if ( -1 == ok ) {
+		log( 'oopsie response', response );
+		conf.error( response );
+		return;
+	}
+	
+	const resData = response.split( 'ok<!--separate-->' ).join( '' );
+	const data = parse( resData );
 	conf.success( data );
 }
 

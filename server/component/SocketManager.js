@@ -173,7 +173,7 @@ ns.SocketManager.prototype.releasePool = function() {
 	self.pool.removeAllListeners();
 }
 
-ns.SocketManager.prototype.authenticate = function( bundle, socket ) {
+ns.SocketManager.prototype.authenticate = async function( bundle, socket ) {
 	const self = this;
 	if ( !bundle ) {
 		log( 'authenticate - no bundle', bundle );
@@ -191,23 +191,29 @@ ns.SocketManager.prototype.authenticate = function( bundle, socket ) {
 		return;
 	}
 	
-	self.authRequest( token, authBack );
-	function authBack( data ) {
-		if ( !data ) {
-			log( 'authenticate - no data??', bundle, 3 );
-			close();
-			return;
-		}
-		
-		if ( data.ID !== token.userId ) {
-			log( 'authenticate - invalid user id', { d : data, m : bundle });
-			close();
-			return;
-		}
-		
-		self.socketToUserId[ socket.id ] = token.userId;
-		self.bind( socket );
+	let fcUser = null;
+	try {
+		fcUser = await self.authRequest( token, socket );
+	} catch( ex ) {
+		log( 'authenticate - fc req ex', ex );
+		close();
+		return;
 	}
+	
+	if ( !fcUser ) {
+		log( 'authenticate - no data??', bundle, 3 );
+		close();
+		return;
+	}
+	
+	if ( fcUser.ID !== token.userId ) {
+		log( 'authenticate - invalid user id', { d : fcUser, m : bundle });
+		close();
+		return;
+	}
+	
+	self.socketToUserId[ socket.id ] = token.userId;
+	self.bind( socket );
 	
 	function close() {
 		socket.close();
@@ -236,38 +242,83 @@ ns.SocketManager.prototype.validateAuthToken = function( bundle ) {
 	return validatedToken;
 }
 
-ns.SocketManager.prototype.authRequest = function( token, callback ) {
+ns.SocketManager.prototype.authRequest = function( token, socket ) {
 	const self = this;
-	const data = {
-		module  : 'system',
-		command : 'userinfoget',
-		authid  : token.authId,
-	};
-	
 	const start = Date.now();
-	const req = {
-		path    : '/system.library/module/',
-		data    : data,
-		success : success,
-		error   : error,
-	};
-	fcRequest.post( req );
-	
-	function success( data ) {
-		const end = Date.now();
-		const ms = end - start;
-		log( 'authRequest timing', {
-			id : token.authId,
-			ms : ms,
-			s  : ( ms / 1000 ),
-		});
-		callback( data );
-	}
-	
-	function error( err ) {
-		log( 'authRequest.error', err );
-		callback( false );
-	}
+	let tries = 0;
+	const maxTries = 3;
+	const errorTimeout = 1000 * 5;
+	return new Promise(( resolve, reject ) => {
+		log( 'authRequest', token );
+		const data = {
+			module  : 'system',
+			command : 'userinfoget',
+			authid  : token.authId,
+		};
+		
+		sendReq( data );
+		
+		function sendReq( data ) {
+			tries++;
+			const req = {
+				path    : '/system.library/module/',
+				data    : data,
+				success : success,
+				error   : error,
+			};
+			
+			fcRequest.post( req );
+			
+			function success( res ) {
+				const end = Date.now();
+				const ms = end - start;
+				log( 'authRequest timing', {
+					id : token.authId,
+					ms : ms,
+					s  : ( ms / 1000 ),
+				});
+				
+				if ( null == res ) {
+					retry()
+					return;
+				}
+				
+				resolve( res );
+			}
+			
+			function error( err ) {
+				log( 'authRequest.error', err );
+				retry( err );
+			}
+			
+			function retry( err ) {
+				log( 'retry', {
+					tries    : tries,
+					maxTries : maxTries,
+					err      : err,
+				});
+				
+				if ( null != err )
+					sendError( err );
+				
+				if ( tries >= maxTries ) {
+					reject( 'ERR_MAX_TRIES' );
+					return;
+				}
+				
+				setTimeout( resend, errorTimeout );
+				function resend() {
+					log( 'resend' );
+					sendReq( data );
+				}
+			}
+		}
+		
+		function sendError( err ) {
+			//log( 'sendError', err );
+		}
+		
+	});
 }
 
 ns.SocketManager.prototype.bind = function( socket ) {
