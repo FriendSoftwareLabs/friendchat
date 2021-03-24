@@ -319,6 +319,7 @@ library.view = library.view || {};
 	 
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
+		console.log( 'handleInitialize', conf );
 		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		/*
 		if ( 'DESKTOP' !== window.View.deviceType )

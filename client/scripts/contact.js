@@ -2299,6 +2299,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLive = async function( event ) {
 		const self = this;
+		console.log( 'handleLive', event );
 		const type = event.type;
 		if ( 'open' === type ) {
 			self.handleLiveOpen( event.data );
@@ -2359,8 +2360,11 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.onLive = function( event ) {
 		const self = this;
+		const change = self.updatePeers( event );
+		if ( !change )
+			return;
+		
 		self.liveToView( event );
-		self.updatePeers( event );
 	}
 	
 	ns.PresenceRoom.prototype.handleChat = function( event ) {
@@ -2753,25 +2757,33 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updatePeers = function( event ) {
 		const self = this;
-		if ( 'peers' === event.type ) {
-			const data = event.data;
+		const type = event.type;
+		const data = event.data;
+		if ( 'peers' === type ) {
 			self.peers = data.peerIds;
 			update();
-			return;
+			return true;
 		}
 		
-		const pid = event.data.peerId;
-		if ( 'join' === event.type ) {
-			self.peers.push( pid );
+		const pId = data.peerId;
+		console.log( 'updatePeers', pId );
+		if ( 'join' === type ) {
+			const pIdx = self.peers.indexOf( pId );
+			if ( -1 != pIdx )
+				return false;
+			
+			self.peers.push( pId );
 			update();
-			return;
+			return true;
 		}
 		
 		if ( 'leave' === event.type ) {
 			self.peers = self.peers.filter( notPID );
 			update();
-			return;
+			return true;
 		}
+		
+		return false;
 		
 		function update() {
 			const opts = {
@@ -2783,7 +2795,7 @@ library.contact = library.contact || {};
 		}
 		
 		function notPID( peerId ) {
-			return peerId !== pid;
+			return peerId !== pId;
 		}
 	}
 	
@@ -3391,7 +3403,7 @@ library.contact = library.contact || {};
 			const data = event.data;
 			self.peers = data.peerIds;
 			checkWhosWho();
-			return;
+			return true;
 		}
 		
 		const peerId = event.data.peerId;
@@ -3400,6 +3412,10 @@ library.contact = library.contact || {};
 			return;
 		
 		if ( 'join' === event.type ) {
+			const pIdx = self.peers.indexOf( peerId );
+			if ( -1 != pIdx )
+				return false;
+			
 			self.peers.push( peerId );
 			self.liveState.contact = true;
 			if ( self.liveState.user ) {
@@ -3796,7 +3812,7 @@ library.contact = library.contact || {};
 			userList    : self.userIds,
 			recentList  : self.recentList,
 			onlineList  : self.onlineList,
-			peers       : self.peers,
+			peerList    : self.peers,
 			ownerId     : self.ownerId,
 			userId      : self.userId,
 			contactId   : self.contactId,

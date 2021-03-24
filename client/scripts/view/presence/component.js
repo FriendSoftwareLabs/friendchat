@@ -3513,7 +3513,19 @@ var hello = window.hello || {};
 	ns.LiveStatus.prototype.update = function( userList ) {
 		const self = this;
 		userList = userList || [];
+		const currIds = Object.keys( self.peerIdMap );
+		const remove = currIds.filter( cId => isNotInList( cId, userList ));
+		console.log( 'LiveStatus.update', {
+			current : currIds,
+			fresh   : userList,
+			remove  : remove,
+		});
+		remove.forEach( uId => self.removePeer( uId ));
 		userList.forEach( uId => self.addPeer( uId ));
+		
+		function isNotInList( cId, list ) {
+			return !list.some( lId => lId === cId );
+		}
 	}
 	
 	ns.LiveStatus.prototype.close = function() {
@@ -3638,7 +3650,8 @@ var hello = window.hello || {};
 		delete self.peerIdMap[ userId ];
 		const el = document.getElementById( peerId );
 		el.parentNode.removeChild( el );
-		self.peerList = self.peerList.filter( pId => pId !== peerId );
+		const pIdx = self.peerList.indexOf( userId );
+		self.peerList.splice( pIdx, 1 );
 		if ( userId === self.userId )
 			self.userLive = false;
 		
