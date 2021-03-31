@@ -26,7 +26,6 @@ var hello = null;
 // HELLO
 (function( ns, undefined ) {
 	ns.Hello = function( app, conf ) {
-		console.log( 'hello', conf );
 		const self = this;
 		self.app = app;
 		self.config = conf;
@@ -170,7 +169,6 @@ var hello = null;
 	ns.Hello.prototype.run = function( fupConf ) {
 		const self = this;
 		self.timeNow( 'run' );
-		console.log( 'api.inc', api );
 		self.incommingCall = new api.IncommingCall( self.config.ringTones );
 		//self.app.testAllowPlaySounds();
 		self.app.setSingleInstance( true );
@@ -1130,7 +1128,7 @@ var hello = null;
 	
 	ns.Hello.prototype.handlePushNotie = function( event, view ) {
 		const self = this;
-		console.trace( 'handlePushNotie', event );
+		//console.trace( 'handlePushNotie', event );
 		/*
 		console.log( 'handlePushNotie', {
 			event    : event,
@@ -1197,7 +1195,6 @@ var hello = null;
 	
 	ns.Hello.prototype.handleNotie = function( event ) {
 		const self = this;
-		console.trace( 'handleNotie', event );
 		if ( !event || !event.extra ) {
 			console.trace( 'hello.handleNotie - invalid event', event );
 			return false;
@@ -1231,6 +1228,12 @@ var hello = null;
 	
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
+		/*
+		console.log( 'handleAppResume', {
+			event    : event,
+			isOnline : self.isOnline,
+		});
+		*/
 		if ( !self.isOnline ) {
 			console.log( 'hello.handleAppResume - already reconnecting' );
 			return;
@@ -1284,7 +1287,7 @@ var hello = null;
 		self.getUserInfo()
 			.then( infoBack )
 			.catch( fail );
-			
+		
 		function infoBack( userInfo ) {
 			self.getUserAvatar();
 		}

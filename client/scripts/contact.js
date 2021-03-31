@@ -703,6 +703,7 @@ library.contact = library.contact || {};
 		self.isView = room.isView;
 		self.workgroupId = room.workgroupId || null;
 		self.supergroupId = room.supergroupId || null;
+		self.atNames = [];
 		
 		ns.Contact.call( self, conf );
 		
@@ -896,14 +897,6 @@ library.contact = library.contact || {};
 		const cId = id.clientId;
 		const isRoom = ( self.clientId == cId );
 		const old = self.identity;
-		console.log( 'Room.updateIdentity', {
-			cId      : cId,
-			self     : self.clientId,
-			isRoom   : isRoom,
-			fresh    : id,
-			old      : old,
-			user     : self.user,
-		});
 		if ( isRoom ) {
 			self.identity = id;
 			self.activity.updateIdentity( cId, id );
@@ -1330,7 +1323,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = async function( state ) {
 		const self = this;
-		
 		self.ownerId = state.ownerId;
 		self.workConfig = state.workConfig || null;
 		self.workgroups = state.workgroups;
@@ -1351,11 +1343,8 @@ library.contact = library.contact || {};
 		self.setSettings( state.settings );
 		self.setupWorkroom();
 		
-		if ( self.workgroups ) {
-			//self.setWorkgroupMembers();
-			if ( !selfIsUser())
-				self.roomIsView = true;
-		}
+		if ( !selfIsUser())
+			self.roomIsView = true;
 		
 		await self.idc.get( self.userId );
 		const isAdmin = self.adminList.some( aId => aId === self.userId );
@@ -1431,34 +1420,13 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updateRoomIdentity = function( state ) {
 		const self = this;
-		console.log( 'handleInitialize', {
-			idn    : self.identity.name,
-			staten : state.name,
-		});
 		self.identity.name = state.name;
 	}
 	
 	ns.PresenceRoom.prototype.updateAtList = function() {
 		const self = this;
-		/*
-		console.log( 'updateAtList', {
-			worgs    : self.workgroups,
-			atList   : self.atList,
-			atNames  : self.atNames,
-			atWorgs  : self.atWorgs,
-			mentions : self.mentionList,
-		});
-		*/
-		if ( null != self.workgroups ) {
-			self.atWorgs = self.workgroups.assigned.map( ass => {
-				return ass.name;
-			});
-		} else {
-			self.atWorgs = [];
-		}
-		
+		self.atWorgs = self.getAtWorgs();
 		const all = [ ...self.atNames, ...self.atWorgs ];
-		//console.log( 'all', all );
 		self.atList = all;
 		if ( !self.chatView )
 			return;
@@ -1468,6 +1436,29 @@ library.contact = library.contact || {};
 			data : self.atList,
 		};
 		self.toChat( uptd );
+	}
+	
+	ns.PresenceRoom.prototype.getAtWorgs = function() {
+		const self = this;
+		let atWorgs = [];
+		if ( self.roomIsView )
+			return atWorgs;
+		
+		if ( null == self.workgroups )
+			return atWorgs;
+		
+		if ( self.workgroupId ) {
+			const worg = self.workgroups.available[ self.workgroupId ];
+			atWorgs = [ worg.name ];
+			return atWorgs;
+		}
+		
+		
+		atWorgs = self.workgroups.assigned.map( ass => {
+			return ass.name;
+		});
+		
+		return atWorgs;
 	}
 	
 	ns.PresenceRoom.prototype.restoreLive = function() {
@@ -1485,7 +1476,7 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.updateRelation = async function( relation ) {
 		const self = this;
 		if ( !relation ) {
-			self.setWorkActivity();
+			self.setDefaultWorkActivity();
 			return;
 		}
 		
@@ -1589,7 +1580,7 @@ library.contact = library.contact || {};
 		self.activity.updateItem( self.clientId, opts );
 	}
 	
-	ns.PresenceRoom.prototype.setWorkActivity = function() {
+	ns.PresenceRoom.prototype.setDefaultWorkActivity = function() {
 		const self = this;
 		if ( !self.workgroupId )
 			return;
@@ -1617,7 +1608,7 @@ library.contact = library.contact || {};
 			
 			const lm = rel.lastMessage;
 			if ( !lm ) {
-				self.setWorkActivity();
+				self.setDefaultWorkActivity();
 				return;
 			}
 			
@@ -1626,7 +1617,16 @@ library.contact = library.contact || {};
 		}
 		
 		function update( rel, act ) {
-			console.log( 'update - NYI', [ rel, act ]);
+			if ( !rel || !rel.lastMessage || !rel.lastMessage.data )
+				return;
+			
+			const lm = rel.lastMessage.data;
+			const msgTime = lm.time;
+			const actTime = act.data.timestamp;
+			if ( msgTime < actTime )
+				return;
+			
+			self.recentMessage( lm.message, lm.from, lm.time );
 		}
 	}
 	
@@ -1650,16 +1650,18 @@ library.contact = library.contact || {};
 		else
 			tests = nameChecks;
 		
-		//tests.push( 'all' );
-		tests.push( 'everyone' );
-		if ( self.checkIsRecent())
-			tests.push( 'active' );
-		
-		if ( self.checkIsAdmin())
-			tests.push( 'admins' );
-		
-		if ( self.checkIsGuest())
-			tests.push( 'guests' );
+		// not a workroom
+		if ( null == self.workgroupId ) {
+			tests.push( 'everyone' );
+			if ( self.checkIsRecent())
+				tests.push( 'active' );
+			
+			if ( self.checkIsAdmin())
+				tests.push( 'admins' );
+			
+			if ( self.checkIsGuest())
+				tests.push( 'guests' );
+		}
 		
 		self.mentionList = tests;
 		if ( self.mentionPId )
@@ -1695,9 +1697,9 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.atStringsFromGroups = function( uId ) {
 		const self = this;
-		const user = self.users[ uId ];
+		const user = self.idc.read( uId );
 		if ( !user )
-			return null;
+			return null
 		
 		const memberOf = [];
 		if ( !user.workgroups || !user.workgroups.length )
@@ -1714,8 +1716,10 @@ library.contact = library.contact || {};
 			relevant = relevant.concat( ass );
 		}
 		
+		/*
 		if ( wgs.superId )
 			relevant.push( wgs.superId );
+		*/
 		
 		if ( wgs.workId )
 			relevant.push( wgs.workId );
@@ -1883,7 +1887,6 @@ library.contact = library.contact || {};
 		}
 		
 		function authIdsFail( err ) {
-			console.log( 'authIdsFail', err );
 			delete settings.authorized;
 			showView( settings );
 		}
@@ -2032,9 +2035,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleWorkgroup = function( event ) {
 		const self = this;
-		console.log( 'handleWorkgroup', {
-			event : event,
-		});
 		if ( !self.workgroups )
 			return;
 		
@@ -2052,7 +2052,6 @@ library.contact = library.contact || {};
 		
 		if ( 'sub-rooms' === type )
 			updateSubs( data );
-		
 		
 		function updateAssigned( ass ) {
 			self.workgroups.assigned = ass;
@@ -2200,7 +2199,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleRoomUpdate = function( update ) {
 		const self = this;
-		console.log( 'PresenceRoom.handleRoomUpdate', update );
 		const name = update.name;
 		self.identity.name = name;
 		self.identity.avatar = update.avatar;
@@ -2217,7 +2215,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleJoin = async function( user ) {
 		const self = this;
-		console.log( 'handleJoin', user );
 		const uId = user.clientId;
 		if ( user.name )
 			self.handleAtNameAdd( user.name );
@@ -2270,7 +2267,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updateWorgsForUser = function( user ) {
 		const self = this;
-		console.log( 'updateWorgsForUser', {
+		console.log( 'updateWorgsForUser - NOOP', {
 			user  : user,
 			worgs : self.workgroups,
 		});
@@ -2299,7 +2296,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLive = async function( event ) {
 		const self = this;
-		console.log( 'handleLive', event );
 		const type = event.type;
 		if ( 'open' === type ) {
 			self.handleLiveOpen( event.data );
@@ -2404,7 +2400,7 @@ library.contact = library.contact || {};
 			};
 			
 			let silent = false;
-			if ( self.roomIsView ) // workrooms added as subrooms
+			if ( self.roomIsView && ( null != self.supergroupId )) // workrooms added as subrooms
 				silent = true;
 			
 			if ( fromSelf )
@@ -2766,7 +2762,6 @@ library.contact = library.contact || {};
 		}
 		
 		const pId = data.peerId;
-		console.log( 'updatePeers', pId );
 		if ( 'join' === type ) {
 			const pIdx = self.peers.indexOf( pId );
 			if ( -1 != pIdx )
@@ -3065,10 +3060,9 @@ library.contact = library.contact || {};
 			isDisabled  : self.isDisabled,
 			roomName    : self.identity.name,
 			userList    : self.userIds,
-			//identities  : self.identities,
-			workgroups  : [],
+			workgroups  : null,
 			onlineList  : [],
-			peers       : [],
+			peerList    : [],
 			ownerId     : self.ownerId,
 			userId      : self.userId,
 			contactId   : self.contactId,
@@ -3148,15 +3142,7 @@ library.contact = library.contact || {};
 		const cId = id.clientId;
 		const isRoom = ( cId == self.clientId );
 		const old = self.identity;
-		console.log( 'PresenceContact.updateIdentity', {
-			type     : update.type,
-			cId      : cId,
-			clientId : self.clientId,
-			isRoom   : isRoom,
-			fresh    : id,
-			old      : old,
-			user     : self.user,
-		});
+		
 		if ( isRoom ) {
 			self.identity = id;
 			self.activity.updateIdentity( cId, id );
@@ -3274,7 +3260,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.init = function( contact ) {
 		const self = this;
-		console.log( 'PresenceContact.init', contact );
 		self.identity = contact.identity;
 		//self.identities[ self.user.clientId ] = self.user;
 		//self.identities[ self.identity.clientId ] = self.identity;
@@ -3315,9 +3300,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.updateRelation = async function( rel ) {
 		const self = this;
-		console.log( 'PresenceContact.updateRelation', {
-			rel : rel,
-		});
 		if ( !rel )
 			return;
 		

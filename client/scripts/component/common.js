@@ -754,7 +754,6 @@ inherits from EventEmitter
 			function idBack( id ) {
 				clear( clientId );
 				const frozen = self.add( id );
-				console.log( 'idBack, f', [ clientId, frozen ]);
 				resolve( frozen );
 			}
 			
@@ -822,15 +821,7 @@ inherits from EventEmitter
 			return;
 		}
 		
-		console.log( 'IdCache.update', {
-			update  : update,
-			current : current,
-		});
 		if ( current.lastUpdate > update.lastUpdate ) {
-			console.log( 'stale update', {
-				update : update,
-				cache  : current,
-			});
 			return null;
 		}
 		
@@ -839,10 +830,6 @@ inherits from EventEmitter
 		const str = JSON.stringify( current );
 		const fresh = JSON.parse( str );
 		fresh[ key ] = value;
-		console.log( 'uptd', {
-			str   : str,
-			fresh : fresh,
-		});
 		const frozen = self.add( fresh );
 		self.emit( 'update', frozen, key );
 	}
@@ -902,7 +889,6 @@ inherits from EventEmitter
 			return;
 		
 		const frozen = self.add( update );
-		console.log( 'changes', changes );
 		changes.forEach( key => {
 			self.emit( 'update', frozen, key );
 		});

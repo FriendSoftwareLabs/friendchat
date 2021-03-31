@@ -199,6 +199,7 @@ var friend = window.friend || {}; // already instanced stuff
 		const viewConf = windowConf.viewConf || {};
 		windowConf.viewConf = viewConf;
 		viewConf.deviceType = self.app.deviceType;
+		viewConf.friendApp = self.app.friendApp;
 		
 		if ( self.app.fragments )
 			viewConf.fragments = self.app.fragments;
@@ -267,7 +268,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.toApp = function( event ) {
 		const self = this;
-		//console.log( 'toApp', event );
 		self.handle( event );
 		//self.emit( event.type, event.data );
 	}
@@ -540,10 +540,6 @@ var friend = window.friend || {}; // already instanced stuff
 		self._send( init );
 		
 		function unhandled( type, data ) {
-			console.log( 'NativeView unhandled', {
-				type : type,
-				data : data,
-			});
 			self.emit( type, data );
 		}
 	}
@@ -563,7 +559,6 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		msg.type = 'native-view';
 		msg.viewId = self.id;
-		console.log( 'NativeView._send', msg );
 		self.app.sendMessage( msg );
 	}
 	
@@ -848,7 +843,6 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		console.log( 'unhandled app event', msg );
 		self.appMessage( msg );
 	}
 	
@@ -1021,7 +1015,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.register = function( msg ) {
 		const self = this;
-		console.log( 'App.register', msg );
 		window.origin  = msg.origin;
 		self.domain    = msg.domain;
 		self.locale    = msg.locale;
@@ -1090,7 +1083,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.appWakeup = function( event ) {
 		const self = this;
-		console.log( 'appWakeup', event );
 		if ( self.logSock )
 			self.logSock.reconnect();
 		
@@ -1291,7 +1283,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.returnCallback = function( error, result, callbackId ) {
 		const self = this;
-		console.log( 'returnCallback', [ error, result, callbackId ]);
 		const event = {
 			type       : 'system',
 			command    : 'callback',
@@ -1575,7 +1566,6 @@ var friend = window.friend || {}; // already instanced stuff
 			return new Promise(( resolve, reject ) => {
 				window.setTimeout( doTest, 5000 );
 				async function doTest() {
-					console.log( 'doTest' );
 					let success = false;
 					try {
 						success = await test.play();
@@ -1584,7 +1574,6 @@ var friend = window.friend || {}; // already instanced stuff
 						resolve( false );
 					}
 					
-					console.log( 'testAllowPlaySounds success?', success );
 					resolve( true );
 				}
 			});
@@ -1770,7 +1759,6 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.getDoors = function( callback ) {
 		const self = this;
-		//console.log( 'getDoors' );
 		var callbackId = self.app.setCallback( callBackWrap );
 		self.send({
 			method     : 'getDoors',
@@ -2022,7 +2010,7 @@ friend.Dormant = new fupLocal.Dormant;
 		});
 		
 		//let path = self.normalizePath( 'Functions/' );
-		path = self.normalizePath( fnPath );
+		const path = self.normalizePath( fnPath );
 		const parent = self.dirs[ path ];
 		const fun = parent.funs[ event.dormantCommand ];
 		if ( !fun ) {
@@ -2371,7 +2359,9 @@ api.DoorFun.prototype.init = function() {
 (function( ns, undefined ) {
 	ns.IncommingCall = function( ringTones ) {
 		const self = this;
-		console.log( 'IncommingCall', ringTones );
+		if ( null == ringTones )
+			console.logg( 'IncommingCall - no ringtones?' );
+		
 		self.ringTones = ringTones;
 		
 		self.defaultRing = 'default';
@@ -2412,7 +2402,6 @@ api.DoorFun.prototype.init = function() {
 			return;
 		}
 		
-		//console.log( 'IncommingCall.showCall', [ id, identity, ringTone ]);
 		if ( null == self.ringTones[ ringTone ])
 			ringTone = self.defaultRing;
 		
@@ -2427,7 +2416,6 @@ api.DoorFun.prototype.init = function() {
 	
 	ns.IncommingCall.prototype.hideCall = function( id ) {
 		const self = this;
-		//console.log( 'IncommingCall.hideCall', id );
 		self.stop( id );
 	}
 	
@@ -2458,7 +2446,6 @@ api.DoorFun.prototype.init = function() {
 		const self = this;
 		const call = self.calls[ id ];
 		const ringConf = self.ringTones[ call.ringTone ];
-		console.log( 'start', ringConf );
 		const pattern = ringConf.pattern;
 		const sounds = await soundsFromPattern( ringConf );
 		
@@ -2470,11 +2457,6 @@ api.DoorFun.prototype.init = function() {
 			.catch( end );
 		
 		function played( success ) {
-			console.log( 'played', {
-				success : success,
-				call    : call,
-				conf    : ringConf,
-			});
 			if ( !success ) {
 				end();
 				return;

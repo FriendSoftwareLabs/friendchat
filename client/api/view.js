@@ -42,10 +42,12 @@ var friend = window.friend || {};
 		self.eventInit();
 		
 		function eventSink( type, data ) {
+			/*
 			console.log( 'View.eventSink', {
 				type : type,
 				data : data,
 			});
+			*/
 		}
 	}
 	
@@ -479,6 +481,7 @@ var friend = window.friend || {};
 		self.appConf = self.config.appConf || {};
 		self.appSettings = self.config.appSettings || {};
 		self.deviceType = self.config.deviceType || 'ERR_CONF_OH_SHIT';
+		self.friendApp = self.config.friendApp || null;
 		
 		if ( !!self.config.isDev )
 			self.initLogSock();
@@ -540,13 +543,11 @@ var friend = window.friend || {};
 		window.addEventListener( 'dragover', onDragover, false );
 		window.addEventListener( 'drop', onDrop, false );
 		function onDragover( e ) {
-			//console.log( 'dragover', e );
 			e.preventDefault();
 			e.stopPropagation();
 		}
 		
 		function onDrop( e ) {
-			console.log( 'onDrop', e );
 			e.preventDefault();
 			e.stopPropagation();
 			self.emit( 'drop', e );
@@ -795,7 +796,6 @@ var friend = window.friend || {};
 			targetViewId : self.id, // TODO: This may be needed!
 			flags        : flags,
 		};
-		
 		// Add a callback
 		if( callback )
 		{
@@ -805,61 +805,99 @@ var friend = window.friend || {};
 		self.sendBase( o );
 	}
 	
-	ns.View.prototype.prepareCamera = function( targetElement, callback ) {
+	ns.View.prototype.prepareCamera = function( camButtonEl, callback ) {
 		const self = this;
-		console.log( 'prepareCamera' );
-		if( self.cameraChecked === true )
-			return;
-		
-		self.cameraChecked = true;
-		
-		const imagetools = document.createElement( 'script' );
-		imagetools.src = '/webclient/3rdparty/load-image.all.min.js'
-		document.head.appendChild( imagetools );
-		
+		const inputId = 'nativeCameraTrigger';
+		const wrapId = 'cameraButtonInputWrap';
+		const imageToolsId = 'cameraImageTools';
+		let imageTools = document.getElementById( imageToolsId );
+		if ( null == imageTools ) {
+			imageTools = document.createElement( 'script' );
+			imageTools.id = imageToolsId;
+			imageTools.src = '/webclient/3rdparty/load-image.all.min.js';
+			document.head.appendChild( imageTools );
+		}
 		
 		if ( 'DESKTOP' === self.deviceType )
-			setupDesktop();
-		else
-			setupMobile();
+			setupDesktop( camButtonEl );
+		else {
+			setupMobile( camButtonEl );
+		}
 		
-		function setupDesktop() {
-			targetElement.addEventListener( 'click', btnClick, false );
+		function setupDesktop( camBtn ) {
+			if( true == self.cameraSetup )
+				return;
+			
+			self.cameraSetup = true;
+			camBtn.addEventListener( 'click', btnClick, false );
 			function btnClick( e ) {
 				self.openCamera({
-					title:View.i18n('i18n_take_a_picture')
+					title:View.i18n( 'i18n_take_a_picture' )
 				}, imgBack );
 			}
 		}
 		
-		function setupMobile() {
+		function setupMobile( camBtn ) {
 			// mobile device image capture is best done using a file input. we put that in place.
-			const tp = targetElement.parentNode;
-			const ne = document.createElement( 'div' );
-			ne.className = 'FileUploadWrapper';
-			ne.innerHTML = '<input id="cameraimageFI" type="file" accept="image/*" />';
+			const btnParent = camBtn.parentNode;
+			let wrap = document.getElementById( wrapId );
+			if ( null == wrap ) {
+				wrap = document.createElement( 'div' );
+				wrap.id = wrapId;
+				wrap.classList.add( 'FileUploadWrapper' );
+				btnParent.insertBefore( wrap, camBtn );
+				wrap.appendChild( camBtn );
+			}
 			
-			tp.insertBefore( ne, targetElement );
-			ne.insertBefore( targetElement, ne.firstChild );
+			let input = document.getElementById( inputId );
+			if ( null != input ) {
+				const clone = input.cloneNode();
+				input.parentNode.removeChild( input );
+				clone.id = null;
+			}
 			
-			document.getElementById( 'cameraimageFI' )
-				.addEventListener( 'change', handleIncomingFile );
+			input = document.createElement( 'input' );
+			input.id = inputId;
+			input.setAttribute( 'type', 'file' );
+			input.setAttribute( 'accept', 'image/*' );
+			input.setAttribute( 'capture', '' );
 			
-			function handleIncomingFile( evt )
-			{
-				if( evt && evt.target && evt.target.files )
-				{
+			//= '<input id="native-camera-trigger" type="file" accept="image/*" capture="camera">';
+			wrap.appendChild( input );
+			
+			//btnParent.insertBefore( input, targetElement );
+			//ne.insertBefore( targetElement, ne.firstChild );
+			
+			input.addEventListener(
+				'change',
+				e => handleIncomingFile( e, input ),
+				false
+			);
+			
+			input.addEventListener( 'focus', yepFocus );
+			function yepFocus( e ) {
+				console.log( 'yepFocus', e );
+			}
+			
+			function handleIncomingFile( evt, input ) {
+				if( evt && evt.target && evt.target.files ) {
 					window.loadImage(
 						evt.target.files[0],
-						function(returnedcanvas,meta) {
-							var imagedata = returnedcanvas.toDataURL('image/jpeg', 0.9);
-							imgBack({
-								data : imagedata
-							});
-						},
-						{ maxWidth: 1920, maxHeight: 1920, canvas:true, orientation: true }
+						loadBack,
+						{ 
+							maxWidth    : 1920,
+							maxHeight   : 1920,
+							canvas      : true,
+							orientation : true,
+						}
 					);
 					
+					function loadBack( returnedcanvas, meta ) {
+						const imagedata = returnedcanvas.toDataURL('image/jpeg', 0.9);
+						imgBack({
+							data : imagedata
+						});
+					}
 				}
 				else
 				{
@@ -869,13 +907,10 @@ var friend = window.friend || {};
 		}
 		
 		function imgBack( msg ) {
-			if( !( msg && msg.data ))
-			{
+			if( !( msg && msg.data )) {
 				callback({
 					result : false
 				});
-				if( document.getElementById( 'cameraimageFI' ) )
-					document.getElementById( 'cameraimageFI' ).value = '';
 				return;
 			}
 			
@@ -893,8 +928,8 @@ var friend = window.friend || {};
 			// Paste the blob!
 			const p = new api.PasteHandler( 'camera', 'jpg' );
 			const blob = {
-				type: 'blob',
-				blob: bl
+				type : 'blob',
+				blob : bl,
 			};
 			p.handle( blob )
 				.then( pasteBack )
@@ -910,14 +945,10 @@ var friend = window.friend || {};
 					type: 'drag-n-drop',
 					data: list,
 				});
-				if( document.getElementById( 'cameraimageFI' ) )
-					document.getElementById( 'cameraimageFI' ).value = '';
 			}
 			
 			function pasteErr( err ) {
 				console.log( 'camera pasteErr', err );
-				if( document.getElementById( 'cameraimageFI' ) )
-					document.getElementById( 'cameraimageFI' ).value = '';
 			}
 		};
 		
@@ -1685,7 +1716,6 @@ window.View = new api.View();
 			//items = ( e.clipboardData || e.originalEvent.clipboardData ).items;
 		}
 		
-		console.log( 'normalize - done', items );
 		return items;
 		
 		function getTransItems( trans ) {
@@ -1695,7 +1725,6 @@ window.View = new api.View();
 					return null;
 				
 				const file = item.getAsFile();
-				console.log( 'this is a file, promise', file );
 				return file;
 			});
 			files = files.filter( f => !!f );
@@ -1704,7 +1733,6 @@ window.View = new api.View();
 		
 		function getTransFiles( trans ) {
 			const files = loopIt( trans.files );
-			//console.log( 'getTransFiles', files )
 			return files;
 		}
 		
@@ -1714,7 +1742,6 @@ window.View = new api.View();
 			while( i ) {
 				--i;
 				const item = weird[ i ];
-				//console.log( 'loopIt item', item );
 				list.push( item );
 			}
 			
@@ -1905,7 +1932,6 @@ window.View = new api.View();
 		// end of uploadPastedFile
 		function uploadFileToDownloadsFolder( file, filename, path )
 		{
-			console.log( 'Upload to downloads folder' );
 			// Setup a file copying worker
 			var url = document.location.protocol + '//' + document.location.host + '/webclient/';
 			var uworker = new Worker( url + 'js/io/filetransfer.js' );
@@ -1943,12 +1969,6 @@ window.View = new api.View();
 			
 			uworker.postMessage( fileMessage );
 		}
-		
-		
-		
-		
-		
-		
 		
 		for( var i in pastedItems )
 		{

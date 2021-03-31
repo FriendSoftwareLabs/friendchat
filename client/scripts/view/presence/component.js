@@ -315,7 +315,7 @@ var hello = window.hello || {};
 	
 	ns.UserGroupOther.prototype.updateVisible = function() {
 		const self = this;
-		console.log( 'UserGroupOther.updateVisible', self.isVisible );
+		//console.log( 'UserGroupOther.updateVisible - NOOP', self.isVisible );
 	}
 	
 	ns.UserGroupOther.prototype.handleKeyUp = function( e ) {
@@ -742,6 +742,11 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.getWorkgroup = function( worgId ) {
 		const self = this;
 		return self.groupsAvailable[ worgId ] || null;
+	}
+	
+	ns.UserCtrl.prototype.getAtDefaults = function() {
+		const self = this;
+		return [ 'everyone', 'admins', 'active', 'guests' ];
 	}
 	
 	ns.UserCtrl.prototype.checkIsOnline = function( userId ) {
@@ -1287,7 +1292,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.handleJoin = async function( conf ) {
 		const self = this;
-		console.log( 'UserCtrl.handleJoin', conf );
 		const user = conf.user;
 		const uId = user.clientId;
 		const uIdx = self.userList.indexOf( uId );
@@ -1295,7 +1299,7 @@ var hello = window.hello || {};
 			return;
 		
 		self.userList.push( uId );
-		self.addUserToWorgs( user );
+		//self.addUserToWorgs( user );
 		/*
 		if ( user.isAdmin )
 			self.addAdmin
@@ -1316,14 +1320,6 @@ var hello = window.hello || {};
 			return;
 		
 		self.buildUser( uId );
-	}
-	
-	ns.UserCtrl.prototype.addUserToWorgs = function( user ) {
-		const self = this;
-		console.log( 'addUserToWorgs', {
-			user : user,
-			worgs : self.workgroups,
-		});
 	}
 	
 	ns.UserCtrl.prototype.updateUserPosition = async function( userId ) {
@@ -1447,13 +1443,18 @@ var hello = window.hello || {};
 		const self = this;
 		const id = update.data;
 		const cId = id.clientId;
+		const prop = update.type;
 		if ( null == self.identities[ cId ])
 			self.addId( id );
+		else {
+			const curr = self.identities[ cId ];
+			curr[ prop ] = id[ prop ];
+		}
 		//self.identities[ cId ] = id;
 		
-		const prop = update.type;
-		if ( 'avatar' === prop )
+		if ( 'avatar' === prop ) {
 			self.addUserCss( cId, id.avatar );
+		}
 		
 		if ( 'name' === prop ) {
 			const user = self.get( cId );
@@ -1547,7 +1548,7 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.updateGuests = function( guests ) {
 		const self = this;
-		console.log( 'updateGuests', guests );
+		console.log( 'updateGuests - NOOP', guests );
 		
 	}
 	
@@ -2477,7 +2478,6 @@ var hello = window.hello || {};
 		
 		//
 		if ( event.fromId === self.userId ) {
-			console.log( 'setting userLastMsg', event );
 			self.userLastMsg = event;
 		}
 		
@@ -2627,7 +2627,6 @@ var hello = window.hello || {};
 		let prefetchIds = {};
 		items.forEach( item => {
 			const msg = item.data;
-			console.log( 'prefetch', msg );
 			const fId = msg.fromId;
 			prefetchIds[ fId ] = true;
 			if ( null == msg.targets )
@@ -2636,7 +2635,6 @@ var hello = window.hello || {};
 			const tIds = Object.keys( msg.targets );
 			tIds.forEach( tId => {
 				const t = msg.targets[ tId ];
-				console.log( 'target', t );
 				if ( null == t.length )
 					return;
 				
@@ -2646,7 +2644,6 @@ var hello = window.hello || {};
 			});
 		});
 		prefetchIds = Object.keys( prefetchIds );
-		console.log( 'prefetch ids', prefetchIds );
 		const idWaits = prefetchIds.map( fId => self.users.getIdentity( fId ));
 		await Promise.all( idWaits );
 		
@@ -3515,11 +3512,6 @@ var hello = window.hello || {};
 		userList = userList || [];
 		const currIds = Object.keys( self.peerIdMap );
 		const remove = currIds.filter( cId => isNotInList( cId, userList ));
-		console.log( 'LiveStatus.update', {
-			current : currIds,
-			fresh   : userList,
-			remove  : remove,
-		});
 		remove.forEach( uId => self.removePeer( uId ));
 		userList.forEach( uId => self.addPeer( uId ));
 		

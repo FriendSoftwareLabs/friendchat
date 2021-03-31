@@ -143,9 +143,6 @@ library.view = library.view || {};
 			var can = menu.querySelector( '.Cancel' );
 			var cam = menu.querySelector( '.Camera' );
 			var upl = menu.querySelector( '.Upload' );
-			can.onclick = function() {
-				menu.classList.remove( 'Showing' );
-			}
 			
 			if( menu.classList.contains( 'Showing' )) {
 				menu.classList.remove( 'Showing' );
@@ -153,14 +150,18 @@ library.view = library.view || {};
 				menu.classList.add( 'Showing' );
 			}
 			
-			upl.onclick = function( e ){
-				menu.classList.remove( 'Showing' );
-				attachFiles( e );
-			}
-			
 			window.View.prepareCamera( cam, function( data ) {
 				menu.classList.remove( 'Showing' );
 			});
+			
+			can.onclick = function() {
+				menu.classList.remove( 'Showing' );
+			}
+			
+			upl.onclick = function( e ) {
+				menu.classList.remove( 'Showing' );
+				attachFiles( e );
+			}
 		}
 		
 		function attachFiles() {
@@ -319,7 +320,6 @@ library.view = library.view || {};
 	 
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
-		console.log( 'handleInitialize', conf );
 		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		/*
 		if ( 'DESKTOP' !== window.View.deviceType )
@@ -446,6 +446,7 @@ library.view = library.view || {};
 			self.input,
 			self.parser,
 			self.linkExpand,
+			self.isView,
 		);
 		
 		// input history
@@ -537,10 +538,20 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.setAtParsing = function( ats ) {
 		const self = this;
+		ats = ats || [];
+		ats.sort( byAN );
+		/*
 		self.atList = ats || [];
 		self.atList.sort( byAN );
-		if ( !self.isPrivate )
-			self.atList = [ 'everyone', 'admins', 'active', 'guests', ...self.atList ];
+		*/
+		
+		if ( self.isPrivate )
+			self.atList = ats;
+		else {
+			const atDefaults = self.users.getAtDefaults();
+			self.atList = [ ...atDefaults, ...ats ];
+			//self.atList = [ 'everyone', 'admins', 'active', 'guests', ...self.atList ];
+		}
 		
 		const atConf = {
 			atStrings : self.atList,
@@ -1176,7 +1187,6 @@ library.view = library.view || {};
 			sectionKlass : self.sectionKlass,
 			usersId      : self.usersId,
 		};
-		console.log( 'WorkGroup el conf', elConf );
 		self.el = hello.template.getElement( 'user-group-tmpl', elConf );
 		const container = document.getElementById( self.containerId );
 		if ( !container )
@@ -1274,12 +1284,16 @@ library.view = library.view || {};
 	) {
 		const self = this;
 		self.conf = serverConfig;
+		self.workId = null; // workgroup id for this room
+		self.superId = null; // super room workgroup id
+		self.subIds = []; // sub room workgroup ids
 		self.members = {};
+		self.memberList = {};
 		self.userToMembers = {};
+		self.memberToUser = {};
 		self.works = {};
 		self.workIds = [];
 		self.rooms = null;
-		self.subGroups = [];
 		library.component.UserCtrl.call( self,
 			conn,
 			userList,
@@ -1301,7 +1315,7 @@ library.view = library.view || {};
 		const self = this;
 		const noClick = true;
 		self.showWorkgroup( self.workId, noClick );
-		self.subGroups.forEach( wId => self.showWorkgroup( wId ));
+		self.subIds.forEach( wId => self.showWorkgroup( wId ));
 		if ( self.superId && !self.conf.supersSubHideSuper )
 			self.showWorkgroup( self.superId );
 		
@@ -1317,7 +1331,10 @@ library.view = library.view || {};
 		if ( !members )
 			return null;
 		
-		return members[ userId ];
+		const u2m = self.userToMembers[ userId ];
+		const memId = u2m[ worgId ];
+		const member = members[ memId ];
+		return member
 	}
 	
 	ns.UserWorkCtrl.prototype.getAvatarKlass = function( clientId ) {
@@ -1376,6 +1393,11 @@ library.view = library.view || {};
 		return names;
 	}
 	
+	ns.UserWorkCtrl.prototype.getAtDefaults = function() {
+		const self = this;
+		return [];
+	}
+	
 	// Private
 	
 	ns.UserWorkCtrl.prototype.init = async function(
@@ -1383,10 +1405,6 @@ library.view = library.view || {};
 		room
 	) {
 		const self = this;
-		console.log( 'UserWorkCtrl', {
-			worgs : workgroups,
-			room  : room,
-		});
 		self.room = room;
 		self.build();
 		self.groupList = new library.component.ListOrder( 'user-groups' );
@@ -1426,20 +1444,64 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.handleJoin = async function( conf ) {
 		const self = this;
-		console.log( 'UserWorkCtrl.handleJoin', conf );
 		const user = conf.user;
 		const uId = user.clientId;
-		const uIdx = self.userList.indexOf( uId );
-		if ( -1 != uIdx )
-			return;
-		
-		self.userList.push( uId );
-		self.addUserToWorgs( user );
-		
 		if ( user.isRecent )
 			self.recentAdd( uId );
 		
-		self.buildUser( uId, user.workgroups );
+		const worgs = user.workgroups;
+		if ( null == worgs )
+			throw new Error( 'handleJoin - no worgs' );
+		
+		self.addUser( user, worgs );
+		self.addSuperMember( user, worgs );
+		self.addSubMember( user, worgs );
+	}
+	
+	ns.UserWorkCtrl.prototype.addUser = function( user, worgs ) {
+		const self = this;
+		let isUser = worgs.some( wId => wId === self.workId );
+		if ( !isUser )
+			return;
+		
+		const cId = user.clientId;
+		const uIdx = self.userList.indexOf( cId );
+		if ( -1 != uIdx )
+			return;
+		
+		self.userList.push( cId );
+		let mList = self.memberList[ self.workId ];
+		if ( null == mList ) {
+			mList = [ cId ];
+			self.memberList[ self.workId ] = mList;
+		} else
+			self.memberList[ self.workId ].push( cId );
+		
+		self.buildUser( cId, worgs );
+	}
+	
+	ns.UserWorkCtrl.prototype.addSuperMember = function( user, worgs ) {
+		const self = this;
+		const isSuper = worgs.some( wId => wId === self.superId );
+		if ( !isSuper )
+			return;
+		
+		const cId = user.clientId;
+		self.memberList[ self.superId ].push( cId );
+		self.setWorkMember( cId, self.superId );
+	}
+	
+	ns.UserWorkCtrl.prototype.addSubMember = function( user, worgs ) {
+		const self = this;
+		worgs.forEach( wId => {
+			const isSub = self.subIds.some( sId => sId === wId );
+			if ( !isSub )
+				return;
+			
+			const cId = user.clientId;
+			self.memberList[ wId ].push( cId );
+			self.setWorkMember( cId, wId );
+		});
 	}
 	
 	ns.UserWorkCtrl.prototype.handleSubRooms = function( subIds ) {
@@ -1447,22 +1509,13 @@ library.view = library.view || {};
 		if ( !subIds )
 			subIds = [];
 		
-		console.log( 'handleSubRooms', self.isInitialized );
-		const curr = self.subGroups;
+		const curr = self.subIds;
 		const remove = curr.filter( notInSubs );
 		const add = subIds.filter( notInCurr );
-		remove.forEach( wId => self.removeWorkgroup( wId ));
+		remove.forEach( wId => self.removeSubGroup( wId ));
 		add.forEach( wId => {
-			const subWorg = self.groupsAvailable[ wId ];
-			subWorg.priority = self.subPri;
-			self.setupWorkgroup( wId, 'base-group group-work' );
-			if ( !self.isInitialized )
-				return;
-			
-			self.showWorkgroup( wId );
-			self.setWorkMembers( wId );
+			self.addSubGroup( wId );
 		});
-		self.subGroups = subIds;
 		
 		self.toggleSpecials();
 		
@@ -1475,12 +1528,38 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.UserWorkCtrl.prototype.addSubGroup = function( subId ) {
+		const self = this;
+		const sIdx = self.subIds.indexOf( subId );
+		if ( -1 != sIdx )
+			return;
+		
+		self.subIds.push( subId );
+		const subWorg = self.groupsAvailable[ subId ];
+		subWorg.priority = self.subPri;
+		self.setupWorkgroup( subId, 'base-group group-work' );
+		if ( !self.isInitialized )
+			return;
+		
+		self.showWorkgroup( subId );
+		self.setWorkMembers( subId );
+	}
+	
+	ns.UserWorkCtrl.prototype.removeSubGroup = function( subId ) {
+		const self = this;
+		const sIdx = self.subIds.indexOf( subId );
+		if ( -1 == sIdx )
+			return;
+		
+		self.removeWorkgroup( subId );
+		self.subIds.splice( sIdx, 1 );
+	}
+	
 	ns.UserWorkCtrl.prototype.handleWorgMembers = async function( event ) {
 		const self = this;
-		console.log( 'handleWorgMembers', event );
 		const workId = event.workId;
 		const members = event.members;
-		self.workMembers[ workId ] = members;
+		self.memberList[ workId ] = members;
 		//const ids = event.identities;
 		/*
 		ids.forEach( id => {
@@ -1495,7 +1574,6 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.initWorkgroups = function( conf ) {
 		const self = this;
-		console.log( 'initWorkgroups', conf );
 		if ( null == conf ) {
 			console.log( 'UserWorkCtrl.initWorkgroups - no conf ???' );
 			return;
@@ -1503,10 +1581,11 @@ library.view = library.view || {};
 		
 		self.workId = conf.workId;
 		self.superId = conf.superId;
+		self.subIds = [];
 		self.addUserCss( self.workId, self.room.avatar );
 		self.addRooms( conf.rooms );
 		
-		self.workMembers = conf.members;
+		self.memberList = conf.members;
 		const ava = conf.available;
 		const wIds = Object.keys( ava );
 		wIds.forEach( wId => {
@@ -1516,16 +1595,19 @@ library.view = library.view || {};
 		
 		self.addUserGroup();
 		self.addSuperGroup();
-		self.handleSubRooms( conf.subIds );
+		conf.subIds.forEach( sId => {
+			self.addSubGroup( sId );
+		});
+		
+		self.toggleSpecials();
 	}
 	
 	ns.UserWorkCtrl.prototype.populateUserList = async function() {
 		const self = this;
-		console.log( 'populateUserList' );
 		await self.setUsers();
 		//await self.setWorkMembers( self.workId );
 		await self.setSuperMembers();
-		const subWaits = self.subGroups.map( wId => self.setWorkMembers( wId ));
+		const subWaits = self.subIds.map( wId => self.setWorkMembers( wId ));
 		await Promise.all( subWaits );
 	}
 	
@@ -1534,7 +1616,6 @@ library.view = library.view || {};
 		if ( !rooms )
 			return;
 		
-		console.log( 'addRooms', rooms );
 		self.rooms = rooms;
 		const rIds = Object.keys( rooms );
 		rIds.forEach( rId => {
@@ -1582,7 +1663,6 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.setupWorkgroup = function( worgId, sectionKlass, noClick ) {
 		const self = this;
-		console.log( 'setupWorkgroup', worgId );
 		let group = self.getGroup( worgId );
 		if ( group ) {
 			console.log( 'setupWorkgroup - already added', worgId );
@@ -1601,7 +1681,7 @@ library.view = library.view || {};
 		if ( null == worg.sectionKlass )
 			worg.sectionKlass = sectionKlass;
 		
-		if ( !noClick )
+		if ( null == noClick )
 			worg.sectionKlass = worg.sectionKlass + ' MousePointer clickie';
 		
 		if ( !self.members[ worgId ])
@@ -1612,10 +1692,6 @@ library.view = library.view || {};
 	ns.UserWorkCtrl.prototype.showWorkgroup = function( wId, noClick ) {
 		const self = this;
 		const worg = self.groupsAvailable[ wId ];
-		console.log( 'showWorgGroup', {
-			wId     : wId,
-			worg    : worg,
-		});
 		const group = new library.view.WorkGroup(
 			wId,
 			worg,
@@ -1659,34 +1735,24 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.setUsers = async function() {
 		const self = this;
-		console.log( 'addUsers - userList', self.userList );
 		const waitU = self.userList.map( uId => {
 			return self.buildUser( uId );
 		});
 		await Promise.all( waitU );
 	}
 	
-	/*
-	ns.UserWorkCtrl.prototype.setUserToGroup = function( userId ) {
-		const self = this;
-		console.log( 'setUserToGroup', userId );
-		self.moveUserToGroup( userId, self.workId );
-	}
-	*/
-	
 	ns.UserWorkCtrl.prototype.setWorkMembers = async function( worgId ) {
 		const self = this;
-		let idList = self.workMembers[ worgId ] || [];
-		let group = self.getGroup( worgId );
+		const idList = self.memberList[ worgId ] || [];
+		const group = self.getGroup( worgId );
 		let members = self.members[ worgId ];
-		console.log( 'setWorkMembers', {
-			wId    : worgId,
-			idList : idList,
-			membs  : members,
-			group  : group,
-		});
+		if ( null == members ) {
+			members = {};
+			self.members[ worgId ] = members;
+		}
+		
 		if ( !group ) {
-			console.log( 'UserWrokCtrl.setWorkMembers - no group', {
+			console.log( 'UserWorkCtrl.setWorkMembers - no group', {
 				worgId : worgId,
 				idList : idList,
 				self   : self,
@@ -1697,64 +1763,86 @@ library.view = library.view || {};
 		const idWaits = idList.map( cId => {
 			return self.getIdentity( cId );
 		});
-		await Promise.all( idWaits );
 		
-		const mIds = Object.keys( members );
-		let remove = mIds.filter( notInIdList );
-		remove.forEach( mId => self.removeMember( mId, worgId ));
+		const idMap = {};
 		idList.forEach( cId => {
-			if ( members[ cId ])
-				return;
-			
-			const memberId = friendUP.tool.uid( 'mem' );
-			let uToM = self.userToMembers[ cId ];
-			if ( null == uToM ) {
-				uToM = {
-					list     : [ memberId ],
-				};
-				uToM[ memberId ] = worgId;
-				self.userToMembers[ cId ] = uToM;
-			} else {
-				uToM.list.push( memberId );
-				uToM[ memberId ] = worgId;
-			}
-			
-			const identity = self.getIdSync( cId );
-			identity.isAuthed = true;
-			const conf = {
-				clientId   : memberId,
-				userId     : identity.clientId,
-				name       : identity.name,
-				workgroups : identity.workgroups,
-			};
-			console.log( 'setWorkMember', {
-				cId  : cId,
-				conf : conf,
-				u2m  : self.userToMembers[ cId ],
-			});
-			let user = new library.view.WorkUser(
-				memberId,
-				conf,
-				onClick
-			);
-			members[ cId ] = user;
-			self.users[ memberId ] = user;
-			self.userIds.push( memberId );
-			self.detached.appendChild( user.el );
-			//self.addUserCss( cId, identity.avatar );
-			group.attach( user );
-			let status = null;
-			if ( identity.isOnline )
-				status = 'online';
-			else
-				status = 'offline';
-			
-			user.setStatus( status );
+			idMap[ cId ] = true;
+		});
+		const mIds = Object.keys( members );
+		const remove = mIds
+			.map( mId => checkIsStale( mId, idMap ))
+			.filter( rId => null != rId );
+		
+		remove.forEach( cId => self.removeMember( cId, worgId ));
+		
+		await Promise.all( idWaits );
+		idList.forEach( cId => {
+			self.setWorkMember( cId, worgId );
 		});
 		
-		function notInIdList( mId ) {
-			return !idList.some( cId => cId === mId );
+		function checkIsStale( memId, idMap ) {
+			let staleId = null;
+			const currId = self.memberToUser[ memId ];
+			if ( !idMap[ currId ])
+				staleId = currId;
+			
+			return staleId;
 		}
+	}
+	
+	ns.UserWorkCtrl.prototype.setWorkMember = function( cId, worgId ) {
+		const self = this;
+		const members = self.members[ worgId ];
+		const group = self.getGroup( worgId );
+		if ( null == group )
+			return;
+		
+		let u2m = self.userToMembers[ cId ];
+		if (( null != u2m ) && ( null != u2m[ worgId ])) {
+			console.log( 'setWorkMEmbers - already added', [ u2m, worgId ]);
+			// already set
+			return;
+		}
+		
+		const memberId = friendUP.tool.uid( 'mem' );
+		if ( null == u2m ) {
+			u2m = {
+				list : [ memberId ],
+			};
+			self.userToMembers[ cId ] = u2m;
+		} else {
+			u2m.list.push( memberId );
+		}
+		
+		u2m[ memberId ] = worgId;
+		u2m[ worgId ] = memberId;
+		
+		const identity = self.getIdSync( cId );
+		identity.isAuthed = true;
+		const conf = {
+			clientId   : memberId,
+			userId     : identity.clientId,
+			name       : identity.name,
+			workgroups : [ ...identity.workgroups ],
+		};
+		
+		let member = new library.view.WorkUser(
+			memberId,
+			conf,
+			onClick
+		);
+		members[ memberId ] = member;
+		self.memberToUser[ memberId ] = cId;
+		self.detached.appendChild( member.el );
+		//self.addUserCss( cId, identity.avatar );
+		group.attach( member );
+		let status = null;
+		if ( identity.isOnline )
+			status = 'online';
+		else
+			status = 'offline';
+		
+		member.setStatus( status );
 		
 		function onClick( id ) {
 			const target = {
@@ -1769,50 +1857,86 @@ library.view = library.view || {};
 		const self = this;
 		const list = [];
 		const user = self.users[ userId ];
-		const u2m = self.userToMembers[ userId ];
 		if ( user )
 			list.push( user );
+		
+		const u2m = self.userToMembers[ userId ];
 		if ( u2m )
 			u2m.list.forEach( mId => {
-				const user = self.users[ mId ];
-				list.push( user );
+				//const user = self.users[ mId ];
+				const wId = u2m[ mId ];
+				const membs = self.members[ wId ];
+				const member = membs[ mId ];
+				list.push( member );
 			});
 		
-		console.log( 'getUser', {
+		return list;
+	}
+	
+	ns.UserWorkCtrl.prototype.removeUser = function( userId ) {
+		const self = this;
+		console.log( 'removeUser - NOOP', {
 			userId : userId,
 			users  : self.users,
-			u2m    : u2m,
-			list   : list,
 		});
-		
-		return list;
 	}
 	
 	ns.UserWorkCtrl.prototype.removeMember = function( userId, worgId ) {
 		const self = this;
 		const members = self.members[ worgId ];
-		if ( !members )
+		if ( null == members )
 			return;
 		
-		const user = members[ userId ];
-		if ( !user )
+		const u2m = self.userToMembers[ userId ];
+		const memId = u2m.list.find( mId => {
+			const wId = u2m[ mId ];
+			if ( wId == worgId )
+				return true;
+		});
+		const member = members[ memId ];
+		
+		if ( null == member ) {
+			console.log( 'no member found', {
+				userId  : userId,
+				worgId  : worgId,
+				members : members,
+				u2m     : u2m,
+				memId   : memId,
+				member  : member,
+			});
 			return;
+		}
 		
 		const group = self.getGroup( worgId );
-		if ( !group )
+		if ( null == group ) {
+			console.log( 'WTF? a user with no group', {
+				userId  : userId,
+				worgId  : worgId,
+				members : self.members,
+				groups  : self.works,
+				u2m     : u2m,
+			});
 			return;
+		}
+		group.detach( memId );
 		
-		group.detach( userId );
-		delete members[ userId ];
-		user.close();
+		delete u2m[ memId ];
+		delete u2m[ worgId ];
+		const mIdx = u2m.list.indexOf( memId );
+		u2m.list.splice( mIdx, 1 );
+		if ( 0 == u2m.list.length )
+			delete self.userToMembers[ userId ];
+		
+		delete members[ memId ];
+		delete self.memberToUser[ memId ];
+		member.close();
 	}
 	
 	ns.UserWorkCtrl.prototype.removeMembers = function( worgId ) {
 		const self = this;
-		const members = self.members[ worgId ];
-		const mIds = Object.keys( members );
-		mIds.forEach( mId => {
-			self.removeMember( mId, worgId );
+		const list = self.memberList[ worgId ];
+		list.forEach( cId => {
+			self.removeMember( cId, worgId );
 		});
 		
 		delete self.members[ worgId ];
@@ -1857,16 +1981,12 @@ library.view = library.view || {};
 		if ( !groupId )
 			return null;
 		
-		console.log( 'getGrtoup', {
-			gid   : groupId,
-			works : self.works,
-		});
 		return self.works[ groupId ];
 	}
 	
 	ns.UserWorkCtrl.prototype.toggleSpecials = function() {
 		const self = this;
-		const show = !!self.subGroups.length;
+		const show = !!self.subIds.length;
 		const grps = self.works[ 'all_groups' ];
 		const mbms = self.works[ 'all_members' ];
 		if ( grps && grps.el )
@@ -1889,9 +2009,11 @@ library.view = library.view || {};
 		workgroups,
 		input,
 		parser,
-		linkExpand
+		linkExpand,
+		isWorkView
 	) {
 		const self = this;
+		self.isView = isWorkView;
 		library.component.MsgBuilder.call( self,
 			parentConn,
 			containerId,
@@ -1904,6 +2026,7 @@ library.view = library.view || {};
 			parser,
 			linkExpand
 		);
+		
 	}
 	
 	ns.WorkMsgBuilder.prototype =
@@ -1933,10 +2056,8 @@ library.view = library.view || {};
 		const id = await self.users.getIdentity( fromId );
 		
 		//
-		if ( event.fromId === self.userId ) {
-			console.log( 'setting userLastMsg', event );
+		if ( event.fromId === self.userId )
 			self.userLastMsg = event;
-		}
 		
 		const time = self.parseTime( event.time );
 		const envelope = self.getEnvelope( time.envelope );
@@ -1965,7 +2086,6 @@ library.view = library.view || {};
 	
 	ns.WorkMsgBuilder.prototype.buildWorkMsg = function( conf ) {
 		const self = this;
-		console.log( 'buildWorkMsg', conf );
 		const tmplId = 'work-msg-tmpl';
 		const msg = conf.event;
 		const uId = msg.fromId;
@@ -2008,18 +2128,14 @@ library.view = library.view || {};
 		let name = null;
 		let canEdit = false;
 		let canForward = self.checkCanForward( msg );
-		const twIds = Object.keys( msg.targets );
+		let twIds = [];
+		if ( self.isView )
+			twIds = [];
+		else
+			twIds = Object.keys( msg.targets );
+		
 		let targetNames = [];
 		let targetHtmls = [];
-		
-		console.log( 'target things', {
-			msg : msg,
-			fromSuper : fromSuper,
-			fromSub : fromSub,
-			fromThis : fromThis,
-			targets : msg.targets,
-			twIds    : twIds,
-		});
 		
 		if ( fromThis ) {
 			if ( !fromUser ) {
@@ -2157,7 +2273,7 @@ library.view = library.view || {};
 			
 			const target = msg.targets[ twId ];
 			if ( null == target.length )
-				targetNames.push( wName( worg ) );
+				targetNames.push( wName( worg ));
 			else
 				setNames( worg, target );
 			

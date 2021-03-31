@@ -102,6 +102,16 @@ library.module = library.module || {};
 		throw new Error( 'BaseModule.getIdentity - implement in module' );
 	}
 	
+	/*
+		this function is called by the Activity subsystem during startup
+		clientIdList is all current items registered in Activity by this module
+		The module should check the list for stale entries and call Activity.remove( <cId> )
+		for each one.
+	*/
+	ns.BaseModule.prototype.verifyActivities = function( clientIdList ) {
+		throw new Error( 'BaseModule.verifyActivities - implement in module' );
+	}
+	
 	// Private
 	
 	ns.BaseModule.prototype.initBaseModule = function() {
@@ -604,6 +614,7 @@ library.module = library.module || {};
 		self.openChatWaiting = [];
 		self.hiddenContacts = {};
 		self.getIdentityBacklog = {};
+		self.relationWaiters = {};
 		self.contactsOnline = [];
 		self.currentFilter = 'relations';
 		self.invites = {};
@@ -667,6 +678,24 @@ library.module = library.module || {};
 						fun( null );
 					});
 				}
+			});
+		}
+	}
+	
+	ns.Presence.prototype.verifyActivities = function( cIdList ) {
+		const self = this;
+		window.setTimeout( verify, 1000 * 10 );
+		function verify() {
+			cIdList.forEach( cId => {
+				const item = self.getTypeItem( cId );
+				if ( null != item )
+					return;
+				
+				const invite = self.invites[ cId ];
+				if ( null != invite )
+					return;
+				
+				self.activity.remove( cId );
 			});
 		}
 	}
@@ -790,7 +819,16 @@ library.module = library.module || {};
 				.then( addBack )
 				.catch( reject );
 			
-			function addBack( clientId ) {
+			async function addBack( clientId ) {
+				if ( null == clientId ) {
+					resolve( null );
+					return;
+				}
+				
+				let rel = self.contacts[ clientId ];
+				if (( null == rel ) || ( null == rel.close ))
+					rel = await self.waitForRelation( clientId );
+				
 				resolve( clientId );
 			}
 		});
@@ -808,7 +846,7 @@ library.module = library.module || {};
 			self.addContact( clientId )
 				.then( cAdded )
 				.catch( reject );
-				
+			
 			function cAdded( clientId ) {
 				if ( !clientId ) {
 					resolve( null );
@@ -848,7 +886,7 @@ library.module = library.module || {};
 	ns.Presence.prototype.openChat = function( conf, notification, view ) {
 		const self = this;
 		if ( !self.initialized ) {
-			self.queueEvent( 'openChat', [ conf, view ] );
+			self.queueEvent( 'openChat', [ conf, notification, view ] );
 			return;
 		}
 		
@@ -1271,7 +1309,7 @@ library.module = library.module || {};
 			return item.getIdentity();
 		
 		item = self.contacts[ cId ];
-		if ( item )
+		if ( item && item.getIdentity )
 			return item.getIdentity();
 		
 		item = self.invites[ cId ];
@@ -1446,7 +1484,9 @@ library.module = library.module || {};
 		if ( !self.idc )
 			return;
 		
-		let cId = contact.clientId;
+		const cId = contact.clientId;
+		self.removeHidden( cId );
+		
 		let room = self.updateContact( contact );
 		if ( room )
 			return;
@@ -1466,6 +1506,7 @@ library.module = library.module || {};
 				contact : contact,
 				self    : self,
 			});
+			delete self.contacts[ cId ];
 			return;
 		}
 		
@@ -1493,9 +1534,55 @@ library.module = library.module || {};
 		self.toView( cAdd );
 		
 		self.checkIdBacklog( cId );
+		self.resolveRelation( cId );
 		const waitConf = self.checkOpenChatWaiting( cId );
 		if ( waitConf )
 			room.openChat( waitConf.view || null );
+	}
+	
+	ns.Presence.prototype.waitForRelation = function( cId ) {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			const rel = self.contacts[ cId ];
+			if ( null != rel && null != rel.close ) {
+				resolve( rel );
+				return;
+			}
+			
+			let waiters = self.relationWaiters[ cId ];
+			if ( null == waiters ) {
+				waiters = [];
+				self.relationWaiters[ cId ] = waiters;
+			}
+			
+			waiters.push( relAvailable );
+			
+			function relAvailable( rel ) {
+				resolve( rel );
+			}
+		});
+	}
+	
+	ns.Presence.prototype.resolveRelation = function( cId ) {
+		const self = this;
+		const waiters = self.relationWaiters[ cId ];
+		if ( null == waiters )
+			return;
+		
+		const rel = self.contacts[ cId ];
+		waiters.forEach( fn => fn( rel ));
+	}
+	
+	ns.Presence.prototype.removeHidden = function( cId ) {
+		const self = this;
+		const hidden = self.hiddenContacts[ cId ];
+		if ( null == hidden )
+			return;
+		
+		if ( null != hidden.close )
+			hidden.close();
+		
+		delete self.hiddenContacts[ cId ];
 	}
 	
 	ns.Presence.prototype.handleUserOnline = function( contactId, isOnline ) {
@@ -1503,21 +1590,9 @@ library.module = library.module || {};
 		if ( contactId === self.accountId )
 			return;
 		
-		/*
-		console.log( 'handleUserOnline', [ contactId, isOnline, self.contactsOnline ]);
-		const oIdx = self.contactsOnline.indexOf( contactId );
-		if ( isOnline && ( -1 == oIdx ))
-			self.contactsOnline.push( contactId );
-		if ( !isOnline && ( -1 != oIdx ))
-			self.contactsOnline.splice( oIdx, 1 );
-		console.log( 'contactsOnline', self.contactsOnline );
-		*/
-		
 		const contact = self.contacts[ contactId ];
-		if ( contact ) {
-			console.log( 'contact.setOnline', contact );
+		if ( contact )
 			contact.setOnline( isOnline );
-		}
 		
 		self.roomIds.forEach( rId => {
 			const room = self.rooms[ rId ];
@@ -1810,7 +1885,8 @@ library.module = library.module || {};
 				userId     : self.accountId,
 			};
 			
-			room = new library.contact.PresenceHidden( conf );
+			const room = new library.contact.PresenceHidden( conf );
+			self.hiddenContacts[ cId ] = room;
 			room.once( 'close', onClose );
 			
 			function onClose() {
@@ -1960,7 +2036,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleIdUpdate = function( update ) {
 		const self = this;
-		console.log( 'handleIdUpdate', update );
 		self.idc.update( update );
 	}
 	
@@ -2192,7 +2267,13 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.openContactChat = async function( contactId ) {
 		const self = this;
-		const contact = await self.getContact( contactId );
+		let contact = null;
+		try {
+			contact = await self.getContact( contactId );
+		} catch( ex ) {
+			console.log( 'openContactChat ex', ex );
+		}
+		
 		if ( null == contact )
 			return;
 		
@@ -2333,19 +2414,9 @@ library.module = library.module || {};
 		if ( !hello.dormant.allowWrite )
 			return;
 		
-		console.log( 'Presence.dormantParentPath', self.dormantParentPath );
 		if ( self.dormantParentPath )
 			return;
 		
-		console.log( 'Presence.setupDormant', self );
-		/*
-		let uid = self.clientId.split( '-' )[1];
-		let path = [
-			'presence',
-			uid,
-		];
-		path = path.join( '_' );
-		*/
 		const path = 'Presence';
 		const presence = new api.DoorDir({
 			title : path,

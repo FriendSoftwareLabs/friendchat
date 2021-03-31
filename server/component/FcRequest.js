@@ -48,7 +48,6 @@ ns.FcRequest.prototype.post = function( conf ) {
 	var query = querystring.stringify( conf.data );
 	var opts = self.buildPostOptions( conf.path, query.length );
 	var req = https.request( opts, reqBack );
-	req.on( 'error', oops );
 	req.write( query );
 	function reqBack( res ) {
 		var chunks = '';

@@ -3384,7 +3384,7 @@ The menu will remove itself if it loses focus or a menu item is clicked
 			return;
 		}
 		
-		let pri = self.normalizePriority( item.priority );
+		let pri = self.normalizePriority( item.pri );
 		self.orderBy.forEach( t => {
 			const val = conf[ t ];
 			if ( undefined === val )

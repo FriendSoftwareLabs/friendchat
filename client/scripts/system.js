@@ -1848,7 +1848,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketReconnecting = function( reTime ) {
 		const self = this;
-		console.log( 'Connection.reconnecting', reTime );
 		self.onstate({
 			type : 'wait-reconnect',
 			data : {
@@ -2823,11 +2822,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
-		console.log( 'Activity.setIsOnline', {
-			curr : self.isOnline,
-			uptd : isOnline,
-		});
-		
 		if ( isOnline === self.isOnline )
 			return;
 		
@@ -3077,10 +3071,8 @@ Searchable collection(s) of users, rooms and other odds and ends
 			data : conf,
 		};
 		self.items[ id ] = event;
+		self.itemIds = Object.keys( self.items );
 		self.cIdMap[ cId ] = event;
-		const idx = self.itemIds.indexOf( id );
-		if ( -1 === idx )
-			self.itemIds.push( id );
 		
 		resolveWaiting( cId, event );
 		
@@ -3103,7 +3095,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.sendRemove = async function( id ) {
 		const self = this;
-		console.log( 'sendRemove', id );
 		self.setRemoved( id );
 		const remove = {
 			type : 'remove',
@@ -3123,15 +3114,15 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.removeItem = function( id ) {
 		const self = this;
-		console.log( 'Activity.removeItem', id );
 		const item = self.items[ id ];
 		if ( null == item )
 			return;
 		
 		const cId = item.clientId;
 		//const mod = self.getModule( item.modId );
-		delete self.items[ id ];
 		delete self.cIdMap[ cId ];
+		delete self.items[ id ];
+		self.itemIds = Object.keys( self.items );
 		self.setRemoved( id );
 		const remove = {
 			type : 'remove',
@@ -3382,14 +3373,16 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 		
 		function updateForModule( mId ) {
-			const cIds = getModuleCIds( mId );
-			if ( !cIds || !cIds.length )
+			const itemIds = getModuleIds( mId );
+			if ( !itemIds || !itemIds.length )
 				return;
 			
 			const mod = self.getModule( mId );
-			cIds.forEach( i => {
+			itemIds.map( i => {
 				update( i, mod );
 			});
+			const cIds = itemIds.map( i => i.clientId );
+			self.askVerify( mId, cIds );
 		}
 		
 		async function update( i, mod ) {
@@ -3417,11 +3410,16 @@ Searchable collection(s) of users, rooms and other odds and ends
 				},
 			};
 			self.view.send( uptd );
+			
+			return i.clienntId;
 		}
 		
-		function getModuleCIds( mId ) {
+		function getModuleIds( mId ) {
 			const cIds = self.itemIds.map( id => {
 				const item = self.items[ id ];
+				if ( null == item )
+					return null;
+				
 				const d = item.data;
 				if ( d.modId === mId )
 					return {
@@ -3434,6 +3432,12 @@ Searchable collection(s) of users, rooms and other odds and ends
 			
 			return cIds;
 		}
+	}
+	
+	ns.Activity.prototype.askVerify = function( modId, cIdList ) {
+		const self = this;
+		const mod = self.getModule( modId );
+		mod.verifyActivities( cIdList );
 	}
 	
 	ns.Activity.prototype.handleMessage = function( msg ) {
@@ -3464,7 +3468,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.handleRemove = async function( id ) {
 		const self = this;
-		console.log( 'handleRemove', id );
 		self.removeItem( id );
 	}
 	
@@ -3525,7 +3528,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		function getIdMaybeTimeout( cId, mod ) {
 			return new Promise(( resolve, reject ) => {
 				let hasFinished = false;
-				let timeId = window.setTimeout( timedOut, 1000 * 30 );
+				let timeId = window.setTimeout( timedOut, 1000 * 10 );
 				mod.getIdentity( cId )
 					.then( hasResult )
 					.catch( err );

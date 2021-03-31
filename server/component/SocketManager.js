@@ -249,7 +249,6 @@ ns.SocketManager.prototype.authRequest = function( token, socket ) {
 	const maxTries = 3;
 	const errorTimeout = 1000 * 5;
 	return new Promise(( resolve, reject ) => {
-		log( 'authRequest', token );
 		const data = {
 			module  : 'system',
 			command : 'userinfoget',
@@ -272,12 +271,6 @@ ns.SocketManager.prototype.authRequest = function( token, socket ) {
 			function success( res ) {
 				const end = Date.now();
 				const ms = end - start;
-				log( 'authRequest timing', {
-					id : token.authId,
-					ms : ms,
-					s  : ( ms / 1000 ),
-				});
-				
 				if ( null == res ) {
 					retry()
 					return;

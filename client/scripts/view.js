@@ -168,11 +168,10 @@ library.view = library.view || {};
 			onSend
 		);
 		function eventSink( e ) {
-			console.log( 'PresenceChat - eventsink', e );
+			//console.log( 'PresenceChat - eventsink', e );
 		}
 		
 		function onSend( e ) {
-			//console.log( 'onSend', e );
 			self.view.send( e );
 		}
 		
@@ -181,13 +180,11 @@ library.view = library.view || {};
 		//self.view.on( 'get-identity', e => self.handleGetId( e ));
 		function droppings( e ) { self.drop.handle( e ); }
 		function viewSink( type, data ) {
-			//console.log( 'app.PC.viewSink', [ type, data ]);			
 			return self.handle({
 				type : type,
 				data : data,
 			});
 			
-			//self.emit( type, data );
 		}
 		
 		function closed( e ) {
@@ -195,7 +192,6 @@ library.view = library.view || {};
 		}
 		
 		function attach() {
-			console.log( 'attach' );
 			const title = Application.i18n( 'i18n_share_file' );
 			const dialog = new api.Filedialog( title );
 			dialog.open( 'Mountlist:' )
@@ -203,7 +199,6 @@ library.view = library.view || {};
 				.catch( err );
 			
 			function filesBack( items ) {
-				console.log( 'attach files back', items );
 				if ( !items )
 					return;
 				
@@ -712,14 +707,12 @@ library.view = library.view || {};
 		}
 		
 		function setup( localSettings ) {
-			console.log( 'setup', conf );
 			self.roomId = conf.roomId;
 			self.roomTitle = conf.roomName;
 			self.isPrivate = conf.isPrivate
 			self.isStream = conf.isStream;
 			self.liveConf.localSettings = localSettings;
 			
-			console.log( 'checkNative', hello.app );
 			if ( hello.app.friendApp && ( 'iOS' === hello.app.friendApp.platform ))
 				initNative();
 			else
@@ -832,7 +825,6 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.liveReady = function() {
 		const self = this;
-		console.log( 'liveReady', self.initQueue );
 		if ( !self.initQueue )
 			return;
 		
