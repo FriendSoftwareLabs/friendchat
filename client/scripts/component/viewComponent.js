@@ -1348,6 +1348,10 @@ library.component = library.component || {};
 	
 	ns.LinkExpand.prototype.expandFile = function( a, mime ) {
 		const self = this;
+		console.log( 'expandFile', {
+			a    : a,
+			mime : mime,
+		});
 		return {
 			content : '',
 		};
