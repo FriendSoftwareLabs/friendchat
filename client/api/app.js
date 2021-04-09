@@ -861,7 +861,7 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const type = msg.viewId;
 		if ( !type || !msg.data ) {
-			console.log( 'weird event', msg );
+			console.trace( 'weird event', msg );
 			return;
 		}
 		

@@ -210,6 +210,31 @@ var friend = window.friend || {};
 		self.sendTypeEvent( 'show-notify', notie );
 	}
 	
+	ns.View.prototype.getAppsForFileType = async function( fileType ) {
+		const self = this;
+		console.log( 'View.getAppsForFileType', fileType );
+		return await check( fileType );
+		
+		function check( fileType ) {
+			return new Promise(( resolve, reject ) => {
+				const callBackId = self.addCallback( checkBack );
+				const event = {
+					type      : 'system',
+					command   : 'checkmimetypes',
+					mimetypes : [ fileType ],
+					callback  : callBackId,
+				};
+				
+				self.sendBase( event );
+			});
+			
+			function checkBack( res ) {
+				console.log( 'checkBack', res );
+				resolve( res );
+			}
+		}
+	}
+	
 	ns.View.prototype.getConfig = function() {
 		const self = this;
 		return self.appConf;
@@ -223,7 +248,6 @@ var friend = window.friend || {};
 	ns.View.prototype.addCallback = function( callback )
 	{
 		const self = this;
-		
 		var id = friendUP.tool.uid();
 		self.callbacks[ id ] = callback;
 		return id;

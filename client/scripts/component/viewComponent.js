@@ -1114,6 +1114,7 @@ library.component = library.component || {};
 	
 	ns.LinkExpand.prototype.work = function( el ) {
 		const self = this;
+		console.log( 'work', el );
 		const links = el.querySelectorAll( 'a' );
 		Array.prototype.forEach.call( links, expand );
 		
@@ -1124,12 +1125,13 @@ library.component = library.component || {};
 				.catch( failed );
 			return;
 			
-			function success( mime ) {
+			async function success( mime ) {
+				console.log( 'success', mime );
 				var handler = self.mimeMap[ mime.type ];
 				if ( !handler )
 					return;
 				
-				var conf = handler( a, mime );
+				var conf = await handler( a, mime );
 				if ( !conf )
 					return null;
 				
@@ -1137,7 +1139,7 @@ library.component = library.component || {};
 			}
 			
 			function failed( err ) {
-				//console.log( 'LE.mime.failed', err );
+				console.log( 'LE.mime.failed', err );
 			}
 		}
 	}
@@ -1169,6 +1171,10 @@ library.component = library.component || {};
 			if ( !url || !url.length )
 				reject();
 			
+			const parts = url.split( '.' );
+			const ext = parts.pop();
+			const fileExt = '.'+ext;
+			
 			url = url.replace( /^http:/, 'https:' );
 			var req = new window.XMLHttpRequest();
 			//req.addEventListener( 'progress', reqProgress );
@@ -1181,14 +1187,16 @@ library.component = library.component || {};
 			}
 			
 			function reqReadyState( e ) {
-				var ev = JSON.stringify( e );
-				var headers = req.getAllResponseHeaders();
+				const ev = JSON.stringify( e );
+				const headers = req.getAllResponseHeaders();
 				if ( !headers.length )
 					return;
 				
-				var mime = getContentType( headers );
+				const mime = getContentType( headers );
 				if ( !mime )
 					return;
+				
+				mime.fileExt = fileExt;
 				
 				req.abort();
 				resolve( mime );
@@ -1293,7 +1301,7 @@ library.component = library.component || {};
 		headA.addEventListener( 'click', onClick, false );
 	}
 	
-	ns.LinkExpand.prototype.expandImage = function( a, mime ) {
+	ns.LinkExpand.prototype.expandImage = async function( a, mime ) {
 		const self = this;
 		const src = a.href;
 		const conf = {
@@ -1322,7 +1330,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.LinkExpand.prototype.expandAudio = function( a, mime ) {
+	ns.LinkExpand.prototype.expandAudio = async function( a, mime ) {
 		const self = this;
 		const src = a.href;
 		const conf = {
@@ -1334,7 +1342,7 @@ library.component = library.component || {};
 		};
 	}
 	
-	ns.LinkExpand.prototype.expandVideo = function( a, mime ) {
+	ns.LinkExpand.prototype.expandVideo = async function( a, mime ) {
 		const self = this;
 		const src = a.href;
 		const conf = {
@@ -1346,12 +1354,14 @@ library.component = library.component || {};
 		};
 	}
 	
-	ns.LinkExpand.prototype.expandFile = function( a, mime ) {
+	ns.LinkExpand.prototype.expandFile = async function( a, mime ) {
 		const self = this;
 		console.log( 'expandFile', {
-			a    : a,
-			mime : mime,
+			a     : a,
+			mime  : mime,
 		});
+		const apps = await window.View.getAppsForFileType( mime.fileExt );
+		
 		return {
 			content : '',
 		};
