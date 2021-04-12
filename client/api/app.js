@@ -2360,7 +2360,7 @@ api.DoorFun.prototype.init = function() {
 	ns.IncommingCall = function( ringTones ) {
 		const self = this;
 		if ( null == ringTones )
-			console.logg( 'IncommingCall - no ringtones?' );
+			console.log( 'IncommingCall - no ringtones?' );
 		
 		self.ringTones = ringTones;
 		
