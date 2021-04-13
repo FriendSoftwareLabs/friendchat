@@ -800,6 +800,7 @@ library.contact = library.contact || {};
 		
 		// tell server
 		
+		console.log( 'joinLive', cId );
 		const join = {
 			type : 'live-join',
 			data : cId,
@@ -1470,6 +1471,7 @@ library.contact = library.contact || {};
 				sessionId : self.live.id,
 			},
 		};
+		console.log( 'restoreLive', restore );
 		self.send( restore );
 	}
 	
@@ -2330,12 +2332,14 @@ library.contact = library.contact || {};
 			return;
 		
 		if ( 'join' === type ) {
+			console.log( 'handleLive, join', event );
 			const peer = event.data;
 			const id = await self.idc.get( peer.peerId );
 			peer.identity = id;
 		}
 		
 		if ( 'peers' === type ) {
+			console.log( 'handleLive, peers', event );
 			const data = event.data;
 			const pIds = data.peerIds;
 			const identityList = await self.idc.getList( pIds );

@@ -758,7 +758,7 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.setState = function( userId, state, isSet ) {
 		const self = this;
 		const user = self.users[ userId ];
-		if ( user )
+		if ( user && user.setState )
 			user.setState( state, isSet );
 		
 		self.emit( 'state', {
@@ -1515,6 +1515,7 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.handleLive = function( update ) {
 		const self = this;
+		console.log( 'UserCtrl.handleLive', update );
 		if ( !update || !update.data )
 			return;
 		
@@ -3509,6 +3510,7 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.update = function( userList ) {
 		const self = this;
+		console.log( 'LiveStatus.update', userList );
 		userList = userList || [];
 		const currIds = Object.keys( self.peerIdMap );
 		const remove = currIds.filter( cId => isNotInList( cId, userList ));
@@ -3598,6 +3600,7 @@ var hello = window.hello || {};
 		if ( 'live' !== event.state )
 			return;
 		
+		console.log( 'LiveStatus.handleLive', event );
 		if ( event.isSet )
 			self.addPeer( event.userId );
 		else
@@ -3606,19 +3609,22 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.addPeer = async function( userId ) {
 		const self = this;
+		console.log( 'addPeer', {
+			userId : userId,
+			peer   : self.peerIdMap[ userId ],
+		});
 		if ( self.peerIdMap[ userId ])
 			return;
 		
 		const peerId = friendUP.tool.uid( 'peer' );
+		self.peerIdMap[ userId ] = peerId;
 		const avatarKlass = await self.users.getAvatarKlass( userId );
 		const peer = {
 			id          : peerId,
 			avatarKlass : avatarKlass,
 		};
 		const peerEl = hello.template.getElement( 'live-status-peer-tmpl', peer );
-		self.peerIdMap[ userId ] = peerId;
 		self.peers.insertBefore( peerEl, self.peerCount );
-		//self.peers.appendChild( self.peerCount );
 		self.peerList.push( peerId );
 		if ( userId === self.userId )
 			self.userLive = true;
@@ -3642,7 +3648,7 @@ var hello = window.hello || {};
 		delete self.peerIdMap[ userId ];
 		const el = document.getElementById( peerId );
 		el.parentNode.removeChild( el );
-		const pIdx = self.peerList.indexOf( userId );
+		const pIdx = self.peerList.indexOf( peerId );
 		self.peerList.splice( pIdx, 1 );
 		if ( userId === self.userId )
 			self.userLive = false;
