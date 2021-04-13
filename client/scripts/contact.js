@@ -36,6 +36,7 @@ library.contact = library.contact || {};
 		self.dormantParentPath = conf.dormantParentPath || '';
 		self.clientId = self.data.clientId;
 		self.displayName = self.data.displayName || self.data.name;
+		self.priority = 0;
 		self.lastMessage = self.data.lastMessage;
 		self.messagesWaiting = 0;
 		self.mentionsWaiting = 0;
@@ -699,7 +700,6 @@ library.contact = library.contact || {};
 		self.userId = conf.userId;
 		
 		const room = conf.room;
-		self.priority = room.priority || 0;
 		self.isView = room.isView;
 		self.workgroupId = room.workgroupId || null;
 		self.supergroupId = room.supergroupId || null;
@@ -707,6 +707,7 @@ library.contact = library.contact || {};
 		
 		ns.Contact.call( self, conf );
 		
+		self.priority = room.priority || 0;
 		self.roomType = 'room';
 		self.settings = null;
 		self.adminList = [];
