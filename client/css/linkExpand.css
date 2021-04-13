@@ -4,7 +4,11 @@
 }
 
 .link-expand-ui {
-	margin-bottom : 2px;
+	position : absolute;
+	top      : 0.3em;
+	left     : 0.3em;
+	z-index  : 1;
+	border-radius: 1.25em;
 }
 
 .link-expand-ui > .button {
@@ -13,41 +17,53 @@
 .pre-icon {
 	width : 2.5em;
 	height: 2.5em;
-	margin-right : 0.5em;
 }
 
-.link-expand .raw-link {
-	position: relative;
+.link-expand-ui .raw-link {
+	width : 0em;
+	position : relative;
 }
 
-.link-expand .raw-link > div {
-	position: absolute;
-	top : 0;
-	right : 0;
-	left : 0;
+.link-expand-ui:hover .raw-link {
+	width       : unset;
+	padding-right : 0.7em;
+	max-width   : 10em;
 }
 
-.link-expand .raw-link a {
-	display : inline-block;
-	width : 100%;
-	overflow: hidden;
+/*
+.link-expand-ui .raw-link > div {
+	position : absolute;
+	top      : 0;
+	right    : 0;
+	left     : 0;
+}
+*/
+
+.link-expand-ui .raw-link a {
+	display       : inline-block;
+	width         : 100%;
+	overflow      : hidden;
 	text-overflow : ellipsis;
-	white-space: nowrap;
+	white-space   : nowrap;
 }
 
+.link-expand-content : {
+}
 
 .link-expand .link-expand-video,
 .link-expand .link-expand-image {
 	height: 10em;
+	border-radius: 0.2em;
+}
+
+.link-expand .link-expand-video,
+.link-expand .link-expand-audio {
+	margin-top : 2.8em;
 }
 
 .link-expand .link-expand-image {
-	background-position: center;
-	background-size: contain;
-	background-repeat: no-repeat;
-	background-color: rgba(0,0,0,0.1);
-	border-radius: 3px;
-	border: 10px solid rgba(0,0,0,0.0);
+	background-size   : contain;
+	background-repeat : no-repeat;
 }
 
 .link-expand .link-expand-file {

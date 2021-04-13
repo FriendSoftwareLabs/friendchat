@@ -1307,18 +1307,19 @@ library.component = library.component || {};
 		}
 		
 		function onClick( e ) {
+			const t = e.target;
+			const tName = t.tagName;
+			console.log( 'onClick', {
+				e     : e,
+				t     : t,
+				tName : tName,
+			});
+			if ( 'IMG' != tName )
+				return;
+			
 			e.preventDefault();
 			e.stopPropagation();
-			window.View.sendBase({
-				type   : 'dos',
-				method : 'openWindowByFilename',
-				args   : {
-					fileInfo: {
-						Path: src
-					},
-					ext: 'jpg',
-				},
-			});
+			self.sendOpen( src );
 		}
 	}
 	
@@ -1379,6 +1380,21 @@ library.component = library.component || {};
 			content : null,
 		};
 		//return a.href;
+	}
+	
+	ns.LinkExpand.prototype.sendOpen = function( src ) {
+		const self = this;
+		console.log( 'LinkExpand.sendOpen', src );
+		window.View.sendBase({
+			type   : 'dos',
+			method : 'openWindowByFilename',
+			args   : {
+				fileInfo: {
+					Path: src
+				},
+				//ext: 'jpg',
+			},
+		});
 	}
 	
 	
