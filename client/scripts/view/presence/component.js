@@ -1969,10 +1969,6 @@ var hello = window.hello || {};
 		}
 		
 		function isAuthor() {
-			const user = self.users.get( self.userId );
-			if ( !user )
-				return false;
-			
 			return msg.fromId === self.userId;
 		}
 		
