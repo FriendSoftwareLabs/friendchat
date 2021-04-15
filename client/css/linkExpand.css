@@ -62,7 +62,8 @@
 }
 
 .link-expand .link-expand-video,
-.link-expand .link-expand-audio {
+.link-expand .link-expand-audio,
+.link-expand .link-expand-file {
 	margin-top : 3.2em;
 }
 
@@ -71,9 +72,3 @@
 	border: 0.2em solid rgba( 130, 130, 130, 0.3 );
 }
 
-.link-expand .link-expand-file {
-	width : 64px;
-	height: 64px;
-	background-size: contain;
-	background-repeat: none;
-}

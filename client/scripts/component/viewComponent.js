@@ -1173,7 +1173,7 @@ library.component = library.component || {};
 			
 			const parts = url.split( '.' );
 			const ext = parts.pop();
-			const fileExt = '.'+ext;
+			const fileExt = ext;
 			
 			url = url.replace( /^http:/, 'https:' );
 			var req = new window.XMLHttpRequest();
@@ -1284,8 +1284,8 @@ library.component = library.component || {};
 		};
 		
 		const el = self.template.getElement( 'link-expand-tmpl', elConf );
-		el.querySelector( '.link-expand-content' )
-			.appendChild( content );
+		const outer = el.querySelector( '.link-expand-content' );
+		outer.appendChild( content );
 		
 		const parent = a.parentNode;
 		parent.removeChild( a );
@@ -1294,11 +1294,14 @@ library.component = library.component || {};
 		if ( null == onClick )
 			return;
 		
+		/*
 		const headA = el.querySelector( '.link-expand-ui a' );
 		if ( null == headA )
 			return;
 		
 		headA.addEventListener( 'click', onClick, false );
+		*/
+		content.addEventListener( 'click', onClick, false );
 	}
 	
 	ns.LinkExpand.prototype.expandImage = async function( a, mime ) {
@@ -1315,6 +1318,7 @@ library.component = library.component || {};
 		}
 		
 		function onClick( e ) {
+			/*
 			const t = e.target;
 			const tName = t.tagName;
 			console.log( 'onClick', {
@@ -1324,7 +1328,7 @@ library.component = library.component || {};
 			});
 			if ( 'IMG' != tName )
 				return;
-			
+			*/
 			e.preventDefault();
 			e.stopPropagation();
 			self.sendOpen( src );
@@ -1361,24 +1365,27 @@ library.component = library.component || {};
 			a     : a,
 			mime  : mime,
 		});
-		const apps = await window.View.getAppsForFileType( mime.fileExt );
+		const apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
 		console.log( 'apps', apps );
 		
+		/*
 		return {
 			content : '',
 		};
+		*/
 		
-		/*
-		typeClass = 'File';
-		if ( mime && mime.ext )
-			typeClass = 'Type' + mime.ext.toUpperCase();
 		
-		var conf = {
+		let typeClass = 'File';
+		if ( mime && mime.fileExt )
+			typeClass = 'Type' + mime.fileExt.toUpperCase();
+		
+		const conf = {
 			typeClass : typeClass
 		};
-		var htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
-		return htmlElement;
-		*/
+		const htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
+		return {
+			content : htmlElement,
+		};
 	}
 	
 	ns.LinkExpand.prototype.expandText = function( a, mime ) {

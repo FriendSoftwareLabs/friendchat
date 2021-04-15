@@ -75,11 +75,7 @@ var friend = window.friend || {};
 		function register( e ) { self.register( e ); }
 		function viewtheme( e ) { self.handleViewTheme( e ); }
 		function systemTheme( e ) { self.handleSystemTheme( e ); }
-		function callback( e ) {
-			if( e.data && self.callbacks[ e.callback ] ) {
-				self.executeCallback( e.callback, e.data );
-			}
-		};
+		function callback( e ) { self.handleCallback( e ); }
 		
 		self.notifyMap = {
 			'activateview'   : activated,
@@ -122,9 +118,14 @@ var friend = window.friend || {};
 		
 		msg.origin = e.origin;
 		
-		const handler = self.eventMap[ msg.command ];
+		if ( 'callback' == msg.type && msg.callback ) {
+			self.handleCallback( msg );
+			return;
+		}
+		
+		const handler = self.eventMap[ msg.command ]; // || self.eventMap[ msg.type ];
 		if ( !handler ) {
-			self.handle( msg );
+			self.handle( msg ); // eventnode handler
 			return;
 		}
 		
@@ -147,6 +148,16 @@ var friend = window.friend || {};
 		}
 		
 		handler( msg );
+	}
+	
+	ns.ViewEvent.prototype.handleCallback = function( event ) {
+		const self = this;
+		console.log( 'handleCallback', event );
+		const cb = self.getCallback( event.callback );
+		if ( null == cb )
+			return;
+		
+		cb( event );
 	}
 	
 	/*
@@ -226,12 +237,12 @@ var friend = window.friend || {};
 				};
 				
 				self.sendBase( event );
+				
+				function checkBack( res ) {
+					console.log( 'checkBack', res );
+					resolve( res.data );
+				}
 			});
-			
-			function checkBack( res ) {
-				console.log( 'checkBack', res );
-				resolve( res );
-			}
 		}
 	}
 	
@@ -251,6 +262,13 @@ var friend = window.friend || {};
 		var id = friendUP.tool.uid();
 		self.callbacks[ id ] = callback;
 		return id;
+	}
+	
+	ns.View.prototype.getCallback = function( cbId ) {
+		const self = this;
+		const cb = self.callbacks[ cbId ];
+		delete self.callbacks[ cbId ];
+		return cb;
 	}
 	
 	ns.View.prototype.executeCallback = function( cid, data )
@@ -1216,7 +1234,6 @@ body .View.Active.IconWindow ::-webkit-scrollbar-thumb
 		event.viewId = self.id;
 		event.applicationId = self.applicationId;
 		
-		console.log( 'sendBase', event );
 		const msgString = friendUP.tool.stringify( event );
 		window.parent.postMessage( msgString, self.parentOrigin );
 	}

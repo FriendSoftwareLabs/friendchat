@@ -45,12 +45,25 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Shell.prototype.init = function() {
 		const self = this;
 		console.log( 'Shell.init', self );
+		const cbId = self.app.addCallback( ready );
+		const init = {
+			shellId : cbId,
+			args    : {
+				applicationId : self.app.applicationId,
+			},
+		};
+		
+		self.send( init );
+		
+		function ready( shellInit ) {
+			console.log( 'Shell.init ready', shellInit );
+		}
 	}
 	
 	ns.Shell.prototype.send = function( event ) {
 		const self = this;
 		event.type = 'shell';
-		event.shellSession = self.shellSession;
+		event.shellSession = self.shellSession || undefined;
 		
 		self.app.sendBase( event );
 	}
