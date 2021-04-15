@@ -36,6 +36,7 @@ library.contact = library.contact || {};
 		self.dormantParentPath = conf.dormantParentPath || '';
 		self.clientId = self.data.clientId;
 		self.displayName = self.data.displayName || self.data.name;
+		self.priority = 0;
 		self.lastMessage = self.data.lastMessage;
 		self.messagesWaiting = 0;
 		self.mentionsWaiting = 0;
@@ -699,7 +700,6 @@ library.contact = library.contact || {};
 		self.userId = conf.userId;
 		
 		const room = conf.room;
-		self.priority = room.priority || 0;
 		self.isView = room.isView;
 		self.workgroupId = room.workgroupId || null;
 		self.supergroupId = room.supergroupId || null;
@@ -707,6 +707,7 @@ library.contact = library.contact || {};
 		
 		ns.Contact.call( self, conf );
 		
+		self.priority = room.priority || 0;
 		self.roomType = 'room';
 		self.settings = null;
 		self.adminList = [];
@@ -800,6 +801,7 @@ library.contact = library.contact || {};
 		
 		// tell server
 		
+		console.log( 'joinLive', cId );
 		const join = {
 			type : 'live-join',
 			data : cId,
@@ -1470,6 +1472,7 @@ library.contact = library.contact || {};
 				sessionId : self.live.id,
 			},
 		};
+		console.log( 'restoreLive', restore );
 		self.send( restore );
 	}
 	
@@ -2330,12 +2333,14 @@ library.contact = library.contact || {};
 			return;
 		
 		if ( 'join' === type ) {
+			console.log( 'handleLive, join', event );
 			const peer = event.data;
 			const id = await self.idc.get( peer.peerId );
 			peer.identity = id;
 		}
 		
 		if ( 'peers' === type ) {
+			console.log( 'handleLive, peers', event );
 			const data = event.data;
 			const pIds = data.peerIds;
 			const identityList = await self.idc.getList( pIds );

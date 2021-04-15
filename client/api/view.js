@@ -1216,6 +1216,7 @@ body .View.Active.IconWindow ::-webkit-scrollbar-thumb
 		event.viewId = self.id;
 		event.applicationId = self.applicationId;
 		
+		console.log( 'sendBase', event );
 		const msgString = friendUP.tool.stringify( event );
 		window.parent.postMessage( msgString, self.parentOrigin );
 	}

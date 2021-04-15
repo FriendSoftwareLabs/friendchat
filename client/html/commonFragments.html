@@ -536,20 +536,17 @@ content
 -->
 <script id="link-expand-tmpl" type="text/html">
 <div class="link-expand">
-	<div class="link-expand-ui group row start BackgroundHeavy">
+	<div class="link-expand-ui group row BackgroundDefault">
 		<div class="pre-icon center-child fortify">
 			<i class="fa fa-fw fa-link"></i>
 		</div>
 		<div class="raw-link expand">
-			&nbsp;
-			<div>
-				<a class="link-expand-direct-url" href="<%= href %>" target="_blank" title="<%= href %>">
-					<%= file %>
-				</a>
-			</div>
+			<a class="link-expand-direct-url" href="<%= href %>" target="_blank" title="<%= href %>">
+				<%= file %>
+			</a>
 		</div>
 	</div>
-	<div class="link-expand-content group row center">
+	<div class="link-expand-content">
 	</div>
 </div>
 </script>
@@ -558,11 +555,7 @@ content
 src
 -->
 <script id="image-expand-tmpl" type="text/html">
-<a href="<%= src %>" target="_blank" class="expand">
-	<div class="link-expand-image"
-		style="background-image : url(&#39;<%= src%>&#39;)"
-	></div>
-</a>
+<img class="link-expand-image MousePointer" src="<%= src %>"></img>
 </script>
 
 <!-- audio-expand-tmpl

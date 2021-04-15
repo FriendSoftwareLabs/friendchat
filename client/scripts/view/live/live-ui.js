@@ -1903,20 +1903,25 @@ library.component = library.component || {};
 		if ( swap.timeId )
 			window.clearTimeout( swap.timeId );
 		
-		if ( swap.resId )
+		if ( swap.resId && pIn )
 			pIn.off( swap.resId );
 		
-		pIn.setFastStats( false );
+		if ( pIn ) {
+			pIn.setFastStats( false );
+			pIn.setFaded( false );
+		}
 		
-		pOut.setFaded( false );
-		pIn.setFaded( false );
+		if ( pOut )
+			pOut.setFaded( false );
 		
 		const isActive = self.checkIsThumbsActive();
 		if ( !isActive )
 			return;
 		
-		self.showInThumbs( pOut );
-		self.showInMain( pIn );
+		if ( pOut )
+			self.showInThumbs( pOut );
+		if ( pIn )
+			self.showInMain( pIn );
 		
 		return;
 	}
