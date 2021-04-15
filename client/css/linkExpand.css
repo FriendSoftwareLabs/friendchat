@@ -5,8 +5,8 @@
 
 .link-expand-ui {
 	position : absolute;
-	top      : 0.3em;
-	left     : 0.3em;
+	top      : 0.9em;
+	left     : 0.9em;
 	z-index  : 1;
 	border-radius: 1.25em;
 }
@@ -25,9 +25,9 @@
 }
 
 .link-expand-ui:hover .raw-link {
-	width       : unset;
+	width         : unset;
 	padding-right : 0.7em;
-	max-width   : 10em;
+	max-width     : 10em;
 }
 
 /*
@@ -47,23 +47,28 @@
 	white-space   : nowrap;
 }
 
-.link-expand-content : {
+.link-expand-content {
+	position: relative;
+	max-width: 80%;
+	margin : 0.4em;
 }
 
 .link-expand .link-expand-video,
 .link-expand .link-expand-image {
-	height: 10em;
-	border-radius: 0.2em;
+	max-height    : 10em;
+	max-width     : 100%;
+	min-height    : 3.5em;
+	border-radius : 0.2em;
 }
 
 .link-expand .link-expand-video,
 .link-expand .link-expand-audio {
-	margin-top : 2.8em;
+	margin-top : 3.2em;
 }
 
 .link-expand .link-expand-image {
-	background-size   : contain;
-	background-repeat : no-repeat;
+	object-fit: cover;
+	border: 0.2em solid rgba( 130, 130, 130, 0.3 );
 }
 
 .link-expand .link-expand-file {
