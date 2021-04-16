@@ -168,6 +168,9 @@ var hello = null;
 	
 	ns.Hello.prototype.run = function( fupConf ) {
 		const self = this;
+		
+		const sh = new api.Shell( window.Application );
+		
 		self.timeNow( 'run' );
 		self.incommingCall = new api.IncommingCall( self.config.ringTones );
 		//self.app.testAllowPlaySounds();

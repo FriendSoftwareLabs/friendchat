@@ -573,12 +573,16 @@ src
 </script>
 
 <!-- file-expand-tmpl
-typeClass
+typeClass,
+fileName,
 -->
 <script id="file-expand-tmpl" type="text/html">
-<div class="link-expand-file File">
+<div class="link-expand-file File group row">
 	<div class="Icon">
 		<div class="<%=typeClass%>"></div>
+	</div>
+	<div class="Title">
+		<%= fileName %>
 	</div>
 </div>
 </script>

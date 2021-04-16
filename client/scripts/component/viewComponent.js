@@ -1380,7 +1380,8 @@ library.component = library.component || {};
 			typeClass = 'Type' + mime.fileExt.toUpperCase();
 		
 		const conf = {
-			typeClass : typeClass
+			typeClass : typeClass,
+			fileName  : mime.fileName,
 		};
 		const htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
 		return {
