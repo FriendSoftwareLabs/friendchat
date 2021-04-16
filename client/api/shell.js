@@ -26,18 +26,38 @@ var friend = window.friend || {}; // already instanced stuff
 
 (function( ns, undefined ) {
 	ns.Shell = function( app ) {
+		console.log( 'shell', app );
 		const self = this;
 		self.app = app;
+		
 		self.shellId = null;
+		self.ready = false;
+		self.sendQeue = [];
 		
 		self.init();
 	}
 	
 	// Public
 	
-	ns.Shell.prototype.execute = async function( appName, filePath ) {
+	ns.Shell.prototype.execute = async function( command ) {
 		const self = this;
-		console.log( 'Shell.execute', [ appName, filePath ]);
+		console.log( 'Shell.execute', command );
+		return new Promise(( resolve, reject ) => {
+			const cbId = self.app.setCallback( execBack );
+			const exec = {
+				command      : 'execute',
+				commandLine  : command,
+				callbackId   : cbId,
+			};
+			
+			self.send( exec );
+			
+			function execBack( res ) {
+				console.log( 'execBack', res );
+				resolve( res );
+			}
+			
+		});
 	}
 	
 	// Private
@@ -45,27 +65,47 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Shell.prototype.init = function() {
 		const self = this;
 		console.log( 'Shell.init', self );
-		const cbId = self.app.addCallback( ready );
+		const cbId = self.app.setCallback( ready );
 		const init = {
 			shellId : cbId,
 			args    : {
-				applicationId : self.app.applicationId,
+				applicationId : self.app.id,
+				authId        : self.app.authId,
 			},
 		};
 		
+		self.ready = true;
 		self.send( init );
+		self.ready = false;
 		
 		function ready( shellInit ) {
 			console.log( 'Shell.init ready', shellInit );
+			self.sessionId = shellInit.shellSession;
+			self.num = shellInit.shellNumber;
+			self.ready = true;
+			self.executeSendQueue();
 		}
+	}
+	
+	ns.Shell.prototype.executeSendQueue = function() {
+		const self = this;
+		console.log( 'executeSendQueue', self.sendQeue );
+		self.sendQeue.forEach( e => self.send( e ));
+		self.sendQeue = [];
 	}
 	
 	ns.Shell.prototype.send = function( event ) {
 		const self = this;
-		event.type = 'shell';
-		event.shellSession = self.shellSession || undefined;
+		if ( !self.ready ) {
+			self.sendQeue.push( event );
+			return;
+		}
 		
-		self.app.sendBase( event );
+		event.type = 'shell';
+		event.shellSession = self.sessionId || undefined;
+		
+		console.log( 'Shell.send', event );
+		self.app.sendWorkspace( event );
 	}
 	
 })( api );

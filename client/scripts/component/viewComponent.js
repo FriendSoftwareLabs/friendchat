@@ -1386,7 +1386,13 @@ library.component = library.component || {};
 		const htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
 		return {
 			content : htmlElement,
+			onClick : onClick,
 		};
+		
+		function onClick( e ) {
+			console.log( 'file onClick', [ e, a.href, mime ]);
+			window.View.openFile( a.href, 'FriendCreate' );
+		}
 	}
 	
 	ns.LinkExpand.prototype.expandText = function( a, mime ) {

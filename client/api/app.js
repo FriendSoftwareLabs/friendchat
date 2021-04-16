@@ -224,6 +224,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fromView.on( 'ready', ready );
 		self.fromView.on( 'minimized', mini );
 		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
+		self.fromView.on( 'open-file', e => self.openFile( e ));
 		
 		library.component.RequestNode.call( self,
 			null,
@@ -347,6 +348,14 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.View.prototype.handleNotification = function( notie ) {
 		const self = this;
 		self.app.notify( notie );
+	}
+	
+	ns.View.prototype.openFile = function( e ) {
+		const self = this;
+		const fP = e.filePath;
+		const aN = e.appName;
+		console.log( 'openFile', [ e, fP, aN ]);
+		self.app.openFile( fP, aN );
 	}
 	
 	ns.View.prototype.doClose = function() {
@@ -767,6 +776,7 @@ var friend = window.friend || {}; // already instanced stuff
 			'libraryresponse'    : libResponse,
 			'refreshtheme'       : refreshTheme,
 			'notification'       : notification,
+			//'shell'              : shell,
 			'quit'               : quit,
 		};
 		
@@ -782,6 +792,7 @@ var friend = window.friend || {}; // already instanced stuff
 		function libResponse( e ) { self.handleLibResponse( e ); }
 		function refreshTheme( e ) { self.handleRefreshTheme( e ); }
 		function notification( e ) { self.handleCmdNotify( e ); }
+		//function shell( e ) { self.handleShell( e ); }
 		function quit( e ) { self.quit(); }
 		
 		self.notifyMap = {
@@ -832,7 +843,7 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 		*/
 		
-		if ( msg.callback || msg.clickcallback ) {
+		if ( msg.callback || msg.clickcallback || msg.shellId || msg.callbackId ) {
 			var yep = self.handleCallback( msg );
 			if ( yep )
 				return;
@@ -848,13 +859,23 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleCallback = function( msg ) {
 		const self = this;
-		const cid = msg.callback || msg.clickcallback;
+		const cid = msg.callback || msg.clickcallback || msg.shellId || msg.callbackId;
 		const callback = self.getCallback( cid );
 		if ( !callback )
 			return false;
 		
 		callback( msg );
 		return true;
+	}
+	
+	ns.AppEvent.prototype.handleShell = function( msg ) {
+		const self = this;
+		console.log( 'handleShell', msg );
+		const cb = self.getCallback( msg.shellId );
+		if ( null == cb )
+			return;
+		
+		cb( msg );
 	}
 	
 	ns.AppEvent.prototype.handleFromView = function( msg ) {
@@ -1222,6 +1243,15 @@ var friend = window.friend || {}; // already instanced stuff
 		self.emit( 'conn-state', event );
 	}
 	
+	ns.Application.prototype.openFile = async function( filePath, appName ) {
+		const self = this;
+		console.log( 'openFile', [ filePath, appName ]);
+		const cmdLine = appName + ' ' + filePath;
+		const sh = new api.Shell( self );
+		const res = await sh.execute( cmdLine );
+		console.log( 'openFile res', res );
+	}
+	
 	// Private
 	
 	ns.Application.prototype.toAllViews = function( event ) {
@@ -1307,6 +1337,9 @@ var friend = window.friend || {}; // already instanced stuff
 		const msgString = friendUP.tool.stringify( msg );
 		window.parent.postMessage( msgString, window.origin || '*' );
 	}
+	
+	ns.Application.prototype.sendWorkspace = 
+		ns.Application.prototype.sendMessage;
 	
 	// close all views, does not quit the application
 	ns.Application.prototype.close = function()	{

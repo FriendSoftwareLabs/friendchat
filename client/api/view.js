@@ -228,7 +228,7 @@ var friend = window.friend || {};
 		
 		function check( fileType ) {
 			return new Promise(( resolve, reject ) => {
-				const callBackId = self.addCallback( checkBack );
+				const callBackId = self.setCallback( checkBack );
 				const event = {
 					type      : 'system',
 					command   : 'checkmimetypes',
@@ -246,6 +246,16 @@ var friend = window.friend || {};
 		}
 	}
 	
+	ns.View.prototype.openFile = function( filePath, appName ) {
+		const self = this;
+		const open = {
+			filePath : filePath,
+			appName  : appName,
+		};
+		
+		self.sendTypeEvent( 'open-file', open );
+	}
+	
 	ns.View.prototype.getConfig = function() {
 		const self = this;
 		return self.appConf;
@@ -256,7 +266,7 @@ var friend = window.friend || {};
 		return self.appSettings;
 	}
 	
-	ns.View.prototype.addCallback = function( callback )
+	ns.View.prototype.setCallback = function( callback )
 	{
 		const self = this;
 		var id = friendUP.tool.uid();
@@ -406,6 +416,7 @@ var friend = window.friend || {};
 		var self = this;
 		//console.log( 'view.blur', msg );
 	}
+	
 	
 	// private
 	
@@ -841,7 +852,7 @@ var friend = window.friend || {};
 		// Add a callback
 		if( callback )
 		{
-			o.callback = self.addCallback( callback );
+			o.callback = self.setCallback( callback );
 		}
 		
 		self.sendBase( o );
@@ -1237,6 +1248,9 @@ body .View.Active.IconWindow ::-webkit-scrollbar-thumb
 		const msgString = friendUP.tool.stringify( event );
 		window.parent.postMessage( msgString, self.parentOrigin );
 	}
+	
+	ns.View.prototype.sendWorkspace = 
+		ns.View.prototype.sendBase;
 	
 	// Get a translated string
 	ns.View.prototype.i18n = function( string ) {
