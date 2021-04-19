@@ -1651,7 +1651,7 @@ library.view = library.view || {};
 	ns.Presence.prototype.filterSetAll = function( list ) {
 		const self = this;
 		self.allIds = list;
-		self.filterAllAddScrollBuffer();
+		self.filterAllAddScrollBuffer( 30 );
 		self.filterUncoverBox();
 	}
 	
@@ -1670,11 +1670,11 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.Presence.prototype.filterAllAddScrollBuffer = function() {
+	ns.Presence.prototype.filterAllAddScrollBuffer = function( addMax ) {
 		const self = this;
 		const scrollBox = document.getElementById( 'contacts' );
 		const container = document.getElementById( self.contactsId );
-		if ( enoughOverflow())
+		if ( enoughOverflow( 0, addMax ))
 			return;
 		
 		let index = 0;
@@ -1686,6 +1686,7 @@ library.view = library.view || {};
 		
 		let loadIds = [];
 		let moar = true;
+		let added = 0;
 		const total = self.allIds.length;
 		while( moar ) {
 			const cId = self.allIds[ index ];
@@ -1703,7 +1704,8 @@ library.view = library.view || {};
 			
 			self.filterLastIndex = index;
 			index++;
-			moar = !enoughOverflow();
+			added++;
+			moar = !enoughOverflow( added, addMax );
 			if ( index > total )
 				moar = false;
 		}
@@ -1714,9 +1716,12 @@ library.view = library.view || {};
 		
 		self.filterLoadIdList( loadIds );
 		
-		function enoughOverflow() {
-			if ( self.tempIds.length < 20 )
-				return false;
+		function enoughOverflow( added, addMax ) {
+			console.log( 'enoughOverflow', [ added, addMax ]);
+			if ( null != addMax ) {
+				if ( added < addMax )
+					return false;
+			}
 			
 			const visible = scrollBox.clientHeight;
 			const full = scrollBox.scrollHeight;
@@ -1815,6 +1820,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.filterSetTemp = function( cId, online, id ) {
 		const self = this;
+		console.log( 'filterSetTemp', cId );
 		const contact = self.checkExists( cId );
 		if ( contact ) {
 			moveContact( cId, online );
@@ -2891,7 +2897,7 @@ library.view = library.view || {};
 
 (function( ns, undefiend ) {
 	ns.PresenceTemp = function( conf, conn ) {
-		console.log( 'PresenceTemp', conf );
+		//console.log( 'PresenceTemp', conf );
 		const self = this;
 		self.type = 'temp-contact';
 		self.data = {
@@ -2928,12 +2934,12 @@ library.view = library.view || {};
 	
 	ns.PresenceTemp.prototype.updateOnline = function() {
 		const self = this;
-		console.log( 'updateOnline', self.identity.isOnline );
+		//console.log( 'updateOnline', self.identity.isOnline );
 		const isOnline = self.identity.isOnline;
 		if ( !isOnline && ( null == self.onlineStatus ))
 			return;
 		
-		console.log( 'updateOnline, the things', isOnline );
+		//console.log( 'updateOnline, the things', isOnline );
 		if ( null == self.onlineStatus )
 			self.buildStatus();
 		
@@ -2993,7 +2999,7 @@ library.view = library.view || {};
 				res = Math.floor( rnd * ( max - min ) + min );
 			else
 				res = Math.floor( rnd * max );
-			console.log( 'rnd', [ res, max, min ]);
+			//console.log( 'rnd', [ res, max, min ]);
 			return res;
 		}
 	}
@@ -3021,7 +3027,7 @@ library.view = library.view || {};
 	
 	ns.PresenceTemp.prototype.init = function( canOnline ) {
 		const self = this;
-		console.log( 'tmp init' );
+		//console.log( 'tmp init' );
 		if ( null != self.identity.name )
 			self.updateIdentity();
 	}
