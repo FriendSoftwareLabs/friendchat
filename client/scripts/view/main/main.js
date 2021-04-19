@@ -1717,10 +1717,11 @@ library.view = library.view || {};
 		self.filterLoadIdList( loadIds );
 		
 		function enoughOverflow( added, addMax ) {
-			console.log( 'enoughOverflow', [ added, addMax ]);
 			if ( null != addMax ) {
 				if ( added < addMax )
 					return false;
+				else
+					return true;
 			}
 			
 			const visible = scrollBox.clientHeight;
