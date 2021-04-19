@@ -1391,7 +1391,7 @@ library.component = library.component || {};
 		
 		function onClick( e ) {
 			console.log( 'file onClick', [ e, a.href, mime ]);
-			window.View.openFile( a.href, 'FriendCreate' );
+			window.View.openFile( a.href, 'launch FriendCreate' );
 		}
 	}
 	
