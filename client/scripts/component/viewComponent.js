@@ -1171,9 +1171,10 @@ library.component = library.component || {};
 			if ( !url || !url.length )
 				reject();
 			
-			const parts = url.split( '.' );
-			const ext = parts.pop();
-			const fileExt = ext;
+			const extParts = url.split( '.' );
+			const fileExt = extParts.pop();
+			const fileParts = url.split( '/' );
+			const fileName = fileParts.pop();
 			
 			url = url.replace( /^http:/, 'https:' );
 			var req = new window.XMLHttpRequest();
@@ -1197,6 +1198,7 @@ library.component = library.component || {};
 					return;
 				
 				mime.fileExt = fileExt;
+				mime.fileName = fileName;
 				
 				req.abort();
 				resolve( mime );
@@ -1267,6 +1269,7 @@ library.component = library.component || {};
 	// Evaluate content and add a "link"
 	ns.LinkExpand.prototype.replace = function( a, conf ) {
 		const self = this;
+		const type = conf.type;
 		const content = conf.content;
 		const onClick = conf.onClick;
 		const src = a.href;
@@ -1279,8 +1282,9 @@ library.component = library.component || {};
 		
 		file = window.decodeURIComponent( file );
 		const elConf = {
+			type : type,
 			href : a.href,
-			file : file
+			file : file,
 		};
 		
 		const el = self.template.getElement( 'link-expand-tmpl', elConf );
@@ -1313,6 +1317,7 @@ library.component = library.component || {};
 		const htmlElement = self.template.getElement( 'image-expand-tmpl', conf );
 		htmlElement.addEventListener( 'click', onClick, false );
 		return {
+			type    : 'image',
 			content : htmlElement,
 			onClick : onClick,
 		}
@@ -1343,6 +1348,7 @@ library.component = library.component || {};
 		};
 		const htmlElement = self.template.getElement( 'audio-expand-tmpl', conf );
 		return {
+			type    : 'audio',
 			content : htmlElement,
 		};
 	}
@@ -1355,6 +1361,7 @@ library.component = library.component || {};
 		};
 		const htmlElement = self.template.getElement( 'video-expand-tmpl', conf );
 		return {
+			type    : 'video',
 			content : htmlElement,
 		};
 	}
@@ -1365,26 +1372,31 @@ library.component = library.component || {};
 			a     : a,
 			mime  : mime,
 		});
+		const fileName = mime.fileName;
+		let fileDescription = fileName;
+		let appHTML = '';
 		const apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
 		console.log( 'apps', apps );
 		
-		/*
-		return {
-			content : '',
-		};
-		*/
-		
+		if ( !apps ) {
+			fileDescription = fileName
+				+ ', '
+				+ View.i18n( 'i18n_open_with')
+				+ ':';
+		}
 		
 		let typeClass = 'File';
 		if ( mime && mime.fileExt )
 			typeClass = 'Type' + mime.fileExt.toUpperCase();
 		
 		const conf = {
-			typeClass : typeClass,
-			fileName  : mime.fileName,
+			typeClass       : typeClass,
+			fileDescription : fileDescription,
+			appHTML         : appHTML,
 		};
 		const htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
 		return {
+			type    : 'file',
 			content : htmlElement,
 			onClick : onClick,
 		};

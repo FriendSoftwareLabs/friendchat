@@ -531,11 +531,12 @@ faIcon,
 <!-- LINK EXPAND FRAGMENTS -->
 
 <!-- link-expand-tmpl
+type
 href
 content
 -->
 <script id="link-expand-tmpl" type="text/html">
-<div class="link-expand">
+<div class="link-expand link-expand-<%= type %>">
 	<div class="link-expand-ui group row BackgroundDefault">
 		<div class="pre-icon center-child fortify">
 			<i class="fa fa-fw fa-link"></i>
@@ -555,35 +556,50 @@ content
 src
 -->
 <script id="image-expand-tmpl" type="text/html">
-<img class="link-expand-image MousePointer" src="<%= src %>"></img>
+<img class="link-expand-item MousePointer" src="<%= src %>"></img>
 </script>
 
 <!-- audio-expand-tmpl
 src
 -->
 <script id="audio-expand-tmpl" type="text/html">
-<audio class="link-expand-audio" src="<%= src %>" controls class="fortify"></audio>
+<audio class="link-expand-item" src="<%= src %>" controls class="fortify"></audio>
 </script>
 
 <!-- video-expand-tmpl
 src
 -->
 <script id="video-expand-tmpl" type="text/html">
-<video class="link-expand-video" src="<%= src %>" controls class="fortify"></video>
+<video class="link-expand-item" src="<%= src %>" controls class="fortify"></video>
 </script>
 
 <!-- file-expand-tmpl
 typeClass,
-fileName,
+fileDescription,
+appHTML,
 -->
 <script id="file-expand-tmpl" type="text/html">
-<div class="link-expand-file File group row">
-	<div class="Icon">
+<div class="le-item File group row">
+	<div class="le-file-icon fortify">
 		<div class="<%=typeClass%>"></div>
 	</div>
-	<div class="Title">
-		<%= fileName %>
+	<div class="expand">
+		<div class="le-file-desc">
+			<%= fileDescription %>
+		</div>
+		<div class="le-file-apps">
+			<%= appHTML %>
+		</div>
 	</div>
+</div>
+</script>
+
+<!-- file expand app tmpl
+appName,
+-->
+<script id="file-expand-app-tmpl" type="text/html">
+<div class="file-expand-app">
+	<%= appName %>
 </div>
 </script>
 
