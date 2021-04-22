@@ -38,6 +38,7 @@
 .link-expand-ui:hover .raw-link {
 	width         : unset;
 	padding-right : 0.7em;
+	padding-left  : 0.5em;
 	max-width     : 10em;
 }
 
@@ -50,9 +51,14 @@
 	white-space   : nowrap;
 }
 
-.link-expand-content {
+
+.link-expand .link-expand-content {
 	position: relative;
-	max-width: 80%;
+	margin: 0;
+}
+
+.link-expand-video .link-expand-content,
+.link-expand-image .link-expand-content {
 	margin : 0.4em;
 }
 
@@ -91,3 +97,9 @@
 	border: 0.2em solid rgba( 130, 130, 130, 0.3 );
 }
 
+#hello .File {
+	float      : unset;
+	transition : unset;
+	width      : unset;
+	margin     : unset;
+}
