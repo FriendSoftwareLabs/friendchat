@@ -103,3 +103,7 @@
 	width      : unset;
 	margin     : unset;
 }
+
+#hello .File .Icon {
+	margin-left : -10px;
+}
