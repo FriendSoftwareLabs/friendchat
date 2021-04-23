@@ -479,6 +479,7 @@ library.component = library.component || {};
 		
 		self.element = null;
 		self.observer = null;
+		self.checked = {};
 		
 		self.init();
 	}
@@ -502,7 +503,7 @@ library.component = library.component || {};
 			self.boxResize.observe( self.element );
 		}
 		
-		function scrollEvent( e ) { self.checkIsAtBottom( e ); }
+		function scrollEvent( e ) {	self.checkIsAtBottom( e ); }
 		function resizeEvent( e ) { self.handleResize(); }
 		
 		self.observer = new window.MutationObserver( domMutated );
@@ -526,7 +527,7 @@ library.component = library.component || {};
 			self.resizeTimeout = null;
 		}
 		
-		self.resizeTimeout = window.setTimeout( update, 100 );
+		self.resizeTimeout = window.setTimeout( update, 50 );
 		function update() {
 			self.resizeTimeout = null;
 			self.updateScrollTreshold();
@@ -536,22 +537,36 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.onMutation = function( mutations ) {
 		const self = this;
+		//console.log( 'onMutation', mutations );
 		self.reposition();
 		
 		/*
 		mutations.forEach( handle );
 		function handle( mutation ) {
 			var isAdded = !!mutation.addedNodes.length;
-			if ( isAdded )
-				self.bindLoad( mutation.addedNodes );
+			if ( !isAdded )
+				return;
+			
+			self.bindLoad( mutation.addedNodes );
 		}
 		*/
 	}
 	
 	ns.BottomScroller.prototype.bindLoad = function( nodes ) {
 		const self = this;
+		console.log( 'bindLoad', nodes );
 		nodes.forEach( findLoadyThings );
 		function findLoadyThings( node ) {
+			if ( null == node )
+				return;
+			
+			const id = node.id;
+			
+			if ( id && ( null != self.checked[ id ] ))
+				return;
+			
+			console.log( 'checking', node );
+			self.checked[ id ] = true;
 			var imgs = node.getElementsByTagName( 'img' );
 			var vids = node.getElementsByTagName( 'video' );
 			
@@ -560,6 +575,7 @@ library.component = library.component || {};
 			if ( 'video' === node.tagName )
 				push( vids, node );
 			
+			console.log( 'found', [ imgs, vids ]);
 			if ( imgs.length )
 				bind( imgs, 'load' );
 			if ( vids.length )
@@ -567,18 +583,35 @@ library.component = library.component || {};
 		}
 		
 		function bind( eles, event ) {
+			setChangeTimeout();
 			Array.prototype.forEach.call( eles, addListener );
 			function addListener( el ) {
+				if ( null == el )
+					return;
+				
 				el.addEventListener( event, handler, false );
 				function handler( e ) {
+					console.log( 'thingie did the thing', el );
 					self.reposition();
 					// nesting functions, fick ja
+					el.removeEventListener( event, handler );
 				}
 			}
 		}
 		
 		function push( tar, item ) {
 			Array.prototype.push.call( tar, item );
+		}
+		
+		function setChangeTimeout() {
+			if ( null != self.stateChangeTimeout )
+				window.clearTimeout( self.stateChangeTimeout );
+			
+			self.stateChangeTimeout = window.setTimeout( unset, 100 );
+			function unset() {
+				console.log( 'unset changeTimeout' );
+				self.stateChangeTimeout = null;
+			}
 		}
 	}
 	
@@ -592,6 +625,11 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.checkIsAtBottom = function( e ) {
 		const self = this;
+		/*
+		console.log( 'checkIsAtBottom', [ e, self.stateChangeTimeout ]);
+		if ( null != self.stateChangeTimeout )
+			return;
+		*/
 		var viewport = self.element.parentNode;
 		var scrollHeight = self.element.scrollHeight;
 		var difference = self.element.scrollTop + viewport.scrollHeight;
@@ -608,6 +646,7 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.reposition = function() {
 		const self = this;
+		//console.log( 'reposition', self.scrollAtBottom );
 		if ( !self.scrollAtBottom )
 			return;
 		
@@ -1227,7 +1266,7 @@ library.component = library.component || {};
 					t : req.responseType,
 					h : headers,
 				});
-*/
+				*/
 				reject( 'invalid' );
 			}
 		}
@@ -1300,7 +1339,9 @@ library.component = library.component || {};
 			src : src,
 		};
 		const htmlElement = self.template.getElement( 'image-expand-tmpl', conf );
-		htmlElement.addEventListener( 'click', onClick, false );
+		//htmlElement.addEventListener( 'click', onClick, false );
+		//htmlElement.addEventListener( 'load', onLoad, false );
+		
 		return {
 			content : htmlElement,
 			onClick : onClick,
@@ -1309,11 +1350,13 @@ library.component = library.component || {};
 		function onClick( e ) {
 			const t = e.target;
 			const tName = t.tagName;
+			/*
 			console.log( 'onClick', {
 				e     : e,
 				t     : t,
 				tName : tName,
 			});
+			*/
 			if ( 'IMG' != tName )
 				return;
 			
@@ -1321,6 +1364,12 @@ library.component = library.component || {};
 			e.stopPropagation();
 			self.sendOpen( src );
 		}
+		
+		/*
+		function onLoad( e ) {
+			console.log( 'onLoad', e );
+		}
+		*/
 	}
 	
 	ns.LinkExpand.prototype.expandAudio = function( a, mime ) {

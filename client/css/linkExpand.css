@@ -49,15 +49,18 @@
 
 .link-expand-content {
 	position: relative;
-	max-width: 80%;
+	max-width: 100%;
 	margin : 0.4em;
 }
 
 .link-expand .link-expand-video,
 .link-expand .link-expand-image {
+	/*
 	max-height    : 10em;
-	max-width     : 100%;
 	min-height    : 3.5em;
+	*/
+	height        : 10em;
+	max-width     : 100%;
 	border-radius : 0.2em;
 }
 
@@ -68,7 +71,7 @@
 
 .link-expand .link-expand-image {
 	object-fit: cover;
-	border: 0.2em solid rgba( 130, 130, 130, 0.3 );
+	border: 0.02em solid rgba( 130, 130, 130, 0.3 );
 }
 
 .link-expand .link-expand-file {

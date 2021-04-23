@@ -70,7 +70,7 @@ library.view = library.view || {};
 		const dropConf = {
 			targetId : 'hello',
 			ondrop   : onDrop,
-		}
+		};
 		self.drop = new library.component.Drop( dropConf );
 		function onDrop( event ) {
 			console.log( 'Drop onDrop', event );

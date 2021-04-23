@@ -2192,8 +2192,8 @@ var hello = window.hello || {};
 			'action'       : action,
 			'notification' : notie,
 			'log'          : log,
-			'update'       : e => { self.update( e )},
-			'edit'         : e => { self.update( e, true )},
+			'update'       : e => self.update( e ),
+			'edit'         : e => self.update( e, true ),
 			'confirm'      : e => self.handleConfirm( e ),
 		};
 		
@@ -2494,7 +2494,7 @@ var hello = window.hello || {};
 		}
 		
 		const time = self.parseTime( event.time );
-		const envelope = self.getEnvelope( time.envelope );
+		const envelope = await self.getEnvelope( time.envelope );
 		const conf = {
 			inGroup : self.isLastSpeaker( event, envelope ),
 			event   : event,
@@ -2538,12 +2538,14 @@ var hello = window.hello || {};
 		
 		self.pauseSmoothScrolling();
 		self.supressConfirm = true;
+		self.writingLogs = true;
 		
 		if ( 'before' === log.type )
 			await self.handleLogBefore( events );
 		else
 			await self.handleLogAfter( events );
 		
+		self.writingLogs = false;
 		self.supressConfirm = false;
 		let lMId = self.getLastMsgId();
 		self.confirmEvent( 'message', lMId );
@@ -2563,11 +2565,19 @@ var hello = window.hello || {};
 		let lastIndex = ( items.length - 1 );
 		let prevEnvelope = null;
 		let firstMsg = null;
-		items.forEach( handle );
+		let index = 0;
+		for ( const item of items ) {
+			index++;
+			console.log( 'index', index );
+			await handle( item, index );
+		}
+		
+		//items.forEach( handle );
 		if ( prevEnvelope )
 			prevEnvelope.firstMsg = firstMsg;
 		
-		function handle( item, index ) {
+		async function handle( item, index ) {
+			console.log( 'handle', [ item, index ]);
 			const handler = self.buildMap[ item.type ];
 			if ( !handler ) {
 				console.log( 'no handler for event', item );
@@ -2584,7 +2594,7 @@ var hello = window.hello || {};
 			}
 			
 			let time = self.parseTime( event.time );
-			let envelope = self.getEnvelope( time.envelope );
+			let envelope = await self.getEnvelope( time.envelope );
 			if ( prevEnvelope && ( envelope.id !== prevEnvelope.id )) {
 				prevEnvelope.firstMsg = firstMsg;
 				lastSpeakerId = null;
@@ -2880,7 +2890,7 @@ var hello = window.hello || {};
 		return false;
 	}
 	
-	ns.MsgBuilder.prototype.getEnvelope = function( envConf ) {
+	ns.MsgBuilder.prototype.getEnvelope = async function( envConf ) {
 		const self = this;
 		let envelope = self.envelopes[ envConf.id ];
 		if ( envelope )
@@ -2899,6 +2909,7 @@ var hello = window.hello || {};
 			beforeEl = document.getElementById( beforeId );
 		
 		self.container.insertBefore( envelope.el, beforeEl );
+		await waitLol();
 		return envelope;
 		
 		function oldFirst( idA, idB ) {
@@ -2908,6 +2919,12 @@ var hello = window.hello || {};
 				return 1;
 			else
 				return -1;
+		}
+		
+		function waitLol() {
+			return new Promise( resolve => {
+				window.setTimeout( resolve, 5 );
+			});
 		}
 	}
 	
