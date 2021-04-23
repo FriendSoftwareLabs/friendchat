@@ -417,6 +417,7 @@ library.view = library.view || {};
 		self.parser = new library.component.parse.Parser();
 		self.setMentionParsing( state.mentionList );
 		self.setAtParsing( state.atList );
+		self.parser.use( 'FriendPath' );
 		self.parser.use( 'LinkStd' );
 		self.parser.use( 'Emojii', conf.emojii );
 		

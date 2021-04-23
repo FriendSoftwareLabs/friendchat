@@ -1449,6 +1449,7 @@ library.component = library.component || {};
 			fileDescription : fileDescription,
 			appHTML         : appHTML,
 		};
+		
 		console.log( 'conf', conf );
 		const htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
 		return {
@@ -1467,18 +1468,21 @@ library.component = library.component || {};
 			else
 				app = defaultApp;
 			
+			if ( null == app ) {
+				console.log( 'file onclick, no app' );
+				return;
+			}
+			
+			const launch = 'launch ' + app;
 			console.log( 'onClick things', {
 				clicked : clicked,
 				isAppEl : isAppEl,
 				app     : app,
-				defaultApp : defaultApp,
+				defApp  : defaultApp,
+				launch  : launch,
 			});
 			
-			if ( !app ) {
-				return;
-			}
-			
-			window.View.openFile( a.href, 'launch FriendCreate' );
+			window.View.openFile( a.href, launch );
 		}
 		
 		function buildApps( apps ) {

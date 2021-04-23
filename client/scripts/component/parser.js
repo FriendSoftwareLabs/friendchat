@@ -386,9 +386,6 @@ library.component.parse = library.component.parse || {};
 // LINKSTD - simple url linkifier
 (function( ns, undefined ) {
 	ns.LinkStd = function() {
-		if ( !( this instanceof ns.LinkStd ))
-			return new ns.LinkStd();
-		
 		ns.Parse.call( this );
 		const self = this;
 		
@@ -483,6 +480,71 @@ library.component.parse = library.component.parse || {};
 	
 })( library.component.parse );
 
+(function( ns, undefined ) {
+	ns.FriendPath = function() {
+		ns.Parse.call( this );
+		const self = this;
+		
+		self.id = 'LinkStd';
+		
+		self.init();
+	}
+	
+	// Pubies
+	
+	ns.FriendPath.prototype.process = function( str, isLog ) {
+		const self = this;
+		const match = self.pathRX.exec( str );
+		console.log( 'FriendPath', [ str, match ]);
+		if ( match )
+			return makeLink( match[ 0 ]);
+		
+		return null;
+		
+		function makeLink( path ) {
+			var link = document.createElement( 'f' );
+			link.innerText = path;
+			link.href = path; //makeAbsoluteUrl( path );
+			link.target = '_blank';
+			console.log( 'flink', link );
+			return link.outerHTML;
+		}
+		
+		/*
+		function makeAbsoluteUrl( path ) {
+			var match = path.match( self.prefixRX );
+			if ( !match ) {
+				path = 'https://' + path;
+			}
+			
+			return path;
+		}
+		*/
+	}
+	
+	// Privies
+	
+	ns.FriendPath.prototype.init = function() {
+		const self = this;
+		self.buildPathRX();
+	}
+	
+	ns.FriendPath.prototype.buildPathRX = function() {
+		const self = this;
+		const allowed = '_\\-a-z\\u00a1-\\uffff0-9';
+		self.pathRX = new RegExp(
+			// volume
+			"^([" + allowed + "]+:)" +
+			// path
+			"((?:[" + allowed + "]+\\/)+)*" +
+			// file
+			"([" + allowed + "]+\\.[" + allowed + "]+$)"
+			, "i"
+		);
+		console.log( 'pathRX', self.pathRX );
+	}
+	
+})( library.component.parse );
 
 // NL2BR
 // DEPRECATED - use WsToEntity instead probably
