@@ -1341,10 +1341,10 @@ library.component = library.component || {};
 		const headA = el.querySelector( '.link-expand-ui a' );
 		if ( null == headA )
 			return;
-		
-		headA.addEventListener( 'click', onClick, false );
 		*/
+		
 		content.addEventListener( 'click', onClick, false );
+		
 	}
 	
 	ns.LinkExpand.prototype.expandImage = async function( a, mime ) {
@@ -1364,17 +1364,17 @@ library.component = library.component || {};
 		}
 		
 		function onClick( e ) {
+			/*
 			const t = e.target;
 			const tName = t.tagName;
-			/*
 			console.log( 'onClick', {
 				e     : e,
 				t     : t,
 				tName : tName,
 			});
-			*/
 			if ( 'IMG' != tName )
 				return;
+			*/
 			
 			e.preventDefault();
 			e.stopPropagation();
