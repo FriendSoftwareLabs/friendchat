@@ -1,6 +1,6 @@
 .link-expand {
-	overflow    : hidden;
-	white-space : normal;
+	overflow    : hidden ;
+	white-space : normal ;
 }
 
 .link-expand-ui {
@@ -8,21 +8,21 @@
 }
 
 .link-expand-image .link-expand-ui {
-	position : absolute;
-	top      : 0.9em;
-	left     : 0.9em;
-	z-index  : 1;
-	border-radius: 1.25em;
+	position      : absolute ;
+	top           : 0.9em    ;
+	left          : 0.9em    ;
+	z-index       : 1        ;
+	border-radius : 1.25em   ;
 }
 
 .pre-icon {
-	width : 1em;
-	height: 1em;
+	width : 1em ;
+	height: 1em ;
 }
 
 .link-expand-image .pre-icon {
-	width : 2.5em;
-	height: 2.5em;
+	width  : 2.5em ;
+	height : 2.5em ;
 }
 
 .link-expand-ui > .button {
@@ -31,47 +31,47 @@
 
 
 .link-expand-ui .raw-link {
-	width : 0em;
-	position : relative;
+	width    : 0em      ;
+	position : relative ;
 }
 
 .link-expand-ui:hover .raw-link {
-	width         : unset;
-	padding-right : 0.7em;
-	padding-left  : 0.5em;
-	max-width     : 10em;
+	width         : unset ;
+	padding-right : 0.7em ;
+	padding-left  : 0.5em ;
+	max-width     : 10em  ;
 }
 
 
 .link-expand-ui .raw-link a {
-	display       : inline-block;
-	width         : 100%;
-	overflow      : hidden;
-	text-overflow : ellipsis;
-	white-space   : nowrap;
+	display       : inline-block ;
+	width         : 100%         ;
+	overflow      : hidden       ;
+	text-overflow : ellipsis     ;
+	white-space   : nowrap       ;
 }
 
 
 .link-expand .link-expand-content {
-	position: relative;
-	margin: 0;
+	position : relative ;
+	margin   : 0        ;
 }
 
 .link-expand-video .link-expand-content,
 .link-expand-image .link-expand-content {
-	margin : 0.4em;
+	margin : 0.4em ;
 }
 
 .link-expand-video .le-item,
 .link-expand-image .le-item {
-	height        : 10em;
-	max-width     : 100%;
-	border-radius : 0.2em;
+	height        : 10em  ;
+	max-width     : 100%  ;
+	border-radius : 0.2em ;
 }
 
 .link-expand-image .le-item {
-	object-fit: cover;
-	border: 0.02em solid rgba( 130, 130, 130, 0.3 );
+	object-fit : cover                                   ;
+	border     : 0.02em solid rgba( 130, 130, 130, 0.3 ) ;
 }
 
 .link-expand-video,
@@ -84,8 +84,12 @@
 }
 
 .link-expand-file .le-file-icon {
-	height: 3em;
-	width: 3em;
+	height : 3em ;
+	width  : 3em ;
+}
+
+.link-expand-file .le-file-meta {
+	padding-left : 0.5em;
 }
 
 .link-expand-file .le-file-desc {
@@ -97,16 +101,18 @@
 }
 
 .link-expand-file .le-app-item {
-	padding : 0 0.5em;
+	padding       : 0 0.5em ;
+	margin-right  : 0.3em   ;
+	border-radius : 0.3em   ;
 }
 
 #hello .File {
-	float      : unset;
-	transition : unset;
-	width      : unset;
-	margin     : unset;
+	float      : unset ;
+	transition : unset ;
+	width      : unset ;
+	margin     : unset ;
 }
 
 #hello .File .Icon {
-	margin-left : -10px;
+	margin-left : -10px ;
 }

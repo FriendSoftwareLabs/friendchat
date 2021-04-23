@@ -1489,14 +1489,14 @@ library.component = library.component || {};
 				if ( null == defaultApp )
 					defaultApp = app;
 				
-				const div = document.createElement( 'div' );
-				div.innerText = app;
-				div.classList.add( 'le-app-item' );
-				list.push( div );
+				const conf = {
+					appName : app,
+				};
+				const html = hello.template.get( 'file-expand-app-tmpl', conf );
+				list.push( html );
 			});
 			
-			const htmls = list.map( el => el.outerHTML );
-			return htmls.join('');
+			return list.join('');
 		}
 	}
 	
