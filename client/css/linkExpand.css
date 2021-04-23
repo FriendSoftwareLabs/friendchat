@@ -64,9 +64,8 @@
 
 .link-expand-video .le-item,
 .link-expand-image .le-item {
-	max-height    : 10em;
+	height        : 10em;
 	max-width     : 100%;
-	min-height    : 3.5em;
 	border-radius : 0.2em;
 }
 
@@ -96,9 +95,9 @@
 	padding : 0 0.5em;
 }
 
-.link-expand .link-expand-image {
+.link-expand-image {
 	object-fit: cover;
-	border: 0.2em solid rgba( 130, 130, 130, 0.3 );
+	border: 0.02em solid rgba( 130, 130, 130, 0.3 );
 }
 
 #hello .File {

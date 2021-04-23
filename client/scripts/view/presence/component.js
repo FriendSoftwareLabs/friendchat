@@ -1515,35 +1515,50 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.handleLive = function( update ) {
 		const self = this;
-		console.log( 'UserCtrl.handleLive', update );
-		if ( !update || !update.data )
+		const type = update.type;
+		const data = update.data;
+		if ( !type || !data ) {
+			console.log( 'UserCtrl.handleLive, invalid', update );
 			return;
-		
-		const peer = update.data;
-		const uId = peer.peerId;
-		const event = update.type; // 'join' or 'leave'
-		let join = true;
-		const uIdx = self.peerList.indexOf( uId );
-		if ( event === 'leave' ) {
-			join = false;
-			remove( uId, uIdx );
-		} else
-			add( uId, uIdx );
-		
-		self.setState( uId, 'live', join );
-		
-		function remove( uId, uIdx ) {
-			if ( -1 == uIdx )
-				return;
-			
-			self.peerList.splice( uIdx, 1 );
 		}
 		
-		function add( uId, uIdx ) {
-			if ( -1 != uIdx )
+		if ( 'peers' == type ) {
+			reset( data.peerIds );
+			return;
+		}
+		
+		const pId = data.peerId;
+		const pIdx = self.peerList.indexOf( pId );
+		if ( 'join' == type ) {
+			if ( -1 != pIdx )
 				return;
 			
-			self.peerList.push( uId );
+			self.peerList.push( pId );
+			setLive( pId, true );
+			return;
+		}
+		
+		if ( 'leave' == type ) {
+			if ( -1 == pIdx )
+				return;
+			
+			self.peerList.splice( pIdx, 1 );
+			setLive( pId, false );
+			return;
+		}
+		
+		function setLive( peerId, isLive ) {
+			self.setState( peerId, 'live', isLive );
+		}
+		
+		function reset( freshList ) {
+			self.peerList.forEach( pId => {
+				setLive( pId, false );
+			});
+			freshList.forEach( pId => {
+				setLive( pId, true );
+			});
+			self.peerList = freshList;
 		}
 	}
 	
@@ -2177,8 +2192,8 @@ var hello = window.hello || {};
 			'action'       : action,
 			'notification' : notie,
 			'log'          : log,
-			'update'       : e => { self.update( e )},
-			'edit'         : e => { self.update( e, true )},
+			'update'       : e => self.update( e ),
+			'edit'         : e => self.update( e, true ),
 			'confirm'      : e => self.handleConfirm( e ),
 		};
 		
@@ -2479,7 +2494,7 @@ var hello = window.hello || {};
 		}
 		
 		const time = self.parseTime( event.time );
-		const envelope = self.getEnvelope( time.envelope );
+		const envelope = await self.getEnvelope( time.envelope );
 		const conf = {
 			inGroup : self.isLastSpeaker( event, envelope ),
 			event   : event,
@@ -2523,12 +2538,14 @@ var hello = window.hello || {};
 		
 		self.pauseSmoothScrolling();
 		self.supressConfirm = true;
+		self.writingLogs = true;
 		
 		if ( 'before' === log.type )
 			await self.handleLogBefore( events );
 		else
 			await self.handleLogAfter( events );
 		
+		self.writingLogs = false;
 		self.supressConfirm = false;
 		let lMId = self.getLastMsgId();
 		self.confirmEvent( 'message', lMId );
@@ -2548,11 +2565,19 @@ var hello = window.hello || {};
 		let lastIndex = ( items.length - 1 );
 		let prevEnvelope = null;
 		let firstMsg = null;
-		items.forEach( handle );
+		let index = 0;
+		for ( const item of items ) {
+			index++;
+			console.log( 'index', index );
+			await handle( item, index );
+		}
+		
+		//items.forEach( handle );
 		if ( prevEnvelope )
 			prevEnvelope.firstMsg = firstMsg;
 		
-		function handle( item, index ) {
+		async function handle( item, index ) {
+			console.log( 'handle', [ item, index ]);
 			const handler = self.buildMap[ item.type ];
 			if ( !handler ) {
 				console.log( 'no handler for event', item );
@@ -2569,7 +2594,7 @@ var hello = window.hello || {};
 			}
 			
 			let time = self.parseTime( event.time );
-			let envelope = self.getEnvelope( time.envelope );
+			let envelope = await self.getEnvelope( time.envelope );
 			if ( prevEnvelope && ( envelope.id !== prevEnvelope.id )) {
 				prevEnvelope.firstMsg = firstMsg;
 				lastSpeakerId = null;
@@ -2865,7 +2890,7 @@ var hello = window.hello || {};
 		return false;
 	}
 	
-	ns.MsgBuilder.prototype.getEnvelope = function( envConf ) {
+	ns.MsgBuilder.prototype.getEnvelope = async function( envConf ) {
 		const self = this;
 		let envelope = self.envelopes[ envConf.id ];
 		if ( envelope )
@@ -2884,6 +2909,7 @@ var hello = window.hello || {};
 			beforeEl = document.getElementById( beforeId );
 		
 		self.container.insertBefore( envelope.el, beforeEl );
+		await waitLol();
 		return envelope;
 		
 		function oldFirst( idA, idB ) {
@@ -2893,6 +2919,12 @@ var hello = window.hello || {};
 				return 1;
 			else
 				return -1;
+		}
+		
+		function waitLol() {
+			return new Promise( resolve => {
+				window.setTimeout( resolve, 5 );
+			});
 		}
 	}
 	
@@ -3506,8 +3538,10 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.update = function( userList ) {
 		const self = this;
-		console.log( 'LiveStatus.update', userList );
 		userList = userList || [];
+		userList = userList
+			.filter( uId => null != uId );
+		
 		const currIds = Object.keys( self.peerIdMap );
 		const remove = currIds.filter( cId => isNotInList( cId, userList ));
 		remove.forEach( uId => self.removePeer( uId ));
@@ -3596,19 +3630,21 @@ var hello = window.hello || {};
 		if ( 'live' !== event.state )
 			return;
 		
-		console.log( 'LiveStatus.handleLive', event );
-		if ( event.isSet )
-			self.addPeer( event.userId );
+		const uId = event.userId;
+		const isLive = event.isSet;
+		if ( null == uId ) {
+			console.trace( 'LiveStatus.handleLive - no peer id', event );
+			return;
+		}
+		
+		if ( isLive )
+			self.addPeer( uId );
 		else
-			self.removePeer( event.userId );
+			self.removePeer( uId );
 	}
 	
 	ns.LiveStatus.prototype.addPeer = async function( userId ) {
 		const self = this;
-		console.log( 'addPeer', {
-			userId : userId,
-			peer   : self.peerIdMap[ userId ],
-		});
 		if ( self.peerIdMap[ userId ])
 			return;
 		
