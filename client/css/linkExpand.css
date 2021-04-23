@@ -69,6 +69,11 @@
 	border-radius : 0.2em;
 }
 
+.link-expand-image .le-item {
+	object-fit: cover;
+	border: 0.02em solid rgba( 130, 130, 130, 0.3 );
+}
+
 .link-expand-video,
 .link-expand-audio {
 	
@@ -93,11 +98,6 @@
 
 .link-expand-file .le-app-item {
 	padding : 0 0.5em;
-}
-
-.link-expand-image {
-	object-fit: cover;
-	border: 0.02em solid rgba( 130, 130, 130, 0.3 );
 }
 
 #hello .File {
