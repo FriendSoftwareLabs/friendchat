@@ -92,6 +92,10 @@
 	
 }
 
+.link-expand-file .le-app-item {
+	padding : 0 0.5em;
+}
+
 .link-expand .link-expand-image {
 	object-fit: cover;
 	border: 0.2em solid rgba( 130, 130, 130, 0.3 );

@@ -1375,14 +1375,21 @@ library.component = library.component || {};
 		const fileName = mime.fileName;
 		let fileDescription = fileName;
 		let appHTML = '';
-		const apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
+		let defaultApp = null;
+		let apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
 		console.log( 'apps', apps );
-		
 		if ( !apps ) {
+			apps = {};
+			apps[ mime.fileExt ] = 'FriendCreate';
+		}
+		
+		if ( apps ) {
 			fileDescription = fileName
 				+ ', '
-				+ View.i18n( 'i18n_open_with')
+				+ View.i18n( 'i18n_open_with' )
 				+ ':';
+				
+			appHTML = buildApps( apps );
 		}
 		
 		let typeClass = 'File';
@@ -1394,6 +1401,7 @@ library.component = library.component || {};
 			fileDescription : fileDescription,
 			appHTML         : appHTML,
 		};
+		console.log( 'conf', conf );
 		const htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
 		return {
 			type    : 'file',
@@ -1403,7 +1411,44 @@ library.component = library.component || {};
 		
 		function onClick( e ) {
 			console.log( 'file onClick', [ e, a.href, mime ]);
+			let app = null;
+			const clicked = e.path[ 0 ];
+			const isAppEl = clicked.classList.contains( 'le-app-item' );
+			if ( isAppEl )
+				app = clicked.innerText;
+			else
+				app = defaultApp;
+			
+			console.log( 'onClick things', {
+				clicked : clicked,
+				isAppEl : isAppEl,
+				app     : app,
+				defaultApp : defaultApp,
+			});
+			
+			if ( !app ) {
+				return;
+			}
+			
 			window.View.openFile( a.href, 'launch FriendCreate' );
+		}
+		
+		function buildApps( apps ) {
+			const list = [];
+			const exts = Object.keys( apps );
+			exts.forEach( ext => {
+				const app = apps[ ext ];
+				if ( null == defaultApp )
+					defaultApp = app;
+				
+				const div = document.createElement( 'div' );
+				div.innerText = app;
+				div.classList.add( 'le-app-item' );
+				list.push( div );
+			});
+			
+			const htmls = list.map( el => el.outerHTML );
+			return htmls.join('');
 		}
 	}
 	
