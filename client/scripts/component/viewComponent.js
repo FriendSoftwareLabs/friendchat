@@ -1325,11 +1325,13 @@ library.component = library.component || {};
 		if ( null == onClick )
 			return;
 		
+		/*
 		const headA = el.querySelector( '.link-expand-ui a' );
 		if ( null == headA )
 			return;
+		*/
 		
-		headA.addEventListener( 'click', onClick, false );
+		el.addEventListener( 'click', onClick, false );
 	}
 	
 	ns.LinkExpand.prototype.expandImage = function( a, mime ) {
