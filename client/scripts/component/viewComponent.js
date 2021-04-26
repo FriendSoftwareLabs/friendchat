@@ -1282,7 +1282,7 @@ library.component = library.component || {};
 			}
 			
 			function junkToSpace( junk ) {
-				const rx = new RegExp('\\%(?:25|20)+)', 'g' );
+				const rx = new RegExp('(\\%(?:25|20)+)', 'g' );
 				console.log( 'junk', [ junk, rx ]);
 				const clean = junk.replace( rx, ' ' );
 				console.log( 'clean', clean );
