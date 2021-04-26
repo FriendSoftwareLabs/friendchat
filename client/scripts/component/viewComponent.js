@@ -1435,10 +1435,13 @@ library.component = library.component || {};
 		let defaultApp = null;
 		let apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
 		console.log( 'apps', apps );
+		
+		/*
 		if ( !apps ) {
 			apps = {};
 			apps[ mime.fileExt ] = 'FriendCreate';
 		}
+		*/
 		
 		if ( apps ) {
 			fileDescription = fileName
@@ -1469,6 +1472,9 @@ library.component = library.component || {};
 		
 		function onClick( e ) {
 			console.log( 'file onClick', [ e, a.href, mime ]);
+			if ( null == apps )
+				return;
+			
 			let app = null;
 			const clicked = e.path[ 0 ];
 			const isAppEl = clicked.classList.contains( 'le-app-item' );
