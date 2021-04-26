@@ -259,22 +259,12 @@ var friend = window.friend || {};
 	ns.View.prototype.openLink = async function( href, appName ) {
 		const self = this;
 		console.log( 'openLink', [ href, appName ]);
-		var req = new window.XMLHttpRequest();
-		req.addEventListener( 'progress', reqProgress );
-		req.addEventListener( 'readystatechange', reqReadyState );
-		req.addEventListener( 'error', reqError );
-		req.addEventListener( 'load', reqLoad );
-		req.addEventListener( 'timeout', reqTimeout );
-		req.open( 'GET', href );
-		req.send();
-		
-		function reqProgress( e ) { console.log( 'reqProgress', e ); }
-		function reqReadyState( e ) { console.log( 'reqReadyState', e ); }
-		function reqError( e ) { console.log( 'reqError', e ); }
-		function reqTimeout( e ) { console.log('reqTimeout', e ); }
-		function reqLoad( e ) {
-			console.log( 'reqLoad', e );
-		}
+		const response = await window.fetch( href );
+		const file = await response.blob();
+		console.log( 'things', {
+			response : response,
+			file     : file,
+		});
 		
 	}
 	
@@ -1618,6 +1608,7 @@ window.View = new api.View();
 		const self = this;
 		return new Promise(( resolve, reject ) => {
 			const items = self.normalize( DOMEvent );
+			console.log( 'items', items );
 			if ( !items.length ) {
 				resolve([]);
 				return;
@@ -1771,6 +1762,7 @@ window.View = new api.View();
 	
 	ns.PasteHandler.prototype.normalize = function( e ) {
 		const self = this;
+		console.log( 'normalize', e );
 		const dTrans = e.dataTransfer;
 		let items = [];
 		// from camera
