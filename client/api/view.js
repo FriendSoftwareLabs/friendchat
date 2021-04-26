@@ -256,16 +256,21 @@ var friend = window.friend || {};
 		self.sendTypeEvent( 'open-file', open );
 	}
 	
-	ns.View.prototype.openLink = async function( href, appName ) {
+	ns.View.prototype.openLink = async function( href, fileName, appName ) {
 		const self = this;
 		console.log( 'openLink', [ href, appName ]);
-		const response = await window.fetch( href );
-		const file = await response.blob();
+		const link = await window.fetch( href );
+		const blob = await link.blob();
+		const file = new File( blob, fileName );
 		console.log( 'things', {
-			response : response,
+			link     : link,
+			blob     : blob,
 			file     : file,
 		});
 		
+		const pH = new api.PasteHandler();
+		const res = await pH.uploadFile( file );
+		console.log( 'openLink - upload res', res );
 	}
 	
 	ns.View.prototype.getConfig = function() {
@@ -1708,6 +1713,7 @@ window.View = new api.View();
 	
 	ns.PasteHandler.prototype.uploadFile = function( file ) {
 		const self = this;
+		console.log( 'uploadFile', file );
 		//const type = ( file.type == '' ? 'application/octet-stream' : file.type );
 		let fileName = file.name;
 		if ( fileName )
