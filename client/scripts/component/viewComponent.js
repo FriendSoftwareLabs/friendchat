@@ -1475,14 +1475,15 @@ library.component = library.component || {};
 			
 			const launch = 'launch ' + app;
 			console.log( 'onClick things', {
-				clicked : clicked,
-				isAppEl : isAppEl,
-				app     : app,
-				defApp  : defaultApp,
-				launch  : launch,
+				clicked  : clicked,
+				isAppEl  : isAppEl,
+				app      : app,
+				defApp   : defaultApp,
+				launch   : launch,
+				fileName : fileName,
 			});
 			
-			window.View.openLink( a.href, launch );
+			window.View.openLink( a.href, fileName, launch );
 		}
 		
 		function buildApps( apps ) {

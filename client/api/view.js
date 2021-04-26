@@ -258,19 +258,24 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.openLink = async function( href, fileName, appName ) {
 		const self = this;
-		console.log( 'openLink', [ href, appName ]);
+		console.log( 'openLink', [ href, fileName, appName ]);
 		const link = await window.fetch( href );
 		const blob = await link.blob();
-		const file = new File( blob, fileName );
 		console.log( 'things', {
 			link     : link,
 			blob     : blob,
-			file     : file,
 		});
+		const file = new File([ blob ], fileName );
+		console.log( 'file', file );
 		
 		const pH = new api.PasteHandler();
 		const res = await pH.uploadFile( file );
 		console.log( 'openLink - upload res', res );
+		if ( null == res.path )
+			return false;
+		
+		const path = res.path;
+		self.openFile( path, appName );
 	}
 	
 	ns.View.prototype.getConfig = function() {
@@ -1606,6 +1611,7 @@ window.View = new api.View();
 		const self = this;
 		self.name = sourceName || 'file';
 		self.saveDir = 'Home:FriendChat/';
+		self.dirFiles = {};
 		self.dup = 1;
 	}
 	
@@ -1624,10 +1630,9 @@ window.View = new api.View();
 				.catch( reject );
 			
 			function pathOk( dirFileList ) {
-				const dirFiles = {};
 				dirFileList.forEach( item  => {
 					const name = item.Filename;
-					dirFiles[ name ] = item;
+					self.dirFiles[ name ] = item;
 				});
 				self.dirFiles = dirFiles;
 				upload( items );
