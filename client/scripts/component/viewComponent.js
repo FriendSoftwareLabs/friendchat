@@ -1482,7 +1482,7 @@ library.component = library.component || {};
 				launch  : launch,
 			});
 			
-			window.View.openFile( a.href, launch );
+			window.View.openLink( a.href, launch );
 		}
 		
 		function buildApps( apps ) {

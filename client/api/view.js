@@ -256,6 +256,28 @@ var friend = window.friend || {};
 		self.sendTypeEvent( 'open-file', open );
 	}
 	
+	ns.View.prototype.openLink = async function( href, appName ) {
+		const self = this;
+		console.log( 'openLink', [ href, appName ]);
+		var req = new window.XMLHttpRequest();
+		req.addEventListener( 'progress', reqProgress );
+		req.addEventListener( 'readystatechange', reqReadyState );
+		req.addEventListener( 'error', reqError );
+		req.addEventListener( 'load', reqLoad );
+		req.addEventListener( 'timeout', reqTimeout );
+		req.open( 'GET', href );
+		req.send();
+		
+		function reqProgress( e ) { console.log( 'reqProgress', e ); }
+		function reqReadyState( e ) { console.log( 'reqReadyState', e ); }
+		function reqError( e ) { console.log( 'reqError', e ); }
+		function reqTimeout( e ) { console.log('reqTimeout', e ); }
+		function reqLoad( e ) {
+			console.log( 'reqLoad', e );
+		}
+		
+	}
+	
 	ns.View.prototype.getConfig = function() {
 		const self = this;
 		return self.appConf;
