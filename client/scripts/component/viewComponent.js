@@ -1213,7 +1213,8 @@ library.component = library.component || {};
 			const extParts = url.split( '.' );
 			const fileExt = extParts.pop();
 			const fileParts = url.split( '/' );
-			const fileName = fileParts.pop();
+			let fileName = fileParts.pop();
+			fileName = junkToSpace( fileName );
 			
 			url = url.replace( /^http:/, 'https:' );
 			var req = new window.XMLHttpRequest();
@@ -1278,6 +1279,14 @@ library.component = library.component || {};
 				});
 				*/
 				reject( 'invalid' );
+			}
+			
+			function junkToSpace( junk ) {
+				const rx = new RegExp('\\%(?:25|20)+)', 'g' );
+				console.log( 'junk', [ junk, rx ]);
+				const clean = junk.replace( rx, ' ' );
+				console.log( 'clean', clean );
+				return clean;
 			}
 		}
 	}
