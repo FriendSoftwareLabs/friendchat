@@ -1436,13 +1436,6 @@ library.component = library.component || {};
 		let apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
 		console.log( 'apps', apps );
 		
-		/*
-		if ( !apps ) {
-			apps = {};
-			apps[ mime.fileExt ] = 'FriendCreate';
-		}
-		*/
-		
 		if ( apps ) {
 			fileDescription = fileName
 				+ ', '
@@ -1471,52 +1464,42 @@ library.component = library.component || {};
 		};
 		
 		function onClick( e ) {
-			console.log( 'file onClick', [ e, a.href, mime ]);
-			if ( null == apps )
-				return;
-			
 			let app = null;
 			const clicked = e.path[ 0 ];
 			const isAppEl = clicked.classList.contains( 'le-app-item' );
-			if ( isAppEl )
-				app = clicked.innerText;
-			else
-				app = defaultApp;
-			
-			if ( null == app ) {
-				console.log( 'file onclick, no app' );
-				return;
-			}
-			
-			const launch = 'launch ' + app;
-			console.log( 'onClick things', {
+			console.log( 'file onClick', {
+				e        : e,
+				a        : a.href,
+				mime     : mime,
 				clicked  : clicked,
 				isAppEl  : isAppEl,
-				app      : app,
-				defApp   : defaultApp,
-				launch   : launch,
 				fileName : fileName,
 			});
+			if ( !isAppEl )
+				return;
 			
+			app = clicked.innerText;
+			const launch = 'launch ' + app;
 			window.View.openLink( a.href, fileName, launch );
 		}
 		
 		function buildApps( apps ) {
-			const list = [];
 			const exts = Object.keys( apps );
-			exts.forEach( ext => {
+			const list = exts.map( ext => {
 				const app = apps[ ext ];
-				if ( null == defaultApp )
-					defaultApp = app;
-				
+				return buildApp( app );
+			});
+			
+			return list.join('');
+			
+			function buildApp( appName ) {
 				const conf = {
 					appName : app,
 				};
 				const html = hello.template.get( 'file-expand-app-tmpl', conf );
-				list.push( html );
-			});
-			
-			return list.join('');
+				return html;
+				//list.push( html );
+			}
 		}
 	}
 	

@@ -12,7 +12,17 @@
 	top           : 0.9em    ;
 	left          : 0.9em    ;
 	z-index       : 1        ;
-	border-radius : 1.25em   ;
+	border-radius : 1em      ;
+}
+
+.link-expand-image .link-expand-ui .dl-btn {
+	border-top-left-radius    : 1em ;
+	border-bottom-left-radius : 1em ;
+}
+
+.link-expand-image .link-expand-ui .show-link {
+	border-top-right-radius    : 1em ;
+	border-bottom-right-radius : 1em ;
 }
 
 .pre-icon {
@@ -21,12 +31,8 @@
 }
 
 .link-expand-image .pre-icon {
-	width  : 2.5em ;
-	height : 2.5em ;
-}
-
-.link-expand-ui > .button {
-	
+	width  : 2em ;
+	height : 2em ;
 }
 
 .link-expand-ui .raw-link {
@@ -34,21 +40,18 @@
 	position : relative ;
 }
 
-.link-expand-ui:hover .raw-link {
+.link-expand-ui .show-link:hover .raw-link {
 	width         : unset ;
 	padding-right : 0.7em ;
 	padding-left  : 0.5em ;
 	max-width     : 10em  ;
 }
 
-.link-expand-ui .raw-link a {
-	display       : inline-block ;
-	width         : 100%         ;
+.link-expand-ui .raw-link {
 	overflow      : hidden       ;
 	text-overflow : ellipsis     ;
 	white-space   : nowrap       ;
 }
-
 
 .link-expand .link-expand-content {
 	position : relative ;
@@ -103,6 +106,11 @@
 	margin-right  : 0.3em   ;
 	border-radius : 0.3em   ;
 	cursor        : pointer ;
+	opacity       : 0.8     ;
+}
+
+.link-expand-file .le-app-item:hover {
+	opacity : 1 ;
 }
 
 #hello .File {
