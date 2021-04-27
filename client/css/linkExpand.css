@@ -9,12 +9,14 @@
 
 .link-expand-image .link-expand-ui {
 	position      : absolute ;
-	top           : 0.9em    ;
-	left          : 0.9em    ;
+	top           : 0.6em    ;
+	left          : 0.6em    ;
 	z-index       : 1        ;
 	border-radius : 1em      ;
+	overflow      : hidden   ;
 }
 
+/*
 .link-expand-image .link-expand-ui .dl-btn {
 	border-top-left-radius    : 1em ;
 	border-bottom-left-radius : 1em ;
@@ -24,15 +26,18 @@
 	border-top-right-radius    : 1em ;
 	border-bottom-right-radius : 1em ;
 }
+*/
 
+/*
 .pre-icon {
-	width : 1em ;
-	height: 1em ;
+	width : 2em ;
+	height: 2em ;
 }
+*/
 
 .link-expand-image .pre-icon {
-	width  : 2em ;
-	height : 2em ;
+	width  : 2.4em ;
+	height : 2em   ;
 }
 
 .link-expand-ui .raw-link {
@@ -40,17 +45,20 @@
 	position : relative ;
 }
 
-.link-expand-ui .show-link:hover .raw-link {
+/*
+.link-expand-image .show-link:hover .raw-link {
 	width         : unset ;
 	padding-right : 0.7em ;
 	padding-left  : 0.5em ;
 	max-width     : 10em  ;
 }
+*/
 
 .link-expand-ui .raw-link {
-	overflow      : hidden       ;
-	text-overflow : ellipsis     ;
-	white-space   : nowrap       ;
+	display       : none     ;
+	overflow      : hidden   ;
+	text-overflow : ellipsis ;
+	white-space   : nowrap   ;
 }
 
 .link-expand .link-expand-content {
@@ -78,6 +86,20 @@
 .link-expand-video,
 .link-expand-audio {
 	
+}
+
+.link-expand-file {
+	display        : flex        ;
+	flex-direction : row-reverse ;
+	padding-right  : 4em         ;
+}
+
+.link-expand-file .link-expand-ui {
+	flex : 0 0 auto;
+}
+
+.link-expand-file .link-expand-content {
+	flex : 1 1 auto ;
 }
 
 .link-expand-file .le-item {
@@ -123,4 +145,9 @@
 
 #hello .File .Icon {
 	margin-left : -10px ;
+}
+
+#hello .link-expand-image .Button {
+	padding : unset ;
+	margin  : unset ;
 }

@@ -1387,7 +1387,7 @@ library.component = library.component || {};
 			
 			e.preventDefault();
 			e.stopPropagation();
-			self.sendOpen( src );
+			self.openImage( src );
 		}
 		
 		/*
@@ -1431,19 +1431,16 @@ library.component = library.component || {};
 		});
 		const fileName = mime.fileName;
 		let fileDescription = fileName;
-		let appHTML = '';
-		let defaultApp = null;
+		let openHTML = '';
+		let openWith = null;
 		let apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
 		console.log( 'apps', apps );
+		apps = {
+			'.jsx' : 'FriendCreate',
+		};
 		
-		if ( apps ) {
-			fileDescription = fileName
-				+ ', '
-				+ View.i18n( 'i18n_open_with' )
-				+ ':';
-				
-			appHTML = buildApps( apps );
-		}
+		if ( apps )
+			setOpen( apps );
 		
 		let typeClass = 'File';
 		if ( mime && mime.fileExt )
@@ -1452,54 +1449,44 @@ library.component = library.component || {};
 		const conf = {
 			typeClass       : typeClass,
 			fileDescription : fileDescription,
-			appHTML         : appHTML,
+			openHTML         : openHTML,
 		};
 		
 		console.log( 'conf', conf );
-		const htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
+		const el = self.template.getElement( 'file-expand-tmpl', conf );
+		const open = el.querySelector( '.le-app-open' );
+		if ( null != open )
+			open.addEventListener( 'click', onClick, false );
+		
 		return {
 			type    : 'file',
-			content : htmlElement,
-			onClick : onClick,
+			content : el,
 		};
 		
 		function onClick( e ) {
-			let app = null;
-			const clicked = e.path[ 0 ];
-			const isAppEl = clicked.classList.contains( 'le-app-item' );
-			console.log( 'file onClick', {
+			console.log( 'open onClick', {
 				e        : e,
 				a        : a.href,
 				mime     : mime,
-				clicked  : clicked,
-				isAppEl  : isAppEl,
+				openWith : openWith,
 				fileName : fileName,
 			});
-			if ( !isAppEl )
+			
+			if ( null == openWith )
 				return;
 			
-			app = clicked.innerText;
-			const launch = 'launch ' + app;
+			const launch = 'launch ' + openWith;
+			console.log( 'launch', launch );
 			window.View.openLink( a.href, fileName, launch );
 		}
 		
-		function buildApps( apps ) {
+		function setOpen( apps ) {
 			const exts = Object.keys( apps );
-			const list = exts.map( ext => {
+			exts.forEach( ext => {
 				const app = apps[ ext ];
-				return buildApp( app );
+				openWith = app;
 			});
-			
-			return list.join('');
-			
-			function buildApp( appName ) {
-				const conf = {
-					appName : app,
-				};
-				const html = hello.template.get( 'file-expand-app-tmpl', conf );
-				return html;
-				//list.push( html );
-			}
+			openHTML = hello.template.get( 'file-expand-open-tmpl', {});
 		}
 	}
 	
@@ -1519,9 +1506,9 @@ library.component = library.component || {};
 		//return a.href;
 	}
 	
-	ns.LinkExpand.prototype.sendOpen = function( src ) {
+	ns.LinkExpand.prototype.openImage = function( src ) {
 		const self = this;
-		console.log( 'LinkExpand.sendOpen', src );
+		console.log( 'LinkExpand.openImage', src );
 		window.View.sendBase({
 			type   : 'dos',
 			method : 'openWindowByFilename',

@@ -538,16 +538,17 @@ content
 <script id="link-expand-tmpl" type="text/html">
 <div class="link-expand link-expand-<%= type %>">
 	<div class="link-expand-ui group row start BackgroundDefault">
-		<div class="pre-icon dl-btn Button center-child fortify">
-			<i class="fa fa-fw fa-cube"></i>
+		<div class="pre-icon dl-btn Button IconButton center-child fortify">
+			<i class="fa fa-fw fa-download"></i>
 		</div>
 		<div class="show-link group row fortify">
-			<div class="pre-icon center-child fortify">
-				<i class="fa fa-fw fa-link"></i>
-			</div>
-			<div class="raw-link fortify">
-				<a class="link-expand-direct-url" href="<%= href %>" target="_blank" title="<%= href %>">
-					<%= file %>
+			<div class="pre-icon Button IconButton fortify">
+				<a class="link-expand-direct-url center-child"
+					href="<%= href %>"
+					target="_blank"
+					title="<%= href %>"
+				>
+					<i class="fa fa-fw fa-external-link"></i>
 				</a>
 			</div>
 		</div>
@@ -581,30 +582,27 @@ src
 <!-- file-expand-tmpl
 typeClass,
 fileDescription,
-appHTML,
+openHTML,
 -->
 <script id="file-expand-tmpl" type="text/html">
 <div class="le-item File group row">
 	<div class="le-file-icon Icon fortify">
 		<div class="<%=typeClass%>"></div>
 	</div>
-	<div class="le-file-meta expand">
-		<div class="le-file-desc">
+	<div class="le-file-meta group row expand">
+		<div class="le-file-desc expand">
 			<%= fileDescription %>
 		</div>
-		<div class="le-file-apps group row start">
-			<%= appHTML %>
-		</div>
+		<%= openHTML %>
 	</div>
 </div>
 </script>
 
-<!-- file expand app tmpl
-appName,
+<!-- file expand open tmpl
 -->
-<script id="file-expand-app-tmpl" type="text/html">
-<div class="le-app-item Available">
-	<%= appName %>
+<script id="file-expand-open-tmpl" type="text/html">
+<div class="le-app-open Button IconButton center-child">
+	<i class="fa fa-fw fa-sign-in"></i>
 </div>
 </script>
 
