@@ -29,7 +29,6 @@
 	
 }
 
-
 .link-expand-ui .raw-link {
 	width    : 0em      ;
 	position : relative ;
@@ -41,7 +40,6 @@
 	padding-left  : 0.5em ;
 	max-width     : 10em  ;
 }
-
 
 .link-expand-ui .raw-link a {
 	display       : inline-block ;
@@ -104,6 +102,7 @@
 	padding       : 0 0.5em ;
 	margin-right  : 0.3em   ;
 	border-radius : 0.3em   ;
+	cursor        : pointer ;
 }
 
 #hello .File {
@@ -111,6 +110,7 @@
 	transition : unset ;
 	width      : unset ;
 	margin     : unset ;
+	cursor     : unset ;
 }
 
 #hello .File .Icon {
