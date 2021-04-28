@@ -1453,9 +1453,6 @@ library.component = library.component || {};
 		let openWith = null;
 		let apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
 		console.log( 'apps', apps );
-		apps = {
-			'.jsx' : 'FriendCreate',
-		};
 		
 		if ( apps )
 			setOpen( apps );
