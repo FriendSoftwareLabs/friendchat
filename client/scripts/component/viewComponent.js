@@ -1321,6 +1321,7 @@ library.component = library.component || {};
 			a    : a,
 			conf : conf,
 		});
+		const href = a.href;
 		const file = conf.mime;
 		const type = conf.type;
 		const content = conf.content;
@@ -1338,7 +1339,6 @@ library.component = library.component || {};
 		*/
 		const elConf = {
 			type : type,
-			href : a.href,
 			//file : file,
 		};
 		
@@ -1351,7 +1351,9 @@ library.component = library.component || {};
 		parent.appendChild( el );
 		
 		const dl = el.querySelector( '.link-expand-ui .dl-btn' );
+		const ext = el.querySelector( '.link-expand-ui .show-link' );
 		dl.addEventListener( 'click', onDL, false );
+		ext.addEventListener( 'click', onExt, false );
 		
 		if ( null == onClick )
 			return;
@@ -1367,6 +1369,11 @@ library.component = library.component || {};
 		function onDL( e ) {
 			console.log( 'onDL', [ e, a, file ]);
 			window.View.saveLink( a.href, file.fileName );
+		}
+		
+		function onExt( e ) {
+			console.log( 'onExt', href );
+			window.open( href, '_blank' );
 		}
 		
 	}
