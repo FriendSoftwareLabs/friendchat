@@ -1337,8 +1337,13 @@ library.component = library.component || {};
 		
 		file = window.decodeURIComponent( file );
 		*/
+		let bgDef = '';
+		if ( null != conf.bgDefault )
+			bgDef = 'BackgroundDefault';
+		
 		const elConf = {
-			type : type,
+			type      : type,
+			bgDefault : bgDef,
 			//file : file,
 		};
 		
@@ -1350,8 +1355,9 @@ library.component = library.component || {};
 		parent.removeChild( a );
 		parent.appendChild( el );
 		
-		const dl = el.querySelector( '.link-expand-ui .dl-btn' );
-		const ext = el.querySelector( '.link-expand-ui .show-link' );
+		const leui = el.querySelector( '.link-expand-ui' );
+		const dl = leui.querySelector( '.dl-btn' );
+		const ext = leui.querySelector( '.show-link' );
 		dl.addEventListener( 'click', onDL, false );
 		ext.addEventListener( 'click', onExt, false );
 		
@@ -1389,10 +1395,11 @@ library.component = library.component || {};
 		//htmlElement.addEventListener( 'load', onLoad, false );
 		
 		return {
-			type    : 'image',
-			mime    : mime,
-			content : htmlElement,
-			onClick : onClick,
+			type      : 'image',
+			mime      : mime,
+			content   : htmlElement,
+			bgDefault : true,
+			onClick   : onClick,
 		}
 		
 		function onClick( e ) {
@@ -1509,7 +1516,10 @@ library.component = library.component || {};
 				const app = apps[ ext ];
 				openWith = app;
 			});
-			openHTML = hello.template.get( 'file-expand-open-tmpl', {});
+			conf = {
+				app : openWith,
+			};
+			openHTML = hello.template.get( 'file-expand-open-tmpl', conf );
 		}
 	}
 	
