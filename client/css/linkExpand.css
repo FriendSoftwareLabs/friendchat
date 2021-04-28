@@ -12,7 +12,7 @@
 	top           : 0.6em    ;
 	left          : 0.6em    ;
 	z-index       : 1        ;
-	border-radius : 1em      ;
+	border-radius : 1.2em    ;
 	overflow      : hidden   ;
 }
 
@@ -36,8 +36,8 @@
 */
 
 .link-expand-image .pre-icon {
-	width  : 2.4em ;
-	height : 2em   ;
+	width  : 2.6em ;
+	height : 2.4em ;
 }
 
 .link-expand-ui .raw-link {

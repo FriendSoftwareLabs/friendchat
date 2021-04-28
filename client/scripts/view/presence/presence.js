@@ -219,8 +219,8 @@ library.view = library.view || {};
 		if ( 'Files' !== types )
 			return;
 		
-		const p = new api.PasteHandler();
-		p.handle( e )
+		const fm = new api.FileMaker();
+		fm.fromPaste( e )
 			.then( uploaded )
 			.catch( e => console.log( 'handlePaste err', e ));
 		
