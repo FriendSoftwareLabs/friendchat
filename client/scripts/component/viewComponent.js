@@ -1516,7 +1516,7 @@ library.component = library.component || {};
 				const app = apps[ ext ];
 				openWith = app;
 			});
-			conf = {
+			const conf = {
 				app : openWith,
 			};
 			openHTML = hello.template.get( 'file-expand-open-tmpl', conf );
