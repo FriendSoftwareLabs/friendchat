@@ -9,8 +9,8 @@
 
 .link-expand-image .link-expand-ui {
 	position      : absolute ;
-	top           : 0.6em    ;
-	left          : 0.6em    ;
+	top           : 0.8em    ;
+	left          : 0.8em    ;
 	z-index       : 1        ;
 	border-radius : 1.2em    ;
 	overflow      : hidden   ;
