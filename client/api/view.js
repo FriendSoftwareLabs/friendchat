@@ -246,19 +246,9 @@ var friend = window.friend || {};
 		}
 	}
 	
-	ns.View.prototype.openFile = function( filePath, appName ) {
+	ns.View.prototype.saveLink = async function( href, fileName ) {
 		const self = this;
-		const open = {
-			filePath : filePath,
-			appName  : appName,
-		};
-		
-		self.sendTypeEvent( 'open-file', open );
-	}
-	
-	ns.View.prototype.openLink = async function( href, fileName, appName ) {
-		const self = this;
-		console.log( 'openLink', [ href, fileName, appName ]);
+		console.log( 'saveLink', [ href, fileName ]);
 		const link = await window.fetch( href );
 		const blob = await link.blob();
 		console.log( 'things', {
@@ -270,7 +260,25 @@ var friend = window.friend || {};
 		
 		const pH = new api.PasteHandler();
 		const res = await pH.uploadFile( file );
-		console.log( 'openLink - upload res', res );
+		console.log( 'saveLink - upload res', res );
+		return res;
+	}
+	
+	ns.View.prototype.openFile = function( filePath, appName ) {
+		const self = this;
+		console.log( 'openFile', [ filePath, appName ]);
+		const open = {
+			filePath : filePath,
+			appName  : appName,
+		};
+		
+		self.sendTypeEvent( 'open-file', open );
+	}
+	
+	ns.View.prototype.openLink = async function( href, fileName, appName ) {
+		const self = this;
+		console.log( 'openLink', [ href, fileName, appName ]);
+		const res = await self.saveLink( href, fileName );
 		if ( null == res.path )
 			return false;
 		

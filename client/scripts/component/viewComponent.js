@@ -1317,9 +1317,15 @@ library.component = library.component || {};
 	// Evaluate content and add a "link"
 	ns.LinkExpand.prototype.replace = function( a, conf ) {
 		const self = this;
+		console.log( 'replace', {
+			a    : a,
+			conf : conf,
+		});
+		const file = conf.mime;
 		const type = conf.type;
 		const content = conf.content;
 		const onClick = conf.onClick;
+		/*
 		const src = a.href;
 		const fileMatch = src.match( /\/([-_%\w\s]+\.[\w]+)$/i);
 		let file = null;
@@ -1329,10 +1335,11 @@ library.component = library.component || {};
 			file = src;
 		
 		file = window.decodeURIComponent( file );
+		*/
 		const elConf = {
 			type : type,
 			href : a.href,
-			file : file,
+			//file : file,
 		};
 		
 		const el = self.template.getElement( 'link-expand-tmpl', elConf );
@@ -1342,6 +1349,9 @@ library.component = library.component || {};
 		const parent = a.parentNode;
 		parent.removeChild( a );
 		parent.appendChild( el );
+		
+		const dl = el.querySelector( '.link-expand-ui .dl-btn' );
+		dl.addEventListener( 'click', onDL, false );
 		
 		if ( null == onClick )
 			return;
@@ -1353,6 +1363,11 @@ library.component = library.component || {};
 		*/
 		
 		content.addEventListener( 'click', onClick, false );
+		
+		function onDL( e ) {
+			console.log( 'onDL', [ e, a, file ]);
+			window.View.saveLink( a.href, file.fileName );
+		}
 		
 	}
 	
@@ -1368,6 +1383,7 @@ library.component = library.component || {};
 		
 		return {
 			type    : 'image',
+			mime    : mime,
 			content : htmlElement,
 			onClick : onClick,
 		}
@@ -1406,6 +1422,7 @@ library.component = library.component || {};
 		const htmlElement = self.template.getElement( 'audio-expand-tmpl', conf );
 		return {
 			type    : 'audio',
+			mime    : mime,
 			content : htmlElement,
 		};
 	}
@@ -1419,6 +1436,7 @@ library.component = library.component || {};
 		const htmlElement = self.template.getElement( 'video-expand-tmpl', conf );
 		return {
 			type    : 'video',
+			mime    : mime,
 			content : htmlElement,
 		};
 	}
@@ -1460,6 +1478,7 @@ library.component = library.component || {};
 		
 		return {
 			type    : 'file',
+			mime    : mime,
 			content : el,
 		};
 		
