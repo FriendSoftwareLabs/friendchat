@@ -870,7 +870,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleShell = function( msg ) {
 		const self = this;
-		console.log( 'handleShell', msg );
+		//console.log( 'handleShell', msg );
 		const cb = self.getCallback( msg.shellId );
 		if ( null == cb )
 			return;

@@ -408,16 +408,14 @@ library.view = library.view || {};
 		}
 		
 		// link expansion
-		const leConf = {
-			templateManager : friend.template,
-		};
-		self.linkExpand = new library.component.LinkExpand( leConf );
+		self.linkExpand = new library.component.LinkExpand( window.View.appSettings );
+		//self.pathExpand = new library.component.PathExpand();
 		
 		// message parsing
 		self.parser = new library.component.parse.Parser();
 		self.setMentionParsing( state.mentionList );
 		self.setAtParsing( state.atList );
-		self.parser.use( 'FriendPath' );
+		//self.parser.use( 'FriendPath' );
 		self.parser.use( 'LinkStd' );
 		self.parser.use( 'Emojii', conf.emojii );
 		
@@ -447,6 +445,7 @@ library.view = library.view || {};
 			self.input,
 			self.parser,
 			self.linkExpand,
+			null, //self.pathExpand,
 			self.isView,
 		);
 		
@@ -2011,6 +2010,7 @@ library.view = library.view || {};
 		input,
 		parser,
 		linkExpand,
+		pathExpand,
 		isWorkView
 	) {
 		const self = this;
@@ -2025,7 +2025,8 @@ library.view = library.view || {};
 			workgroups,
 			input,
 			parser,
-			linkExpand
+			linkExpand,
+			pathExpand
 		);
 		
 	}

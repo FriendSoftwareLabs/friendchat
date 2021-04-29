@@ -26,7 +26,6 @@ var friend = window.friend || {}; // already instanced stuff
 
 (function( ns, undefined ) {
 	ns.Shell = function( app ) {
-		console.log( 'shell', app );
 		const self = this;
 		self.app = app;
 		
@@ -41,7 +40,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Shell.prototype.execute = async function( command ) {
 		const self = this;
-		console.log( 'Shell.execute', command );
 		return new Promise(( resolve, reject ) => {
 			const cbId = self.app.setCallback( execBack );
 			const exec = {
@@ -64,7 +62,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Shell.prototype.init = function() {
 		const self = this;
-		console.log( 'Shell.init', self );
 		const cbId = self.app.setCallback( ready );
 		const init = {
 			shellId : cbId,
@@ -79,7 +76,6 @@ var friend = window.friend || {}; // already instanced stuff
 		self.ready = false;
 		
 		function ready( shellInit ) {
-			console.log( 'Shell.init ready', shellInit );
 			self.sessionId = shellInit.shellSession;
 			self.num = shellInit.shellNumber;
 			self.ready = true;
@@ -89,7 +85,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Shell.prototype.executeSendQueue = function() {
 		const self = this;
-		console.log( 'executeSendQueue', self.sendQeue );
 		self.sendQeue.forEach( e => self.send( e ));
 		self.sendQeue = [];
 	}

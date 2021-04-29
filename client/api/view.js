@@ -152,7 +152,6 @@ var friend = window.friend || {};
 	
 	ns.ViewEvent.prototype.handleCallback = function( event ) {
 		const self = this;
-		console.log( 'handleCallback', event );
 		const cb = self.getCallback( event.callback );
 		if ( null == cb )
 			return;
@@ -223,7 +222,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.getAppsForFileType = async function( fileType ) {
 		const self = this;
-		console.log( 'View.getAppsForFileType', fileType );
 		return await check( fileType );
 		
 		function check( fileType ) {
@@ -239,7 +237,6 @@ var friend = window.friend || {};
 				self.sendBase( event );
 				
 				function checkBack( res ) {
-					console.log( 'checkBack', res );
 					resolve( res.data );
 				}
 			});
@@ -248,18 +245,13 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.saveLink = async function( href, fileName ) {
 		const self = this;
-		console.log( 'saveLink', [ href, fileName ]);
-		
 		const fm = new api.FileMaker();
 		const res = await fm.fromLink( href, fileName );
-		//const res = await fm.fromBlob( blob, fileName );
-		console.log( 'saveLink - upload res', res );
 		return res;
 	}
 	
 	ns.View.prototype.openFile = function( filePath, appName ) {
 		const self = this;
-		console.log( 'openFile', [ filePath, appName ]);
 		const open = {
 			filePath : filePath,
 			appName  : appName,
@@ -270,7 +262,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.openLink = async function( href, fileName, appName ) {
 		const self = this;
-		console.log( 'openLink', [ href, fileName, appName ]);
 		const res = await self.saveLink( href, fileName );
 		if ( null == res.path )
 			return false;
@@ -545,6 +536,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.initialize = function( conf ) {
 		const self = this;
+		console.log( 'View.initialize', conf );
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
 		self.authId = conf.authId;
@@ -990,7 +982,6 @@ var friend = window.friend || {};
 				return;
 			}
 			
-			console.log( 'imgBack', msg );
 			const raw = window.atob( msg.data.data.split( ';base64,' )[1] );
 			const uInt8Array = new Uint8Array( raw.length );
 			for ( let i = 0; i < raw.length; ++i ) {

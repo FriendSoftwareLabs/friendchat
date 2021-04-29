@@ -1139,14 +1139,11 @@ library.component = library.component || {};
 
 // LinkExpand
 (function( ns, undefined ) {
-	ns.LinkExpand = function( conf ) {
-		if ( !( this instanceof ns.LinkExpand ))
-			return new ns.LinkExpand( conf );
-			
+	ns.LinkExpand = function( appSettings ) {
 		const self = this;
-		self.template = conf.templateManager; // should be pre-loaded with relevant fragments
+		self.template = hello.template;
 		
-		self.init();
+		self.init( appSettings );
 	}
 	
 	// Public
@@ -1185,15 +1182,22 @@ library.component = library.component || {};
 	
 	// private
 	
-	ns.LinkExpand.prototype.init = function() {
+	ns.LinkExpand.prototype.init = function( appSettings ) {
 		const self = this;
+		console.log( 'LinkExpand.init', appSettings );
+		if ( null != appSettings )
+			self.showDL = !!appSettings.showSaveLinks;
+		
 		self.mimeMap = {
 			'image'       : image,
 			'audio'       : audio,
 			'video'       : video,
-			'text'        : file,
-			'application' : file,
 		};
+		
+		if ( null != appSettings && true == appSettings.expandFileLinks ) {
+			self.mimeMap[ 'text' ] = file;
+			self.mimeMap[ 'application' ] = file;
+		}
 		
 		// anchor, mime
 		function image( a, m ) { return self.expandImage( a, m ); }
@@ -1341,10 +1345,15 @@ library.component = library.component || {};
 		if ( null != conf.bgDefault )
 			bgDef = 'BackgroundDefault';
 		
+		let hideSave = 'hidden';
+		if ( self.showDL )
+			hideSave = '';
+		
 		const elConf = {
 			type      : type,
 			bgDefault : bgDef,
 			href      : href,
+			hideSave  : hideSave,
 		};
 		
 		const el = self.template.getElement( 'link-expand-tmpl', elConf );
@@ -1563,6 +1572,54 @@ library.component = library.component || {};
 		});
 	}
 	
+	
+})( library.component );
+
+(function( ns, undefined ) {
+	ns.PathExpand = function() {
+		const self = this;
+		
+		self.init();
+	}
+	
+	ns.PathExpand.prototype.work = function( el ) {
+		const self = this;
+		const links = el.querySelectorAll( 'f' );
+		console.log( 'pathexpand - work', {
+			el    : el,
+			links : links,
+		});
+		Array.prototype.forEach.call( links, expand );
+		
+		function expand( f ) {
+			console.log( 'expand', f );
+			const path = f.href.toString();
+			
+			
+			async function success( mime ) {
+				console.log( 'success', mime );
+				var handler = self.mimeMap[ mime.type ];
+				if ( !handler )
+					return;
+				
+				var conf = await handler( a, mime );
+				if ( !conf )
+					return null;
+				
+				self.replace( a, conf );
+			}
+			
+			function failed( err ) {
+				console.log( 'LE.mime.failed', err );
+			}
+		}
+	}
+	
+	// Priate
+	
+	ns.PathExpand.prototype.init = function() {
+		const self = this;
+	}
 	
 })( library.component );
 
