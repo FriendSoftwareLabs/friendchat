@@ -532,8 +532,8 @@ faIcon,
 
 <!-- link-expand-tmpl
 type
-content
 bgDefault
+href
 -->
 <script id="link-expand-tmpl" type="text/html">
 <div class="link-expand link-expand-<%= type %>">
@@ -547,6 +547,7 @@ bgDefault
 			title="{i18n_open_in_new_tab}"
 		>
 			<i class="fa fa-fw fa-external-link"></i>
+			<a href="<%= href %>" target="_blank" style="display:none;"></a>
 		</div>
 	</div>
 	<div class="link-expand-content">

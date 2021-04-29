@@ -1344,7 +1344,7 @@ library.component = library.component || {};
 		const elConf = {
 			type      : type,
 			bgDefault : bgDef,
-			//file : file,
+			href      : href,
 		};
 		
 		const el = self.template.getElement( 'link-expand-tmpl', elConf );
@@ -1358,8 +1358,10 @@ library.component = library.component || {};
 		const leui = el.querySelector( '.link-expand-ui' );
 		const dl = leui.querySelector( '.dl-btn' );
 		const ext = leui.querySelector( '.show-link' );
+		const extA = ext.querySelector( 'a' );
 		dl.addEventListener( 'click', onDL, false );
 		ext.addEventListener( 'click', onExt, false );
+		
 		
 		if ( null == onClick )
 			return;
@@ -1378,8 +1380,15 @@ library.component = library.component || {};
 		}
 		
 		function onExt( e ) {
-			console.log( 'onExt', href );
-			window.open( href, '_blank' );
+			console.log( 'onExt', extA);
+			extA.click();
+			/*
+			window.open(
+				href,
+				'_blank',
+				'noopener,noreferrer'
+			);
+			*/
 		}
 		
 	}
