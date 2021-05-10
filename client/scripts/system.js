@@ -3124,6 +3124,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.removeItem = function( id ) {
 		const self = this;
+		console.trace( 'Activity.removeItem', id );
 		const item = self.items[ id ];
 		if ( null == item )
 			return;
