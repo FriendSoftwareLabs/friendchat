@@ -935,6 +935,7 @@ var hello = null;
 	
 	ns.Hello.prototype.updateIsOnline = function( isOnline ) {
 		const self = this;
+		console.log( 'updateIsOnline', isOnline );
 		if ( isOnline === self.isOnline )
 			return;
 		
