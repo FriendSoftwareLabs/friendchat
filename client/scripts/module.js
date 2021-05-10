@@ -151,11 +151,11 @@ library.module = library.module || {};
 		function updateSetting( msg ) { self.updateSetting( msg ); }
 		
 		self.connectionMap = {
-			'connecting' : function( e ) { self.handleConnecting( e ); },
+			'connecting' : e => self.handleConnecting( e ),
 			'open'       : e => self.handleConnOpen( e ),
-			'online'     : function( e ) { self.handleOnline( e ); },
-			'error'      : function( e ) { self.handleConnectionError( e ); },
-			'offline'    : function( e ) { self.handleOffline( e ); },
+			'online'     : e => self.handleOnline( e ),
+			'error'      : e => self.handleConnectionError( e ),
+			'offline'    : e => self.handleOffline( e ),
 		};
 		self.connectionErrorMap = {};
 		
@@ -248,12 +248,16 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.connection = function( state ) {
 		const self = this;
 		self.state = state;
+		console.log( 'Module.connection', {
+			mod   : self.type,
+			type  : state.type,
+		});
 		self.view.send({
 			type : 'connection',
 			data : state,
 		});
 		
-		var handler = self.connectionMap[ state.type ];
+		const handler = self.connectionMap[ state.type ];
 		if ( !handler ) {
 			console.log( 'no handler for connection event', state );
 			self.clearViewInfo();

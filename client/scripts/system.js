@@ -2822,6 +2822,10 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
+		console.log( 'Activity.setIsOnline', {
+			curr   : self.isOnline,
+			update : isOnline,
+		});
 		if ( isOnline === self.isOnline )
 			return;
 		
@@ -3095,6 +3099,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.sendRemove = async function( id ) {
 		const self = this;
+		console.trace( 'Activity.sendRemove', id );
 		self.setRemoved( id );
 		const remove = {
 			type : 'remove',
@@ -3114,6 +3119,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.removeItem = function( id ) {
 		const self = this;
+		console.trace( 'Activity.removeItem', id );
 		const item = self.items[ id ];
 		if ( null == item )
 			return;
