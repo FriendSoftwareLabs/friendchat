@@ -250,8 +250,8 @@ library.module = library.module || {};
 		self.state = state;
 		console.log( 'Module.connection', {
 			mod   : self.type,
-			state : state,
-		} );
+			type  : state.type,
+		});
 		self.view.send({
 			type : 'connection',
 			data : state,
