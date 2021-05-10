@@ -280,7 +280,10 @@ ns.SocketManager.prototype.authRequest = function( token, socket ) {
 			}
 			
 			function error( err ) {
-				log( 'authRequest.error', err );
+				log( 'authRequest.error', {
+					err   : err,
+					token : token,
+				});
 				retry( err );
 			}
 			
