@@ -831,8 +831,6 @@ library.module = library.module || {};
 				type    : 'contact / global',
 				actions : [
 					'open-chat',
-					'live-audio',
-					'live-video',
 				],
 				pool    : items,
 			};
@@ -958,14 +956,26 @@ library.module = library.module || {};
 		});
 	}
 	
-	ns.Presence.prototype.openChat = function( conf, notification, view ) {
+	ns.Presence.prototype.openChat = async function( conf, notification, view ) {
 		const self = this;
 		if ( !self.initialized ) {
 			self.queueEvent( 'openChat', [ conf, notification, view ] );
 			return;
 		}
 		
-		const item = self.getTypeItem( conf.id, conf.type );
+		let item = null;
+		try {
+			item = await self.getContact( conf.id );
+		} catch( ex ) {
+			console.log( 'no contact for', conf );
+		}
+		
+		if ( item ) {
+			item.openChat( notification, view );
+			return;
+		}
+		
+		item = self.getTypeItem( conf.id, conf.type );
 		if ( !item || !item.openChat ) {
 			conf.notification = !!notification;
 			conf.view = view || null;

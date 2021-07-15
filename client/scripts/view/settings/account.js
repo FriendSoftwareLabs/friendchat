@@ -60,7 +60,7 @@ library.view = library.view || {};
 			'minimalUI'    : View.i18n( 'i18n_minimal_ui' ),
 			'advancedUI'   : View.i18n( 'i18n_advanced_ui' ),
 			'compactChat'  : View.i18n( 'i18n_compact_chat' ),
-			'hideInSearch' : View.i18n( 'i18n_dont_show_in_search' ),
+			'hideInSearch' : View.i18n( 'i18n_hide_from_search' ),
 		};
 		self.defaultMap = {};
 		self.buildMap = {
