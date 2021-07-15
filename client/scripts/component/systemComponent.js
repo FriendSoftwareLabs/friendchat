@@ -452,6 +452,11 @@ window.library.component = window.library.component || {};
 		self.presence.serviceLiveInvite( conf, roomId );
 	}
 	
+	ns.PresenceService.prototype.setAccountSetting = async function( key, value ) {
+		const self = this;
+		return await self.presence.setAccountSetting( key, value );
+	}
+	
 	ns.PresenceService.prototype.sendMsgToFID = function( uId, message, open ) {
 		const self = this;
 		if ( '--open' === open )

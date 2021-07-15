@@ -75,7 +75,6 @@ library.tool = library.tool || {};
 			return date;
 		}
 		
-		
 		function moreThanADayAgo( timestamp ) {
 			var now = Date.now();
 			var aDay = 1000 * 60 * 60 * 24;

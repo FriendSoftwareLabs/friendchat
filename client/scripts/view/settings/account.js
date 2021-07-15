@@ -47,6 +47,7 @@ library.view = library.view || {};
 			//'minimalUI',
 			//'advancedUI',
 			'compactChat',
+			'hideInSearch',
 		];
 		self.displayOrder = self.validKeys;
 		self.labelMap = {
@@ -59,6 +60,7 @@ library.view = library.view || {};
 			'minimalUI'    : View.i18n( 'i18n_minimal_ui' ),
 			'advancedUI'   : View.i18n( 'i18n_advanced_ui' ),
 			'compactChat'  : View.i18n( 'i18n_compact_chat' ),
+			'hideInSearch' : View.i18n( 'i18n_dont_show_in_search' ),
 		};
 		self.defaultMap = {};
 		self.buildMap = {
@@ -71,6 +73,7 @@ library.view = library.view || {};
 			'minimalUI'    : singleCheck,
 			'advancedUI'   : singleCheck,
 			'compactChat'  : singleCheck,
+			'hideInSearch' : singleCheck,
 		};
 		
 		function singleCheck( setting ) { self.singleCheck( setting ); }

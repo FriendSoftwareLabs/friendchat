@@ -1186,6 +1186,7 @@ library.rtc = library.rtc || {};
 			'privateAlert' : e => self.updatePrivateAlert( e ),
 			'inAppMenu'    : e => self.updateInAppMenu( e ),
 			'compactChat'  : e => self.updateCompactChat( e ),
+			'hideInSearch' : e => self.updateHideInSearch( e ),
 		};
 		
 		self.view = new library.component.SubView({
@@ -1299,6 +1300,17 @@ library.rtc = library.rtc || {};
 	ns.Account.prototype.updateCompactChat = function( value ) {
 		const self = this;
 		self.settings.compactChat = value;
+	}
+	
+	ns.Account.prototype.updateHideInSearch = function( value ) {
+		const self = this;
+		self.settings.hideInSearch = value;
+		console.log( 'updateHideInSearch', {
+			v : value,
+			h : hello,
+		});
+		if ( hello.service )
+			hello.service.setAccountSetting( 'hideInSearch', value );
 	}
 	
 	ns.Account.prototype.updateInAppMenu = function( value ) {
