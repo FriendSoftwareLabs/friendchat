@@ -19,7 +19,7 @@
 }
 
 .label {
-	min-width     : 8.5em;
+	width         : 9em;
 	padding-right : 0.5em;
 	text-align    : left;
 	line-height   : 2em;
@@ -82,4 +82,6 @@
 .check-name {
 	overflow      : hidden;
 	text-overflow : ellipsis;
+	white-space   : normal;
+	word-break    : break-word;
 }

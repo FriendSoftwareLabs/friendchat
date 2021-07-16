@@ -718,12 +718,28 @@ library.module = library.module || {};
 		self.toAccount( ava );
 	}
 	
+	ns.Presence.prototype.setAccountSetting = async function( key, value ) {
+		const self = this;
+		console.log( 'Presence.setAccountSetting', [ key, value ]);
+		const req = {
+			type : 'account-settings-set',
+			data : {
+				key   : key,
+				value : value,
+			},
+		};
+		const res = await self.acc.request( req );
+		console.log( 'Presence.setAccountSetting res', res );
+		return res;
+	}
+	
 	ns.Presence.prototype.search = function( searchStr ) {
 		const self = this;
-		let filter = new library.component.Filter();
-		let results = [
-			new Promise( getRooms ),
-			new Promise( getContacts ),
+		const filter = new library.component.Filter();
+		const results = [
+			getRooms( searchStr ),
+			getFromServer( searchStr ),
+			getContacts( searchStr ),
 		];
 		
 		return {
@@ -731,20 +747,22 @@ library.module = library.module || {};
 			results : results,
 		};
 		
-		function getRooms( resolve, reject ) {
+		async function getRooms( searchStr ) {
 			let items = Object.keys( self.rooms )
 				.map( build );
 				
 			items = filter.filter( searchStr, items );
-			resolve({
-				type    : 'groups',
+			const res = {
+				type    : 'rooms',
 				actions : [
 					'open-chat',
 					'live-audio',
 					'live-video',
 				],
 				pool    : items,
-			});
+			};
+			
+			return res;
 			
 			function build( rId ) {
 				let room = self.rooms[ rId ];
@@ -759,20 +777,22 @@ library.module = library.module || {};
 			}
 		}
 		
-		function getContacts( resolve, reject ) {
+		async function getContacts( searchStr ) {
 			let items = Object.keys( self.contacts )
 				.map( build );
 			
 			items = filter.filter( searchStr, items );
-			resolve({
-				type    : 'contacts',
+			const res = {
+				type    : 'personal',
 				actions : [
 					'open-chat',
 					'live-audio',
 					'live-video',
 				],
 				pool    : items,
-			});
+			};
+			
+			return res;
 			
 			function build( cId ) {
 				let con = self.contacts[ cId ];
@@ -782,6 +802,54 @@ library.module = library.module || {};
 					isRelation : true,
 					name       : con.identity.name,
 					avatar     : con.identity.avatar,
+					isOnline   : con.identity.isOnline,
+				};
+				return item;
+			}
+		}
+		
+		async function getFromServer( searchStr ) {
+			const req = {
+				type : 'search-user',
+				data : {
+					needle : searchStr,
+				},
+			};
+			let ids = null;
+			try {
+				ids = await self.acc.request( req );
+			} catch( ex ) {
+				console.log( 'Presence.search getContacts, request error', ex );
+				return null;
+			}
+			
+			ids = ids.filter( removeContacts );
+			const items = ids.map( build );
+			
+			const res = {
+				type    : 'contact / global',
+				actions : [
+					'open-chat',
+				],
+				pool    : items,
+			};
+			
+			return res;
+			
+			function removeContacts( id ) {
+				const cId = id.clientId;
+				const contact = self.contacts[ cId ];
+				return !contact;
+			}
+			
+			function build( id ) {
+				let item = {
+					id         : id.clientId,
+					type       : 'contact',
+					isRelation : true,
+					name       : id.name,
+					avatar     : id.avatar,
+					isOnline   : id.isOnline,
 				};
 				return item;
 			}
@@ -887,14 +955,26 @@ library.module = library.module || {};
 		});
 	}
 	
-	ns.Presence.prototype.openChat = function( conf, notification, view ) {
+	ns.Presence.prototype.openChat = async function( conf, notification, view ) {
 		const self = this;
 		if ( !self.initialized ) {
 			self.queueEvent( 'openChat', [ conf, notification, view ] );
 			return;
 		}
 		
-		const item = self.getTypeItem( conf.id, conf.type );
+		let item = null;
+		try {
+			item = await self.getContact( conf.id );
+		} catch( ex ) {
+			console.log( 'no contact for', conf );
+		}
+		
+		if ( item ) {
+			item.openChat( notification, view );
+			return;
+		}
+		
+		item = self.getTypeItem( conf.id, conf.type );
 		if ( !item || !item.openChat ) {
 			conf.notification = !!notification;
 			conf.view = view || null;

@@ -983,8 +983,7 @@ html body .hidden {
 
 .search-result-contact,
 .search-result-room {
-	padding       : 0.5em;
-	margin-bottom : 0.1em;
+	padding : 0.5em;
 }
 
 .search-result-room .avatar,
