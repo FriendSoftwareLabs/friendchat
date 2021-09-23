@@ -125,10 +125,12 @@ library.module = library.module || {};
 		);
 		
 		function eventSink( type, data ) {
+			/*
 			console.log( 'BaseModule - conn eventSink', {
 				type : type,
 				data : data,
 			});
+			*/
 		}
 		
 		/*
@@ -195,10 +197,12 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.viewSink = function( type, data ) {
 		const self = this;
+		/*
 		console.log( 'BaseModule.viewSink', {
 			type : type,
 			data : data,
 		});
+		*/
 	}
 	
 	ns.BaseModule.prototype.initialize = function() {
@@ -248,10 +252,6 @@ library.module = library.module || {};
 	ns.BaseModule.prototype.connection = function( state ) {
 		const self = this;
 		self.state = state;
-		console.log( 'Module.connection', {
-			mod   : self.type,
-			type  : state.type,
-		});
 		self.view.send({
 			type : 'connection',
 			data : state,
@@ -259,7 +259,7 @@ library.module = library.module || {};
 		
 		const handler = self.connectionMap[ state.type ];
 		if ( !handler ) {
-			console.log( 'no handler for connection event', state );
+			//console.log( 'no handler for connection event', state );
 			self.clearViewInfo();
 			return;
 		}
@@ -286,7 +286,7 @@ library.module = library.module || {};
 		const self = this;
 		var handler = self.connectionErrorMap[ error.type ];
 		if ( !handler ) {
-			console.log( 'no handler for connection error', error );
+			//console.log( 'no handler for connection error', error );
 			return;
 		}
 		
@@ -323,7 +323,7 @@ library.module = library.module || {};
 		const self = this;
 		var callback = self.queryCallbacks[ data.callbackId ];
 		if ( !callback ) {
-			console.log( 'no callbak found for', data );
+			//console.log( 'no callbak found for', data );
 			return;
 		}
 		
@@ -615,10 +615,10 @@ library.module = library.module || {};
 		
 		self.type = 'presence';
 		self.roomRequests = {};
-		self.openChatWaiting = [];
 		self.hiddenContacts = {};
 		self.getIdentityBacklog = {};
-		self.relationWaiters = {};
+		self.contactLoading = {};
+		self.roomLoading = {};
 		self.contactsOnline = [];
 		self.currentFilter = 'relations';
 		self.invites = {};
@@ -643,7 +643,6 @@ library.module = library.module || {};
 		
 		id = await waitFor( clientId );
 		if ( null == id ) {
-			console.log( 'throw' );
 			throw 'ERR_NO_ID';
 		}
 		
@@ -671,10 +670,6 @@ library.module = library.module || {};
 				
 				function noIdFound() {
 					const waiters = self.getIdentityBacklog[ cId ];
-					console.log( 'noIdFound', {
-						cId     : cId,
-						waiters : waiters,
-					});
 					if ( !waiters )
 						return;
 					
@@ -691,7 +686,7 @@ library.module = library.module || {};
 		window.setTimeout( verify, 1000 * 10 );
 		function verify() {
 			cIdList.forEach( cId => {
-				const item = self.getTypeItem( cId );
+				const item = self.getLocalChat( cId );
 				if ( null != item )
 					return;
 				
@@ -720,7 +715,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.setAccountSetting = async function( key, value ) {
 		const self = this;
-		console.log( 'Presence.setAccountSetting', [ key, value ]);
 		const req = {
 			type : 'account-settings-set',
 			data : {
@@ -729,7 +723,6 @@ library.module = library.module || {};
 			},
 		};
 		const res = await self.acc.request( req );
-		console.log( 'Presence.setAccountSetting res', res );
 		return res;
 	}
 	
@@ -795,7 +788,7 @@ library.module = library.module || {};
 			return res;
 			
 			function build( cId ) {
-				let con = self.contacts[ cId ];
+				let con = self.getLocalChat( cId );
 				let item = {
 					id         : con.clientId,
 					type       : 'contact',
@@ -872,122 +865,153 @@ library.module = library.module || {};
 		});
 	}
 	
-	ns.Presence.prototype.addContact = function( clientId ) {
+	ns.Presence.prototype.addContact = async function( clientId ) {
 		const self = this;
-		return new Promise(( resolve, reject ) => {
-			if ( self.contacts[ clientId ]) {
-				resolve( clientId );
-				return;
-			}
-			
-			const add = {
+		if ( self.contacts[ clientId ]) {
+			return clientId;
+		}
+		
+		const loader = self.contactLoading[ clientId ];
+		if ( null != loader ) {
+			await self.waitForChat( 'contact', clientId );
+			return clientId;
+		}
+		
+		const req = {
+			type : 'relation-add',
+			data : {
 				clientId : clientId,
-			};
-			const req = {
-				type : 'relation-add',
-				data : add,
-			};
-			self.acc.request( req )
-				.then( addBack )
-				.catch( reject );
-			
-			async function addBack( clientId ) {
-				if ( null == clientId ) {
-					resolve( null );
-					return;
-				}
-				
-				let rel = self.contacts[ clientId ];
-				if (( null == rel ) || ( null == rel.close ))
-					rel = await self.waitForRelation( clientId );
-				
-				resolve( clientId );
-			}
-		});
+			},
+		};
+		
+		let cId = null;
+		try {
+			cId = await self.acc.request( req )
+		} catch( ex ) {
+			console.log( 'Presence.addContact - add ex', ex );
+			return null;
+		}
+		
+		if ( null == cId )
+			return null;
+		
+		await self.waitForChat( 'contact', cId );
+		return cId;
 	}
 	
-	ns.Presence.prototype.getContact = function( clientId ) {
+	ns.Presence.prototype.getRoomSync = function( roomId ) {
 		const self = this;
-		return new Promise(( resolve, reject ) => {
-			let contact = self.contacts[ clientId ];
-			if ( contact ) {
-				resolve( contact );
-				return;
-			}
-			
-			self.addContact( clientId )
-				.then( cAdded )
-				.catch( reject );
-			
-			function cAdded( clientId ) {
-				if ( !clientId ) {
-					resolve( null );
-					return;
-				}
-				
-				contact = self.contacts[ clientId ];
-				if ( !contact ) {
-					reject( 'ERR_FUCK_STILL_NO_CONTACT' );
-					return;
-				}
-				
-				resolve( contact );
-			}
-		});
+		if ( !roomId )
+			throw new Error( 'Presence.getRoomSync - no roomId' );
+		
+		const room = self.rooms[ roomId ];
+		if ( null == room )
+			return null;
+		
+		return room;
 	}
 	
-	ns.Presence.prototype.sendMessage = function( clientId, message, openChat ) {
+	
+	ns.Presence.prototype.getContact = async function( clientId ) {
 		const self = this;
-		return new Promise(( resolve, reject ) => {
-			self.getContact( clientId )
-				.then( contactBack )
-				.catch( reject );
-			
-			function contactBack( contact ) {
-				if ( !contact ) {
-					reject( 'ERR_NOT_AVAILABLE' );
-					return;
-				}
-				
-				contact.sendMessage( message, openChat );
-				resolve( true );
+		const loader = self.contactLoading[ clientId ];
+		if ( null != loader )
+			return await self.waitForChat( 'contact', clientId );
+		
+		let contact = self.getLocalChat( clientId );
+		if ( null == contact )
+			contact = await addContact( clientId );
+		
+		return contact;
+		
+		async function addContact( cId ) {
+			let addedId = null;
+			try {
+				addedId = await self.addContact( clientId );
+			} catch( ex ) {
+				console.log( 'Presence.getContact, addContact ex', ex );
+				return null;
 			}
-		});
+			
+			return self.getLocalChat( clientId );
+		}
 	}
 	
-	ns.Presence.prototype.openChat = async function( conf, notification, view ) {
+	ns.Presence.prototype.getRoom = async function( clientId ) {
+		const self = this;
+		const loader = self.roomLoading[ clientId ];
+		if ( null != loader )
+			return await self.waitForChat( 'room', clientId );
+		
+		let room = self.getRoomSync( clientId );
+		if ( null == room )
+			room = await self.waitForChat( 'room', clientId );
+		
+		return room;
+	}
+	
+	ns.Presence.prototype.sendMessage = async function( clientId, message, openChat ) {
+		const self = this;
+		const chat = await self.loadChat( clientId );
+		if ( null == chat )
+			throw new Error( 'ERR_NOT_AVAILABLE' );
+		
+		chat.sendMessage( message, openChat );
+	}
+	
+	ns.Presence.prototype.openChat = async function( conf, notification, view, queued ) {
 		const self = this;
 		if ( !self.initialized ) {
-			self.queueEvent( 'openChat', [ conf, notification, view ] );
+			if ( null == queued )
+				queued = 1;
+			else
+				queued++;
+			
+			self.queueEvent( 'openChat', [ conf, notification, view, queued ]);
 			return;
 		}
 		
+		// sync local check
+		const cId = conf.id;
 		let item = null;
-		try {
-			item = await self.getContact( conf.id );
-		} catch( ex ) {
-			console.log( 'no contact for', conf );
-		}
-		
+		item = self.getLocalChat( cId );
 		if ( item ) {
 			item.openChat( notification, view );
 			return;
 		}
 		
-		item = self.getTypeItem( conf.id, conf.type );
-		if ( !item || !item.openChat ) {
-			conf.notification = !!notification;
-			conf.view = view || null;
-			self.openChatWaiting.push( conf );
-			return;
+		// async check
+		item = await self.loadChat( cId );
+		
+		if ( item )
+			item.openChat( notification, view );
+		else
+			console.log( 'Presence.openChat - could not find a chat for', conf );
+		
+	}
+	
+	ns.Presence.prototype.loadChat = async function( clientId ) {
+		const self = this;
+		// wait for things to load check
+		const loadRoom = self.getRoom( clientId );
+		const loadContact = self.getContact( clientId );
+		let item = null;
+		try {
+			item = await window.Promise.any([ loadRoom, loadContact ]);
+		} catch( ex ) {
+			console.log( 'Presence.loadChat - failed to load the thing', {
+				cId : clientId,
+				err : ex,
+			});
+			return null;
 		}
 		
-		item.openChat( notification, view );
+		return item;
 	}
 	
 	ns.Presence.prototype.goLiveAudio = function( conf ) {
 		const self = this;
-		const item = self.getTypeItem( conf.id, conf.type );
+		const item = self.getLocalChat( conf.id );
 		if ( !item )
 			return;
 		
@@ -996,7 +1020,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.goLiveVideo = function( conf ) {
 		const self = this;
-		const item = self.getTypeItem( conf.id, conf.type );
+		const item = self.getLocalChat( conf.id );
 		if ( !item )
 			return;
 		
@@ -1105,7 +1129,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleActivityOpen = function( clientId, data ) {
 		const self = this;
-		const room = self.getTypeItem( clientId );
+		const room = self.getLocalChat( clientId );
 		if ( !room ) {
 			console.log( 'app.Presence.handleActivityOpen - no room for', [ clientId, data ]);
 			return null;
@@ -1116,7 +1140,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleActivityLive = function( clientId, permissions ) {
 		const self = this;
-		const room = self.getTypeItem( clientId );
+		const room = self.getLocalChat( clientId );
 		if ( !room ) {
 			console.log( 'app.Presence.handleActivityLive - no room for', [ clientId, data ]);
 			return;
@@ -1167,28 +1191,12 @@ library.module = library.module || {};
 		self.activity.remove( responseId );
 	}
 	
-	ns.Presence.prototype.getTypeItem = function( cId, type ) {
+	ns.Presence.prototype.getLocalChat = function( cId, type ) {
 		const self = this;
-		let item = null;
-		if ( type )
-			item = byType( cId, type );
-		else
-			item = madness( cId );
+		const room = self.rooms[ cId ];
+		const contact = self.contacts[ cId ];
 		
-		return item;
-		
-		function byType( cId, type ) {
-			if ( 'room' === type )
-				return self.rooms[ cId ] || null;
-			else
-				return self.contacts[ cId ] || null;
-		}
-		
-		function madness( cId ) {
-			let room = self.rooms[ cId ];
-			let con = self.contacts[ cId ];
-			return room || con || null;
-		}
+		return room || contact || null;
 	}
 	
 	ns.Presence.prototype.initialize = function() {
@@ -1236,7 +1244,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.serviceGetRoomInfo = function( clientId ) {
 		const self = this;
-		const item = self.getTypeItem( clientId );
+		const item = self.getLocalChat( clientId );
 		if ( !item )
 			return null;
 		
@@ -1547,13 +1555,11 @@ library.module = library.module || {};
 	ns.Presence.prototype.updateContact = function( contact ) {
 		const self = this;
 		const cId = contact.clientId;
-		const room = self.contacts[ cId ];
+		const room = self.getLocalChat( cId );
 		if ( !room )
 			return false;
 		
-		let isReconnecting = false;
-		if ( room.reconnect ) // room might be a <bool>
-			isReconnecting = room.reconnect();
+		const isReconnecting = room.reconnect();
 		
 		if ( !isReconnecting ) {
 			room.updateRelation( contact.relation );
@@ -1575,9 +1581,7 @@ library.module = library.module || {};
 		if ( room )
 			return;
 		
-		// prevents setting the contact twice, this fn is async
-		self.contacts[ cId ] = true;
-		
+		self.setChatLoading( 'contact', cId );
 		const host = library.tool.buildDestination(
 			null,
 			self.module.host,
@@ -1586,11 +1590,7 @@ library.module = library.module || {};
 		
 		const identity = await self.idc.get( contact.clientId );
 		if ( !identity ) {
-			console.log( 'no id for', {
-				contact : contact,
-				self    : self,
-			});
-			delete self.contacts[ cId ];
+			self.resolveChatLoaded( 'contact', cId, 'ERR_NO_IDENTITY' );
 			return;
 		}
 		
@@ -1618,43 +1618,93 @@ library.module = library.module || {};
 		self.toView( cAdd );
 		
 		self.checkIdBacklog( cId );
-		self.resolveRelation( cId );
-		const waitConf = self.checkOpenChatWaiting( cId );
-		if ( waitConf )
-			room.openChat( waitConf.view || null );
+		self.resolveChatLoaded( 'contact', cId );
 	}
 	
-	ns.Presence.prototype.waitForRelation = function( cId ) {
+	ns.Presence.prototype.setChatLoading = function( type, clientId ) {
+		const self = this;
+		let loader = null;
+		if ( 'contact' == type )
+			loader = self.contactLoading[ clientId ];
+		if ( 'room' == type )
+			loader = self.roomLoading[ clientId ];
+		
+		if ( null != loader )
+			return loader;
+		
+		let resolver = null;
+		loader = new Promise( waiter ); // resolver is assinged in here
+		loader.resolver = resolver;
+		loader.timeouter = window.setTimeout( failed, 10000 );
+		if ( 'contact' == type )
+			self.contactLoading[ clientId ] = loader;
+		if ( 'room' == type )
+			self.roomLoading[ clientId ] = loader;
+		
+		return loader;
+		
+		function waiter( resolve, reject ) {
+			resolver = ( err, res ) => {
+				if ( null == err )
+					resolve( res );
+				else
+					reject( err );
+			}
+		}
+		
+		function failed() {
+			self.resolveChatLoaded( type, clientId, 'ERR_TIMEOUT' );
+		}
+	}
+	
+	ns.Presence.prototype.waitForChat = function( type, cId ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
-			const rel = self.contacts[ cId ];
-			if ( null != rel && null != rel.close ) {
+			const rel = self.getLocalChat( cId );
+			if ( null != rel ) {
 				resolve( rel );
 				return;
 			}
 			
-			let waiters = self.relationWaiters[ cId ];
-			if ( null == waiters ) {
-				waiters = [];
-				self.relationWaiters[ cId ] = waiters;
+			let loader = null;
+			if ( 'contact' == type )
+				loader = self.contactLoading[ cId ];
+			if ( 'room' == type )
+				loader = self.roomLoading[ cId ];
+			
+			if ( null == loader ) {
+				loader = self.setChatLoading( type, cId );
 			}
 			
-			waiters.push( relAvailable );
-			
-			function relAvailable( rel ) {
-				resolve( rel );
-			}
+			loader
+				.then( resolve )
+				.catch( reject );
 		});
 	}
 	
-	ns.Presence.prototype.resolveRelation = function( cId ) {
+	ns.Presence.prototype.resolveChatLoaded = function( type, cId, error ) {
 		const self = this;
-		const waiters = self.relationWaiters[ cId ];
-		if ( null == waiters )
+		let loader = null;
+		if ( 'contact' == type ) {
+			loader = self.contactLoading[ cId ];
+			delete self.contactLoading[ cId ];
+		}
+		if ( 'room' == type ) {
+			loader = self.roomLoading[ cId ];
+			delete self.roomLoading[ cId ];
+		}
+		
+		if ( null == loader )
 			return;
 		
-		const rel = self.contacts[ cId ];
-		waiters.forEach( fn => fn( rel ));
+		const rel = self.getLocalChat( cId );
+		if ( null != loader.timeouter )
+			window.clearTimeout( loader.timeouter );
+		
+		if ( null == error )
+			loader.resolver( null, rel );
+		else
+			loader.resolver( error, null );
 	}
 	
 	ns.Presence.prototype.removeHidden = function( cId ) {
@@ -1686,21 +1736,6 @@ library.module = library.module || {};
 			room.setUserOnline( contactId, isOnline );
 		});
 		
-	}
-	
-	ns.Presence.prototype.checkOpenChatWaiting = function( clientId ) {
-		const self = this;
-		let conf = false;
-		self.openChatWaiting = self.openChatWaiting.filter( c => {
-			if ( c.id !== clientId )
-				return true; // keep entry
-			
-			// found
-			conf = c;
-			return false;
-		});
-		
-		return conf;
 	}
 	
 	ns.Presence.prototype.handleRelationRemove = function( clientId ) {
@@ -1771,13 +1806,11 @@ library.module = library.module || {};
 		const token = invite.token;
 		if ( null != self.invites[ token ]) {
 			// already have invite
-			console.log( 'already ahve invite', token );
 			return;
 		}
 		
 		const roomId = invite.roomId;
 		if ( null != self.rooms[ roomId ]) {
-			console.log( 'already have room', token );
 			// alreay have room
 			return;
 		}
@@ -1873,12 +1906,16 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.updateRooms = function( rooms ) {
 		const self = this;
-		console.log( 'Presence.updateRooms - NYI', rooms );
+		//console.log( 'Presence.updateRooms - NYI', rooms );
+		if ( null == rooms )
+			return;
+		
+		
 	}
 	
 	ns.Presence.prototype.updateContacts = function( contacts ) {
 		const self = this;
-		console.log( 'Presence.updateContacts - NYI', contacts );
+		//console.log( 'Presence.updateContacts - NYI', contacts );
 		if ( null == contacts )
 			return;
 		
@@ -1949,7 +1986,6 @@ library.module = library.module || {};
 		
 		function onRes( res ) {
 			if ( !res ) {
-				console.log( 'handleOpenHidden - no contact??', res );
 				delete self.hiddenContacts[ contactId ];
 				return;
 			}
@@ -2328,9 +2364,7 @@ library.module = library.module || {};
 		room.on( 'contact', contactEvent );
 		
 		self.checkIdBacklog( cId );
-		const waitConf = self.checkOpenChatWaiting( cId );
-		if ( waitConf )
-			room.openChat( waitConf.view );
+		self.resolveChatLoaded( 'room', cId );
 		
 		return room;
 		
@@ -2384,7 +2418,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.joinLiveSession = function( roomId, sessConf ) {
 		const self = this;
-		const room = self.getTypeItem( roomId );
+		const room = self.getLocalChat( roomId );
 		if ( !room )
 			return;
 		
@@ -2393,7 +2427,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.setupLiveSession = function( roomId, sessConf ) {
 		const self = this;
-		const room = self.getTypeItem( roomId );
+		const room = self.getLocalChat( roomId );
 		if ( !room ) {
 			console.log( 'Presence.setupLvieSession - no room for id', {
 				rid  : roomId,
@@ -2414,7 +2448,7 @@ library.module = library.module || {};
 		
 		contacts.forEach( invite );
 		function invite( contact ) {
-			const room = self.getRoom( roomId );
+			const room = self.getRoomSync( roomId );
 			if ( !room )
 				return;
 			
@@ -2471,23 +2505,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.loginInvalid = function( login ) {
 		const self = this;
-	}
-	
-	ns.Presence.prototype.getRoom = function( roomId ) {
-		const self = this;
-		if ( !roomId )
-			throw new Error( 'Presence.getRoom - no roomId' );
-		
-		const room = self.rooms[ roomId ];
-		if ( !room ) {
-			console.log( 'Presence.getRoom - no room for id', {
-				rid   : roomId,
-				rooms : self.rooms,
-			});
-			throw new Error( 'Presence.getRoom - no room for id' );
-		}
-		
-		return room;
 	}
 	
 	ns.Presence.prototype.setupDormant = function() {

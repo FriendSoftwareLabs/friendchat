@@ -65,6 +65,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.onclose = onclose;
 		self.id = self.windowConf.id || friendUP.tool.uid( 'view' );
 		self.eventQueue = [];
+		
 		self.app = window.Application;
 		
 		self.viewName = self.id;
@@ -416,9 +417,6 @@ var friend = window.friend || {}; // already instanced stuff
 		msg.type = 'view';
 		msg.viewId = self.id;
 		
-		if ( !self.app )
-			return;
-		
 		self.app.sendMessage( msg );
 	}
 	
@@ -669,10 +667,8 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Library.prototype.init = function() {
 		const self = this;
-		if ( !self.app ) {
-			console.log( 'window.Application not found', self.app );
+		if ( !self.app )
 			throw new Error( 'window.Application not found' );
-		}
 		
 		var cid = self.app.setCallback( result );
 		var msg = {
@@ -728,7 +724,7 @@ var friend = window.friend || {}; // already instanced stuff
 				type : type,
 				data : data,
 			};
-			console.log( 'AppEvent - unhandled event', e );
+			//console.log( 'AppEvent - unhandled event', e );
 			self.receiveMessage( e );
 		}
 	}
@@ -807,7 +803,6 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 		
 		const msg = friendUP.tool.parse( e.data );
-		//console.log( 'app.receiveEvent', msg );
 		if ( !msg ) {
 			console.log( 'app.receiveEvent - no msg for event', e );
 			return;
@@ -861,7 +856,7 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const type = msg.viewId;
 		if ( !type || !msg.data ) {
-			console.log( 'weird event', msg );
+			//console.log( 'weird event', msg );
 			return;
 		}
 		
@@ -1045,7 +1040,7 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const handler = self.notifyMap[ msg.method ];
 		if ( !handler ) {
-			console.log( 'app.AppEvent.notify - no handler for ', msg );
+			//console.log( 'app.AppEvent.notify - no handler for ', msg );
 			return;
 		}
 		
@@ -1426,13 +1421,8 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Application.prototype.getCallback = function( id ) {
 		const self = this;
 		const callback = self.callbacks[ id ];
-		if ( !callback ) {
-			console.log( 'app.getCallback - no callback for', {
-				id  : id,
-				cbs : self.callbacks,
-			});
+		if ( !callback )
 			return null;
-		}
 		
 		delete self.callbacks[ id ];
 		return callback;

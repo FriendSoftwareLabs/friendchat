@@ -1725,11 +1725,13 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.addUserCss = function( userId, avatar ) {
 		const self = this;
+		/*
 		if ( !avatar )
 			console.log( 'addUserCss - missing avatar', {
 				uid : userId,
 				ava : avatar,
 			});
+		*/
 		
 		const container = document.getElementById( 'user-css' );
 		const styleId = self.getUserCssId( userId );
@@ -2039,7 +2041,7 @@ var hello = window.hello || {};
 				.catch( editErr );
 			
 			function editBack( res ) {
-				console.log( 'editBack', res );
+				//console.log( 'editBack', res );
 			}
 			
 			function editErr( err ) {
@@ -2568,7 +2570,6 @@ var hello = window.hello || {};
 		let index = 0;
 		for ( const item of items ) {
 			index++;
-			console.log( 'index', index );
 			await handle( item, index );
 		}
 		
@@ -2577,7 +2578,6 @@ var hello = window.hello || {};
 			prevEnvelope.firstMsg = firstMsg;
 		
 		async function handle( item, index ) {
-			console.log( 'handle', [ item, index ]);
 			const handler = self.buildMap[ item.type ];
 			if ( !handler ) {
 				console.log( 'no handler for event', item );

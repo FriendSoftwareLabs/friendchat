@@ -44,6 +44,7 @@ var hello = null;
 		self.forceShowLogin = false;
 		self.isOnline = false;
 		self.pushies = [];
+		self.preViews = {};
 		self.loaded = false;
 		self.loadedCallbacks = [];
 		self.resumeCallbacks = [];
@@ -166,13 +167,15 @@ var hello = null;
 		function logClose() { self.checkQuit(); }
 	}
 	
-	ns.Hello.prototype.run = function( fupConf ) {
+	ns.Hello.prototype.run = async function( fupConf ) {
 		const self = this;
 		self.timeNow( 'run' );
+		const userInfoLoader = self.getUserInfo();
 		self.incommingCall = new api.IncommingCall( self.config.ringTones );
 		//self.app.testAllowPlaySounds();
 		self.app.setSingleInstance( true );
 		self.main = new library.system.Main();
+		const mainLoader = self.main.initialize();
 		self.listenSystemEvents();
 		if ( !self.config ) {
 			self.showConnStatus({
@@ -196,38 +199,43 @@ var hello = null;
 		}
 		
 		self.timeNow( 'loadCommonFragments' );
-		self.loadCommonFragments()
-			.then( fragsLoaded )
-			.catch( err => { 
-				console.log( 'loadCommonFragments - err', err );
-				error( 'ERR_LOAD_FRAGMENTS' );
-		});
-		
-		function fragsLoaded() {
-			self.timeNow( 'fragmentsLoaded' );
-			let doRun = false;
-			let openMinimized = false;
-			if ( self.config.run )
-				openMinimized = self.handleRunConf();
-			
-			self.openMain( openMinimized );
-			self.doLoaded();
-			
-			getUser();
+		const fragLoader = self.loadCommonFragments();
+		let res = null;
+		try {
+			const completeAll = [ mainLoader, fragLoader, userInfoLoader ];
+			res = await window.Promise.all( completeAll );
+		} catch( ex ) {
+			error( 'ERR_PARALELLS' );
+			self.close();
+			return;
 		}
+		
+		self.timeNow( 'paralells completed' );
+		const userInfo = res[ 2 ];
+		let doRun = false;
+		let openMinimized = false;
+		if ( self.config.run )
+			openMinimized = self.handleRunConf();
+		
+		self.openMain( openMinimized );
+		self.doLoaded();
+		
+		handleUserInfo( userInfo );
+		/*
+		getUser();
 		
 		function getUser() {
 			self.timeNow( 'getUser start' );
 			self.getUserInfo()
-				.then( userInfoBack )
+				.then( handleUserInfo )
 				.catch( e => {
 					console.log( 'e', e );
 					error( 'ERR_LOAD_USERINFO' );
 				});
 		}
+		*/
 		
-		function userInfoBack( userInfo ) {
-			console.log( 'userInfoBack', userInfo );
+		function handleUserInfo( userInfo ) {
 			self.timeNow( 'user info loaded' );
 			if ( !userInfo ) {
 				self.showConnStatus({
@@ -322,16 +330,6 @@ var hello = null;
 		self.timeNow( 'honst config loaded' );
 		library.tool.mergeObjects( self.config, hostConf );
 		self.config.appName = self.config.appName || 'Friend Chat';
-		
-		/* BA server needs live things
-		if ( hello.app.friendApp ) {
-			console.log( 'hello - friendApp', hello.app.friendApp );
-			if ( 'iOS' === hello.app.friendApp.platform )
-				hello.config.hideLive = true;
-		}
-		*/
-		
-		//hello.config.hideLive = true;
 		self.app.setConfig( hello.config );
 	}
 	
@@ -667,6 +665,7 @@ var hello = null;
 		) {
 			console.log( 'Hello - Guest login - invalid config', self.config.run );
 			throw new Error( 'see log ^^^' );
+			return;
 		}
 		
 		const conf = self.config.run;
@@ -935,7 +934,6 @@ var hello = null;
 	
 	ns.Hello.prototype.updateIsOnline = function( isOnline ) {
 		const self = this;
-		console.log( 'updateIsOnline', isOnline );
 		if ( isOnline === self.isOnline )
 			return;
 		
@@ -1129,7 +1127,6 @@ var hello = null;
 	
 	ns.Hello.prototype.handlePushNotie = function( event, view ) {
 		const self = this;
-		//console.trace( 'handlePushNotie', event );
 		/*
 		console.log( 'handlePushNotie', {
 			event    : event,
@@ -1140,12 +1137,12 @@ var hello = null;
 			resumeTO : self.resumeTimeout,
 		});
 		*/
+		
 		if ( !self.loaded ) {
 			self.registerOnLoaded( onLoaded );
 			return;
 			
 			function onLoaded() {
-				console.log( 'hello pushie onLoaded', event );
 				self.handlePushNotie( event );
 			}
 		}
@@ -1170,10 +1167,15 @@ var hello = null;
 		}
 		
 		if ( !self.service && !view ) {
-			self.fakeView = true;
+			const roomId = extra.roomId;
 			const roomName = event.title;
 			extra.isPrivate = true;
-			view = new library.view.PresenceChat( null, roomName, !!extra.isPrivate );
+			if ( null != roomId )
+				view = getPreView( roomId, roomName, !!extra.isPrivate );
+			
+			if ( null != view )
+				self.fakeView = true;
+			
 		}
 		
 		if ( null != self.resumeTimeout || !self.isOnline ) {
@@ -1192,6 +1194,16 @@ var hello = null;
 				extra : extra,
 				view  : view,
 			});
+		
+		function getPreView( roomId, roomName, isPrivate ) {
+			let view = self.preViews[ roomId ];
+			if ( null != view )
+				return view;
+			
+			view = new library.view.PresenceChat( null, roomName, isPrivate );
+			self.preViews[ roomId ] = view;
+			return view;
+		}
 	}
 	
 	ns.Hello.prototype.handleNotie = function( event ) {
@@ -1229,14 +1241,8 @@ var hello = null;
 	
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
-		/*
-		console.log( 'handleAppResume', {
-			event    : event,
-			isOnline : self.isOnline,
-		});
-		*/
 		if ( !self.isOnline ) {
-			console.log( 'hello.handleAppResume - already reconnecting' );
+			console.log( 'hello.handleAppResume - already reconnecting HOW DO YOU KNOW THIS?????' );
 			return;
 		}
 		
@@ -1311,7 +1317,11 @@ var hello = null;
 		self.isLogout = false;
 		self.title = null;
 		
-		self.init();
+	}
+	
+	ns.Main.prototype.initialize = async function() {
+		const self = this;
+		await self.init();
 	}
 	
 	// Public
@@ -1328,9 +1338,6 @@ var hello = null;
 		const self = this;
 		if ( null == self.openMinimized )
 			self.openMinimized = openMinimized || false;
-		
-		if ( 'init-done' != self.state )
-			return;
 		
 		const initConf = {
 			mainFragments : hello.mainCommonFragments,
@@ -1423,13 +1430,25 @@ var hello = null;
 	
 	// Private
 	
-	ns.Main.prototype.init = function() {
+	ns.Main.prototype.init = async function() {
 		const self = this;
-		api.ApplicationStorage.get( 'account-settings' )
-			.then( settingsCacheBack )
-			.catch( err => {
-				console.log( 'app.Main.init - account setting load err', err );
-			});
+		let res = null;
+		try {
+			res = await api.ApplicationStorage.get( 'account-settings' );
+		} catch( ex ) {
+			console.log( 'Main.init - get accountsettings ex', ex );
+			res = {};
+		}
+		
+		let accSettings = res.data;
+		if ( !accSettings ) {
+			self.accSettings = {
+				advancedUI : false,
+			};
+		} else
+			self.accSettings = accSettings;
+		
+		self.recentHistory = {};
 		
 		function settingsCacheBack( cache ) {
 			const accSettings = cache.data;
@@ -1448,7 +1467,6 @@ var hello = null;
 		
 		function doSetup() {
 			self.advancedUI = self.accSettings.advancedUI;
-			self.state = 'init-done';
 			if ( null != self.openMinimized )
 				self.open();
 			

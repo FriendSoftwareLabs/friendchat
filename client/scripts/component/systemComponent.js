@@ -500,11 +500,6 @@ window.library.component = window.library.component || {};
 	
 	ns.PresenceService.prototype.handleNotification = function( extra, view ) {
 		const self = this;
-		console.log( 'PresenceService.handleNotification', {
-			extra : extra,
-			view : !!view,
-		});
-		
 		const roomId = extra.roomId;
 		const msgId = extra.msgId;
 		if ( !roomId ) {

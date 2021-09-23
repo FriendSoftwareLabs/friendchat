@@ -321,10 +321,6 @@ library.view = library.view || {};
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
 		const isMobile = ( 'MOBILE' === window.View.deviceType );
-		/*
-		if ( 'DESKTOP' !== window.View.deviceType )
-			self.backBtn.classList.toggle( 'hidden', false );
-		*/
 		
 		hello.template = friend.template;
 		const state = conf.state;
@@ -626,11 +622,11 @@ library.view = library.view || {};
 		}
 	}
 	
-	ns.Presence.prototype.setPrivateUI = function() {
+	ns.Presence.prototype.setPrivateUI = async function() {
 		const self = this;
 		self.usersEl.classList.toggle( 'hidden', true );
 		self.toggleUserListBtn( false );
-		self.setContactTitle();
+		await self.setContactTitle();
 	}
 	
 	ns.Presence.prototype.setViewUI = function() {
@@ -702,6 +698,9 @@ library.view = library.view || {};
 		const id = update.data;
 		const cId = id.clientId;
 		if ( cId !== self.contactId )
+			return;
+		
+		if ( null == self.titleEl )
 			return;
 		
 		const nameEl = self.titleEl.querySelector( '.title-name' );
@@ -877,6 +876,9 @@ library.view = library.view || {};
 			return;
 		
 		const titleEl = document.getElementById( self.titleId );
+		if ( null == titleEl )
+			return;
+		
 		const nameEl = titleEl.querySelector( '.title-name' );
 		nameEl.textContent = title;
 	}
@@ -1665,7 +1667,6 @@ library.view = library.view || {};
 		const self = this;
 		let group = self.getGroup( worgId );
 		if ( group ) {
-			console.log( 'setupWorkgroup - already added', worgId );
 			return;
 		}
 		
@@ -1799,7 +1800,6 @@ library.view = library.view || {};
 		
 		let u2m = self.userToMembers[ cId ];
 		if (( null != u2m ) && ( null != u2m[ worgId ])) {
-			console.log( 'setWorkMEmbers - already added', [ u2m, worgId ]);
 			// already set
 			return;
 		}
@@ -1875,10 +1875,12 @@ library.view = library.view || {};
 	
 	ns.UserWorkCtrl.prototype.removeUser = function( userId ) {
 		const self = this;
+		/*
 		console.log( 'removeUser - NOOP', {
 			userId : userId,
 			users  : self.users,
 		});
+		*/
 	}
 	
 	ns.UserWorkCtrl.prototype.removeMember = function( userId, worgId ) {
@@ -1888,6 +1890,9 @@ library.view = library.view || {};
 			return;
 		
 		const u2m = self.userToMembers[ userId ];
+		if ( null == u2m )
+			return;
+		
 		const memId = u2m.list.find( mId => {
 			const wId = u2m[ mId ];
 			if ( wId == worgId )
@@ -1957,14 +1962,8 @@ library.view = library.view || {};
 		if ( isInRoom ) {
 			self.moveUserToGroup( userId, self.workId );
 		} else {
-			console.log( 'user is in subroom', {
-				uw     : user.workgroups,
-				groups : self.members,
-				wid    : self.workId,
-			});
 			let toId = null;
 			user.workgroups.some( wId => {
-				console.log( 'wId', wId );
 				const grp = self.getGroup( wId );
 				if ( !grp )
 					return false;
@@ -2060,7 +2059,7 @@ library.view = library.view || {};
 			self.userLastMsg = event;
 		
 		const time = self.parseTime( event.time );
-		const envelope = self.getEnvelope( time.envelope );
+		const envelope = await self.getEnvelope( time.envelope );
 		const conf = {
 			inGroup : self.isLastSpeaker( event, envelope ),
 			event   : event,
@@ -2093,13 +2092,13 @@ library.view = library.view || {};
 		const selfUser = self.users.getIdSync( self.userId );
 		const mId = msg.msgId;
 		if ( !msg.targets ) {
-			console.log( 'MsgBuilder.buildWorkMsg - no targets', conf );
+			console.log( 'WorkMsgBuilder.buildWorkMsg - no targets', conf );
 			return null;
 		}
 		
 		const source = self.users.getWorkgroup( msg.source );
 		if ( !source ) {
-			console.log( 'buildWorkMsg - no source, aborting', {
+			console.log( 'WorkMsgBuilderbuildWorkMsg - no source, aborting', {
 				msg  : conf.event,
 				self : self,
 			});
@@ -2253,7 +2252,6 @@ library.view = library.view || {};
 			targets.forEach( uId => {
 				const user = self.users.getIdSync( uId );
 				if ( !user ) {
-					console.log( 'setToUsers - no user for', uId );
 					return;
 				}
 				
@@ -2264,10 +2262,6 @@ library.view = library.view || {};
 		function setToAll( twId, msg, targetNames ) {
 			const worg = self.users.getWorkgroup( twId );
 			if ( !worg ) {
-				console.log( 'addTargetNames - no worg', {
-					twId  : twId,
-					users : self.users,
-				});
 				return;
 			}
 			
@@ -2283,10 +2277,7 @@ library.view = library.view || {};
 					const user = self.users.getIdSync( uId );
 					let uName = '';
 					if ( !user ) {
-						console.log( 'setNames - no user for', {
-							uid : uId,
-							w   : worg,
-						});
+						// YEP
 					} else
 						uName = user.name;
 					
@@ -2301,10 +2292,12 @@ library.view = library.view || {};
 		}
 		
 		function emptyTargetNames( msg ) {
+			/*
 			console.log( 'MsgBuilderbuildWorkMsg - empty target names' );
 			console.log( 'msg', msg );
 			console.log( 'users', self.users );
 			console.log( 'self', self );
+			*/
 		}
 	}
 	

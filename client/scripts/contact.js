@@ -777,9 +777,9 @@ library.contact = library.contact || {};
 			return;
 		}
 		
-		const cId = friendUP.tool.uid( 'lc' );
+		const liveId = friendUP.tool.uid( 'lc' );
 		conf = conf || {};
-		conf.clientId = cId;
+		conf.clientId = liveId;
 		conf.roomId = self.clientId;
 		conf.roomName = self.identity.name;
 		conf.isPrivate = self.isPrivate || false;
@@ -801,10 +801,9 @@ library.contact = library.contact || {};
 		
 		// tell server
 		
-		console.log( 'joinLive', cId );
 		const join = {
 			type : 'live-join',
-			data : cId,
+			data : liveId,
 		};
 		self.send( join );
 		
@@ -1128,20 +1127,58 @@ library.contact = library.contact || {};
 		self.setupLive( permissions );
 	}
 	
+	ns.PresenceRoom.prototype.checkOpenPending = function( initialized, preView, noti ) {
+		const self = this;
+		const pend = self.openChatPending;
+		if ( !initialized && !pend ) {
+			self.openChatPending = {
+				view         : preView,
+				notification : noti,
+			};
+		}
+		
+		if ( !preView )
+			return null;
+		
+		if ( self.chatView ) {
+			if ( preView == self.chatView )
+				return null;
+			
+			preView.close();
+			
+			return null;
+		}
+		
+		if ( initialized )
+			return preView;
+		
+		if ( !pend ) {
+			self.openChatPending = {
+				notification : noti,
+				view         : preView,
+			};
+			return null;
+		}
+		
+		if ( preView == pend.view )
+			return null;
+		
+		preView.close();
+		
+		return null;
+	}
+	
 	ns.PresenceRoom.prototype.openChat = function( notification, preView ) {
 		const self = this;
 		self.hasNotification = !!notification;
+		preView = self.checkOpenPending( self.initialized, preView, notification );
 		
+		if ( !self.initialized )
+			return;
+		
+		self.openChatPending = null;
 		if ( self.chatView ) {
 			self.chatView.show();
-			return;
-		}
-		
-		if ( !self.initialized ) {
-			self.openChatPending = {
-				notification : notification,
-				view         : preView || null,
-			};
 			return;
 		}
 		
@@ -1472,7 +1509,6 @@ library.contact = library.contact || {};
 				sessionId : self.live.id,
 			},
 		};
-		console.log( 'restoreLive', restore );
 		self.send( restore );
 	}
 	
@@ -2246,7 +2282,8 @@ library.contact = library.contact || {};
 		};
 		self.toChat( join );
 		
-		if ( user.isOnline )
+		const id = await self.idc.get( uId );
+		if ( id.isOnline )
 			self.setUserOnline( uId, true );
 		else
 			self.updateViewUsers();
@@ -2270,13 +2307,15 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updateWorgsForUser = function( user ) {
 		const self = this;
+		/*
 		console.log( 'updateWorgsForUser - NOOP', {
 			user  : user,
 			worgs : self.workgroups,
 		});
+		*/
 	}
 	
-	ns.PresenceRoom.prototype.updateViewUsers = function( event ) {
+	ns.PresenceRoom.prototype.updateViewUsers = function() {
 		const self = this;
 		const users = {
 			type : 'users',
@@ -3524,10 +3563,8 @@ library.contact = library.contact || {};
 		self.peers.push( self.userId );
 		const isClient = checkClientLive( liveId );
 		const state = isClient ? 'client' : 'user';
-		if ( state === self.liveState.description ) {
-			console.log( 'aborting' );
+		if ( state === self.liveState.description )
 			return;
-		}
 		
 		self.liveState.description = state;
 		self.updateLiveState();
@@ -3759,23 +3796,11 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChat = function( notification, preView ) {
 		const self = this;
-		if ( !self.isOpen ) {
-			self.openChatPending = {
-				notification : notification,
-				view         : preView || null,
-			};
+		preView = self.checkOpenPending( self.isOpen, preView, notification );
+		if ( !self.isOpen )
 			self.open();
-		} else {
-			const pending = self.openChatPending;
-			if ( pending ) {
-				delete self.openChatPending;
-				self.openChatView(
-					pending.notification,
-					pending.view
-				);
-			 }
-			 else
-				self.openChatView();
+		else {
+			self.openChatView( notification, preView );
 		}
 	}
 	
@@ -3787,6 +3812,9 @@ library.contact = library.contact || {};
 		
 		if ( self.chatView ) {
 			self.chatView.show();
+			if ( preView )
+				preView.close();
+			
 			return;
 		}
 		

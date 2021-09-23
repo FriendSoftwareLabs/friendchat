@@ -2665,13 +2665,13 @@ Searchable collection(s) of users, rooms and other odds and ends
 			'invite-audio'    : inviteAudio,
 		};
 		
-		function addRelation( s, e, l ) { self.handleAddRelation( s, e, l ); }
+		function addRelation(    s, e, l ) { self.handleAddRelation(    s, e, l ); }
 		function removeRelation( s, e, l ) { self.handleRemoveRelation( s, e, l ); }
-		function openChat( s, e, l ) { self.handleOpenChat( s, e, l ); }
-		function liveAudio( s, e, l ) { self.handleLiveAudio( s, e, l ); }
-		function liveVideo( s, e, l ) { self.handleLiveVideo( s, e, l ); }
-		function inviteVideo( s, e, l ) { self.handleInviteVideo( s, e, l ); }
-		function inviteAudio( s, e, l ) { self.handleInviteAudio( s, e, l ); }
+		function openChat(       s, e, l ) { self.handleOpenChat(       s, e, l ); }
+		function liveAudio(      s, e, l ) { self.handleLiveAudio(      s, e, l ); }
+		function liveVideo(      s, e, l ) { self.handleLiveVideo(      s, e, l ); }
+		function inviteVideo(    s, e, l ) { self.handleInviteVideo(    s, e, l ); }
+		function inviteAudio(    s, e, l ) { self.handleInviteAudio(    s, e, l ); }
 	}
 	
 	ns.Items.prototype.handleAction = function( listenId, action ) {
@@ -3147,24 +3147,28 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setRemoved = function( id ) {
 		const self = this;
+		console.log( 'setRemoved', id );
 		const lock = self.removed[ id ];
 		if ( null != lock )
 			window.clearTimeout( lock );
 		
-		self.removed[ id ] = window.setTimeout( unlock, 3000 );
+		self.removed[ id ] = window.setTimeout( unlock, 500 );
 		
 		function unlock() {
-			delete self.removed[ id ];
+			self.unsetRemoved( id );
+			//delete self.removed[ id ];
 		}
 	}
 	
 	ns.Activity.prototype.unsetRemoved = function( id ) {
 		const self = this;
+		console.log( 'unsetRemoved', id );
 		const lock = self.removed[ id ];
 		if ( null == lock )
 			return;
 		
 		window.clearTimeout( lock );
+		delete self.removed[ id ];
 	}
 	
 	ns.Activity.prototype.updateLocalOpts = function( id, opts ) {
@@ -3402,15 +3406,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		async function update( i, mod ) {
 			let identity = null;
 			identity = await self.getIdentity( i.clientId, mod );
-			/*
-			try {
-				identity = await mod.getIdentity( i.clientId );
-			} catch( ex ) {
-				console.log( 'Activity.updateIdentities - mod.getIdentity ex', ex );
-				self.remove( i.id );
-				return;
-			}
-			*/
+			
 			if ( null == identity ) {
 				console.log( 'Activity.updateIdentities - no id', i );
 				return;
@@ -3568,7 +3564,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 				}
 				
 				function err( ex ) {
-					console.log( 'err', ex );
+					console.log( 'getIdMaybeTimeout err', ex );
 					if ( null != timeId )
 						window.clearTimeout( timeId );
 					

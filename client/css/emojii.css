@@ -1,53 +1,54 @@
 @charset "UTF-8";
+	/*
 @font-face {
 	font-family : qweasd;
-	/*src : url( '/webclient/apps/FriendChat/res/NotoColorEmoji.ttf' );
+	src : url( '/webclient/apps/FriendChat/res/NotoColorEmoji.ttf' );
 	wont load on windows
 	also, is 6mb lol
-	*/
 	src : url( '/webclient/apps/FriendChat/res/NotoEmoji-Regular.ttf' );
 }
+	*/
 
 /* EMOS */
 i.pictograph
 {
-	font-family: qweasd;
-	display: inline-block;
-	text-rendering: auto;
-	font-style: normal;
-	background-repeat: no-repeat;
-	background-position: center center;
-	background-size: contain;
-	font-size : 170%;
-	padding: 0.2em;
+	font-family         : qweasd;
+	display             : inline-block;
+	text-rendering      : auto;
+	font-style          : normal;
+	background-repeat   : no-repeat;
+	background-position : center center;
+	background-size     : contain;
+	font-size           : 170%;
+	padding             : 0.2em;
 }
 
-.emo-ok:before { content : "👍"; }
-.emo-angel:before { content : "😇"; }
-.emo-angry:before { content : "😠"; }
-.emo-blow-kiss:before { content : "😘"; }
-.emo-cool:before { content : "😎"; }
-.emo-confused:before { content : "😮"; }
-.emo-devil:before { content : "😈"; }
-.emo-hearts:before { content : "😍"; }
-.emo-laugh:before { content : "😄"; }
-.emo-info:before { content : "ℹ"; }
-.emo-sad:before { content : "😞"; }
-.emo-sleep:before { content : "😴"; }
-.emo-smile:before { content : "😊"; }
-.emo-grin:before { content : "😀"; }
-.emo-smile-tounge:before { content : "😺"; }
-.emo-surprise:before { content : "😲"; }
-.emo-wink:before { content : "😋"; }
-.emo-unimpressed:before { content : "😶"; }
-.emo-hooray:before { content : "🙌"; }
-.emo-alien:before { content : "👽"; }
-.emo-imnothere:before { content : "😓"; }
-.emo-beer:before { content : "🍻"; }
-.emo-martini:before { content : "🍸"; }
-.emo-cherry:before { content : "🍒"; }
-.emo-thumbup:before { content : "👍"; }
-.emo-thumbdown:before { content : "👎"; }
+.emo-ok:before { content : "\01F44D"; }
+.emo-angel:before { content : "\01F607"; }
+.emo-angry:before { content : "\01F620"; }
+.emo-blow-kiss:before { content : "\01F618"; }
+.emo-cool:before { content : "\01F60E"; }
+.emo-confused:before { content : "\01F62E"; }
+.emo-devil:before { content : "\01F608"; }
+.emo-hearts:before { content : "\01F60D"; }
+.emo-laugh:before { content : "\01F603"; }
+.emo-info:before { content : "\02139"; }
+.emo-sad:before { content : "\01F614"; }
+.emo-sleep:before { content : "\01F634"; }
+.emo-smile:before { content : "\01F60A"; }
+.emo-grin:before { content : "\01F603"; }
+.emo-smile-tounge:before { content : "\01F63A"; }
+.emo-surprise:before { content : "\01F632"; }
+.emo-wink:before { content : "\01F61C"; }
+.emo-unimpressed:before { content : "\01F636"; }
+.emo-hooray:before { content : "\01F64C"; }
+.emo-alien:before { content : "\01F47D"; }
+.emo-imnothere:before { content : "\01F613"; }
+.emo-beer:before { content : "\01F37B"; }
+.emo-martini:before { content : "\01F378"; }
+.emo-cherry:before { content : "\01F352"; }
+.emo-thumbup:before { content : "\01F44D"; }
+.emo-thumbdown:before { content : "\01F44E"; }
 .emo-hogne,
 .emo-trump {
 	width : 5em;
@@ -61,14 +62,14 @@ i.pictograph
 	background-image : url( https://treeroot.org/subether/upload/profile/156/album/profile%20pictures/also_Cat_Typing_small.gif );
 }
 
-.emo-cat:before { content : "🐱"; }
-.emo-sick:before { content : "😷"; }
-.emo-cake:before { content : "🍰"; }
-.emo-cow:before { content : "🐮"; }
-.emo-shrug:before { content : "🤷"; }
-.emo-octopus:before { content : "🐙 "; }
-.emo-snake:before { content : "🐍"; }
-.emo-train:before { content : "🚅"; }
-.emo-plane:before { content : "✈️"; }
-.emo-rocket:before { content : "🚀"; }
-.emo-tophat:before { content : "🎩"; }
+.emo-cat:before { content : " \01F431"; }
+.emo-sick:before { content : " \01F637"; }
+.emo-cake:before { content : "\01F370"; }
+.emo-cow:before { content : "\01F42E"; }
+.emo-shrug:before { content : "\01F937"; }
+.emo-octopus:before { content : "\01F419 "; }
+.emo-snake:before { content : "\01F40D"; }
+.emo-train:before { content : "\01F682"; }
+.emo-plane:before { content : "\01F6E9"; }
+.emo-rocket:before { content : "\01F680"; }
+.emo-tophat:before { content : "\01F3A9"; }

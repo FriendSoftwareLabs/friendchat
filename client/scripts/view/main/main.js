@@ -1821,7 +1821,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.filterSetTemp = function( cId, online, id ) {
 		const self = this;
-		console.log( 'filterSetTemp', cId );
 		const contact = self.checkExists( cId );
 		if ( contact ) {
 			moveContact( cId, online );
@@ -1985,7 +1984,6 @@ library.view = library.view || {};
 		const self = this;
 		const list = event.hidden;
 		if ( !list || !list.length ) {
-			console.log( 'no hidden contacts', event );
 			return;
 		}
 		
@@ -2630,9 +2628,9 @@ library.view = library.view || {};
 })( library.view );
 
 (function( ns, undefined ) {
-	ns.PresenceView = function( conf, conn ) {
+	ns.PresenceView = function( conf ) {
 		const self = this;
-		library.view.PresenceRoom.call( self, conf, conn );
+		library.view.PresenceRoom.call( self, conf );
 	}
 	
 	ns.PresenceView.prototype = Object.create( library.view.PresenceRoom.prototype );
@@ -2898,7 +2896,6 @@ library.view = library.view || {};
 
 (function( ns, undefiend ) {
 	ns.PresenceTemp = function( conf, conn ) {
-		//console.log( 'PresenceTemp', conf );
 		const self = this;
 		self.type = 'temp-contact';
 		self.data = {
@@ -2924,7 +2921,6 @@ library.view = library.view || {};
 	
 	ns.PresenceTemp.prototype.updateIdentity = function( id ) {
 		const self = this;
-		console.log( 'PresenceTemp.updateIdentity', id );
 		if ( null != id )
 			self.identity = id;
 		
@@ -2935,12 +2931,10 @@ library.view = library.view || {};
 	
 	ns.PresenceTemp.prototype.updateOnline = function() {
 		const self = this;
-		//console.log( 'updateOnline', self.identity.isOnline );
 		const isOnline = self.identity.isOnline;
 		if ( !isOnline && ( null == self.onlineStatus ))
 			return;
 		
-		//console.log( 'updateOnline, the things', isOnline );
 		if ( null == self.onlineStatus )
 			self.buildStatus();
 		
@@ -3000,7 +2994,6 @@ library.view = library.view || {};
 				res = Math.floor( rnd * ( max - min ) + min );
 			else
 				res = Math.floor( rnd * max );
-			//console.log( 'rnd', [ res, max, min ]);
 			return res;
 		}
 	}
@@ -3016,19 +3009,8 @@ library.view = library.view || {};
 		return opts;
 	}
 	
-	/*
-	ns.PresenceTemp.prototype.bindItem = function() {
-		const self = this;
-		self.el.addEventListener( 'click', click, false );
-		function click( e ) {
-			self.openChat();
-		}
-	}
-	*/
-	
 	ns.PresenceTemp.prototype.init = function( canOnline ) {
 		const self = this;
-		//console.log( 'tmp init' );
 		if ( null != self.identity.name )
 			self.updateIdentity();
 	}
