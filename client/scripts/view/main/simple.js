@@ -144,6 +144,31 @@ var hello = window.hello || {};
 			self.enableInAppMenu();
 		}
 		
+		// temporary (welcome) buttons with actions
+		if( document.getElementById( 'your-group-chats' ) ) {
+			// go to conference rooms tab
+			document.getElementById( 'your-group-chats' ).onclick = function() {
+				document.getElementById( 'show-rooms' ).click();
+			}
+			// go to contacts tab
+			document.getElementById( 'your-contacts' ).onclick = function() {
+				document.getElementById( 'show-contacts' ).click();
+				setTimeout( function() {
+					let conts = document.querySelector( '.contacts' );
+					if( !conts ) {
+						document.querySelector( '.show-online' ).click();
+						return;
+					}
+					conts = conts.getElementsByClassName( 'contact' );
+					if( !conts.length ) {
+						document.querySelector( '.show-online' ).click();
+						return;
+					}
+					document.querySelector( '.show-relations' ).click();
+				}, 25 );
+			}
+		}
+		
 		// tabs
 		const activity = document.getElementById( 'activity-events' );
 		const activityBtn = document.getElementById( 'show-activity' );

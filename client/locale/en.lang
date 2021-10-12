@@ -20,7 +20,7 @@ i18n_channel_settings : Channel settings
 i18n_irc_settings : IRC settings
 i18n_join : join
 i18n_treeroot_settings : Friend Community settings
-i18n_workgroups : Workgroups
+i18n_workgroups : Groups
 i18n_user_limit : User limit
 i18n_a : A
 i18n_friendup : Friend
@@ -322,9 +322,9 @@ i18n_save : Save
 i18n_searching : Searching..
 i18n_email : Email
 i18n_contacts : Contacts
-i18n_conference_rooms : Conference rooms
+i18n_conference_rooms : Groups
 i18n_conference_members : Members
-i18n_workgroup_contacts : Workgroup Contacts
+i18n_workgroup_contacts : Contacts
 i18n_community_contacts : Community Contacts
 i18n_open_chat : Open chat
 i18n_go_live_audio : Go live, audio
@@ -332,7 +332,7 @@ i18n_go_live_video : Go live, video
 i18n_invite_to_video : Invite to video chat
 i18n_invite_to_audio : Invite to voice chat
 i18n_invite_to_room : Invite to Room
-i18n_recent_conversations : Latest activity
+i18n_recent_conversations : Chats
 i18n_remove_contact : Remove contact
 i18n_leave_room : Leave room
 i18n_remove_chat : Remove chat
@@ -387,8 +387,12 @@ i18n_this_is_a_communication_and_collaboration_tool_for_the_friend_workspace : T
 i18n_please_take_a_moment_to_look_around : Please take a moment to look around
 i18n_the_search_bar_at_the_top_filters_current_rooms_and_contacts_and_allow_finding_community_contacts : The search bar at the top filters current rooms and contacts and allow finding community contacts
 i18n_the_tabs_at_the_bottom_will_take_you_to_the_following_sections : The tabs at the bottom will take you to the following sections
-i18n_current_conversations_and_events : Current conversations and events
-i18n_your_group_chats : Your group chats
+i18n_get_started : Get started
+i18n_current_conversations_and_events : Latest chat activity
+i18n_your_group_chats : Groups
+i18n_btn_click : Click
+i18n_see_your_group_chats : to chat with your groups
+i18n_see_your_contacts : to find people
 i18n_your_contacts : Your contacts
 i18n_have_fun : Have fun!
 i18n_there_are_no_recent_conversations_or_events : There are no recent conversations or events

@@ -57,3 +57,59 @@
 {
 	overflow: auto;
 }
+
+/* Welcome buttons */
+
+#welcome-things 
+{
+	text-align: center;
+}
+
+html #welcome-box
+{
+	font-size: 130%;
+}
+
+html #welcome-box, html #welcome-things .group
+{
+	text-align: center;
+}
+
+html #welcome-things .group
+{
+	display: inline-block;
+	margin: 0 0 15px 0;
+}
+
+html #welcome-things .group i
+{
+	cursor: pointer;
+}
+
+html #welcome-box h2
+{
+	margin: 0 0 15px 0;
+}
+
+html #welcome-things i
+{
+	margin: 0 5px 0 5px;
+}
+
+#welcome-box .Padding
+{
+	padding: 100px 20px;
+}
+
+/* List buttons */
+
+button.button.show-set-name.fortify
+{
+	margin: 0 0 0 15px;
+}
+
+.room-name-form.expand.group.row .expand
+{
+	margin: 0 10px 0 15px;
+}
+
