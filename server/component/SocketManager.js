@@ -390,7 +390,7 @@ ns.SocketManager.prototype.replaceSession = function( session, socket ) {
 	
 	const conn = socket.detach();
 	if ( !conn ) {
-		socket.close();
+		self.removeSocket( socket.id );
 		return;
 	}
 	

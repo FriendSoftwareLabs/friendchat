@@ -234,7 +234,7 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	args.password = null; // pasword deprecated
 	if ( !args.name ) {
 		msg.response = {
-			status : 400,
+			status  : 400,
 			message : 'missing arguments',
 		};
 		done();
@@ -253,7 +253,7 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	const accountId = await dbAccount.getAccountId( args.name );
 	if ( !accountId ) {
 		msg.response = {
-			status : 403,
+			status  : 403,
 			message : 'auth fail',
 		};
 		done();
@@ -262,7 +262,10 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	
 	const dbAcc = await dbAccount.get( accountId );
 	if ( !dbAcc ) {
-		msg.response = 'could not load account?';
+		msg.response = {
+			staus   : 503,
+			message : 'could not load account?',
+		};
 		done();
 		return;
 	}
@@ -270,25 +273,28 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	if ( !dbAcc.clientId || !dbAcc.name )
 		throw new Error( 'account.login - critical - missing clientId and/or name' );
 	
+	const socket = self.getSocket( socketId );
+	if ( null == socket ) {
+		msg.response = {
+			status  : 503,
+			message : 'socket closed prematurely',
+		};
+		done();
+		return;
+	}
+	
 	let account = self.state.account[ dbAcc.clientId ];
-	// fresh login, need an account instance
-	if ( !account ) {
-		dbAcc.onclose = removeAccount;
+	if ( !account ) { // fresh login, need an account instance
+		dbAcc.onclose = onLogout;
 		account = new Account( dbAcc, self.state.db );
 		self.state.account[ account.clientId ] = account;
 		
-		function removeAccount() {
+		function onLogout() {
 			self.unsetAccount( account.clientId );
 		}
 	}
 	
 	// hand over socket to account
-	const socket = self.getSocket( socketId );
-	if ( !socket ) {
-		self.unsetAccount( account.clientId );
-		return;
-	}
-	
 	socket.release( 'msg' );
 	self.setSession( socket, account.clientId );
 	account.attachSession( socket );
@@ -297,9 +303,9 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	await dbAccount.touch( account.clientId );
 	
 	msg.response = {
-		status : 200,
+		status  : 200,
 		success : true,
-		data : dbAcc,
+		data    : dbAcc,
 	};
 	done();
 	

@@ -45,6 +45,9 @@ ns.ModCtrl = function( conf ) {
 	self.modules = {};
 	self.moduleOrder = [];
 	self.eventMap = null;
+	
+	self.closed = false;
+	
 	self.init();
 }
 
@@ -128,13 +131,13 @@ ns.ModCtrl.prototype.addDefaultModules = function( defaultUsername ) {
 
 ns.ModCtrl.prototype.receiveMsg = function( e, sid ) {
 	const self = this;
-	var mod = self.modules[ e.type ];
+	const mod = self.modules[ e.type ];
 	if ( mod ) {
 		mod.receiveMsg( e.data, sid );
 		return null;
 	}
 	
-	var handler = self.eventMap[ e.type ];
+	const handler = self.eventMap[ e.type ];
 	if ( handler ) {
 		handler( e.data, sid );
 		return null;
@@ -144,21 +147,38 @@ ns.ModCtrl.prototype.receiveMsg = function( e, sid ) {
 	return e;
 }
 
-ns.ModCtrl.prototype.close = function() {
+ns.ModCtrl.prototype.close = async function() {
 	const self = this;
-	killRunning();
+	if ( self.closed )
+		return true;
+	
+	self.closed = true;
+	const kills = self.moduleOrder.map( mId => kill( mId ));
+	await Promise.all( kills );
+	
+	self.modules = null;
+	self.moduleOrder = null;
 	
 	delete self.accountId;
 	delete self.db;
 	delete self.onsend;
 	
-	function killRunning() {
-		for ( var cid in self.modules )
-			self.modules[ cid ].kill();
-		
+	return true;
+	
+	function kill( mId ) {
+		return new Promise(( resolve, reject ) => {
+			const mod = self.getMod( mId );
+			if ( !mod )
+				resolve( null );
+			
+			mod.kill( killBack );
+			function killBack() {
+				self.delMod( mId );
+				resolve( mId );
+			}
+		});
 	}
 }
-
 
 // Pirvate
 
@@ -179,6 +199,31 @@ ns.ModCtrl.prototype.init = function() {
 	
 	function create( e, sid ) { self.create( e, sid ); }
 	function remove( e, sid ) { self.remove( e, sid ); }
+}
+
+ns.ModCtrl.prototype.setMod = function( moduleId, mod ) {
+	const self = this;
+	self.modules[ moduleId ] = mod;
+	self.moduleOrder.push( moduleId );
+}
+
+ns.ModCtrl.prototype.getMod = function( moduleId ) {
+	const self = this;
+	const mod = self.modules[ moduleId ];
+	if ( null == mod )
+		return null;
+	
+	return mod;
+}
+
+ns.ModCtrl.prototype.delMod = function( moduleId ) {
+	const self = this;
+	const mod = self.modules[ moduleId ];
+	delete self.modules[ moduleId ];
+	const mIdx = self.moduleOrder.indexOf( moduleId );
+	self.moduleOrder.splice( mIdx, 1 );
+	
+	return true;
 }
 
 ns.ModCtrl.prototype.buildModConf = function( type, defaultUsername ) {
@@ -286,25 +331,25 @@ ns.ModCtrl.prototype.add = function( module ) {
 
 ns.ModCtrl.prototype.remove = function( moduleId ) {
 	const self = this;
-	var module = self.modules[ moduleId ];
-	if ( !module ) {
+	const mod = self.getMod( moduleId );
+	if ( !mod ) {
 		log( 'ModCtrl.remove - no such module', {
-			mid : moduleId,
+			mid  : moduleId,
 			mods : self.modules,
 		});
 		done( false );
 		return;
 	}
 	
-	module.kill( killBack );
+	mod.kill( killBack );
 	function killBack() {
-		delete self.modules[ moduleId ];
+		self.delMod( moduleId );
 		initDB();
 		done( true );
 	}
 	
 	function initDB() {
-		var dbModule = new DbModule( self.db, self.accountId );
+		const dbModule = new DbModule( self.db, self.accountId );
 		dbModule.once( 'ready', dbRemove );
 		function dbRemove() {
 			dbModule.remove( moduleId, remBack );
@@ -322,7 +367,7 @@ ns.ModCtrl.prototype.remove = function( moduleId ) {
 	}
 	
 	function sendRemove() {
-		var removeEvent = {
+		const removeEvent = {
 			type : 'module',
 			data : {
 				type : 'remove',
@@ -335,7 +380,7 @@ ns.ModCtrl.prototype.remove = function( moduleId ) {
 
 ns.ModCtrl.prototype.load = function( callback ) {
 	const self = this;
-	var dbModule = new DbModule( self.db, self.accountId );
+	const dbModule = new DbModule( self.db, self.accountId );
 	dbModule.once( 'ready', dbReady );
 	function dbReady() { dbModule.get( modsBack ); }
 	function modsBack( modules ) {
@@ -346,10 +391,10 @@ ns.ModCtrl.prototype.load = function( callback ) {
 
 ns.ModCtrl.prototype.start = function( mod ) {
 	const self = this;
-	var clientId = mod.clientId;
-	var conn = self.modules[ clientId ];
+	const clientId = mod.clientId;
+	let conn = self.getMod( clientId );
 	if ( conn ) {
-		log( 'module already initialized????', { mod : mod, mods : self.modules });
+		log( 'module already initialized', { mod : mod, mods : self.modules });
 		return false;
 	}
 	
@@ -360,15 +405,14 @@ ns.ModCtrl.prototype.start = function( mod ) {
 		getSettings    : getSettings,
 	});
 	
-	var Module = self.available[ mod.type ];
+	const Module = self.available[ mod.type ];
 	if ( !Module ) {
 		log( 'startModule - no constructor for', mod );
 		return;
 	}
 	
 	new Module( conn, clientId );
-	self.modules[ clientId ] = conn;
-	self.moduleOrder.push( clientId );
+	self.setMod( clientId, conn );
 	const conf = self.getModuleDefaultConf( mod.type );
 	if ( !conf )
 		throw new Error( 'start - module does not have default conf:' + mod.type );
@@ -392,10 +436,11 @@ ns.ModCtrl.prototype.start = function( mod ) {
 
 ns.ModCtrl.prototype.stop = function( moduleId ) {
 	const self = this;
-	const mod = self.modules[ moduleId ];
-	delete self.modules[ moduleId ];
-	const mIdx = self.moduleOrder.indexOf( moduleId );
-	self.moduleOrder.splice( mIdx, 1 );
+	const mod = self.getMod( moduleId );
+	if ( null == mod )
+		return;
+	
+	self.delMod( moduleId );
 	mod.kill();
 }
 
@@ -412,7 +457,7 @@ ns.ModCtrl.prototype.getModuleDefaultConf = function( modType ) {
 
 ns.ModCtrl.prototype.persistSetting = function( moduleId, pair, callback ) {
 	const self = this;
-	var dbModule = new DbModule( self.db, self.accountId, moduleId );
+	const dbModule = new DbModule( self.db, self.accountId, moduleId );
 	dbModule.once( 'ready', dbReady );
 	function dbReady( err ) {
 		if ( err ) {
@@ -442,7 +487,7 @@ ns.ModCtrl.prototype.persistSetting = function( moduleId, pair, callback ) {
 
 ns.ModCtrl.prototype.getSettings = function( moduleId, callback ) {
 	const self = this;
-	var dbModule = new DbModule( self.db, self.accountId, moduleId );
+	const dbModule = new DbModule( self.db, self.accountId, moduleId );
 	dbModule.once( 'ready', dbReady );
 	function dbReady() {
 		dbModule.get( getBack );
@@ -462,7 +507,7 @@ ns.ModCtrl.prototype.getSettings = function( moduleId, callback ) {
 
 ns.ModCtrl.prototype.sendMod = function( msg, sid ) {
 	const self = this;
-	var wrap = {
+	const wrap = {
 		type : 'module',
 		data : msg,
 	};
@@ -576,7 +621,7 @@ ns.ModuleProxy.prototype.moduleProxyInit = function() {
 
 ns.ModuleProxy.prototype.emitState = function( sessionId ) {
 	const self = this;
-	var stateEvent = {
+	const stateEvent = {
 		type : 'connection',
 		data : self.state,
 	};

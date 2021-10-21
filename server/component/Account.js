@@ -45,6 +45,8 @@ ns.Account = function( conf, dbPool ) {
 	self.msgMap = null;
 	self.activity = null;
 	
+	self.closed = false;
+	
 	self.init();
 }
 
@@ -231,9 +233,11 @@ ns.Account.prototype.setupModCtrl = function( allowAdvanced ) {
 	function onModSend( e, sid ) { self.toClient( e, sid ); }
 }
 
-ns.Account.prototype.logout = function() {
+ns.Account.prototype.logout = async function() {
 	const self = this;
-	self.mods.close();
+	if ( self.mods )
+		await self.mods.close();
+	
 	const onclose = self.onclose;
 	delete self.onclose;
 	if ( !onclose )
@@ -242,21 +246,28 @@ ns.Account.prototype.logout = function() {
 	onclose();
 }
 
-ns.Account.prototype.close = function() {
+ns.Account.prototype.close = async function() {
 	const self = this;
-	allSessionsMustDie();
+	if ( self.closed )
+		return;
 	
+	self.closed = true;
+	allSessionsMustDie();
 	self.sessions = {};
 	self.sessionKeys = [];
 	
+	if ( self.mods )
+		await self.mods.close();
+	delete self.mods;
+	
 	if ( self.activity )
 		self.activity.close();
+	delete self.activity;
 	
 	if ( self.dbAccount )
 		self.dbAccount.close();
-	
-	delete self.activity;
 	delete self.dbAccount;
+	
 	delete self.db;
 	delete self.onclose;
 	delete self.clientId;
