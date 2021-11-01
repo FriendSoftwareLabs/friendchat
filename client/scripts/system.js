@@ -403,6 +403,8 @@ library.rtc = library.rtc || {};
 		self.parentView = parentView;
 		//self.firstLogin = conf.firstLogin;
 		self.active = {};
+		self.activeIds = [];
+		
 		self.moduleMap = null;
 		self.conn = null;
 		self.view = null;
@@ -423,8 +425,14 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
+		console.log( 'ModCtrl.setIsOnline', isOnline );
 		if ( isOnline )
 			self.reconnect();
+		else
+			self.activeIds.forEach( mId => {
+				const mod = self.active[ mId ];
+				mod.setOnline( false );
+			});
 	}
 	
 	ns.ModuleControl.prototype.updateAvatar = function( avatar ) {
@@ -559,15 +567,9 @@ library.rtc = library.rtc || {};
 		const mod = new Module( conf, activity, onRemove );
 		hello.activity.registerModule( modId, mod, activity );
 		
-		/*
-		window.setTimeout( reg, 10000 );
-		function reg() {
-			console.log( 'reg', modId );
-			
-		}
-		*/
-		
 		self.active[ modId ] = mod;
+		self.activeIds.push( modId );
+		
 		hello.items.addSource( modId, mod );
 		const viewConf = {
 			identity : mod.identity,
@@ -725,6 +727,8 @@ library.rtc = library.rtc || {};
 		hello.items.removeSource( moduleId );
 		module.close();
 		delete self.active[ moduleId ];
+		self.activeIds = Object.keys( self.active );
+		
 		self.removeFromView( moduleId );
 		hello.activity.removeModule( moduleId );
 	}
@@ -3075,7 +3079,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 		
 		const cId = conf.clientId;
-		const identity = await self.lookupIdentity( cId, conf.modId );
+		const identity = await self.lookupIdentity( conf );
 		conf.identity = identity;
 		
 		const event = {
@@ -3086,9 +3090,9 @@ Searchable collection(s) of users, rooms and other odds and ends
 		self.itemIds = Object.keys( self.items );
 		self.cIdMap[ cId ] = event;
 		
-		resolveWaiting( cId, event );
-		
 		self.view.send( event );
+		
+		resolveWaiting( cId, event );
 		
 		function resolveWaiting( cId, event ) {
 			const waiting = self.waitForItem[ cId ];
@@ -3107,7 +3111,11 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.sendRemove = async function( id ) {
 		const self = this;
-		console.trace( 'Activity.sendRemove', id );
+		const item = self.items[ id ];
+		console.trace( 'Activity.sendRemove', {
+			id   : id,
+			item : item,
+		});
 		self.setRemoved( id );
 		const remove = {
 			type : 'remove',
@@ -3127,8 +3135,11 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.removeItem = function( id ) {
 		const self = this;
-		console.trace( 'Activity.removeItem', id );
 		const item = self.items[ id ];
+		console.trace( 'Activity.removeItem', {
+			id   : id,
+			item : item,
+		});
 		if ( null == item )
 			return;
 		
@@ -3152,7 +3163,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 		if ( null != lock )
 			window.clearTimeout( lock );
 		
-		self.removed[ id ] = window.setTimeout( unlock, 500 );
+		self.removed[ id ] = window.setTimeout( unlock, 1000 );
 		
 		function unlock() {
 			self.unsetRemoved( id );
@@ -3390,17 +3401,34 @@ Searchable collection(s) of users, rooms and other odds and ends
 			});
 		}
 		
-		function updateForModule( mId ) {
-			const itemIds = getModuleIds( mId );
+		async function updateForModule( mId ) {
+			const mod = self.getModule( mId );
+			const isOnline = mod.getOnlineStatus();
+			console.log( 'app.Activity.updateIdentities, is online?', {
+				mod      : mod,
+				isOnline : isOnline,
+			});
+			
+			if ( !isOnline ) {
+				console.log( 'Activity.updateidentities - no online', mId );
+				return;
+			}
+			
+			let itemIds = getModuleIds( mId );
 			if ( !itemIds || !itemIds.length )
 				return;
 			
-			const mod = self.getModule( mId );
+			const cIds = itemIds.map( i => i.clientId );
+			await self.askVerify( mId, cIds );
+			
+			// get updated list, askVerify migth have removed some
+			itemIds = getModuleIds( mId );
+			if ( !itemIds || !itemIds.length )
+				return;
+			
 			itemIds.map( i => {
 				update( i, mod );
 			});
-			const cIds = itemIds.map( i => i.clientId );
-			self.askVerify( mId, cIds );
 		}
 		
 		async function update( i, mod ) {
@@ -3408,19 +3436,15 @@ Searchable collection(s) of users, rooms and other odds and ends
 			identity = await self.getIdentity( i.clientId, mod );
 			
 			if ( null == identity ) {
-				console.log( 'Activity.updateIdentities - no id', i );
+				console.log( 'Activity.updateIdentities - no id', {
+					i      : i,
+					online : self.isOnline,
+					modOn  : mod.getOnlineStatus(),
+				});
 				return;
 			}
 			
-			const uptd = {
-				type : 'identity',
-				data : {
-					id       : i.id,
-					identity : identity,
-				},
-			};
-			self.view.send( uptd );
-			
+			self.updateViewIdentity( i.id, identity );
 			return i.clienntId;
 		}
 		
@@ -3428,6 +3452,10 @@ Searchable collection(s) of users, rooms and other odds and ends
 			const cIds = self.itemIds.map( id => {
 				const item = self.items[ id ];
 				if ( null == item )
+					return null;
+				
+				const lock = self.removed[ id ];
+				if ( null != lock )
 					return null;
 				
 				const d = item.data;
@@ -3444,10 +3472,22 @@ Searchable collection(s) of users, rooms and other odds and ends
 		}
 	}
 	
-	ns.Activity.prototype.askVerify = function( modId, cIdList ) {
+	ns.Activity.prototype.updateViewIdentity = function( itemId, identity ) {
+		const self = this;
+		const uptd = {
+			type : 'identity',
+			data : {
+				id       : itemId,
+				identity : identity,
+			},
+		};
+		self.view.send( uptd );
+	}
+	
+	ns.Activity.prototype.askVerify = async function( modId, cIdList ) {
 		const self = this;
 		const mod = self.getModule( modId );
-		mod.verifyActivities( cIdList );
+		await mod.verifyActivities( cIdList );
 	}
 	
 	ns.Activity.prototype.handleMessage = function( msg ) {
@@ -3481,29 +3521,42 @@ Searchable collection(s) of users, rooms and other odds and ends
 		self.removeItem( id );
 	}
 	
-	ns.Activity.prototype.lookupIdentity = async function( cId, mId ) {
+	ns.Activity.prototype.lookupIdentity = async function( conf ) {
 		const self = this;
-		const cache = await api.ApplicationStorage.get( cId );
-		if ( cache && cache.data )
-			return cache.data;
-		
-		if( !self.isLoaded )
-			return null;
+		const cId = conf.clientId;
+		const mId = conf.modId;
+		const itemId = conf.id;
 		
 		let id = null;
-		const mod = self.getModule( mId );
-		if ( !mod )
-			return null;
+		const cache = await api.ApplicationStorage.get( cId );
+		if ( cache && cache.data )
+			id = cache.data;
 		
-		id = await self.getIdentity( cId, mod );
-		if ( null == id )
-			return null;
-		
+		window.setTimeout( getId, 1 );
 		return id;
+		
+		async function getId() {
+			const mod = self.getModule( mId );
+			if ( !mod )
+				return null;
+			
+			id = await self.getIdentity( cId, mod );
+			if ( id == null )
+				return;
+			
+			self.updateViewIdentity( itemId, id );
+		}
 	}
 	
 	ns.Activity.prototype.getIdentity = async function( clientId, mod ) {
 		const self = this;
+		if ( !self.isOnline )
+			return null;
+		
+		const modOnline = mod.getOnlineStatus();
+		if ( !modOnline )
+			return null;
+		
 		let id = null;
 		let item = null;
 		try {
@@ -3827,6 +3880,15 @@ Searchable collection(s) of users, rooms and other odds and ends
 		};
 		
 		return self.activity.sendRequest( req );
+	}
+	
+	/* refresh 
+		tells activity to check that the list
+		and identities are up to date
+	*/
+	ns.ActivityModule.prototype.refresh = function() {
+		const self = this;
+		self.activity.updateIdentities( self.id );
 	}
 	
 	ns.ActivityModule.prototype.close = function() {

@@ -37,6 +37,8 @@ library.module = library.module || {};
 		self.activity = activity;
 		self.onremove = onremove;
 		
+		self.isOnline = false;
+		
 		self.identity = null;
 		self.rooms = {};
 		self.roomIds = [];
@@ -55,6 +57,20 @@ library.module = library.module || {};
 	}
 	
 	// Public
+	
+	ns.BaseModule.prototype.setOnline = function( isOnline ) {
+		const self = this;
+		if ( isOnline === self.isOnline )
+			return;
+		
+		console.log( 'module.setOnline, isOnline', isOnline );
+		self.isOnline = isOnline;
+	}
+	
+	ns.BaseModule.prototype.getOnlineStatus = function() {
+		const self = this;
+		return self.isOnline;
+	}
 	
 	// Tells the module there has been a disconnect/reconenct and that it should 
 	// reconnect / sync to its server side component
@@ -279,11 +295,14 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.handleOnline = function( data ) {
 		const self = this;
+		console.log( 'basemodule.handleOnline', data );
 		//console.log( 'online', data );
 	}
 	
 	ns.BaseModule.prototype.handleConnectionError = function( error ) {
 		const self = this;
+		console.log( 'basemodule.handleConnectionError', error );
+		self.isOnline = false;
 		var handler = self.connectionErrorMap[ error.type ];
 		if ( !handler ) {
 			//console.log( 'no handler for connection error', error );
@@ -295,6 +314,8 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.handleOffline =  function( e ) {
 		const self = this;
+		console.log( 'BaseModule.handleOffline', e );
+		self.isOnline = false;
 		self.viewInfo( 'offline', e );
 	}
 	
@@ -622,6 +643,7 @@ library.module = library.module || {};
 		self.contactsOnline = [];
 		self.currentFilter = 'relations';
 		self.invites = {};
+		
 		self.init();
 	}
 	
@@ -631,6 +653,8 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
+		console.log( 'app.presence.reconnect' );
+		self.isOnline = false;
 		self.initialized = false;
 		self.sendModuleInit();
 	}
@@ -681,22 +705,40 @@ library.module = library.module || {};
 		}
 	}
 	
-	ns.Presence.prototype.verifyActivities = function( cIdList ) {
+	ns.Presence.prototype.verifyActivities = async function( cIdList ) {
 		const self = this;
-		window.setTimeout( verify, 1000 * 10 );
-		function verify() {
-			cIdList.forEach( cId => {
-				const item = self.getLocalChat( cId );
-				if ( null != item )
-					return;
-				
-				const invite = self.invites[ cId ];
-				if ( null != invite )
-					return;
-				
-				self.activity.remove( cId );
+		console.log( 'presence.verifyActivities', {
+			isOnline : self.isOnline,
+			cids     : cIdList,
+		});
+		if ( !self.isOnline )
+			return;
+		
+		console.log( 'verifyActivities', cIdList );
+		
+		const removers = cIdList.map( cId => {
+			const item = self.getLocalChat( cId );
+			if ( null != item )
+				return null;
+			
+			const invite = self.invites[ cId ];
+			if ( null != invite )
+				return null;
+			
+			// returns a promise
+			console.log( 'verifyActivities - remove this', {
+				cId     : cId,
+				contact : self.contactIds,
+				rooms   : self.roomIds,
 			});
-		}
+			return self.activity.remove( cId );
+		}).filter( r => null != r );
+		
+		console.log( 'removers', removers );
+		if ( !removers.length )
+			return;
+		
+		await Promise.all( removers );
 	}
 	
 	ns.Presence.prototype.updateAvatar = function( avatar ) {
@@ -910,7 +952,6 @@ library.module = library.module || {};
 		
 		return room;
 	}
-	
 	
 	ns.Presence.prototype.getContact = async function( clientId ) {
 		const self = this;
@@ -1308,6 +1349,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = async function( state ) {
 		const self = this;
+		console.log( 'presence.handleAccountInit', state );
 		if ( self.idc ) {
 			await self.idc.refresh();
 		}
@@ -1326,6 +1368,7 @@ library.module = library.module || {};
 			return;
 		}
 		
+		self.isOnline = true;
 		self.initialized = true;
 		updateAccount( state.account );
 		const uid = {
@@ -1339,6 +1382,14 @@ library.module = library.module || {};
 		self.updateFilterOnline();
 		//self.setupDormant();
 		self.flushQueue();
+		
+		if ( self.activity )
+			window.setTimeout( refreshActivity, 3000 );
+		
+		function refreshActivity() {
+			console.log( 'refreshActivity' );
+			self.activity.refresh();
+		}
 		
 		function updateAccount( account ) {
 			self.account = account;
