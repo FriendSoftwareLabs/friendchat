@@ -416,8 +416,8 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.reconnect = function() {
 		const self = this;
-		const mids = Object.keys( self.active );
-		mids.forEach( mId => {
+		const mIds = Object.keys( self.active );
+		mIds.forEach( mId => {
 			let mod = self.active[ mId ];
 			mod.reconnect();
 		});
@@ -437,8 +437,8 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.updateAvatar = function( avatar ) {
 		const self = this;
-		mids = Object.keys( self.active );
-		mids.forEach( mId => {
+		const mIds = Object.keys( self.active );
+		mIds.forEach( mId => {
 			let mod = self.active[ mId ];
 			mod.updateAvatar( avatar );
 		});
