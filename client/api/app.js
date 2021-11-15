@@ -607,7 +607,7 @@ var friend = window.friend || {}; // already instanced stuff
 
 // MODULE
 (function( ns, undefined ) {
-	ns.Module = function( conf )
+	ns.Module = function( conf, forceHTTP )
 	{
 		const self = this;
 		self.success = conf.success;
@@ -616,19 +616,20 @@ var friend = window.friend || {}; // already instanced stuff
 		self.id = friendUP.tool.uid;
 		self.app = window.Application;
 		
-		self.init( conf );
+		self.init( conf, forceHTTP );
 	}
 	
-	ns.Module.prototype.init = function( conf )
+	ns.Module.prototype.init = function( conf, forceHTTP )
 	{
 		const self = this;
-		var callbackId = self.app.setCallback( result );
-		var msg = {
-			module : conf.module || 'system',
-			method : conf.method,
-			args : conf.args,
-			vars : conf.vars,
-			fileId : callbackId,
+		const callbackId = self.app.setCallback( result );
+		const msg = {
+			module    : conf.module || 'system',
+			method    : conf.method,
+			args      : conf.args,
+			vars      : conf.vars,
+			fileId    : callbackId,
+			forceHTTP : forceHTTP,
 		};
 		self.send( msg );
 		
@@ -645,6 +646,7 @@ var friend = window.friend || {}; // already instanced stuff
 		msg.type = 'module';
 		self.app.sendMessage( msg );
 	}
+	
 })( api );
 
 

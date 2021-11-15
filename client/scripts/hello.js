@@ -348,13 +348,26 @@ var hello = null;
 				error   : modErr,
 			};
 			
-			new api.Module( conf );
+			const forceHTTP = true;
+			new api.Module( conf, forceHTTP );
 			function modBack( res ) {
 				const data = friendUP.tool.objectify( res );
+				if ( null == data ) {
+					reject( 'ERR_INVALID_JSON' );
+					return;
+				}
+				
+				if ( null == data.ID ) {
+					console.log( 'getUserInfo - sus data', data );
+					reject( 'ERR_DATA_SUS' );
+					return;
+				}
+				
 				resolve( data );
 			}
 			
 			function modErr( err ) {
+				console.log( 'getUserInfo err', err );
 				reject( false );
 			}
 		});
@@ -1289,8 +1302,16 @@ var hello = null;
 		self.resumeCallbacks = [];
 	}
 	
-	ns.Hello.prototype.handleUserUpdate = function( event ) {
+	ns.Hello.prototype.handleUserUpdate = function( event, retries ) {
 		const self = this;
+		if ( null != retries )
+			console.log( 'handleUserUpdate', [ event, retries ]);
+		
+		if ( 10 <= retries ) {
+			console.log( 'many retries, no fun', retries );
+			return;
+		}
+		
 		self.getUserInfo()
 			.then( infoBack )
 			.catch( fail );
@@ -1301,6 +1322,16 @@ var hello = null;
 			
 		function fail( err ) {
 			console.log( 'handleUserUpdate - something went bonk', err );
+			window.setTimeout( retry, 1000 * 3 );
+		}
+		
+		function retry() {
+			if ( null == retries )
+				retries = 1;
+			else
+				retries++;
+			
+			self.handleUserUpdate( event, retries );
 		}
 	}
 	
