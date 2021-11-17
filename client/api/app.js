@@ -225,6 +225,12 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fromView.on( 'ready', ready );
 		self.fromView.on( 'minimized', mini );
 		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
+		self.fromView.on( 'open-file', e => self.openFile( e ));
+		self.fromView.on( 'call-friend', e => {
+			console.log( 'call-friend', e );
+			self.doThingieCall( e.type, e.data );
+		});
+		//self.fromView.on( 'call-library', e => self.doLibraryCall( e ));
 		
 		library.component.RequestNode.call( self,
 			null,
@@ -348,6 +354,60 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.View.prototype.handleNotification = function( notie ) {
 		const self = this;
 		self.app.notify( notie );
+	}
+	
+	ns.View.prototype.openFile = function( e ) {
+		const self = this;
+		const fP = e.filePath;
+		const aN = e.appName;
+		console.log( 'openFile', [ e, fP, aN ]);
+		self.app.openFile( fP, aN );
+	}
+	
+	ns.View.prototype.doModuleCall = function( req ) {
+		const self = this;
+		self.doThingieCall( 'module', req );
+	}
+	
+	ns.View.prototype.doLibraryCall = function( req ) {
+		const self = this;
+		self.doThingieCall( 'library', req );
+	}
+	
+	ns.View.prototype.doThingieCall = function( type, req ) {
+		const self = this;
+		console.log( 'doThingieCall', req );
+		const reqId = req.reqId;
+		const conf = req.conf;
+		conf.onSuccess = onSuccess;
+		conf.onError = onError;
+		let thingie = null;
+		if ( 'module' == type )
+			thingie = api.Module;
+		if ( 'library' == type )
+			thingie = api.Library;
+		
+		new thingie( conf );
+		
+		function onSuccess( data ) {
+			console.log( 'onThingieCall.onSuccess', data );
+			sendResponse( null, data, reqId );
+		}
+		
+		function onError( err ) {
+			console.log( 'onThingieCall.onError', err );
+			sendResponse( err, null, reqId );
+		}
+		
+		function sendResponse( err, res, reqId ) {
+			const reply = {
+				type     : 'callback',
+				callback : reqId,
+				error    : err,
+				response : res,
+			};
+			self.sendMessage( reply );
+		}
 	}
 	
 	ns.View.prototype.doClose = function() {
@@ -610,8 +670,8 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Module = function( conf, forceHTTP )
 	{
 		const self = this;
-		self.success = conf.success;
-		self.error = conf.error;
+		self.onSuccess = conf.onSuccess;
+		self.onError = conf.onError;
 		
 		self.id = friendUP.tool.uid;
 		self.app = window.Application;
@@ -619,8 +679,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.init( conf, forceHTTP );
 	}
 	
-	ns.Module.prototype.init = function( conf, forceHTTP )
-	{
+	ns.Module.prototype.init = function( conf, forceHTTP ) {
 		const self = this;
 		const callbackId = self.app.setCallback( result );
 		const msg = {
@@ -635,9 +694,9 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		function result( data ) {
 			if ( !data )
-				self.error();
+				self.onError();
 			else
-				self.success( data );
+				self.onSuccess( data );
 		}
 	}
 	
@@ -660,8 +719,8 @@ var friend = window.friend || {}; // already instanced stuff
 		self.name = conf.name || 'system.library';
 		self.func = conf.functionName;
 		self.args = conf.args || {};
-		self.onsuccess= conf.onsuccess;
-		self.onerror = conf.onerror;
+		self.onSuccess = conf.onSuccess;
+		self.onError = conf.onError;
 		
 		self.app = window.Application;
 		self.init();
@@ -672,11 +731,11 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( !self.app )
 			throw new Error( 'window.Application not found' );
 		
-		var cid = self.app.setCallback( result );
-		var msg = {
-			library : self.name,
-			func : self.func,
-			args : self.args,
+		const cid = self.app.setCallback( result );
+		const msg = {
+			library    : self.name,
+			func       : self.func,
+			args       : self.args,
 			callbackId : cid,
 		};
 		self.send( msg );
@@ -688,11 +747,11 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Library.prototype.handleResponse = function( res ) {
 		const self = this;
-		var success = res.ok;
+		const success = res.ok;
 		if ( success )
-			self.onsuccess( res.data );
+			self.onSuccess( res.data );
 		else
-			self.onerror( res.error );
+			self.onError( res.error );
 	}
 	
 	ns.Library.prototype.send = function( msg ) {
@@ -765,6 +824,7 @@ var friend = window.friend || {}; // already instanced stuff
 			'libraryresponse'    : libResponse,
 			'refreshtheme'       : refreshTheme,
 			'notification'       : notification,
+			//'shell'              : shell,
 			'quit'               : quit,
 		};
 		
@@ -780,6 +840,7 @@ var friend = window.friend || {}; // already instanced stuff
 		function libResponse( e ) { self.handleLibResponse( e ); }
 		function refreshTheme( e ) { self.handleRefreshTheme( e ); }
 		function notification( e ) { self.handleCmdNotify( e ); }
+		//function shell( e ) { self.handleShell( e ); }
 		function quit( e ) { self.quit(); }
 		
 		self.notifyMap = {
@@ -829,7 +890,7 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 		*/
 		
-		if ( msg.callback || msg.clickcallback ) {
+		if ( msg.callback || msg.clickcallback || msg.shellId || msg.callbackId ) {
 			var yep = self.handleCallback( msg );
 			if ( yep )
 				return;
@@ -845,7 +906,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleCallback = function( msg ) {
 		const self = this;
-		const cid = msg.callback || msg.clickcallback;
+		const cid = msg.callback || msg.clickcallback || msg.shellId || msg.callbackId;
 		const callback = self.getCallback( cid );
 		if ( !callback )
 			return false;
@@ -854,11 +915,21 @@ var friend = window.friend || {}; // already instanced stuff
 		return true;
 	}
 	
+	ns.AppEvent.prototype.handleShell = function( msg ) {
+		const self = this;
+		//console.log( 'handleShell', msg );
+		const cb = self.getCallback( msg.shellId );
+		if ( null == cb )
+			return;
+		
+		cb( msg );
+	}
+	
 	ns.AppEvent.prototype.handleFromView = function( msg ) {
 		const self = this;
 		const type = msg.viewId;
 		if ( !type || !msg.data ) {
-			//console.log( 'weird event', msg );
+			console.log( 'weird event', msg );
 			return;
 		}
 		
@@ -1219,6 +1290,15 @@ var friend = window.friend || {}; // already instanced stuff
 		self.emit( 'conn-state', event );
 	}
 	
+	ns.Application.prototype.openFile = async function( filePath, appName ) {
+		const self = this;
+		console.log( 'openFile', [ filePath, appName ]);
+		const cmdLine = appName + ' ' + filePath;
+		const sh = new api.Shell( self );
+		const res = await sh.execute( cmdLine );
+		console.log( 'openFile res', res );
+	}
+	
 	// Private
 	
 	ns.Application.prototype.toAllViews = function( event ) {
@@ -1304,6 +1384,9 @@ var friend = window.friend || {}; // already instanced stuff
 		const msgString = friendUP.tool.stringify( msg );
 		window.parent.postMessage( msgString, window.origin || '*' );
 	}
+	
+	ns.Application.prototype.sendWorkspace = 
+		ns.Application.prototype.sendMessage;
 	
 	// close all views, does not quit the application
 	ns.Application.prototype.close = function()	{
@@ -1655,8 +1738,8 @@ window.Application = new fupLocal.Application();
 			args : {
 				path : self.path,
 			},
-			onsuccess : success,
-			onerror : err,
+			onSuccess : success,
+			onError : err,
 		};
 		var lib = new api.Library( libConf );
 		function success( res ) {

@@ -1779,6 +1779,7 @@ var hello = window.hello || {};
 		input,
 		parser,
 		linkExpand,
+		pathExpand
 	) {
 		const self = this;
 		self.containerId = containerId;
@@ -1791,6 +1792,7 @@ var hello = window.hello || {};
 		self.input = input;
 		self.parser = parser || null;
 		self.linkEx = linkExpand || null;
+		self.pathEx = pathExpand || null;
 		
 		self.conn = null
 		self.envelopes = {};

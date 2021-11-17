@@ -609,7 +609,7 @@ library.view = library.view || {};
 			for( var i in pastedItems ) {
 				var item = pastedItems[i];
 				if( item.kind === 'file' ) {
-					var p = new api.PasteHandler();
+					var p = new api.FileMaker();
 					p.paste( evt, function( res ) {
 						if( res.response == true ) {
 							self.view.send(	{

@@ -1781,15 +1781,15 @@ library.view = library.view || {};
 	ns.ShareInvite.prototype.sendEmail = function( msg ) {
 		const self = this;
 		var modConf = {
-			module : 'system',
-			method : 'systemmail',
-			args : {
-				to : msg.email,
+			module    : 'system',
+			method    : 'systemmail',
+			args      : {
+				to      : msg.email,
 				subject : Application.i18n('i18n_join_me_live'),
-				body : "huehuehueh",
+				body    : "huehuehueh",
 			},
-			success : success,
-			error : error,
+			onSuccess : success,
+			onError   : error,
 		};
 		var mod = new api.Module( modConf );
 		

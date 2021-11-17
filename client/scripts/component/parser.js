@@ -26,29 +26,45 @@ var hello = window.hello || {};
 library.component = library.component || {};
 library.component.parse = library.component.parse || {};
 
+/*
 
-// LEXER
-(function( ns, undefined ) {
-	ns.Lexer = function() {
-		if ( !( this instanceof ns.Lexer ))
-			return new ns.Lexer();
-		
-		const self = this;
-		self.init();
-	}
-	
-	ns.Lexer.prototype.init = function() {
-		const self = this;
-		if ( window.marked )
-			window.marked.setOptions({
-				sanitize : true,
-			});
-	}
-	
-})( library.component.parse );
+Parser - takes a string as input, applies a predefined 
+set of parsing units ( PU ) and returns the upated string.
+Events can also be emitted, these happen after the
+parser has returned.
 
+Each PU is self contained, and can be enabled, disabled or 
+updated through the Parser interface. It is identified 
+with a unique string, these are the ones currently available:
 
-// PARSER
+- Emojii     : converts certain text into image elements
+- LinkStd    : discovers links and converts them into <a> elements
+- FriendPath : discovers friend disk paths and converts them into <fp> elements
+- WsToEntity : Converts various whitespace to html
+- NL2BR      : Replaces \r\n with a <br>
+- BreakLongStrings : Splits long strings by inserting a tiny whitespace
+
+Any new PU should be extended from the base 'Parse' object, to get some
+functionality for free and ensure a consistent interface. Any new PU must be
+defined in the library.component.parse namespace.
+
+The order in wich the PUs are registered during runtime determines the order
+in wich they are given the working string. PUs can be registered to receive
+the full working string, or by default, they will be given one piece at a time,
+split on whitespace.
+
+PUs registered with the full length option run before the working string
+is split and give the rest of the PUs. Any part of the string that is modified
+by a PU is not passed to any following PU. When a PU modifies a piece it
+returns the modified string. A PU that does nothing with the piece it was 
+given must return null.
+
+A PU can choose to emit an event for a given piece. This is an async operation
+and happens after the Parser has returned. Register a listener with
+the PUs type to receive events from it. Type can be some default or set
+through PU config.
+
+*/
 (function( ns, undefined) {
 	ns.Parser = function() {
 		const self = this;
@@ -65,6 +81,30 @@ library.component.parse = library.component.parse || {};
 	
 	// Public
 	
+	/* Listening to events
+	
+	Parser inherits the EventEmitter interface
+	The TYPE of event to listen for must be set in the PU
+	as a default or through config
+	
+	.on( type, handler ) to listen for all events of type
+	.once( type, handler ) to listen for only the first event of type
+	.release( type ) to stop listening for this type of events
+	
+	the handler will receive whatever data the PU emits
+	
+	*/
+	
+	/* use
+	
+	Register PUs to be used, in order. All full-length PUs run before
+	the rest.
+	
+	id - <string> id of PU
+	conf - optional. Any configuration the PU need to operate
+	isFullLength - optional. When true, the PU will receive the full string.
+	
+	*/
 	ns.Parser.prototype.use = function( id, conf, isFullLength ) {
 		const self = this;
 		const ParsyBoi = library.component.parse[ id ];
@@ -91,6 +131,14 @@ library.component.parse = library.component.parse || {};
 		return pId;
 	}
 	
+	/* update
+	
+	Update a PUs configuration
+	
+	id - <string> id of PU
+	conf - Configuration passed to PU
+	
+	*/
 	ns.Parser.prototype.update = function( id, conf ) {
 		const self = this;
 		const parsyBoi = self.parsers[ id ];
@@ -106,9 +154,16 @@ library.component.parse = library.component.parse || {};
 		parsyBoi.update( conf );
 	}
 	
+	/* remove
+	
+	stop using this PU
+	
+	id - <string> id of PU
+	
+	*/
 	ns.Parser.prototype.remove = function( id ) {
 		const self = this;
-		var idIndex = self.pieceOrder.indexOf( id );
+		const idIndex = self.pieceOrder.indexOf( id );
 		if ( idIndex === -1 ) {
 			console.log( 'cannot remove, invalid parser id', id );
 			return;
@@ -117,15 +172,39 @@ library.component.parse = library.component.parse || {};
 		self.pieceOrder = self.pieceOrder.splice( idIndex, 1 );
 		const parser = self.parsers[ id ];
 		delete self.parsers[ id ];
+		const type = parser.type;
+		if ( null != type )
+			self.release( type );
+		
 		parser.close();
 	}
 	
+	/* work
+	
+	Takes a string and runs it through all registered PUs.
+	Returns the modified string.
+	
+	First the full string is passed to PUs registered with the 
+	full-length option. If one PU modifies the full string, the
+	string is split and the sub slices are considered full length
+	and passed to the next full-length PU.
+	
+	Then the ( rest of ) the string is split on whitespace, and
+	each piece is run through the remaining PUs. Any piece that
+	is modified by a PU is not passed to the PUs after it.
+	
+	str - <string> to be checked
+	isLog - <bool> optional, is passed to the PU
+	
+	returns <string>
+	
+	*/
 	ns.Parser.prototype.work = function( str, isLog ) {
 		const self  = this;
 		str = breakTags( str );
 		
 		if ( !self.pieceOrder.length && !self.fullOrder.length ) {
-			console.log( 'no parsers registered' );
+			console.log( 'Parser - no parsers registered' );
 			return str;
 		}
 		
@@ -139,7 +218,6 @@ library.component.parse = library.component.parse || {};
 		tokens = tokens.map( piece => {
 			if ( 'string' != piece.type )
 				return piece;
-			
 			
 			piece.data = self.pieceParser( piece.data, isLog );
 			return piece;
@@ -163,6 +241,11 @@ library.component.parse = library.component.parse || {};
 		}
 	}
 	
+	/* close
+	
+	Cleans up registered PUs and closes the Parser
+	
+	*/
 	ns.Parser.prototype.close = function() {
 		const self = this;
 		self.pieceOrder.forEach( id => {
@@ -180,6 +263,13 @@ library.component.parse = library.component.parse || {};
 		self.closeEventEmitter();
 	}
 	
+	/* moveParserForward
+	
+	Move a PU forward in the parse order
+	
+	id - <string> id of PU
+	
+	*/
 	ns.Parser.prototype.moveParserForward = function( id ) {
 		const self = this;
 		var currentIndex = self.pieceOrder.indexOf( id );
@@ -192,6 +282,13 @@ library.component.parse = library.component.parse || {};
 		self.pieceOrder.splice( currentIndex - 1, 0, id );
 	}
 	
+	/* moveParserBack
+	
+	Move a PU back in parse order
+	
+	id - <string> id of PU
+	
+	*/
 	ns.Parser.prototype.moveParserBack = function( id ) {
 		const self = this;
 		console.log( 'parser.moveBack - NYI' );
@@ -313,30 +410,81 @@ library.component.parse = library.component.parse || {};
 })( library.component.parse );
 
 
-// PARSE base model
+
+/* Parse
+
+Parse is the base model to inherit from when building a new PU.
+It defines a interface that is used by Parser 
+and provides some basic functionality
+
+emitEvent - <function> passed in by Parser. Sends events back to Parser to be emitted
+	with the PUs TYPE. The PU must have a .type set
+
+*/
 (function( ns, undefined ) {
 	ns.Parse = function( emitEvent ) {
 		const self = this;
-		self.id = null; // text string to identify the parser
-		
 		self.emit = emitEvent;
+		
+		self.id = null; // text string to identify the parser. Set in Implementation, required
+		self.type = null; // type of events this PU emits. Set in implementation, optional
 	}
 	
+	/* process
+	
+	This is how the PU receives work from Parser
+	
+	str - <string> string to check. return the modified string or null
+		if no modification was made
+	isLog - <bool> passed through from Parser.work(). It may be useful to
+		the PU to know if this piece is from a log or a real time message
+	
+	*/
 	ns.Parse.prototype.process = function( str, isLog ) {
 		const self = this;
 		console.log( 'basemodel Parse.process - please implement in ' + self.id, str );
 		return str;
 	}
 	
+	/* update
+	
+	Handle a configuration update for the PU
+	
+	conf - whatever the configuration for the PU needs to be.
+	
+	*/
 	ns.Parse.prototype.update = function( conf ) {
 		const self = this;
 		console.log( 'basemodel Parse.update - please implement in ' + self.id, conf );
 	}
 	
+	/* queueEvent
+	
+	Helper for the PU to emit an event. The setTimeout ensures the event is emitted
+	after the Parser has returned
+	
+	 event - data to be emitted
+	
+	*/
+	ns.Parse.prototype.queueEvent = function( event ) {
+		const self = this;
+		window.setTimeout(() => self.emit( event ), 1 );
+	}
+	
+	/* escape
+	
+	Helper, escape some special characters
+	
+	*/
 	ns.Parse.prototype.escape = function( str ) {
 		return str.replace( /[-\/\\^$*+?.()|[\]{}]/g, "\\$&" );
 	}
 	
+	/* close
+	
+	cleans up the PU. re-implement if needed
+	
+	*/
 	ns.Parse.prototype.close = function() {
 		const self = this;
 		delete self.emit;
@@ -383,12 +531,15 @@ library.component.parse = library.component.parse || {};
 })( library.component.parse );
 
 
-// LINKSTD - simple url linkifier
+/* LinkStd - simple url linkifier
+
+Turns text belived to be urls into <a> tags
+Post processing/expansion can be done by passing the msg
+element to the LinkExpander
+
+*/
 (function( ns, undefined ) {
 	ns.LinkStd = function() {
-		if ( !( this instanceof ns.LinkStd ))
-			return new ns.LinkStd();
-		
 		ns.Parse.call( this );
 		const self = this;
 		
@@ -400,12 +551,6 @@ library.component.parse = library.component.parse || {};
 	}
 	
 	ns.LinkStd.prototype = Object.create( ns.Parse.prototype );
-	
-	ns.LinkStd.prototype.init = function() {
-		const self = this;
-		self.buildUrlRX();
-		self.buildPrefixRX();
-	}
 	
 	ns.LinkStd.prototype.process = function( str, isLog ) {
 		const self = this;
@@ -431,6 +576,12 @@ library.component.parse = library.component.parse || {};
 			
 			return url;
 		}
+	}
+	
+	ns.LinkStd.prototype.init = function() {
+		const self = this;
+		self.buildUrlRX();
+		self.buildPrefixRX();
 	}
 	
 	ns.LinkStd.prototype.buildUrlRX = function() {
@@ -483,19 +634,87 @@ library.component.parse = library.component.parse || {};
 	
 })( library.component.parse );
 
+/* FriendPath
+
+turns text belived to be friend disk paths into <fp> tags
+these will need post-procsessing by PathExpand
+
+*/
+(function( ns, undefined ) {
+	ns.FriendPath = function() {
+		ns.Parse.call( this );
+		const self = this;
+		self.id = 'FriendPath';
+		
+		self.init();
+	}
+	
+	// Pubies
+	
+	ns.FriendPath.prototype.process = function( str, isLog ) {
+		const self = this;
+		const match = self.pathRX.exec( str );
+		console.log( 'FriendPath', [ str, match ]);
+		if ( match )
+			return makeLink( match[ 0 ]);
+		
+		return null;
+		
+		function makeLink( path ) {
+			const link = document.createElement( 'fp' );
+			link.innerText = path;
+			link.href = path; //makeAbsoluteUrl( path );
+			link.target = '_blank';
+			console.log( 'flink', link );
+			return link.outerHTML;
+		}
+		
+		/*
+		function makeAbsoluteUrl( path ) {
+			var match = path.match( self.prefixRX );
+			if ( !match ) {
+				path = 'https://' + path;
+			}
+			
+			return path;
+		}
+		*/
+	}
+	
+	// Privies
+	
+	ns.FriendPath.prototype.init = function() {
+		const self = this;
+		self.buildPathRX();
+	}
+	
+	ns.FriendPath.prototype.buildPathRX = function() {
+		const self = this;
+		const allowed = '_\\-a-z\\u00a1-\\uffff0-9';
+		self.pathRX = new RegExp(
+			// volume
+			"^([" + allowed + "]+:)" +
+			// path
+			"((?:[" + allowed + "]+\\/)+)*" +
+			// file
+			"([" + allowed + "]+\\.[" + allowed + "]+$)"
+			, "i"
+		);
+		console.log( 'pathRX', self.pathRX );
+	}
+	
+})( library.component.parse );
 
 // NL2BR
-// DEPRECATED - use WsToEntity instead probably
+// DEPRECATED - use WsToEntity instead probably i guess
 (function( ns, undefined ) {
 	ns.NL2BR = function() {
-		if ( !( this instanceof ns.NL2BR ))
-			return new ns.EsacpeHTMLTags();
-		
 		ns.Parse.call( this );
 		
 		const self = this;
 		self.id = 'NL2BR';
 		self.rx = null;
+		
 		self.init();
 	}
 	
@@ -527,14 +746,11 @@ library.component.parse = library.component.parse || {};
 })( library.component.parse );
 
 
-// BREAK LONG STRINGS
+// BREAK LONG STRINGS - probably also old and not really used
 (function( ns, undefined ) {
 	ns.BreakLongStrings = function( maxLength ) {
-		if ( !( this instanceof ns.BreakLongStrings ))
-			return new ns.BreakLongStrings( maxLength );
-		
 		const self = this;
-		self.id = 'breakLongStrings';
+		self.id = 'BreakLongStrings';
 		self.maxLength = maxLength || 10;
 		self.partLength = null;
 		self.RX = null;
@@ -563,14 +779,17 @@ library.component.parse = library.component.parse || {};
 })( library.component.parse );
 
 
-// EMOJII parser
+/* Emojii
+
+Looks for text tags like :smile: or :) and replace them with emojiis
+in a <i> element to gives them a bit of a bump in font size
+
+*/
 (function( ns, undefined ) {
 	ns.Emojii = function( emojiiMap ) {
-		if ( !( this instanceof ns.Emojii ))
-			return new ns.Emojii( emojiiMap );
-		
 		ns.Parse.call( this );
 		const self = this;
+		self.id = 'Emojii';
 		self.emojiiMap = emojiiMap;
 		
 		self.init();
@@ -580,7 +799,6 @@ library.component.parse = library.component.parse || {};
 	
 	ns.Emojii.prototype.init = function() {
 		const self = this;
-		self.id = 'Emojii';
 		self.transformMap();
 		self.buildRX();
 	}
@@ -693,11 +911,20 @@ library.component.parse = library.component.parse || {};
 	
 })( library.component.parse );
 
+/* AtThings
+
+looks for predefined @strings and replace them wit a <span> and
+some css styling
+
+Will also emit events on a match when configured for it
+
+*/
 (function( ns, undefined ) {
 	ns.AtThings = function( conf, emitEvent ) {
 		const self = this;
 		ns.Parse.call( self, emitEvent );
 		
+		self.id = 'AtThings';
 		self.type = conf.type || 'mention';
 		self.special = conf.atStrings || [];
 		self.cssKlass = conf.cssKlass;
@@ -725,9 +952,10 @@ library.component.parse = library.component.parse || {};
 		const part = match[ 0 ];
 		if ( self.onlyEmit ) {
 			if ( !isLog )
-				window.setTimeout( emit, 1 );
+				self.queueEvent( part );
+				//window.setTimeout( emit, 1 );
 			
-			return;
+			return null;
 		}
 		
 		const start = match.index;

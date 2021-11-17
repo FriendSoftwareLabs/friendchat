@@ -455,4 +455,10 @@ i18n_all_contacts : All contacts
 i18n_active : Active
 i18n_filter : Filter
 i18n_show_everyone : Show everyone
+i18n_open_with : open with
+i18n_open_in_new_tab : Open in new tab
+i18n_save_to_home_fchat : Save to Home&#58;friendchat/
+i18n_open_with_default_application : Open with default application
+i18n_save_links_to_file : Save links to file
+i18n_expand_file_links : Expand file links
 i18n_hide_from_search : Hide from search

@@ -1137,62 +1137,121 @@ library.component = library.component || {};
 	
 })( library.component );
 
-// LinkExpand
+
+/* LinkExpand
+
+Takes a DOM element and looks for <a> tags. Their url
+will be evaluated in various ways, and if a handler exists
+for the type of url found ( image, file, etc ) it will
+be rewritten to show more available information
+
+Each url is classified on MIME ( 'Content-Type' header )
+and file name / extension where available. This info is
+used to determine what handler to use and then the <a> and
+collected info is passed to that handler. The handlers are
+async so they can do any extra lookup they may need.
+
+The handler then returns the plain html and it is placed
+in a generic link expand wrapping with a bit of UI
+
+*/
 (function( ns, undefined ) {
-	ns.LinkExpand = function( conf ) {
-		if ( !( this instanceof ns.LinkExpand ))
-			return new ns.LinkExpand( conf );
-			
+	ns.LinkExpand = function( appSettings ) {
 		const self = this;
-		self.template = conf.templateManager; // should be pre-loaded with relevant fragments
+		self.template = hello.template;
 		
-		self.init();
+		self.init( appSettings );
 	}
 	
 	// Public
 	
+	/* work
+	
+	Takes a DOM element and searches for <a> tags.
+	Returns nothing useful, execution is async
+	
+	It will look up MIME ( content-type header ) and use that
+	to determine what handler to use
+	
+	el - <DOM node> A DOM node to search for <a> tags in.
+		Found tags may be replaced or modified in place
+	
+	*/
 	ns.LinkExpand.prototype.work = function( el ) {
 		const self = this;
 		const links = el.querySelectorAll( 'a' );
 		Array.prototype.forEach.call( links, expand );
 		
-		function expand( a ) {
-			var url = a.href.toString();
-			self.getMIME( url )
-				.then( success )
-				.catch( failed );
-			return;
-			
-			function success( mime ) {
-				var handler = self.mimeMap[ mime.type ];
-				if ( !handler )
-					return;
-				
-				var conf = handler( a, mime );
-				if ( !conf )
-					return null;
-				
-				self.replace( a, conf );
+		async function expand( a ) {
+			const url = a.href.toString();
+			let mimeConf = null;
+			try {
+				mimeConf = await self.getMIME( url );
+			} catch( ex ) {
+				console.log( 'LinkExpand.mime.failed', err );
+				return;
 			}
 			
-			function failed( err ) {
-				//console.log( 'LE.mime.failed', err );
+			const handler = self.mimeMap[ mime.type ];
+			if ( !handler )
+				return;
+			
+			const conf = await handler( a, mime );
+			if ( !conf )
+				return;
+			
+			self.replace( a, conf );
+			
+			/* module call example
+			console.log( 'LinkExpand.work, lets aslo userinfoget!' );
+			let uInfo = null;
+			try {
+				uInfo = await window.View.callModule(
+					null,
+					'userinfoget',
+				);
+			} catch( ex ) {
+				console.log( 'callModule ex', ex );
 			}
+			console.log( 'LinkExpand.work, userinfo?', uInfo );
+			*/
+			
+			/* library call example
+			console.log( 'LinkExpand.work, lets check session list!' );
+			let sList = null;
+			try {
+				sList = await window.View.callLibrary(
+					null,
+					'user/sessionlist'
+				);
+			} catch( ex ) {
+				console.log( 'callLibrary ex', ex );
+			}
+			console.log( 'LinkExpand.work, session list?', sList );
+			*/
 		}
 	}
 	
 	// private
 	
-	ns.LinkExpand.prototype.init = function() {
+	ns.LinkExpand.prototype.init = function( appSettings ) {
 		const self = this;
+		if ( null != appSettings )
+			self.showDL = !!appSettings.showSaveLinks;
+		
 		self.mimeMap = {
-			'image'       : image,
-			'audio'       : audio,
-			'video'       : video,
-			'text'        : file,
-			'application' : file,
+			'image'  : image,
+			'audio'  : audio,
+			'video'  : video,
 		};
 		
+		// text and file expansion is an account setting, default off
+		if ( null != appSettings && true == appSettings.expandFileLinks ) {
+			self.mimeMap[ 'text' ] = file;
+			self.mimeMap[ 'application' ] = file;
+		}
+		
+		// handlers
 		// anchor, mime
 		function image( a, m ) { return self.expandImage( a, m ); }
 		function audio( a, m ) { return self.expandAudio( a, m ); }
@@ -1201,15 +1260,42 @@ library.component = library.component || {};
 		function file( a, m ) { return self.expandFile( a, m ); }
 	}
 	
+	/* getMIME
+	
+	takes a URL and makes a GET request. When HEADERS
+	have been received, the request is aborted ( before 
+	and content is sent / received ).
+	
+	The Content-Type header is picked out and evaluated.
+	The URL is also checked for file name/ext
+	
+	returns a promise that resolves to a k/v map or throws
+	
+	url - <string> Uniform Resource Locator, colloquially termed a web address
+	
+	returns {
+		type     : <string> mime type
+		ext      : <string> mime ext
+		fileName : <string> file name taken from the URL itself
+		fileExt  : <string> file extension take from the URL iteself
+	}
+	
+	*/
 	ns.LinkExpand.prototype.getMIME = function( url ) {
 		const self = this;
 		return new window.Promise( urlCheck );
 		function urlCheck( resolve, reject ) {
 			if ( !url || !url.length )
-				reject();
+				reject( 'no u' );
+			
+			const extParts = url.split( '.' );
+			const fileExt = extParts.pop();
+			const fileParts = url.split( '/' );
+			let fileName = fileParts.pop();
+			fileName = junkToSpace( fileName );
 			
 			url = url.replace( /^http:/, 'https:' );
-			var req = new window.XMLHttpRequest();
+			const req = new window.XMLHttpRequest();
 			//req.addEventListener( 'progress', reqProgress );
 			req.addEventListener( 'readystatechange', reqReadyState );
 			req.addEventListener( 'error', reqError );
@@ -1217,19 +1303,23 @@ library.component = library.component || {};
 			req.send();
 			
 			function reqProgress( e ) {
+				console.log( 'LinkExpand request progress', e );
 			}
 			
 			function reqReadyState( e ) {
-				var ev = JSON.stringify( e );
-				var headers = req.getAllResponseHeaders();
+				const ev = JSON.stringify( e );
+				const headers = req.getAllResponseHeaders();
 				if ( !headers.length )
 					return;
 				
-				var mime = getContentType( headers );
+				const mime = getContentType( headers );
 				if ( !mime )
 					return;
 				
 				req.abort();
+				
+				mime.fileExt = fileExt;
+				mime.fileName = fileName;
 				resolve( mime );
 			}
 			
@@ -1237,29 +1327,27 @@ library.component = library.component || {};
 				const headers = headerStr.split( /\r\n/ );
 				const cType = headers
 					.map( rxCType )
-					.filter( notNull )
+					.filter( i => null != i )
 					[ 0 ];
 				
 				return cType;
 			}
 			
 			function rxCType( str ) {
-				var match = str.match( /^content-type: (([a-z]+)\/(.+))$/i );
+				const match = str.match( /^content-type: (([a-z]+)\/(.+))$/i );
 				if ( !match || !match[ 2 ] || !match[ 3 ] )
 					return null;
 				
-				var res = {
+				const res = {
 					type : match[ 2 ],
 					ext  : match[ 3 ],
 				};
 				return res;
 			}
 			
-			function notNull( item ) { return null != item }
-			
 			function reqError( e ) {
-				var headers = req.getAllResponseHeaders();
 				/*
+				const headers = req.getAllResponseHeaders();
 				console.log( 'reqError', {
 					e : e,
 					r : req,
@@ -1269,58 +1357,74 @@ library.component = library.component || {};
 				*/
 				reject( 'invalid' );
 			}
-		}
-	}
-	
-	ns.LinkExpand.prototype.getHandler = function( a ) {
-		const self = this;
-		var url = a.href;
-		var ext = getFileExtension( url );
-		if ( !ext )
-			return null;
-		
-		ext = ext.toLowerCase();
-		var handler = self.extensionMap[ ext ];
-		if ( !handler )
-			return null;
-		
-		return handler;
-		
-		function getFileExtension( url ) {
-			var match = url.match( /[\w\d]\/.*\.([\w\d]*)$/ );
-			if ( !match )
-				return;
 			
-			return match[ 1 ];
+			// converts certain weird shit in filenames into whitespace
+			function junkToSpace( junk ) {
+				const rx = new RegExp('(\\%(?:25|20)+)', 'g' );
+				const clean = junk.replace( rx, ' ' );
+				return clean;
+			}
 		}
 	}
 	
-	// Evaluate content and add a "link"
+	/* replace
+	
+	Takes link specific content returned by the handler and
+	wraps it in generic link expand html/css and can add some
+	helper ui. By default only adds a open-in-tab button.
+	A download to home:friendchat button is available as an 
+	account setting, represented by the local property self.showDL
+	
+	a - the <a> DOM node to change
+	conf - replacement content and some options returned by the handler
+	
+	properties of conf: {
+		type      - what type of content this is. Valid options: image / audio / video / file
+		mime      - info gathered by the initial lookup in .getMIME()
+		content   - replacement content, a html element ( not yet added to DOM )
+		bgDefault - <bool> when true, BackgroundDefault CSS class is set
+		onClick   - callback for content clicks. A handler for a specific content
+			element / button must be assigned in the handler itself
+	}
+	
+	*/
 	ns.LinkExpand.prototype.replace = function( a, conf ) {
 		const self = this;
+		const href = a.href;
+		const file = conf.mime;
+		const type = conf.type;
 		const content = conf.content;
 		const onClick = conf.onClick;
-		const src = a.href;
-		const fileMatch = src.match( /\/([-_%\w\s]+\.[\w]+)$/i);
-		let file = null;
-		if ( fileMatch )
-			file = fileMatch[ 1 ];
-		else
-			file = src;
+		let bgDef = '';
+		if ( true == conf.bgDefault )
+			bgDef = 'BackgroundDefault';
 		
-		file = window.decodeURIComponent( file );
+		let hideSave = 'hidden';
+		if ( self.showDL )
+			hideSave = '';
+		
 		const elConf = {
-			href : a.href,
-			file : file
+			type      : type,
+			bgDefault : bgDef,
+			href      : href,
+			hideSave  : hideSave,
 		};
 		
 		const el = self.template.getElement( 'link-expand-tmpl', elConf );
-		el.querySelector( '.link-expand-content' )
-			.appendChild( content );
+		const outer = el.querySelector( '.link-expand-content' );
+		outer.appendChild( content );
 		
 		const parent = a.parentNode;
 		parent.removeChild( a );
 		parent.appendChild( el );
+		
+		const leui = el.querySelector( '.link-expand-ui' );
+		const dl = leui.querySelector( '.dl-btn' );
+		const ext = leui.querySelector( '.show-link' );
+		const extA = ext.querySelector( 'a' );
+		dl.addEventListener( 'click', onDL, false );
+		ext.addEventListener( 'click', onExt, false );
+		
 		
 		if ( null == onClick )
 			return;
@@ -1331,50 +1435,70 @@ library.component = library.component || {};
 			return;
 		*/
 		
-		el.addEventListener( 'click', onClick, false );
+		content.addEventListener( 'click', onClick, false );
+		
+		function onDL( e ) {
+			window.View.saveLink( a.href, file.fileName );
+		}
+		
+		function onExt( e ) {
+			extA.click();
+		}
+		
 	}
 	
-	ns.LinkExpand.prototype.expandImage = function( a, mime ) {
+	/* HANDLERS
+	
+	Every handler is async and receives the <a> element 
+	and the mime conf object
+	
+	a    - <a> DOM node
+	mime - {
+		type     : <string> mime type
+		ext      : <string> mime ext
+		fileName : <string> file name taken from the URL itself
+		fileExt  : <string> file extension take from the URL iteself
+	}
+	
+	html fragments used can be found in html/commonFragments.html
+	
+	*/
+	
+	/* expandImage
+	
+	Replaces the link with a size constrained box to show the image in
+	Clicking the image will open the image in the Friend native image viewer
+	
+	*/
+	ns.LinkExpand.prototype.expandImage = async function( a, mime ) {
 		const self = this;
 		const src = a.href;
 		const conf = {
 			src : src,
 		};
 		const htmlElement = self.template.getElement( 'image-expand-tmpl', conf );
-		//htmlElement.addEventListener( 'click', onClick, false );
-		//htmlElement.addEventListener( 'load', onLoad, false );
 		
 		return {
-			content : htmlElement,
-			onClick : onClick,
+			type      : 'image',
+			mime      : mime,
+			content   : htmlElement,
+			bgDefault : true,
+			onClick   : onClick,
 		}
 		
 		function onClick( e ) {
-			const t = e.target;
-			const tName = t.tagName;
-			/*
-			console.log( 'onClick', {
-				e     : e,
-				t     : t,
-				tName : tName,
-			});
-			*/
-			if ( 'IMG' != tName )
-				return;
-			
 			e.preventDefault();
 			e.stopPropagation();
-			self.sendOpen( src );
+			self.openImage( src );
 		}
-		
-		/*
-		function onLoad( e ) {
-			console.log( 'onLoad', e );
-		}
-		*/
 	}
 	
-	ns.LinkExpand.prototype.expandAudio = function( a, mime ) {
+	/* expandAudio
+	
+	Replaces the link with a audio player
+	
+	*/
+	ns.LinkExpand.prototype.expandAudio = async function( a, mime ) {
 		const self = this;
 		const src = a.href;
 		const conf = {
@@ -1382,11 +1506,18 @@ library.component = library.component || {};
 		};
 		const htmlElement = self.template.getElement( 'audio-expand-tmpl', conf );
 		return {
+			type    : 'audio',
+			mime    : mime,
 			content : htmlElement,
 		};
 	}
 	
-	ns.LinkExpand.prototype.expandVideo = function( a, mime ) {
+	/* expandVideo
+	
+	Replaces the link with a video player
+	
+	*/
+	ns.LinkExpand.prototype.expandVideo = async function( a, mime ) {
 		const self = this;
 		const src = a.href;
 		const conf = {
@@ -1394,30 +1525,80 @@ library.component = library.component || {};
 		};
 		const htmlElement = self.template.getElement( 'video-expand-tmpl', conf );
 		return {
+			type    : 'video',
+			mime    : mime,
 			content : htmlElement,
 		};
 	}
 	
-	ns.LinkExpand.prototype.expandFile = function( a, mime ) {
+	/* expandFile
+	
+	Replaces the link with custom html to show a file type
+	appropriate icon and the file name.
+	
+	Clicking the file name i supposed to open it in an app
+	defined by user preferences. Might or might not work right now
+	
+	*/
+	ns.LinkExpand.prototype.expandFile = async function( a, mime ) {
 		const self = this;
+		const fileName = mime.fileName;
+		let fileDescription = fileName;
+		let openHTML = '';
+		let openWith = null;
+		let apps = await window.View.getAppsForFileType( '.' + mime.fileExt );
+		if ( apps )
+			openHTML = setOpen( apps );
+		
+		let typeClass = 'File';
+		if ( mime && mime.fileExt )
+			typeClass = 'Type' + mime.fileExt.toUpperCase();
+		
+		const conf = {
+			typeClass       : typeClass,
+			fileDescription : fileDescription,
+			openHTML        : openHTML,
+		};
+		
+		const el = self.template.getElement( 'file-expand-tmpl', conf );
+		const open = el.querySelector( '.le-app-open' );
+		if ( null != open )
+			open.addEventListener( 'click', onClick, false );
+		
 		return {
-			content : '',
+			type    : 'file',
+			mime    : mime,
+			content : el,
 		};
 		
-		/*
-		typeClass = 'File';
-		if ( mime && mime.ext )
-			typeClass = 'Type' + mime.ext.toUpperCase();
+		function onClick( e ) {
+			if ( null == openWith )
+				return;
+			
+			const launch = 'launch ' + openWith;
+			window.View.openLink( a.href, fileName, launch );
+		}
 		
-		var conf = {
-			typeClass : typeClass
-		};
-		var htmlElement = self.template.getElement( 'file-expand-tmpl', conf );
-		return htmlElement;
-		*/
+		function setOpen( apps ) {
+			const exts = Object.keys( apps );
+			exts.forEach( ext => {
+				const app = apps[ ext ];
+				openWith = app;
+			});
+			const conf = {
+				app : openWith,
+			};
+			const html = hello.template.get( 'file-expand-open-tmpl', conf );
+			return html;
+		}
 	}
 	
-	ns.LinkExpand.prototype.expandText = function( a, mime ) {
+	/* expandText
+	
+	NYI
+	
+	*/
+	ns.LinkExpand.prototype.expandText = async function( a, mime ) {
 		const self = this;
 		return {
 			content : null,
@@ -1425,7 +1606,12 @@ library.component = library.component || {};
 		//return a.href;
 	}
 	
-	ns.LinkExpand.prototype.expandOther = function( a, mime ) {
+	/* expandOther
+	
+	???
+	
+	*/
+	ns.LinkExpand.prototype.expandOther = async function( a, mime ) {
 		const self = this;
 		return {
 			content : null,
@@ -1433,9 +1619,15 @@ library.component = library.component || {};
 		//return a.href;
 	}
 	
-	ns.LinkExpand.prototype.sendOpen = function( src ) {
+	/* openImage
+	
+	Open an image in the workspace native image viewer
+	
+	src : friend path to image
+	
+	*/
+	ns.LinkExpand.prototype.openImage = function( src ) {
 		const self = this;
-		console.log( 'LinkExpand.sendOpen', src );
 		window.View.sendBase({
 			type   : 'dos',
 			method : 'openWindowByFilename',
@@ -1448,6 +1640,60 @@ library.component = library.component || {};
 		});
 	}
 	
+})( library.component );
+
+
+/* PathExpand - IN DEV
+
+Handles <fp> tags found in elements. These represent
+Friend disk paths, so do those things with them i guess
+
+*/
+(function( ns, undefined ) {
+	ns.PathExpand = function() {
+		const self = this;
+		
+		self.init();
+	}
+	
+	ns.PathExpand.prototype.work = function( el ) {
+		const self = this;
+		const links = el.querySelectorAll( 'fp' );
+		console.log( 'pathexpand - work', {
+			el    : el,
+			links : links,
+		});
+		Array.prototype.forEach.call( links, expand );
+		
+		function expand( fp ) {
+			console.log( 'expand', fp );
+			const path = fp.href.toString();
+			
+			
+			async function success( mime ) {
+				console.log( 'success', mime );
+				let handler = self.mimeMap[ mime.type ];
+				if ( !handler )
+					return;
+				
+				let conf = await handler( a, mime );
+				if ( !conf )
+					return null;
+				
+				self.replace( a, conf );
+			}
+			
+			function failed( err ) {
+				console.log( 'LE.mime.failed', err );
+			}
+		}
+	}
+	
+	// Priate
+	
+	ns.PathExpand.prototype.init = function() {
+		const self = this;
+	}
 	
 })( library.component );
 

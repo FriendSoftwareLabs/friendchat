@@ -531,19 +531,24 @@ faIcon,
 <!-- LINK EXPAND FRAGMENTS -->
 
 <!-- link-expand-tmpl
+type
+bgDefault
 href
-content
+hideSave
 -->
 <script id="link-expand-tmpl" type="text/html">
-<div class="link-expand">
-	<div class="link-expand-ui group row BackgroundDefault">
-		<div class="pre-icon center-child fortify">
-			<i class="fa fa-fw fa-link"></i>
+<div class="link-expand link-expand-<%= type %>">
+	<div class="link-expand-ui group row start <%= bgDefault %>">
+		<div class="pre-icon dl-btn Button IconButton center-child fortify <%= hideSave %>"
+			title="{i18n_save_to_home_fchat}"
+		>
+			<i class="fa fa-fw fa-save"></i>
 		</div>
-		<div class="raw-link expand">
-			<a class="link-expand-direct-url" href="<%= href %>" target="_blank" title="<%= href %>">
-				<%= file %>
-			</a>
+		<div class="pre-icon show-link Button IconButton center-child fortify"
+			title="{i18n_open_in_new_tab}"
+		>
+			<i class="fa fa-fw fa-external-link"></i>
+			<a href="<%= href %>" target="_blank" style="display:none;"></a>
 		</div>
 	</div>
 	<div class="link-expand-content">
@@ -555,28 +560,49 @@ content
 src
 -->
 <script id="image-expand-tmpl" type="text/html">
-<img class="link-expand-image MousePointer" src="<%= src %>"></img>
+<img class="le-item MousePointer" src="<%= src %>"></img>
 </script>
 
 <!-- audio-expand-tmpl
 src
 -->
 <script id="audio-expand-tmpl" type="text/html">
-<audio class="link-expand-audio" src="<%= src %>" controls class="fortify"></audio>
+<audio class="le-item" src="<%= src %>" controls class="fortify"></audio>
 </script>
 
 <!-- video-expand-tmpl
 src
 -->
 <script id="video-expand-tmpl" type="text/html">
-<video class="link-expand-video" src="<%= src %>" controls class="fortify"></video>
+<video class="le-item" src="<%= src %>" controls class="fortify"></video>
 </script>
 
 <!-- file-expand-tmpl
-typeClass
+typeClass,
+fileDescription,
+openHTML,
 -->
 <script id="file-expand-tmpl" type="text/html">
-<div class="link-expand-file <%=typeClass%>">
+<div class="le-item File group row">
+	<div class="le-file-icon Icon fortify">
+		<div class="<%=typeClass%>"></div>
+	</div>
+	<div class="le-file-meta group row expand">
+		<div class="le-file-desc expand">
+			<%= fileDescription %>
+		</div>
+		<%= openHTML %>
+	</div>
+</div>
+</script>
+
+<!-- file expand open tmpl
+-->
+<script id="file-expand-open-tmpl" type="text/html">
+<div class="le-app-open Button IconButton center-child"
+	title="{i18n_open_with} <%= app %>"
+>
+	<i class="fa fa-fw fa-sign-in"></i>
 </div>
 </script>
 

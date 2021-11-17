@@ -1,82 +1,159 @@
 .link-expand {
-	overflow: hidden;
-	white-space : normal;
+	overflow    : hidden ;
+	white-space : normal ;
 }
 
 .link-expand-ui {
-	position : absolute;
-	top      : 0.9em;
-	left     : 0.9em;
-	z-index  : 1;
-	border-radius: 1.25em;
+	
 }
 
-.link-expand-ui > .button {
-}
-
-.pre-icon {
-	width : 2.5em;
-	height: 2.5em;
-}
-
-.link-expand-ui .raw-link {
-	width : 0em;
-	position : relative;
-}
-
-.link-expand-ui:hover .raw-link {
-	width         : unset;
-	padding-right : 0.7em;
-	max-width     : 10em;
+.link-expand-image .link-expand-ui {
+	position      : absolute                             ;
+	top           : 0.8em                                ;
+	left          : 0.8em                                ;
+	z-index       : 1                                    ;
+	overflow      : hidden                               ;
+	border        : 1px solid rgba( 130, 130, 130, 0.4 ) ;
+	border-radius : 1.2em                                ;
 }
 
 /*
-.link-expand-ui .raw-link > div {
-	position : absolute;
-	top      : 0;
-	right    : 0;
-	left     : 0;
+.link-expand-image .link-expand-ui .dl-btn {
+	border-top-left-radius    : 1em ;
+	border-bottom-left-radius : 1em ;
+}
+
+.link-expand-image .link-expand-ui .show-link {
+	border-top-right-radius    : 1em ;
+	border-bottom-right-radius : 1em ;
 }
 */
 
-.link-expand-ui .raw-link a {
-	display       : inline-block;
-	width         : 100%;
-	overflow      : hidden;
-	text-overflow : ellipsis;
-	white-space   : nowrap;
+/*
+.pre-icon {
+	width : 2em ;
+	height: 2em ;
+}
+*/
+
+.link-expand-image .pre-icon {
+	width  : 2.4em ;
+	height : 2.4em ;
 }
 
-.link-expand-content {
-	position: relative;
-	max-width: 100%;
-	margin : 0.4em;
+.link-expand-image .pre-icon > i {
+	padding-top  : 0.1em ;
+	padding-left : 0.1em ;
 }
 
-.link-expand .link-expand-video,
-.link-expand .link-expand-image {
-	/*
-	max-height    : 10em;
-	min-height    : 3.5em;
-	*/
-	height        : 10em;
-	max-width     : 100%;
-	border-radius : 0.2em;
+.link-expand-ui .raw-link {
+	width    : 0em      ;
+	position : relative ;
 }
 
-.link-expand .link-expand-video,
-.link-expand .link-expand-audio {
-	margin-top : 3.2em;
+/*
+.link-expand-image .show-link:hover .raw-link {
+	width         : unset ;
+	padding-right : 0.7em ;
+	padding-left  : 0.5em ;
+	max-width     : 10em  ;
+}
+*/
+
+.link-expand-ui .raw-link {
+	display       : none     ;
+	overflow      : hidden   ;
+	text-overflow : ellipsis ;
+	white-space   : nowrap   ;
 }
 
-.link-expand .link-expand-image {
-	object-fit: cover;
-	border: 0.02em solid rgba( 130, 130, 130, 0.3 );
+.link-expand .link-expand-content {
+	position : relative ;
+	margin   : 0        ;
 }
 
-.link-expand .link-expand-file {
-	width : 64px;
-	height: 64px;
-	background-size: contain;
-	background-repeat: none;
+.link-expand-video .link-expand-content,
+.link-expand-image .link-expand-content {
+	margin : 0.4em ;
+}
+
+.link-expand-video .le-item,
+.link-expand-image .le-item {
+	height        : 10em  ;
+	max-width     : 100%  ;
+	border-radius : 0.2em ;
+}
+
+.link-expand-image .le-item {
+	object-fit : cover                                   ;
+	border     : 1px solid rgba( 130, 130, 130, 0.3 ) ;
+}
+
+.link-expand-video,
+.link-expand-audio {
+	
+}
+
+.link-expand-file {
+	display        : flex        ;
+	flex-direction : row-reverse ;
+	padding-right  : 4em         ;
+}
+
+.link-expand-file .link-expand-ui {
+	flex : 0 0 auto;
+}
+
+.link-expand-file .link-expand-content {
+	flex : 1 1 auto ;
+}
+
+.link-expand-file .le-item {
+	
+}
+
+.link-expand-file .le-file-icon {
+	height : 3em ;
+	width  : 3em ;
+}
+
+.link-expand-file .le-file-meta {
+	padding-left : 0.5em;
+}
+
+.link-expand-file .le-file-desc {
+	
+}
+
+.link-expand-file .le-file-apps {
+	
+}
+
+.link-expand-file .le-app-item {
+	padding       : 0 0.5em ;
+	margin-right  : 0.3em   ;
+	border-radius : 0.3em   ;
+	cursor        : pointer ;
+	opacity       : 0.8     ;
+}
+
+.link-expand-file .le-app-item:hover {
+	opacity : 1 ;
+}
+
+#hello .File {
+	float      : unset ;
+	transition : unset ;
+	width      : unset ;
+	margin     : unset ;
+	cursor     : unset ;
+}
+
+#hello .File .Icon {
+	margin-left : -10px ;
+}
+
+#hello .link-expand-image .Button {
+	padding : unset ;
+	margin  : unset ;
 }

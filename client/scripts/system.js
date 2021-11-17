@@ -1184,13 +1184,14 @@ library.rtc = library.rtc || {};
 		function updateSetting( e ) { self.updateSetting( e ); }
 		
 		self.updateMap = {
-			'popupChat'    : e => self.updatePopupChat( e ),
-			'msgAlert'     : e => self.updateMsgAlert( e ),
-			'roomAlert'    : e => self.updateRoomAlert( e ),
-			'privateAlert' : e => self.updatePrivateAlert( e ),
-			'inAppMenu'    : e => self.updateInAppMenu( e ),
-			'compactChat'  : e => self.updateCompactChat( e ),
-			'hideInSearch' : e => self.updateHideInSearch( e ),
+			'popupChat'       : ( v, s ) => self.updateDefault( v, s ),
+			'roomAlert'       : ( v, s ) => self.updateDefault( v, s ),
+			'privateAlert'    : ( v, s ) => self.updateDefault( v, s ),
+			'inAppMenu'       : ( v, s ) => self.updateDefault( v, s ),
+			'compactChat'     : ( v, s ) => self.updateDefault( v, s ),
+			'showSaveLinks'   : ( v, s ) => self.updateDefault( v, s ),
+			'expandFileLinks' : ( v, s ) => self.updateDefault( v, s ),
+			'hideInSearch'    : ( v, s ) => self.updateDefault( v, s ),
 		};
 		
 		self.view = new library.component.SubView({
@@ -1277,18 +1278,19 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		handler( update.value );
+		handler( update.value, update.setting );
 		hello.setSettings( self.settings );
 	}
 	
+	ns.Account.prototype.updateDefault = function( value, setting ) {
+		const self = this;
+		self.settings[ setting ] = value;
+	}
+	
+	/*
 	ns.Account.prototype.updatePopupChat = function( value ) {
 		const self = this;
 		self.settings.popupChat = value;
-	}
-	
-	ns.Account.prototype.updateMsgAlert = function( value ) {
-		const self = this;
-		self.settings.msgAlert = value;
 	}
 	
 	ns.Account.prototype.updateRoomAlert = function( value ) {
@@ -1317,6 +1319,8 @@ library.rtc = library.rtc || {};
 		const self = this;
 		self.settings.inAppMenu = value;
 	}
+	
+	*/
 	
 	ns.Account.prototype.load = function( account ) {
 		const self = this;

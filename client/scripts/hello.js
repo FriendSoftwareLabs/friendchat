@@ -341,11 +341,11 @@ var hello = null;
 			};
 			
 			const conf = {
-				module  : 'system',
-				method  : 'userinfoget',
-				args    : args,
-				success : modBack,
-				error   : modErr,
+				module    : 'system',
+				method    : 'userinfoget',
+				args      : args,
+				onSuccess : modBack,
+				onError   : modErr,
 			};
 			
 			const forceHTTP = true;
@@ -411,8 +411,8 @@ var hello = null;
 					args   : {
 						setting : 'avatar',
 					},
-					success : avaBack,
-					error   : avaErr,
+					onSuccess : avaBack,
+					onError   : avaErr,
 				};
 				
 				new api.Module( conf );

@@ -75,11 +75,7 @@ var friend = window.friend || {};
 		function register( e ) { self.register( e ); }
 		function viewtheme( e ) { self.handleViewTheme( e ); }
 		function systemTheme( e ) { self.handleSystemTheme( e ); }
-		function callback( e ) {
-			if( e.data && self.callbacks[ e.callback ] ) {
-				self.executeCallback( e.callback, e.data );
-			}
-		};
+		function callback( e ) { self.handleCallback( e ); }
 		
 		self.notifyMap = {
 			'activateview'   : activated,
@@ -122,9 +118,14 @@ var friend = window.friend || {};
 		
 		msg.origin = e.origin;
 		
-		const handler = self.eventMap[ msg.command ];
+		if ( 'callback' == msg.type && msg.callback ) {
+			self.handleCallback( msg );
+			return;
+		}
+		
+		const handler = self.eventMap[ msg.command ]; // || self.eventMap[ msg.type ];
 		if ( !handler ) {
-			self.handle( msg );
+			self.handle( msg ); // eventnode handler
 			return;
 		}
 		
@@ -147,6 +148,16 @@ var friend = window.friend || {};
 		}
 		
 		handler( msg );
+	}
+	
+	ns.ViewEvent.prototype.handleCallback = function( event ) {
+		const self = this;
+		console.log( 'View.handleCallback', event );
+		const cb = self.getCallback( event.callback );
+		if ( null == cb )
+			return;
+		
+		cb( event );
 	}
 	
 	/*
@@ -210,6 +221,134 @@ var friend = window.friend || {};
 		self.sendTypeEvent( 'show-notify', notie );
 	}
 	
+	ns.View.prototype.getAppsForFileType = async function( fileType ) {
+		const self = this;
+		return await check( fileType );
+		
+		function check( fileType ) {
+			return new Promise(( resolve, reject ) => {
+				const callBackId = self.setCallback( checkBack );
+				const event = {
+					type      : 'system',
+					command   : 'checkmimetypes',
+					mimetypes : [ fileType ],
+					callback  : callBackId,
+				};
+				
+				self.sendBase( event );
+				
+				function checkBack( res ) {
+					resolve( res.data );
+				}
+			});
+		}
+	}
+	
+	/* callModule
+	
+	Execute a FriendUP module
+	
+	modName - optional, defaults to 'system'
+	method - module function to run
+	args - key/value pairs of arguments
+	
+	returns a promise the resolves to module call result
+	or throws an exception on error
+	
+	*/
+	ns.View.prototype.callModule = async function( 
+		modName, 
+		method, 
+		args 
+	) {
+		const self = this;
+		const mod = {
+			module : modName,
+			method : method,
+			args   : args,
+		};
+		
+		const res = await self.callFriend( 'module', mod );
+		return res;
+	}
+	
+	/* callLibrary
+	
+	Execute a FriendUP library call
+	libName - optional, defaults to 'system.library',
+	funcName - <string> function name to exec
+	args - key/value pairs of arguments
+	
+	*/
+	ns.View.prototype.callLibrary = async function(
+		libName,
+		funcName,
+		args
+	) {
+		const self = this;
+		const lib = {
+			name         : libName,
+			functionName : funcName,
+			args         : args,
+		};
+		
+		const res = await self.callFriend( 'library', lib );
+		return res;
+	}
+	
+	ns.View.prototype.callFriend = function( type, conf ) {
+		const self = this;
+		return new Promise(( resolve, reject ) => {
+			const reqId = self.setCallback( modBack );
+			const req = {
+				reqId   : reqId,
+				conf    : conf,
+			};
+			
+			const wrap = {
+				type : type,
+				data : req,
+			};
+			
+			self.sendTypeEvent( 'call-friend', wrap );
+			
+			function modBack( e ) {
+				console.log( 'modBack', e );
+				if ( e.err )
+					reject( e.err );
+				else
+					resolve( e.response );
+			}
+		});
+	}
+	
+	ns.View.prototype.saveLink = async function( href, fileName ) {
+		const self = this;
+		const fm = new api.FileMaker();
+		const res = await fm.fromLink( href, fileName );
+		return res;
+	}
+	
+	ns.View.prototype.openFile = function( filePath, appName ) {
+		const self = this;
+		const open = {
+			filePath : filePath,
+			appName  : appName,
+		};
+		
+		self.sendTypeEvent( 'open-file', open );
+	}
+	
+	ns.View.prototype.openLink = async function( href, fileName, appName ) {
+		const self = this;
+		const res = await self.saveLink( href, fileName );
+		if ( null == res.path )
+			return false;
+		
+		const path = res.path;
+		self.openFile( path, appName );
+	}
+	
 	ns.View.prototype.getConfig = function() {
 		const self = this;
 		return self.appConf;
@@ -220,13 +359,19 @@ var friend = window.friend || {};
 		return self.appSettings;
 	}
 	
-	ns.View.prototype.addCallback = function( callback )
+	ns.View.prototype.setCallback = function( callback )
 	{
 		const self = this;
-		
-		var id = friendUP.tool.uid();
+		const id = friendUP.tool.uid();
 		self.callbacks[ id ] = callback;
 		return id;
+	}
+	
+	ns.View.prototype.getCallback = function( cbId ) {
+		const self = this;
+		const cb = self.callbacks[ cbId ];
+		delete self.callbacks[ cbId ];
+		return cb;
 	}
 	
 	ns.View.prototype.executeCallback = function( cid, data )
@@ -364,6 +509,7 @@ var friend = window.friend || {};
 		var self = this;
 		//console.log( 'view.blur', msg );
 	}
+	
 	
 	// private
 	
@@ -799,7 +945,7 @@ var friend = window.friend || {};
 		// Add a callback
 		if( callback )
 		{
-			o.callback = self.addCallback( callback );
+			o.callback = self.setCallback( callback );
 		}
 		
 		self.sendBase( o );
@@ -914,24 +1060,26 @@ var friend = window.friend || {};
 				return;
 			}
 			
-			const raw = window.atob( msg.data.split( ';base64,' )[1] );
+			const raw = window.atob( msg.data.data.split( ';base64,' )[1] );
 			const uInt8Array = new Uint8Array( raw.length );
 			for ( let i = 0; i < raw.length; ++i ) {
 				uInt8Array[ i ] = raw.charCodeAt( i );
 			}
 			
-			const bl = new Blob(
+			const blob = new Blob(
 				[ uInt8Array ],
 				{ type: 'image/jpeg', encoding: 'utf-8' }
 			);
 			
 			// Paste the blob!
-			const p = new api.PasteHandler( 'camera', 'jpg' );
+			const fm = new api.FileMaker( 'camera' );
+			/*
 			const blob = {
 				type : 'blob',
-				blob : bl,
+				blob : blob,
 			};
-			p.handle( blob )
+			*/
+			fm.fromBlob( blob )
 				.then( pasteBack )
 				.catch( pasteErr );
 			
@@ -939,11 +1087,10 @@ var friend = window.friend || {};
 				result : true
 			});
 			
-			function pasteBack( list ) {
-				console.log( 'camera pasteBack', list );
+			function pasteBack( file ) {
 				self.send({
 					type: 'drag-n-drop',
-					data: list,
+					data: [ file ],
 				});
 			}
 			
@@ -1195,6 +1342,9 @@ body .View.Active.IconWindow ::-webkit-scrollbar-thumb
 		const msgString = friendUP.tool.stringify( event );
 		window.parent.postMessage( msgString, self.parentOrigin );
 	}
+	
+	ns.View.prototype.sendWorkspace = 
+		ns.View.prototype.sendBase;
 	
 	// Get a translated string
 	ns.View.prototype.i18n = function( string ) {
@@ -1529,50 +1679,52 @@ window.View = new api.View();
 // Paste handler handles pasting of files and media ----------------------------
 ( function( ns, undefined ) {
 	
-	ns.PasteHandler = function( sourceName ) {
+	ns.FileMaker = function( sourceName ) {
 		const self = this;
 		self.name = sourceName || 'file';
 		self.saveDir = 'Home:FriendChat/';
+		self.dirFiles = null;
+		self.dirChecked = false;
 		self.dup = 1;
 	}
 	
-	ns.PasteHandler.prototype.handle = function( DOMEvent ) {
+	ns.FileMaker.prototype.fromPaste = async function( DOMEvent, fileName ) {
 		const self = this;
-		return new Promise(( resolve, reject ) => {
-			const items = self.normalize( DOMEvent );
-			if ( !items.length ) {
-				resolve([]);
-				return;
-			}
-			
-			self.checkPath()
-				.then( pathOk )
-				.catch( reject );
-			
-			function pathOk( dirFileList ) {
-				const dirFiles = {};
-				dirFileList.forEach( item  => {
-					const name = item.Filename;
-					dirFiles[ name ] = item;
-				});
-				self.dirFiles = dirFiles;
-				upload( items );
-			}
-			
-			function upload( items ) {
-				const uploaded = Promise.all( items.map( doUpload ));
-				resolve( uploaded );
-				
-				function doUpload( item ) {
-					return self.uploadFile( item );
-				}
-			}
-		});
+		const items = self.normalize( DOMEvent );
+		if ( !items.length ) {
+			resolve([]);
+			return;
+		}
+		
+		const uploads = items.map( item => self.uploadFile( item ));
+		const uploaded = await Promise.all( uploads );
+		return uploaded;
+		
+	}
+	
+	ns.FileMaker.prototype.fromBlob = async function( blob, fileName ) {
+		const self = this;
+		if ( null != fileName )
+			blob.name = fileName;
+		
+		//const file = new File([ blob ], fileName );
+		//console.log( 'fromBlob file', file );
+		const res = await self.uploadFile( blob );
+		return res;
+		
+	}
+	
+	ns.FileMaker.prototype.fromLink = async function( href, fileName ) {
+		const self = this;
+		const link = await window.fetch( href );
+		const blob = await link.blob();
+		blob.name = fileName;
+		return await self.fromBlob( blob );
 	}
 	
 	// Private
 	
-	ns.PasteHandler.prototype.checkOrigName = function( orig ) {
+	ns.FileMaker.prototype.checkOrigName = function( orig ) {
 		const self = this;
 		const dir = self.dirFiles;
 		const parts = orig.split( '.' );
@@ -1588,7 +1740,7 @@ window.View = new api.View();
 		return name;
 	}
 	
-	ns.PasteHandler.prototype.genName = function( file ) {
+	ns.FileMaker.prototype.genName = function( file ) {
 		const self = this;
 		const dir = self.dirFiles;
 		const time = getDateStr();
@@ -1637,8 +1789,9 @@ window.View = new api.View();
 		}
 	}
 	
-	ns.PasteHandler.prototype.uploadFile = function( file ) {
+	ns.FileMaker.prototype.uploadFile = async function( file ) {
 		const self = this;
+		await self.checkPath();
 		//const type = ( file.type == '' ? 'application/octet-stream' : file.type );
 		let fileName = file.name;
 		if ( fileName )
@@ -1647,7 +1800,7 @@ window.View = new api.View();
 			fileName = self.genName( file );
 		
 		self.dirFiles[ fileName ] = true;
-		return uploadWorker( file, fileName );
+		return await uploadWorker( file, fileName );
 		
 		function uploadWorker( file, fileName  ) {
 			return new Promise(( resolve, reject ) => {
@@ -1660,7 +1813,7 @@ window.View = new api.View();
 				const uworker = new Worker( url + 'js/io/filetransfer.js' );
 				
 				uworker.onerror = function( err ) {
-					console.log( 'PasteHandler uploadWorker - err', err );
+					console.log( 'FileMaker uploadWorker - err', err );
 				}
 				
 				uworker.onmessage = function( e ) {
@@ -1674,6 +1827,7 @@ window.View = new api.View();
 						response : true,
 						type     : 'File',
 						path     : path,
+						name     : fileName,
 					});
 				}
 				
@@ -1691,7 +1845,7 @@ window.View = new api.View();
 		}
 	}
 	
-	ns.PasteHandler.prototype.normalize = function( e ) {
+	ns.FileMaker.prototype.normalize = function( e ) {
 		const self = this;
 		const dTrans = e.dataTransfer;
 		let items = [];
@@ -1749,34 +1903,60 @@ window.View = new api.View();
 		}
 	}
 	
-	ns.PasteHandler.prototype.checkPath = function() {
+	ns.FileMaker.prototype.checkPath = async function() {
 		const self = this;
-		return new Promise(( resolve, reject ) => {
-			// check full path
-			self.callFC( 'dir', self.saveDir )
-				.then( resolve )
-				.catch( notFound );
-			
-			// not foud, try create, maybe fail v0v
-			function notFound() {
-				window.View.showNotification(
-					View.i18n( 'i18n_file_upload' ),
-					View.i18n( 'i18n_creating_folder' ) + ': ' + self.saveDir,
-				);
-				self.callFC( 'makedir', self.saveDir )
-					.then( reCheck )
-					.catch( reject );
-			}
-			
-			function reCheck() {
-				self.checkPath()
-					.then( resolve )
-					.then( reject );
-			}
+		if ( null != self.dirFiles )
+			return true;
+		
+		let dirFileList = null;
+		try {
+			dirFileList = await check();
+		} catch( ex ) {
+			console.log( 'FileMaker.checkPath, path error', {
+				ex      : ex,
+				saveDir : self.saveDir,
+				DOME    : DOMEvent,
+				items   : items,
+			});
+			throw new Error( 'ERR_PATH' );
+		}
+		
+		self.dirFiles = {};
+		dirFileList.forEach( item  => {
+			const name = item.Filename;
+			self.dirFiles[ name ] = item;
 		});
+		
+		return true;
+		
+		function check() {
+			return new Promise(( resolve, reject ) => {
+				// check full path
+				self.callFC( 'dir', self.saveDir )
+					.then( resolve )
+					.catch( notFound );
+				
+				// not foud, try create, maybe fail v0v
+				function notFound() {
+					window.View.showNotification(
+						View.i18n( 'i18n_file_upload' ),
+						View.i18n( 'i18n_creating_folder' ) + ': ' + self.saveDir,
+					);
+					self.callFC( 'makedir', self.saveDir )
+						.then( reCheck )
+						.catch( reject );
+				}
+				
+				function reCheck() {
+					check()
+						.then( resolve )
+						.then( reject );
+				}
+			});
+		}
 	}
 	
-	ns.PasteHandler.prototype.callFC = function( action, path ) {
+	ns.FileMaker.prototype.callFC = function( action, path ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
 			const base = '/system.library/file/' + action + '/?path=';
@@ -1825,7 +2005,7 @@ window.View = new api.View();
 	}
 	
 	// Initiate paste handler
-	ns.PasteHandler.prototype.paste = function( evt, callback ) {
+	ns.FileMaker.prototype.paste = function( evt, callback ) {
 		const self = this;
 		
 		function DirectoryContainsFile( filename, directoryContents )
