@@ -935,7 +935,7 @@ var friend = window.friend || {};
 		const self = this;
 		
 		// The message
-		var o = {
+		const o = {
 			type         : 'system',
 			command      : 'opencamera',
 			viewId       : self.id,
@@ -945,10 +945,14 @@ var friend = window.friend || {};
 		// Add a callback
 		if( callback )
 		{
-			o.callback = self.setCallback( callback );
+			o.callback = self.setCallback( camBack );
 		}
 		
 		self.sendBase( o );
+		
+		function camBack( e ) {
+			callback( e.data );
+		}
 	}
 	
 	ns.View.prototype.prepareCamera = function( camButtonEl, callback ) {
@@ -1052,15 +1056,16 @@ var friend = window.friend || {};
 			}
 		}
 		
-		function imgBack( msg ) {
-			if( !( msg && msg.data )) {
+		function imgBack( img ) {
+			console.log( 'imgBack - img', img );
+			if( !( img && img.data )) {
 				callback({
 					result : false
 				});
 				return;
 			}
 			
-			const raw = window.atob( msg.data.data.split( ';base64,' )[1] );
+			const raw = window.atob( img.data.split( ';base64,' )[1] );
 			const uInt8Array = new Uint8Array( raw.length );
 			for ( let i = 0; i < raw.length; ++i ) {
 				uInt8Array[ i ] = raw.charCodeAt( i );
