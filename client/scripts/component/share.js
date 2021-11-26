@@ -41,6 +41,14 @@ library.component = library.component || {};
 		self.init();
 	}
 	
+	ns.ShareView.prototype.close = function() {
+		const self = this;
+		if ( self.conn )
+			self.conn.close();
+		
+		delete self.conn;
+	}
+	
 	ns.ShareView.prototype.init = function() {
 		const self = this;
 		self.bindConn();
@@ -51,6 +59,7 @@ library.component = library.component || {};
 	ns.ShareView.prototype.bindConn = function() {
 		const self = this;
 		self.conn = new library.component.EventNode( self.type, self.parentConn );
+		delete self.parentConn;
 		self.conn.on( 'state', state );
 		self.conn.on( 'private', priv );
 		self.conn.on( 'public', pub );
@@ -462,6 +471,14 @@ library.component = library.component || {};
 		self.invites = {};
 		
 		self.init( conf.conn );
+	}
+	
+	ns.ShareLink.prototype.close = function() {
+		const self = this;
+		if ( self.conn )
+			self.conn.close();
+		
+		delete self.conn;
 	}
 	
 	ns.ShareLink.prototype.init = function( pConn ) {

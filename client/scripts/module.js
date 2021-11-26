@@ -623,6 +623,7 @@ library.module = library.module || {};
 		self.conn.close();
 		self.view.close();
 	}
+	
 	ns.BaseModule.prototype.close = ns.BaseModule.prototype.baseClose;
 	
 })( library.module );
@@ -1002,6 +1003,12 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.openChat = async function( conf, notification, view, queued ) {
 		const self = this;
+		console.log( 'presence.openChat', {
+			conf   : conf,
+			noti   : notification,
+			view   : view,
+			queued : queued,
+		});
 		if ( !self.initialized ) {
 			if ( null == queued )
 				queued = 1;
@@ -1018,6 +1025,9 @@ library.module = library.module || {};
 		item = self.getLocalChat( cId );
 		if ( item ) {
 			item.openChat( notification, view );
+			if ( null != view )
+				hello.clearPreView( cId, view );
+			
 			return;
 		}
 		
@@ -1028,6 +1038,9 @@ library.module = library.module || {};
 			item.openChat( notification, view );
 		else
 			console.log( 'Presence.openChat - could not find a chat for', conf );
+		
+		if ( null != view )
+			hello.clearPreView( cId, view );
 		
 	}
 	
@@ -1135,6 +1148,19 @@ library.module = library.module || {};
 		}
 	}
 	
+	ns.Presence.prototype.close = function() {
+		const self = this;
+		if ( self.acc )
+			self.acc.close();
+		
+		if ( self.contactEvents )
+			self.contactEvents.close();
+		
+		self.baseClose();
+		delete self.acc;
+		delete self.contactEvents;
+	}
+	
 	// Private
 	
 	ns.Presence.prototype.init = function() {
@@ -1234,6 +1260,11 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.getLocalChat = function( cId, type ) {
 		const self = this;
+		console.log( 'getLocalChat', {
+			rid   : cId,
+			rooms : self.rooms,
+			conts : self.contacts,
+		});
 		const room = self.rooms[ cId ];
 		const contact = self.contacts[ cId ];
 		
@@ -1484,7 +1515,6 @@ library.module = library.module || {};
 		self.initializeAccount();
 		
 		function accEventSink( ...args ) { console.log( 'Presence.accEventSink', args ); }
-		function accReqEventSink( ...args ) { console.log( 'Presence.accReqEventSink', args ); }
 	}
 	
 	ns.Presence.prototype.initializeAccount = function() {
@@ -1596,11 +1626,15 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.updateFilterOnline = function() {
 		const self = this;
+		console.log( 'updateFilterOnline', self.currentFilter );
 		const uptd = {
 			type : 'update-online',
 			data : self.contactsOnline.length,
 		};
 		self.filterToView( uptd );
+		
+		if ( 'online' == self.currentFilter )
+			self.handleFilterSelect({ id : 'online' });
 	}
 	
 	ns.Presence.prototype.updateContact = function( contact ) {
@@ -2084,6 +2118,11 @@ library.module = library.module || {};
 	ns.Presence.prototype.handleFilterSelect = async function( select ) {
 		const self = this;
 		const id = select.id;
+		console.log( 'handleFilterSelect', {
+			select : select,
+			curr   : self.currentFilter,
+		});
+		
 		self.currentFilter = id;
 		if ( 'relations' == id ) {
 			prepare( id, self.contactIds );

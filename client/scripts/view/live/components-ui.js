@@ -914,7 +914,7 @@ library.component = library.component || {};
 	
 	ns.ChatTease.prototype.close = function() {
 		const self = this;
-		self.emitterClose();
+		self.closeEventEmitter();
 		delete self.teaseContainer;
 		delete self.teaseNum;
 		delete self.showChatBtn;

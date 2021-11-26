@@ -100,11 +100,15 @@ library.view = library.view || {};
 	
 	ns.PresenceChat.prototype.close = function() {
 		const self = this;
-		delete self.initData;
-		delete self.onclose;
-		self.closeEventEmitter();
+		if ( self.drop )
+			self.drop.close();
+		
 		if ( self.view )
 			self.view.close();
+		
+		delete self.initData;
+		delete self.onclose;
+		self.closeRequestNode();
 	}
 	
 	// Private
@@ -184,7 +188,6 @@ library.view = library.view || {};
 				type : type,
 				data : data,
 			});
-			
 		}
 		
 		function closed( e ) {
@@ -727,10 +730,15 @@ library.view = library.view || {};
 			self.view = new api.NativeView(
 				null,
 				viewConf,
-				self.onEvent
+				nativeSink,
 			);
 			
 			self.bindView();
+		}
+		
+		function nativeSink( ...args ) {
+			console.log( 'app.Live.nativeSink', args );
+			self.onEvent( ...args );
 		}
 		
 		function initLive() {
@@ -765,9 +773,14 @@ library.view = library.view || {};
 				template,
 				windowConf,
 				viewConf,
-				self.onEvent,
+				viewSink,
 				closed
 			);
+			
+			function viewSink( ...args ) {
+				console.log( 'app.Live.viewSink', args );
+				self.onEvent( ...args );
+			}
 			
 			function closed( e ) { self.closed(); }
 			
@@ -797,8 +810,8 @@ library.view = library.view || {};
 	ns.Live.prototype.getTitle = function() {
 		const self = this;
 		let roomTitle;
-		let postFix = self.isStream
-			? Application.i18n( 'i18n_stream_session' )
+		let postFix = self.isStream ?
+			Application.i18n( 'i18n_stream_session' )
 			: Application.i18n( 'i18n_live_session' );
 		
 		if ( self.isPrivate )
@@ -816,6 +829,9 @@ library.view = library.view || {};
 		self.view.on( 'close'      , ohOkayThen );
 		self.view.on( 'loaded', e => console.log( 'live loaded', e ));
 		self.view.on( 'ready', e => self.liveReady());
+		self.view.on( 'focused', e => {});
+		self.view.on( 'minimized', e => {});
+		self.view.on( 'maximized', e => {});
 		
 		function storePrefered( e ) { self.storePrefered( e ); }
 		function localSetting( e ) { self.storeLocalSetting( e ); }

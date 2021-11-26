@@ -188,6 +188,11 @@ to listeners registered through this interface
 		delete self._eventSink;
 	}
 	
+	ns.EventEmitter.prototype.close = function() {
+		const self = this;
+		self.closeEventEmitter();
+	}
+	
 	// Private
 	
 	ns.EventEmitter.prototype._eventEmitterInit = function() {
@@ -271,7 +276,7 @@ inherits from EventEmitter
 		return self.emit( event.type, event.data );
 	}
 	
-	ns.EventNode.prototype.close = function() {
+	ns.EventNode.prototype.closeEventNode = function() {
 		const self = this;
 		self.closeEventEmitter();
 		delete self.sendEvent;
@@ -282,6 +287,11 @@ inherits from EventEmitter
 		
 		delete self.type;
 		delete self.conn;
+	}
+	
+	ns.EventNode.prototype.close = function() {
+		const self = this;
+		self.closeEventNode();
 	}
 	
 	// Private
@@ -369,6 +379,27 @@ inherits from EventEmitter
 					resolve( response );
 			}
 		});
+	}
+	
+	ns.RequestNode.prototype.closeRequestNode = function() {
+		const self = this;
+		const rIds = Object.keys( self._requests );
+		rIds.forEach( rId => {
+			req = self._requests[ rId ];
+			delete self._requests[ rId ];
+			if ( null == req )
+				return;
+			
+			req( 'ERR_NODE_CLOSED', null );
+		});
+		
+		self.closeEventNode();
+		
+	}
+	
+	ns.RequestNode.prototype.close = function() {
+		const self = this;
+		self.closeRequestNode();
 	}
 	
 	// Private
@@ -716,6 +747,7 @@ inherits from EventEmitter
 		delete self.conn;
 		delete self.ids;
 		delete self.idList;
+		self.closeEventEmitter();
 	}
 	
 	ns.IdCache.prototype.get = function( clientId ) {
@@ -987,6 +1019,7 @@ inherits from EventEmitter
 			el.parentNode.removeChild( el );
 		
 		delete self.containerId;
+		self.closeEventEmitter();
 	}
 	
 	// Pri>ate

@@ -59,6 +59,7 @@ var friend = window.friend || {}; // already instanced stuff
 		onclose
 	) {
 		const self = this;
+		self.viewType = 'app.View';
 		self.path = htmlPath;
 		self.windowConf = windowConf || {};
 		self.initData = initData;
@@ -223,7 +224,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fromView.on( 'conn-state', e => self.toConnState( e ));
 		self.fromView.on( 'loaded', loaded );
 		self.fromView.on( 'ready', ready );
-		self.fromView.on( 'minimized', mini );
+		self.fromView.on( 'minimized', e => self.handleMinimized( e ));
 		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
 		self.fromView.on( 'open-file', e => self.openFile( e ));
 		self.fromView.on( 'call-friend', e => {
@@ -270,7 +271,6 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		function loaded( e ) { self.handleLoaded( e ); }
 		function ready( e ) { self.handleReady( e ); }
-		function mini( e ) { self.handleMinimized( e ); }
 	}
 	
 	ns.View.prototype.toApp = function( event ) {
@@ -335,6 +335,9 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleMinimized = function( isMinimized ) {
 		const self = this;
+		if ( !self.isMinimized && !isMinimized )
+			self.handleFocus();
+			
 		if ( isMinimized === self.isMinimized )
 			return;
 		
@@ -351,6 +354,11 @@ var friend = window.friend || {}; // already instanced stuff
 		self.emit( 'maximized', self.isMaximized );
 	}
 	
+	ns.View.prototype.handleFocus = function() {
+		const self = this;
+		self.emit( 'focused', true );
+	}
+	
 	ns.View.prototype.handleNotification = function( notie ) {
 		const self = this;
 		self.app.notify( notie );
@@ -360,7 +368,7 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const fP = e.filePath;
 		const aN = e.appName;
-		console.log( 'openFile', [ e, fP, aN ]);
+		console.log( 'app.View.openFile', [ e, fP, aN ]);
 		self.app.openFile( fP, aN );
 	}
 	
@@ -413,7 +421,7 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.View.prototype.doClose = function() {
 		const self = this;
 		self.ready = false;
-		var onclose = self.onclose;
+		const onclose = self.onclose;
 		delete self.onclose;
 		if ( onclose )
 			onclose( true );
@@ -423,16 +431,20 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.close = function() {
 		const self = this;
-		if ( !self.app )
+		self.ready = false;
+		if ( !self.app ) {
+			console.log( 'View.close - no app', self.id );
 			return;
+		}
 		
+		console.log( 'app.View.close', self.id );
 		self.app.removeView( self.id );
-		var msg = {
+		const msg = {
 			method : 'close',
 		};
 		self._send( msg );
 		
-		self.closeEventEmitter();
+		self.closeRequestNode();
 		delete self.onclose;
 		delete self.app;
 		delete self.eventQueue;
@@ -670,6 +682,9 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Module = function( conf, forceHTTP )
 	{
 		const self = this;
+		if ( null == conf.onSuccess || null == conf.onError )
+			throw new Error( 'missing the things' );
+		
 		self.onSuccess = conf.onSuccess;
 		self.onError = conf.onError;
 		
@@ -891,7 +906,7 @@ var friend = window.friend || {}; // already instanced stuff
 		*/
 		
 		if ( msg.callback || msg.clickcallback || msg.shellId || msg.callbackId ) {
-			var yep = self.handleCallback( msg );
+			const yep = self.handleCallback( msg );
 			if ( yep )
 				return;
 		}
@@ -901,6 +916,8 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
+		console.log( 'app.receiveEvent - system didnt handle this one', msg );
+		
 		self.appMessage( msg );
 	}
 	
@@ -908,6 +925,12 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const cid = msg.callback || msg.clickcallback || msg.shellId || msg.callbackId;
 		const callback = self.getCallback( cid );
+		console.log( 'handleCallback', {
+			cbId     : cid,
+			msg      : msg,
+			callback : callback,
+		});
+		
 		if ( !callback )
 			return false;
 		
@@ -980,8 +1003,8 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.fileLoad = function( msg ) {
 		const self = this;
-		var handler = self.getCallback( msg.fileId );
-		
+		const fId = msg.fileId;
+		const handler = self.getCallback( fId );
 		if ( !handler ) {
 			console.log( 'appEvent.fileLoad - no handler for event, passing to receiveMessage ', msg );
 			self.receiveMessage( msg );
@@ -1081,7 +1104,7 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 	}
 	
-	ns.AppEvent.prototype.register = function( msg ) {
+	ns.AppEvent.prototype.register = async function( msg ) {
 		const self = this;
 		window.origin  = msg.origin;
 		self.domain    = msg.domain;
@@ -1092,11 +1115,11 @@ var friend = window.friend || {}; // already instanced stuff
 		self.authId    = msg.authId;
 		self.friendApp = msg.friendApp;
 		
-		self.setLocale( null, setBack );
-		function setBack() {
-			self.registered( msg );
-			self.initialize( msg );
-		}
+		await self.setLocale( null );
+		
+		self.registered( msg );
+		self.initialize( msg );
+		
 	}
 	
 	ns.AppEvent.prototype.registered = function( data ) {
@@ -1132,6 +1155,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.setViewFlag = function( msg ) {
 		const self = this;
+		//console.log( 'setViewFlag', msg );
 		let view = self.views[ msg.viewId ];
 		if ( !view )
 			return;
@@ -1310,23 +1334,107 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 	}
 	
-	ns.Application.prototype.loadFile = function( path, loadCallback, vars ) {
+	/* loadFile
+	
+	returns a promise that resolves to the file data or throws an exception
+	
+	path - <string> path to file
+	vars - <map> optional, additional options
+	retriesAllowed - <number> optional, how many, if any, attempts will be made
+		to get a useful result. Defaults to 0
+	
+	*/
+	ns.Application.prototype.loadFile = async function( path, vars, retriesAllowed ) {
 		const self = this;
-		if ( !path || !loadCallback ) {
+		if ( null == path )
+			throw new Error( 'ERR_NO_PATH' );
+		
+		let file = null;
+		try {
+			file = await doLoad( path, vars, retriesAllowed );
+		} catch( ex ) {
+			throw ex;
+		}
+		
+		return file;
+		
+		function doLoad( path, vars, rAllowed, reee ) {
+			return new Promise(( resolve, reject ) => {
+				const cbId = self.setCallback( loadCallback );
+				if ( rAllowed && rAllowed < reee ) {
+					reject( 'ERR_TOO_MANY_RETRIES' );
+					return;
+				}
+				
+				send( path, vars, cbId );
+				const loadTO = window.setTimeout( loadTimeout, 1000 * 3 );
+				
+				function loadCallback( file ) {
+					window.clearTimeout( loadTO );
+					
+					if ( 0 == file.indexOf( 'ERR_' ))
+						error( file );
+					else
+						resolve( file );
+				}
+				
+				function loadTimeout() {
+					console.log( 'loadTimeout', cbId );
+					self.cancelCallback( cbId, 'ERR_TIMEOUT' );
+				}
+				
+				async function error( err ) {
+					if ( null == rAllowed ) {
+						reject( 'ERR_TOO_MANY_RETRIES' );
+						return;
+					}
+					
+					console.log( 'error', {
+						err      : err,
+						path     : path,
+						cbId     : cbId,
+						rAllowed : rAllowed,
+						reee     : reee,
+					});
+					if ( null == reee )
+						reee = 0;
+					else
+						reee++;
+					
+					let file = null;
+					try {
+						file = await doLoad( path, vars, rAllowed, reee );
+					} catch( ex ) {
+						reject( ex );
+					}
+					
+					resolve( file );
+				}
+				
+			});
+			
+		}
+		
+		function send( path, vars, cbId ) {
+			const load = {
+				type     : 'file',
+				method   : 'load',
+				data     : { path : path },
+				filePath : self.filePath,
+				vars     : vars || [],
+				fileId   : cbId,
+			};
+			self.sendMessage( load );
+		}
+		
+		
+		if ( !path ) {
 			console.log( 'Application.loadFile: invalid arguments',
 				{ path : path, callback : loadCallback });
 			return;
 		}
 		
-		const fid = self.setCallback( loadCallback );
-		self.sendMessage({
-			type     : 'file',
-			method   : 'load',
-			data     : { path: path },
-			filePath : self.filePath,
-			vars     : vars || [],
-			fileId   : fid,
-		});
+		
 	}
 	
 	ns.Application.prototype.executeModule = function()	{
@@ -1414,6 +1522,7 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Application.prototype.addView = function( view ) {
 		const self = this;
 		const vId = view.id;
+		console.log( 'addView', vId );
 		self.views[ vId ] = view;
 		self.viewIds.push( vId );
 	}
@@ -1429,6 +1538,7 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( !view )
 			return;
 		
+		console.log( 'removeView', viewId );
 		self.release( viewId );
 		delete self.views[ viewId ];
 		self.viewIds = Object.keys( self.views );
@@ -1439,31 +1549,36 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fragments = fragStr;
 	}
 	
-	ns.Application.prototype.setLocale = function( locale, callback ) {
+	ns.Application.prototype.setLocale = async function( locale ) {
 		const self = this;
 		locale = locale || self.locale;
 		const localeFile = locale + '.lang';
 		const path = 'Progdir:locale/' + localeFile;
-		self.loadFile( path, fileBack );
-		
-		function fileBack( res ) {
-			if ( !res ) {
-				callback( false );
-				return;
-			}
-			
-			if ( 0 === res.indexOf( '<!DOC')) {
-				console.log( 'no file for locale', {
-					locale : localeFile,
-					res    : res,
-				});
-				self.locale = 'en';
-				self.setLocale( null, callback );
-				return;
-			}
-			
-			parseTranslations( res );
+		let file = null;
+		try {
+			file = await self.loadFile( path );
+		} catch( ex ) {
+			console.log( 'App.setLocale, failed to load file', ex );
+			return false;
 		}
+		
+		if ( !file ) {
+			return false;
+		}
+			
+		if ( 0 === file.indexOf( '<!DOC')) {
+			console.log( 'no file for locale', {
+				locale : localeFile,
+				file    : file,
+			});
+			self.locale = 'en';
+			self.setLocale( null, callback );
+			return false;
+		}
+		
+		parseTranslations( file );
+		
+		return true;
 		
 		function parseTranslations( file ) {
 			const lines = file.split( '\n' );
@@ -1471,7 +1586,6 @@ var friend = window.friend || {}; // already instanced stuff
 			const translations = {};
 			onlyValid.forEach( setKeyValue );
 			self.translations = translations;
-			callback( true );
 			
 			function setKeyValue( line ) {
 				let parts = line.split( ':' );
@@ -1511,6 +1625,19 @@ var friend = window.friend || {}; // already instanced stuff
 		
 		delete self.callbacks[ id ];
 		return callback;
+	}
+	
+	ns.Application.prototype.cancelCallback = function( cbId, error ) {
+		const self = this;
+		const cb = self.callbacks[ cbId ];
+		delete self.callbacks[ cbId ];
+		if ( null == cb )
+			return;
+		
+		if ( null == error )
+			return;
+		
+		cb( error, null );
 	}
 	
 	ns.Application.prototype.setPromiseCallback = function() {
@@ -2720,8 +2847,8 @@ api.DoorFun.prototype.init = function() {
 				args   : {
 					source : url,
 				},
-				success : onSuccess,
-				error   : onError,
+				onSuccess : onSuccess,
+				onError   : onError,
 			});
 			
 			function onSuccess( res ) {

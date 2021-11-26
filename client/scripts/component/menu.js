@@ -179,7 +179,7 @@ library.component = library.component || {};
 	ns.Menu.prototype.close = function() {
 		const self = this;
 		delete self.template;
-		self.release();
+		self.closeEventEmitter();
 	}
 	
 	// private

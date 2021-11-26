@@ -146,6 +146,8 @@ var hello = window.hello || {};
 		if ( self.el )
 			self.el.parentNode.removeChild( self.el );
 		
+		self.closeEventEmitter();
+		
 		delete self.el;
 		delete self.items;
 		delete self.itemIds;
@@ -863,6 +865,8 @@ var hello = window.hello || {};
 		if ( self.conn )
 			self.conn.close();
 		*/
+		
+		self.closeEventEmitter();
 		
 		delete self.detached;
 		delete self.el;
@@ -2136,6 +2140,9 @@ var hello = window.hello || {};
 			window.clearTimeout( self.envelopeUpdate );
 			delete self.envelopeUpdate;
 		}
+		
+		if ( self.conn )
+			self.conn.close();
 		
 		delete self.conn;
 		delete self.users;
@@ -3561,6 +3568,8 @@ var hello = window.hello || {};
 		
 		if ( self.el && self.el.parentNode )
 			self.el.parentNode.removeChild( self.el );
+		
+		self.closeEventEmitter();
 		
 		delete self.el;
 		delete self.audioBtn;

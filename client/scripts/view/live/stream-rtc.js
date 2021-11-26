@@ -752,6 +752,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.User.prototype.close = function() {
 		const self = this;
+		self.closeEventEmitter();
 	}
 	
 	// Private
@@ -1031,7 +1032,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.proxy )
 			self.proxy.close();
 		
-		self.release(); // clear event emitter
+		self.closeEventEmitter();
 		
 		delete self.local;
 		delete self.proxy;

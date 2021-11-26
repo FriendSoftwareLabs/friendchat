@@ -50,15 +50,16 @@ library.component = library.component || {};
 		self.pingInterval = null; // reference to setInterval id
 		self.pingStep = 1000 * 15; // time between pings
 		self.pingTimeouts = {}; // references to timeouts for sent pings
-		self.pingMaxTime = 1000 * 10; // timeout
-		self.reconnectDelay = 200; // ms
+		self.pingMaxTime = 1000 * 5; // timeout
+		self.reconnectDelay = 100; // milliseconds. NB! this is multiplied by reconnectScale,
+		                           // and reconnectAttempt, so its actually a fair bit higher
 		self.reconnectAttempt = 0; // delay is multiplied with attempts
 		                           //to find how long the next delay is
 		self.reconnectMaxAttempts = 0; // 0 to keep hammering
 		self.reconnectScale = {
 			min : 5,
 			max : 8,
-		}; // random in range, makes sure not all the clients
+		}; // random in range, to make sure not all the clients
 		   // in the world reconnect at the same time
 		
 		self.init();

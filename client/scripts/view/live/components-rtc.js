@@ -467,6 +467,8 @@ library.rtc = library.rtc || {};
 		
 		delete self.analyser;
 		delete self.stream;
+		
+		self.closeEventEmitter();
 	}
 	
 	// Private
@@ -1064,6 +1066,7 @@ library.rtc = library.rtc || {};
 		closeDataChannels();
 		closeRTC();
 		closeSignal();
+		self.closeEventEmitter();
 		
 		delete self.media;
 		delete self.modifySDP;
@@ -1091,7 +1094,6 @@ library.rtc = library.rtc || {};
 			if ( !self.signal )
 				return;
 			
-			self.signal.release();
 			self.signal.close();
 			
 			delete self.signal;
@@ -2872,6 +2874,7 @@ library.rtc = library.rtc || {};
 	ns.Media.prototype.close = function() {
 		const self = this;
 		self.clear();
+		self.closeEventEmitter();
 		
 		delete self.permissions;
 		delete self.preferedDevices;

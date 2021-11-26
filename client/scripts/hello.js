@@ -44,6 +44,7 @@ var hello = null;
 		self.forceShowLogin = false;
 		self.isOnline = false;
 		self.pushies = [];
+		self.pushiesReceivedFor = {};
 		self.preViews = {};
 		self.loaded = false;
 		self.loadedCallbacks = [];
@@ -70,6 +71,18 @@ var hello = null;
 			self.pushies.forEach( e => {
 				self.service.handleNotification( e.extra, e.view );
 			});
+	}
+	
+	ns.Hello.prototype.clearPreView = function( clientId, view ) {
+		const self = this;
+		console.log( 'clearPreView', {
+			cId      : clientId,
+			view     : view,
+			previews : self.preViews,
+		});
+		const preView = self.preViews[ clientId ];
+		delete self.preViews[ clientId ];
+		console.log( 'removed pre view?', preView );
 	}
 	
 	ns.Hello.prototype.getIdConf = function() {
@@ -363,6 +376,7 @@ var hello = null;
 					return;
 				}
 				
+				console.log( 'getUserInfo done', data );
 				resolve( data );
 			}
 			
@@ -468,44 +482,36 @@ var hello = null;
 		}
 	}
 	
-	ns.Hello.prototype.loadCommonFragments = function() {
+	ns.Hello.prototype.loadCommonFragments = async function() {
 		const self = this;
-		return new Promise( resolve => {
-			let commonLoaded = false;
-			let mainLoaded = false;
-			let liveLoaded = false;
-			self.app.loadFile( 'Progdir:html/commonFragments.html', commonOmNoms );
-			self.app.loadFile( 'Progdir:html/mainCommonFragments.html', moinmonOmNoms );
-			self.app.loadFile( 'Progdir:html/liveCommonFragments.html', liveOmNomNoms );
-			
-			function commonOmNoms( fileContent ) {
-				fileContent = Application.i18nReplaceInString( fileContent );
-				self.app.setFragments( fileContent );
-				//hello.commonFragments = fileContent;
-				if ( mainLoaded && liveLoaded )
-					resolve();
-				else 
-					commonLoaded = true;
-			}
-			
-			function moinmonOmNoms( content ) {
-				content = Application.i18nReplaceInString( content );
-				hello.mainCommonFragments = content;
-				if ( commonLoaded && liveLoaded )
-					resolve();
-				else
-					mainLoaded = true;
-			}
-			
-			function liveOmNomNoms( content ) {
-				content = Application.i18nReplaceInString( content );
-				hello.liveCommonFragments = content;
-				if ( commonLoaded && mainLoaded )
-					resolve();
-				else
-					liveLoaded = true;
-			}
-		});
+		const paths = [
+			'Progdir:html/commonFragments.html',
+			'Progdir:html/mainCommonFragments.html',
+			'Progdir:html/liveCommonFragments.html',
+		];
+		
+		const loaders = paths.map( p => self.app.loadFile( p, null, 2 ));
+		let files = null;
+		try{
+			files = await Promise.all( loaders );
+		} catch( ex ) {
+			console.log( 'Hello.loadCommonFragments - failed to load', ex );
+			return false;
+		}
+		
+		console.log( 'loadcommonfrags, files', files );
+		files = files.map( f => localize( f ));
+		
+		self.app.setFragments( files[ 0 ]);
+		hello.mainCommonFragments = files[ 1 ];
+		hello.liveCommonFragments = files[ 2 ];
+		
+		return true;
+		
+		function localize( raw ) {
+			const translated = Application.i18nReplaceInString( raw );
+			return translated;
+		}
 	}
 	
 	ns.Hello.prototype.loadHostConfig = function() {
@@ -1138,45 +1144,79 @@ var hello = null;
 		const self = this;
 	}
 	
-	ns.Hello.prototype.handlePushNotie = function( event, view ) {
+	ns.Hello.prototype.handlePushNotie = function( event ) {
 		const self = this;
-		/*
-		console.log( 'handlePushNotie', {
-			event    : event,
-			view     : view,
-			loaded   : self.loaded,
-			isOnline : self.isOnline,
-			service  : self.service,
-			resumeTO : self.resumeTimeout,
-		});
-		*/
-		
-		if ( !self.loaded ) {
-			self.registerOnLoaded( onLoaded );
-			return;
-			
-			function onLoaded() {
-				self.handlePushNotie( event );
-			}
-		}
-		
 		if ( !event || !event.extra ) {
 			console.trace( 'hello.handlePushNotie - not valid event', event );
 			return false;
 		}
 		
+		if ( !event.clicked ) {
+			console.log( 'hello.handlePushNotie - not clicked, discarding', event );
+			return false;
+		}
+		
 		const extra = friendUP.tool.parse( event.extra );
-		if ( !extra ) {
-			console.trace( 'hello.handlePushNotie - invalid data', {
+		if ( null == extra ) {
+			console.trace( 'hello.handlePushNotie - invalid extra', {
 				event : event,
 				extra : extra,
 			});
 			return;
 		}
 		
-		if ( !event.clicked ) {
-			console.log( 'hello.handlePushNotie - not clicked, discarding', event );
-			return false;
+		const roomId = extra.roomId;
+		if ( null == roomId ) {
+			console.log( 'hello.handlePushNotie - no roomId', {
+				event : event,
+				extra : extra,
+			});
+			return;
+		}
+		
+		const previous = self.pushiesReceivedFor[ roomId ];
+		if ( null != previous ) {
+			console.log( 'hello.handlePushNotie - already received, dropping', {
+				pushie   : event,
+				previous : previous,
+			});
+			return;
+		}
+		
+		console.trace( 'hello.handlePushNotie', event );
+		const received = {
+			extra     : extra,
+			timestamp : Date.now(),
+			timeout   : window.setTimeout( remove, 1000 * 2 ),
+		};
+		self.pushiesReceivedFor[ roomId ] = received;
+		self.processPushNotie( event, extra );
+		
+		function remove() {
+			console.log( 'pushie remove', roomId );
+			delete self.pushiesReceivedFor[ roomId ];
+		}
+	}
+	
+	ns.Hello.prototype.processPushNotie = function( event, extra, view ) {
+		const self = this;
+		console.log( 'processPushNotie', {
+			event    : event,
+			extra    : extra,
+			view     : view,
+			loaded   : self.loaded,
+			isOnline : self.isOnline,
+			service  : self.service,
+			resumeTO : self.resumeTimeout,
+		});
+		
+		if ( !self.loaded ) {
+			self.registerOnLoaded( onLoaded );
+			return;
+			
+			function onLoaded() {
+				self.processPushNotie( event, extra );
+			}
 		}
 		
 		if ( !self.service && !view ) {
@@ -1186,9 +1226,6 @@ var hello = null;
 			if ( null != roomId )
 				view = getPreView( roomId, roomName, !!extra.isPrivate );
 			
-			if ( null != view )
-				self.fakeView = true;
-			
 		}
 		
 		if ( null != self.resumeTimeout || !self.isOnline ) {
@@ -1196,7 +1233,7 @@ var hello = null;
 			return;
 			
 			function onResume() {
-				self.handlePushNotie( event, view );
+				self.processPushNotie( event, extra, view );
 			}
 		}
 		
@@ -1255,8 +1292,15 @@ var hello = null;
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
 		if ( !self.isOnline ) {
-			console.log( 'hello.handleAppResume - already reconnecting HOW DO YOU KNOW THIS?????' );
+			console.log( 'hello.handleAppResume, already reconnecting - HOW DO YOU KNOW THIS?????' );
 			return;
+		}
+		
+		if ( self.conn ) {
+			const wsOk = self.conn.verify();
+			console.log( 'wsOk ??', wsOk );
+			if ( wsOk )
+				return;
 		}
 		
 		if ( null != self.resumeTimeout )
@@ -1367,6 +1411,7 @@ var hello = null;
 	
 	ns.Main.prototype.open = function( openMinimized ) {
 		const self = this;
+		console.log( 'main.open', openMinimized );
 		if ( null == self.openMinimized )
 			self.openMinimized = openMinimized || false;
 		
@@ -1463,6 +1508,7 @@ var hello = null;
 	
 	ns.Main.prototype.init = async function() {
 		const self = this;
+		console.log( 'main init start, fetch things from app storage' );
 		let res = null;
 		try {
 			res = await api.ApplicationStorage.get( 'account-settings' );
@@ -1480,6 +1526,7 @@ var hello = null;
 			self.accSettings = accSettings;
 		
 		self.recentHistory = {};
+		console.log( 'main init done, got app things maybe', accSettings );
 		
 		function settingsCacheBack( cache ) {
 			const accSettings = cache.data;

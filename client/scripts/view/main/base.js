@@ -48,6 +48,12 @@ library.view = library.view || {};
 	
 	// Public
 	
+	ns.BaseContact.prototype.close = function() {
+		const self = this;
+		// self.closeBaseContact();
+		throw new Error( 'BaseContact.close -  implement in contact' );
+	}
+	
 	ns.BaseContact.prototype.show = function() {
 		const self = this;
 		self.el.classList.toggle( 'hidden', false );
@@ -274,13 +280,15 @@ library.view = library.view || {};
 		self.conn.send( msg );
 	}
 	
-	ns.BaseContact.prototype.close = function() {
+	ns.BaseContact.prototype.closeBaseContatct = function() {
 		const self = this;
-		self.conn.close();
+		if ( self.conn )
+			self.conn.close();
+		
 		delete self.conn;
 		delete self.el;
 		
-		var element = document.getElementById( self.clientId );
+		const element = document.getElementById( self.clientId );
 		element.parentNode.removeChild( element );
 		delete self.lastMessage;
 		self.closeEventEmitter();
@@ -320,7 +328,6 @@ library.view = library.view || {};
 		self.contactItemsId = null;
 		self.contacts = {};
 		self.contactIds = [];
-		
 		
 		self.initBaseModule( conf.parentView );
 		
@@ -1087,7 +1094,9 @@ library.view = library.view || {};
 	ns.BaseModule.prototype.closeBaseModule = function() {
 		const self = this;
 		self.closeChildren();
-		self.mod.close();
+		if ( self.mod )
+			self.mod.close();
+		
 		if ( self.serverMessage )
 			self.serverMessage.close();
 		
@@ -1098,6 +1107,7 @@ library.view = library.view || {};
 		element.parentNode.removeChild( element );
 		self.closeEventEmitter();
 		
+		delete self.mod;
 		delete self.menuActions;
 		delete self.serverMessage;
 		delete self.updateMap;

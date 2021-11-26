@@ -98,7 +98,7 @@ library.component = library.component || {};
 			element.parentNode.removeChild( element );
 			
 		self.emit( 'close', true );
-		self.release();
+		self.closeEventEmitter();
 	}
 	
 	// Private

@@ -2071,10 +2071,12 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.close = function() {
 		const self = this;
-		delete self.conn;
 		if( self.menu && self.menu.close )
 			self.menu.close();
 		delete self.menu;
+		
+		self.closeEventEmitter();
+		delete self.conn;
 	}
 	
 })( library.view );
@@ -3671,6 +3673,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.close = function() {
 		const self = this;
+		self.closeEventEmitter();
 		self.removeStream();
 		
 		delete self.ondrag;

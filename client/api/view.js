@@ -54,7 +54,7 @@ var friend = window.friend || {};
 	ns.ViewEvent.prototype = Object.create( library.component.RequestNode.prototype );
 	
 	ns.ViewEvent.prototype.eventInit = function() {
-		var self = this;
+		const self = this;
 		self.eventMap = {
 			'focus'        : focus,
 			'blur'         : blur,
@@ -98,7 +98,7 @@ var friend = window.friend || {};
 			return;
 		}
 		
-		var msg = null;
+		let msg = null;
 		if ( e.data.toUpperCase ) {
 			try {
 				msg = JSON.parse( e.data );
@@ -118,12 +118,17 @@ var friend = window.friend || {};
 		
 		msg.origin = e.origin;
 		
+		if ( self.closed ) {
+			console.trace( 'view.View.receiveEvent - view is close, why event??', msg );
+			return;
+		}
+		
 		if ( 'callback' == msg.type && msg.callback ) {
 			self.handleCallback( msg );
 			return;
 		}
 		
-		const handler = self.eventMap[ msg.command ]; // || self.eventMap[ msg.type ];
+		const handler = self.eventMap[ msg.command ];
 		if ( !handler ) {
 			self.handle( msg ); // eventnode handler
 			return;
@@ -162,18 +167,18 @@ var friend = window.friend || {};
 	
 	/*
 	ns.ViewEvent.prototype.on = function( event, handler ) {
-		var self = this;
+		const self = this;
 		self.listener[ event ] = handler;
 	}
 	
 	ns.ViewEvent.prototype.off = function( event ) {
-		var self = this;
+		const self = this;
 		if ( self.listener[ event ])
 			delete self.listener[ event ];
 	}
 	
 	ns.ViewEvent.prototype.allOff = function() {
-		var self = this;
+		const self = this;
 		self.listener = {};
 	}
 	
@@ -187,6 +192,7 @@ var friend = window.friend || {};
 		const self = this;
 		api.ViewEvent.call( self );
 		
+		self.viewType = 'view.View';
 		self.id = null;
 		self.applicationId = null;
 		self.authId = null;
@@ -494,19 +500,23 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.close = function( msg ) {
-		var self = this;
+		const self = this;
 		self.sendMessage({
 			type : 'close',
 		});
+		
+		console.log( 'view.View.close', self.id );
+		self.closeRequestNode();
+		self.closed = true;
 	}
 	
 	ns.View.prototype.focus = function( msg ) {
-		var self = this;
+		const self = this;
 		//console.log( 'view.focus', msg );
 	}
 	
 	ns.View.prototype.blur = function( msg ) {
-		var self = this;
+		const self = this;
 		//console.log( 'view.blur', msg );
 	}
 	
@@ -526,7 +536,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.triggerReflow = function( el ) {
-		var self = this;
+		const self = this;
 		if ( !el ) {
 			console.log( 'View.triggerReflow - no element' );
 			return;
@@ -541,7 +551,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.buildFileUrl = function( path ) {
-		var self = this;
+		const self = this;
 		var pre = '/system.library/file/read/?path=';
 		var post = '&authid=' + self.authId + '&mode=rb';
 		var url =  pre + path + post;
@@ -552,7 +562,7 @@ var friend = window.friend || {};
 	// empty filepath, filepath.length === 0, will unset, same as removeViewTheme.
 	// filepath will be set
 	ns.View.prototype.setViewTheme = function( filepath ) {
-		var self = this;
+		const self = this;
 		// remove current
 		self.removeViewTheme();
 		// set new filepath if defined,
@@ -573,7 +583,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.removeViewTheme = function() {
-		var self = this;
+		const self = this;
 		var element = document.getElementById( 'css-app-theme' );
 		if ( !element )
 			return;
@@ -582,7 +592,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.checkAllLoaded = function() {
-		var self = this;
+		const self = this;
 		if ( !self.scriptsLoaded || !self.cssLoaded )
 			return;
 		
@@ -793,7 +803,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.addAPIScripts = function() {
-		var self = this;
+		const self = this;
 		// scripts
 		var scripts = [
 			'io/cajax.js', // dependency for cssparser.js
@@ -819,7 +829,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.setBaseCss = function( callback ) {
-		var self = this;
+		const self = this;
 		if ( self.theme )
 			self.themePath = '/themes/' + self.theme;
 		else
@@ -840,7 +850,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.loadCss = function( idFileMap, callback ) {
-		var self = this;
+		const self = this;
 		var filesLeft = 0;
 		load( idFileMap );
 		
@@ -1107,7 +1117,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.activate = function() {
-		var self = this;
+		const self = this;
 		var msg = {
 			method : 'activate',
 		};
@@ -1115,7 +1125,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.activated = function() {
-		var self = this;
+		const self = this;
 		if ( self.isActive )
 			return;
 		
@@ -1130,7 +1140,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.deactivated = function() {
-		var self = this;
+		const self = this;
 		if ( !self.isActive )
 			return;
 		
@@ -1148,7 +1158,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.handleViewTheme = function( msg ) {
-		var self = this;
+		const self = this;
 		var data = msg.data;
 		if ( data.type === 'set' )
 			self.setViewTheme( data.data );
@@ -1157,7 +1167,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.handleSystemTheme = function( data ) {
-		var self = this;
+		const self = this;
 		self.setIsLoading( true );
 		self.theme = data.theme;
 		self.setBaseCss( setBack );

@@ -280,6 +280,8 @@ library.component = library.component || {};
 		
 		delete self.inner;
 		delete self.el;
+		
+		self.closeEventEmitter();
 	}
 	
 	ns.StatusIndicator.prototype.set = function( stateKey ) {
@@ -1184,11 +1186,11 @@ in a generic link expand wrapping with a bit of UI
 		
 		async function expand( a ) {
 			const url = a.href.toString();
-			let mimeConf = null;
+			let mime = null;
 			try {
-				mimeConf = await self.getMIME( url );
+				mime = await self.getMIME( url );
 			} catch( ex ) {
-				console.log( 'LinkExpand.mime.failed', err );
+				console.log( 'LinkExpand.mime.failed', ex );
 				return;
 			}
 			
@@ -2379,7 +2381,7 @@ Friend disk paths, so do those things with them i guess
 	ns.Search.prototype.close = function() {
 		const self = this;
 		if ( self.conn )
-			self.conn.release( 'search-result' );
+			self.conn.close();
 		
 		delete self.conn;
 		delete self.input;
@@ -2912,6 +2914,16 @@ itemList - optional, list of DOM elements to show in the list
 	ns.FilterList.prototype.focus = function() {
 		const self = this;
 		self.input.focus();
+	}
+	
+	ns.FilterList.prototype.close = function() {
+		const self = this;
+		delete self.templater;
+		delete self.inputCId;
+		delete self.listCId;
+		delete self.filterProps;
+		
+		self.closeEventEmitter();
 	}
 	
 	// Private

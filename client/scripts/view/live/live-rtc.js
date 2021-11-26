@@ -1435,6 +1435,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.closePeer( pId );
 		});
 		
+		if ( self.proxy )
+			self.proxy.close();
+		delete self.proxy;
+		
 		delete self.conf;
 		delete self.conn;
 		delete self.ui;
@@ -1582,8 +1586,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.close = function() {
-		var self = this;
-		self.release(); // component.EventEmitter, component/common.js
+		const self = this;
+		self.closeEventEmitter(); // component.EventEmitter, component/common.js
 		if ( self.stream )
 			self.clearStream();
 		
@@ -1599,6 +1603,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.media )
 			self.media.close();
 		
+		if ( self.proxy )
+			self.proxy.close();
+		
 		delete self.currentAudioOut;
 		delete self.localSettings;
 		delete self.speaking;
@@ -1611,6 +1618,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		delete self.menu;
 		delete self.doneBack;
 		delete self.conn;
+		delete self.proxy;
 	}
 	
 	// Private
@@ -4084,8 +4092,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.selfie.off( self.streamHandlerId );
 		self.releaseRemoteMedia();
-		self.release(); // component.EventEmitter
-		//self.selfie.off( self.qualityHandlerId );
+		self.closeEventEmitter();
 		delete self.selfie;
 		
 		delete self.onremove;

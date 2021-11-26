@@ -1613,6 +1613,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.filterPrepareList = function( event ) {
 		const self = this;
+		console.log( 'filterPrepareList', [ event, self.currentFilter ]);
 		const select = event.select;
 		if ( select != self.currentFilter ) {
 			console.log( 'filterPrepareList - filter missmatch, dropping', {
@@ -1621,6 +1622,8 @@ library.view = library.view || {};
 			});
 			return;
 		}
+		
+		self.filterCleanupCurrent();
 		
 		if ( 'relations' == select ) {
 			self.contactIds.forEach( cId => {
@@ -1642,6 +1645,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.filterSetOnline = function( list ) {
 		const self = this;
+		console.log( 'filterSetOnline', list );
 		list.forEach(( cId, index ) => {
 			self.filterSetTemp( cId, true, null );
 		});
@@ -2179,6 +2183,14 @@ library.view = library.view || {};
 	
 	// Public
 	
+	ns.PresenceRoom.prototype.close = function() {
+		const self = this;
+		if ( null != self.live )
+			self.live.close();
+		
+		self.closeBaseContatct();
+	}
+	
 	ns.PresenceRoom.prototype.showLive = function() {
 		const self = this;
 		const show = {
@@ -2206,8 +2218,8 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.buildElement = function() {
 		const self = this;
-		var tmplId = 'presence-room-tmpl';
-		var conf = {
+		const tmplId = 'presence-room-tmpl';
+		const conf = {
 			clientId     : self.clientId,
 			name         : self.identity.name,
 			avatar       : self.identity.avatar || '',
@@ -2215,7 +2227,7 @@ library.view = library.view || {};
 			liveStatusId : self.liveStatus,
 			msgWaitingId : self.msgWaiting,
 		};
-		var container = document.getElementById( self.containerId );
+		const container = document.getElementById( self.containerId );
 		self.el = hello.template.getElement( tmplId, conf );
 		container.appendChild( self.el );
 	}
@@ -2671,6 +2683,17 @@ library.view = library.view || {};
 	
 	// Public
 	
+	ns.PresenceContact.prototype.close = function() {
+		const self = this;
+		self.conn.release( 'live-state' );
+		if ( self.live )
+			self.live.close();
+		
+		delete self.live;
+		
+		self.closeBaseContatct();
+	}
+	
 	ns.PresenceContact.prototype.showLive = function() {
 		const self = this;
 		const show = {
@@ -2909,7 +2932,7 @@ library.view = library.view || {};
 		
 		library.view.BaseContact.call( self, conf, conn );
 		
-		self.init(  );
+		self.init();
 	}
 	
 	ns.PresenceTemp.prototype = Object.create( library.view.BaseContact.prototype );
@@ -2918,6 +2941,11 @@ library.view = library.view || {};
 		'greenbear',
 		'redbear',
 	];
+	
+	ns.PresenceTemp.prototype.close = function() {
+		const self = this;
+		self.closeBaseContatct();
+	}
 	
 	ns.PresenceTemp.prototype.updateIdentity = function( id ) {
 		const self = this;

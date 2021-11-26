@@ -27,9 +27,6 @@ library.contact = library.contact || {};
 // Contact basemodel
 (function( ns, undefined ) {
 	ns.Contact = function( conf ) {
-		if( !( this instanceof ns.Contact ))
-			return new ns.Contact( conf );
-		
 		const self = this;
 		library.component.EventEmitter.call( self );
 		self.moduleId = conf.moduleId;
@@ -669,7 +666,7 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.contactClose = function() {
 		const self = this;
-		self.release();
+		self.closeEventEmitter();
 		if ( self.conn )
 			self.conn.close();
 		
@@ -818,6 +815,7 @@ library.contact = library.contact || {};
 		function liveName( e ) { self.handleLiveName( e ); }
 		function viewSwitch( e ) { self.handleViewSwitch( e ); }
 		function onClose( e ) {
+			console.log( 'live onclose' );
 			self.closeLive();
 			const leave = {
 				type : 'leave',
@@ -826,6 +824,7 @@ library.contact = library.contact || {};
 		}
 		
 		function liveToServer( type, data ) {
+			console.log( 'liveToServer', [ type, data ]);
 			const event = {
 				type : type,
 				data : data,
@@ -1170,6 +1169,13 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.openChat = function( notification, preView ) {
 		const self = this;
+		console.log( 'openChat', {
+			notie    : notification,
+			preview  : preView,
+			inited   : self.initialized,
+			openPend : self.openChatPending,
+			chatView : self.chatView,
+		});
 		self.hasNotification = !!notification;
 		preView = self.checkOpenPending( self.initialized, preView, notification );
 		
@@ -1182,26 +1188,27 @@ library.contact = library.contact || {};
 			return;
 		}
 		
+		const s = self;
 		const initData = {
-			clientId    : self.clientId,
-			room        : self.identity,
-			roomName    : self.identity.name,
-			persistent  : self.persistent,
-			userList    : self.userIds,
-			adminList   : self.adminList,
-			recentList  : self.recentList,
-			onlineList  : self.onlineList,
-			guestList   : self.guestList,
-			peerList    : self.peers,
-			ownerId     : self.ownerId,
-			userId      : self.userId,
-			isPrivate   : self.isPrivate,
-			isView      : self.isView,
-			config      : self.workConfig,
-			guestAvatar : self.guestAvatar,
-			workgroups  : self.workgroups,
-			mentionList : self.mentionList,
-			atList      : self.atList,
+			clientId    : s.clientId,
+			room        : s.identity,
+			roomName    : s.identity.name,
+			persistent  : s.persistent,
+			userList    : s.userIds,
+			adminList   : s.adminList,
+			recentList  : s.recentList,
+			onlineList  : s.onlineList,
+			guestList   : s.guestList,
+			peerList    : s.peers,
+			ownerId     : s.ownerId,
+			userId      : s.userId,
+			isPrivate   : s.isPrivate,
+			isView      : s.isView,
+			config      : s.workConfig,
+			guestAvatar : s.guestAvatar,
+			workgroups  : s.workgroups,
+			mentionList : s.mentionList,
+			atList      : s.atList,
 		};
 		
 		if ( preView ) {
@@ -1215,10 +1222,7 @@ library.contact = library.contact || {};
 			);
 		}
 		
-		const reset = {
-			type : 'counter-reset',
-		};
-		self.conn.send( reset );
+		self.sendCounterReset();
 		
 		self.chatView.on( 'chat', e => self.sendChatEvent( e ));
 		self.chatView.on( 'live', goLive );
@@ -1226,6 +1230,7 @@ library.contact = library.contact || {};
 		self.chatView.on( 'invite-show', e => self.showInviter( e ));
 		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
 		self.chatView.on( 'minimized', e => self.handleMinimized( e ));
+		self.chatView.on( 'focused', e => self.handleFocused( e ));
 		self.chatView.on( 'close', e => self.closeChat());
 		self.chatView.on( 'get-identity', e => self.handleGetId( e ));
 		
@@ -1257,16 +1262,23 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleMinimized = function( isMinz ) {
 		const self = this;
+		console.log( 'handleMinimized', isMinz );
 		if ( self.isMinimized === isMinz )
 			return;
 		
 		self.isMinimized = isMinz;
 		if ( !isMinz ) {
-			self.resetCounters();
+			self.sendCounterReset();
 			//self.messageWaiting( false );
 			//self.mentionWaiting( false );
 		}
 		
+	}
+	
+	ns.PresenceRoom.prototype.handleFocused = function() {
+		const self = this;
+		console.log( 'proom.handleFocused' );
+		self.sendCounterReset();
 	}
 	
 	ns.PresenceRoom.prototype.closeChat = function() {
@@ -1362,6 +1374,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = async function( state ) {
 		const self = this;
+		console.log( 'PresenceRoom.handleInitialize', state );
 		self.ownerId = state.ownerId;
 		self.workConfig = state.workConfig || null;
 		self.workgroups = state.workgroups;
@@ -1376,7 +1389,6 @@ library.contact = library.contact || {};
 		self.guestAvatar = state.guestAvatar;
 		if ( self.identity.name != state.name )
 			self.updateRoomIdentity( state );
-		//self.identity.name = state.name;
 		
 		self.setUsers( state.users );
 		self.setSettings( state.settings );
@@ -1509,6 +1521,7 @@ library.contact = library.contact || {};
 				sessionId : self.live.id,
 			},
 		};
+		console.log( 'restoreLive', restore );
 		self.send( restore );
 	}
 	
@@ -2203,6 +2216,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
+		console.log( 'handleInvite', event );
 		if ( 'revoke' === event.type )
 			send( event );
 		else
@@ -2338,6 +2352,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLive = async function( event ) {
 		const self = this;
+		console.log( 'PRoom.handleLive', event );
 		const type = event.type;
 		if ( 'open' === type ) {
 			self.handleLiveOpen( event.data );
@@ -2499,6 +2514,21 @@ library.contact = library.contact || {};
 		});
 	}
 	
+	/* TODO
+	
+	make this less spammy by having a bool for any
+	unread messages and mentions
+	
+	*/
+	ns.PresenceRoom.prototype.sendCounterReset = function() {
+		const self = this;
+		console.log( 'send counter reset' );
+		const reset = {
+			type : 'counter-reset',
+		};
+		self.conn.send( reset );
+	}
+	
 	ns.PresenceRoom.prototype.handleCounterReset = function( e ) {
 		const self = this;
 		self.resetCounters();
@@ -2506,6 +2536,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.resetCounters = function() {
 		const self = this;
+		console.log( 'resetCounters', self.identity );
 		self.messageWaiting( false );
 		self.mentionWaiting( false );
 	}
@@ -2651,6 +2682,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.buildInvites = function( event ) {
 		const self = this;
+		console.log( 'buildInvites', event );
 		return new Promise(( resolve, reject ) => {
 			if ( 'state' === event.type )
 				parseState( event.data )
@@ -2729,6 +2761,7 @@ library.contact = library.contact || {};
 		}
 		
 		function parseState( state, callback ) {
+			state.privateTokens = [];
 			return new Promise(( resolve, reject ) => {
 				Promise.all( state.privateTokens.map( buildPriv ))
 					.then( privsDone )
@@ -2845,17 +2878,26 @@ library.contact = library.contact || {};
 		};
 	}
 	
-	ns.PresenceRoom.prototype.sendChatEvent = function( event ) {
+	ns.PresenceRoom.prototype.sendChatEvent = function( e ) {
 		const self = this;
+		if ( 'log' == e.type )
+			console.log( 'sendChatEvent - e', e );
+		
 		const chat = {
 			type : 'chat',
-			data : event,
+			data : e,
 		};
 		self.send( chat );
+		
+		if ( 'msg' == e.type
+			|| 'work-msg' == e.type
+		)
+			self.sendCounterReset();
 	}
 	
 	ns.PresenceRoom.prototype.inviteToServer = function( event ) {
 		const self = this;
+		console.log( 'inviteToServer', event );
 		const invite = {
 			type : 'invite',
 			data : event,
@@ -2936,6 +2978,10 @@ library.contact = library.contact || {};
 		self.liveToView( userJoin );
 		
 		const isClient = checkClientLive( liveId );
+		console.log( 'handleLiveOpen - isClient', {
+			liveId   : liveId,
+			isClient : isClient,
+		});
 		const state = isClient ? 'client' : 'user';
 		const opts = {
 			'live-state' : state,
@@ -3313,8 +3359,9 @@ library.contact = library.contact || {};
 		self.conn.on( 'open', open );
 		self.conn.on( 'initialize', init );
 		self.conn.on( 'identity', identity );
-		self.conn.on( 'live', live );
-		self.conn.on( 'chat', chat );
+		self.conn.on( 'live', e => self.handleLive( e ));
+		self.conn.on( 'chat', e => self.handleChat( e ));
+		self.conn.on( 'counter-reset', e => self.resetCounters( e ));
 		
 		self.settings = new library.component.RequestNode( 'settings', self.conn );
 		self.settings.on( 'update', e => self.handleSettingUpdate( e ));
@@ -3808,7 +3855,6 @@ library.contact = library.contact || {};
 		const self = this;
 		self.openChatPending = false;
 		self.hasNotification = !!notification;
-		self.resetCounters();
 		
 		if ( self.chatView ) {
 			self.chatView.show();
@@ -3839,10 +3885,13 @@ library.contact = library.contact || {};
 			self.chatView.updateState( initData );
 		} else
 			self.chatView = new library.view.PresenceChat( initData );
+			
+		self.sendCounterReset();
 		
 		self.chatView.on( 'close', onClose );
-		self.chatView.on( 'chat', chat );
+		self.chatView.on( 'chat', e => self.sendChatEvent( e ));
 		self.chatView.on( 'live', goLive );
+		self.chatView.on( 'focused', e => self.handleFocused( e ));
 		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
 		self.chatView.on( 'get-identity', e => self.handleGetId( e ));
 		
@@ -3852,7 +3901,6 @@ library.contact = library.contact || {};
 			self.closeChat();
 		}
 		
-		function chat( e ) { self.sendChatEvent( e ); }
 		function goLive( e ) {
 			if ( 'video' === e )
 				self.startVideo();

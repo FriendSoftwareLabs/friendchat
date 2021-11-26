@@ -502,6 +502,7 @@ window.library.component = window.library.component || {};
 		const self = this;
 		const roomId = extra.roomId;
 		const msgId = extra.msgId;
+		console.log( 'PresenceService.handleNotification', [ extra, view ]);
 		if ( !roomId ) {
 			console.log( 'PresenceService.handleNotification - missing room id', extra );
 			return;
@@ -529,7 +530,7 @@ window.library.component = window.library.component || {};
 	ns.PresenceService.prototype.close = function() {
 		const self = this;
 		delete self.service;
-		self.release();
+		self.closeEventEmitter();
 	}
 	
 	// Private

@@ -718,14 +718,14 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.handleRemove = function( moduleId ) {
 		const self = this;
-		var module = self.active[ moduleId ];
-		if ( !module ) {
+		const mod = self.active[ moduleId ];
+		if ( !mod ) {
 			console.log( 'invalid module id ');
 			return;
 		}
 		
 		hello.items.removeSource( moduleId );
-		module.close();
+		mod.close();
 		delete self.active[ moduleId ];
 		self.activeIds = Object.keys( self.active );
 		
@@ -1652,6 +1652,7 @@ library.rtc = library.rtc || {};
 		self.altHost = altHost;
 		self.onstate = onState;
 		self.readyCallback = null;
+		self.lastMsgTime = null;
 		
 		self.host = null;
 		self.state = null;
@@ -1662,6 +1663,64 @@ library.rtc = library.rtc || {};
 	}
 	
 	// Public
+	
+	/* verify
+	
+	checks ws health
+	
+	returns true/false for healthy / not healthy
+	
+	*/
+	ns.Connection.prototype.verify = function() {
+		const self = this;
+		const now = window.Date.now();
+		const threeSecondsAgo = now - ( 1000 * 3 );
+		console.log( 'verify', {
+			now    : hmsms( now ),
+			tsago  : hmsms( threeSecondsAgo ),
+			lstmsg : hmsms( self.lastMsgTime ),
+			diff   : threeSecondsAgo - self.lastMsgTime,
+		});
+		
+		if ( null == self.lastMsgTime )
+			return false;
+		
+		// more than three seconds since last msg
+		if (  self.lastMsgTime < threeSecondsAgo )
+			return false;
+		
+		return true;
+		
+		function hmsms( ts ) {
+			const d = new Date( ts );
+			let p = [ 
+				pad( d.getHours()),
+				':',
+				pad( d.getMinutes()),
+				':',
+				pad( d.getSeconds()),
+				'.',
+				padMS( d.getMilliseconds())
+			];
+			return p.join('');
+			
+			function pad( num ) {
+				if ( num < 10 )
+					return '0' + num;
+				
+				return '' + num;
+			}
+			
+			function padMS( num ) {
+				if ( num < 10 )
+					return '00' + num;
+				if ( num < 100 )
+					return '0' + num;
+				
+				return '' + num;
+			}
+		}
+	}
 	
 	ns.Connection.prototype.on = function( type, callback ) {
 		const self = this;
@@ -1826,6 +1885,10 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
+		console.log( 'socketSession', sid );
+		if ( null != sid )
+			self.LastMsgTime = window.Date.now();
+		
 		self.onstate({
 			type : 'session',
 			data : sid,
@@ -1893,6 +1956,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.clear = function() {
 		const self = this;
+		self.lastMsgTime = null;
 		if ( !self.socket )
 			return;
 		
@@ -1902,12 +1966,13 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.message = function( event ) {
 		const self = this;
-		var handler = self.subscriber[ event.type ];
+		const handler = self.subscriber[ event.type ];
 		if ( !handler ) {
 			console.log( 'hello.conn - no handler for event', event );
 			return;
 		}
 		
+		self.lastMsgTime = window.Date.now();
 		handler( event.data );
 	}
 	
@@ -1918,9 +1983,6 @@ library.rtc = library.rtc || {};
 
 (function( ns, undefined ) {
 	ns.Message = function( conf ) {
-		if ( !( this instanceof ns.Message ))
-			return new ns.Message( conf );
-		
 		const self = this;
 		self.id = conf.id;
 		self.handler = conf.handler;
@@ -2640,11 +2702,11 @@ Searchable collection(s) of users, rooms and other odds and ends
 	ns.Items.prototype.stopListen = function( listenId ) {
 		const self = this;
 		const conn = self.listeners[ listenId ];
-		if ( !conn )
+		delete self.listeners[ listenId ];
+		if ( null == conn )
 			return;
 		
-		delete self.listeners[ listenId ];
-		conn.release( 'search' );
+		conn.close();
 	}
 	
 	ns.Items.prototype.addSource = function( id, source ) {
@@ -3901,6 +3963,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 			self.activity.release( self.id );
 		
 		delete self.activity;
+		self.closeEventEmitter();
 	}
 	
 	// Private

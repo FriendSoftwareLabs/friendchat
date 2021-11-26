@@ -559,6 +559,10 @@ var hello = window.hello || {};
 		if ( self.itemOrder )
 			self.itemOrder.close();
 		
+		if ( null != self.conn )
+			self.conn.close();
+		
+		delete self.conn;
 		//self.releaseModules();
 		
 		delete self.template;
