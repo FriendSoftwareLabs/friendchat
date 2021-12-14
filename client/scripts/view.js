@@ -73,6 +73,14 @@ library.view = library.view || {};
 		self.view.activate();
 	}
 	
+	ns.PresenceChat.prototype.setFlag = function( flag, value ) {
+		const self = this;
+		if ( null == self.view )
+			return;
+		
+		self.view.setFlag( flag, value );
+	}
+	
 	ns.PresenceChat.prototype.checkMinimized = function() {
 		const self = this;
 		if ( !self.view )
@@ -145,9 +153,10 @@ library.view = library.view || {};
 			viewWidth = 500;
 		
 		const windowConf = {
-			title  : self.getTitle(),
-			width  : viewWidth,
-			height : 450,
+			title     : self.getTitle(),
+			width     : viewWidth,
+			height    : 450,
+			minimized : false,
 		};
 		
 		let initData = null;
@@ -164,6 +173,15 @@ library.view = library.view || {};
 			viewSink,
 			closed
 		);
+		
+		// because workspace is a bit of a dumpsterfire
+		window.setTimeout( unmini, 100 );
+		window.setTimeout( unmini, 200 );
+		window.setTimeout( unmini, 400 );
+		window.setTimeout( unmini, 800 );
+		function unmini() {
+			self.setFlag( 'minimized', false );
+		}
 		
 		library.component.RequestNode.call( self,
 			null,

@@ -95,6 +95,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.setFlag = function( flag, value ) {
 		const self = this;
+		//console.log( 'app.View.setFlag', [ flag, value ]);
 		const msg = {
 			method : 'setFlag',
 			data   : {
