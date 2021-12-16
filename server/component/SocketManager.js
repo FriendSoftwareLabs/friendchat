@@ -118,6 +118,7 @@ ns.SocketManager.prototype.bindPool = function() {
 	
 	function poolConnection( conn ) {
 		const sid = self.makeSocketId();
+		log( 'poolConnection', sid );
 		const conf = {
 			id   : sid,
 			conn : conn,
@@ -400,6 +401,11 @@ ns.SocketManager.prototype.replaceSession = function( session, socket ) {
 ns.SocketManager.prototype.setSession = function( socket, parentId ) {
 	const self = this;
 	const sessionId = self.makeSessionId();
+	log( 'setSession', {
+		socket    : !!socket,
+		sessionId : sessionId,
+		parentId  : parentId,
+	});
 	socket.setSession( sessionId, parentId );
 	self.sessions[ sessionId ] = socket;
 }

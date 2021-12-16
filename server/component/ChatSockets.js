@@ -231,6 +231,7 @@ ns.ChatSockets.prototype.removeAccount = async function( msg, socketId ) {
 ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	const self = this;
 	const args = msg.data;
+	log( 'accountLogin', [ msg, socketId ]);
 	args.password = null; // pasword deprecated
 	if ( !args.name ) {
 		msg.response = {

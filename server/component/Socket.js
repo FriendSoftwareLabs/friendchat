@@ -64,6 +64,10 @@ ns.Socket.prototype.send = function( msg ) {
 
 ns.Socket.prototype.setSession = function( sessionId, parentId ) {
 	const self = this;
+	log( 'setSession', {
+		sid : sessionId,
+		pid : parentId,
+	});
 	if ( sessionId ) {
 		self.sessionId = sessionId;
 		self.parentId = parentId;
@@ -73,6 +77,7 @@ ns.Socket.prototype.setSession = function( sessionId, parentId ) {
 		type : 'session',
 		data : self.sessionId,
 	};
+	
 	return self.sendOnSocket( sessionEvent );
 }
 
