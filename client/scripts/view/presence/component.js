@@ -1777,9 +1777,7 @@ var hello = window.hello || {};
 		containerId,
 		users,
 		userId,
-		contactId,
 		roomId,
-		workgroups,
 		input,
 		parser,
 		linkExpand,
@@ -1789,10 +1787,7 @@ var hello = window.hello || {};
 		self.containerId = containerId;
 		self.users = users;
 		self.userId = userId;
-		self.contactId = contactId;
 		self.roomId = roomId;
-		self.workgroupId = null;
-		self.supergroupId = null;
 		self.input = input;
 		self.parser = parser || null;
 		self.linkEx = linkExpand || null;
@@ -1801,10 +1796,11 @@ var hello = window.hello || {};
 		self.conn = null
 		self.envelopes = {};
 		self.envelopeOrder = [];
+		self.msgOverlays = {};
 		self.supressConfirm = false;
 		self.userLastMsg = null;
 		
-		self.init( parentConn, workgroups );
+		self.init( parentConn );
 	}
 	
 	// Public
@@ -1813,10 +1809,6 @@ var hello = window.hello || {};
 		const self = this;
 		const handler = self.eventMap[ event.type ];
 		if ( !handler ) {
-			console.log( 'MsgBuilder.handle - no handler for event', {
-				e : event,
-				h : self.eventMap,
-			});
 			return null;
 		}
 		
@@ -1864,42 +1856,41 @@ var hello = window.hello || {};
 		self.editMessage( last.msgId );
 	}
 	
-	ns.MsgBuilder.prototype.editMessage = function( itemId ) {
+	ns.MsgBuilder.prototype.editMessage = async function( itemId ) {
 		const self = this;
 		const el = document.getElementById( itemId );
 		if ( el.isEditing )
 			return;
 		
-		const getMsg = {
-			msgId : itemId,
-		};
 		const req = {
 			type : 'edit-get',
-			data : getMsg,
+			data : {
+				msgId : itemId,
+			},
 		};
-		self.conn.request( req )
-			.then( msgBack )
-			.catch( reqErr );
 		
-		function msgBack( event ) {
-			if ( !event ) {
-				editError( 'ERR_EDIT_NO_EVENT' );
-				return;
-			}
-			
-			self.doEdit( event );
-		}
-		
-		function reqErr( err ) {
+		let msg = null;
+		try {
+			msg = await self.conn.request( req );
+		} catch( ex ) {
 			console.log( 'reqErr', err );
-			editError( 'ERR_EDIT_REQUEST_FAILED' );
+			editError( 'ERR_EDIT_REQUEST_FAILED', itemId );
 		}
 		
-		function editError( err ) {
-			console.log( 'editError', err );
+		if ( null == msg ) {
+			editError( 'ERR_EDIT_NO_EVENT', itemId );
+			return;
+		}
+		
+		self.doEdit( msg );
+		
+		function editError( err, item ) {
+			console.log( 'editError', {
+				err : err,
+				msg : item,
+			});
 		}
 	}
-	
 	
 	ns.MsgBuilder.prototype.pauseSmoothScrolling = function() {
 		const self = this;
@@ -1924,7 +1915,7 @@ var hello = window.hello || {};
 		const mId = msg.msgId;
 		const el = document.getElementById( mId );
 		if ( !el ) {
-			console.log( 'MsgBuilder.doEdit - no element found for', event );
+			console.trace( 'MsgBuilder.doEdit - no element found for', event );
 			return;
 		}
 		
@@ -1969,6 +1960,7 @@ var hello = window.hello || {};
 		cancelBtn.addEventListener( 'click', cancelClick, false );
 		
 		function onSubmit( newMsg ) {
+			//newMsg = edit.getValue();
 			handleInput( newMsg );
 		}
 		
@@ -1977,17 +1969,23 @@ var hello = window.hello || {};
 			handleInput( newMsg );
 		}
 		
-		function handleInput( msg ) {
+		async function handleInput( msg ) {
 			let reason = null;
 			if ( reasonInput ) {
 				reason = getReason();
 				if ( reasonRequired && !reason ) {
 					setReasonRequired();
+					edit.setValue( msg );
 					return;
 				}
 			}
 			
-			saveEdit( msg, reason );
+			const err = await saveEdit( msg, reason );
+			if ( err ) {
+				edit.setValue( msg );
+				return;
+			}
+			
 			close();
 		}
 		
@@ -2031,7 +2029,7 @@ var hello = window.hello || {};
 			close();
 		}
 		
-		function saveEdit( newMsg, reason ) {
+		async function saveEdit( newMsg, reason ) {
 			const edit = {
 				msgId   : mId,
 				message : newMsg,
@@ -2042,17 +2040,16 @@ var hello = window.hello || {};
 				type : 'edit-save',
 				data : edit,
 			};
-			self.conn.request( req )
-				.then( editBack )
-				.catch( editErr );
-			
-			function editBack( res ) {
-				//console.log( 'editBack', res );
+			let res = null;
+			try {
+				res = await self.conn.request( req );
+			} catch( ex ) {
+				console.log( 'editErr', ex );
+				edit.setValue( newMsg );
+				return ex;
 			}
 			
-			function editErr( err ) {
-				console.log( 'editErr', err );
-			}
+			return null;
 		}
 		
 		function close() {
@@ -2096,6 +2093,84 @@ var hello = window.hello || {};
 		}
 		
 		self.input.setValue( str );
+	}
+	
+	ns.MsgBuilder.prototype.deleteMessage = async function( msgId ) {
+		const self = this;
+		self.setMsgOverlay( msgId, true );
+		let confirm = null
+		try {
+			confirm = await window.View.confirmDialog( 
+				window.View.i18n( 'i18n_confirm_delete' ),
+				window.View.i18n( 'i18n_the_message_will_be_deleted' ),
+				window.View.i18n( 'i18n_delete' ),
+				window.View.i18n( 'i18n_cancel' )
+			);
+		} catch( ex ) {
+			console.log( 'deleteMessage - confirm ex', ex );
+		}
+		
+		if ( null == confirm || false === confirm ) {
+			self.setMsgOverlay( msgId, false );
+			return;
+		}
+		
+		const del = {
+			type : 'delete',
+			data : {
+				msgId : msgId,
+			}
+		};
+		let res = null;
+		try {
+			res = await self.conn.request( del );
+		} catch( ex ) {
+			console.log( 'deleteMessage ex', ex );
+			self.setMsgOverlay( msgId, false );
+			
+			return;
+		}
+		
+		if ( res && res.type == 'error' ) {
+			console.log( 'view.Presence.MsgBuilder.deleteMessage - error', res );
+			self.setMsgOverlay( msgId, false );
+		} else {
+			//console.log( 'deleteMessage - deleted probaby', [ msgId, res ]);
+		}
+		
+	}
+	
+	ns.MsgBuilder.prototype.setMsgOverlay = function( msgId, show ) {
+		const self = this;
+		if ( true == show )
+			set( msgId );
+		else
+			unset( msgId );
+		
+		function set( mId ) {
+			const mEl = document.getElementById( msgId );
+			let oId = self.msgOverlays[ msgId ];
+			if ( null != oId )
+				return;
+			
+			oId = window.friendUP.tool.uid( 'mo' );
+			const oConf = {
+				id : oId,
+			};
+			const oEl = hello.template.getElement( 'msg-overlay', oConf );
+			self.msgOverlays[ msgId ] = oId;
+			mEl.appendChild( oEl );
+		}
+		
+		function unset( msgId ) {
+			const oId = self.msgOverlays[ msgId ];
+			const overlay = document.getElementById( oId );
+			delete self.msgOverlays[ msgId ];
+			if ( null == overlay )
+				return;
+			
+			overlay.parentNode.removeChild( overlay );
+		}
 	}
 	
 	ns.MsgBuilder.prototype.getFirstMsgId = function() {
@@ -2168,12 +2243,6 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.init = function( parentConn, workgroups ) {
 		const self = this;
 		self.settings = window.View.getSettings();
-		
-		if ( workgroups) {
-			self.workgroupId = workgroups.workId || '';
-			self.supergroupId = workgroups.superId || '';
-		}
-		
 		self.conn = new library.component.RequestNode(
 			'chat',
 			parentConn,
@@ -2205,6 +2274,7 @@ var hello = window.hello || {};
 			'log'          : log,
 			'update'       : e => self.update( e ),
 			'edit'         : e => self.update( e, true ),
+			'remove'       : e => self.handleRemove( e ),
 			'confirm'      : e => self.handleConfirm( e ),
 		};
 		
@@ -2493,8 +2563,6 @@ var hello = window.hello || {};
 		if ( self.exists( event.msgId ))
 			return;
 		
-		//console.log( 'handleMsg', event );
-		
 		// makes sure identity is available sync
 		const fromId = event.fromId;
 		const id = await self.users.getIdentity( fromId );
@@ -2506,8 +2574,9 @@ var hello = window.hello || {};
 		
 		const time = self.parseTime( event.time );
 		const envelope = await self.getEnvelope( time.envelope );
+		const isLastSpeaker = self.checkIsLastSpeaker( event, envelope );
 		const conf = {
-			inGroup : self.isLastSpeaker( event, envelope ),
+			inGroup : isLastSpeaker,
 			event   : event,
 		};
 		
@@ -2575,6 +2644,7 @@ var hello = window.hello || {};
 		let lastSpeakerId = null;
 		let lastIndex = ( items.length - 1 );
 		let prevEnvelope = null;
+		let prevEvent = null;
 		let firstMsg = null;
 		let index = 0;
 		for ( const item of items ) {
@@ -2616,6 +2686,7 @@ var hello = window.hello || {};
 				( null != event.fromId )
 				&& ( lastSpeakerId === event.fromId )
 				&& ( event.type === 'msg' )
+				&& (( prevEvent != null ) && ( prevEvent.data.status != 'delete' ))
 			);
 			
 			let conf = {
@@ -2641,6 +2712,7 @@ var hello = window.hello || {};
 				lastSpeakerId = null;
 			
 			prevEnvelope = envelope;
+			prevEvent = item;
 		}
 		//return el;
 	}
@@ -2681,15 +2753,22 @@ var hello = window.hello || {};
 		return true;
 	}
 	
-	ns.MsgBuilder.prototype.isLastSpeaker = function( event, envelope ) {
+	ns.MsgBuilder.prototype.checkIsLastSpeaker = function( event, envelope ) {
 		const self = this;
 		if ( 'msg' !== event.type )
 			return false;
 		
-		if ( null == envelope.lastSpeakerId )
+		const lm = envelope.lastMsg;
+		if ( null == lm )
 			return false;
 		
-		return event.fromId === envelope.lastSpeakerId;
+		if ( event.fromId != lm.fromId )
+			return false;
+		
+		if ( 'delete' == lm.status )
+			return false;
+		
+		return true;
 	}
 	
 	ns.MsgBuilder.prototype.setSmoothScrolling = function( setSmooth ) {
@@ -2745,6 +2824,7 @@ var hello = window.hello || {};
 		let userKlass = '';
 		let selfKlass = 'sw1';
 		let canEdit = false;
+		let canDelete = false;
 		let canForward = self.checkCanForward( msg );
 		if ( isGuest ) {
 			name = 'Guest > ' + msg.name;
@@ -2763,11 +2843,10 @@ var hello = window.hello || {};
 			canEdit = true;
 		}
 		
-		if ( user && user.isAdmin )
+		if ( user && user.isAdmin ) {
 			canEdit = true;
-		
-		if ( self.contactId && uId === self.contactId )
-			canEdit = false;
+			canDelete = true;
+		}
 		
 		let original = msg.message;
 		let message = null;
@@ -2777,7 +2856,7 @@ var hello = window.hello || {};
 			message = original;
 		
 		const timeStr = self.getClockStamp( msg.time );
-		const actionsHtml = self.buildMsgActions( canEdit, canForward );
+		const actionsHtml = self.buildMsgActions( canEdit, canForward, canDelete );
 		const msgConf = {
 			msgId      : mId,
 			userKlass  : userKlass,
@@ -2794,14 +2873,20 @@ var hello = window.hello || {};
 		return el;
 	}
 	
-	ns.MsgBuilder.prototype.buildMsgActions = function( canEdit, canForward ) {
+	ns.MsgBuilder.prototype.buildMsgActions = function( 
+		canEdit, 
+		canForward, 
+		canDelete 
+	) {
 		const self = this;
 		const editHidden = set( canEdit );
 		const forwardHidden = set( canForward );
-		const gradHidden = set( canEdit || canForward );
+		const deleteHidden = set( canDelete );
+		const gradHidden = set( canEdit || canForward || canDelete );
 		const conf = {
 			editHidden    : editHidden,
 			forwardHidden : forwardHidden,
+			deleteHidden  : deleteHidden,
 			gradHidden    : gradHidden,
 		};
 		const html = hello.template.get( 'msg-actions-tmpl', conf );
@@ -2866,10 +2951,13 @@ var hello = window.hello || {};
 		const actionsQuery = '.msg-content .msg-actions';
 		const editBtn = el.querySelector( actionsQuery + ' .edit-msg' );
 		const fwdBtn = el.querySelector( actionsQuery + ' .forward-msg' );
+		const delBtn = el.querySelector( actionsQuery + ' .delete-msg' );
 		if ( editBtn )
 		  editBtn.addEventListener( 'click', editClick, false );
 		if ( fwdBtn )
 		  fwdBtn.addEventListener( 'click', fwdClick, false );
+		if ( delBtn )
+			delBtn.addEventListener( 'click', delClick, false );
 		
 		function editClick( e ) {
 			self.editMessage( itemId );
@@ -2877,6 +2965,10 @@ var hello = window.hello || {};
 		
 		function fwdClick( e ) {
 			self.forwardMessage( itemId );
+		}
+		
+		function delClick( e ) {
+			self.deleteMessage( itemId );
 		}
 	}
 	
@@ -2935,6 +3027,19 @@ var hello = window.hello || {};
 				window.setTimeout( resolve, 5 );
 			});
 		}
+	}
+	
+	ns.MsgBuilder.prototype.removeEnvelope = function( envId ) {
+		const self = this;
+		const envelope = self.envelopes[ envId ];
+		if ( null == envelope )
+			return;
+		
+		const eel = envelope.el;
+		delete self.envelopes[ envId ];
+		const eIdx = self.envelopeOrder.indexOf( envId );
+		self.envelopeOrder.splice( eIdx, 1 );
+		eel.parentNode.removeChild( eel );
 	}
 	
 	ns.MsgBuilder.prototype.updateEnvelopeDate = function() {
@@ -3033,25 +3138,96 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.updateRelationState = function( relations ) {
 		const self = this;
-		if ( !self.contactId )
+		// used for private convos, implemented in PrivateMsgBuilder
+	}
+	
+	ns.MsgBuilder.prototype.handleRemove = async function( e ) {
+		const self = this;
+		const el = window.document.getElementById( e );
+		if ( null == el )
 			return;
 		
-		const user = relations[ self.userId ];
-		const contact = relations[ self.contactId ];
-		
-		if ( !relations.lastMsgId )
+		//const prevEl = el.previousElementSibling;
+		const currGroup = el.classList.contains( 'msg-group' );
+		const nextEl = el.nextElementSibling;
+		remove( el );
+		if ( null == nextEl )
 			return;
 		
-		if ( null == contact.lastReadId )
+		const nextGroup = nextEl.classList.contains( 'msg-group' );
+		if ( nextGroup )
 			return;
 		
-		if ( self.lastRead === contact.lastReadId )
+		if ( !currGroup )
 			return;
 		
-		self.updateLastRead({
-			msgId        : contact.lastReadId,
-			lastReadTime : contact.lastReadTime,
-		});
+		const nextId = nextEl.id;
+		await self.rebuildMessage( nextId );
+		
+		function remove( el ) {
+			const envEl = el.parentNode;
+			el.parentNode.removeChild( el );
+			if ( envEl.children.length > 1 )
+				return;
+			
+			const envId = envEl.id;
+			self.removeEnvelope( envId );
+		}
+		
+		/*
+		function getUserIdFor( msgEl ) {
+			const cl = msgEl.classList;
+			let uId = null;
+			cl.forEach( c => {
+				if ( null != uId )
+					return;
+				
+				const idx = c.indexOf( 'acc-' );
+				console.log( 'getUserIdFor - checking', [ c, idx ]);
+				if ( -1 == idx )
+					return false;
+				
+				uId = c;
+				return true;
+			});
+			
+			return uId;
+		}
+		*/
+	}
+	
+	ns.MsgBuilder.prototype.rebuildMessage = async function( msgId ) {
+		const self = this;
+		const currEl = window.document.getElementById( msgId );
+		if ( null == currEl )
+			return false;
+		
+		let nextMsg = null;
+		const get = {
+			type : 'msg-get',
+			data : {
+				msgId : msgId,
+			},
+		};
+		try {
+			nextMsg = await self.conn.request( get );
+		} catch( ex ) {
+			console.log( 'view.presence.MSgBuilder.handleRemove - get msg ex', ex );
+			return;
+		}
+		
+		if ( null == nextMsg )
+			return;
+		
+		const conf = {
+			inGroup : false,
+			event   : nextMsg.data,
+		};
+		const freshEl = self.buildMsg( conf, true );
+		currEl.parentNode.insertBefore( freshEl, currEl );
+		currEl.parentNode.removeChild( currEl );
+		
+		self.bindItem( msgId );
 	}
 	
 	ns.MsgBuilder.prototype.confirmEvent = function( type, eventId ) {
@@ -3071,36 +3247,7 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleConfirm = function( event ) {
 		const self = this;
-		if ( !self.contactId )
-			return;
-		
-		if ( 'message' == event.type ) {
-			confirmMessage( event.data );
-			return;
-		}
-		
-		console.log( 'MsgBuilder.handleConfirm - unknown confirm event', event );
-		
-		function confirmMessage( state ) {
-			const mId = state.msgId;
-			const msgEl = document.getElementById( mId );
-			if ( !msgEl ) {
-				console.log( 'handleConfirm.confirmMessage - no el found for', state );
-				return;
-			}
-			
-			if ( state.lastReadTime )
-				self.updateLastRead( state );
-			else
-				updateLastDelivered( state );
-			
-			/*
-			if ( state.userId === self.userId )
-				self.updateLastDelivered( state );
-			else
-				self.updateLastRead( state );
-			*/
-		}
+		// used in private convos, implemented in PrivateMsgBuilder
 	}
 	
 	ns.MsgBuilder.prototype.updateLastRead = function( state ) {
@@ -3137,7 +3284,9 @@ var hello = window.hello || {};
 		let timeStr = '';
 		if ( null != timestamp ) {
 			timeStr = self.getClockStamp( timestamp );
-			self.addConfirmExtInfo( msgId, timestamp );
+			const ok = self.addConfirmExtInfo( msgId, timestamp );
+			if ( !ok )
+				return;
 		}
 		
 		if ( !self.settings.compactChat ) {
@@ -3226,9 +3375,12 @@ var hello = window.hello || {};
 		const self = this;
 		const msgEl = document.getElementById( msgId );
 		if ( !msgEl )
-			return;
+			return false;
 		
 		const extEl = msgEl.querySelector( '.extended-info' );
+		if ( null == extEl )
+			return false;
+		
 		let cInfoEl = extEl.querySelector( '.confirm-info' );
 		if ( cInfoEl ) {
 			cInfoEl.parentNode.removeChild( cInfoEl );
@@ -3244,6 +3396,7 @@ var hello = window.hello || {};
 		cInfoEl = hello.template.getElement( 'confirm-info-tmpl', conf );
 		
 		extEl.appendChild( cInfoEl );
+		return true;
 	}
 	
 	ns.MsgBuilder.prototype.getConfirmId = function( msgId ) {

@@ -559,7 +559,6 @@ inherits from EventEmitter
 	
 	ns.SubView.prototype.handleMessage = function( msg ) {
 		const self = this;
-		
 		if ( !msg || !msg.type) {
 			console.log( 'SubView.handleMessage - invalid: ', msg );
 			return;

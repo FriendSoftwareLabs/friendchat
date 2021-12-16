@@ -63,7 +63,6 @@ library.module = library.module || {};
 		if ( isOnline === self.isOnline )
 			return;
 		
-		console.log( 'module.setOnline, isOnline', isOnline );
 		self.isOnline = isOnline;
 	}
 	
@@ -295,13 +294,11 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.handleOnline = function( data ) {
 		const self = this;
-		console.log( 'basemodule.handleOnline', data );
 		//console.log( 'online', data );
 	}
 	
 	ns.BaseModule.prototype.handleConnectionError = function( error ) {
 		const self = this;
-		console.log( 'basemodule.handleConnectionError', error );
 		self.isOnline = false;
 		var handler = self.connectionErrorMap[ error.type ];
 		if ( !handler ) {
@@ -314,7 +311,6 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.handleOffline =  function( e ) {
 		const self = this;
-		console.log( 'BaseModule.handleOffline', e );
 		self.isOnline = false;
 		self.viewInfo( 'offline', e );
 	}
@@ -654,7 +650,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'app.presence.reconnect' );
 		self.isOnline = false;
 		self.initialized = false;
 		self.sendModuleInit();
@@ -708,14 +703,8 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.verifyActivities = async function( cIdList ) {
 		const self = this;
-		console.log( 'presence.verifyActivities', {
-			isOnline : self.isOnline,
-			cids     : cIdList,
-		});
 		if ( !self.isOnline )
 			return;
-		
-		console.log( 'verifyActivities', cIdList );
 		
 		const removers = cIdList.map( cId => {
 			const item = self.getLocalChat( cId );
@@ -727,15 +716,9 @@ library.module = library.module || {};
 				return null;
 			
 			// returns a promise
-			console.log( 'verifyActivities - remove this', {
-				cId     : cId,
-				contact : self.contactIds,
-				rooms   : self.roomIds,
-			});
 			return self.activity.remove( cId );
 		}).filter( r => null != r );
 		
-		console.log( 'removers', removers );
 		if ( !removers.length )
 			return;
 		
@@ -1003,12 +986,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.openChat = async function( conf, notification, view, queued ) {
 		const self = this;
-		console.log( 'presence.openChat', {
-			conf   : conf,
-			noti   : notification,
-			view   : view,
-			queued : queued,
-		});
 		if ( !self.initialized ) {
 			if ( null == queued )
 				queued = 1;
@@ -1260,11 +1237,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.getLocalChat = function( cId, type ) {
 		const self = this;
-		console.log( 'getLocalChat', {
-			rid   : cId,
-			rooms : self.rooms,
-			conts : self.contacts,
-		});
 		const room = self.rooms[ cId ];
 		const contact = self.contacts[ cId ];
 		
@@ -1380,7 +1352,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = async function( state ) {
 		const self = this;
-		console.log( 'presence.handleAccountInit', state );
 		if ( self.idc ) {
 			await self.idc.refresh();
 		}
@@ -1418,7 +1389,6 @@ library.module = library.module || {};
 			window.setTimeout( refreshActivity, 3000 );
 		
 		function refreshActivity() {
-			console.log( 'refreshActivity' );
 			self.activity.refresh();
 		}
 		
@@ -1626,7 +1596,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.updateFilterOnline = function() {
 		const self = this;
-		console.log( 'updateFilterOnline', self.currentFilter );
 		const uptd = {
 			type : 'update-online',
 			data : self.contactsOnline.length,
@@ -2118,10 +2087,6 @@ library.module = library.module || {};
 	ns.Presence.prototype.handleFilterSelect = async function( select ) {
 		const self = this;
 		const id = select.id;
-		console.log( 'handleFilterSelect', {
-			select : select,
-			curr   : self.currentFilter,
-		});
 		
 		self.currentFilter = id;
 		if ( 'relations' == id ) {

@@ -75,14 +75,8 @@ var hello = null;
 	
 	ns.Hello.prototype.clearPreView = function( clientId, view ) {
 		const self = this;
-		console.log( 'clearPreView', {
-			cId      : clientId,
-			view     : view,
-			previews : self.preViews,
-		});
 		const preView = self.preViews[ clientId ];
 		delete self.preViews[ clientId ];
-		console.log( 'removed pre view?', preView );
 	}
 	
 	ns.Hello.prototype.getIdConf = function() {
@@ -137,6 +131,7 @@ var hello = null;
 	
 	ns.Hello.prototype.timeNow = function( str ) {
 		const self = this;
+		return;
 		const now = Date.now();
 		if ( null == self.startTiming ) {
 			self.startTiming = now;
@@ -376,7 +371,7 @@ var hello = null;
 					return;
 				}
 				
-				console.log( 'getUserInfo done', data );
+				//console.log( 'getUserInfo done', data );
 				resolve( data );
 			}
 			
@@ -499,7 +494,6 @@ var hello = null;
 			return false;
 		}
 		
-		console.log( 'loadcommonfrags, files', files );
 		files = files.map( f => localize( f ));
 		
 		self.app.setFragments( files[ 0 ]);
@@ -562,7 +556,6 @@ var hello = null;
 			}
 			
 			function loadRetry() {
-				console.log( 'loading host config aborted or timed out', self.hostConfRequest );
 				try {
 					self.hostConfRequest.abort();
 				} catch( e ) {
@@ -1176,14 +1169,9 @@ var hello = null;
 		
 		const previous = self.pushiesReceivedFor[ roomId ];
 		if ( null != previous ) {
-			console.log( 'hello.handlePushNotie - already received, dropping', {
-				pushie   : event,
-				previous : previous,
-			});
 			return;
 		}
 		
-		console.trace( 'hello.handlePushNotie', event );
 		const received = {
 			extra     : extra,
 			timestamp : Date.now(),
@@ -1193,13 +1181,13 @@ var hello = null;
 		self.processPushNotie( event, extra );
 		
 		function remove() {
-			console.log( 'pushie remove', roomId );
 			delete self.pushiesReceivedFor[ roomId ];
 		}
 	}
 	
 	ns.Hello.prototype.processPushNotie = function( event, extra, view ) {
 		const self = this;
+		/*
 		console.log( 'processPushNotie', {
 			event    : event,
 			extra    : extra,
@@ -1209,6 +1197,7 @@ var hello = null;
 			service  : self.service,
 			resumeTO : self.resumeTimeout,
 		});
+		*/
 		
 		if ( !self.loaded ) {
 			self.registerOnLoaded( onLoaded );
@@ -1292,13 +1281,12 @@ var hello = null;
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
 		if ( !self.isOnline ) {
-			console.log( 'hello.handleAppResume, already reconnecting - HOW DO YOU KNOW THIS?????' );
+			//console.log( 'hello.handleAppResume, already reconnecting - HOW DO YOU KNOW THIS?????' );
 			return;
 		}
 		
 		if ( self.conn ) {
 			const wsOk = self.conn.verify();
-			console.log( 'wsOk ??', wsOk );
 			if ( wsOk )
 				return;
 		}
@@ -1363,7 +1351,7 @@ var hello = null;
 		function infoBack( userInfo ) {
 			self.getUserAvatar();
 		}
-			
+		
 		function fail( err ) {
 			console.log( 'handleUserUpdate - something went bonk', err );
 			window.setTimeout( retry, 1000 * 3 );
@@ -1411,7 +1399,6 @@ var hello = null;
 	
 	ns.Main.prototype.open = function( openMinimized ) {
 		const self = this;
-		console.log( 'main.open', openMinimized );
 		if ( null == self.openMinimized )
 			self.openMinimized = openMinimized || false;
 		
@@ -1508,7 +1495,6 @@ var hello = null;
 	
 	ns.Main.prototype.init = async function() {
 		const self = this;
-		console.log( 'main init start, fetch things from app storage' );
 		let res = null;
 		try {
 			res = await api.ApplicationStorage.get( 'account-settings' );
@@ -1526,7 +1512,6 @@ var hello = null;
 			self.accSettings = accSettings;
 		
 		self.recentHistory = {};
-		console.log( 'main init done, got app things maybe', accSettings );
 		
 		function settingsCacheBack( cache ) {
 			const accSettings = cache.data;

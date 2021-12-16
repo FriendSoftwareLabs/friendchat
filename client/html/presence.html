@@ -294,9 +294,9 @@ message,
 msgActions,
 -->
 <script id="msg-group-tmpl" type="text/html">
-<div id="<%= msgId %>" class="msg-item msg-group 
-							  <%= userKlass %> 
+<div id="<%= msgId %>" class="<%= userKlass %> 
 							  <%= selfKlass %> 
+							  msg-item msg-group 
 							  ">
 	<div class="group-container group row left">
 		<div class="avatar fortify">
@@ -336,12 +336,13 @@ msgActions,
 
 <!-- message
 msgId,
-selfKlass
+userKlass,
+selfKlass,
 time,
 msgActions,
 -->
 <script id="msg-tmpl" type="text/html">
-<div id="<%= msgId %>" class="msg-item msg <%= selfKlass %>">
+<div id="<%= msgId %>" class="<%= userKlass %> <%= selfKlass %> msg-item msg">
 	<div class="group-container group row left">
 		<div class="avatar blank fortify">
 		</div>
@@ -392,9 +393,9 @@ msgActions,
 time,
 -->
 <script id="work-msg-tmpl" type="text/html">
-<div id="<%= msgId %>" class="msg-item work-msg 
-							  <%= userKlass %> 
+<div id="<%= msgId %>" class="<%= userKlass %> 
 							  <%= selfKlass %> 
+							  msg-item work-msg
 							  ">
 	<div class="group-container group row left">
 		<div class="avatar <%= avatarType %> fortify">
@@ -527,22 +528,23 @@ time,
 </script>
 
 <!-- system message
+id,
 type,
 icon,
 message,
 time,
 -->
 <script id="system-msg-tmpl", type="text/html">
-<div class="msg <%= type %>">
+<div id="<%= id %>" class="msg msg-item system-msg <%= type %> group row">
 	<div class="group row">
 		<div class="msg-icon fortify center-child">
 			<i class="fa fa-fw <%= icon %>"></i>
 		</div>
-		<div class="time fortify">
-			<%= time %>
-		</div>
+		<div class="str"><%= message %></div>
 	</div>
-	<div class="str"><%= message %></div>
+	<div class="time fortify">
+		<%= time %>
+	</div>
 </div>
 </script>
 
@@ -554,6 +556,9 @@ forwardHidden,
 <script id="msg-actions-tmpl" type="text/html">
 <div class="msg-actions fortify group row BackgroundDefault">
 	<div class="pre-grad gradHidden BackgroundDefault hidden">
+	</div>
+	<div class="delete-msg Button IconButton fortify center-child <%= deleteHidden %>">
+		<i class="fa fa-fw fa-trash"></i>
 	</div>
 	<div class="edit-msg Button IconButton fortify center-child <%= editHidden %>">
 		<i class="fa fa-fw fa-edit"></i>
@@ -642,6 +647,14 @@ name,
 	<div class="target-cancel fortify">
 		<i class="fa fa-fw fa-close"></i>
 	</div>
+</div>
+</script>
+
+<!-- message-overlay
+	id
+-->
+<script id="msg-overlay" type="text/html">
+<div id="<%= id %>" class="msg-overlay">
 </div>
 </script>
 

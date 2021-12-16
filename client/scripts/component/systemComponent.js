@@ -318,7 +318,6 @@ window.library.component = window.library.component || {};
 	
 	ns.Droppings.prototype.handle = function( items ) {
 		const self = this;
-		console.log( 'Droppings.handle', items );
 		items.forEach( jajajaja );
 		function jajajaja( item ) {
 			var handler = self.typeMap[ item.type || item.Type ];
@@ -502,7 +501,6 @@ window.library.component = window.library.component || {};
 		const self = this;
 		const roomId = extra.roomId;
 		const msgId = extra.msgId;
-		console.log( 'PresenceService.handleNotification', [ extra, view ]);
 		if ( !roomId ) {
 			console.log( 'PresenceService.handleNotification - missing room id', extra );
 			return;

@@ -228,10 +228,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fromView.on( 'minimized', e => self.handleMinimized( e ));
 		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
 		self.fromView.on( 'open-file', e => self.openFile( e ));
-		self.fromView.on( 'call-friend', e => {
-			console.log( 'call-friend', e );
-			self.doThingieCall( e.type, e.data );
-		});
+		self.fromView.on( 'call-friend', e => { self.doThingieCall( e.type, e.data ); });
 		//self.fromView.on( 'call-library', e => self.doLibraryCall( e ));
 		
 		library.component.RequestNode.call( self,
@@ -369,7 +366,6 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const fP = e.filePath;
 		const aN = e.appName;
-		console.log( 'app.View.openFile', [ e, fP, aN ]);
 		self.app.openFile( fP, aN );
 	}
 	
@@ -385,7 +381,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.doThingieCall = function( type, req ) {
 		const self = this;
-		console.log( 'doThingieCall', req );
 		const reqId = req.reqId;
 		const conf = req.conf;
 		conf.onSuccess = onSuccess;
@@ -399,7 +394,6 @@ var friend = window.friend || {}; // already instanced stuff
 		new thingie( conf );
 		
 		function onSuccess( data ) {
-			console.log( 'onThingieCall.onSuccess', data );
 			sendResponse( null, data, reqId );
 		}
 		
@@ -434,11 +428,9 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		self.ready = false;
 		if ( !self.app ) {
-			console.log( 'View.close - no app', self.id );
 			return;
 		}
 		
-		console.log( 'app.View.close', self.id );
 		self.app.removeView( self.id );
 		const msg = {
 			method : 'close',
@@ -887,6 +879,8 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
+		//console.log( 'appEvent.receiveEvent', msg );
+		
 		msg.origin = e.origin;
 		const handler = self.commandMap[ msg.command ];
 		if ( handler ) {
@@ -917,7 +911,7 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		console.log( 'app.receiveEvent - system didnt handle this one', msg );
+		//console.log( 'app.receiveEvent - system didnt handle this one', msg );
 		
 		self.appMessage( msg );
 	}
@@ -926,11 +920,6 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const cid = msg.callback || msg.clickcallback || msg.shellId || msg.callbackId;
 		const callback = self.getCallback( cid );
-		console.log( 'handleCallback', {
-			cbId     : cid,
-			msg      : msg,
-			callback : callback,
-		});
 		
 		if ( !callback )
 			return false;
@@ -953,7 +942,7 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const type = msg.viewId;
 		if ( !type || !msg.data ) {
-			console.log( 'weird event', msg );
+			//console.log( 'weird event', msg );
 			return;
 		}
 		
@@ -1156,7 +1145,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.setViewFlag = function( msg ) {
 		const self = this;
-		//console.log( 'setViewFlag', msg );
 		let view = self.views[ msg.viewId ];
 		if ( !view )
 			return;
@@ -1317,11 +1305,9 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.openFile = async function( filePath, appName ) {
 		const self = this;
-		console.log( 'openFile', [ filePath, appName ]);
 		const cmdLine = appName + ' ' + filePath;
 		const sh = new api.Shell( self );
 		const res = await sh.execute( cmdLine );
-		console.log( 'openFile res', res );
 	}
 	
 	// Private
@@ -1380,7 +1366,6 @@ var friend = window.friend || {}; // already instanced stuff
 				}
 				
 				function loadTimeout() {
-					console.log( 'loadTimeout', cbId );
 					self.cancelCallback( cbId, 'ERR_TIMEOUT' );
 				}
 				
@@ -1523,7 +1508,6 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Application.prototype.addView = function( view ) {
 		const self = this;
 		const vId = view.id;
-		console.log( 'addView', vId );
 		self.views[ vId ] = view;
 		self.viewIds.push( vId );
 	}
@@ -1539,7 +1523,6 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( !view )
 			return;
 		
-		console.log( 'removeView', viewId );
 		self.release( viewId );
 		delete self.views[ viewId ];
 		self.viewIds = Object.keys( self.views );
@@ -1969,7 +1952,6 @@ window.Application = new fupLocal.Application();
 		});
 		
 		function callBackWrap( msg ) {
-			//console.log( 'getDoors.callBackWrap', msg );
 			for ( var infoKey in msg )
 				self.setupProxyDoor( msg[ infoKey ] );
 			if ( callback )
@@ -1979,7 +1961,6 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleMessage = function( msg ) {
 		const self = this;
-		//console.log( 'Dormant.handleMessage', msg );
 		var handler = self.methodMap[ msg.method ];
 		if ( !handler ) {
 			console.log( 'Dormant.handleMessage - no handler for', msg );

@@ -425,7 +425,6 @@ library.rtc = library.rtc || {};
 	
 	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
-		console.log( 'ModCtrl.setIsOnline', isOnline );
 		if ( isOnline )
 			self.reconnect();
 		else
@@ -1675,12 +1674,14 @@ library.rtc = library.rtc || {};
 		const self = this;
 		const now = window.Date.now();
 		const threeSecondsAgo = now - ( 1000 * 3 );
+		/*
 		console.log( 'verify', {
 			now    : hmsms( now ),
 			tsago  : hmsms( threeSecondsAgo ),
 			lstmsg : hmsms( self.lastMsgTime ),
 			diff   : threeSecondsAgo - self.lastMsgTime,
 		});
+		*/
 		
 		if ( null == self.lastMsgTime )
 			return false;
@@ -1885,7 +1886,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
-		console.log( 'socketSession', sid );
 		if ( null != sid )
 			self.LastMsgTime = window.Date.now();
 		
@@ -2061,7 +2061,7 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		console.log( 'unknown response: ', data );
+		//console.log( 'unknown response: ', data );
 	}
 	
 	ns.Request.prototype.send = function( msg, callback ) {
@@ -2900,10 +2900,12 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
+		/*
 		console.log( 'Activity.setIsOnline', {
 			curr   : self.isOnline,
 			update : isOnline,
 		});
+		*/
 		if ( isOnline === self.isOnline )
 			return;
 		
@@ -2943,6 +2945,13 @@ Searchable collection(s) of users, rooms and other odds and ends
 		const id = window.MD5( cId );
 		const time = event.timestamp;
 		const isFresh = self.checkIsFresh( id, time );
+		/*
+		console.log( 'isfresh', {
+			isFresh   : isFresh,
+			fordelete : self.removed[ id ],
+		} );
+		*/
+		
 		if ( !isFresh ) {
 			/*
 			const opts = event.options;
@@ -2950,7 +2959,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 				// send update to server maybe ?
 			*/
 			
-			return;
+			return false;
 		}
 		
 		event.id = id;
@@ -2959,7 +2968,8 @@ Searchable collection(s) of users, rooms and other odds and ends
 			data : event,
 		};
 		
-		const res = self.conn.request( wrap );
+		const res = await self.conn.request( wrap );
+		//console.log( 'Activity.sendEvent res', res );
 		return res;
 	}
 	
@@ -3038,10 +3048,12 @@ Searchable collection(s) of users, rooms and other odds and ends
 		const id = window.MD5( cId );
 		const item = self.items[ id ];
 		if ( null != item ) {
+			/*
 			console.log( 'sendRequest - found item', {
 				req  : req,
 				item : item,
 			});
+			*/
 			return cId;
 		}
 		
@@ -3140,8 +3152,9 @@ Searchable collection(s) of users, rooms and other odds and ends
 		const id = conf.id;
 		const lock = self.removed[ id ];
 		if ( null != lock ) {
-			console.log( 'app.Activity.setItem - item marked as removed', id );
-			return;
+			self.unsetRemoved( id );
+			//console.log( 'app.Activity.setItem - item marked as removed', id );
+			//return;
 		}
 		
 		const cId = conf.clientId;
@@ -3178,10 +3191,12 @@ Searchable collection(s) of users, rooms and other odds and ends
 	ns.Activity.prototype.sendRemove = async function( id ) {
 		const self = this;
 		const item = self.items[ id ];
+		/*
 		console.trace( 'Activity.sendRemove', {
 			id   : id,
 			item : item,
 		});
+		*/
 		self.setRemoved( id );
 		const remove = {
 			type : 'remove',
@@ -3202,10 +3217,12 @@ Searchable collection(s) of users, rooms and other odds and ends
 	ns.Activity.prototype.removeItem = function( id ) {
 		const self = this;
 		const item = self.items[ id ];
+		/*
 		console.trace( 'Activity.removeItem', {
 			id   : id,
 			item : item,
 		});
+		*/
 		if ( null == item )
 			return;
 		
@@ -3224,7 +3241,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setRemoved = function( id ) {
 		const self = this;
-		console.log( 'setRemoved', id );
+		//console.log( 'setRemoved', id );
 		const lock = self.removed[ id ];
 		if ( null != lock )
 			window.clearTimeout( lock );
@@ -3239,7 +3256,7 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.unsetRemoved = function( id ) {
 		const self = this;
-		console.log( 'unsetRemoved', id );
+		//console.log( 'unsetRemoved', id );
 		const lock = self.removed[ id ];
 		if ( null == lock )
 			return;
@@ -3444,6 +3461,10 @@ Searchable collection(s) of users, rooms and other odds and ends
 		if ( null == item )
 			return true;
 		
+		// marked for removal
+		if ( null != self.removed[ id ])
+			return true;
+		
 		const event = item.data;
 		// new item is newer
 		if ( timestamp > event.timestamp )
@@ -3470,13 +3491,15 @@ Searchable collection(s) of users, rooms and other odds and ends
 		async function updateForModule( mId ) {
 			const mod = self.getModule( mId );
 			const isOnline = mod.getOnlineStatus();
+			/*
 			console.log( 'app.Activity.updateIdentities, is online?', {
 				mod      : mod,
 				isOnline : isOnline,
 			});
+			*/
 			
 			if ( !isOnline ) {
-				console.log( 'Activity.updateidentities - no online', mId );
+				//console.log( 'Activity.updateidentities - no online', mId );
 				return;
 			}
 			
@@ -3502,11 +3525,13 @@ Searchable collection(s) of users, rooms and other odds and ends
 			identity = await self.getIdentity( i.clientId, mod );
 			
 			if ( null == identity ) {
+				/*
 				console.log( 'Activity.updateIdentities - no id', {
 					i      : i,
 					online : self.isOnline,
 					modOn  : mod.getOnlineStatus(),
 				});
+				*/
 				return;
 			}
 			

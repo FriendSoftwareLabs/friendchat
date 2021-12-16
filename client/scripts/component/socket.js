@@ -78,7 +78,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'Socket.reconnect', self.session );
 		self.allowReconnect = true;
 		self.doReconnect( true );
 	}
@@ -298,14 +297,12 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		const self = this;
-		console.log( 'WS handleClosed', e );
 		self.setState( 'close', e );
 		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		const self = this;
-		console.log( 'WS handleError', e );
 		self.setState( 'error', e );
 	}
 	

@@ -109,8 +109,8 @@ var friend = window.friend || {};
 		} else
 			msg = e.data;
 		
+		//console.log( 'View.receiveEvent, e', e );
 		//console.log( 'View.receiveEvent', msg );
-		//var msg = friendUP.tool.objectify( e.data );
 		if ( !msg ) {
 			console.log( 'view.receiveEvent - no msg for event', e );
 			return;
@@ -157,7 +157,6 @@ var friend = window.friend || {};
 	
 	ns.ViewEvent.prototype.handleCallback = function( event ) {
 		const self = this;
-		console.log( 'View.handleCallback', event );
 		const cb = self.getCallback( event.callback );
 		if ( null == cb )
 			return;
@@ -225,6 +224,44 @@ var friend = window.friend || {};
 			notifyId : notifyId,
 		};
 		self.sendTypeEvent( 'show-notify', notie );
+	}
+	
+	ns.View.prototype.confirmDialog = async function( 
+		title,
+		string,
+		okText,
+		cancelText
+	) {
+		const self = this;
+		const msg = {
+			type     : 'system',
+			command  : 'confirm',
+			title    : title,
+			string   : string,
+		};
+		
+		if ( okText )
+			msg.confirmok = okText;
+		if ( cancelText )
+			msg.confirmcancel = cancelText;
+		
+		const response = await confirm( msg );
+		return response;
+		
+		function confirm( msg ) {
+			return new Promise(( resolve, reject ) => {
+				const cbId = self.setCallback( confirmBack );
+				msg.callback = cbId;
+				self.sendBase( msg );
+				
+				function confirmBack( res ) {
+					if ( !res || null == res.data )
+						reject( 'ERR_INVALID_API_RESPONSE' );
+					
+					resolve( res.data );
+				}
+			});
+		}
 	}
 	
 	ns.View.prototype.getAppsForFileType = async function( fileType ) {
@@ -319,7 +356,6 @@ var friend = window.friend || {};
 			self.sendTypeEvent( 'call-friend', wrap );
 			
 			function modBack( e ) {
-				console.log( 'modBack', e );
 				if ( e.err )
 					reject( e.err );
 				else
@@ -505,7 +541,6 @@ var friend = window.friend || {};
 			type : 'close',
 		});
 		
-		console.log( 'view.View.close', self.id );
 		self.closeRequestNode();
 		self.closed = true;
 	}
@@ -1036,7 +1071,7 @@ var friend = window.friend || {};
 			
 			input.addEventListener( 'focus', yepFocus );
 			function yepFocus( e ) {
-				console.log( 'yepFocus', e );
+				
 			}
 			
 			function handleIncomingFile( evt, input ) {
@@ -1067,7 +1102,6 @@ var friend = window.friend || {};
 		}
 		
 		function imgBack( img ) {
-			console.log( 'imgBack - img', img );
 			if( !( img && img.data )) {
 				callback({
 					result : false

@@ -755,7 +755,6 @@ library.view = library.view || {};
 		}
 		
 		function nativeSink( ...args ) {
-			console.log( 'app.Live.nativeSink', args );
 			self.onEvent( ...args );
 		}
 		
@@ -796,7 +795,6 @@ library.view = library.view || {};
 			);
 			
 			function viewSink( ...args ) {
-				console.log( 'app.Live.viewSink', args );
 				self.onEvent( ...args );
 			}
 			

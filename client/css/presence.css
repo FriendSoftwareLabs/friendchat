@@ -237,7 +237,8 @@ body[mobile] #emojii-panel-button
 }
 
 .msg-item {
-	padding : 0.2em 0.6em;
+	padding  : 0.2em 0.6em;
+	position : relative;
 }
 
 .avatar-offset,
@@ -291,6 +292,16 @@ body[mobile] #emojii-panel-button
 
 .msg-container {
 	
+}
+
+.msg-overlay {
+	position : absolute;
+	top      : 0;
+	left     : 0;
+	bottom   : 0;
+	right    : 0;
+	z-index  : 999;
+	background-color: rgba( 0, 0, 0, 0.25 );
 }
 
 .work-msg .work-to-from {
@@ -421,6 +432,12 @@ body[mobile] #emojii-panel-button
 
 .system-container {
 	
+}
+
+.system-msg {
+	opacity     : 0.6;
+	font-weight : bold;
+	font-style  : italic;
 }
 
 .msg-box {

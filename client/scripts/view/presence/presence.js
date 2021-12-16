@@ -73,7 +73,6 @@ library.view = library.view || {};
 		};
 		self.drop = new library.component.Drop( dropConf );
 		function onDrop( event ) {
-			console.log( 'Drop onDrop', event );
 			self.send( event );
 		}
 		
@@ -335,6 +334,7 @@ library.view = library.view || {};
 		self.userId     = state.userId;
 		self.contactId  = state.contactId;
 		
+		// selecting constructors
 		let UserCtrl = library.component.UserCtrl;
 		let MsgBuilder = library.component.MsgBuilder;
 		const isWorkroom = ( state.workgroups && state.workgroups.workId );
@@ -343,6 +343,11 @@ library.view = library.view || {};
 			MsgBuilder = ns.WorkMsgBuilder;
 		}
 		
+		if ( self.isPrivate ) {
+			MsgBuilder = ns.PrivateMsgBuilder;
+		}
+		
+		//
 		if ( !self.isPrivate )
 			self.toggleUserListBtn( true );
 		
@@ -430,20 +435,27 @@ library.view = library.view || {};
 		self.input.on( 'submit', e => self.handleInputSubmit( e ));
 		
 		// message builder
-		self.msgBuilder = new MsgBuilder(
+		const msgBuilderArgs = [
 			self.conn,
 			'messages',
 			self.users,
 			self.userId,
-			self.contactId || null,
 			self.clientId,
-			state.workgroups,
 			self.input,
 			self.parser,
 			self.linkExpand,
 			null, //self.pathExpand,
-			self.isView,
-		);
+		];
+		
+		if ( isWorkroom ) {
+			msgBuilderArgs.push( self.isView );
+			msgBuilderArgs.push( state.workgroups );
+		}
+		
+		if ( state.isPrivate )
+			msgBuilderArgs.push( self.contactId );
+		
+		self.msgBuilder = new MsgBuilder( ...msgBuilderArgs );
 		
 		// input history
 		const hConf = {
@@ -797,6 +809,7 @@ library.view = library.view || {};
 			self.handleLog( data );
 			return;
 		}
+		
 		/*
 		if ( 'update' === type ) {
 			self.msgBuilder.update( data );
@@ -2003,31 +2016,29 @@ library.view = library.view || {};
 		containerId,
 		users,
 		userId,
-		contactId,
 		roomId,
-		workgroups,
 		input,
 		parser,
 		linkExpand,
 		pathExpand,
-		isWorkView
+		isWorkView,
+		workgroups
 	) {
-		const self = this;
+		const self = this; 
 		self.isView = isWorkView;
+		self.workgroupId = workgroups.workId || '';
+		self.supergroupId = workgroups.superId || '';
 		library.component.MsgBuilder.call( self,
 			parentConn,
 			containerId,
 			users,
 			userId,
-			contactId,
 			roomId,
-			workgroups,
 			input,
 			parser,
 			linkExpand,
 			pathExpand
 		);
-		
 	}
 	
 	ns.WorkMsgBuilder.prototype =
@@ -2062,8 +2073,9 @@ library.view = library.view || {};
 		
 		const time = self.parseTime( event.time );
 		const envelope = await self.getEnvelope( time.envelope );
+		const isLastSpeaker = self.checkIsLastSpeaker( event, envelope );
 		const conf = {
-			inGroup : self.isLastSpeaker( event, envelope ),
+			inGroup : isLastSpeaker,
 			event   : event,
 		};
 		
@@ -2129,6 +2141,7 @@ library.view = library.view || {};
 		let name = null;
 		let canEdit = false;
 		let canForward = self.checkCanForward( msg );
+		let canDelete = false;
 		let twIds = [];
 		if ( self.isView )
 			twIds = [];
@@ -2191,8 +2204,10 @@ library.view = library.view || {};
 			toFromNameHidden = 'hidden';
 			toFromMsg = View.i18n( 'i18n_message_from' );
 			toFromName =  msg.name;
-			if ( !fromUser )
+			if ( !fromUser ) {
 				canEdit = true;
+				canDelete = true;
+			}
 		}
 		
 		if ( uId === self.userId ) {
@@ -2200,8 +2215,10 @@ library.view = library.view || {};
 			canEdit = true;
 		}
 		
-		if ( fromUser && fromUser.isAdmin )
+		if ( fromUser && fromUser.isAdmin ) {
 			canEdit = true;
+			canDelete = true;
+		}
 		
 		let original = msg.message;
 		let message = null;
@@ -2211,7 +2228,7 @@ library.view = library.view || {};
 			message = original;
 		
 		const timeStr = self.getClockStamp( msg.time );
-		const actionsHtml = self.buildMsgActions( canEdit, canForward );
+		const actionsHtml = self.buildMsgActions( canEdit, canForward, canDelete );
 		const msgConf = {
 			msgId            : mId,
 			userKlass        : userKlass,
@@ -2299,6 +2316,224 @@ library.view = library.view || {};
 			console.log( 'msg', msg );
 			console.log( 'users', self.users );
 			console.log( 'self', self );
+			*/
+		}
+	}
+	
+})( library.view );
+
+
+(function( ns, undefined ){
+	ns.PrivateMsgBuilder = function(
+		parentConn,
+		containerId,
+		users,
+		userId,
+		roomId,
+		input,
+		parser,
+		linkExpand,
+		pathExpand,
+		contactId
+	) {
+		const self = this;
+		self.isPrivate = true;
+		self.contactId = contactId;
+		library.component.MsgBuilder.call( self,
+			parentConn,
+			containerId,
+			users,
+			userId,
+			roomId,
+			input,
+			parser,
+			linkExpand,
+			pathExpand
+		);
+		
+		self.initPriv();
+	}
+	
+	ns.PrivateMsgBuilder.prototype =
+		Object.create( library.component.MsgBuilder.prototype );
+	
+	ns.PrivateMsgBuilder.prototype.initPriv = function() {
+		const self = this;
+		self.eventMap[ 'delete' ] = e => self.handleDelete( e );
+	}
+	
+	ns.PrivateMsgBuilder.prototype.handleDelete = async function( event ) {
+		const self = this;
+		const msg = event.data;
+		const mId = msg.msgId;
+		const currEl = document.getElementById( mId );
+		if ( null == currEl )
+			return false;
+		
+		const delEl = self.buildDeletedMsg({ event : msg });
+		if ( null == delEl )
+			return false;
+		
+		updateEnvelopeLastMsg( currEl );
+		const nextEl = currEl.nextElementSibling;
+		replace( currEl, delEl );
+		if ( null == nextEl )
+			return;
+		
+		const nextIsDelete = nextEl.classList.contains( 'delete' );
+		const nextIsGroup = nextEl.classList.contains( 'msg-group' );
+		if ( nextIsDelete || nextIsGroup )
+			return;
+		
+		const nId = nextEl.id;
+		await self.rebuildMessage( nId );
+		
+		function replace( rm, set ) {
+			rm.parentNode.insertBefore( set, rm );
+			rm.parentNode.removeChild( rm );
+		}
+		
+		function updateEnvelopeLastMsg( mEl ) {
+			const mId = mEl.id;
+			const envEl = mEl.parentNode;
+			const envId = envEl.id;
+			const envelope = self.envelopes[ envId ];
+			const lm = envelope.lastMsg;
+			if ( null == lm )
+				return;
+			
+			if ( mId != lm.msgId )
+				return;
+			
+			lm.status = 'delete';
+		}
+	}
+	
+	ns.PrivateMsgBuilder.prototype.buildDeletedMsg = function( conf ) {
+		const self = this;
+		const msg = conf.event;
+		const id = self.users.getIdSync( msg.fromId );
+		const delConf = {
+			id      : msg.msgId,
+			type    : 'deleted',
+			icon    : 'fa-close',
+			message : window.View.i18n( 'i18n_message_deleted_by' ) + ' ' + id.name,
+			time    : self.getClockStamp( msg.time ),
+		};
+		const el = hello.template.getElement( 'system-msg-tmpl', delConf );
+		
+		return el;
+	}
+	
+	ns.PrivateMsgBuilder.prototype.buildMsg = function( conf, isLog ) {
+		const self = this;
+		const msg = conf.event;
+		if ( 'delete' == msg.status )
+			return self.buildDeletedMsg( conf );
+		
+		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
+		const uId = msg.fromId;
+		const mId = msg.msgId;
+		const user = self.users.getIdSync( self.userId );
+		const from = self.users.getIdSync( uId );
+		const isGuest = uId == null ? true : false;
+		
+		let name = '';
+		let userKlass = '';
+		let selfKlass = 'sw1';
+		let canEdit = false;
+		let canDelete = false;
+		let canForward = false; //self.checkCanForward( msg );
+		if ( isGuest ) {
+			name = 'Guest > ' + msg.name;
+			userKlass = 'guest-user-klass';
+		} else {
+			if ( from )
+				name = from.name;
+			else
+				name = msg.name;
+			
+			userKlass = uId + '-klass';
+		}
+		
+		if ( uId === self.userId ) {
+			selfKlass = 'sw2 isSelf';
+			canEdit = true;
+			canDelete = true;
+		}
+		
+		let original = msg.message;
+		let message = null;
+		if ( self.parser )
+			message = self.parser.work( original, isLog );
+		else
+			message = original;
+		
+		const timeStr = self.getClockStamp( msg.time );
+		const actionsHtml = self.buildMsgActions( canEdit, canForward, canDelete );
+		const msgConf = {
+			msgId      : mId,
+			userKlass  : userKlass,
+			selfKlass  : selfKlass,
+			from       : name,
+			time       : timeStr,
+			message    : message,
+			msgActions : actionsHtml,
+		};
+		const el = hello.template.getElement( tmplId, msgConf );
+		if ( self.linkEx )
+			self.linkEx.work( el );
+		
+		return el;
+	}
+	
+	ns.PrivateMsgBuilder.prototype.updateRelationState = function( relations ) {
+		const self = this;
+		const user = relations[ self.userId ];
+		const contact = relations[ self.contactId ];
+		
+		if ( !relations.lastMsgId )
+			return;
+		
+		if ( null == contact.lastReadId )
+			return;
+		
+		if ( self.lastRead === contact.lastReadId )
+			return;
+		
+		self.updateLastRead({
+			msgId        : contact.lastReadId,
+			lastReadTime : contact.lastReadTime,
+		});
+	}
+	
+	ns.PrivateMsgBuilder.prototype.handleConfirm = function( event ) {
+		const self = this;
+		if ( 'message' == event.type ) {
+			confirmMessage( event.data );
+			return;
+		}
+		
+		console.log( 'MsgBuilder.handleConfirm - unknown confirm event', event );
+		
+		function confirmMessage( state ) {
+			const mId = state.msgId;
+			const msgEl = document.getElementById( mId );
+			if ( !msgEl ) {
+				console.log( 'handleConfirm.confirmMessage - no el found for', state );
+				return;
+			}
+			
+			if ( state.lastReadTime )
+				self.updateLastRead( state );
+			else
+				self.updateLastDelivered( state );
+			
+			/*
+			if ( state.userId === self.userId )
+				self.updateLastDelivered( state );
+			else
+				self.updateLastRead( state );
 			*/
 		}
 	}

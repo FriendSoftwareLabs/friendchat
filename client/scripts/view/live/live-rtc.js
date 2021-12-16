@@ -1831,7 +1831,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.handleSpeaking = function( speaking ) {
 		const self = this;
-		console.log( 'handleSpeaking', speaking );
 		
 		if ( null != self.speakingTimeout ) {
 			window.clearTimeout( self.speakingTimeout );
@@ -1851,7 +1850,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			wasSpeaker = true;
 		
 		self.speaking.setIsSpeaker( isSpeaker );
-		console.log( 'wasSpeaker', wasSpeaker );
 		if ( wasSpeaker )
 			self.speakingTimeout = window.setTimeout( waitABit, 2000 );
 		else
@@ -2003,10 +2001,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.updateFollowSpeaker = function( speaking ) {
 		const self = this;
-		console.log( 'updateFollowSpeaker', {
-			speaking : speaking,
-			speaker  : self.speaker,
-		});
 		if ( null != speaking )
 			self.speaker = speaking;
 		
