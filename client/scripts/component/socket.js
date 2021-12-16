@@ -46,8 +46,10 @@ library.component = library.component || {};
 		self.ready = false;
 		
 		// INTERNAL
+		self.id = friendUP.tool.uid( 'ws' );
 		self.ws = null;
 		self.session = null;
+		self.state = 'new';
 		self.allowReconnect = true;
 		self.pingInterval = null; // reference to setInterval id
 		self.pingStep = 1000 * 15; // time between pings
@@ -82,7 +84,7 @@ library.component = library.component || {};
 	// whats the server going to do? cry more lol
 	ns.Socket.prototype.close = function( code, reason ) {
 		const self = this;
-		console.log( 'app.Socket.close' );
+		console.log( 'app.Socket.close', self.id );
 		self.unsetSession();
 		self.allowReconnect = false;
 		self.onmessage = null;
@@ -122,8 +124,9 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.connect = function() {
 		const self = this;
+		console.log( 'Socket.connect', self.id );
 		if ( !self.allowReconnect ) {
-			console.log( 'ws connect, not allowed' );
+			console.log( 'ws connect, not allowed', self );
 			return;
 		}
 		
@@ -137,7 +140,9 @@ library.component = library.component || {};
 		
 		hello.timeNow( 'ws connect' );
 		self.clearConnectTimeout();
-		self.setState( 'connect', self.url );
+		if ( 'reconnect' != self.state )
+			self.setState( 'connect', self.url );
+		
 		var protocol = self.protocol.length ? self.protocol : null;
 		try {
 			self.ws = new window.WebSocket( self.url );
@@ -156,7 +161,11 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'Socket.reconnect', self.session );
+		console.log( 'Socket.reconnect', {
+			session : self.session,
+			id      : self.id,
+		});
+		self.allowReconnect = true;
 		self.doReconnect( true );
 	}
 	
@@ -286,6 +295,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.setState = function( type, data ) {
 		const self = this;
+		self.state = type;
 		if ( !self.onstate )
 			return;
 		
@@ -293,7 +303,7 @@ library.component = library.component || {};
 			type : type,
 			data : data,
 		};
-		self.onstate( state );
+		self.onstate( state, self.id );
 	}
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
@@ -306,14 +316,20 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		const self = this;
-		console.log( 'WS handleClosed', e );
+		console.log( 'WS handleClosed', {
+			e  : e,
+			id : self.id,
+		});
 		self.setState( 'close', e );
 		self.doReconnect();
 	}
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		const self = this;
-		console.log( 'WS handleError', e );
+		console.log( 'WS handleError', {
+			e  : e,
+			id : self.id,
+		});
 		self.setState( 'error', e );
 	}
 	
@@ -355,7 +371,10 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		const self = this;
-		console.log( 'ws.handleSession - sid:', sessionId );
+		console.log( 'ws.handleSession - sid:', {
+			sid  : sessionId,
+			id : self.id,
+		});
 		hello.timeNow( 'ws handleSession' );
 		self.session = sessionId;
 		if ( !self.session ) {
@@ -372,7 +391,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.restartSession = function() {
 		const self = this;
-		var session = {
+		const session = {
 			type : 'session',
 			data : self.session,
 		};
@@ -556,7 +575,7 @@ library.component = library.component || {};
 		if ( !onend )
 			return;
 		
-		onend();
+		onend( 'ded', self.id );
 	}
 	
 	ns.Socket.prototype.cleanup = function() {

@@ -1798,14 +1798,15 @@ library.rtc = library.rtc || {};
 			onend      : onEnd,
 		}, remainingSendQueue );
 		
-		function onMessage( msg ) { self.message( msg ); }
-		function onState( state ) { self.handleState( state ); }
-		function onEnd( msg ) { self.handleEnd( msg ); }
+		function onMessage( msg, wsId ) { self.message( msg, wsId ); }
+		function onState( state, wsId ) { self.handleState( state, wsId ); }
+		function onEnd( msg, wsId ) { self.handleEnd( msg, wsId ); }
 	}
 	
 	ns.Connection.prototype.reconnect = function( callback ) {
 		const self = this;
 		let sendQ = null;
+		console.log( 'Connection.reconnect', callback );
 		if ( null != self.socket )
 			sendQ = self.clear();
 		
@@ -1829,9 +1830,9 @@ library.rtc = library.rtc || {};
 			'open'       : socketOpen,
 			'auth'       : socketAuth,
 			'session'    : socketSession,
-			'close'      : socketClosed,
-			'timeout'    : socketTimeout,
-			'error'      : socketError,
+			'close'      : ( e, wsId ) => self.socketClosed( e, wsId ),
+			'timeout'    : ( e, wsId ) => self.socketTimeout( e, wsId ),
+			'error'      : ( e, wsId ) => self.socketError( e, wsId ),
 			'ping'       : socketPing,
 			'reconnect'  : socketReconnect,
 		};
@@ -1839,15 +1840,13 @@ library.rtc = library.rtc || {};
 		function socketOpen( e ) { self.socketOpen( e ); }
 		function socketAuth( e ) { self.socketAuth( e ); }
 		function socketSession( e ) { self.socketSession( e ); }
-		function socketClosed ( e ) { self.socketClosed( e ); }
-		function socketTimeout( e ) { self.socketTimeout( e ); }
-		function socketError ( e ) { self.socketError( e ); }
 		function socketPing ( e ) { self.socketPing( e ); }
 		function socketReconnect( e ) { self.socketReconnecting( e ); }
 	}
 	
-	ns.Connection.prototype.handleState = function( event ) {
+	ns.Connection.prototype.handleState = function( event, wsId ) {
 		const self = this;
+		console.log( 'Conn.handleState', [ event, wsId ]);
 		const handler = self.socketEventMap[ event.type ];
 		if ( !handler ) {
 			console.log( 'unknown socket state', event );
@@ -1876,6 +1875,10 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketAuth = function( success ) {
 		const self = this;
+		console.log( 'Connection.socketauth', {
+			success  : success,
+			callback : self.readyCallback,
+		});
 		if ( !success )
 			return;
 		
@@ -1887,7 +1890,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
-		console.log( 'socketSession', sid );
+		console.log( 'Connection.socketSession', sid );
 		if ( null != sid )
 			self.LastMsgTime = window.Date.now();
 		
@@ -1897,25 +1900,39 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
-	ns.Connection.prototype.socketClosed = function( e ) {
+	ns.Connection.prototype.socketClosed = function( e, wsId ) {
 		const self = this;
+		console.log( 'Conn.socketClosed', {
+			e        : e,
+			wsId     : wsId,
+			currWsId : self.socket ? self.socket.id : null,
+		});
 		self.onstate({
 			type : 'error',
 			data : 'Connection to ' + self.host + ' closed',
 		});
 	}
 	
-	ns.Connection.prototype.socketTimeout = function( e ) {
+	ns.Connection.prototype.socketTimeout = function( e, wsId ) {
 		const self = this;
+		console.log( 'Conn.socketTimeout', {
+			e        : e,
+			wsId     : wsId,
+			currWsId : self.socket ? self.socket.id : null,
+		});
 		self.onstate({
 			type : 'error',
 			data : 'Connect attempt timed out: ' + self.host,
 		});
 	}
 	
-	ns.Connection.prototype.socketError = function( err ) {
+	ns.Connection.prototype.socketError = function( err, wsId ) {
 		const self = this;
-		hello.log.notify( 'Socket error' );
+		console.log( 'Conn.socketError', {
+			e        : e,
+			wsId     : wsId,
+			currWsId : self.socket ? self.socket.id : null,
+		});
 		self.onstate({
 			type : 'error',
 			data : 'Connection error to: ' + self.host,
@@ -1938,8 +1955,13 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
-	ns.Connection.prototype.handleEnd = function( data ) {
+	ns.Connection.prototype.handleEnd = function( data, wsId ) {
 		const self = this;
+		console.log( 'Conn.handleEnd', {
+			data     : data,
+			wsId     : wsId,
+			currWsId : self.socket ? self.socket.id : null,
+		});
 		self.clear();
 		let err = {
 			type : 'end',
