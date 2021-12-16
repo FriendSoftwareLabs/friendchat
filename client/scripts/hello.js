@@ -16,8 +16,7 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.        *
 *                                                                              *
 *****************************************************************************©*/
- code 1005
- 
+
 'use strict';
 var library = window.library || {};
 var friendUP = window.friendUP || {};
