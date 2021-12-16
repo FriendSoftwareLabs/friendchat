@@ -815,7 +815,6 @@ library.contact = library.contact || {};
 		function liveName( e ) { self.handleLiveName( e ); }
 		function viewSwitch( e ) { self.handleViewSwitch( e ); }
 		function onClose( e ) {
-			console.log( 'live onclose' );
 			self.closeLive();
 			const leave = {
 				type : 'leave',
@@ -824,7 +823,6 @@ library.contact = library.contact || {};
 		}
 		
 		function liveToServer( type, data ) {
-			console.log( 'liveToServer', [ type, data ]);
 			const event = {
 				type : type,
 				data : data,
@@ -860,7 +858,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.getLastMessage = function() {
 		const self = this;
-		return null;
+		return self.lastMessage;
 	}
 	
 	ns.PresenceRoom.prototype.startChat = function() {
@@ -1169,13 +1167,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.openChat = function( notification, preView ) {
 		const self = this;
-		console.log( 'openChat', {
-			notie    : notification,
-			preview  : preView,
-			inited   : self.initialized,
-			openPend : self.openChatPending,
-			chatView : self.chatView,
-		});
 		self.hasNotification = !!notification;
 		preView = self.checkOpenPending( self.initialized, preView, notification );
 		
@@ -1262,7 +1253,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleMinimized = function( isMinz ) {
 		const self = this;
-		console.log( 'handleMinimized', isMinz );
 		if ( self.isMinimized === isMinz )
 			return;
 		
@@ -1277,7 +1267,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleFocused = function() {
 		const self = this;
-		console.log( 'proom.handleFocused' );
 		self.sendCounterReset();
 	}
 	
@@ -1374,7 +1363,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = async function( state ) {
 		const self = this;
-		console.log( 'PresenceRoom.handleInitialize', state );
 		self.ownerId = state.ownerId;
 		self.workConfig = state.workConfig || null;
 		self.workgroups = state.workgroups;
@@ -1521,7 +1509,6 @@ library.contact = library.contact || {};
 				sessionId : self.live.id,
 			},
 		};
-		console.log( 'restoreLive', restore );
 		self.send( restore );
 	}
 	
@@ -1823,8 +1810,10 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.setLastMessage = async function( lm ) {
 		const self = this;
-		if ( null == lm || null == lm.data )
+		if ( null == lm || null == lm.data ) {
+			self.lastMessage = null;
 			return;
+		}
 		
 		self.lastMessage = lm;
 		const msg = lm.data;
@@ -2216,7 +2205,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInvite = function( event ) {
 		const self = this;
-		console.log( 'handleInvite', event );
 		if ( 'revoke' === event.type )
 			send( event );
 		else
@@ -2352,7 +2340,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLive = async function( event ) {
 		const self = this;
-		console.log( 'PRoom.handleLive', event );
 		const type = event.type;
 		if ( 'open' === type ) {
 			self.handleLiveOpen( event.data );
@@ -2420,7 +2407,7 @@ library.contact = library.contact || {};
 		self.liveToView( event );
 	}
 	
-	ns.PresenceRoom.prototype.handleChat = function( event ) {
+	ns.PresenceRoom.prototype.handleChat = async function( event ) {
 		const self = this;
 		const chat = {
 			type : 'chat',
@@ -2431,53 +2418,123 @@ library.contact = library.contact || {};
 			( 'msg' === event.type ) 
 			|| ( 'work-msg' === event.type )
 		) {
-			self.onMessage( event.data );
+			await self.onMessage( event );
 		}
+		
+		if ( 'edit' === event.type 
+			|| 'update' === event.type )
+			await self.updateMessageEdit( event.data );
+		
+		if ( 'remove' === event.type )
+			await self.handleRemoveMessage( event.data );
+		if ( 'delete' === event.type )
+			await self.handleRemoveMessage( event.data.data.msgId );
+		
+		if ( 'last-message' === event.type )
+			await self.updateLastMessage( event.data );
 		
 		self.toChat( chat );
 		self.toLive( chat );
 	}
 	
-	ns.PresenceRoom.prototype.onMessage = function( msg ) {
+	ns.PresenceRoom.prototype.onMessage = async function( event ) {
 		const self = this;
 		self.hasNotification = false;
+		await self.setLastMessage( event );
+		
+		const msg = self.lastMessage.data;
 		let fromSelf = false;
 		if ( msg.fromId === self.userId )
 			fromSelf = true;
 		
-		self.resolveMessageName( msg )
-			.then( nameBack )
-			.catch( nameBack );
+		let silent = false;
+		if ( self.roomIsView && ( null != self.supergroupId )) // workrooms added as subrooms
+			silent = true;
 		
-		function nameBack( from ) {
-			const event = {
-				from    : from,
-				message : msg.message,
-				time    : msg.time,
-			};
-			
-			let silent = false;
-			if ( self.roomIsView && ( null != self.supergroupId )) // workrooms added as subrooms
-				silent = true;
-			
-			if ( fromSelf )
-				self.recentMessage( msg.message, from, msg.time );
-			else
-				self.onChatMessage( event, silent );
-			
-			if ( silent )
-				return;
-			
-			if ( !fromSelf )
-				self.parser.work( msg.message );
-			
-			/*
-			self.recentMessage( msg.message, from, msg.time );
-			
-			if ( !self.chatView )
-				self.messageWaiting( true, msg.message, from, msg.time );
-			*/
-		}
+		if ( fromSelf )
+			self.recentMessage( msg.message, msg.from, msg.time );
+		else
+			self.onChatMessage( msg, silent );
+		
+		if ( silent )
+			return;
+		
+		if ( !fromSelf )
+			self.parser.work( msg.message );
+		
+	}
+	
+	ns.PresenceRoom.prototype.updateMessageEdit = async function( event ) {
+		const self = this;
+		if ( null == self.lastMessage )
+			return;
+		
+		const msg = event.data;
+		let lm = self.lastMessage.data;
+		
+		const mId = msg.msgId;
+		const lmId = lm.msgId;
+		
+		if ( mId !== lmId )
+			return;
+		
+		msg.from = lm.from;
+		self.lastMessage.data = msg;
+		const activity = await self.activity.read( self.clientId );
+		if ( null == activity )
+			return;
+		
+		if ( 'message' != activity.type )
+			return;
+		
+		const args = [
+			self.roomType,
+			self.clientId,
+			self.priority,
+			msg.from,
+			msg.message,
+			msg.editTime,
+		];
+		self.activity.message( ...args );
+	}
+	
+	ns.PresenceRoom.prototype.handleRemoveMessage = async function( msgId ) {
+		const self = this;
+		if ( null == self.lastMessage )
+			return;
+		
+		const lm = self.lastMessage.data;
+		if ( msgId != lm.msgId )
+			return;
+		
+		self.lastMessage = null;
+		
+		const activity = await self.activity.read( self.clientId );
+		if ( null == activity )
+			return;
+		
+		if ( 'message' != activity.type )
+			return;
+		
+		await self.activity.remove( self.clientId );
+	}
+	
+	ns.PresenceRoom.prototype.updateLastMessage = async function( msg ) {
+		const self = this;
+		await self.setLastMessage( msg );
+		const activity = await self.activity.read( self.clientId );
+		if (( null != activity ) && ( 'message' != activity.type ))
+			return;
+		
+		const lm = self.lastMessage.data;
+		const ok = await self.activity.message(
+			self.roomType,
+			self.clientId,
+			self.priority,
+			lm.from,
+			lm.message,
+			( lm.editTime || lm.time )
+		);
 	}
 	
 	ns.PresenceRoom.prototype.resolveMessageName = function( msg ) {
@@ -2522,7 +2579,6 @@ library.contact = library.contact || {};
 	*/
 	ns.PresenceRoom.prototype.sendCounterReset = function() {
 		const self = this;
-		console.log( 'send counter reset' );
 		const reset = {
 			type : 'counter-reset',
 		};
@@ -2536,7 +2592,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.resetCounters = function() {
 		const self = this;
-		console.log( 'resetCounters', self.identity );
 		self.messageWaiting( false );
 		self.mentionWaiting( false );
 	}
@@ -2682,7 +2737,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.buildInvites = function( event ) {
 		const self = this;
-		console.log( 'buildInvites', event );
 		return new Promise(( resolve, reject ) => {
 			if ( 'state' === event.type )
 				parseState( event.data )
@@ -2880,9 +2934,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.sendChatEvent = function( e ) {
 		const self = this;
-		if ( 'log' == e.type )
-			console.log( 'sendChatEvent - e', e );
-		
 		const chat = {
 			type : 'chat',
 			data : e,
@@ -2897,7 +2948,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.inviteToServer = function( event ) {
 		const self = this;
-		console.log( 'inviteToServer', event );
 		const invite = {
 			type : 'invite',
 			data : event,
@@ -2978,10 +3028,6 @@ library.contact = library.contact || {};
 		self.liveToView( userJoin );
 		
 		const isClient = checkClientLive( liveId );
-		console.log( 'handleLiveOpen - isClient', {
-			liveId   : liveId,
-			isClient : isClient,
-		});
 		const state = isClient ? 'client' : 'user';
 		const opts = {
 			'live-state' : state,
@@ -3926,24 +3972,21 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.onMessage = function( event ) {
 		const self = this;
+		const msg = event.data;
+		self.setLastMessage( event );
 		self.hasNotification = false;
 		let fromSelf = false;
-		if ( event.fromId === self.userId )
+		if ( msg.fromId === self.userId )
 			fromSelf = true;
 		
-		self.resolveMessageName( event )
+		self.resolveMessageName( msg )
 			.then( nameBack )
 			.catch( nameBack );
 			
 		function nameBack( from ) {
-			const msg = {
-				from    : from,
-				message : event.message,
-				time    : event.time,
-			};
-			
+			msg.from = from;
 			if ( fromSelf )
-				self.recentMessage( event.message, from, event.time );
+				self.recentMessage( msg.message, msg.from, msg.time );
 			else
 				self.onChatMessage( msg );
 			
@@ -3955,7 +3998,7 @@ library.contact = library.contact || {};
 				return;
 			}
 			
-			self.parser.work( event.message );
+			self.parser.work( msg.message );
 		}
 	}
 	
@@ -3974,13 +4017,10 @@ library.contact = library.contact || {};
 		
 		const msg = event.data;
 		const from = msg.fromId === self.contactId ? self.identity.name : null;
+		msg.from = from;
 		self.lastMessage = {
 			type : event.type,
-			data : {
-				from    : from,
-				time    : msg.time,
-				message : msg.message,
-			},
+			data : msg,
 		};
 	}
 	

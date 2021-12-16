@@ -615,7 +615,7 @@ library.component = library.component || {};
 		var self = this;
 		var item = self.items[ id ];
 		if ( !item ) {
-			console.log( 'Menu.getItem - no item for id', { id : id, items : self.items });
+			//console.log( 'Menu.getItem - no item for id', { id : id, items : self.items });
 			//throw new Error( 'Menu.getItem failed, here is your stack trance, sir.');
 			return false;
 		}

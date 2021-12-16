@@ -26,7 +26,7 @@ library.component = library.component || {};
 
 // SOCKET
 (function( ns, undefined ) {
-	ns.Socket = function( conf, inheritedSendQueue ) {
+	ns.Socket = function( conf, inheritedSendQueue, sessionId ) {
 		if ( !( this instanceof ns.Socket ))
 			return new ns.Socket( conf );
 		
@@ -41,14 +41,14 @@ library.component = library.component || {};
 		
 		//
 		self.sendQueue = inheritedSendQueue || [];
+		self.session = sessionId || null;
 		
-		// PROPERTIES USEFUL TO PUBLIC
+		// PUBLIC i guess
 		self.ready = false;
 		
 		// INTERNAL
 		self.id = friendUP.tool.uid( 'ws' );
 		self.ws = null;
-		self.session = null;
 		self.state = 'new';
 		self.allowReconnect = true;
 		self.pingInterval = null; // reference to setInterval id

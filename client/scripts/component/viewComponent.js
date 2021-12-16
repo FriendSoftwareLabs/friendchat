@@ -556,7 +556,6 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.bindLoad = function( nodes ) {
 		const self = this;
-		console.log( 'bindLoad', nodes );
 		nodes.forEach( findLoadyThings );
 		function findLoadyThings( node ) {
 			if ( null == node )
@@ -567,7 +566,6 @@ library.component = library.component || {};
 			if ( id && ( null != self.checked[ id ] ))
 				return;
 			
-			console.log( 'checking', node );
 			self.checked[ id ] = true;
 			var imgs = node.getElementsByTagName( 'img' );
 			var vids = node.getElementsByTagName( 'video' );
@@ -577,7 +575,6 @@ library.component = library.component || {};
 			if ( 'video' === node.tagName )
 				push( vids, node );
 			
-			console.log( 'found', [ imgs, vids ]);
 			if ( imgs.length )
 				bind( imgs, 'load' );
 			if ( vids.length )
@@ -593,7 +590,6 @@ library.component = library.component || {};
 				
 				el.addEventListener( event, handler, false );
 				function handler( e ) {
-					console.log( 'thingie did the thing', el );
 					self.reposition();
 					// nesting functions, fick ja
 					el.removeEventListener( event, handler );
@@ -611,7 +607,6 @@ library.component = library.component || {};
 			
 			self.stateChangeTimeout = window.setTimeout( unset, 100 );
 			function unset() {
-				console.log( 'unset changeTimeout' );
 				self.stateChangeTimeout = null;
 			}
 		}
@@ -1305,7 +1300,6 @@ in a generic link expand wrapping with a bit of UI
 			req.send();
 			
 			function reqProgress( e ) {
-				console.log( 'LinkExpand request progress', e );
 			}
 			
 			function reqReadyState( e ) {
@@ -2024,10 +2018,15 @@ Friend disk paths, so do those things with them i guess
 			return;
 		
 		let str = self.ta.value;
-		self.emit( 'submit', str );
+		
 		
 		self.setValue( '' );
 		self.focus();
+		
+		window.setTimeout( emit, 1 );
+		function emit() {
+			self.emit( 'submit', str );
+		}
 	}
 	
 	ns.MultiInput.prototype.checkLineBreaks = function( addOne ) {
@@ -3900,10 +3899,12 @@ The menu will remove itself if it loses focus or a menu item is clicked
 				const id = item.id;
 				const el = document.getElementById( id );
 				if ( !el ) {
+					/*
 					console.log( 'listOrder.applyOrder, apply - no el for', {
 						item  : item,
 						shelf : self,
 					});
+					*/
 					return;
 				}
 				try {

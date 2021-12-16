@@ -838,7 +838,6 @@ library.component = library.component || {};
 	
 	ns.UI.prototype.updateWaiting = function() {
 		const self = this;
-		console.log( 'live.UI.updateWaiting - no u' );
 		/*
 		const pids = Object.keys( self.peers );
 		const hideWaiting = pids.length > 1;
