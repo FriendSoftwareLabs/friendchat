@@ -218,6 +218,7 @@ library.component = library.component || {};
 		self.cleanup();
 		if ( !self.allowReconnect )	{
 			console.log( 'WS reconnect aborting, disallowed', {
+				id      : self.id,
 				allow   : self.allowReconnect,
 				atempts : self.reconnectAttempt,
 				session : self.session,
@@ -348,6 +349,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
 		const self = this;
+		console.log( 'Socket.handleAuth', [ success, self.id ]);
 		hello.timeNow( 'ws handleAuth' );
 		if ( null == success ) {
 			self.sendAuth();
