@@ -912,7 +912,8 @@ var hello = null;
 		const self = this;
 		console.trace( 'hello.reconnect', self.conn );
 		if ( self.conn )
-			self.conn.reconnect();
+			self.doRelogin();
+			//self.conn.reconnect();
 		else
 			self.runUser();
 	}

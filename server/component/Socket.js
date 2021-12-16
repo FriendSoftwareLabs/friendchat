@@ -83,6 +83,7 @@ ns.Socket.prototype.setSession = function( sessionId, parentId ) {
 
 ns.Socket.prototype.authenticate = function( success ) {
 	const self = this;
+	log( 'authenticate', [ success, self.id ]);
 	if ( self.authenticated === success )
 		return;
 	

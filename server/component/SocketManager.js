@@ -402,7 +402,7 @@ ns.SocketManager.prototype.setSession = function( socket, parentId ) {
 	const self = this;
 	const sessionId = self.makeSessionId();
 	log( 'setSession', {
-		socket    : !!socket,
+		socket    : socket.id,
 		sessionId : sessionId,
 		parentId  : parentId,
 	});
