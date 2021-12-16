@@ -26,7 +26,7 @@ library.component = library.component || {};
 
 // SOCKET
 (function( ns, undefined ) {
-	ns.Socket = function( conf ) {
+	ns.Socket = function( conf, inheritedSendQueue ) {
 		if ( !( this instanceof ns.Socket ))
 			return new ns.Socket( conf );
 		
@@ -39,13 +39,15 @@ library.component = library.component || {};
 		self.onstate = conf.onstate;
 		self.onend = conf.onend;
 		
+		//
+		self.sendQueue = inheritedSendQueue || [];
+		
 		// PROPERTIES USEFUL TO PUBLIC
 		self.ready = false;
 		
 		// INTERNAL
 		self.ws = null;
 		self.session = null;
-		self.sendQueue = [];
 		self.allowReconnect = true;
 		self.pingInterval = null; // reference to setInterval id
 		self.pingStep = 1000 * 15; // time between pings
@@ -69,30 +71,25 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.send = function( msgObj ) {
 		const self = this;
-		var wrap = {
+		const wrap = {
 			type : 'msg',
 			data : msgObj,
 		};
 		self.sendOnSocket( wrap );
 	}
 	
-	ns.Socket.prototype.reconnect = function() {
-		const self = this;
-		console.log( 'Socket.reconnect', self.session );
-		self.allowReconnect = true;
-		self.doReconnect( true );
-	}
-	
 	// code and reason can be whatever; the socket is closed anyway,
 	// whats the server going to do? cry more lol
 	ns.Socket.prototype.close = function( code, reason ) {
 		const self = this;
+		console.log( 'app.Socket.close' );
 		self.unsetSession();
 		self.allowReconnect = false;
 		self.onmessage = null;
 		self.onstate = null;
 		self.onend = null;
 		self.wsClose( code, reason );
+		return self.sendQueue;
 	}
 	
 	// PRIVATES
@@ -125,6 +122,11 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.connect = function() {
 		const self = this;
+		if ( !self.allowReconnect ) {
+			console.log( 'ws connect, not allowed' );
+			return;
+		}
+		
 		if ( self.ws )
 			self.cleanup();
 		
@@ -150,6 +152,12 @@ library.component = library.component || {};
 		function connectTimedout( e ) {
 			self.handleConnectTimeout();
 		}
+	}
+	
+	ns.Socket.prototype.reconnect = function() {
+		const self = this;
+		console.log( 'Socket.reconnect', self.session );
+		self.doReconnect( true );
 	}
 	
 	ns.Socket.prototype.attachHandlers = function() {
@@ -347,6 +355,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		const self = this;
+		console.log( 'ws.handleSession - sid:', sessionId );
 		hello.timeNow( 'ws handleSession' );
 		self.session = sessionId;
 		if ( !self.session ) {
@@ -552,6 +561,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.cleanup = function() {
 		const self = this;
+		console.log( 'ws cleanup' );
 		self.ready = false;
 		self.stopPing();
 		self.clearHandlers();

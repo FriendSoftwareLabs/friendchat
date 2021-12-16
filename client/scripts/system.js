@@ -1673,6 +1673,12 @@ library.rtc = library.rtc || {};
 	*/
 	ns.Connection.prototype.verify = function() {
 		const self = this;
+		if ( null == self.socket )
+			return false;
+		
+		if ( false == self.socket.ready )
+			return false;
+		
 		const now = window.Date.now();
 		const threeSecondsAgo = now - ( 1000 * 3 );
 		console.log( 'verify', {
@@ -1760,7 +1766,7 @@ library.rtc = library.rtc || {};
 		return true;
 	}
 	
-	ns.Connection.prototype.connect = function( callback ) {
+	ns.Connection.prototype.connect = function( callback, remainingSendQueue ) {
 		const self = this;
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
@@ -1790,7 +1796,7 @@ library.rtc = library.rtc || {};
 			onmessage  : onMessage,
 			onstate    : onState,
 			onend      : onEnd,
-		});
+		}, remainingSendQueue );
 		
 		function onMessage( msg ) { self.message( msg ); }
 		function onState( state ) { self.handleState( state ); }
@@ -1799,20 +1805,16 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.reconnect = function( callback ) {
 		const self = this;
-		if ( callback )
-			self.readyCallback = callback;
+		let sendQ = null;
+		if ( null != self.socket )
+			sendQ = self.clear();
 		
-		if ( !self.socket ) {
-			self.connect();
-			return;
-		}
-		
-		self.socket.reconnect();
+		self.connect( callback, sendQ );
 	}
 	
 	ns.Connection.prototype.close = function() {
 		const self = this;
-		if ( !self.socket )
+		if ( null == self.socket )
 			return;
 		
 		self.clear();
@@ -1956,12 +1958,15 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.clear = function() {
 		const self = this;
+		console.log( 'Connection.clear' );
 		self.lastMsgTime = null;
 		if ( !self.socket )
 			return;
 		
-		self.socket.close();
+		const sendQ = self.socket.close();
 		self.socket = null;
+		
+		console.log( 'Connection.clear - remaining sendQueue', sendQ );
 	}
 	
 	ns.Connection.prototype.message = function( event ) {

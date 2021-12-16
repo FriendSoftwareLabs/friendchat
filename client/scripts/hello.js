@@ -16,7 +16,8 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.        *
 *                                                                              *
 *****************************************************************************©*/
-
+ code 1005
+ 
 'use strict';
 var library = window.library || {};
 var friendUP = window.friendUP || {};
@@ -848,9 +849,13 @@ var hello = null;
 	
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
+		console.log( 'hello.doRelogin', {
+			tried : self.triedRelogin,
+		});
 		self.triedRelogin = true;
 		self.conn.reconnect( connected );
 		function connected( err, res ) {
+			console.log( 'hello.doRelogin - callback', [ err, res ]);
 			if ( err ) {
 				console.log( 'doRelogin connect failed', err );
 				
@@ -906,6 +911,7 @@ var hello = null;
 	
 	ns.Hello.prototype.reconnect = function() {
 		const self = this;
+		console.trace( 'hello.reconnect', self.conn );
 		if ( self.conn )
 			self.conn.reconnect();
 		else
@@ -983,6 +989,7 @@ var hello = null;
 	// From main view
 	ns.Hello.prototype.handleConnState = function( e ) {
 		const self = this;
+		console.log( 'hello.handleConnState', e );
 		if ( 'reconnect' === e.type )
 			self.reconnect();
 		
