@@ -1929,7 +1929,7 @@ library.rtc = library.rtc || {};
 	ns.Connection.prototype.socketError = function( err, wsId ) {
 		const self = this;
 		console.log( 'Conn.socketError', {
-			e        : e,
+			err      : err,
 			wsId     : wsId,
 			currWsId : self.socket ? self.socket.id : null,
 		});
