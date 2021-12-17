@@ -854,10 +854,10 @@ var hello = null;
 		self.triedRelogin = true;
 		self.conn.connect( connected );
 		function connected( err, res ) {
-			console.log( 'hello.doRelogin - callback', [ err, res ]);
+			console.log( 'hello.doRelogin - connected', [ err, res ]);
 			if ( err ) {
 				console.log( 'doRelogin connect failed', err );
-				
+				hello.quit();
 				return;
 			}
 			

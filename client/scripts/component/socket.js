@@ -369,7 +369,7 @@ library.component = library.component || {};
 				type : 'error',
 				data : 'Authentication with server failed',
 			};
-			self.setState( err );
+			self.setState( 'error', err );
 			self.ended();
 			return;
 		}
@@ -385,13 +385,16 @@ library.component = library.component || {};
 			id : self.id,
 		});
 		hello.timeNow( 'ws handleSession' );
-		self.session = sessionId;
+		if ( !sessionId )
+			self.session = null;
+		
 		if ( !self.session ) {
+			self.setState( 'session', null );
 			self.ended();
 			return;
-		} else
-			self.reconnectAttempt = 0;
+		}
 		
+		self.reconnectAttempt = 0;
 		if ( !self.ready )
 			self.setReady();
 		

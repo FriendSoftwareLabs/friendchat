@@ -346,7 +346,7 @@ ns.SocketManager.prototype.checkSession = function( sessionId, socket ) {
 	const self = this;
 	const session = self.getSession( sessionId );
 	if ( !session ) {
-		log( 'checkSession - no session found', sessionId );
+		log( 'checkSession - no session found', [ sessionId, socket.id ]);
 		socket.unsetSession()
 			.then( e => {
 				socket.close();
@@ -412,9 +412,14 @@ ns.SocketManager.prototype.setSession = function( socket, parentId ) {
 
 ns.SocketManager.prototype.getSession = function( id ) {
 	const self = this;
-	var session = self.sessions[ id ];
-	if ( !session )
+	const session = self.sessions[ id ];
+	if ( !session ) {
+		log( 'getSession, no session for', {
+			sid  : id,
+			sess : self.sessions,
+		});
 		return null;
+	}
 	
 	return session;
 }
