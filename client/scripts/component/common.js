@@ -385,7 +385,7 @@ inherits from EventEmitter
 		const self = this;
 		const rIds = Object.keys( self._requests );
 		rIds.forEach( rId => {
-			req = self._requests[ rId ];
+			const req = self._requests[ rId ];
 			delete self._requests[ rId ];
 			if ( null == req )
 				return;
