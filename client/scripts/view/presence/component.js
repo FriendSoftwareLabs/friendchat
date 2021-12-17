@@ -1462,7 +1462,8 @@ var hello = window.hello || {};
 		
 		if ( 'name' === prop ) {
 			const user = self.get( cId );
-			user.updateName( id.name );
+			if ( null != user )
+				user.updateName( id.name );
 		}
 		
 		if ( 'isOnline' === prop ) {
