@@ -768,8 +768,10 @@ var hello = null;
 		}
 		
 		console.log( 'unknown data for API user', self.config.run );
+		/*
 		hello.log.alert( Application.i18n('i18n_unknown_data_for_api_user') );
 		hello.log.show();
+		*/
 		
 		function initPresenceConnection( callback ) {
 			const conf = self.config.run;
@@ -820,14 +822,19 @@ var hello = null;
 			self.loggedIn = true;
 			self.login.close();
 			self.login = null;
+			
+			/*
 			if ( !account ) {
 				hello.log.alert( Application.i18n( 'i18n_no_account_to_login' ) );
 				hello.log.show();
 				return;
 			}
+			*/
 			
+			/*
 			hello.log.positive( 
 				Application.i18n( 'i18n_logged_in_as' ) + ': ' + account.name );
+			*/
 			
 			self.timeNow( 'logged in, update main' );
 			self.main.setAccountLoaded( account );
@@ -845,7 +852,7 @@ var hello = null;
 			tried : self.triedRelogin,
 		});
 		self.triedRelogin = true;
-		self.conn.reconnect( connected );
+		self.conn.connect( connected );
 		function connected( err, res ) {
 			console.log( 'hello.doRelogin - callback', [ err, res ]);
 			if ( err ) {
@@ -905,10 +912,15 @@ var hello = null;
 		const self = this;
 		console.trace( 'hello.reconnect', self.conn );
 		if ( self.conn )
-			self.doRelogin();
-			//self.conn.reconnect();
+			self.conn.reconnect( connBack );
 		else
 			self.runUser();
+		
+		function connBack( err, res ) {
+			console.log( 'hello.reconnect connBack', [ err, res ]);
+			if ( err )
+				self.doRelogin();
+		}
 	}
 	
 	ns.Hello.prototype.updateConnState = function( state ) {

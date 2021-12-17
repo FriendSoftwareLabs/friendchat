@@ -178,6 +178,7 @@ ns.Socket.prototype.start = function() {
 	
 	self.bind();
 	self.doPing();
+	self.sendId();
 }
 
 ns.Socket.prototype.stop = function() {
@@ -204,6 +205,16 @@ ns.Socket.prototype.unbind = function() {
 	self.conn.removeAllListeners( 'error' );
 	self.conn.removeAllListeners( 'close' );
 	self.conn.removeAllListeners( 'message' );
+}
+
+ns.Socket.prototype.sendId = function() {
+	const self = this;
+	const id = {
+		type : 'socket-id',
+		data : self.id,
+	}
+	
+	self.sendOnSocket( id );
 }
 
 ns.Socket.prototype.receiveMessage = function( msgString ) {

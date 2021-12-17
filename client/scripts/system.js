@@ -1773,7 +1773,7 @@ library.rtc = library.rtc || {};
 			throw new Error( 'missing websocket config stuff' );
 		
 		if ( self.socket )
-			self.clear();
+			remainingSendQueue = self.clear();
 		
 		if ( callback )
 			self.readyCallback = callback;
@@ -1790,14 +1790,18 @@ library.rtc = library.rtc || {};
 		
 		self.host = url;
 		const auth = hello.getAuthBundle();
-		self.socket = new library.component.Socket({
-			url        : url,
-			protocol   : 'text',
-			authBundle : auth,
-			onmessage  : onMessage,
-			onstate    : onState,
-			onend      : onEnd,
-		}, remainingSendQueue );
+		self.socket = new library.component.Socket(
+			{
+				url        : url,
+				protocol   : 'text',
+				authBundle : auth,
+				onmessage  : onMessage,
+				onstate    : onState,
+				onend      : onEnd,
+			}, 
+			remainingSendQueue, 
+			self.sessionId
+		);
 		
 		function onMessage( msg, wsId ) { self.message( msg, wsId ); }
 		function onState( state, wsId ) { self.handleState( state, wsId ); }
@@ -1806,6 +1810,11 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.reconnect = function( callback ) {
 		const self = this;
+		if ( null == self.sessionId ) {
+			callback( 'ERR_NO_SESSION' );
+			return;
+		}
+		
 		let sendQ = null;
 		console.log( 'Connection.reconnect', callback );
 		if ( null != self.socket )
@@ -1892,7 +1901,10 @@ library.rtc = library.rtc || {};
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
 		console.log( 'Connection.socketSession', sid );
-		if ( null != sid )
+		self.sessionId = sid || null;
+		if ( null == sid )
+			self.LastMsgTime = null;
+		else
 			self.LastMsgTime = window.Date.now();
 		
 		self.onstate({

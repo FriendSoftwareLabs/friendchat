@@ -47,7 +47,7 @@ library.component = library.component || {};
 		self.ready = false;
 		
 		// INTERNAL
-		self.id = friendUP.tool.uid( 'ws' );
+		//self.id = friendUP.tool.uid( 'ws' );
 		self.ws = null;
 		self.state = 'new';
 		self.allowReconnect = true;
@@ -109,6 +109,7 @@ library.component = library.component || {};
 		
 		self.messageMap = {
 			'authenticate' : authenticate,
+			'socket-id'     : e => self.handleSocketId( e ),
 			'session'      : session,
 			'ping'         : ping,
 			'pong'         : pong,
@@ -345,6 +346,12 @@ library.component = library.component || {};
 		}
 		
 		handler( msg.data );
+	}
+	
+	ns.Socket.prototype.handleSocketId = function( socketId ) {
+		const self = this;
+		console.log( 'Socket.handleId', socketId );
+		self.id = socketId;
 	}
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
