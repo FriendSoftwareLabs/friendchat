@@ -383,6 +383,8 @@ library.component = library.component || {};
 		hello.timeNow( 'ws handleSession' );
 		if ( !sessionId )
 			self.session = null;
+		else
+			self.session = sessionId;
 		
 		console.log( 'ws.handleSession - sid:', {
 			sid  : sessionId,
