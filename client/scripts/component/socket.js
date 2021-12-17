@@ -420,6 +420,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.sendAuth = function() {
 		const self = this;
+		console.log( 'socket sendAuth', self.session );
 		if ( self.session ) {
 			self.restartSession();
 			return;

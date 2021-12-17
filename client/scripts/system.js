@@ -1767,11 +1767,12 @@ library.rtc = library.rtc || {};
 		return true;
 	}
 	
-	ns.Connection.prototype.connect = function( callback, remainingSendQueue ) {
+	ns.Connection.prototype.connect = function( callback ) {
 		const self = this;
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
 		
+		let remainingSendQueue = null;
 		if ( self.socket )
 			remainingSendQueue = self.clear();
 		
@@ -1810,17 +1811,13 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.reconnect = function( callback ) {
 		const self = this;
+		console.log( 'Connection.reconnect', [ self.sessionId, callback ]);
 		if ( null == self.sessionId ) {
 			callback( 'ERR_NO_SESSION' );
 			return;
 		}
 		
-		let sendQ = null;
-		console.log( 'Connection.reconnect', callback );
-		if ( null != self.socket )
-			sendQ = self.clear();
-		
-		self.connect( callback, sendQ );
+		self.connect( callback );
 	}
 	
 	ns.Connection.prototype.close = function() {
@@ -1900,7 +1897,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
-		console.log( 'Connection.socketSession', sid );
+		console.log( 'Connection - session id', sid );
 		self.sessionId = sid || null;
 		if ( null == sid )
 			self.LastMsgTime = null;
