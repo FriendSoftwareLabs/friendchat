@@ -380,14 +380,15 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		const self = this;
-		console.log( 'ws.handleSession - sid:', {
-			sid  : sessionId,
-			id : self.id,
-		});
 		hello.timeNow( 'ws handleSession' );
 		if ( !sessionId )
 			self.session = null;
 		
+		console.log( 'ws.handleSession - sid:', {
+			sid  : sessionId,
+			id   : self.id,
+			self : self.session,
+		});
 		if ( !self.session ) {
 			self.setState( 'session', null );
 			self.ended();

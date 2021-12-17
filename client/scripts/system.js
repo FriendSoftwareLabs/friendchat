@@ -263,14 +263,14 @@ library.rtc = library.rtc || {};
 	
 	ns.Login.prototype.login = function( msg ) {
 		const self = this;
-		var account = self.accounts[ msg.clientId ];
+		const account = self.accounts[ msg.clientId ];
 		if ( !account ) {
 			console.log( 'login.login - invalid client id', msg );
 			console.log( 'accounts', self.accounts );
 			return;
 		}
 		
-		var request = {
+		const request = {
 			url  : '/login',
 			verb : 'post',
 			data : {
@@ -279,6 +279,7 @@ library.rtc = library.rtc || {};
 				password : msg.password
 			},
 		};
+		console.log( 'Login - send login', request );
 		hello.request.send( request, logBack );
 		function logBack( response ) {
 			self.loginResponse( response );

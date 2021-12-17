@@ -131,7 +131,6 @@ var hello = null;
 	
 	ns.Hello.prototype.timeNow = function( str ) {
 		const self = this;
-		return;
 		const now = Date.now();
 		if ( null == self.startTiming ) {
 			self.startTiming = now;
