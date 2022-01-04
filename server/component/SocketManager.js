@@ -178,6 +178,7 @@ ns.SocketManager.prototype.releasePool = function() {
 
 ns.SocketManager.prototype.authenticate = async function( bundle, socket ) {
 	const self = this;
+	log( 'authenticate', [ bundle, socket.id ], 4 );
 	if ( !bundle ) {
 		log( 'authenticate - no bundle', bundle );
 		close();
@@ -357,6 +358,7 @@ ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 		session   : !!session,
 	});
 	if ( null != stored ) {
+		self.bind( socket );
 		await self.loginSession( stored, socket );
 		return;
 	}
