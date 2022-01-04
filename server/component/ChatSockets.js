@@ -287,7 +287,7 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	self.addToAccount( dbAcc, socket );
 	
 	// setting last login
-	await dbAccount.touch( account.clientId );
+	await dbAccount.touch( dbAcc.clientId );
 	
 	msg.response = {
 		status  : 200,
@@ -322,6 +322,9 @@ ns.ChatSockets.prototype.loginSession = async function( sessionId, accountId, so
 	}
 	
 	self.addToAccount( accConf, socket );
+	
+	await dbAcc.touch( accountId );
+	dbAcc.close();
 }
 
 ns.ChatSockets.prototype.addToAccount = function( accConf, socket ) {
