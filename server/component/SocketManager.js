@@ -36,6 +36,7 @@ ns.SocketManager = function( tlsConf, port ) {
 	
 	self.sockets = {}; // connections not logged in
 	self.sessions = {}; // logged in, can now be restored from the client
+	self.sessionStore = {};
 	self.socketToUserId = {};
 	self.key = null;
 	self.cert = null;
