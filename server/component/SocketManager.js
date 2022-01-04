@@ -486,7 +486,7 @@ ns.SocketManager.prototype.removeSocket = async function( socketId ) {
 
 ns.SocketManager.prototype.storeSession = function( sessionId, accountId, fUserId ) {
 	const self = this;
-	log( 'storeSession', [ sessionId, accountId ]);
+	log( 'storeSession', [ sessionId, accountId, fUserId ]);
 	const store = {
 		sessionId : sessionId,
 		accountId : accountId,
