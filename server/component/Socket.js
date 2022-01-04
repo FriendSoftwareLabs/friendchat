@@ -65,9 +65,12 @@ ns.Socket.prototype.send = function( msg ) {
 ns.Socket.prototype.setSession = function( sessionId, parentId ) {
 	const self = this;
 	log( 'setSession', {
-		sid : sessionId,
-		pid : parentId,
+		socket  : self.id,
+		current : [ self.sessionId, self.parentId ],
+		sid     : sessionId,
+		pid     : parentId,
 	});
+	
 	if ( sessionId ) {
 		self.sessionId = sessionId;
 		self.parentId = parentId;
@@ -135,9 +138,10 @@ ns.Socket.prototype.unsetSession = function() {
 	return self.sendOnSocket( sessionEvent );
 }
 
-// used from account
+// used from account or internally
 ns.Socket.prototype.kill = function() {
 	const self = this;
+	log( 'kill' );
 	self.cleanup();
 	self.emit( 'close' );
 }

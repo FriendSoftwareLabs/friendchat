@@ -38,7 +38,7 @@ ns.SocketManager = function( tlsConf, port ) {
 	self.sessions = {}; // logged in, can now be restored from the client
 	self.sessionStore = {};
 	self.socketToUserId = {};
-	self.sessionTimeout = 1000 * 60;
+	self.sessionTimeout = 1000 * 60 * 10;
 	self.key = null;
 	self.cert = null;
 	self.pool = null;
@@ -324,7 +324,10 @@ ns.SocketManager.prototype.bind = function( socket ) {
 	const self = this;
 	const sId = socket.id;
 	self.sockets[ sId ] = socket;
-	socket.on( 'close'   , e => self.removeSocket(   sId ));
+	socket.on( 'close'   , e => { 
+		log( 'socket on close', sId );
+		self.removeSocket( sId );
+	});
 	socket.on( 'session' , e => self.handleSession(  e, sId ));
 	socket.on( 'msg'     , e => self.receiveMessage( e, sId ));
 	
