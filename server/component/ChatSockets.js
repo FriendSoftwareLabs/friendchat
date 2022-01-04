@@ -311,12 +311,15 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	}
 }
 
-ns.ChatSockets.prototype.loginSession = async function( sessionId, accountId, socket ) {
+ns.ChatSockets.prototype.loginSession = async function( session, socket ) {
 	const self = this;
-	log( 'loginSession', [ sessionId, accountId, !!socket ] );
-	const dbAcc = new DbAccount( self.state.db, accountId );
+	log( 'loginSession', [ session, !!socket ] );
+	const fUserId = session.fUserId;
+	const accountId = session.accountId;
+	const dbAcc = new DbAccount( self.state.db, fUserId );
 	const accConf = await dbAcc.get( accountId );
 	if ( null == accConf ) {
+		log( 'no conf for acc', accountId );
 		self.removeSocket( socket.id );
 		return;
 	}

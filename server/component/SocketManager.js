@@ -354,11 +354,7 @@ ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 		session   : !!session,
 	});
 	if ( null != stored ) {
-		await self.loginSession(
-			stored.sessionId, 
-			stored.accountId,
-			socket
-		);
+		await self.loginSession( stored, socket );
 		return;
 	}
 	
@@ -474,12 +470,13 @@ ns.SocketManager.prototype.removeSocket = async function( socketId ) {
 	});
 	if ( !!sessionId && !!accId ) {
 		const parent = self.getParent( accId );
-		if ( parent )
+		if ( parent ) {
 			parent.detachSession( socketId );
+			self.storeSession( sessionId, accId, parent.userId );
+		}
 		
 		delete self.sessions[ sessionId ];
 		await socket.unsetSession();
-		self.storeSession( sessionId, accId );
 	}
 	
 	delete self.socketToUserId[ socketId ];
@@ -487,12 +484,13 @@ ns.SocketManager.prototype.removeSocket = async function( socketId ) {
 	socket.close();
 }
 
-ns.SocketManager.prototype.storeSession = function( sessionId, accountId ) {
+ns.SocketManager.prototype.storeSession = function( sessionId, accountId, fUserId ) {
 	const self = this;
 	log( 'storeSession', [ sessionId, accountId ]);
 	const store = {
 		sessionId : sessionId,
 		accountId : accountId,
+		fUserId   : fUserId,
 		timeout   : setTimeout( remove, self.sessionTimeout ),
 	};
 	self.sessionStore[ sessionId ] = store;
