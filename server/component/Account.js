@@ -27,13 +27,13 @@ var Activity = require( './Activity' );
 
 var ns = {};
 
-ns.Account = function( conf, dbPool ) {
+ns.Account = function( conf, dbPool, onclose ) {
 	if( !( this instanceof ns.Account ))
 		return new ns.Account( state, conf );
 	
 	const self = this;
 	self.db = dbPool;
-	self.onclose = conf.onclose;
+	self.onclose = onclose;
 	self.clientId = conf.clientId;
 	self.userId = conf.userId;
 	self.name = conf.name;

@@ -342,23 +342,34 @@ ns.SocketManager.prototype.unbind = function( socket ) {
 	socket.release( 'msg' );
 }
 
-ns.SocketManager.prototype.checkSession = function( sessionId, socket ) {
+ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 	const self = this;
+	const stored = self.getStoredSession( sessionId );
 	const session = self.getSession( sessionId );
-	if ( !session ) {
-		log( 'checkSession - no session found', [ sessionId, socket.id ]);
-		socket.unsetSession()
-			.then( e => {
-				socket.close();
-			})
-			.catch( e => {
-				socket.close();
-			});
-			
+	log( 'checkSession', {
+		sessionId : sessionId,
+		stored    : stored,
+		session   : !!session,
+	});
+	if ( null != stored ) {
+		await self.loginSession(
+			stored.sessionId, 
+			stored.accountId,
+			socket
+		);
 		return;
 	}
 	
-	self.replaceSession( session, socket );
+	if ( null == session ) {
+		log( 'checkSession - no session found', [ sessionId, socket.id ]);
+		try {
+			await socket.unsetSession()
+		} catch( ex ) {
+			
+		}
+	} else
+		self.replaceSession( session, socket );
+	
 	socket.close();
 }
 
@@ -412,8 +423,8 @@ ns.SocketManager.prototype.setSession = function( socket, parentId ) {
 
 ns.SocketManager.prototype.getSession = function( id ) {
 	const self = this;
-	const session = self.sessions[ id ];
-	if ( !session ) {
+	const socket = self.sessions[ id ];
+	if ( !socket ) {
 		log( 'getSession, no session for', {
 			sid  : id,
 			sess : self.sessions,
@@ -421,7 +432,22 @@ ns.SocketManager.prototype.getSession = function( id ) {
 		return null;
 	}
 	
-	return session;
+	return socket;
+}
+
+ns.SocketManager.prototype.getStoredSession = function( sId ) {
+	const self = this;
+	const stored = self.sessionStore[ sId ];
+	delete self.sessionStore[ sId ];
+	if ( null == stored )
+		return null;
+	
+	if ( null != stored.timeout ) {
+		clearTimeout( stored.timeout );
+		stored.timeout = null;
+	}
+	
+	return stored;
 }
 
 ns.SocketManager.prototype.getSocket = function( sId ) {
@@ -429,26 +455,64 @@ ns.SocketManager.prototype.getSocket = function( sId ) {
 	return self.sockets[ sId ] || null;
 }
 
-ns.SocketManager.prototype.removeSocket = async function( sId ) {
+ns.SocketManager.prototype.removeSocket = async function( socketId ) {
 	const self = this;
-	const socket = self.getSocket( sId );
+	const socket = self.getSocket( socketId );
 	if ( !socket ) {
-		log( 'removeSocket - no socket', sId );
+		log( 'removeSocket - no socket', socketId );
 		return;
 	}
 	
-	if ( socket.sessionId ) {
-		const parent = self.getParent( socket.parentId );
+	const sessionId = socket.sessionId;
+	const accId = socket.parentId;
+	log( 'removeSocket', {
+		socketId  : socketId,
+		sessionId : sessionId,
+		accId     : accId,
+	});
+	if ( !!sessionId && !!accId ) {
+		const parent = self.getParent( accId );
 		if ( parent )
-			parent.detachSession( sId );
+			parent.detachSession( socketId );
 		
-		delete self.sessions[ socket.sessionId ];
+		delete self.sessions[ sessionId ];
 		await socket.unsetSession();
+		self.storeSession( sessionId, accId );
 	}
 	
-	delete self.socketToUserId[ sId ];
-	delete self.sockets[ sId ];
+	delete self.socketToUserId[ socketId ];
+	delete self.sockets[ socketId ];
 	socket.close();
+}
+
+ns.SocketManager.prototype.storeSession = function( sessionId, accountId ) {
+	const self = this;
+	log( 'storeSession', [ sessionId, accountId ]);
+	const store = {
+		sessionId : sessionId,
+		accountId : accountId,
+		timeout   : setTimeout( remove, self.sessionTimeout ),
+	};
+	self.sessionStore[ sessionId ] = store;
+	
+	function remove() {
+		log( 'remove stored session', sessionId );
+		self.removeSession( sessionId );
+	}
+	
+}
+
+ns.SocketManager.prototype.removeSession = function( sessionId ) {
+	const self = this;
+	log( 'removeSession', sessionId );
+	const store = self.sessionStore[ sessionId ];
+	delete self.sessionStore[ sessionId ];
+	if ( null == store )
+		return;
+	
+	if ( null != store.timeout )
+		clearTimeout( store.timeout );
+	
 }
 
 ns.SocketManager.prototype.makeSocketId = function() {

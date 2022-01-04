@@ -113,7 +113,7 @@ ns.ChatSockets.prototype.loadAccounts = async function( msg, socketId ) {
 		
 		msg.response = {
 			status : 200,
-			data : accounts,
+			data   : accounts,
 		};
 		
 		self.send( msg, socketId );
@@ -284,21 +284,7 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 		return;
 	}
 	
-	let account = self.state.account[ dbAcc.clientId ];
-	if ( !account ) { // fresh login, need an account instance
-		dbAcc.onclose = onLogout;
-		account = new Account( dbAcc, self.state.db );
-		self.state.account[ account.clientId ] = account;
-		
-		function onLogout() {
-			self.unsetAccount( account.clientId );
-		}
-	}
-	
-	// hand over socket to account
-	socket.release( 'msg' );
-	self.setSession( socket, account.clientId );
-	account.attachSession( socket );
+	self.addToAccount( dbAcc, socket );
 	
 	// setting last login
 	await dbAccount.touch( account.clientId );
@@ -323,6 +309,37 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 			return self.state.account[ accId ].name;
 		}
 	}
+}
+
+ns.ChatSockets.prototype.loginSession = async function( sessionId, accountId, socket ) {
+	const self = this;
+	log( 'loginSession', [ sessionId, accountId, !!socket ] );
+	const dbAcc = new DbAccount( self.state.db, accountId );
+	const accConf = await dbAcc.get( accountId );
+	if ( null == accConf ) {
+		self.removeSocket( socket.id );
+		return;
+	}
+	
+	self.addToAccount( accConf, socket );
+}
+
+ns.ChatSockets.prototype.addToAccount = function( accConf, socket ) {
+	const self = this;
+	let account = self.state.account[ accConf.clientId ];
+	if ( !account ) { // fresh login, need an account instance
+		account = new Account( accConf, self.state.db, onLogout );
+		self.state.account[ account.clientId ] = account;
+		
+		function onLogout() {
+			self.unsetAccount( account.clientId );
+		}
+	}
+	
+	// hand over socket to account
+	socket.release( 'msg' );
+	self.setSession( socket, account.clientId );
+	account.attachSession( socket );
 }
 
 // this is the account calling close on itself, it just needs to be deleted here

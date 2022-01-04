@@ -125,6 +125,7 @@ ns.Socket.prototype.detach = function() {
 
 ns.Socket.prototype.unsetSession = function() {
 	const self = this;
+	log( 'unsetSession' );
 	self.sessionId = false;
 	const sessionEvent = {
 		type : 'session',
@@ -334,11 +335,12 @@ ns.Socket.prototype.clearPingTimers = function() {
 
 ns.Socket.prototype.startPingClose = function() {
 	const self = this;
-	if ( self.pingoutTimer )
+	if ( null != self.pingoutTimer )
 		return;
 	
 	self.pingoutTimer = setTimeout( kill, self.sessionTimeout );
 	function kill() {
+		log( 'kill by ping timeout', self.id );
 		self.pingoutTimer = null;
 		self.kill();
 	}
@@ -393,15 +395,15 @@ ns.Socket.prototype.executeSendQueue = function() {
 
 ns.Socket.prototype.connError = function( event ) {
 	const self = this;
-	self.handleClose();
+	self.handleClose( 'error' );
 }
 
 ns.Socket.prototype.connClose = function( event ) {
 	const self = this;
-	self.handleClose();
+	self.handleClose( 'close' );
 }
 
-ns.Socket.prototype.handleClose = function() {
+ns.Socket.prototype.handleClose = function( type ) {
 	const self = this;
 	if ( !self.sessionId ) {
 		self.kill();
@@ -415,6 +417,7 @@ ns.Socket.prototype.handleClose = function() {
 	// time out
 	self.errorTimer = setTimeout( kill, self.sessionTimeout );
 	function kill() {
+		log( 'kill by socket close', [ self.id, type ]);
 		self.errorTimer = null;
 		self.kill();
 	}
