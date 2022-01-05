@@ -882,7 +882,7 @@ library.view = library.view || {};
 			});
 		
 		function getBack( res ) {
-			settings = res.data || {};
+			const settings = res.data || {};
 			updateFromQueue( settings );
 		}
 		
