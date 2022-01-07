@@ -26,7 +26,7 @@ library.component = library.component || {};
 
 // SOCKET
 (function( ns, undefined ) {
-	ns.Socket = function( conf, inheritedSendQueue, sessionId ) {
+	ns.Socket = function( conf, sessionId, inheritedSendQueue ) {
 		if ( !( this instanceof ns.Socket ))
 			return new ns.Socket( conf );
 		
@@ -449,6 +449,7 @@ library.component = library.component || {};
 	ns.Socket.prototype.sendOnSocket = function( msgObj, force ) {
 		const self = this;
 		if ( !wsReady() ) {
+			console.log( 'Socket.sendOnSocket - not ready, queueing', [ msgObj, force ]);
 			queue( msgObj );
 			return;
 		}

@@ -1762,8 +1762,13 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.send = function( msg ) {
 		const self = this;
-		if ( !msg || !self.socket )
+		if ( !msg || !self.socket ){
+			console.log( 'Connection.send - boop', {
+				msg    : !!msg,
+				socket : !!self.socket,
+			});
 			return false;
+		}
 		
 		self.socket.send( msg );
 		return true;
@@ -1793,6 +1798,9 @@ library.rtc = library.rtc || {};
 		
 		self.host = url;
 		const auth = hello.getAuthBundle();
+		if ( remainingSendQueue && remainingSendQueue.length )
+			console.log( 'Connection.connect - leftovers', remainingSendQueue );
+		
 		self.socket = new library.component.Socket(
 			{
 				url        : url,
@@ -1802,8 +1810,8 @@ library.rtc = library.rtc || {};
 				onstate    : onState,
 				onend      : onEnd,
 			}, 
-			remainingSendQueue, 
-			self.sessionId
+			self.sessionId,
+			null //remainingSendQueue
 		);
 		
 		function onMessage( msg, wsId ) { self.message( msg, wsId ); }
