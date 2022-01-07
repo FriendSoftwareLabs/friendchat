@@ -974,6 +974,11 @@ var hello = null;
 			return;
 		
 		self.isOnline = isOnline;
+		if ( self.isOnline )
+			console.log( '--- online' );
+		else
+			console.log( '--- offline' );
+		
 		self.app.toAllViews({
 			type : 'app-online',
 			data : isOnline,
@@ -1312,6 +1317,7 @@ var hello = null;
 		
 		if ( self.conn ) {
 			const wsOk = self.conn.verify();
+			console.log( 'handleAppResume - ws check', wsOk );
 			if ( wsOk )
 				return;
 		}
