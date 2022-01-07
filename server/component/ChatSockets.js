@@ -41,9 +41,9 @@ ns.ChatSockets.prototype.init = function() {
 	const self = this;
 	self.messageMap = self.messageMap || {
 		'/create' : create,
-		'/read' : load,
+		'/read'   : load,
 		'/remove' : remove,
-		'/login' : login,
+		'/login'  : login,
 	};
 	
 	function create( e, sid ) { self.createAccount( e, sid ); }
@@ -95,6 +95,7 @@ ns.ChatSockets.prototype.send = function( msg, socketId ) {
 
 ns.ChatSockets.prototype.loadAccounts = async function( msg, socketId ) {
 	const self = this;
+	log( 'loadAccounts', [ msg, socketId ], 3 );
 	const userId = self.socketToUserId[ socketId ];
 	if ( !userId ) {
 		let err = new Error();

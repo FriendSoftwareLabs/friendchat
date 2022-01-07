@@ -811,6 +811,10 @@ var hello = null;
 	
 	ns.Hello.prototype.doLogin = function() {
 		const self = this;
+		console.log( 'doLogin', {
+			login : self.login,
+			loggedIn : self.loggedIn,
+		})
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;

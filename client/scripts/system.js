@@ -139,6 +139,7 @@ library.rtc = library.rtc || {};
 		);
 		
 		function getBack( msg ) {
+			console.log( 'Login getBack', msg );
 			if ( msg.status !== 200 ) {
 				console.log( 'hello.login.get -failed', msg );
 				return;
