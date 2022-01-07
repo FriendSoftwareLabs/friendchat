@@ -852,7 +852,9 @@ var hello = null;
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
 		console.log( 'hello.doRelogin', {
-			tried : self.triedRelogin,
+			login    : self.login,
+			loggedin : self.loggedIn,
+			tried    : self.triedRelogin,
 		});
 		self.triedRelogin = true;
 		self.conn.connect( connected );

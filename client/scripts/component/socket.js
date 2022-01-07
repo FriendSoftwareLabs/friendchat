@@ -48,6 +48,7 @@ library.component = library.component || {};
 		
 		// INTERNAL
 		//self.id = friendUP.tool.uid( 'ws' );
+		self.id = null; // socket id will be set by server
 		self.ws = null;
 		self.state = 'new';
 		self.allowReconnect = true;
@@ -449,12 +450,19 @@ library.component = library.component || {};
 	ns.Socket.prototype.sendOnSocket = function( msgObj, force ) {
 		const self = this;
 		if ( !wsReady() ) {
-			console.log( 'Socket.sendOnSocket - not ready, queueing', [ msgObj, force ]);
+			console.log( 'Socket.sendOnSocket - WS not ready, queueing', {
+				msg : msgObj,
+				sid : self.id,
+			});
 			queue( msgObj );
 			return;
 		}
 		
 		if ( !socketReady( force )) {
+			console.log( 'Socket.sendOnSocket - socket not ready, queueing', {
+				msg : msgObj,
+				sid : self.id,
+			})
 			queue( msgObj );
 			return;
 		}
@@ -484,7 +492,7 @@ library.component = library.component || {};
 		}
 		
 		function wsReady() {
-			var ready = !!( self.ws && ( self.ws.readyState === 1 ));
+			const ready = !!( self.ws && ( self.ws.readyState === 1 ));
 			return ready;
 		}
 	}
