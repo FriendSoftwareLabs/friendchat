@@ -895,7 +895,7 @@ var hello = null;
 		const self = this;
 		console.log( 'updateConnState', state );
 		if ( 'authenticate' == state.type ) {
-			self.handleAuth( state );
+			self.handleConnAuth( state );
 			return;
 		}
 		
