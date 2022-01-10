@@ -292,16 +292,13 @@ var hello = null;
 			self.finalizeConfig( hostConf );
 			self.main.setTitle( self.config.appName );
 			self.initDormant();
-			self.initSystemModules( connBack );
+			self.initSystemModules();
 		}
 		
 		function confErr( err ) {
 			console.log( 'confErr', err );
 		}
 		
-		function connBack() {
-			self.doLogin();
-		}
 	}
 	
 	ns.Hello.prototype.runGuest = function() {
@@ -619,7 +616,7 @@ var hello = null;
 		}
 	}
 	
-	ns.Hello.prototype.initSystemModules = function( callback ) {
+	ns.Hello.prototype.initSystemModules = function() {
 		const self = this;
 		self.timeNow( 'initSystemModules' );
 		self.conn = new library.system.Connection( null, onWSState );
@@ -633,19 +630,7 @@ var hello = null;
 				self.dormantAllowWrite,
 			);
 		
-		self.conn.connect( connBack );
-		function connBack( err ) {
-			self.timeNow( 'ws connected' );
-			if( err ) {
-				console.log( 'connBack - conn err', err );
-				self.showConnStatus( err );
-				return;
-			}
-			
-			self.connected = true;
-			callback();
-		}
-		
+		self.conn.connect();
 		function onWSState( e ) { self.updateConnState( e ); }
 	}
 	
@@ -779,7 +764,7 @@ var hello = null;
 				return;
 			}
 			
-			var host = library.tool.buildDestination( 'wss://', conf.data.host );
+			const host = library.tool.buildDestination( 'wss://', conf.data.host );
 			self.conn = new library.system.Connection( host, onWSState );
 			self.items = new library.system.Items();
 			self.intercept = new library.system.Interceptor();
@@ -812,12 +797,18 @@ var hello = null;
 	ns.Hello.prototype.doLogin = function() {
 		const self = this;
 		console.log( 'doLogin', {
-			login : self.login,
+			login    : self.login,
 			loggedIn : self.loggedIn,
+			account  : self.account,
 		})
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;
+		}
+		
+		if ( self.loggedIn ) {
+			self.doRelogin();
+			return;
 		}
 		
 		self.login = new library.system.Login( null, onlogin, onclose );
@@ -825,20 +816,6 @@ var hello = null;
 			self.loggedIn = true;
 			self.login.close();
 			self.login = null;
-			
-			/*
-			if ( !account ) {
-				hello.log.alert( Application.i18n( 'i18n_no_account_to_login' ) );
-				hello.log.show();
-				return;
-			}
-			*/
-			
-			/*
-			hello.log.positive( 
-				Application.i18n( 'i18n_logged_in_as' ) + ': ' + account.name );
-			*/
-			
 			self.timeNow( 'logged in, update main' );
 			self.main.setAccountLoaded( account );
 		}
@@ -854,24 +831,15 @@ var hello = null;
 		console.log( 'hello.doRelogin', {
 			login    : self.login,
 			loggedin : self.loggedIn,
+			account  : self.account,
 			tried    : self.triedRelogin,
 		});
 		self.triedRelogin = true;
-		self.conn.connect( connected );
-		function connected( err, res ) {
-			console.log( 'hello.doRelogin - connected', [ err, res ]);
-			if ( err ) {
-				console.log( 'doRelogin connect failed', err );
-				hello.quit();
-				return;
-			}
-			
-			const acc = {
-				clientId : self.account.clientId,
-				name     : self.account.displayName,
-			};
-			self.login = new library.system.Login( acc, success, fail );
-		}
+		const acc = {
+			clientId : self.account.clientId,
+			name     : self.account.displayName,
+		};
+		self.login = new library.system.Login( acc, success, fail );
 		
 		function success( account ) {
 			self.triedRelogin = false;
@@ -917,20 +885,20 @@ var hello = null;
 		const self = this;
 		console.trace( 'hello.reconnect', self.conn );
 		if ( self.conn )
-			self.conn.reconnect( connBack );
+			self.conn.connect();
 		else
 			self.runUser();
 		
-		function connBack( err, res ) {
-			console.log( 'hello.reconnect connBack', [ err, res ]);
-			if ( err )
-				self.doRelogin();
-		}
 	}
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
 		console.log( 'updateConnState', state );
+		if ( 'authenticate' == state.type ) {
+			self.handleAuth( state );
+			return;
+		}
+		
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
 		if (   'error' === state.type
@@ -945,7 +913,7 @@ var hello = null;
 		
 		if ( 'end' === state.type && !self.triedRelogin ) {
 			if ( !self.triedRelogin )
-				self.doRelogin();
+				self.doLogin();
 			else
 				self.showLoginFail();
 			
@@ -961,6 +929,21 @@ var hello = null;
 			
 			return true;
 		}
+	}
+	
+	ns.Hello.prototype.handleConnAuth = function( state ) {
+		const self = this;
+		console.log( 'handleConnAuth', state );
+		const authed = state.data;
+		if ( !authed )
+			return;
+		
+		self.connected = true;
+		self.timeNow( 'ws connected' );
+		if ( self.isOnline )
+			return;
+		
+		self.doLogin();
 	}
 	
 	ns.Hello.prototype.showLoginFail = function() {
@@ -1104,6 +1087,7 @@ var hello = null;
 	
 	ns.Hello.prototype.logout = function() {
 		const self = this;
+		self.isOnline = false;
 		self.loggedIn = false;
 		self.forceShowLogin = true;
 		self.main.logout();

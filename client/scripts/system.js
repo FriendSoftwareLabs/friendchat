@@ -1774,7 +1774,7 @@ library.rtc = library.rtc || {};
 		return true;
 	}
 	
-	ns.Connection.prototype.connect = function( callback ) {
+	ns.Connection.prototype.connect = function() {
 		const self = this;
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
@@ -1782,9 +1782,6 @@ library.rtc = library.rtc || {};
 		let remainingSendQueue = null;
 		if ( self.socket )
 			remainingSendQueue = self.clear();
-		
-		if ( callback )
-			self.readyCallback = callback;
 		
 		let url = null;
 		if ( self.altHost )
@@ -1817,17 +1814,6 @@ library.rtc = library.rtc || {};
 		function onMessage( msg, wsId ) { self.message( msg, wsId ); }
 		function onState( state, wsId ) { self.handleState( state, wsId ); }
 		function onEnd( msg, wsId ) { self.handleEnd( msg, wsId ); }
-	}
-	
-	ns.Connection.prototype.reconnect = function( callback ) {
-		const self = this;
-		console.log( 'Connection.reconnect', [ self.sessionId, callback ]);
-		if ( null == self.sessionId ) {
-			callback( 'ERR_NO_SESSION' );
-			return;
-		}
-		
-		self.connect( callback );
 	}
 	
 	ns.Connection.prototype.close = function() {
@@ -1894,15 +1880,18 @@ library.rtc = library.rtc || {};
 		const self = this;
 		console.log( 'Connection.socketauth', {
 			success  : success,
-			callback : self.readyCallback,
+			session  : self.sessionId,
 		});
-		if ( !success )
-			return;
 		
-		const callback = self.readyCallback;
-		delete self.readyCallback;
-		if ( callback )
-			callback( null, success );
+		if ( self.sessionId ) {
+			self.connect();
+			return;
+		}
+		
+		self.onstate({
+			type : 'authenticate',
+			data : success,
+		});
 	}
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
