@@ -912,9 +912,10 @@ var hello = null;
 		self.showConnStatus( state );
 		
 		if ( 'end' === state.type && !self.triedRelogin ) {
-			if ( !self.triedRelogin )
-				self.doLogin();
-			else
+			if ( !self.triedRelogin ) {
+				self.conn.connect();
+				//self.doLogin();
+			} else
 				self.showLoginFail();
 			
 			return;
