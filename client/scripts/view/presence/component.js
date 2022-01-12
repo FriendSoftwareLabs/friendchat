@@ -2397,6 +2397,7 @@ var hello = window.hello || {};
 			}
 			
 			function send( e ) {
+				console.log( 'send', e );
 				e.stopPropagation();
 				e.preventDefault();
 				self.sendMsgTarget();
@@ -2413,8 +2414,9 @@ var hello = window.hello || {};
 			self.msgTargetInput.setValue( currMsg );
 			self.input.setValue( '' );
 			
-			function onSubmit() {
-				self.sendMsgTarget();
+			function onSubmit( e ) {
+				console.log( 'onSubmit', e );
+				self.sendMsgTarget( e );
 			}
 		}
 		
@@ -2493,12 +2495,15 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.MsgBuilder.prototype.sendMsgTarget = function() {
+	ns.MsgBuilder.prototype.sendMsgTarget = function( message ) {
 		const self = this;
 		if ( !self.msgTargetInput )
 			return;
 		
-		const message = self.msgTargetInput.getValue();
+		console.log( 'sendMsgTarget', message );
+		if ( null == message )
+			message = self.msgTargetInput.getValue();
+		
 		if ( !message || !message.length )
 			return;
 		
@@ -2857,6 +2862,14 @@ var hello = window.hello || {};
 			message = original;
 		
 		const timeStr = self.getClockStamp( msg.time );
+		console.log( 'buildMsg', {
+			msg        : msg,
+			from       : from,
+			user       : user,
+			canEdit    : canEdit,
+			canDelete  : canDelete,
+			canForward : canForward,
+		});
 		const actionsHtml = self.buildMsgActions( canEdit, canForward, canDelete );
 		const msgConf = {
 			msgId      : mId,
@@ -3142,9 +3155,12 @@ var hello = window.hello || {};
 		// used for private convos, implemented in PrivateMsgBuilder
 	}
 	
-	ns.MsgBuilder.prototype.handleRemove = async function( e ) {
+	ns.MsgBuilder.prototype.handleRemove = async function( event ) {
 		const self = this;
-		const el = window.document.getElementById( e );
+		console.log( 'MsgBuilder.handleRemove', event );
+		const msg = event.data;
+		const mId = msg.msgId;
+		const el = window.document.getElementById( mId );
 		if ( null == el )
 			return;
 		
@@ -3200,10 +3216,11 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.rebuildMessage = async function( msgId ) {
 		const self = this;
 		const currEl = window.document.getElementById( msgId );
+		console.log( 'rebuildMessage', [ msgId, currEl ]);
 		if ( null == currEl )
 			return false;
 		
-		let nextMsg = null;
+		let msgConf = null;
 		const get = {
 			type : 'msg-get',
 			data : {
@@ -3211,18 +3228,19 @@ var hello = window.hello || {};
 			},
 		};
 		try {
-			nextMsg = await self.conn.request( get );
+			msgConf = await self.conn.request( get );
 		} catch( ex ) {
 			console.log( 'view.presence.MSgBuilder.handleRemove - get msg ex', ex );
 			return;
 		}
 		
-		if ( null == nextMsg )
+		if ( null == msgConf )
 			return;
 		
+		console.log( 'rebuildMessage - nextMsg', msgConf );
 		const conf = {
 			inGroup : false,
-			event   : nextMsg.data,
+			event   : msgConf.data,
 		};
 		const freshEl = self.buildMsg( conf, true );
 		currEl.parentNode.insertBefore( freshEl, currEl );
