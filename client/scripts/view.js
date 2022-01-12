@@ -707,14 +707,31 @@ library.view = library.view || {};
 		
 		function loadBack( res ) {
 			const localSettings = res.data || {};
-			if ( !localSettings.preferedDevices )
-				loadOldDevices( localSettings );
-			else
+			console.log( 'app.Live, live-settings loadBack', localSettings );
+			if ( null != localSettings.preferedDevices ) {
 				setup( localSettings );
+				return;
+			}
+			
+			const pd = localSettings[ 'prefered-devices' ];
+			if ( null != pd ) {
+				localSettings.preferedDevices = pd;
+				setup( localSettings );
+				
+				self.storeLocalSetting({
+					setting : 'preferedDevices',
+					value   : pd,
+				});
+				self.storeLocalSetting({
+					setting : 'prefered-devices',
+					value   : undefined,
+				});
+			} else
+				loadOldDevices( localSettings );
 		}
 		
 		function loadOldDevices( localSettings ) {
-			api.ApplicationStorage.get( 'prefered-devices' )
+			api.ApplicationStorage.get( 'preferedDevices' )
 				.then( devBack )
 				.catch( e => {
 					console.log( 'Live.init - applicationStorage uncaught error', e );
