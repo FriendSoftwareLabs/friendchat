@@ -1986,7 +1986,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Selfie.prototype.savePreferedDevices = function( devices ) {
 		const self = this;
 		console.log( 'savePreferedDevices', devices );
-		self.saveLocalSetting( 'preferedDevices', devices );
+		self.saveLocalSetting( 'prefered-devices', devices );
 	}
 	
 	ns.Selfie.prototype.handleQuality = function( level ) {
