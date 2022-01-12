@@ -265,6 +265,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.RTC.prototype.convertLegacyDevices = function() {
 		const self = this;
 		const pref = self.localSettings.preferedDevices;
+		console.log( 'convertLegacyDevices', pref );
 		if ( !pref )
 			return;
 		
@@ -1983,6 +1984,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.savePreferedDevices = function( devices ) {
 		const self = this;
+		console.log( 'savePreferedDevices', devices );
 		self.saveLocalSetting( 'preferedDevices', devices );
 	}
 	

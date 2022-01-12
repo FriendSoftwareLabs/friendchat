@@ -161,13 +161,14 @@ library.rtc = library.rtc || {};
 	// without parser, default output
 	// [ device, ]
 	ns.MediaDevices.prototype.enumerate = function( parser ) {
-		var self =this;
+		const self = this;
 		return new window.Promise( function( resolve, reject ) {
 			navigator.mediaDevices.enumerateDevices()
 				.then( foundDevices )
 				.catch( enumError );
 				
 			function foundDevices( arr ) {
+				console.log( 'MediaDevices.enumerate - found devices', arr );
 				let res = null;
 				if ( parser )
 					res = parser( arr );
