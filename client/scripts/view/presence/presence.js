@@ -2215,7 +2215,7 @@ library.view = library.view || {};
 			canEdit = true;
 		}
 		
-		if ( fromUser && fromUser.isAdmin ) {
+		if ( selfUser && selfUser.isAdmin ) {
 			canEdit = true;
 			canDelete = true;
 		}
@@ -2227,6 +2227,17 @@ library.view = library.view || {};
 		else
 			message = original;
 		
+		console.log( 'buildWorkMsg', {
+			msg        : msg,
+			from       : fromUser,
+			user       : selfUser,
+			canEdit    : canEdit,
+			canDelete  : canDelete,
+			canForward : canForward,
+			fromThis   : fromThis,
+			fromSuper  : fromSuper,
+			fromSub    : fromSub,
+		});
 		const timeStr = self.getClockStamp( msg.time );
 		const actionsHtml = self.buildMsgActions( canEdit, canForward, canDelete );
 		const msgConf = {
