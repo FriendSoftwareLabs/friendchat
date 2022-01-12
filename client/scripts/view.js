@@ -721,6 +721,7 @@ library.view = library.view || {};
 				});
 			
 			function devBack( res ) {
+				console.log( 'app.Live.loadOldDevices, devBack', res );
 				let devs = res.data;
 				localSettings.preferedDevices = devs;
 				setup( localSettings );
@@ -867,6 +868,7 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.storeLocalSetting = function( data ) {
 		const self = this;
+		console.log( 'app.Live.storeLocalSetting', data );
 		if ( self.settingsQueue ) {
 			self.settingsQueue.push( data );
 			return;

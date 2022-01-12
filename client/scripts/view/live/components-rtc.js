@@ -2850,6 +2850,7 @@ library.rtc = library.rtc || {};
 			deviceSource
 	) {
 		const self = this;
+		console.log( 'Media, prefDev', preferedDevices );
 		library.component.EventEmitter.call( self );
 		self.permissions = permissions;
 		self.preferedDevices = preferedDevices || {};
@@ -2887,6 +2888,7 @@ library.rtc = library.rtc || {};
 	// permissions and preferedDevices are optional
 	ns.Media.prototype.create = function( preferedDevices ) {
 		const self = this;
+		console.log( 'Media.create'. preferedDevices );
 		self.updatePreferedDevices( preferedDevices );
 		let send = self.permissions.send;
 		if ( !send || ( !send.audio && !send.video )) {
@@ -2900,6 +2902,7 @@ library.rtc = library.rtc || {};
 		
 		function devsBack( available ) {
 			const kinds = {};
+			console.log( 'Media.create - available', available );
 			self.lastAvailable = available;
 			setupConf( available );
 		}

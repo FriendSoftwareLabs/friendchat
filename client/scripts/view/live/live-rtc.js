@@ -63,6 +63,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 (function( ns, undefined ) {
 	ns.RTC = function( conn, UI, conf, onclose, onready ) {
 		const self = this;
+		console.log( 'RTC, conf', conf );
 		self.conn = conn || null;
 		self.ui = UI;
 		self.userId = conf.userId;
