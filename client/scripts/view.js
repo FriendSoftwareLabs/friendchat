@@ -708,12 +708,18 @@ library.view = library.view || {};
 		function loadBack( res ) {
 			const localSettings = res.data || {};
 			console.log( 'app.Live, live-settings loadBack', localSettings );
+			const pd = localSettings[ 'prefered-devices' ];
 			if ( null != localSettings.preferedDevices ) {
 				setup( localSettings );
+				if ( null != pd )
+					self.storeLocalSetting({
+						setting : 'prefered-devices',
+						value   : undefined,
+					});
+				
 				return;
 			}
 			
-			const pd = localSettings[ 'prefered-devices' ];
 			if ( null != pd ) {
 				localSettings.preferedDevices = pd;
 				setup( localSettings );
