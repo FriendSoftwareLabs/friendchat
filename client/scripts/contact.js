@@ -2409,6 +2409,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleChat = async function( event ) {
 		const self = this;
+		console.log( 'handleChat', event );
 		const chat = {
 			type : 'chat',
 			data : event,
@@ -2426,9 +2427,9 @@ library.contact = library.contact || {};
 			await self.updateMessageEdit( event.data );
 		
 		if ( 'remove' === event.type )
-			await self.handleRemoveMessage( event.data );
+			await self.handleRemoveMessage( event.data.data );
 		if ( 'delete' === event.type )
-			await self.handleRemoveMessage( event.data.data.msgId );
+			await self.handleRemoveMessage( event.data.data );
 		
 		if ( 'last-message' === event.type )
 			await self.updateLastMessage( event.data );
@@ -2498,8 +2499,10 @@ library.contact = library.contact || {};
 		self.activity.message( ...args );
 	}
 	
-	ns.PresenceRoom.prototype.handleRemoveMessage = async function( msgId ) {
+	ns.PresenceRoom.prototype.handleRemoveMessage = async function( msg ) {
 		const self = this;
+		console.log( 'handleRemoveMessage', msg );
+		const msgId = msg.msgId;
 		if ( null == self.lastMessage )
 			return;
 		
