@@ -2128,6 +2128,7 @@ library.rtc = library.rtc || {};
 		if ( self.state === type )
 			return;
 		
+		self.log( 'setting state', type );
 		self.state = type;
 		
 		self.emitState( type, data );
