@@ -367,7 +367,7 @@ var hello = null;
 					return;
 				}
 				
-				//console.log( 'getUserInfo done', data );
+				console.log( 'getUserInfo done', data );
 				resolve( data );
 			}
 			
@@ -796,11 +796,13 @@ var hello = null;
 	
 	ns.Hello.prototype.doLogin = function() {
 		const self = this;
+		/*
 		console.log( 'doLogin', {
 			login    : self.login,
 			loggedIn : self.loggedIn,
 			account  : self.account,
-		})
+		});
+		*/
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;
@@ -828,12 +830,14 @@ var hello = null;
 	
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
+		/*
 		console.log( 'hello.doRelogin', {
 			login    : self.login,
 			loggedin : self.loggedIn,
 			account  : self.account,
 			tried    : self.triedRelogin,
 		});
+		*/
 		self.triedRelogin = true;
 		const acc = {
 			clientId : self.account.clientId,
@@ -893,7 +897,7 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
-		console.log( 'updateConnState', state );
+		//console.log( 'updateConnState', state );
 		if ( 'authenticate' == state.type ) {
 			self.handleConnAuth( state );
 			return;
@@ -934,7 +938,7 @@ var hello = null;
 	
 	ns.Hello.prototype.handleConnAuth = function( state ) {
 		const self = this;
-		console.log( 'handleConnAuth', state );
+		//console.log( 'handleConnAuth', state );
 		const authed = state.data;
 		if ( !authed )
 			return;
@@ -958,10 +962,12 @@ var hello = null;
 			return;
 		
 		self.isOnline = isOnline;
+		/*
 		if ( self.isOnline )
 			console.log( '--- online' );
 		else
 			console.log( '--- offline' );
+		*/
 		
 		self.app.toAllViews({
 			type : 'app-online',
@@ -989,7 +995,6 @@ var hello = null;
 	// From main view
 	ns.Hello.prototype.handleConnState = function( e ) {
 		const self = this;
-		console.log( 'hello.handleConnState', e );
 		if ( 'reconnect' === e.type )
 			self.reconnect();
 		

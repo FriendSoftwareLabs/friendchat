@@ -85,7 +85,7 @@ library.component = library.component || {};
 	// whats the server going to do? cry more lol
 	ns.Socket.prototype.close = function( code, reason ) {
 		const self = this;
-		console.log( 'app.Socket.close', self.id );
+		//console.log( 'app.Socket.close', self.id );
 		self.unsetSession();
 		self.allowReconnect = false;
 		self.onmessage = null;
@@ -126,7 +126,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.connect = function() {
 		const self = this;
-		console.log( 'Socket.connect', self.id );
+		//console.log( 'Socket.connect', self.id );
 		if ( !self.allowReconnect ) {
 			console.log( 'ws connect, not allowed', self );
 			return;
@@ -163,10 +163,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.reconnect = function() {
 		const self = this;
-		console.log( 'Socket.reconnect', {
-			session : self.session,
-			id      : self.id,
-		});
 		self.allowReconnect = true;
 		self.doReconnect( true );
 	}
@@ -319,10 +315,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleClose = function( e ) {
 		const self = this;
-		console.log( 'WS handleClosed', {
-			e  : e,
-			id : self.id,
-		});
 		self.setState( 'close', e );
 		self.doReconnect();
 	}
@@ -351,13 +343,11 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleSocketId = function( socketId ) {
 		const self = this;
-		console.log( 'Socket.handleId', socketId );
 		self.id = socketId;
 	}
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
 		const self = this;
-		console.log( 'Socket.handleAuth', [ success, self.id ]);
 		hello.timeNow( 'ws handleAuth' );
 		if ( null == success ) {
 			self.sendAuth();
@@ -387,11 +377,13 @@ library.component = library.component || {};
 		else
 			self.session = sessionId;
 		
+		/*
 		console.log( 'ws.handleSession - sid:', {
 			sid  : sessionId,
 			id   : self.id,
 			self : self.session,
 		});
+		*/
 		if ( !self.session ) {
 			self.setState( 'session', null );
 			self.ended();
@@ -427,7 +419,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.sendAuth = function() {
 		const self = this;
-		console.log( 'socket sendAuth', self.session );
 		if ( self.session ) {
 			self.restartSession();
 			return;
@@ -467,7 +458,7 @@ library.component = library.component || {};
 			return;
 		}
 		
-		var msgStr = friendUP.tool.stringify( msgObj );
+		const msgStr = friendUP.tool.stringify( msgObj );
 		try {
 			self.ws.send( msgStr );
 		} catch (e) {
