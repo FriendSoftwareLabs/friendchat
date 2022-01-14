@@ -1055,6 +1055,12 @@ library.rtc = library.rtc || {};
 	ns.Session.prototype.close = function() {
 		const self = this;
 		self.log( 'session.close' );
+		
+		if ( null != self.iceTimeout ) {
+			window.clearTimeout( self.iceTimeout );
+			self.iceTimeout = null;
+		}
+		
 		if ( self.negotiationNeededWaiting )
 			window.clearTimeout( self.negotiationNeededWaiting );
 		
@@ -1230,7 +1236,7 @@ library.rtc = library.rtc || {};
 		if ( self.iceComplete )
 			return;
 		
-		var msg = {
+		const msg = {
 			type : 'candidate',
 			data : cand,
 		};
