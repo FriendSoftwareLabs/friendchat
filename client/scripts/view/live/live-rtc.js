@@ -3746,7 +3746,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleBaseStats = function( base ) {
 		const self = this;
-		self.log( 'base stats', base ); //spammy!
+		//self.log( 'base stats', base ); //spammy!
 		if ( !self.baseStats ) {
 			self.baseStats = base;
 			return;
