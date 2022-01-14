@@ -150,13 +150,14 @@ library.component = library.component || {};
 	ns.Socket.prototype.close = function( code, reason ) {
 		const self = this;
 		//console.log( 'app.Socket.close', self.id );
+		const sq = self.sendQueue;
 		self.unsetSession();
 		self.allowReconnect = false;
 		self.onmessage = null;
 		self.onstate = null;
 		self.onend = null;
-		self.wsClose( code, reason );
-		return self.sendQueue;
+		self.cleanup();
+		return sq;
 	}
 	
 	// PRIVATES
@@ -409,12 +410,10 @@ library.component = library.component || {};
 			timestamp  : timestamp,
 			verifyBack : self.verifyBack,
 		});
-		const vb = self.verifyBack;
-		self.verifyBack = null;
-		if ( null == vb )
+		if ( null == self.verifyBack )
 			return;
 		
-		vb( timestmap );
+		self.verifyBack( timestamp );
 	}
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
@@ -665,14 +664,15 @@ library.component = library.component || {};
 		onend( 'ded', self.id );
 	}
 	
-	ns.Socket.prototype.cleanup = function() {
+	ns.Socket.prototype.cleanup = function( code, reason ) {
 		const self = this;
 		self.ready = false;
 		self.stopPing();
 		self.clearHandlers();
 		self.clearReconnect();
 		self.clearConnectTimeout();
-		self.wsClose();
+		self.wsClose( code, reason );
+		delete self.sendQueue;
 		delete self.ws;
 	}
 	
