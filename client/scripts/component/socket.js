@@ -96,7 +96,7 @@ library.component = library.component || {};
 		if ( null == self.ws )
 			return false;
 		
-		if ( 'session' != self.state || 'ping' != self.state )
+		if ( 'session' != self.state && 'ping' != self.state )
 			return false;
 		
 		let ok = false;
