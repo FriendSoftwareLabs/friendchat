@@ -1113,17 +1113,18 @@ library.rtc = library.rtc || {};
 	// Private
 	
 	ns.Session.prototype.stateTypeMap = {
-		'routing'             : 'routing',
-		'nominal'             : 'nominal',
-		'host-negotiation'    : 'connecting',
-		'client-negotiation'  : 'connecting',
-		'negotiation-waiting' : 'waiting',
-		'ICE-gathering'       : 'connecting',
-		'ICE-checking'        : 'connecting',
-		'ICE-disconnected'    : 'waiting',
-		'ICE-failed'          : 'error',
-		'closed'              : 'closed',
-		'derp'                : 'error', // something lol'd
+		'routing'               : 'routing',
+		'nominal'               : 'nominal',
+		'host-negotiation'      : 'connecting',
+		'client-negotiation'    : 'connecting',
+		'negotiation-waiting'   : 'waiting',
+		'ICE-gathering'         : 'connecting',
+		'ICE-checking'          : 'connecting',
+		'ICE-disconnected'      : 'waiting',
+		'ICE-failed'            : 'error',
+		'conn-have-local-offer' : 'connecting',
+		'closed'                : 'closed',
+		'derp'                  : 'error', // something lol'd
 	};
 	
 	ns.Session.prototype.init = function() {

@@ -2441,7 +2441,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pingTimeouts = {};
 		self.pongs = [];
 		
-		self.spam = false;
+		self.spam = true;
 		
 		self.init( conf.signal );
 	}
@@ -3690,8 +3690,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.handleSessionStateChange = function( event ) {
 		const self = this;
 		self.log( 'handleSessionStateChange', event );
-		if ( 'error' === event.type )
+		const state = event.type;
+		if ( 'error' === state )
 			self.handleSessionError( event );
+		
+		if ( null == self.connectTimeout ) {
+			if ( 'connecting' == state ) {
+				self.log( 'starting connect timeout' );
+				self.connectTimeout = window.setTimeout( itsTakingTooLong, 1000 * 10 );
+			}
+		} else {
+			if ( 'nominal' == state ) {
+				self.log( 'clearing connect timeout' );
+				window.clearTimeout( self.connectTimeout );
+				self.connectTimeout = null;
+			}
+		}
 		
 		/*
 		if ( 'nominal' === event.type ) {
@@ -3699,11 +3713,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				self.sendConnectData();
 		}
 		*/
-		const state = event.type;
+		
 		if ( state == self.rtcState )
 			return;
 		
-		self.rtcState = event.type;
+		self.rtcState = state;
 		const rtcState = {
 			type : 'rtc',
 			data : event,
@@ -3712,6 +3726,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.emit( 'state', rtcState );
 		if ( 'nominal' === self.rtcState )
 			self.refreshTheThing();
+		
+		function itsTakingTooLong() {
+			self.log( 'connection timed out, restarting' );
+			self.restart();
+		}
 	}
 	
 	ns.Peer.prototype.handleFullStats = function( stats ) {
@@ -4074,12 +4093,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		self.stopPing();
 		self.closeStats();
-		if ( self.metaInterval ) {
+		
+		if ( null != self.connectTimeout ) {
+			window.clearTimeout( self.connectTimeout );
+			self.connectTimeout = null;
+		}
+		
+		if ( null != self.metaInterval ) {
 			window.clearInterval( self.metaInterval );
 			self.metaInterval = null;
 		}
 		
-		if ( self.refreshTimeout )
+		if ( null != self.refreshTimeout )
 			window.clearTimeout( self.refreshTimeout );
 		
 		if ( self.media )
