@@ -165,11 +165,10 @@ ns.Socket.prototype.init = function() {
 	
 	self.conn.id = self.id;
 	self.connMap = {
-		'ping' : ping,
-		'pong' : pong,
+		'verify' : e => self.handleVerify( e ),
+		'ping'   : e => self.handlePing( e ),
+		'pong'   : e => self.handlePong( e ),
 	};
-	function ping( msg ) { self.handlePing( msg ); }
-	function pong( msg ) { self.handlePong( msg ); }
 	
 	self.start();
 }
@@ -242,6 +241,23 @@ ns.Socket.prototype.handleEvent = function( event ) {
 	}
 	
 	self.emit( event.type, event.data );
+}
+
+ns.Socket.prototype.handleVerify = function( timestamp ) {
+	const self = this;
+	log( 'handleVerify', {
+		id        : self.id,
+		timestamp : timestamp,
+		session   : self.sessionId,
+	});
+	if ( !self.sessionId )
+		return;
+	
+	const reply = {
+		type : 'verify',
+		data : timestamp,
+	};
+	self.sendOnSocket( reply );
 }
 
 ns.Socket.prototype.doPing = function() {

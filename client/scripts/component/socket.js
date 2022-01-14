@@ -27,9 +27,6 @@ library.component = library.component || {};
 // SOCKET
 (function( ns, undefined ) {
 	ns.Socket = function( conf, sessionId, inheritedSendQueue ) {
-		if ( !( this instanceof ns.Socket ))
-			return new ns.Socket( conf );
-		
 		const self = this;
 		// REQUIRED CONFIG
 		self.url = conf.url;
@@ -66,6 +63,8 @@ library.component = library.component || {};
 			max : 8,
 		}; // random in range, to make sure not all the clients
 		   // in the world reconnect at the same time
+		self.verifyCheck = null;
+		self.verifyTimeout = 200;
 		
 		self.init();
 	}
@@ -79,6 +78,70 @@ library.component = library.component || {};
 			data : msgObj,
 		};
 		self.sendOnSocket( wrap );
+	}
+	
+	/* verify
+	
+		checks that the ws is alive
+		
+		returns a promise that resolves to true/false
+	*/
+	ns.Socket.prototype.verifyWS = async function() {
+		const self = this;
+		console.log( 'Socket.verify', {
+			id    : self.id,
+			ws    : self.ws,
+			state : self.state,
+		});
+		if ( null == self.ws )
+			return false;
+		
+		if ( 'session' != self.state )
+			return false;
+		
+		let ok = false;
+		try {
+			ok = await check();
+		} catch( ex ) {}
+		
+		console.log( 'Socket.verifyWS ok', ok );
+		return ok;
+		
+		function check() {
+			return new Promise(( resolve, reject ) => {
+				const sendTime = Date.now();
+				const verify = {
+					type : 'verify',
+					data : sendTime,
+				};
+				self.sendOnSocket( verify );
+				self.verifyCheck = window.setTimeout( timeout, self.verifyTimeout );
+				self.verifyBack = function( timestamp ) {
+					if ( null == self.verifyCheck ) // timed out and rejected
+						return;
+					
+					window.clearTimeout( self.verifyCheck );
+					self.verifyCheck = null;
+					self.verifyBack = null;
+					
+					const endTime = Date.now();
+					const travelTime = endTime - sendTime;
+					console.log( 'Socket.verifyWS check travel time ms', travelTime );
+					resolve( true );
+				}
+				
+				function timeout() {
+					self.verifyCheck = null;
+					if ( null == self.verifyBack ) // already returned successfully
+						return;
+					
+					self.verifyBack = null;
+					reject( 'ERR_VERIFY_TIMEOUT' );
+				}
+				
+			});
+		}
+		
 	}
 	
 	// code and reason can be whatever; the socket is closed anyway,
@@ -109,17 +172,13 @@ library.component = library.component || {};
 		}
 		
 		self.messageMap = {
-			'authenticate' : authenticate,
-			'socket-id'     : e => self.handleSocketId( e ),
-			'session'      : session,
-			'ping'         : ping,
-			'pong'         : pong,
+			'authenticate' : e => self.handleAuth( e ),
+			'socket-id'    : e => self.handleSocketId( e ),
+			'session'      : e => self.handleSession( e ),
+			'verify'       : e => self.handleVerify( e ),
+			'ping'         : e => self.handlePing( e ),
+			'pong'         : e => self.handlePong( e ),
 		};
-		
-		function authenticate( e ) { self.handleAuth( e ); }
-		function session( e ) { self.handleSession( e ); }
-		function ping( e ) { self.handlePing( e ); }
-		function pong( e ) { self.handlePong( e ); }
 		
 		self.connect();
 	}
@@ -321,10 +380,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleError = function( e ) {
 		const self = this;
-		console.log( 'WS handleError', {
-			e  : e,
-			id : self.id,
-		});
 		self.setState( 'error', e );
 	}
 	
@@ -344,6 +399,21 @@ library.component = library.component || {};
 	ns.Socket.prototype.handleSocketId = function( socketId ) {
 		const self = this;
 		self.id = socketId;
+	}
+	
+	ns.Socket.prototype.handleVerify = function( timestamp ) {
+		const self = this;
+		console.log( 'Socket.handleVerify', {
+			id         : self.id,
+			timestamp  : timestamp,
+			verifyBack : self.verifyBack,
+		});
+		const vb = self.verifyBack;
+		self.verifyBack = null;
+		if ( null == vb )
+			return;
+		
+		vb( timestmap );
 	}
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
@@ -596,7 +666,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.cleanup = function() {
 		const self = this;
-		console.log( 'ws cleanup' );
 		self.ready = false;
 		self.stopPing();
 		self.clearHandlers();

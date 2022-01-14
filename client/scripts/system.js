@@ -1668,16 +1668,19 @@ library.rtc = library.rtc || {};
 	
 	checks ws health
 	
-	returns true/false for healthy / not healthy
+	returns a promise that resolves to true / false
 	
 	*/
-	ns.Connection.prototype.verify = function() {
+	ns.Connection.prototype.verify = async function() {
 		const self = this;
 		if ( null == self.socket )
 			return false;
 		
-		if ( false == self.socket.ready )
-			return false;
+		const ok = await self.socket.verifyWS();
+		console.log( 'Connection.verify', ok );
+		return ok;
+		
+		/////////////
 		
 		const now = window.Date.now();
 		const threeSecondsAgo = now - ( 1000 * 3 );
