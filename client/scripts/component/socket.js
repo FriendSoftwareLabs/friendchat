@@ -114,6 +114,7 @@ library.component = library.component || {};
 					type : 'verify',
 					data : sendTime,
 				};
+				console.log( 'sending veri', verify );
 				self.sendOnSocket( verify );
 				self.verifyCheck = window.setTimeout( timeout, self.verifyTimeout );
 				self.verifyBack = function( timestamp ) {
