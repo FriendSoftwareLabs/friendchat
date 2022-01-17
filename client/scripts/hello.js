@@ -1296,7 +1296,7 @@ var hello = null;
 			});
 	}
 	
-	ns.Hello.prototype.handleAppResume = async function( event ) {
+	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
 		if ( !self.isOnline ) {
 			//console.log( 'hello.handleAppResume, already reconnecting - HOW DO YOU KNOW THIS?????' );
