@@ -1303,6 +1303,7 @@ var hello = null;
 			return;
 		}
 		
+		/*
 		const nios = checkNotIOS();
 		console.log( 'notIOS', nios );
 		if ( self.conn && nios ) {
@@ -1311,6 +1312,7 @@ var hello = null;
 			if ( wsOk )
 				return;
 		}
+		*/
 		
 		if ( null != self.resumeTimeout )
 			window.clearTimeout( self.resumeTimeout );
