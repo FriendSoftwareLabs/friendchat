@@ -1298,7 +1298,7 @@ var hello = null;
 			});
 	}
 	
-	ns.Hello.prototype.handleAppResume = function( event ) {
+	ns.Hello.prototype.handleAppResume = async function( event ) {
 		const self = this;
 		if ( !self.isOnline ) {
 			//console.log( 'hello.handleAppResume, already reconnecting - HOW DO YOU KNOW THIS?????' );
@@ -1306,9 +1306,9 @@ var hello = null;
 		}
 		
 		if ( self.conn ) {
-			const wsOk = self.conn.verify();
+			const wsOk = await self.conn.verify();
 			console.log( 'handleAppResume - ws check', wsOk );
-			if ( wsOk )
+			if ( true === wsOk )
 				return;
 		}
 		
