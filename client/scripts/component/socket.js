@@ -102,9 +102,11 @@ library.component = library.component || {};
 		let ok = false;
 		try {
 			ok = await check();
-		} catch( ex ) {}
+		} catch( ex ) {
+			console.log( 'Socket.verifyWS ex', ex );
+		}
 		
-		console.log( 'Socket.verifyWS ok', ok );
+		console.log( 'Socket.verifyWS ok?', ok );
 		return ok;
 		
 		function check() {
