@@ -1673,10 +1673,6 @@ library.rtc = library.rtc || {};
 	*/
 	ns.Connection.prototype.verify = async function() {
 		const self = this;
-		console.log( 'Connection.verify - platform', hello.app.friendApp );
-		if ( hello.app.friendApp && ( 'iOS' === hello.app.friendApp.platform ))
-			return false;
-		
 		if ( null == self.socket )
 			return false;
 		

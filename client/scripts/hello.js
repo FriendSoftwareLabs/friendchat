@@ -1305,10 +1305,12 @@ var hello = null;
 			return;
 		}
 		
-		if ( self.conn ) {
+		const nios = checkNotIOS();
+		console.log( 'notIOS', nios );
+		if ( self.conn && nios ) {
 			const wsOk = await self.conn.verify();
 			console.log( 'handleAppResume - ws check', wsOk );
-			if ( true === wsOk )
+			if ( wsOk )
 				return;
 		}
 		
@@ -1326,6 +1328,14 @@ var hello = null;
 		function resume() {
 			self.resumeTimeout = null;
 			self.doResume();
+		}
+		
+		function checkNotIOS() {
+			console.log( 'checkNotIOS - platform', hello.app.friendApp );
+			if ( hello.app.friendApp && ( 'iOS' === hello.app.friendApp.platform ))
+				return false;
+			else
+				return true;
 		}
 	}
 	
