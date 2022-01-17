@@ -1207,7 +1207,6 @@ var hello = null;
 	
 	ns.Hello.prototype.processPushNotie = function( event, extra, view ) {
 		const self = this;
-		/*
 		console.log( 'processPushNotie', {
 			event    : event,
 			extra    : extra,
@@ -1217,7 +1216,6 @@ var hello = null;
 			service  : self.service,
 			resumeTO : self.resumeTimeout,
 		});
-		*/
 		
 		if ( !self.loaded ) {
 			self.registerOnLoaded( onLoaded );
