@@ -887,7 +887,7 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
-		//console.log( 'updateConnState', state );
+		console.log( 'updateConnState', state );
 		if ( 'authenticate' == state.type ) {
 			self.handleConnAuth( state );
 			return;
@@ -1195,14 +1195,13 @@ var hello = null;
 		}
 	}
 	
-	ns.Hello.prototype.processPushNotie = function( event, extra, view ) {
+	ns.Hello.prototype.processPushNotie = async function( event, extra, view ) {
 		const self = this;
 		console.log( 'processPushNotie', {
 			event    : event,
 			extra    : extra,
 			view     : view,
 			loaded   : self.loaded,
-			isOnline : self.isOnline,
 			service  : self.service,
 			resumeTO : self.resumeTimeout,
 		});
@@ -1225,7 +1224,9 @@ var hello = null;
 			
 		}
 		
-		if ( null != self.resumeTimeout || !self.isOnline ) {
+		const isOnline = await self.conn.verify();
+		console.log( 'processPushNotie - isOnline?', isOnline );
+		if ( null != self.resumeTimeout || !isOnline ) {
 			self.registerOnResume( onResume );
 			return;
 			
@@ -1303,17 +1304,15 @@ var hello = null;
 		
 		self.resumeTimeout = window.setTimeout( resume, 2000 );
 		
-		/*
-		const nios = checkNotIOS();
-		console.log( 'notIOS', nios );
-		if ( self.conn && nios ) {
+		//const nios = checkNotIOS();
+		//console.log( 'notIOS', nios );
+		if ( self.conn ) {
 			const wsOk = await self.conn.verify();
 			console.log( 'handleAppResume - ws check', wsOk );
 			if ( wsOk ) {
 				return;
 			}
 		}
-		*/
 		
 		self.reconnect();
 		self.showConnStatus({
