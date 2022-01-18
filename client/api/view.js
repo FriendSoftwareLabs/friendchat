@@ -524,6 +524,9 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.loaded = function() {
 		const self = this;
+		if ( self.connState )
+			self.connState.hideUI();
+		
 		self.sendTypeEvent( 'loaded', 'yep, its true' );
 	}
 	
@@ -1453,8 +1456,7 @@ window.View = new api.View();
 		self.keepLoading = show;
 		if ( show )
 			self.setLoading();
-		
-		if ( !show && self.isOnline )
+		else
 			self.hideUI();
 	}
 	
@@ -1526,9 +1528,6 @@ window.View = new api.View();
 		const self = this;
 		console.log( 'ConnState.handleOnline', sid );
 		self.isOnline = true;
-		if ( self.keepLoading )
-			return;
-		
 		self.hideUI();
 	}
 	
@@ -1540,6 +1539,12 @@ window.View = new api.View();
 	
 	ns.ConnState.prototype.hideUI = function() {
 		const self = this;
+		if ( true == self.keepLoading )
+			return;
+		
+		if ( false == self.isOnline )
+			return;
+		
 		self.showError( false );
 		self.showUI( false );
 	}
