@@ -1226,6 +1226,9 @@ var hello = null;
 		
 		const isOnline = await self.conn.verify();
 		console.log( 'processPushNotie - isOnline?', isOnline );
+		if ( !isOnline )
+			self.reconnect();
+		
 		if ( null != self.resumeTimeout || !isOnline ) {
 			self.registerOnResume( onResume );
 			return;

@@ -1778,9 +1778,14 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.connect = function() {
 		const self = this;
+		console.log( 'Connection.connect, connecting?', self.connecting );
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
 		
+		if ( true == self.connecting )
+			return;
+		
+		self.connecting = true;
 		let remainingSendQueue = null;
 		if ( self.socket )
 			remainingSendQueue = self.clear();
@@ -1900,6 +1905,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
+		self.connecting = false;
 		self.sessionId = sid || null;
 		if ( null == sid )
 			self.LastMsgTime = null;
@@ -1964,6 +1970,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketReconnecting = function( reTime ) {
 		const self = this;
+		self.connecting = false;
 		self.onstate({
 			type : 'wait-reconnect',
 			data : {
@@ -1975,13 +1982,11 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleEnd = function( data, wsId ) {
 		const self = this;
-		/*
 		console.log( 'Conn.handleEnd', {
 			data     : data,
 			wsId     : wsId,
 			currWsId : self.socket ? self.socket.id : null,
 		});
-		*/
 		self.clear();
 		let err = {
 			type : 'end',
@@ -2000,6 +2005,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.clear = function() {
 		const self = this;
+		self.connecting = false;
 		self.lastMsgTime = null;
 		if ( !self.socket )
 			return;
