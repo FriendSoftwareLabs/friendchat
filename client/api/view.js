@@ -522,11 +522,8 @@ var friend = window.friend || {};
 		self.connState.showLoading( !!show );
 	}
 	
-	ns.View.prototype.loaded = function( keepLoading ) {
+	ns.View.prototype.loaded = function() {
 		const self = this;
-		if ( self.connState && !keepLoading )
-			self.connState.setReady();
-		
 		self.sendTypeEvent( 'loaded', 'yep, its true' );
 	}
 	
@@ -1437,7 +1434,7 @@ window.View = new api.View();
 		
 		self.el = null;
 		
-		self.isOnline = null;
+		self.isOnline = false;
 		self.keepLoading = false;
 		
 		self.init();
@@ -1447,20 +1444,13 @@ window.View = new api.View();
 	
 	ns.ConnState.prototype.showLoading = function( show ) {
 		const self = this;
+		show = !!show;
 		self.keepLoading = show;
-		if ( show ) {
+		if ( show )
 			self.setLoading();
-			return;
-		}
 		
-		if ( !show && ( self.isOnline || ( null == self.isOnline )))
-			self.setOnline();
-	}
-	
-	ns.ConnState.prototype.setReady = function() {
-		const self = this;
-		self.keepLoading = false;
-		self.setOnline();
+		if ( !show && self.isOnline )
+			self.hideUI();
 	}
 	
 	ns.ConnState.prototype.set = function( state ) {
@@ -1493,7 +1483,8 @@ window.View = new api.View();
 			'conn-state',
 			window.View,
 			eventSink,
-			null
+			null,
+			true
 		);
 		self.conn.on( 'load', load );
 		self.conn.on( 'connect', connect );
@@ -1528,11 +1519,12 @@ window.View = new api.View();
 	
 	ns.ConnState.prototype.handleOnline = function( sid ) {
 		const self = this;
+		console.log( 'ConnState.handleOnline', sid );
 		self.isOnline = true;
 		if ( self.keepLoading )
-			self.setLoading();
-		else
-			self.setOnline();
+			return;
+		
+		self.hideUI();
 	}
 	
 	ns.ConnState.prototype.setLoading = function() {
@@ -1541,10 +1533,9 @@ window.View = new api.View();
 		self.hideProgressStates();
 	}
 	
-	ns.ConnState.prototype.setOnline = function() {
+	ns.ConnState.prototype.hideUI = function() {
 		const self = this;
 		self.showError( false );
-		self.isOnline = true;
 		self.showUI( false );
 	}
 	
@@ -1554,7 +1545,6 @@ window.View = new api.View();
 		self.showUI( true );
 		self.hideProgressStates();
 	}
-	
 	
 	ns.ConnState.prototype.handleClose = function( e ) {
 		const self = this;

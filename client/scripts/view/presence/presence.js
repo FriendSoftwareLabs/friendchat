@@ -81,8 +81,7 @@ library.view = library.view || {};
 		self.bindConn();
 		
 		//
-		const keepLoading = true;
-		window.View.loaded( keepLoading );
+		window.View.loaded();
 	}
 	
 	ns.Presence.prototype.buildUserList = function() {

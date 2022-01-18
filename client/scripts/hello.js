@@ -768,17 +768,7 @@ var hello = null;
 			self.conn = new library.system.Connection( host, onWSState );
 			self.items = new library.system.Items();
 			self.intercept = new library.system.Interceptor();
-			self.conn.connect( connBack );
-			
-			function connBack( err, res ) {
-				if ( err ) {
-					self.showConnStatus( err );
-					return;
-				}
-				
-				self.connected = true;
-				callback()
-			}
+			self.conn.connect();
 			
 			function onWSState( e ) { self.updateConnState( e ); }
 		}
@@ -905,6 +895,7 @@ var hello = null;
 		
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
+		/*
 		if (   'error' === state.type
 			|| 'close' === state.type
 			|| 'end' === state.type
@@ -912,6 +903,7 @@ var hello = null;
 		) {
 			self.connected = false;
 		}
+		*/
 		
 		self.showConnStatus( state );
 		
@@ -943,7 +935,7 @@ var hello = null;
 		if ( !authed )
 			return;
 		
-		self.connected = true;
+		//self.connected = true;
 		self.timeNow( 'ws connected' );
 		if ( self.isOnline )
 			return;
@@ -962,12 +954,10 @@ var hello = null;
 			return;
 		
 		self.isOnline = isOnline;
-		/*
 		if ( self.isOnline )
 			console.log( '--- online' );
 		else
 			console.log( '--- offline' );
-		*/
 		
 		self.app.toAllViews({
 			type : 'app-online',
@@ -1299,9 +1289,14 @@ var hello = null;
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
 		if ( !self.isOnline ) {
-			//console.log( 'hello.handleAppResume, already reconnecting - HOW DO YOU KNOW THIS?????' );
+			console.log( 'hello.handleAppResume, already reconnecting' );
 			return;
 		}
+		
+		if ( null != self.resumeTimeout )
+			return;
+		
+		self.resumeTimeout = window.setTimeout( resume, 2000 );
 		
 		/*
 		const nios = checkNotIOS();
@@ -1309,17 +1304,13 @@ var hello = null;
 		if ( self.conn && nios ) {
 			const wsOk = await self.conn.verify();
 			console.log( 'handleAppResume - ws check', wsOk );
-			if ( wsOk )
+			if ( wsOk ) {
 				return;
+			}
 		}
 		*/
 		
-		if ( null != self.resumeTimeout )
-			window.clearTimeout( self.resumeTimeout );
-		
-		self.resumeTimeout = window.setTimeout( resume, 1000 );
 		self.reconnect();
-		
 		self.showConnStatus({
 			type : 'resume',
 			data : Date.now(),
@@ -1358,9 +1349,18 @@ var hello = null;
 	
 	ns.Hello.prototype.doResume = function() {
 		const self = this;
-		if ( !self.isOnline || ( null != self.resumeTimeout ))
+		console.log( 'doResume', {
+			isOnline : self.isOnline,
+			resumeTO : self.resumeTimeout,
+		});
+		
+		if ( !self.isOnline )
 			return;
 		
+		if ( null != self.resumeTimeout )
+			window.clearTimeout( self.resumeTimeout );
+		
+		self.resumeTimeout = null;
 		self.resumeCallbacks.forEach( fn => fn());
 		self.resumeCallbacks = [];
 	}
