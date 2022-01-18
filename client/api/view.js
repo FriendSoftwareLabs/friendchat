@@ -1434,7 +1434,7 @@ window.View = new api.View();
 		
 		self.el = null;
 		
-		self.isOnline = false;
+		self.isOnline = true;
 		self.keepLoading = false;
 		
 		self.init();
