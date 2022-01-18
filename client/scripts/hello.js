@@ -1288,6 +1288,11 @@ var hello = null;
 	
 	ns.Hello.prototype.handleAppResume = function( event ) {
 		const self = this;
+		console.log( 'handleAppResume', {
+			e        : e,
+			isOnline : self.isOnline,
+			resumeTO : self.resumeTimeout,
+		});
 		if ( !self.isOnline ) {
 			console.log( 'hello.handleAppResume, already reconnecting' );
 			return;
