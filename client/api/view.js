@@ -1445,6 +1445,11 @@ window.View = new api.View();
 	ns.ConnState.prototype.showLoading = function( show ) {
 		const self = this;
 		show = !!show;
+		console.log( 'ConnState.showLoading', {
+			show : show,
+			curr : self.keepLoading,
+			ison : self.isOnline,
+		});
 		self.keepLoading = show;
 		if ( show )
 			self.setLoading();
