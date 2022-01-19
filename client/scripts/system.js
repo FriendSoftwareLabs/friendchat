@@ -1793,11 +1793,11 @@ library.rtc = library.rtc || {};
 		if ( true == self.connecting )
 			return;
 		
-		self.connecting = true;
 		let remainingSendQueue = null;
 		if ( self.socket )
 			remainingSendQueue = self.clear();
 		
+		self.connecting = true;
 		let url = null;
 		if ( self.altHost )
 			url = self.altHost;
