@@ -1913,6 +1913,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
+		console.log( 'conn.socketSession', sid );
 		self.connecting = false;
 		self.sessionId = sid || null;
 		if ( null == sid )
@@ -1978,6 +1979,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketReconnecting = function( reTime ) {
 		const self = this;
+		console.log( 'conn.socketReconnecting', reTime );
 		self.connecting = false;
 		self.onstate({
 			type : 'wait-reconnect',
@@ -2013,6 +2015,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.clear = function() {
 		const self = this;
+		console.log( 'conn.clear' );
 		self.connecting = false;
 		self.lastMsgTime = null;
 		if ( !self.socket )
