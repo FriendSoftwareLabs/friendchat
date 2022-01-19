@@ -1290,7 +1290,7 @@ var hello = null;
 			});
 	}
 	
-	ns.Hello.prototype.handleAppResume = function( event ) {
+	ns.Hello.prototype.handleAppResume = async function( event ) {
 		const self = this;
 		console.log( 'handleAppResume', {
 			e        : event,
