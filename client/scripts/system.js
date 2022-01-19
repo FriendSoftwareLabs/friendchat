@@ -1673,11 +1673,19 @@ library.rtc = library.rtc || {};
 	*/
 	ns.Connection.prototype.verify = async function() {
 		const self = this;
+		console.log( 'Conn.verify' );
 		if ( null == self.socket )
 			return false;
 		
-		const ok = await self.socket.verifyWS();
-		console.log( 'Connection.verify', ok );
+		if ( null != self.verifying ) {
+			console.log( 'conn.verify - found verifierer' );
+			return await self.verifying;
+		}
+		
+		self.verifying = self.socket.verifyWS();
+		const ok = await self.verifying;
+		console.log( 'Connection.verify real one returned', ok );
+		delete self.verifying;
 		return ok;
 		
 		/////////////
