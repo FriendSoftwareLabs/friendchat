@@ -117,7 +117,13 @@ library.component = library.component || {};
 					data : sendTime,
 				};
 				console.log( 'sending veri', verify );
-				self.sendOnSocket( verify );
+				const msgWasSent = self.sendOnSocket( verify );
+				console.log( 'msgWasSent', msgWasSent );
+				if ( !msgWasSent ) {
+					reject( 'ERR_CANNOT_SEND' );
+					return;
+				}
+				
 				self.verifyCheck = window.setTimeout( timeout, self.verifyTimeout );
 				self.verifyBack = function( timestamp ) {
 					if ( null == self.verifyCheck ) // timed out and rejected
@@ -518,7 +524,7 @@ library.component = library.component || {};
 				sid : self.id,
 			});
 			queue( msgObj );
-			return;
+			return false;
 		}
 		
 		if ( !socketReady( force )) {
@@ -527,7 +533,7 @@ library.component = library.component || {};
 				sid : self.id,
 			})
 			queue( msgObj );
-			return;
+			return false;
 		}
 		
 		const msgStr = friendUP.tool.stringify( msgObj );
@@ -535,7 +541,10 @@ library.component = library.component || {};
 			self.ws.send( msgStr );
 		} catch (e) {
 			console.log( 'send on ws ex', e );
+			return false;
 		}
+		
+		return true;
 		
 		function queue( msg ) {
 			if ( !self.sendQueue )

@@ -1798,6 +1798,8 @@ library.rtc = library.rtc || {};
 			remainingSendQueue = self.clear();
 		
 		self.connecting = true;
+		self.socketConnecting();
+		
 		let url = null;
 		if ( self.altHost )
 			url = self.altHost;
@@ -1818,17 +1820,18 @@ library.rtc = library.rtc || {};
 				url        : url,
 				protocol   : 'text',
 				authBundle : auth,
-				onmessage  : onMessage,
-				onstate    : onState,
-				onend      : onEnd,
+				onmessage  : ( e, wsid ) => self.handleMessage( e, wsid ),
+				onstate    : ( e, wsid ) => self.handleState(   e, wsid ),
+				onend      : ( e, wsid ) => self.handleEnd(     e, wsid ),
 			}, 
 			self.sessionId,
 			null //remainingSendQueue
 		);
-		
-		function onMessage( msg, wsId ) { self.message( msg, wsId ); }
+		/*
+		function onMessage( msg, wsId ) { self.handleMessage( msg, wsId ); }
 		function onState( state, wsId ) { self.handleState( state, wsId ); }
 		function onEnd( msg, wsId ) { self.handleEnd( msg, wsId ); }
+		*/
 	}
 	
 	ns.Connection.prototype.close = function() {
@@ -1874,7 +1877,7 @@ library.rtc = library.rtc || {};
 		handler( event.data );
 	}
 	
-	ns.Connection.prototype.socketConnecting = function( host ) {
+	ns.Connection.prototype.socketConnecting = function() {
 		const self = this;
 		self.onstate({
 			type : 'connect',
@@ -2025,7 +2028,7 @@ library.rtc = library.rtc || {};
 		self.socket = null;
 	}
 	
-	ns.Connection.prototype.message = function( event ) {
+	ns.Connection.prototype.handleMessage = function( event ) {
 		const self = this;
 		const handler = self.subscriber[ event.type ];
 		if ( !handler ) {
