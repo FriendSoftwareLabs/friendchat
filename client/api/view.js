@@ -1490,8 +1490,7 @@ window.View = new api.View();
 			'conn-state',
 			window.View,
 			eventSink,
-			null,
-			true
+			null
 		);
 		self.conn.on( 'load', load );
 		self.conn.on( 'connect', connect );
