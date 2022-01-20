@@ -1238,6 +1238,11 @@ var hello = null;
 			view = getPreView( extra );
 		
 		const isOnline = await maybeOnline;
+		console.log( 'processPushNotie', {
+			isOnline : isOnline,
+			resuTO   : self.resumeTimeout,
+		});
+		
 		if ( null != self.resumeTimeout || !isOnline ) {
 			self.registerOnResume( onResume );
 			return;
