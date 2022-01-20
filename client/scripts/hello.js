@@ -1149,6 +1149,9 @@ var hello = null;
 	
 	ns.Hello.prototype.checkOnline = async function() {
 		const self = this;
+		if ( null == self.conn )
+			return false;
+		
 		const isOnline = await self.conn.verify();
 		if ( !isOnline )
 			self.reconnect();
