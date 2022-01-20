@@ -1182,43 +1182,74 @@ var hello = null;
 			return;
 		}
 		
+		extra.title = event.title;
 		const received = {
 			extra     : extra,
 			timestamp : Date.now(),
-			timeout   : window.setTimeout( remove, 1000 * 2 ),
+			timeout   : window.setTimeout( remove, 1000 * 3 ),
 		};
 		self.pushiesReceivedFor[ roomId ] = received;
-		self.processPushNotie( event, extra );
-		
-		function remove() {
-			delete self.pushiesReceivedFor[ roomId ];
-		}
-	}
-	
-	ns.Hello.prototype.processPushNotie = async function( event, extra, view ) {
-		const self = this;
-		console.log( 'processPushNotie', {
-			event    : event,
-			extra    : extra,
-			view     : view,
-			loaded   : self.loaded,
-			service  : self.service,
-			resumeTO : self.resumeTimeout,
-		});
 		
 		if ( !self.loaded ) {
 			self.registerOnLoaded( onLoaded );
 			return;
 			
 			function onLoaded() {
-				self.processPushNotie( event, extra );
+				self.processPushNotie( extra );
 			}
+		} else
+			self.processPushNotie( extra );
+		
+		function remove() {
+			delete self.pushiesReceivedFor[ roomId ];
+		}
+	}
+	
+	ns.Hello.prototype.processPushNotie = async function( extra, view ) {
+		const self = this;
+		const maybeOnline = self.checkOnline();
+		console.log( 'processPushNotie', {
+			extra    : extra,
+			view     : view,
+			loaded   : self.loaded,
+			service  : self.service,
+			resumeTO : self.resumeTimeout,
+			maybeOn  : maybeOnline,
+		});
+		
+		if ( self.service ) {
+			self.service.handleNotification( extra, view );
+			return;
+		}
+		
+		if ( null == view )
+			view = getPreView( extra );
+		
+		const isOnline = await maybeOnline;
+		if ( null != self.resumeTimeout || !isOnline ) {
+			self.registerOnResume( onResume );
+			return;
+			
+			function onResume() {
+				self.processPushNotie( extra, view );
+			}
+		} else 
+			self.pushies.push({
+				extra : extra,
+				view  : view,
+			});
+		
+		/*
+		if ( true == isOnline )
+			
+			if ( null == self.resumeTimeout )
+				
+			else
+				
+			
 		}
 		
 		if ( !self.service && !view ) {
-			const roomId = extra.roomId;
-			const roomName = event.title;
-			extra.isPrivate = true;
 			if ( null != roomId )
 				view = getPreView( roomId, roomName, !!extra.isPrivate );
 			
@@ -1229,14 +1260,7 @@ var hello = null;
 		if ( !isOnline )
 			self.reconnect();
 		
-		if ( null != self.resumeTimeout || !isOnline ) {
-			self.registerOnResume( onResume );
-			return;
-			
-			function onResume() {
-				self.processPushNotie( event, extra, view );
-			}
-		}
+		
 		
 		if ( self.service )
 			self.service.handleNotification( extra, view );
@@ -1245,13 +1269,16 @@ var hello = null;
 				extra : extra,
 				view  : view,
 			});
+		*/
 		
-		function getPreView( roomId, roomName, isPrivate ) {
+		function getPreView( extra ) {
+			const roomId = extra.roomId;
+			const roomName = extra.title;
 			let view = self.preViews[ roomId ];
 			if ( null != view )
 				return view;
 			
-			view = new library.view.PresenceChat( null, roomName, isPrivate );
+			view = new library.view.PresenceChat( null, roomName, true );
 			self.preViews[ roomId ] = view;
 			return view;
 		}

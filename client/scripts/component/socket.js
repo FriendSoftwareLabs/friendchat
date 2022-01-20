@@ -37,7 +37,7 @@ library.component = library.component || {};
 		self.onend = conf.onend;
 		
 		//
-		self.sendQueue = inheritedSendQueue || [];
+		self.sendQueue = inheritedSendQueue;
 		self.session = sessionId || null;
 		
 		// PUBLIC i guess
@@ -180,6 +180,9 @@ library.component = library.component || {};
 			});
 			throw new Error( 'Socket - missing handlers' );
 		}
+		
+		if ( null == self.sendQueue )
+			self.sendQueue = [];
 		
 		self.messageMap = {
 			'authenticate' : e => self.handleAuth( e ),
@@ -571,6 +574,9 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.executeSendQueue = function() {
 		const self = this;
+		if ( !self.sendQueue )
+			return;
+		
 		self.sendQueue.forEach( send );
 		self.sendQueue = [];
 		function send( msg ) {
