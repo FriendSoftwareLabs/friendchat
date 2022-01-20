@@ -1687,7 +1687,7 @@ window.View = new api.View();
 		// bind ui
 		let rcBtn = document.getElementById( 'conn-state-reconnect-btn' );
 		let qBtn = document.getElementById( 'conn-state-quit-btn' );
-		let cBtn = document.getElementById( 'conn-state-close-btn' );
+		//let cBtn = document.getElementById( 'conn-state-close-btn' );
 		self.errorHead = document.getElementById( 'conn-state-error-head' );
 		self.progressHead = document.getElementById( 'conn-state-progress-head' );
 		self.oops = document.getElementById( 'conn-state-oops' );
@@ -1701,7 +1701,7 @@ window.View = new api.View();
 		
 		rcBtn.addEventListener( 'click', reconnect, false );
 		qBtn.addEventListener( 'click', quit, false );
-		cBtn.addEventListener( 'click', close, false );
+		//cBtn.addEventListener( 'click', close, false );
 		
 		function reconnect( e ) {
 			self.send({
@@ -1715,11 +1715,13 @@ window.View = new api.View();
 			});
 		}
 		
+		/*
 		function close( e ) {
 			self.keepLoading = false;
 			self.isOnline = true;
 			self.hideUI();
 		}
+		*/
 		
 	}
 	
