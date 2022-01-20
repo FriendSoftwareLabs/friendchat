@@ -1147,6 +1147,15 @@ var hello = null;
 		const self = this;
 	}
 	
+	ns.Hello.prototype.checkOnline = async function() {
+		const self = this;
+		const isOnline = await self.conn.verify();
+		if ( !isOnline )
+			self.reconnect();
+		
+		return isOnline;
+	}
+	
 	ns.Hello.prototype.handlePushNotie = function( event ) {
 		const self = this;
 		if ( !event || !event.extra ) {
