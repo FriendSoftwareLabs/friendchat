@@ -1686,6 +1686,7 @@ library.rtc = library.rtc || {};
 		const ok = await self.verifying;
 		//console.log( 'Connection.verify real one returned', ok );
 		delete self.verifying;
+		
 		return ok;
 		
 		/////////////
@@ -1896,13 +1897,12 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketAuth = function( success ) {
 		const self = this;
-		/*
 		console.log( 'Connection.socketauth', {
 			success  : success,
 			session  : self.sessionId,
 		});
-		*/
 		
+		self.connecting = false;
 		if ( self.sessionId ) {
 			self.connect();
 			return;
@@ -1916,8 +1916,10 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
-		//console.log( 'conn.socketSession', sid );
-		self.connecting = false;
+		console.log( 'conn.socketSession', sid );
+		if ( null != sid )
+			self.connecting = false;
+		
 		self.sessionId = sid || null;
 		if ( null == sid )
 			self.LastMsgTime = null;
