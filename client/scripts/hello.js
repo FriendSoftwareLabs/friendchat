@@ -1149,10 +1149,10 @@ var hello = null;
 	
 	ns.Hello.prototype.checkOnline = async function() {
 		const self = this;
-		if ( null == self.conn )
-			return false;
+		let isOnline = false;
+		if ( null != self.conn )
+			isOnline = await self.conn.verify();
 		
-		const isOnline = await self.conn.verify();
 		if ( !isOnline )
 			self.reconnect();
 		
@@ -1220,6 +1220,7 @@ var hello = null;
 	ns.Hello.prototype.processPushNotie = async function( extra, view ) {
 		const self = this;
 		const maybeOnline = self.checkOnline();
+		/*
 		console.log( 'processPushNotie', {
 			extra    : extra,
 			view     : view,
@@ -1228,6 +1229,7 @@ var hello = null;
 			resumeTO : self.resumeTimeout,
 			maybeOn  : maybeOnline,
 		});
+		*/
 		
 		if ( self.service ) {
 			self.service.handleNotification( extra, view );
@@ -1238,10 +1240,12 @@ var hello = null;
 			view = getPreView( extra );
 		
 		const isOnline = await maybeOnline;
+		/*
 		console.log( 'processPushNotie', {
 			isOnline : isOnline,
 			resuTO   : self.resumeTimeout,
 		});
+		*/
 		
 		if ( null != self.resumeTimeout || !isOnline ) {
 			self.registerOnResume( onResume );
@@ -1336,11 +1340,13 @@ var hello = null;
 	
 	ns.Hello.prototype.handleAppResume = async function( event ) {
 		const self = this;
+		/*
 		console.log( 'handleAppResume', {
 			e        : event,
 			isOnline : self.isOnline,
 			resumeTO : self.resumeTimeout,
 		});
+		*/
 		if ( !self.isOnline ) {
 			console.log( 'hello.handleAppResume, already reconnecting' );
 			return;
@@ -1353,15 +1359,11 @@ var hello = null;
 		
 		//const nios = checkNotIOS();
 		//console.log( 'notIOS', nios );
-		if ( self.conn ) {
-			const wsOk = await self.conn.verify();
-			console.log( 'handleAppResume - ws check', wsOk );
-			if ( wsOk ) {
-				return;
-			}
+		const wsOk = await self.checkOnline();
+		if ( wsOk ) {
+			return;
 		}
 		
-		self.reconnect();
 		self.showConnStatus({
 			type : 'resume',
 			data : Date.now(),
@@ -1372,6 +1374,7 @@ var hello = null;
 			self.doResume();
 		}
 		
+		/*
 		function checkNotIOS() {
 			console.log( 'checkNotIOS - platform', hello.app.friendApp );
 			if ( hello.app.friendApp && ( 'iOS' === hello.app.friendApp.platform ))
@@ -1379,6 +1382,7 @@ var hello = null;
 			else
 				return true;
 		}
+		*/
 	}
 	
 	ns.Hello.prototype.registerOnLoaded = function( fn ) {
@@ -1400,10 +1404,12 @@ var hello = null;
 	
 	ns.Hello.prototype.doResume = function() {
 		const self = this;
+		/*
 		console.log( 'doResume', {
 			isOnline : self.isOnline,
 			resumeTO : self.resumeTimeout,
 		});
+		*/
 		
 		if ( !self.isOnline )
 			return;

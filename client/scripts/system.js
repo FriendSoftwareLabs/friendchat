@@ -1673,18 +1673,18 @@ library.rtc = library.rtc || {};
 	*/
 	ns.Connection.prototype.verify = async function() {
 		const self = this;
-		console.log( 'Conn.verify' );
+		//console.log( 'Conn.verify' );
 		if ( null == self.socket )
 			return false;
 		
 		if ( null != self.verifying ) {
-			console.log( 'conn.verify - found verifierer' );
+			//console.log( 'conn.verify - found verifierer' );
 			return await self.verifying;
 		}
 		
 		self.verifying = self.socket.verifyWS();
 		const ok = await self.verifying;
-		console.log( 'Connection.verify real one returned', ok );
+		//console.log( 'Connection.verify real one returned', ok );
 		delete self.verifying;
 		return ok;
 		
@@ -1786,7 +1786,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.connect = function() {
 		const self = this;
-		console.log( 'Connection.connect, connecting?', self.connecting );
+		//console.log( 'Connection.connect, connecting?', self.connecting );
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
 		
@@ -1916,7 +1916,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
-		console.log( 'conn.socketSession', sid );
+		//console.log( 'conn.socketSession', sid );
 		self.connecting = false;
 		self.sessionId = sid || null;
 		if ( null == sid )
@@ -1982,7 +1982,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketReconnecting = function( reTime ) {
 		const self = this;
-		console.log( 'conn.socketReconnecting', reTime );
+		//console.log( 'conn.socketReconnecting', reTime );
 		self.connecting = false;
 		self.onstate({
 			type : 'wait-reconnect',
@@ -1995,11 +1995,13 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleEnd = function( data, wsId ) {
 		const self = this;
+		/*
 		console.log( 'Conn.handleEnd', {
 			data     : data,
 			wsId     : wsId,
 			currWsId : self.socket ? self.socket.id : null,
 		});
+		*/
 		self.clear();
 		let err = {
 			type : 'end',
@@ -2018,7 +2020,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.clear = function() {
 		const self = this;
-		console.log( 'conn.clear' );
+		//console.log( 'conn.clear' );
 		self.connecting = false;
 		self.lastMsgTime = null;
 		if ( !self.socket )

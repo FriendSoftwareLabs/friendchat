@@ -88,11 +88,13 @@ library.component = library.component || {};
 	*/
 	ns.Socket.prototype.verifyWS = async function() {
 		const self = this;
+		/*
 		console.log( 'Socket.verify', {
 			id    : self.id,
 			ws    : self.ws,
 			state : self.state,
 		});
+		*/
 		if ( null == self.ws )
 			return false;
 		
@@ -103,10 +105,10 @@ library.component = library.component || {};
 		try {
 			ok = await check();
 		} catch( ex ) {
-			console.log( 'Socket.verifyWS ex', ex );
+			//console.log( 'Socket.verifyWS ex', ex );
 		}
 		
-		console.log( 'Socket.verifyWS ok?', ok );
+		//console.log( 'Socket.verifyWS ok?', ok );
 		return ok;
 		
 		function check() {
@@ -116,9 +118,9 @@ library.component = library.component || {};
 					type : 'verify',
 					data : sendTime,
 				};
-				console.log( 'sending veri', verify );
+				//console.log( 'sending veri', verify );
 				const msgWasSent = self.sendOnSocket( verify );
-				console.log( 'msgWasSent', msgWasSent );
+				//console.log( 'msgWasSent', msgWasSent );
 				if ( !msgWasSent ) {
 					reject( 'ERR_CANNOT_SEND' );
 					return;
@@ -135,7 +137,7 @@ library.component = library.component || {};
 					
 					const endTime = Date.now();
 					const travelTime = endTime - sendTime;
-					console.log( 'Socket.verifyWS check travel time ms', travelTime );
+					//console.log( 'Socket.verifyWS check travel time ms', travelTime );
 					resolve( true );
 				}
 				
@@ -382,7 +384,7 @@ library.component = library.component || {};
 		hello.timeNow( 'ws open' );
 		self.clearConnectTimeout();
 		self.setState( 'open', e );
-		// ..waiting for authenticate challenge
+		// ..now waiting for authenticate challenge
 	}
 	
 	ns.Socket.prototype.handleClose = function( e ) {
@@ -416,11 +418,13 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleVerify = function( timestamp ) {
 		const self = this;
+		/*
 		console.log( 'Socket.handleVerify', {
 			id         : self.id,
 			timestamp  : timestamp,
 			verifyBack : self.verifyBack,
 		});
+		*/
 		if ( null == self.verifyBack )
 			return;
 		
