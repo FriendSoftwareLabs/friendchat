@@ -519,6 +519,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.setReady = function() {
 		const self = this;
+		console.log( 'setReady', self.id );
 		self.ready = true;
 		self.startPing();
 		self.executeSendQueue();

@@ -1658,6 +1658,7 @@ library.rtc = library.rtc || {};
 		self.state = null;
 		self.socket = null;
 		self.subscriber = {};
+		self.connecting = false;
 		
 		self.init();
 	}
@@ -1787,7 +1788,11 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.connect = function() {
 		const self = this;
-		console.trace( 'Connection.connect, connecting?', self.connecting );
+		console.trace( 'Connection.connect, connecting?', {
+			connecting : self.connecting,
+			socket     : self.socket,
+		});
+		
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
 		
@@ -1903,7 +1908,6 @@ library.rtc = library.rtc || {};
 			session  : self.sessionId,
 		});
 		
-		self.connecting = false;
 		if ( self.sessionId ) {
 			self.connect();
 			return;
@@ -2023,7 +2027,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.clear = function() {
 		const self = this;
-		//console.log( 'conn.clear' );
+		console.log( 'conn.clear' );
 		self.connecting = false;
 		self.lastMsgTime = null;
 		if ( !self.socket )
