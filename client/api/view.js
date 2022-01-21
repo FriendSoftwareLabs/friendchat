@@ -907,14 +907,14 @@ var friend = window.friend || {};
 		
 		async function load( id ) {
 			removeIfExists( id );
-			let path = idFileMap[ id ];
-			let css = document.createElement( 'link' );
+			const path = idFileMap[ id ];
+			const css = document.createElement( 'link' );
 			css.type = 'text/css';
 			css.rel = 'stylesheet';
 			css.id = id;
 			document.head.appendChild( css );
 			let tries = 0;
-			const loaded = false;
+			let loaded = false;
 			try {
 				loaded = await set( css, path );
 			} catch( ex ) {
@@ -959,12 +959,12 @@ var friend = window.friend || {};
 							return;
 						
 						TO = null;
-						let tryAgain = false;
+						let triedAgain = false;
 						el.href = null;
 						el.onload = null;
 						try {
-							tryAgain = await set( el, path );
-							resolve( tryAgain );
+							triedAgain = await set( el, path );
+							resolve( triedAgain );
 						} catch( ex ) {
 							console.log( 'tried and failed', ex );
 							reject( ex );
