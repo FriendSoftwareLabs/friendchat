@@ -658,7 +658,7 @@ var friend = window.friend || {};
 		friend.template.addFragments( fragStr );
 	}
 	
-	ns.View.prototype.initialize = function( conf ) {
+	ns.View.prototype.initialize = async function( conf ) {
 		const self = this;
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
@@ -688,7 +688,8 @@ var friend = window.friend || {};
 		if ( self.config.viewTheme )
 			self.setViewTheme( self.config.viewTheme );
 		
-		self.setBaseCss( baseCssLoaded );
+		const cssLoaded = self.setBaseCss();
+		console.log( 'cssLoaded promise', cssLoaded );
 		self.connState = new api.ConnState( 'hello' );
 		
 		self.on( 'app-config', e => self.appConfUpdate( e ));
@@ -696,6 +697,16 @@ var friend = window.friend || {};
 		// mousedown listeing
 		document.body.addEventListener( 'mousedown', mouseDownThings, false );
 		document.body.addEventListener( 'mouseup', mouseUpThings, false );
+		
+		const cssOK = await cssLoaded;
+		console.log( 'cssLoaded', cssOK );
+		self.cssLoaded = true;
+		document.body.classList.toggle( 'hi', true );
+		if ( self.themeData )
+			self.applyThemeConfig( self.themeData );
+		
+		self.checkAllLoaded();
+		
 		
 		function mouseDownThings( e ) {
 			self.activate( e );
@@ -745,14 +756,6 @@ var friend = window.friend || {};
 		}
 		
 		//
-		function baseCssLoaded() {
-			self.cssLoaded = true;
-			document.body.classList.toggle( 'hi', true );
-			if ( self.themeData )
-				self.applyThemeConfig( self.themeData );
-			
-			self.checkAllLoaded();
-		}
 	}
 	
 	ns.View.prototype.handleResize = function( e ) {
@@ -840,17 +843,17 @@ var friend = window.friend || {};
 	ns.View.prototype.addAPIScripts = function() {
 		const self = this;
 		// scripts
-		var scripts = [
+		const scripts = [
 			'io/cajax.js', // dependency for cssparser.js
 			'utils/engine.js',
 			'utils/tool.js',
 			'utils/cssparser.js',
 			'gui/template.js',
 		];
-		var path = '/webclient/js/';
-		var pathArr = scripts.map( setPath );
-		var scriptPath = pathArr.join( ';' );
-		var script = document.createElement( 'script' );
+		const path = '/webclient/js/';
+		const pathArr = scripts.map( setPath );
+		const scriptPath = pathArr.join( ';' );
+		const script = document.createElement( 'script' );
 		script.onload = systemScriptsLoaded;
 		script.type = 'text/javascript';
 		script.src = scriptPath;
@@ -863,16 +866,17 @@ var friend = window.friend || {};
 		}
 	}
 	
-	ns.View.prototype.setBaseCss = function( callback ) {
+	// returns a promise from loadCss();
+	ns.View.prototype.setBaseCss = function() {
 		const self = this;
 		if ( self.theme )
 			self.themePath = '/themes/' + self.theme;
 		else
 			self.themePath = '/webclient/theme';
 		
-		var themedScrollbars = self.themePath + '/scrollbars.css';
-		var compiledTheme = self.themePath + '/theme_compiled.css';
-		var css = {
+		const themedScrollbars = self.themePath + '/scrollbars.css';
+		const compiledTheme = self.themePath + '/theme_compiled.css';
+		const css = {
 			'css-font-awesome'      : '/webclient/css/font-awesome.min.css',
 			'css-system-scrollbars' : themedScrollbars,
 			'css-system-theme'      : compiledTheme,
@@ -881,16 +885,98 @@ var friend = window.friend || {};
 		if ( self.viewTheme )
 			css[ 'css-app-theme' ] = self.viewTheme;
 		
-		self.loadCss( css, callback );
+		return self.loadCss( css );
 	}
 	
-	ns.View.prototype.loadCss = function( idFileMap, callback ) {
+	ns.View.prototype.loadCss = async function( idFileMap ) {
 		const self = this;
-		var filesLeft = 0;
-		load( idFileMap );
+		console.log( 'loadCss', idFileMap );
+		let filesLeft = 0;
+		const ids = Object.keys( idFileMap );
+		const loaders = ids.map( load );
+		let ok = false;
+		try {
+			await Promise.all( loaders );
+			ok = true;
+		} catch( ex ) {
+			console.log( 'loadCss ex', ex );
+		}
+		
+		return ok;
+		//load( idFileMap );
+		
+		async function load( id ) {
+			removeIfExists( id );
+			let path = idFileMap[ id ];
+			let css = document.createElement( 'link' );
+			css.type = 'text/css';
+			css.rel = 'stylesheet';
+			css.id = id;
+			document.head.appendChild( css );
+			let tries = 0;
+			const loaded = false;
+			try {
+				loaded = await set( css, path );
+			} catch( ex ) {
+				console.log( 'loadCss set ex', ex );
+			}
+			
+			return loaded;
+			
+			function set( el, path ) {
+				return new Promise(( resolve, reject ) => {
+					tries++;
+					console.log( 'set', [ el, path, tries ]);
+					if ( tries > 3 ) {
+						reject( 'ERR_CSS_LOAD_MAX_TRIES' );
+						return false;
+					}
+					
+					el.href = path;
+					el.onload = loadDone;
+					let timeout = 1;
+					if ( tries > 1 )
+						timeout = 20;
+					if ( tries > 2 )
+						timeout = 1000;
+					
+					console.log( 'setting with timeout', timeout );
+					let TO = window.setTimeout( loadTO, timeout );
+					
+					function loadDone( e ) {
+						console.log( 'loadDone', e );
+						if ( null == TO )
+							return;
+						
+						window.clearTimeout( TO );
+						TO = null;
+						resolve( true );
+					}
+					
+					async function loadTO() {
+						console.log( 'loadTO', TO );
+						if ( null == TO )
+							return;
+						
+						TO = null;
+						const tryAgain = false;
+						el.href = null;
+						el.onload = null;
+						try {
+							tryAgain = await set( el, path );
+							resolve( tryAgain );
+						} catch( ex ) {
+							console.log( 'tried and failed', ex );
+							reject( ex );
+						}
+					}
+					
+				});
+			}
+		}
 		
 		function load( cssMap ) {
-			var ids = Object.keys( cssMap );
+			const ids = Object.keys( cssMap );
 			ids.forEach( setCss );
 			function setCss( id ) {
 				removeIfExists( id );
@@ -913,7 +999,7 @@ var friend = window.friend || {};
 		}
 		
 		function removeIfExists( id ) {
-			var el = document.getElementById( id );
+			const el = document.getElementById( id );
 			if ( !el )
 				return;
 			
