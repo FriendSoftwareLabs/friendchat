@@ -975,6 +975,7 @@ var friend = window.friend || {};
 			}
 		}
 		
+		/*
 		function load( cssMap ) {
 			const ids = Object.keys( cssMap );
 			ids.forEach( setCss );
@@ -997,6 +998,7 @@ var friend = window.friend || {};
 				}
 			}
 		}
+		*/
 		
 		function removeIfExists( id ) {
 			const el = document.getElementById( id );
