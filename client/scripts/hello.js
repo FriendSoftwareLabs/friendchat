@@ -931,7 +931,10 @@ var hello = null;
 	
 	ns.Hello.prototype.handleConnAuth = function( state ) {
 		const self = this;
-		//console.log( 'handleConnAuth', state );
+		console.log( 'handleConnAuth', {
+			state    : state,
+			isOnline : self.isOnline,
+		});
 		const authed = state.data;
 		if ( !authed )
 			return;
@@ -941,6 +944,7 @@ var hello = null;
 		if ( self.isOnline )
 			return;
 		
+		console.log( 'handleConnAuth.doLogin' );
 		self.doLogin();
 	}
 	
