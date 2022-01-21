@@ -1514,6 +1514,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.updateRelation = async function( relation ) {
 		const self = this;
+		console.log( 'updateRelation', relation );
 		if ( !relation ) {
 			self.setDefaultWorkActivity();
 			return;
@@ -2409,6 +2410,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleChat = async function( event ) {
 		const self = this;
+		console.log( 'handleChat', event );
 		const chat = {
 			type : 'chat',
 			data : event,
