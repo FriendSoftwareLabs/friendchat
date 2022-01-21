@@ -959,7 +959,7 @@ var friend = window.friend || {};
 							return;
 						
 						TO = null;
-						const tryAgain = false;
+						let tryAgain = false;
 						el.href = null;
 						el.onload = null;
 						try {
