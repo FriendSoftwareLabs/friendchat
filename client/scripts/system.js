@@ -1787,7 +1787,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.connect = function() {
 		const self = this;
-		//console.log( 'Connection.connect, connecting?', self.connecting );
+		console.trace( 'Connection.connect, connecting?', self.connecting );
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
 		

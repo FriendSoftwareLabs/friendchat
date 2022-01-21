@@ -29,6 +29,7 @@ library.component = library.component || {};
 	ns.Socket = function( conf, sessionId, inheritedSendQueue ) {
 		const self = this;
 		// REQUIRED CONFIG
+		console.log( 'Socket', [ conf, sessionId ]);
 		self.url = conf.url;
 		self.protocol = conf.protocol;
 		self.authBundle = conf.authBundle;
@@ -536,8 +537,9 @@ library.component = library.component || {};
 		
 		if ( !socketReady( force )) {
 			console.log( 'Socket.sendOnSocket - socket not ready, queueing', {
-				msg : msgObj,
-				sid : self.id,
+				msg     : msgObj,
+				session : self.session,
+				socket  : self.id
 			})
 			queue( msgObj );
 			return false;
