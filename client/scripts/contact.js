@@ -2937,6 +2937,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.sendChatEvent = function( e ) {
 		const self = this;
+		console.log( 'sendchatEvent', e );
 		const chat = {
 			type : 'chat',
 			data : e,
