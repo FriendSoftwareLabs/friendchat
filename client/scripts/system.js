@@ -1915,21 +1915,21 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
-	ns.Connection.prototype.socketSession = function( sid ) {
+	ns.Connection.prototype.socketSession = function( sId, wsId ) {
 		const self = this;
-		console.log( 'conn.socketSession', [ sid, wsId ]);
-		if ( null != sid )
+		console.log( 'conn.socketSession', [ sId, wsId ]);
+		if ( null != sId )
 			self.connecting = false;
 		
-		self.sessionId = sid || null;
-		if ( null == sid )
+		self.sessionId = sId || null;
+		if ( null == sId )
 			self.LastMsgTime = null;
 		else
 			self.LastMsgTime = window.Date.now();
 		
 		self.onstate({
 			type : 'session',
-			data : sid,
+			data : sId,
 		});
 	}
 	
