@@ -226,7 +226,6 @@ var hello = null;
 			openMinimized = self.handleRunConf();
 		
 		self.openMain( openMinimized );
-		self.doLoaded();
 		
 		handleUserInfo( userInfo );
 		/*
@@ -294,6 +293,7 @@ var hello = null;
 			self.main.setTitle( self.config.appName );
 			self.initDormant();
 			self.initSystemModules();
+			self.doLoaded();
 		}
 		
 		function confErr( err ) {
