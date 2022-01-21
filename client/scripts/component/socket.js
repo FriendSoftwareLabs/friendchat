@@ -457,18 +457,18 @@ library.component = library.component || {};
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		const self = this;
 		hello.timeNow( 'ws handleSession' );
-		if ( !sessionId )
-			self.session = null;
-		else
-			self.session = sessionId;
 		
-		/*
 		console.log( 'ws.handleSession - sid:', {
 			sid  : sessionId,
 			id   : self.id,
 			self : self.session,
 		});
-		*/
+		
+		if ( !sessionId )
+			self.session = null;
+		else
+			self.session = sessionId;
+		
 		if ( !self.session ) {
 			self.setState( 'session', null );
 			self.ended();

@@ -1848,15 +1848,15 @@ library.rtc = library.rtc || {};
 	ns.Connection.prototype.init = function() {
 		const self = this;
 		self.socketEventMap = {
-			'connect'    : socketConnecting,
-			'open'       : socketOpen,
-			'auth'       : socketAuth,
-			'session'    : socketSession,
+			'connect'    : ( e, wsId ) => self.socketConnecting( e, wsId ),
+			'open'       : ( e, wsId ) => self.socketOpen( e, wsId ),
+			'auth'       : ( e, wsId ) => self.socketAuth( e, wsId ),
+			'session'    : ( e, wsId ) => self.socketSession( e, wsId ),
 			'close'      : ( e, wsId ) => self.socketClosed( e, wsId ),
 			'timeout'    : ( e, wsId ) => self.socketTimeout( e, wsId ),
 			'error'      : ( e, wsId ) => self.socketError( e, wsId ),
-			'ping'       : socketPing,
-			'reconnect'  : socketReconnect,
+			'ping'       : ( e, wsId ) => self.socketPing( e, wsId ),
+			'reconnect'  : ( e, wsId ) => self.socketReconnecting( e, wsId ),
 		};
 		function socketConnecting( e ) { self.socketConnecting( e ); }
 		function socketOpen( e ) { self.socketOpen( e ); }
@@ -1868,18 +1868,19 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleState = function( event, wsId ) {
 		const self = this;
-		//console.log( 'Conn.handleState', [ event, wsId ]);
+		console.log( 'Conn.handleState', [ event, wsId ]);
 		const handler = self.socketEventMap[ event.type ];
 		if ( !handler ) {
 			console.log( 'unknown socket state', event );
 			return;
 		}
 		
-		handler( event.data );
+		handler( event.data, wsId );
 	}
 	
-	ns.Connection.prototype.socketConnecting = function() {
+	ns.Connection.prototype.socketConnecting = function( e, wsId ) {
 		const self = this;
+		//console.log( 'socketConnecting', [ e, wsId ]);
 		self.onstate({
 			type : 'connect',
 			data : {
@@ -1888,7 +1889,7 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
-	ns.Connection.prototype.socketOpen = function( data ) {
+	ns.Connection.prototype.socketOpen = function( e, wsId ) {
 		const self = this;
 		self.onstate({
 			type : 'open',
@@ -1916,7 +1917,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketSession = function( sid ) {
 		const self = this;
-		console.log( 'conn.socketSession', sid );
+		console.log( 'conn.socketSession', [ sid, wsId ]);
 		if ( null != sid )
 			self.connecting = false;
 		
@@ -1982,7 +1983,7 @@ library.rtc = library.rtc || {};
 		// console.log( 'socketPing', data );
 	}
 	
-	ns.Connection.prototype.socketReconnecting = function( reTime ) {
+	ns.Connection.prototype.socketReconnecting = function( reTime, wsId ) {
 		const self = this;
 		//console.log( 'conn.socketReconnecting', reTime );
 		self.connecting = false;
@@ -2026,10 +2027,12 @@ library.rtc = library.rtc || {};
 		self.connecting = false;
 		self.lastMsgTime = null;
 		if ( !self.socket )
-			return;
+			return null;
 		
 		const sendQ = self.socket.close();
 		self.socket = null;
+		
+		return sendQ;
 	}
 	
 	ns.Connection.prototype.handleMessage = function( event ) {
