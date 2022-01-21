@@ -934,12 +934,7 @@ var friend = window.friend || {};
 					
 					el.href = path;
 					el.onload = loadDone;
-					let timeout = 1;
-					if ( tries > 1 )
-						timeout = 20;
-					if ( tries > 2 )
-						timeout = 1000;
-					
+					const timeout = 1000;
 					console.log( 'setting with timeout', timeout );
 					let TO = window.setTimeout( loadTO, timeout );
 					
