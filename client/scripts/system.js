@@ -424,6 +424,14 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
+	ns.ModuleControl.prototype.appResume = function() {
+		const self = this;
+		self.activeIds.forEach( mId => {
+			const mod = self.active[ mId ];
+			mod.appResume();
+		});
+	}
+	
 	ns.ModuleControl.prototype.setIsOnline = function( isOnline ) {
 		const self = this;
 		if ( isOnline )

@@ -1366,6 +1366,7 @@ var hello = null;
 		//console.log( 'notIOS', nios );
 		const wsOk = await self.checkOnline();
 		if ( wsOk ) {
+			self.module.appResume();
 			return;
 		}
 		

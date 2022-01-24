@@ -58,6 +58,13 @@ library.module = library.module || {};
 	
 	// Public
 	
+	// called by module control when the app comes out of background
+	ns.BaseModule.prototype.appResume = function() {
+		const self = this;
+		console.log( 'BaseModule.appResume' );
+		self.reconnect();
+	}
+	
 	ns.BaseModule.prototype.setOnline = function( isOnline ) {
 		const self = this;
 		if ( isOnline === self.isOnline )
