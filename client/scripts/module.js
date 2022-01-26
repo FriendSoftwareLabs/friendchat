@@ -60,9 +60,8 @@ library.module = library.module || {};
 	
 	// called by module control when the app comes out of background
 	ns.BaseModule.prototype.appResume = function() {
-		const self = this;
-		console.log( 'BaseModule.appResume' );
-		self.reconnect();
+		console.log( 'BaseModule.appResume - implement in module' );
+		throw new Error( '^^^ BaseModule.appResume() - implement in module' );
 	}
 	
 	ns.BaseModule.prototype.setOnline = function( isOnline ) {
@@ -660,6 +659,12 @@ library.module = library.module || {};
 		self.isOnline = false;
 		self.initialized = false;
 		self.sendModuleInit();
+	}
+	
+	ns.Presence.prototype.appResume = function() {
+		const self = this;
+		console.log( 'Presence.appResume' );
+		self.reconnect();
 	}
 	
 	ns.Presence.prototype.getIdentity = async function( clientId ) {

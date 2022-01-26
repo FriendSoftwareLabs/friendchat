@@ -1881,7 +1881,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.handleState = function( event, wsId ) {
 		const self = this;
-		console.log( 'Conn.handleState', [ event, wsId ]);
+		//console.log( 'Conn.handleState', [ event, wsId ]);
 		const handler = self.socketEventMap[ event.type ];
 		if ( !handler ) {
 			console.log( 'unknown socket state', event );
