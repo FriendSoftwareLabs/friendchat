@@ -2226,6 +2226,7 @@ library.view = library.view || {};
 		else
 			message = original;
 		
+		/*
 		console.log( 'buildWorkMsg', {
 			msg        : msg,
 			from       : fromUser,
@@ -2237,6 +2238,7 @@ library.view = library.view || {};
 			fromSuper  : fromSuper,
 			fromSub    : fromSub,
 		});
+		*/
 		const timeStr = self.getClockStamp( msg.time );
 		const actionsHtml = self.buildMsgActions( canEdit, canForward, canDelete );
 		const msgConf = {
