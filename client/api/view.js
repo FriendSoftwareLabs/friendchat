@@ -689,7 +689,6 @@ var friend = window.friend || {};
 			self.setViewTheme( self.config.viewTheme );
 		
 		const cssLoaded = self.setBaseCss();
-		console.log( 'cssLoaded promise', cssLoaded );
 		self.connState = new api.ConnState( 'hello' );
 		
 		self.on( 'app-config', e => self.appConfUpdate( e ));
@@ -699,7 +698,6 @@ var friend = window.friend || {};
 		document.body.addEventListener( 'mouseup', mouseUpThings, false );
 		
 		const cssOK = await cssLoaded;
-		console.log( 'cssLoaded', cssOK );
 		self.cssLoaded = true;
 		document.body.classList.toggle( 'hi', true );
 		if ( self.themeData )
@@ -890,7 +888,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.loadCss = async function( idFileMap ) {
 		const self = this;
-		console.log( 'loadCss', idFileMap );
 		let filesLeft = 0;
 		const ids = Object.keys( idFileMap );
 		const loaders = ids.map( load );
@@ -926,7 +923,6 @@ var friend = window.friend || {};
 			function set( el, path ) {
 				return new Promise(( resolve, reject ) => {
 					tries++;
-					console.log( 'set', [ el, path, tries ]);
 					if ( tries > 3 ) {
 						reject( 'ERR_CSS_LOAD_MAX_TRIES' );
 						return false;
@@ -935,11 +931,9 @@ var friend = window.friend || {};
 					el.href = path;
 					el.onload = loadDone;
 					const timeout = 1000;
-					console.log( 'setting with timeout', timeout );
 					let TO = window.setTimeout( loadTO, timeout );
 					
 					function loadDone( e ) {
-						console.log( 'loadDone', e );
 						if ( null == TO )
 							return;
 						
@@ -949,7 +943,6 @@ var friend = window.friend || {};
 					}
 					
 					async function loadTO() {
-						console.log( 'loadTO', TO );
 						if ( null == TO )
 							return;
 						
@@ -969,31 +962,6 @@ var friend = window.friend || {};
 				});
 			}
 		}
-		
-		/*
-		function load( cssMap ) {
-			const ids = Object.keys( cssMap );
-			ids.forEach( setCss );
-			function setCss( id ) {
-				removeIfExists( id );
-				filesLeft++;
-				let path = cssMap[ id ];
-				let css = document.createElement( 'link' );
-				css.type = 'text/css';
-				css.rel = 'stylesheet';
-				css.id = id;
-				document.head.appendChild( css );
-				css.href = path;
-				css.onload = loaded;
-				
-				function loaded() {
-					filesLeft--;
-					if ( !filesLeft && callback )
-						callback();
-				}
-			}
-		}
-		*/
 		
 		function removeIfExists( id ) {
 			const el = document.getElementById( id );
@@ -1531,11 +1499,6 @@ window.View = new api.View();
 	ns.ConnState.prototype.showLoading = function( show ) {
 		const self = this;
 		show = !!show;
-		console.log( 'ConnState.showLoading', {
-			show : show,
-			curr : self.keepLoading,
-			ison : self.isOnline,
-		});
 		self.keepLoading = show;
 		if ( show )
 			self.setLoading();
@@ -1608,7 +1571,6 @@ window.View = new api.View();
 	
 	ns.ConnState.prototype.handleOnline = function( sid ) {
 		const self = this;
-		console.log( 'ConnState.handleOnline', sid );
 		self.isOnline = true;
 		self.hideUI();
 	}

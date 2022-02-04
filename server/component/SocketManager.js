@@ -354,7 +354,6 @@ ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 	}
 	
 	if ( null == session ) {
-		log( 'checkSession - no session found', [ sessionId, socket.id ]);
 		try {
 			await socket.unsetSession()
 		} catch( ex ) {
@@ -412,13 +411,8 @@ ns.SocketManager.prototype.setSession = function( socket, parentId ) {
 ns.SocketManager.prototype.getSession = function( id ) {
 	const self = this;
 	const socket = self.sessions[ id ];
-	if ( !socket ) {
-		log( 'getSession, no session for', {
-			sid  : id,
-			sess : self.sessions,
-		});
+	if ( !socket )
 		return null;
-	}
 	
 	return socket;
 }
