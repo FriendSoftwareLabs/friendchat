@@ -1559,7 +1559,7 @@ window.View = new api.View();
 		function denied( e ) { self.handleDenied( e ); }
 		
 		function eventSink( ) {
-			console.log( 'ConnState - unknown event', arguments );
+			//console.log( 'ConnState - unknown event', arguments );
 		}
 	}
 	

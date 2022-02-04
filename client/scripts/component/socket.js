@@ -29,7 +29,6 @@ library.component = library.component || {};
 	ns.Socket = function( conf, sessionId, inheritedSendQueue ) {
 		const self = this;
 		// REQUIRED CONFIG
-		console.log( 'Socket', [ conf, sessionId ]);
 		self.url = conf.url;
 		self.protocol = conf.protocol;
 		self.authBundle = conf.authBundle;
@@ -519,7 +518,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.setReady = function() {
 		const self = this;
-		console.log( 'setReady', self.id );
 		self.ready = true;
 		self.startPing();
 		self.executeSendQueue();

@@ -1079,7 +1079,7 @@ library.view = library.view || {};
 		const self = this;
 		var handler = self.infoMap[ info.type ];
 		if ( !handler ) {
-			console.log( 'no handler for info', info );
+			//console.log( 'no handler for info', info );
 			return;
 		}
 		
