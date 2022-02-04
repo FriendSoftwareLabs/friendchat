@@ -95,7 +95,6 @@ ns.ChatSockets.prototype.send = function( msg, socketId ) {
 
 ns.ChatSockets.prototype.loadAccounts = async function( msg, socketId ) {
 	const self = this;
-	log( 'loadAccounts', [ msg, socketId ], 3 );
 	const userId = self.socketToUserId[ socketId ];
 	if ( !userId ) {
 		let err = new Error();
@@ -123,7 +122,6 @@ ns.ChatSockets.prototype.loadAccounts = async function( msg, socketId ) {
 
 ns.ChatSockets.prototype.createAccount = async function( msg, socketId ) {
 	const self = this;
-	log( 'createAccount', msg );
 	const args = msg.data;
 	const ret = {
 		status : 403,
@@ -232,7 +230,6 @@ ns.ChatSockets.prototype.removeAccount = async function( msg, socketId ) {
 ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 	const self = this;
 	const args = msg.data;
-	log( 'accountLogin', [ msg, socketId ], 4 );
 	args.password = null; // pasword deprecated
 	if ( !args.name ) {
 		msg.response = {
@@ -314,13 +311,11 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 
 ns.ChatSockets.prototype.loginSession = async function( session, socket ) {
 	const self = this;
-	log( 'loginSession', [ session, !!socket ] );
 	const fUserId = session.fUserId;
 	const accountId = session.accountId;
 	const dbAcc = new DbAccount( self.state.db, fUserId );
 	const accConf = await dbAcc.get( accountId );
 	if ( null == accConf ) {
-		log( 'no conf for acc', accountId );
 		self.removeSocket( socket.id );
 		return;
 	}

@@ -38,7 +38,7 @@ ns.SocketManager = function( tlsConf, port ) {
 	self.sessions = {}; // logged in, can now be restored from the client
 	self.sessionStore = {};
 	self.socketToUserId = {};
-	self.sessionTimeout = 1000 * 60 * 10;
+	self.sessionTimeout = 1000 * 60 * 60;
 	self.key = null;
 	self.cert = null;
 	self.pool = null;
@@ -120,7 +120,6 @@ ns.SocketManager.prototype.bindPool = function() {
 	
 	function poolConnection( conn ) {
 		const sid = self.makeSocketId();
-		log( 'poolConnection', sid );
 		const conf = {
 			id   : sid,
 			conn : conn,
@@ -178,7 +177,6 @@ ns.SocketManager.prototype.releasePool = function() {
 
 ns.SocketManager.prototype.authenticate = async function( bundle, socket ) {
 	const self = this;
-	log( 'authenticate', [ bundle, socket.id ], 4 );
 	if ( !bundle ) {
 		log( 'authenticate - no bundle', bundle );
 		close();
@@ -325,10 +323,7 @@ ns.SocketManager.prototype.bind = function( socket ) {
 	const self = this;
 	const sId = socket.id;
 	self.sockets[ sId ] = socket;
-	socket.on( 'close'   , e => { 
-		log( 'socket on close', sId );
-		self.removeSocket( sId );
-	});
+	socket.on( 'close'   , e => { self.removeSocket( sId );	});
 	socket.on( 'session' , e => self.handleSession(  e, sId ));
 	socket.on( 'msg'     , e => self.receiveMessage( e, sId ));
 	
@@ -352,11 +347,6 @@ ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 	const self = this;
 	const stored = self.getStoredSession( sessionId );
 	const session = self.getSession( sessionId );
-	log( 'checkSession', {
-		sessionId : sessionId,
-		stored    : stored,
-		session   : !!session,
-	});
 	if ( null != stored ) {
 		self.bind( socket );
 		await self.loginSession( stored, socket );
@@ -415,11 +405,6 @@ ns.SocketManager.prototype.replaceSession = function( session, socket ) {
 ns.SocketManager.prototype.setSession = function( socket, parentId ) {
 	const self = this;
 	const sessionId = self.makeSessionId();
-	log( 'setSession', {
-		socket    : socket.id,
-		sessionId : sessionId,
-		parentId  : parentId,
-	});
 	socket.setSession( sessionId, parentId );
 	self.sessions[ sessionId ] = socket;
 }
@@ -468,11 +453,6 @@ ns.SocketManager.prototype.removeSocket = async function( socketId ) {
 	
 	const sessionId = socket.sessionId;
 	const accId = socket.parentId;
-	log( 'removeSocket', {
-		socketId  : socketId,
-		sessionId : sessionId,
-		accId     : accId,
-	});
 	if ( !!sessionId && !!accId ) {
 		const parent = self.getParent( accId );
 		if ( parent ) {
@@ -491,7 +471,6 @@ ns.SocketManager.prototype.removeSocket = async function( socketId ) {
 
 ns.SocketManager.prototype.storeSession = function( sessionId, accountId, fUserId ) {
 	const self = this;
-	log( 'storeSession', [ sessionId, accountId, fUserId ]);
 	const store = {
 		sessionId : sessionId,
 		accountId : accountId,
@@ -501,7 +480,6 @@ ns.SocketManager.prototype.storeSession = function( sessionId, accountId, fUserI
 	self.sessionStore[ sessionId ] = store;
 	
 	function remove() {
-		log( 'remove stored session', sessionId );
 		self.removeSession( sessionId );
 	}
 	
@@ -509,7 +487,6 @@ ns.SocketManager.prototype.storeSession = function( sessionId, accountId, fUserI
 
 ns.SocketManager.prototype.removeSession = function( sessionId ) {
 	const self = this;
-	log( 'removeSession', sessionId );
 	const store = self.sessionStore[ sessionId ];
 	delete self.sessionStore[ sessionId ];
 	if ( null == store )

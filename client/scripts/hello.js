@@ -368,7 +368,6 @@ var hello = null;
 					return;
 				}
 				
-				console.log( 'getUserInfo done', data );
 				resolve( data );
 			}
 			
@@ -888,7 +887,6 @@ var hello = null;
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
-		console.log( 'updateConnState', state );
 		if ( 'authenticate' == state.type ) {
 			self.handleConnAuth( state );
 			return;
@@ -931,10 +929,6 @@ var hello = null;
 	
 	ns.Hello.prototype.handleConnAuth = function( state ) {
 		const self = this;
-		console.log( 'handleConnAuth', {
-			state    : state,
-			isOnline : self.isOnline,
-		});
 		const authed = state.data;
 		if ( !authed )
 			return;
@@ -944,7 +938,6 @@ var hello = null;
 		if ( self.isOnline )
 			return;
 		
-		console.log( 'handleConnAuth.doLogin' );
 		self.doLogin();
 	}
 	
@@ -959,11 +952,6 @@ var hello = null;
 			return;
 		
 		self.isOnline = isOnline;
-		if ( self.isOnline )
-			console.log( '--- online' );
-		else
-			console.log( '--- offline' );
-		
 		self.app.toAllViews({
 			type : 'app-online',
 			data : isOnline,

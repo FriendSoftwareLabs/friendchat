@@ -64,13 +64,6 @@ ns.Socket.prototype.send = function( msg ) {
 
 ns.Socket.prototype.setSession = function( sessionId, parentId ) {
 	const self = this;
-	log( 'setSession', {
-		socket  : self.id,
-		current : [ self.sessionId, self.parentId ],
-		sid     : sessionId,
-		pid     : parentId,
-	});
-	
 	if ( sessionId ) {
 		self.sessionId = sessionId;
 		self.parentId = parentId;
@@ -86,7 +79,6 @@ ns.Socket.prototype.setSession = function( sessionId, parentId ) {
 
 ns.Socket.prototype.authenticate = function( success ) {
 	const self = this;
-	log( 'authenticate', [ success, self.id ]);
 	if ( self.authenticated === success )
 		return;
 	
@@ -128,7 +120,6 @@ ns.Socket.prototype.detach = function() {
 
 ns.Socket.prototype.unsetSession = function() {
 	const self = this;
-	log( 'unsetSession' );
 	self.sessionId = false;
 	const sessionEvent = {
 		type : 'session',
@@ -141,7 +132,6 @@ ns.Socket.prototype.unsetSession = function() {
 // used from account or internally
 ns.Socket.prototype.kill = function() {
 	const self = this;
-	log( 'kill' );
 	self.cleanup();
 	self.emit( 'close' );
 }
@@ -245,11 +235,6 @@ ns.Socket.prototype.handleEvent = function( event ) {
 
 ns.Socket.prototype.handleVerify = function( timestamp ) {
 	const self = this;
-	log( 'handleVerify', {
-		id        : self.id,
-		timestamp : timestamp,
-		session   : self.sessionId,
-	});
 	if ( !self.sessionId )
 		return;
 	
@@ -360,7 +345,6 @@ ns.Socket.prototype.startPingClose = function() {
 	
 	self.pingoutTimer = setTimeout( kill, self.sessionTimeout );
 	function kill() {
-		log( 'kill by ping timeout', self.id );
 		self.pingoutTimer = null;
 		self.kill();
 	}
@@ -437,7 +421,6 @@ ns.Socket.prototype.handleClose = function( type ) {
 	// time out
 	self.errorTimer = setTimeout( kill, self.sessionTimeout );
 	function kill() {
-		log( 'kill by socket close', [ self.id, type ]);
 		self.errorTimer = null;
 		self.kill();
 	}
