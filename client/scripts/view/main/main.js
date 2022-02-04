@@ -4035,7 +4035,7 @@ library.view = library.view || {};
 		self.setTemplate();
 		
 		self.view.showLoading( true );
-		self.view.loaded( true );
+		self.view.loaded();
 	}
 	
 	ns.Main.prototype.bindEvents = function() {

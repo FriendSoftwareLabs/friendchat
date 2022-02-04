@@ -73,6 +73,7 @@ ns.Socket.prototype.setSession = function( sessionId, parentId ) {
 		type : 'session',
 		data : self.sessionId,
 	};
+	
 	return self.sendOnSocket( sessionEvent );
 }
 
@@ -128,7 +129,7 @@ ns.Socket.prototype.unsetSession = function() {
 	return self.sendOnSocket( sessionEvent );
 }
 
-// used from account
+// used from account or internally
 ns.Socket.prototype.kill = function() {
 	const self = this;
 	self.cleanup();
@@ -154,11 +155,10 @@ ns.Socket.prototype.init = function() {
 	
 	self.conn.id = self.id;
 	self.connMap = {
-		'ping' : ping,
-		'pong' : pong,
+		'verify' : e => self.handleVerify( e ),
+		'ping'   : e => self.handlePing( e ),
+		'pong'   : e => self.handlePong( e ),
 	};
-	function ping( msg ) { self.handlePing( msg ); }
-	function pong( msg ) { self.handlePong( msg ); }
 	
 	self.start();
 }
@@ -172,6 +172,7 @@ ns.Socket.prototype.start = function() {
 	
 	self.bind();
 	self.doPing();
+	self.sendId();
 }
 
 ns.Socket.prototype.stop = function() {
@@ -200,6 +201,16 @@ ns.Socket.prototype.unbind = function() {
 	self.conn.removeAllListeners( 'message' );
 }
 
+ns.Socket.prototype.sendId = function() {
+	const self = this;
+	const id = {
+		type : 'socket-id',
+		data : self.id,
+	}
+	
+	self.sendOnSocket( id );
+}
+
 ns.Socket.prototype.receiveMessage = function( msgString ) {
 	const self = this;
 	var msgObj = toJSON( msgString );
@@ -220,6 +231,18 @@ ns.Socket.prototype.handleEvent = function( event ) {
 	}
 	
 	self.emit( event.type, event.data );
+}
+
+ns.Socket.prototype.handleVerify = function( timestamp ) {
+	const self = this;
+	if ( !self.sessionId )
+		return;
+	
+	const reply = {
+		type : 'verify',
+		data : timestamp,
+	};
+	self.sendOnSocket( reply );
 }
 
 ns.Socket.prototype.doPing = function() {
@@ -317,7 +340,7 @@ ns.Socket.prototype.clearPingTimers = function() {
 
 ns.Socket.prototype.startPingClose = function() {
 	const self = this;
-	if ( self.pingoutTimer )
+	if ( null != self.pingoutTimer )
 		return;
 	
 	self.pingoutTimer = setTimeout( kill, self.sessionTimeout );
@@ -376,15 +399,15 @@ ns.Socket.prototype.executeSendQueue = function() {
 
 ns.Socket.prototype.connError = function( event ) {
 	const self = this;
-	self.handleClose();
+	self.handleClose( 'error' );
 }
 
 ns.Socket.prototype.connClose = function( event ) {
 	const self = this;
-	self.handleClose();
+	self.handleClose( 'close' );
 }
 
-ns.Socket.prototype.handleClose = function() {
+ns.Socket.prototype.handleClose = function( type ) {
 	const self = this;
 	if ( !self.sessionId ) {
 		self.kill();

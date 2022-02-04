@@ -44,7 +44,7 @@ library.view = library.view || {};
 	ns.Presence.prototype.init = function() {
 		const self = this;
 		window.View.setBody();
-		window.View.showLoading( true );
+		//window.View.showLoading( true );
 		if ( window.View.appSettings )
 			self.compact = !!window.View.appSettings.compactChat;
 		
@@ -81,8 +81,7 @@ library.view = library.view || {};
 		self.bindConn();
 		
 		//
-		const keepLoading = true;
-		window.View.loaded( keepLoading );
+		window.View.loaded();
 	}
 	
 	ns.Presence.prototype.buildUserList = function() {
@@ -521,7 +520,7 @@ library.view = library.view || {};
 		}
 		
 		window.View.ready();
-		window.View.showLoading( false );
+		//window.View.showLoading( false );
 		self.user = await self.users.getIdentity( self.userId );
 		self.sendChatEvent({
 			type : 'log',
@@ -2227,6 +2226,7 @@ library.view = library.view || {};
 		else
 			message = original;
 		
+		/*
 		console.log( 'buildWorkMsg', {
 			msg        : msg,
 			from       : fromUser,
@@ -2238,6 +2238,7 @@ library.view = library.view || {};
 			fromSuper  : fromSuper,
 			fromSub    : fromSub,
 		});
+		*/
 		const timeStr = self.getClockStamp( msg.time );
 		const actionsHtml = self.buildMsgActions( canEdit, canForward, canDelete );
 		const msgConf = {

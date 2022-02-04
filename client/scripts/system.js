@@ -263,14 +263,14 @@ library.rtc = library.rtc || {};
 	
 	ns.Login.prototype.login = function( msg ) {
 		const self = this;
-		var account = self.accounts[ msg.clientId ];
+		const account = self.accounts[ msg.clientId ];
 		if ( !account ) {
 			console.log( 'login.login - invalid client id', msg );
 			console.log( 'accounts', self.accounts );
 			return;
 		}
 		
-		var request = {
+		const request = {
 			url  : '/login',
 			verb : 'post',
 			data : {
@@ -279,6 +279,7 @@ library.rtc = library.rtc || {};
 				password : msg.password
 			},
 		};
+		
 		hello.request.send( request, logBack );
 		function logBack( response ) {
 			self.loginResponse( response );
@@ -420,6 +421,14 @@ library.rtc = library.rtc || {};
 		mIds.forEach( mId => {
 			let mod = self.active[ mId ];
 			mod.reconnect();
+		});
+	}
+	
+	ns.ModuleControl.prototype.appResume = function() {
+		const self = this;
+		self.activeIds.forEach( mId => {
+			const mod = self.active[ mId ];
+			mod.appResume();
 		});
 	}
 	
@@ -1657,6 +1666,7 @@ library.rtc = library.rtc || {};
 		self.state = null;
 		self.socket = null;
 		self.subscriber = {};
+		self.connecting = false;
 		
 		self.init();
 	}
@@ -1667,60 +1677,23 @@ library.rtc = library.rtc || {};
 	
 	checks ws health
 	
-	returns true/false for healthy / not healthy
+	returns a promise that resolves to true / false
 	
 	*/
-	ns.Connection.prototype.verify = function() {
+	ns.Connection.prototype.verify = async function() {
 		const self = this;
-		const now = window.Date.now();
-		const threeSecondsAgo = now - ( 1000 * 3 );
-		/*
-		console.log( 'verify', {
-			now    : hmsms( now ),
-			tsago  : hmsms( threeSecondsAgo ),
-			lstmsg : hmsms( self.lastMsgTime ),
-			diff   : threeSecondsAgo - self.lastMsgTime,
-		});
-		*/
-		
-		if ( null == self.lastMsgTime )
+		if ( null == self.socket )
 			return false;
 		
-		// more than three seconds since last msg
-		if (  self.lastMsgTime < threeSecondsAgo )
-			return false;
-		
-		return true;
-		
-		function hmsms( ts ) {
-			const d = new Date( ts );
-			let p = [ 
-				pad( d.getHours()),
-				':',
-				pad( d.getMinutes()),
-				':',
-				pad( d.getSeconds()),
-				'.',
-				padMS( d.getMilliseconds())
-			];
-			return p.join('');
-			
-			function pad( num ) {
-				if ( num < 10 )
-					return '0' + num;
-				
-				return '' + num;
-			}
-			
-			function padMS( num ) {
-				if ( num < 10 )
-					return '00' + num;
-				if ( num < 100 )
-					return '0' + num;
-				
-				return '' + num;
-			}
+		if ( null != self.verifying ) {
+			return await self.verifying;
 		}
+		
+		self.verifying = self.socket.verifyWS();
+		const ok = await self.verifying;
+		delete self.verifying;
+		
+		return ok;
 	}
 	
 	ns.Connection.prototype.on = function( type, callback ) {
@@ -1754,23 +1727,32 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.send = function( msg ) {
 		const self = this;
-		if ( !msg || !self.socket )
+		if ( !msg || !self.socket ){
+			console.log( 'Connection.send - err', {
+				msg    : !!msg,
+				socket : !!self.socket,
+			});
 			return false;
+		}
 		
 		self.socket.send( msg );
 		return true;
 	}
 	
-	ns.Connection.prototype.connect = function( callback ) {
+	ns.Connection.prototype.connect = function() {
 		const self = this;
 		if( !hello.config || !hello.config.host )
 			throw new Error( 'missing websocket config stuff' );
 		
-		if ( self.socket )
-			self.clear();
+		if ( true == self.connecting )
+			return;
 		
-		if ( callback )
-			self.readyCallback = callback;
+		let remainingSendQueue = null;
+		if ( self.socket )
+			remainingSendQueue = self.clear();
+		
+		self.connecting = true;
+		self.socketConnecting();
 		
 		let url = null;
 		if ( self.altHost )
@@ -1784,36 +1766,28 @@ library.rtc = library.rtc || {};
 		
 		self.host = url;
 		const auth = hello.getAuthBundle();
-		self.socket = new library.component.Socket({
-			url        : url,
-			protocol   : 'text',
-			authBundle : auth,
-			onmessage  : onMessage,
-			onstate    : onState,
-			onend      : onEnd,
-		});
-		
-		function onMessage( msg ) { self.message( msg ); }
-		function onState( state ) { self.handleState( state ); }
-		function onEnd( msg ) { self.handleEnd( msg ); }
-	}
-	
-	ns.Connection.prototype.reconnect = function( callback ) {
-		const self = this;
-		if ( callback )
-			self.readyCallback = callback;
-		
-		if ( !self.socket ) {
-			self.connect();
-			return;
-		}
-		
-		self.socket.reconnect();
+		self.socket = new library.component.Socket(
+			{
+				url        : url,
+				protocol   : 'text',
+				authBundle : auth,
+				onmessage  : ( e, wsid ) => self.handleMessage( e, wsid ),
+				onstate    : ( e, wsid ) => self.handleState(   e, wsid ),
+				onend      : ( e, wsid ) => self.handleEnd(     e, wsid ),
+			}, 
+			self.sessionId,
+			null //remainingSendQueue
+		);
+		/*
+		function onMessage( msg, wsId ) { self.handleMessage( msg, wsId ); }
+		function onState( state, wsId ) { self.handleState( state, wsId ); }
+		function onEnd( msg, wsId ) { self.handleEnd( msg, wsId ); }
+		*/
 	}
 	
 	ns.Connection.prototype.close = function() {
 		const self = this;
-		if ( !self.socket )
+		if ( null == self.socket )
 			return;
 		
 		self.clear();
@@ -1824,28 +1798,25 @@ library.rtc = library.rtc || {};
 	ns.Connection.prototype.init = function() {
 		const self = this;
 		self.socketEventMap = {
-			'connect'    : socketConnecting,
-			'open'       : socketOpen,
-			'auth'       : socketAuth,
-			'session'    : socketSession,
-			'close'      : socketClosed,
-			'timeout'    : socketTimeout,
-			'error'      : socketError,
-			'ping'       : socketPing,
-			'reconnect'  : socketReconnect,
+			'connect'    : ( e, wsId ) => self.socketConnecting( e, wsId ),
+			'open'       : ( e, wsId ) => self.socketOpen( e, wsId ),
+			'auth'       : ( e, wsId ) => self.socketAuth( e, wsId ),
+			'session'    : ( e, wsId ) => self.socketSession( e, wsId ),
+			'close'      : ( e, wsId ) => self.socketClosed( e, wsId ),
+			'timeout'    : ( e, wsId ) => self.socketTimeout( e, wsId ),
+			'error'      : ( e, wsId ) => self.socketError( e, wsId ),
+			'ping'       : ( e, wsId ) => self.socketPing( e, wsId ),
+			'reconnect'  : ( e, wsId ) => self.socketReconnecting( e, wsId ),
 		};
 		function socketConnecting( e ) { self.socketConnecting( e ); }
 		function socketOpen( e ) { self.socketOpen( e ); }
 		function socketAuth( e ) { self.socketAuth( e ); }
 		function socketSession( e ) { self.socketSession( e ); }
-		function socketClosed ( e ) { self.socketClosed( e ); }
-		function socketTimeout( e ) { self.socketTimeout( e ); }
-		function socketError ( e ) { self.socketError( e ); }
 		function socketPing ( e ) { self.socketPing( e ); }
 		function socketReconnect( e ) { self.socketReconnecting( e ); }
 	}
 	
-	ns.Connection.prototype.handleState = function( event ) {
+	ns.Connection.prototype.handleState = function( event, wsId ) {
 		const self = this;
 		const handler = self.socketEventMap[ event.type ];
 		if ( !handler ) {
@@ -1853,10 +1824,10 @@ library.rtc = library.rtc || {};
 			return;
 		}
 		
-		handler( event.data );
+		handler( event.data, wsId );
 	}
 	
-	ns.Connection.prototype.socketConnecting = function( host ) {
+	ns.Connection.prototype.socketConnecting = function( e, wsId ) {
 		const self = this;
 		self.onstate({
 			type : 'connect',
@@ -1866,7 +1837,7 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
-	ns.Connection.prototype.socketOpen = function( data ) {
+	ns.Connection.prototype.socketOpen = function( e, wsId ) {
 		const self = this;
 		self.onstate({
 			type : 'open',
@@ -1875,27 +1846,35 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketAuth = function( success ) {
 		const self = this;
-		if ( !success )
+		if ( self.sessionId ) {
+			self.connect();
 			return;
+		}
 		
-		const callback = self.readyCallback;
-		delete self.readyCallback;
-		if ( callback )
-			callback( null, success );
+		self.onstate({
+			type : 'authenticate',
+			data : success,
+		});
 	}
 	
-	ns.Connection.prototype.socketSession = function( sid ) {
+	ns.Connection.prototype.socketSession = function( sId, wsId ) {
 		const self = this;
-		if ( null != sid )
+		if ( null != sId )
+			self.connecting = false;
+		
+		self.sessionId = sId || null;
+		if ( null == sId )
+			self.LastMsgTime = null;
+		else
 			self.LastMsgTime = window.Date.now();
 		
 		self.onstate({
 			type : 'session',
-			data : sid,
+			data : sId,
 		});
 	}
 	
-	ns.Connection.prototype.socketClosed = function( e ) {
+	ns.Connection.prototype.socketClosed = function( e, wsId ) {
 		const self = this;
 		self.onstate({
 			type : 'error',
@@ -1903,7 +1882,7 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
-	ns.Connection.prototype.socketTimeout = function( e ) {
+	ns.Connection.prototype.socketTimeout = function( e, wsId ) {
 		const self = this;
 		self.onstate({
 			type : 'error',
@@ -1911,9 +1890,8 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
-	ns.Connection.prototype.socketError = function( err ) {
+	ns.Connection.prototype.socketError = function( err, wsId ) {
 		const self = this;
-		hello.log.notify( 'Socket error' );
 		self.onstate({
 			type : 'error',
 			data : 'Connection error to: ' + self.host,
@@ -1925,8 +1903,9 @@ library.rtc = library.rtc || {};
 		// console.log( 'socketPing', data );
 	}
 	
-	ns.Connection.prototype.socketReconnecting = function( reTime ) {
+	ns.Connection.prototype.socketReconnecting = function( reTime, wsId ) {
 		const self = this;
+		self.connecting = false;
 		self.onstate({
 			type : 'wait-reconnect',
 			data : {
@@ -1936,7 +1915,7 @@ library.rtc = library.rtc || {};
 		});
 	}
 	
-	ns.Connection.prototype.handleEnd = function( data ) {
+	ns.Connection.prototype.handleEnd = function( data, wsId ) {
 		const self = this;
 		self.clear();
 		let err = {
@@ -1956,15 +1935,18 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.clear = function() {
 		const self = this;
+		self.connecting = false;
 		self.lastMsgTime = null;
 		if ( !self.socket )
-			return;
+			return null;
 		
-		self.socket.close();
+		const sendQ = self.socket.close();
 		self.socket = null;
+		
+		return sendQ;
 	}
 	
-	ns.Connection.prototype.message = function( event ) {
+	ns.Connection.prototype.handleMessage = function( event ) {
 		const self = this;
 		const handler = self.subscriber[ event.type ];
 		if ( !handler ) {

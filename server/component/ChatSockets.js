@@ -41,9 +41,9 @@ ns.ChatSockets.prototype.init = function() {
 	const self = this;
 	self.messageMap = self.messageMap || {
 		'/create' : create,
-		'/read' : load,
+		'/read'   : load,
 		'/remove' : remove,
-		'/login' : login,
+		'/login'  : login,
 	};
 	
 	function create( e, sid ) { self.createAccount( e, sid ); }
@@ -113,7 +113,7 @@ ns.ChatSockets.prototype.loadAccounts = async function( msg, socketId ) {
 		
 		msg.response = {
 			status : 200,
-			data : accounts,
+			data   : accounts,
 		};
 		
 		self.send( msg, socketId );
@@ -122,7 +122,6 @@ ns.ChatSockets.prototype.loadAccounts = async function( msg, socketId ) {
 
 ns.ChatSockets.prototype.createAccount = async function( msg, socketId ) {
 	const self = this;
-	log( 'createAccount', msg );
 	const args = msg.data;
 	const ret = {
 		status : 403,
@@ -283,24 +282,10 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 		return;
 	}
 	
-	let account = self.state.account[ dbAcc.clientId ];
-	if ( !account ) { // fresh login, need an account instance
-		dbAcc.onclose = onLogout;
-		account = new Account( dbAcc, self.state.db );
-		self.state.account[ account.clientId ] = account;
-		
-		function onLogout() {
-			self.unsetAccount( account.clientId );
-		}
-	}
-	
-	// hand over socket to account
-	socket.release( 'msg' );
-	self.setSession( socket, account.clientId );
-	account.attachSession( socket );
+	self.addToAccount( dbAcc, socket );
 	
 	// setting last login
-	await dbAccount.touch( account.clientId );
+	await dbAccount.touch( dbAcc.clientId );
 	
 	msg.response = {
 		status  : 200,
@@ -322,6 +307,41 @@ ns.ChatSockets.prototype.accountLogin = async function( msg, socketId ) {
 			return self.state.account[ accId ].name;
 		}
 	}
+}
+
+ns.ChatSockets.prototype.loginSession = async function( session, socket ) {
+	const self = this;
+	const fUserId = session.fUserId;
+	const accountId = session.accountId;
+	const dbAcc = new DbAccount( self.state.db, fUserId );
+	const accConf = await dbAcc.get( accountId );
+	if ( null == accConf ) {
+		self.removeSocket( socket.id );
+		return;
+	}
+	
+	self.addToAccount( accConf, socket );
+	
+	await dbAcc.touch( accountId );
+	dbAcc.close();
+}
+
+ns.ChatSockets.prototype.addToAccount = function( accConf, socket ) {
+	const self = this;
+	let account = self.state.account[ accConf.clientId ];
+	if ( !account ) { // fresh login, need an account instance
+		account = new Account( accConf, self.state.db, onLogout );
+		self.state.account[ account.clientId ] = account;
+		
+		function onLogout() {
+			self.unsetAccount( account.clientId );
+		}
+	}
+	
+	// hand over socket to account
+	socket.release( 'msg' );
+	self.setSession( socket, account.clientId );
+	account.attachSession( socket );
 }
 
 // this is the account calling close on itself, it just needs to be deleted here

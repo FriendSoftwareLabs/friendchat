@@ -226,7 +226,6 @@ var hello = null;
 			openMinimized = self.handleRunConf();
 		
 		self.openMain( openMinimized );
-		self.doLoaded();
 		
 		handleUserInfo( userInfo );
 		/*
@@ -293,16 +292,14 @@ var hello = null;
 			self.finalizeConfig( hostConf );
 			self.main.setTitle( self.config.appName );
 			self.initDormant();
-			self.initSystemModules( connBack );
+			self.initSystemModules();
+			self.doLoaded();
 		}
 		
 		function confErr( err ) {
 			console.log( 'confErr', err );
 		}
 		
-		function connBack() {
-			self.doLogin();
-		}
 	}
 	
 	ns.Hello.prototype.runGuest = function() {
@@ -371,7 +368,6 @@ var hello = null;
 					return;
 				}
 				
-				//console.log( 'getUserInfo done', data );
 				resolve( data );
 			}
 			
@@ -620,7 +616,7 @@ var hello = null;
 		}
 	}
 	
-	ns.Hello.prototype.initSystemModules = function( callback ) {
+	ns.Hello.prototype.initSystemModules = function() {
 		const self = this;
 		self.timeNow( 'initSystemModules' );
 		self.conn = new library.system.Connection( null, onWSState );
@@ -634,19 +630,7 @@ var hello = null;
 				self.dormantAllowWrite,
 			);
 		
-		self.conn.connect( connBack );
-		function connBack( err ) {
-			self.timeNow( 'ws connected' );
-			if( err ) {
-				console.log( 'connBack - conn err', err );
-				self.showConnStatus( err );
-				return;
-			}
-			
-			self.connected = true;
-			callback();
-		}
-		
+		self.conn.connect();
 		function onWSState( e ) { self.updateConnState( e ); }
 	}
 	
@@ -768,8 +752,10 @@ var hello = null;
 		}
 		
 		console.log( 'unknown data for API user', self.config.run );
+		/*
 		hello.log.alert( Application.i18n('i18n_unknown_data_for_api_user') );
 		hello.log.show();
+		*/
 		
 		function initPresenceConnection( callback ) {
 			const conf = self.config.run;
@@ -778,21 +764,11 @@ var hello = null;
 				return;
 			}
 			
-			var host = library.tool.buildDestination( 'wss://', conf.data.host );
+			const host = library.tool.buildDestination( 'wss://', conf.data.host );
 			self.conn = new library.system.Connection( host, onWSState );
 			self.items = new library.system.Items();
 			self.intercept = new library.system.Interceptor();
-			self.conn.connect( connBack );
-			
-			function connBack( err, res ) {
-				if ( err ) {
-					self.showConnStatus( err );
-					return;
-				}
-				
-				self.connected = true;
-				callback()
-			}
+			self.conn.connect();
 			
 			function onWSState( e ) { self.updateConnState( e ); }
 		}
@@ -810,9 +786,21 @@ var hello = null;
 	
 	ns.Hello.prototype.doLogin = function() {
 		const self = this;
+		/*
+		console.log( 'doLogin', {
+			login    : self.login,
+			loggedIn : self.loggedIn,
+			account  : self.account,
+		});
+		*/
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;
+		}
+		
+		if ( self.loggedIn ) {
+			self.doRelogin();
+			return;
 		}
 		
 		self.login = new library.system.Login( null, onlogin, onclose );
@@ -820,15 +808,6 @@ var hello = null;
 			self.loggedIn = true;
 			self.login.close();
 			self.login = null;
-			if ( !account ) {
-				hello.log.alert( Application.i18n( 'i18n_no_account_to_login' ) );
-				hello.log.show();
-				return;
-			}
-			
-			hello.log.positive( 
-				Application.i18n( 'i18n_logged_in_as' ) + ': ' + account.name );
-			
 			self.timeNow( 'logged in, update main' );
 			self.main.setAccountLoaded( account );
 		}
@@ -841,21 +820,20 @@ var hello = null;
 	
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
+		/*
+		console.log( 'hello.doRelogin', {
+			login    : self.login,
+			loggedin : self.loggedIn,
+			account  : self.account,
+			tried    : self.triedRelogin,
+		});
+		*/
 		self.triedRelogin = true;
-		self.conn.reconnect( connected );
-		function connected( err, res ) {
-			if ( err ) {
-				console.log( 'doRelogin connect failed', err );
-				
-				return;
-			}
-			
-			const acc = {
-				clientId : self.account.clientId,
-				name     : self.account.displayName,
-			};
-			self.login = new library.system.Login( acc, success, fail );
-		}
+		const acc = {
+			clientId : self.account.clientId,
+			name     : self.account.displayName,
+		};
+		self.login = new library.system.Login( acc, success, fail );
 		
 		function success( account ) {
 			self.triedRelogin = false;
@@ -899,16 +877,24 @@ var hello = null;
 	
 	ns.Hello.prototype.reconnect = function() {
 		const self = this;
+		console.trace( 'hello.reconnect', self.conn );
 		if ( self.conn )
-			self.conn.reconnect();
+			self.conn.connect();
 		else
 			self.runUser();
+		
 	}
 	
 	ns.Hello.prototype.updateConnState = function( state ) {
 		const self = this;
+		if ( 'authenticate' == state.type ) {
+			self.handleConnAuth( state );
+			return;
+		}
+		
 		const isOnline = checkIsOnline( state );
 		self.updateIsOnline( isOnline );
+		/*
 		if (   'error' === state.type
 			|| 'close' === state.type
 			|| 'end' === state.type
@@ -916,13 +902,15 @@ var hello = null;
 		) {
 			self.connected = false;
 		}
+		*/
 		
 		self.showConnStatus( state );
 		
 		if ( 'end' === state.type && !self.triedRelogin ) {
-			if ( !self.triedRelogin )
-				self.doRelogin();
-			else
+			if ( !self.triedRelogin ) {
+				self.conn.connect();
+				//self.doLogin();
+			} else
 				self.showLoginFail();
 			
 			return;
@@ -937,6 +925,20 @@ var hello = null;
 			
 			return true;
 		}
+	}
+	
+	ns.Hello.prototype.handleConnAuth = function( state ) {
+		const self = this;
+		const authed = state.data;
+		if ( !authed )
+			return;
+		
+		//self.connected = true;
+		self.timeNow( 'ws connected' );
+		if ( self.isOnline )
+			return;
+		
+		self.doLogin();
 	}
 	
 	ns.Hello.prototype.showLoginFail = function() {
@@ -1074,6 +1076,7 @@ var hello = null;
 	
 	ns.Hello.prototype.logout = function() {
 		const self = this;
+		self.isOnline = false;
 		self.loggedIn = false;
 		self.forceShowLogin = true;
 		self.main.logout();
@@ -1137,6 +1140,18 @@ var hello = null;
 		const self = this;
 	}
 	
+	ns.Hello.prototype.checkOnline = async function() {
+		const self = this;
+		let isOnline = false;
+		if ( null != self.conn )
+			isOnline = await self.conn.verify();
+		
+		if ( !isOnline )
+			self.reconnect();
+		
+		return isOnline;
+	}
+	
 	ns.Hello.prototype.handlePushNotie = function( event ) {
 		const self = this;
 		if ( !event || !event.extra ) {
@@ -1172,59 +1187,94 @@ var hello = null;
 			return;
 		}
 		
+		extra.title = event.title;
 		const received = {
 			extra     : extra,
 			timestamp : Date.now(),
-			timeout   : window.setTimeout( remove, 1000 * 2 ),
+			timeout   : window.setTimeout( remove, 1000 * 3 ),
 		};
 		self.pushiesReceivedFor[ roomId ] = received;
-		self.processPushNotie( event, extra );
-		
-		function remove() {
-			delete self.pushiesReceivedFor[ roomId ];
-		}
-	}
-	
-	ns.Hello.prototype.processPushNotie = function( event, extra, view ) {
-		const self = this;
-		/*
-		console.log( 'processPushNotie', {
-			event    : event,
-			extra    : extra,
-			view     : view,
-			loaded   : self.loaded,
-			isOnline : self.isOnline,
-			service  : self.service,
-			resumeTO : self.resumeTimeout,
-		});
-		*/
 		
 		if ( !self.loaded ) {
 			self.registerOnLoaded( onLoaded );
 			return;
 			
 			function onLoaded() {
-				self.processPushNotie( event, extra );
+				self.processPushNotie( extra );
 			}
+		} else
+			self.processPushNotie( extra );
+		
+		function remove() {
+			delete self.pushiesReceivedFor[ roomId ];
+		}
+	}
+	
+	ns.Hello.prototype.processPushNotie = async function( extra, view ) {
+		const self = this;
+		const maybeOnline = self.checkOnline();
+		/*
+		console.log( 'processPushNotie', {
+			extra    : extra,
+			view     : view,
+			loaded   : self.loaded,
+			service  : self.service,
+			resumeTO : self.resumeTimeout,
+			maybeOn  : maybeOnline,
+		});
+		*/
+		
+		if ( self.service ) {
+			self.service.handleNotification( extra, view );
+			return;
+		}
+		
+		if ( null == view )
+			view = getPreView( extra );
+		
+		const isOnline = await maybeOnline;
+		/*
+		console.log( 'processPushNotie', {
+			isOnline : isOnline,
+			resuTO   : self.resumeTimeout,
+		});
+		*/
+		
+		if ( null != self.resumeTimeout || !isOnline ) {
+			self.registerOnResume( onResume );
+			return;
+			
+			function onResume() {
+				self.processPushNotie( extra, view );
+			}
+		} else 
+			self.pushies.push({
+				extra : extra,
+				view  : view,
+			});
+		
+		/*
+		if ( true == isOnline )
+			
+			if ( null == self.resumeTimeout )
+				
+			else
+				
+			
 		}
 		
 		if ( !self.service && !view ) {
-			const roomId = extra.roomId;
-			const roomName = event.title;
-			extra.isPrivate = true;
 			if ( null != roomId )
 				view = getPreView( roomId, roomName, !!extra.isPrivate );
 			
 		}
 		
-		if ( null != self.resumeTimeout || !self.isOnline ) {
-			self.registerOnResume( onResume );
-			return;
-			
-			function onResume() {
-				self.processPushNotie( event, extra, view );
-			}
-		}
+		const isOnline = await self.conn.verify();
+		console.log( 'processPushNotie - isOnline?', isOnline );
+		if ( !isOnline )
+			self.reconnect();
+		
+		
 		
 		if ( self.service )
 			self.service.handleNotification( extra, view );
@@ -1233,13 +1283,16 @@ var hello = null;
 				extra : extra,
 				view  : view,
 			});
+		*/
 		
-		function getPreView( roomId, roomName, isPrivate ) {
+		function getPreView( extra ) {
+			const roomId = extra.roomId;
+			const roomName = extra.title;
 			let view = self.preViews[ roomId ];
 			if ( null != view )
 				return view;
 			
-			view = new library.view.PresenceChat( null, roomName, isPrivate );
+			view = new library.view.PresenceChat( null, roomName, true );
 			self.preViews[ roomId ] = view;
 			return view;
 		}
@@ -1278,24 +1331,32 @@ var hello = null;
 			});
 	}
 	
-	ns.Hello.prototype.handleAppResume = function( event ) {
+	ns.Hello.prototype.handleAppResume = async function( event ) {
 		const self = this;
+		/*
+		console.log( 'handleAppResume', {
+			e        : event,
+			isOnline : self.isOnline,
+			resumeTO : self.resumeTimeout,
+		});
+		*/
 		if ( !self.isOnline ) {
-			//console.log( 'hello.handleAppResume, already reconnecting - HOW DO YOU KNOW THIS?????' );
+			console.log( 'hello.handleAppResume, already reconnecting' );
 			return;
 		}
 		
-		if ( self.conn ) {
-			const wsOk = self.conn.verify();
-			if ( wsOk )
-				return;
-		}
-		
 		if ( null != self.resumeTimeout )
-			window.clearTimeout( self.resumeTimeout );
+			return;
 		
-		self.resumeTimeout = window.setTimeout( resume, 1000 );
-		self.reconnect();
+		self.resumeTimeout = window.setTimeout( resume, 2000 );
+		
+		//const nios = checkNotIOS();
+		//console.log( 'notIOS', nios );
+		const wsOk = await self.checkOnline();
+		if ( wsOk ) {
+			self.module.appResume();
+			return;
+		}
 		
 		self.showConnStatus({
 			type : 'resume',
@@ -1306,6 +1367,16 @@ var hello = null;
 			self.resumeTimeout = null;
 			self.doResume();
 		}
+		
+		/*
+		function checkNotIOS() {
+			console.log( 'checkNotIOS - platform', hello.app.friendApp );
+			if ( hello.app.friendApp && ( 'iOS' === hello.app.friendApp.platform ))
+				return false;
+			else
+				return true;
+		}
+		*/
 	}
 	
 	ns.Hello.prototype.registerOnLoaded = function( fn ) {
@@ -1327,9 +1398,20 @@ var hello = null;
 	
 	ns.Hello.prototype.doResume = function() {
 		const self = this;
-		if ( !self.isOnline || ( null != self.resumeTimeout ))
+		/*
+		console.log( 'doResume', {
+			isOnline : self.isOnline,
+			resumeTO : self.resumeTimeout,
+		});
+		*/
+		
+		if ( !self.isOnline )
 			return;
 		
+		if ( null != self.resumeTimeout )
+			window.clearTimeout( self.resumeTimeout );
+		
+		self.resumeTimeout = null;
 		self.resumeCallbacks.forEach( fn => fn());
 		self.resumeCallbacks = [];
 	}
