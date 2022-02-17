@@ -877,6 +877,7 @@ div.foldit-status {
 #conn-state {
 	padding     : 1em;
 	margin-top  : -5em;
+	position    : relative;
 }
 
 #conn-state-head {
@@ -886,6 +887,12 @@ div.foldit-status {
 
 #conn-state-progress-head {
 	font-size        : 180%;
+}
+
+#conn-state-close-btn {
+	position : absolute;
+	top      : 1em;
+	right    : 1em;
 }
 
 .paddddd {

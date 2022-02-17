@@ -522,10 +522,10 @@ var friend = window.friend || {};
 		self.connState.showLoading( !!show );
 	}
 	
-	ns.View.prototype.loaded = function( keepLoading ) {
+	ns.View.prototype.loaded = function() {
 		const self = this;
-		if ( self.connState && !keepLoading )
-			self.connState.setReady();
+		if ( self.connState )
+			self.connState.hideUI();
 		
 		self.sendTypeEvent( 'loaded', 'yep, its true' );
 	}
@@ -658,7 +658,7 @@ var friend = window.friend || {};
 		friend.template.addFragments( fragStr );
 	}
 	
-	ns.View.prototype.initialize = function( conf ) {
+	ns.View.prototype.initialize = async function( conf ) {
 		const self = this;
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
@@ -688,7 +688,7 @@ var friend = window.friend || {};
 		if ( self.config.viewTheme )
 			self.setViewTheme( self.config.viewTheme );
 		
-		self.setBaseCss( baseCssLoaded );
+		const cssLoaded = self.setBaseCss();
 		self.connState = new api.ConnState( 'hello' );
 		
 		self.on( 'app-config', e => self.appConfUpdate( e ));
@@ -696,6 +696,15 @@ var friend = window.friend || {};
 		// mousedown listeing
 		document.body.addEventListener( 'mousedown', mouseDownThings, false );
 		document.body.addEventListener( 'mouseup', mouseUpThings, false );
+		
+		const cssOK = await cssLoaded;
+		self.cssLoaded = true;
+		document.body.classList.toggle( 'hi', true );
+		if ( self.themeData )
+			self.applyThemeConfig( self.themeData );
+		
+		self.checkAllLoaded();
+		
 		
 		function mouseDownThings( e ) {
 			self.activate( e );
@@ -745,14 +754,6 @@ var friend = window.friend || {};
 		}
 		
 		//
-		function baseCssLoaded() {
-			self.cssLoaded = true;
-			document.body.classList.toggle( 'hi', true );
-			if ( self.themeData )
-				self.applyThemeConfig( self.themeData );
-			
-			self.checkAllLoaded();
-		}
 	}
 	
 	ns.View.prototype.handleResize = function( e ) {
@@ -840,17 +841,17 @@ var friend = window.friend || {};
 	ns.View.prototype.addAPIScripts = function() {
 		const self = this;
 		// scripts
-		var scripts = [
+		const scripts = [
 			'io/cajax.js', // dependency for cssparser.js
 			'utils/engine.js',
 			'utils/tool.js',
 			'utils/cssparser.js',
 			'gui/template.js',
 		];
-		var path = '/webclient/js/';
-		var pathArr = scripts.map( setPath );
-		var scriptPath = pathArr.join( ';' );
-		var script = document.createElement( 'script' );
+		const path = '/webclient/js/';
+		const pathArr = scripts.map( setPath );
+		const scriptPath = pathArr.join( ';' );
+		const script = document.createElement( 'script' );
 		script.onload = systemScriptsLoaded;
 		script.type = 'text/javascript';
 		script.src = scriptPath;
@@ -863,16 +864,17 @@ var friend = window.friend || {};
 		}
 	}
 	
-	ns.View.prototype.setBaseCss = function( callback ) {
+	// returns a promise from loadCss();
+	ns.View.prototype.setBaseCss = function() {
 		const self = this;
 		if ( self.theme )
 			self.themePath = '/themes/' + self.theme;
 		else
 			self.themePath = '/webclient/theme';
 		
-		var themedScrollbars = self.themePath + '/scrollbars.css';
-		var compiledTheme = self.themePath + '/theme_compiled.css';
-		var css = {
+		const themedScrollbars = self.themePath + '/scrollbars.css';
+		const compiledTheme = self.themePath + '/theme_compiled.css';
+		const css = {
 			'css-font-awesome'      : '/webclient/css/font-awesome.min.css',
 			'css-system-scrollbars' : themedScrollbars,
 			'css-system-theme'      : compiledTheme,
@@ -881,39 +883,88 @@ var friend = window.friend || {};
 		if ( self.viewTheme )
 			css[ 'css-app-theme' ] = self.viewTheme;
 		
-		self.loadCss( css, callback );
+		return self.loadCss( css );
 	}
 	
-	ns.View.prototype.loadCss = function( idFileMap, callback ) {
+	ns.View.prototype.loadCss = async function( idFileMap ) {
 		const self = this;
-		var filesLeft = 0;
-		load( idFileMap );
+		let filesLeft = 0;
+		const ids = Object.keys( idFileMap );
+		const loaders = ids.map( load );
+		let ok = false;
+		try {
+			await Promise.all( loaders );
+			ok = true;
+		} catch( ex ) {
+			console.log( 'loadCss ex', ex );
+		}
 		
-		function load( cssMap ) {
-			var ids = Object.keys( cssMap );
-			ids.forEach( setCss );
-			function setCss( id ) {
-				removeIfExists( id );
-				filesLeft++;
-				let path = cssMap[ id ];
-				let css = document.createElement( 'link' );
-				css.type = 'text/css';
-				css.rel = 'stylesheet';
-				css.id = id;
-				document.head.appendChild( css );
-				css.href = path;
-				css.onload = loaded;
-				
-				function loaded() {
-					filesLeft--;
-					if ( !filesLeft && callback )
-						callback();
-				}
+		return ok;
+		//load( idFileMap );
+		
+		async function load( id ) {
+			removeIfExists( id );
+			const path = idFileMap[ id ];
+			const css = document.createElement( 'link' );
+			css.type = 'text/css';
+			css.rel = 'stylesheet';
+			css.id = id;
+			document.head.appendChild( css );
+			let tries = 0;
+			let loaded = false;
+			try {
+				loaded = await set( css, path );
+			} catch( ex ) {
+				console.log( 'loadCss set ex', ex );
+			}
+			
+			return loaded;
+			
+			function set( el, path ) {
+				return new Promise(( resolve, reject ) => {
+					tries++;
+					if ( tries > 3 ) {
+						reject( 'ERR_CSS_LOAD_MAX_TRIES' );
+						return false;
+					}
+					
+					el.href = path;
+					el.onload = loadDone;
+					const timeout = 1000;
+					let TO = window.setTimeout( loadTO, timeout );
+					
+					function loadDone( e ) {
+						if ( null == TO )
+							return;
+						
+						window.clearTimeout( TO );
+						TO = null;
+						resolve( true );
+					}
+					
+					async function loadTO() {
+						if ( null == TO )
+							return;
+						
+						TO = null;
+						let triedAgain = false;
+						el.href = null;
+						el.onload = null;
+						try {
+							triedAgain = await set( el, path );
+							resolve( triedAgain );
+						} catch( ex ) {
+							console.log( 'tried and failed', ex );
+							reject( ex );
+						}
+					}
+					
+				});
 			}
 		}
 		
 		function removeIfExists( id ) {
-			var el = document.getElementById( id );
+			const el = document.getElementById( id );
 			if ( !el )
 				return;
 			
@@ -1437,7 +1488,7 @@ window.View = new api.View();
 		
 		self.el = null;
 		
-		self.isOnline = null;
+		self.isOnline = true;
 		self.keepLoading = false;
 		
 		self.init();
@@ -1447,20 +1498,12 @@ window.View = new api.View();
 	
 	ns.ConnState.prototype.showLoading = function( show ) {
 		const self = this;
+		show = !!show;
 		self.keepLoading = show;
-		if ( show ) {
+		if ( show )
 			self.setLoading();
-			return;
-		}
-		
-		if ( !show && ( self.isOnline || ( null == self.isOnline )))
-			self.setOnline();
-	}
-	
-	ns.ConnState.prototype.setReady = function() {
-		const self = this;
-		self.keepLoading = false;
-		self.setOnline();
+		else
+			self.hideUI();
 	}
 	
 	ns.ConnState.prototype.set = function( state ) {
@@ -1516,7 +1559,7 @@ window.View = new api.View();
 		function denied( e ) { self.handleDenied( e ); }
 		
 		function eventSink( ) {
-			console.log( 'ConnState - unknown event', arguments );
+			//console.log( 'ConnState - unknown event', arguments );
 		}
 	}
 	
@@ -1529,10 +1572,7 @@ window.View = new api.View();
 	ns.ConnState.prototype.handleOnline = function( sid ) {
 		const self = this;
 		self.isOnline = true;
-		if ( self.keepLoading )
-			self.setLoading();
-		else
-			self.setOnline();
+		self.hideUI();
 	}
 	
 	ns.ConnState.prototype.setLoading = function() {
@@ -1541,10 +1581,15 @@ window.View = new api.View();
 		self.hideProgressStates();
 	}
 	
-	ns.ConnState.prototype.setOnline = function() {
+	ns.ConnState.prototype.hideUI = function() {
 		const self = this;
+		if ( true == self.keepLoading )
+			return;
+		
+		if ( false == self.isOnline )
+			return;
+		
 		self.showError( false );
-		self.isOnline = true;
 		self.showUI( false );
 	}
 	
@@ -1554,7 +1599,6 @@ window.View = new api.View();
 		self.showUI( true );
 		self.hideProgressStates();
 	}
-	
 	
 	ns.ConnState.prototype.handleClose = function( e ) {
 		const self = this;
@@ -1687,6 +1731,7 @@ window.View = new api.View();
 		// bind ui
 		let rcBtn = document.getElementById( 'conn-state-reconnect-btn' );
 		let qBtn = document.getElementById( 'conn-state-quit-btn' );
+		//let cBtn = document.getElementById( 'conn-state-close-btn' );
 		self.errorHead = document.getElementById( 'conn-state-error-head' );
 		self.progressHead = document.getElementById( 'conn-state-progress-head' );
 		self.oops = document.getElementById( 'conn-state-oops' );
@@ -1700,6 +1745,7 @@ window.View = new api.View();
 		
 		rcBtn.addEventListener( 'click', reconnect, false );
 		qBtn.addEventListener( 'click', quit, false );
+		//cBtn.addEventListener( 'click', close, false );
 		
 		function reconnect( e ) {
 			self.send({
@@ -1712,6 +1758,15 @@ window.View = new api.View();
 				type : 'quit',
 			});
 		}
+		
+		/*
+		function close( e ) {
+			self.keepLoading = false;
+			self.isOnline = true;
+			self.hideUI();
+		}
+		*/
+		
 	}
 	
 	ns.ConnState.prototype.send = function( event ) {

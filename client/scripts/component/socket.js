@@ -26,10 +26,7 @@ library.component = library.component || {};
 
 // SOCKET
 (function( ns, undefined ) {
-	ns.Socket = function( conf ) {
-		if ( !( this instanceof ns.Socket ))
-			return new ns.Socket( conf );
-		
+	ns.Socket = function( conf, sessionId, inheritedSendQueue ) {
 		const self = this;
 		// REQUIRED CONFIG
 		self.url = conf.url;
@@ -39,13 +36,18 @@ library.component = library.component || {};
 		self.onstate = conf.onstate;
 		self.onend = conf.onend;
 		
-		// PROPERTIES USEFUL TO PUBLIC
+		//
+		self.sendQueue = inheritedSendQueue;
+		self.session = sessionId || null;
+		
+		// PUBLIC i guess
 		self.ready = false;
 		
 		// INTERNAL
+		//self.id = friendUP.tool.uid( 'ws' );
+		self.id = null; // socket id will be set by server
 		self.ws = null;
-		self.session = null;
-		self.sendQueue = [];
+		self.state = 'new';
 		self.allowReconnect = true;
 		self.pingInterval = null; // reference to setInterval id
 		self.pingStep = 1000 * 15; // time between pings
@@ -61,6 +63,8 @@ library.component = library.component || {};
 			max : 8,
 		}; // random in range, to make sure not all the clients
 		   // in the world reconnect at the same time
+		self.verifyCheck = null;
+		self.verifyTimeout = 200;
 		
 		self.init();
 	}
@@ -69,29 +73,101 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.send = function( msgObj ) {
 		const self = this;
-		var wrap = {
+		const wrap = {
 			type : 'msg',
 			data : msgObj,
 		};
 		self.sendOnSocket( wrap );
 	}
 	
-	ns.Socket.prototype.reconnect = function() {
+	/* verify
+	
+		checks that the ws is alive
+		
+		returns a promise that resolves to true/false
+	*/
+	ns.Socket.prototype.verifyWS = async function() {
 		const self = this;
-		self.allowReconnect = true;
-		self.doReconnect( true );
+		/*
+		console.log( 'Socket.verify', {
+			id    : self.id,
+			ws    : self.ws,
+			state : self.state,
+		});
+		*/
+		if ( null == self.ws )
+			return false;
+		
+		if ( 'session' != self.state && 'ping' != self.state )
+			return false;
+		
+		let ok = false;
+		try {
+			ok = await check();
+		} catch( ex ) {
+			//console.log( 'Socket.verifyWS ex', ex );
+		}
+		
+		//console.log( 'Socket.verifyWS ok?', ok );
+		return ok;
+		
+		function check() {
+			return new Promise(( resolve, reject ) => {
+				const sendTime = Date.now();
+				const verify = {
+					type : 'verify',
+					data : sendTime,
+				};
+				//console.log( 'sending veri', verify );
+				const msgWasSent = self.sendOnSocket( verify );
+				//console.log( 'msgWasSent', msgWasSent );
+				if ( !msgWasSent ) {
+					reject( 'ERR_CANNOT_SEND' );
+					return;
+				}
+				
+				self.verifyCheck = window.setTimeout( timeout, self.verifyTimeout );
+				self.verifyBack = function( timestamp ) {
+					if ( null == self.verifyCheck ) // timed out and rejected
+						return;
+					
+					window.clearTimeout( self.verifyCheck );
+					self.verifyCheck = null;
+					self.verifyBack = null;
+					
+					const endTime = Date.now();
+					const travelTime = endTime - sendTime;
+					//console.log( 'Socket.verifyWS check travel time ms', travelTime );
+					resolve( true );
+				}
+				
+				function timeout() {
+					self.verifyCheck = null;
+					if ( null == self.verifyBack ) // already returned successfully
+						return;
+					
+					self.verifyBack = null;
+					reject( 'ERR_VERIFY_TIMEOUT' );
+				}
+				
+			});
+		}
+		
 	}
 	
 	// code and reason can be whatever; the socket is closed anyway,
 	// whats the server going to do? cry more lol
 	ns.Socket.prototype.close = function( code, reason ) {
 		const self = this;
+		//console.log( 'app.Socket.close', self.id );
+		const sq = self.sendQueue;
 		self.unsetSession();
 		self.allowReconnect = false;
 		self.onmessage = null;
 		self.onstate = null;
 		self.onend = null;
-		self.wsClose( code, reason );
+		self.cleanup();
+		return sq;
 	}
 	
 	// PRIVATES
@@ -107,23 +183,29 @@ library.component = library.component || {};
 			throw new Error( 'Socket - missing handlers' );
 		}
 		
-		self.messageMap = {
-			'authenticate' : authenticate,
-			'session'      : session,
-			'ping'         : ping,
-			'pong'         : pong,
-		};
+		if ( null == self.sendQueue )
+			self.sendQueue = [];
 		
-		function authenticate( e ) { self.handleAuth( e ); }
-		function session( e ) { self.handleSession( e ); }
-		function ping( e ) { self.handlePing( e ); }
-		function pong( e ) { self.handlePong( e ); }
+		self.messageMap = {
+			'authenticate' : e => self.handleAuth( e ),
+			'socket-id'    : e => self.handleSocketId( e ),
+			'session'      : e => self.handleSession( e ),
+			'verify'       : e => self.handleVerify( e ),
+			'ping'         : e => self.handlePing( e ),
+			'pong'         : e => self.handlePong( e ),
+		};
 		
 		self.connect();
 	}
 	
 	ns.Socket.prototype.connect = function() {
 		const self = this;
+		//console.log( 'Socket.connect', self.id );
+		if ( !self.allowReconnect ) {
+			console.log( 'ws connect, not allowed', self );
+			return;
+		}
+		
 		if ( self.ws )
 			self.cleanup();
 		
@@ -134,7 +216,9 @@ library.component = library.component || {};
 		
 		hello.timeNow( 'ws connect' );
 		self.clearConnectTimeout();
-		self.setState( 'connect', self.url );
+		if ( 'reconnect' != self.state )
+			self.setState( 'connect', self.url );
+		
 		var protocol = self.protocol.length ? self.protocol : null;
 		try {
 			self.ws = new window.WebSocket( self.url );
@@ -149,6 +233,12 @@ library.component = library.component || {};
 		function connectTimedout( e ) {
 			self.handleConnectTimeout();
 		}
+	}
+	
+	ns.Socket.prototype.reconnect = function() {
+		const self = this;
+		self.allowReconnect = true;
+		self.doReconnect( true );
 	}
 	
 	ns.Socket.prototype.attachHandlers = function() {
@@ -200,6 +290,7 @@ library.component = library.component || {};
 		self.cleanup();
 		if ( !self.allowReconnect )	{
 			console.log( 'WS reconnect aborting, disallowed', {
+				id      : self.id,
 				allow   : self.allowReconnect,
 				atempts : self.reconnectAttempt,
 				session : self.session,
@@ -277,6 +368,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.setState = function( type, data ) {
 		const self = this;
+		self.state = type;
 		if ( !self.onstate )
 			return;
 		
@@ -284,7 +376,7 @@ library.component = library.component || {};
 			type : type,
 			data : data,
 		};
-		self.onstate( state );
+		self.onstate( state, self.id );
 	}
 	
 	ns.Socket.prototype.handleOpen = function( e ) {
@@ -292,7 +384,7 @@ library.component = library.component || {};
 		hello.timeNow( 'ws open' );
 		self.clearConnectTimeout();
 		self.setState( 'open', e );
-		// ..waiting for authenticate challenge
+		// ..now waiting for authenticate challenge
 	}
 	
 	ns.Socket.prototype.handleClose = function( e ) {
@@ -319,6 +411,26 @@ library.component = library.component || {};
 		handler( msg.data );
 	}
 	
+	ns.Socket.prototype.handleSocketId = function( socketId ) {
+		const self = this;
+		self.id = socketId;
+	}
+	
+	ns.Socket.prototype.handleVerify = function( timestamp ) {
+		const self = this;
+		/*
+		console.log( 'Socket.handleVerify', {
+			id         : self.id,
+			timestamp  : timestamp,
+			verifyBack : self.verifyBack,
+		});
+		*/
+		if ( null == self.verifyBack )
+			return;
+		
+		self.verifyBack( timestamp );
+	}
+	
 	ns.Socket.prototype.handleAuth = function( success ) {
 		const self = this;
 		hello.timeNow( 'ws handleAuth' );
@@ -333,7 +445,7 @@ library.component = library.component || {};
 				type : 'error',
 				data : 'Authentication with server failed',
 			};
-			self.setState( err );
+			self.setState( 'error', err );
 			self.ended();
 			return;
 		}
@@ -345,13 +457,18 @@ library.component = library.component || {};
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		const self = this;
 		hello.timeNow( 'ws handleSession' );
-		self.session = sessionId;
+		if ( !sessionId )
+			self.session = null;
+		else
+			self.session = sessionId;
+		
 		if ( !self.session ) {
+			self.setState( 'session', null );
 			self.ended();
 			return;
-		} else
-			self.reconnectAttempt = 0;
+		}
 		
+		self.reconnectAttempt = 0;
 		if ( !self.ready )
 			self.setReady();
 		
@@ -360,7 +477,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.restartSession = function() {
 		const self = this;
-		var session = {
+		const session = {
 			type : 'session',
 			data : self.session,
 		};
@@ -402,21 +519,33 @@ library.component = library.component || {};
 	ns.Socket.prototype.sendOnSocket = function( msgObj, force ) {
 		const self = this;
 		if ( !wsReady() ) {
+			console.log( 'Socket.sendOnSocket - WS not ready, queueing', {
+				msg : msgObj,
+				sid : self.id,
+			});
 			queue( msgObj );
-			return;
+			return false;
 		}
 		
 		if ( !socketReady( force )) {
+			console.log( 'Socket.sendOnSocket - socket not ready, queueing', {
+				msg     : msgObj,
+				session : self.session,
+				socket  : self.id
+			})
 			queue( msgObj );
-			return;
+			return false;
 		}
 		
-		var msgStr = friendUP.tool.stringify( msgObj );
+		const msgStr = friendUP.tool.stringify( msgObj );
 		try {
 			self.ws.send( msgStr );
 		} catch (e) {
 			console.log( 'send on ws ex', e );
+			return false;
 		}
+		
+		return true;
 		
 		function queue( msg ) {
 			if ( !self.sendQueue )
@@ -436,13 +565,16 @@ library.component = library.component || {};
 		}
 		
 		function wsReady() {
-			var ready = !!( self.ws && ( self.ws.readyState === 1 ));
+			const ready = !!( self.ws && ( self.ws.readyState === 1 ));
 			return ready;
 		}
 	}
 	
 	ns.Socket.prototype.executeSendQueue = function() {
 		const self = this;
+		if ( !self.sendQueue )
+			return;
+		
 		self.sendQueue.forEach( send );
 		self.sendQueue = [];
 		function send( msg ) {
@@ -544,17 +676,18 @@ library.component = library.component || {};
 		if ( !onend )
 			return;
 		
-		onend();
+		onend( 'ded', self.id );
 	}
 	
-	ns.Socket.prototype.cleanup = function() {
+	ns.Socket.prototype.cleanup = function( code, reason ) {
 		const self = this;
 		self.ready = false;
 		self.stopPing();
 		self.clearHandlers();
 		self.clearReconnect();
 		self.clearConnectTimeout();
-		self.wsClose();
+		self.wsClose( code, reason );
+		delete self.sendQueue;
 		delete self.ws;
 	}
 	

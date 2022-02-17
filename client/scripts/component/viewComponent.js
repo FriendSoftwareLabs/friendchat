@@ -1185,7 +1185,7 @@ in a generic link expand wrapping with a bit of UI
 			try {
 				mime = await self.getMIME( url );
 			} catch( ex ) {
-				console.log( 'LinkExpand.mime.failed', ex );
+				//console.log( 'LinkExpand.mime.failed', ex );
 				return;
 			}
 			

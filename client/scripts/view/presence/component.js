@@ -2862,6 +2862,7 @@ var hello = window.hello || {};
 			message = original;
 		
 		const timeStr = self.getClockStamp( msg.time );
+		/*
 		console.log( 'buildMsg', {
 			msg        : msg,
 			from       : from,
@@ -2870,6 +2871,7 @@ var hello = window.hello || {};
 			canDelete  : canDelete,
 			canForward : canForward,
 		});
+		*/
 		const actionsHtml = self.buildMsgActions( canEdit, canForward, canDelete );
 		const msgConf = {
 			msgId      : mId,
