@@ -2083,7 +2083,6 @@ window.View = new api.View();
 					return;
 				}
 				
-				console.log( 'call response', res );
 				const parts = res.split( '<!--separate-->' );
 				const success = parts[ 0 ];
 				const str = parts[ 1 ];
