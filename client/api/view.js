@@ -2019,8 +2019,6 @@ window.View = new api.View();
 			console.log( 'FileMaker.checkPath, path error', {
 				ex      : ex,
 				saveDir : self.saveDir,
-				DOME    : DOMEvent,
-				items   : items,
 			});
 			throw new Error( 'ERR_PATH' );
 		}
