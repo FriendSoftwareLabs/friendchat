@@ -4104,6 +4104,7 @@ library.view = library.view || {};
 	
 	ns.Main.prototype.initialize = function( data ) {
 		const self = this;
+		console.log( 'Main.initialize', data );
 		self.identity = data.identity || {};
 		self.recentHistory = data.recentHistory || [];
 		self.setAvatar();

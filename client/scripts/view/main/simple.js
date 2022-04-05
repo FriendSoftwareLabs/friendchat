@@ -73,6 +73,7 @@ var hello = window.hello || {};
 		
 		const menuItems = [];
 		console.log( 'add menu live item ? ', {
+			conf     : window.View.appConf,
 			hideLive : window.View.appConf.hideLive,
 			hidemobil : window.View.appConf.hideLiveMobile,
 			app       : window.View.friendApp,
