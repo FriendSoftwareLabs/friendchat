@@ -21,27 +21,28 @@ window.localconfig = {
 	about   : null,
 	// master config is fetched from here,
 	// and is probably same place as where friendcore is running
-	host    : 'friendcore_host',
-	port    : '/hello/',
-	appName : 'Friend Chat',
-	default : {
-		view  : {
-			width  : 350,
-			height : 320,
+	host           : 'friendcore_host',
+	port           : '/hello/',
+	appName        : 'Friend Chat',
+	default        : {
+		view         : {
+			width      : 350,
+			height     : 320,
 		},
 	},
-	hideLive  : false,
-	ringTones : {
+	hideLive       : false,
+	hideLiveMobile : false,
+	ringTones      : {
 		// underscore ( _ ) in the pattern is a 250ms wait
-		'default' : {
-			r       : 'webclient/apps/FriendChat/res/Ring.ogg',
-			pattern : 'rrr__',
-			loops   : 2,
+		'default'    : {
+			r          : 'webclient/apps/FriendChat/res/Ring.ogg',
+			pattern    : 'rrr__',
+			loops      : 2,
 		},
 		'levans_pop' : {
-			d       : 'webclient/apps/FriendChat/res/levans_pop.webm',
-			pattern : 'd',
-			loops   : 1,
+			d          : 'webclient/apps/FriendChat/res/levans_pop.webm',
+			pattern    : 'd',
+			loops      : 1,
 		},
 	},
 };

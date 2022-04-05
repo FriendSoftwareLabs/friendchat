@@ -292,15 +292,24 @@ library.contact = library.contact || {};
 		if ( !self.identity && msg.from ) // no identity means this is a room
 			message += ' from ' + msg.from; // so lets give a bit more infos
 		
-		if ( hello.config.hideLive && ( 'live-invite' === type )) {
+		if (
+			(
+				hello.config.hideLive 
+				||	( 
+						hello.config.hideLiveMobile 
+						&& !!hello.app.friendApp
+				)
+			)
+			&& ( 'live-invite' === type )
+		) {
 			message += ' - live blocked by app config';
 		}
 		
 		return {
-			level : 'warn',
-			from : msg.from,
+			level   : 'warn',
+			from    : msg.from,
 			message : message,
-			time : msg.time,
+			time    : msg.time,
 		};
 	}
 	
@@ -566,7 +575,8 @@ library.contact = library.contact || {};
 		if ( !invite )
 			throw new Error( 'Contact.startLive - no invite' );
 		
-		if ( hello.config.hideLive ) {
+		console.log( 'startlive - friendApp', hello.app.friendApp );
+		if ( hello.config.hideLive || ( hello.config.hideLiveMobile && hello.app.friendApp ) ) {
 			console.log( 'startLive - blocked by conf', hello.config );
 			return;
 		}
@@ -588,8 +598,8 @@ library.contact = library.contact || {};
 		if ( self.identity )
 			from = self.identity.name;
 		
-		var message = 'Calendar event from ' + from;
-		var cal = new api.Calendar();
+		const message = 'Calendar event from ' + from;
+		const cal = new api.Calendar();
 		cal.addEvent( event, message, addBack );
 		function addBack( res ) {
 			console.log( 'calendar addback - do a thing?', res );
@@ -758,8 +768,23 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		const self = this;
-		if ( hello.config.hideLive ) {
-			console.log( 'PresenceRoom.joinLive - blocked by conf', hello.config );
+		console.log( 'joinLive - friendapp', {
+			conf : hello.config,
+			app  : hello.app.friendApp,
+		});
+		if (
+			(
+				hello.config.hideLive
+				|| (
+					hello.config.hideLiveMobile
+					&& hello.app.friendApp
+				)
+			)
+		) {
+			console.log( 'PresenceRoom.joinLive - blocked by conf', {
+				conf : hello.config,
+				app  : hello.app.friendApp,
+			});
 			return;
 		}
 		
