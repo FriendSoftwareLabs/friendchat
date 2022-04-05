@@ -303,6 +303,7 @@ library.contact = library.contact || {};
 			&& ( 'live-invite' === type )
 		) {
 			message += ' - live blocked by app config';
+			return null;
 		}
 		
 		return {
@@ -575,8 +576,12 @@ library.contact = library.contact || {};
 		if ( !invite )
 			throw new Error( 'Contact.startLive - no invite' );
 		
-		console.log( 'startlive - friendApp', hello.app.friendApp );
-		if ( hello.config.hideLive || ( hello.config.hideLiveMobile && hello.app.friendApp ) ) {
+		if ( hello.config.hideLive 
+			|| ( 
+				hello.config.hideLiveMobile 
+				&& hello.app.friendApp 
+			) 
+		) {
 			console.log( 'startLive - blocked by conf', hello.config );
 			return;
 		}
@@ -773,12 +778,10 @@ library.contact = library.contact || {};
 			app  : hello.app.friendApp,
 		});
 		if (
-			(
-				hello.config.hideLive
-				|| (
-					hello.config.hideLiveMobile
-					&& hello.app.friendApp
-				)
+			hello.config.hideLive
+			|| (
+				hello.config.hideLiveMobile
+				&& hello.app.friendApp
 			)
 		) {
 			console.log( 'PresenceRoom.joinLive - blocked by conf', {
@@ -2365,6 +2368,16 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLive = async function( event ) {
 		const self = this;
+		if ( hello.config.hideLive 
+			|| (
+				hello.config.hideLiveMobile
+				&& hello.app.friendApp
+			)
+		) {
+			console.log( 'handleLive - blocked by config', event );
+			return;
+		}
+		
 		const type = event.type;
 		if ( 'open' === type ) {
 			self.handleLiveOpen( event.data );

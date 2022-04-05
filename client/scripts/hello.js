@@ -1723,7 +1723,12 @@ var hello = null;
 		};
 		
 		let fileItems = [];
-		if ( !hello.config.hideLive )
+		if ( !hello.config.hideLive 
+			&& !( 
+				hello.app.friendApp 
+				&& hello.config.hideLiveMobile 
+			)
+		)
 			fileItems.push( startLive );
 		
 		if ( self.advancedUI )

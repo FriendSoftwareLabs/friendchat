@@ -51,7 +51,12 @@ library.component = library.component || {};
 	ns.IMChat.prototype.init = function() {
 		const self = this;
 		window.View.setBody(); // sets friend.template
-		if ( window.View.appConf.hideLive )
+		if ( window.View.appConf.hideLive 
+			|| ( 
+				window.View.friendApp 
+				&& window.View.appConf.hideLiveMobile
+		 	)
+		)
 			self.toggleLiveBtns( false );
 		
 		self.view = window.View;

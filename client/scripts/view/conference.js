@@ -57,7 +57,12 @@ library.view = library.view || {};
 	ns.Conference.prototype.init = function() {
 		const self = this;
 		window.View.setBody();
-		if ( window.View.appConf.hideLive )
+		if ( window.View.appConf.hideLive 
+			|| ( 
+				window.View.friendApp 
+				&& window.View.appConf.hideLiveMobile
+			)
+		)
 			self.toggleLiveBtns();
 		
 		self.view = window.View;

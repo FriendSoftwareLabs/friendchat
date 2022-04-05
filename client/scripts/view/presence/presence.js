@@ -376,7 +376,12 @@ library.view = library.view || {};
 		}
 		
 		//
-		if ( !window.View.appConf.hideLive ) {
+		if ( !window.View.appConf.hideLive
+			&& !(
+				window.View.friendApp
+				&& window.View.appConf.hideLiveMobile
+			)
+		) {
 			self.liveStatus = new library.component.LiveStatus(
 				'live-status-container',
 				self.users,

@@ -72,7 +72,12 @@ var hello = window.hello || {};
 		};
 		
 		const menuItems = [];
-		if ( !window.View.appConf.hideLive )
+		if ( !window.View.appConf.hideLive
+			&& !(
+				window.View.friendApp
+				&& window.View.appConf.hideLiveMobile
+			) 
+		)
 			menuItems.push( liveItem );
 		
 		menuItems.push( settingsItem );

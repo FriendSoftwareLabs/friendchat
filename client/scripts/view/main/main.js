@@ -170,7 +170,12 @@ library.view = library.view || {};
 		const self = this;
 		const opts = [];
 		opts.push( self.menuActions[ 'open-chat' ]);
-		if ( !window.View.appConf.hideLive ) {
+		if ( !window.View.appConf.hideLive
+			&& !(
+				window.View.friendApp
+				&& window.View.appConf.hideLiveMobile
+			)
+		) {
 			opts.push( self.menuActions[ 'invite-video' ]);
 			opts.push( self.menuActions[ 'invite-audio' ]);
 		}
@@ -1056,7 +1061,11 @@ library.view = library.view || {};
 		const self = this;
 		const opts = [];
 		opts.push( self.menuActions[ 'open-chat' ]);
-		if ( !window.View.appConf.hideLive ) {
+		if ( !window.View.appConf.hideLive && !(
+				window.View.friendApp &&
+				window.View.appConf.hideLiveMobile
+			)
+		) {
 			opts.push( self.menuActions[ 'invite-video' ]);
 			opts.push( self.menuActions[ 'invite-audio' ]);
 		}
@@ -2249,7 +2258,12 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.buildLiveStatus = function() {
 		const self = this;
-		if ( window.View.appConf.hideLive )
+		if ( window.View.appConf.hideLive 
+			|| ( 
+				window.View.friendApp 
+				&& window.View.appConf.hideLiveMobile 
+			) 
+		)
 			return;
 		
 		const liveConf = {
@@ -2370,7 +2384,11 @@ library.view = library.view || {};
 		const self = this;
 		const opts = [];
 		opts.push( self.menuActions[ 'open-chat' ]);
-		if ( !window.View.appConf.hideLive ) {
+		if ( !window.View.appConf.hideLive && !(
+				window.View.friendApp
+				&& window.View.appConf.hideLiveMobile
+			) 
+		) {
 			opts.push( self.menuActions[ 'live-video' ]);
 			opts.push( self.menuActions[ 'live-audio' ]);
 		}
@@ -2521,7 +2539,12 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.bindLive = function() {
 		const self = this;
-		if ( window.View.appConf.hideLive )
+		if ( window.View.appConf.hideLive
+			|| (
+				window.View.friendApp
+				&& window.View.appConf.hideLiveMobile
+			)
+		)
 			return;
 		
 		self.live = new library.component.EventNode(
@@ -2816,7 +2839,12 @@ library.view = library.view || {};
 		const self = this;
 		const opts = [];
 		opts.push( self.menuActions[ 'open-chat' ]);
-		if ( !window.View.appConf.hideLive ) {
+		if ( !window.View.appConf.hideLive
+			&& !(
+				window.View.friendApp
+				&& window.View.appConf.hideLiveMobile
+			) 
+		) {
 			opts.push( self.menuActions[ 'live-video' ]);
 			opts.push( self.menuActions[ 'live-audio' ]);
 		}
@@ -2825,7 +2853,12 @@ library.view = library.view || {};
 	
 	ns.PresenceContact.prototype.bindLive = function() {
 		const self = this;
-		if ( window.View.appConf.hideLive )
+		if ( window.View.appConf.hideLive
+			|| (
+				window.View.friendApp
+				&& window.View.appConf.hideLiveMobile
+			)
+		)
 			return;
 		
 		self.conn.on( 'live-state', e => self.updateLiveDisplay( e ));
@@ -3030,7 +3063,12 @@ library.view = library.view || {};
 		const self = this;
 		const opts = [];
 		opts.push( self.menuActions[ 'open-chat' ]);
-		if ( !window.View.appConf.hideLive ) {
+		if ( !window.View.appConf.hideLive
+			&& !(
+				window.View.friendApp
+				&& window.View.appConf.hideLiveMobile
+			) 
+		) {
 			opts.push( self.menuActions[ 'live-video' ]);
 			opts.push( self.menuActions[ 'live-audio' ]);
 		}
