@@ -72,13 +72,21 @@ var hello = window.hello || {};
 		};
 		
 		const menuItems = [];
+		console.log( 'add menu live item ? ', {
+			hideLive : window.View.appConf.hideLive,
+			hidemobil : window.View.appConf.hideLiveMobile,
+			app       : window.View.friendApp,
+			yep   : ( !window.View.appConf.hideLive && !( window.View.friendApp
+				&& window.View.appConf.hideLiveMobile )),
+		});
 		if ( !window.View.appConf.hideLive
 			&& !(
 				window.View.friendApp
 				&& window.View.appConf.hideLiveMobile
 			) 
-		)
+		) {
 			menuItems.push( liveItem );
+		}
 		
 		menuItems.push( settingsItem );
 		menuItems.push( aboutItem );
