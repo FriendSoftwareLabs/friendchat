@@ -4100,6 +4100,7 @@ library.view = library.view || {};
 		self.view.on( 'identity', e => self.updateIdentity( e ));
 		self.view.on( 'avatar', e => self.updateAvatar( e ));
 		self.view.on( 'settings', e => self.updateSettings( e ));
+		self.view.on( 'app-config', e => self.appConfUpdated( e ));
 	}
 	
 	ns.Main.prototype.initialize = function( data ) {
@@ -4146,6 +4147,11 @@ library.view = library.view || {};
 		const self = this;
 		if ( settings.inAppMenu )
 			self.enableInAppMenu();
+	}
+	
+	ns.Main.prototype.appConfUpdated = function( uptd ) {
+		const self = this;
+		console.log( 'appConfUpdated', uptd );
 	}
 	
 	ns.Main.prototype.updateIdentity = function( id ) {

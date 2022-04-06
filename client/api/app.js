@@ -204,6 +204,11 @@ var friend = window.friend || {}; // already instanced stuff
 		viewConf.deviceType = self.app.deviceType;
 		viewConf.friendApp = self.app.friendApp;
 		
+		console.log( 'app.view.initView', {
+			fap   : self.app.friendApp,
+			wconf : windowConf,
+		});
+		
 		if ( self.app.fragments )
 			viewConf.fragments = self.app.fragments;
 		
@@ -1096,6 +1101,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.register = async function( msg ) {
 		const self = this;
+		console.log( 'app register', msg );
 		window.origin  = msg.origin;
 		self.domain    = msg.domain;
 		self.locale    = msg.locale;
