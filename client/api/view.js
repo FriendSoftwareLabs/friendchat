@@ -787,7 +787,7 @@ var friend = window.friend || {};
 	ns.View.prototype.appConfUpdate = function( update ) {
 		const self = this;
 		self.appConf = update;
-		self.emit( 'app-config', update );
+		self.emit( 'config-update', update );
 	}
 	
 	ns.View.prototype.initLogSock = function() {

@@ -4100,7 +4100,7 @@ library.view = library.view || {};
 		self.view.on( 'identity', e => self.updateIdentity( e ));
 		self.view.on( 'avatar', e => self.updateAvatar( e ));
 		self.view.on( 'settings', e => self.updateSettings( e ));
-		self.view.on( 'app-config', e => self.appConfUpdated( e ));
+		self.view.on( 'config-update', e => self.appConfUpdated( e ));
 	}
 	
 	ns.Main.prototype.initialize = function( data ) {
