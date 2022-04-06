@@ -4114,8 +4114,6 @@ library.view = library.view || {};
 		//hello.template.addFragments( data.fragments );
 		hello.template.addFragments( data.mainFragments );
 		
-		self.addMenu();
-		
 		if( self.initSimple )
 			self.initSimple( settings );
 		else {
@@ -4152,6 +4150,11 @@ library.view = library.view || {};
 	ns.Main.prototype.appConfUpdated = function( uptd ) {
 		const self = this;
 		console.log( 'appConfUpdated', uptd );
+		if ( self.menuIsSet )
+			return;
+		
+		self.addMenu();
+		self.menuIsSet = true;
 	}
 	
 	ns.Main.prototype.updateIdentity = function( id ) {
