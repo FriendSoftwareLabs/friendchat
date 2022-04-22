@@ -548,7 +548,13 @@ window.library.component = window.library.component || {};
 			execute : sendMsgToFID,
 		}, 'Functions/' );
 		
+		const listRooms = new api.DoorFun({
+			title   : 'ListRooms',
+			execute : listRoomsFun,
+		}, 'Functions/' );
+		
 		hello.dormant.addFun( msgToFID );
+		hello.dormant.addFun( listRooms );
 		
 		function sendMsgToFID( fId, message, open ) {
 			/*
@@ -581,6 +587,21 @@ window.library.component = window.library.component || {};
 					console.log( 'sendMsgToFID - msgFail', err );
 					reject( err );
 				}
+			});
+		}
+		
+		function listRoomsFun() {
+			console.log( 'PresenceService.listRooms', self.presence );
+			return new Promise(( resolve, reject ) => {
+				if ( !self.presence ) {
+					reject( 'ERR_NO_SERVICE' );
+					return;
+				}
+				
+				console.log( 'listRoomsFun, presence', self.presence );
+				const rooms = self.presence.listRoomsDormant();
+				console.log( 'listRooms', rooms );
+				resolve( rooms );
 			});
 		}
 	}

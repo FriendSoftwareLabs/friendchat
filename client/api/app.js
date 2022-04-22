@@ -1972,12 +1972,10 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleGetDirectory = function( msg ) {
 		const self = this;
-		/*
 		console.log( 'handleGetDirectory', {
 			msg : msg,
 			doors : self.doors,
 		});
-		*/
 		var door = self.doors[ msg.doorId ];
 		if ( !door ) {
 			consolelog( 'Doormant.handleGetDirectory - no door for', { m : msg, d : self.doors });
@@ -2071,7 +2069,7 @@ friend.Dormant = new fupLocal.Dormant;
 			return new ns.Door( conf );
 		
 		const self = this;
-		self.title = conf.title, // aka base of dir. <this>:foo/bar/
+		self.title = conf.title; // aka base of dir. <this>:foo/bar/
 		self.basePath = null;
 		self.baseRX = null;
 		self.dirs = {};

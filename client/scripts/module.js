@@ -667,6 +667,14 @@ library.module = library.module || {};
 		self.reconnect();
 	}
 	
+	ns.Presence.prototype.listRoomsDormant = function() {
+		const self = this;
+		const rIds = Object.keys( self.rooms );
+		return rIds.map( rId => {
+			return self.rooms[ rId ].identity;
+		});
+	}
+	
 	ns.Presence.prototype.getIdentity = async function( clientId ) {
 		const self = this;
 		let id = await self.lookupIdentity( clientId );
