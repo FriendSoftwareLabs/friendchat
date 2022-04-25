@@ -553,8 +553,14 @@ window.library.component = window.library.component || {};
 			execute : listRoomsFun,
 		}, 'Functions/' );
 		
+		const openRoom = new api.DoorFun({
+			title   : 'OpenRoom',
+			execute : openRoomFun,
+		}, 'Functions/' );
+		
 		hello.dormant.addFun( msgToFID );
 		hello.dormant.addFun( listRooms );
+		hello.dormant.addFun( openRoom );
 		
 		function sendMsgToFID( fId, message, open ) {
 			/*
@@ -602,6 +608,16 @@ window.library.component = window.library.component || {};
 				const rooms = self.presence.listRoomsDormant();
 				console.log( 'listRooms', rooms );
 				resolve( rooms );
+			});
+		}
+		
+		async function openRoomFun( roomId ) {
+			console.log( 'openRoomFun', roomId );
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return await self.presence.openChat({ 
+				id : roomId,
 			});
 		}
 	}
