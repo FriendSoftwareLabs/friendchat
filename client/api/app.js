@@ -1891,7 +1891,7 @@ window.Application = new fupLocal.Application();
 		self.app = window.Application;
 		
 		self.init();
-	}
+	};
 	
 	ns.Dormant.prototype.init = function() {
 		const self = this;
@@ -2051,6 +2051,13 @@ window.Application = new fupLocal.Application();
 		self.send( msg );
 	}
 	
+	ns.Dormant.prototype.sendEvent = function( eventObj ) {
+		const self = this;
+		console.log( 'dormant.sendEvent', eventObj );
+		eventObj.method = 'emit';
+		self.send( eventObj );
+	}
+	
 	ns.Dormant.prototype.send = function( msg ) {
 		const self = this;
 		msg.type = 'dormantmaster';
@@ -2077,7 +2084,7 @@ friend.Dormant = new fupLocal.Dormant;
 		self.doorId = null; // set by dormant
 		
 		self.init();
-	}
+	};
 	
 	// Public
 	
@@ -2098,10 +2105,10 @@ friend.Dormant = new fupLocal.Dormant;
 		const parent = self.dirs[ dir.parentPath ];
 		if ( !parent ) {
 			console.log( 'Dormant / Door.addDir - no parent, aborting', {
-				d : dir,
+				d    : dir,
 				dirs : self.dirs,
-				pP : dir.parentPath,
-				p : dir.fullPath,
+				pP   : dir.parentPath,
+				p    : dir.fullPath,
 			});
 			return;
 		}
@@ -2117,7 +2124,7 @@ friend.Dormant = new fupLocal.Dormant;
 		if ( !dir ) {
 			console.log( 'Dormant / Door.addFun - no dir', {
 				item   : item,
-				lookup : item.fullPath,
+				lookup : item.parentPath,
 				dirs   : self.dirs,
 			});
 			return;
@@ -2126,6 +2133,30 @@ friend.Dormant = new fupLocal.Dormant;
 		//console.log( 'addFun', item );
 		dir.funs[ item.title ] = item;
 		dir.items.push( item );
+	}
+	
+	ns.Door.prototype.addEvent = function( item ) {
+		const self = this;
+		item.parentPath = self.normalizePath( item.parentPath );
+		item.fullPath = self.normalizePath( item.fullPath );
+		item.send = sendFn;
+		const dir = self.dirs[ item.parentPath ];
+		if ( !dir ) {
+			console.log( 'Dormant / Door.addEvent - no dir',{
+				item   : item,
+				lookup : item.parentPath,
+				dirs   : self.dirs,
+			});
+			return;
+		}
+		
+		dir.events[ item.title ] = item;
+		dir.items.push( item );
+		
+		function sendFn( event ) {
+			event.doorId = self.doorId;
+			friend.Dormant.sendEvent( event );
+		}
 	}
 	
 	ns.Door.prototype.remove = function( dir ) {
@@ -2198,10 +2229,11 @@ friend.Dormant = new fupLocal.Dormant;
 		if ( !fun ) {
 			console.log( 'no fun for', event );
 			callback( 'ERR_DORMANT_NO_FUN_DOOR', null );
+			return;
 		}
 		
 		console.log( 'found fun item', fun );
-		if ( !fun.execute|| !fun.execute.apply ) {
+		if ( !fun.execute || !fun.execute.apply ) {
 			console.log( '..but no funtion to execute', fun );
 			callback( 'ERR_DORMANT_NO_FUN', null );
 		}
@@ -2333,6 +2365,7 @@ api.DoorDir = function( conf, parentPath ) {
 	
 	self.items = [];
 	self.funs = {};
+	self.events = {};
 	
 	self.init();
 };
@@ -2344,6 +2377,7 @@ api.DoorDir.prototype = Object.create( api.DoorItem.prototype );
 api.DoorDir.prototype.close = function() {
 	const self = this;
 	self.funs = null;
+	self.events = null;
 	self.items.forEach( item => item.close());
 	self.items = null;
 }
@@ -2385,6 +2419,40 @@ api.DoorFun.prototype.close = function() {
 api.DoorFun.prototype.init = function() {
 	const self = this;
 	
+}
+
+//
+// event in dormant
+//
+api.DoorEvent = function( conf, parentPath ) {
+	const self = this;
+	self.type = 'DormantEvent';
+	self.metaType = 'Meta';
+	self.iconClass = conf.icon || 'File';
+	self.fileSize = 1337;
+	
+	api.DoorItem.call( self, conf, parentPath );
+};
+
+api.DoorEvent.prototype = Object.create( api.DoorItem.prototype );
+
+api.DoorEvent.prototype.emit = function( data ) {
+	const self = this;
+	console.log( 'DoorEvent.emit', [ self, data, self.send ]);
+	const event = {
+		path : self.fullPath + self.title,
+		data : data,
+	};
+	self.send( event );
+}
+
+api.DoorEvent.prototype.close = function() {
+	// TODO send event to workspace that the event has been removed, i guess
+}
+
+api.DoorEvent.prototype.init = function() {
+	const self = this;
+	console.log( 'DoorEvent.init', self );
 };
 
 //
@@ -2405,7 +2473,7 @@ api.DoorFun.prototype.init = function() {
 		self.source = null;
 		
 		self.init();
-	}
+	};
 	
 	ns.PlaySound.prototype.initialize = async function( path ) {
 		const self = this;

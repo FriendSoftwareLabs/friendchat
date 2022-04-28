@@ -396,6 +396,7 @@ window.library.component = window.library.component || {};
 	ns.PresenceService = function( presence ) {
 		const self = this;
 		self.presence = presence;
+		self.dormantEvents = {};
 		/*
 		self.oninvite = conf.oninvite;
 		self.onidentity = conf.onidentity;
@@ -525,6 +526,16 @@ window.library.component = window.library.component || {};
 		self.presence.handleServiceEvent( event );
 	}
 	
+	ns.PresenceService.prototype.emitEvent = function( event, data ) {
+		const self = this;
+		console.log( 'PresenceService.emitEvent', [ event, data, self.dormantEvents ]);
+		const dormantHandler = self.dormantEvents[ event ];
+		if ( null == dormantHandler )
+			return;
+		
+		dormantHandler.emit( data );
+	}
+	
 	ns.PresenceService.prototype.close = function() {
 		const self = this;
 		delete self.service;
@@ -558,9 +569,24 @@ window.library.component = window.library.component || {};
 			execute : openRoomFun,
 		}, 'Functions/' );
 		
+		const roomAdd = new api.DoorEvent({
+			title : 'RoomAdd',
+		}, 'Events/' );
+		
+		const roomRemove = new api.DoorEvent({
+			title : 'RoomRemove',
+		}, 'Events/' );
+		
 		hello.dormant.addFun( msgToFID );
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
+		
+		hello.dormant.addEvent( roomAdd );
+		hello.dormant.addEvent( roomRemove );
+		self.dormantEvents = {
+			'roomAdd'    : roomAdd,
+			'roomRemove' : roomRemove,
+		};
 		
 		function sendMsgToFID( fId, message, open ) {
 			/*

@@ -2469,6 +2469,11 @@ library.rtc = library.rtc || {};
 		self.door.addFun( item );
 	}
 	
+	ns.Dormant.prototype.addEvent = function( item ) {
+		const self = this;
+		self.door.addEvent( item );
+	}
+	
 	ns.Dormant.prototype.remove = function( item ) {
 		const self = this;
 		self.door.remove( item );
@@ -2501,6 +2506,11 @@ library.rtc = library.rtc || {};
 			title : 'Functions',
 			path  : 'Functions/',
 		}, '' );
+		
+		const fEv = new api.DoorDir({
+			title : 'Events',
+			path  : 'Events/',
+		});
 		
 		/*
 		const modDir = new api.DoorDir({
@@ -2543,6 +2553,7 @@ library.rtc = library.rtc || {};
 		*/
 		
 		self.addDir( fDir );
+		self.addDir( fEv );
 		//self.addDir( modDir );
 		self.addFun( quitFun );
 		

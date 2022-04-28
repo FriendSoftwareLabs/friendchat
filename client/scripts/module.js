@@ -547,6 +547,10 @@ library.module = library.module || {};
 		
 		if ( self.activity )
 			self.activity.remove( clientId );
+		
+		if ( self.service && hello.dormant ) {
+			self.service.emitEvent( 'roomRemove', { roomId : clientId });
+		}
 	}
 	
 	ns.BaseModule.prototype.setLocalData = function( data, callback ) {
@@ -1693,6 +1697,11 @@ library.module = library.module || {};
 		
 		self.checkIdBacklog( cId );
 		self.resolveChatLoaded( 'contact', cId );
+		if ( self.service && hello.dormant ) {
+			const idCopy = JSON.parse( JSON.stringify( room.identity ));
+			idCopy.isPrivate = true;
+			self.service.emitEvent( 'roomAdd', idCopy );
+		}
 	}
 	
 	ns.Presence.prototype.setChatLoading = function( type, clientId ) {
@@ -1828,6 +1837,10 @@ library.module = library.module || {};
 		self.toView( cRem );
 		if ( self.activity )
 			self.activity.remove( clientId );
+		
+		if ( self.service && hello.dormant ) {
+			self.service.emitEvent( 'roomRemove', { roomId : clientId });
+		}
 	}
 	
 	ns.Presence.prototype.handleContactEvent = function( wrap ) {
@@ -2440,6 +2453,11 @@ library.module = library.module || {};
 		
 		self.checkIdBacklog( cId );
 		self.resolveChatLoaded( 'room', cId );
+		if ( self.service && hello.dormant ) {
+			const idCopy = JSON.parse( JSON.stringify( room.identity ));
+			idCopy.isPrivate = false;
+			self.service.emitEvent( 'roomAdd', idCopy );
+		}
 		
 		return room;
 		
