@@ -1498,9 +1498,10 @@ in a generic link expand wrapping with a bit of UI
 			console.log( 'image error', e );
 			const errEl = self.template.getElement( 'image-error-tmpl', {});
 			console.log( 'errEl', errEl );
-			e.target.parentNode.classList.toggle( 'le-error', true );
-			e.target.parentNode.innerHTML = '';
-			e.target.parentNode.appendChild( errEl );
+			const leEl = e.target.parentNode;
+			leEl.classList.toggle( 'le-error', true );
+			leEl.innerHTML = '';
+			leEl.appendChild( errEl );
 		}
 	}
 	
