@@ -88,6 +88,10 @@
 	height: unset;
 }
 
+.link-expand.le-error .link-expand-audio {
+	display: none;
+}
+
 .link-expand-image .le-item {
 	object-fit : cover                                   ;
 	border     : 1px solid rgba( 130, 130, 130, 0.3 ) ;
