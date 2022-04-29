@@ -1480,12 +1480,17 @@ in a generic link expand wrapping with a bit of UI
 			content   : htmlElement,
 			bgDefault : true,
 			onClick   : onClick,
-		}
+			onError   : onError,
+		};
 		
 		function onClick( e ) {
 			e.preventDefault();
 			e.stopPropagation();
 			self.openImage( src );
+		}
+		
+		function onError( e ) {
+			console.log( 'image error', e );
 		}
 	}
 	
