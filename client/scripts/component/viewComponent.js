@@ -1391,6 +1391,8 @@ in a generic link expand wrapping with a bit of UI
 		const type = conf.type;
 		const content = conf.content;
 		const onClick = conf.onClick;
+		const onError = conf.onError;
+		
 		let bgDef = '';
 		if ( true == conf.bgDefault )
 			bgDef = 'BackgroundDefault';
@@ -1422,8 +1424,11 @@ in a generic link expand wrapping with a bit of UI
 		ext.addEventListener( 'click', onExt, false );
 		
 		
-		if ( null == onClick )
-			return;
+		if ( null != onClick )
+			content.addEventListener( 'click', onClick, false );
+		
+		if ( null != onError )
+			content.addEventListener( 'error', onError, false );
 		
 		/*
 		const headA = el.querySelector( '.link-expand-ui a' );
@@ -1431,7 +1436,7 @@ in a generic link expand wrapping with a bit of UI
 			return;
 		*/
 		
-		content.addEventListener( 'click', onClick, false );
+		
 		
 		function onDL( e ) {
 			window.View.saveLink( a.href, file.fileName );
