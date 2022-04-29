@@ -692,6 +692,7 @@ library.contact = library.contact || {};
 		self.type = 'presence';
 		self.data = conf.room;
 		self.idc = conf.idCache;
+		self.service = conf.service;
 		self.host = conf.host;
 		self.user = conf.user;
 		self.userId = conf.userId;
@@ -898,6 +899,9 @@ library.contact = library.contact || {};
 		if ( isRoom ) {
 			self.identity = id;
 			self.activity.updateIdentity( cId, id );
+			if ( self.service && hello.dormant ) {
+				self.service.emitEvent( 'roomUpdate', id );
+			}
 		}
 		
 		const isUser = self.userIds.some( uId => uId === cId );
@@ -2240,6 +2244,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleRoomUpdate = function( update ) {
 		const self = this;
+		console.log( 'handleRoomUpdate', update, self.service );
 		const name = update.name;
 		self.identity.name = name;
 		self.identity.avatar = update.avatar;
@@ -2252,6 +2257,10 @@ library.contact = library.contact || {};
 		
 		if ( self.live )
 			self.live.setTitle( name );
+		
+		if ( self.service && hello.dormant ) {
+			self.service.emitEvent( 'roomUpdate', self.identity );
+		}
 	}
 	
 	ns.PresenceRoom.prototype.handleJoin = async function( user ) {

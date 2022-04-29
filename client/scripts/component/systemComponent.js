@@ -577,15 +577,22 @@ window.library.component = window.library.component || {};
 			title : 'RoomRemove',
 		}, 'Events/' );
 		
+		const roomUpdate = new api.DoorEvent({
+			title : 'RoomUpdate',
+		}, 'Events/' );
+		
 		hello.dormant.addFun( msgToFID );
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
 		
 		hello.dormant.addEvent( roomAdd );
 		hello.dormant.addEvent( roomRemove );
+		hello.dormant.addEvent( roomUpdate );
+		
 		self.dormantEvents = {
 			'roomAdd'    : roomAdd,
 			'roomRemove' : roomRemove,
+			'roomUpdate' : roomUpdate,
 		};
 		
 		function sendMsgToFID( fId, message, open ) {
