@@ -1496,6 +1496,11 @@ in a generic link expand wrapping with a bit of UI
 		
 		function onError( e ) {
 			console.log( 'image error', e );
+			const errEl = self.template.getElement( 'image-error-tmpl', {});
+			console.log( 'errEl', errEl );
+			e.target.parentNode.classList.toggle( 'le-error', true );
+			e.target.parentNode.innerHTML = '';
+			e.target.parentNode.appendChild( errEl );
 		}
 	}
 	
