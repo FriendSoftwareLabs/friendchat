@@ -348,7 +348,11 @@ window.library.component = window.library.component || {};
 	ns.Droppings.prototype.handleFile = function( item ) {
 		const self = this;
 		const file = new api.File( item.path || item.Path );
-		file.expose( back );
+		if ( item.roomId )
+			file.expose( item.roomId, back );	
+		else
+			file.expose( back );
+		
 		function back( res ) {
 			var success = !!res;
 			var msg = {
@@ -581,18 +585,36 @@ window.library.component = window.library.component || {};
 			title : 'RoomUpdate',
 		}, 'Events/' );
 		
+		const getIdentity = new api.DoorFun({
+			title   : 'GetIdentity',
+			execute : getIdentityFun,
+		}, 'Functions/' );
+		
+		const openChat = new api.DoorFun({
+			title   : 'OpenChat',
+			execute : openChatFun,
+		}, 'Functions/' );
+		
+		const userUpdate = new api.DoorEvent({
+			title : 'UserUpdate',
+		}, 'Events/' );
+		
 		hello.dormant.addFun( msgToFID );
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
+		hello.dormant.addFun( openChat );
+		hello.dormant.addFun( getIdentity );
 		
 		hello.dormant.addEvent( roomAdd );
 		hello.dormant.addEvent( roomRemove );
 		hello.dormant.addEvent( roomUpdate );
+		hello.dormant.addEvent( userUpdate );
 		
 		self.dormantEvents = {
-			'roomAdd'    : roomAdd,
-			'roomRemove' : roomRemove,
-			'roomUpdate' : roomUpdate,
+			'roomAdd'        : roomAdd,
+			'roomRemove'     : roomRemove,
+			'roomUpdate'     : roomUpdate,
+			'identityUpdate' : userUpdate,
 		};
 		
 		function sendMsgToFID( fId, message, open ) {
@@ -652,6 +674,19 @@ window.library.component = window.library.component || {};
 			return await self.presence.openChat({ 
 				id : roomId,
 			});
+		}
+		
+		async function openChatFun( fUserId ) {
+			console.log( 'openChatFun', fUserId );
+			
+		}
+		
+		async function getIdentityFun( fUserId ) {
+			console.log( 'getIdentity', fUserId );
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return await self.presence.getFriendContact( fUserId );
 		}
 	}
 	

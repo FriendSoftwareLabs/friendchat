@@ -2250,6 +2250,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleIdUpdated = function( id, key ) {
 		const self = this;
+		console.log( 'handleIdUpdated', [ id, key ]);
 		const userId = id.clientId;
 		if ( key && ( 'isOnline' === key )) {
 			self.handleUserOnline( userId, id.isOnline );
@@ -2275,6 +2276,9 @@ library.module = library.module || {};
 			const room = self.rooms[ rId ];
 			room.updateIdentity( uptd );
 		});
+		
+		if ( hello.dormant && self.service )
+			self.service.emitEvent( 'identityUpdate', id );
 	}
 	
 	ns.Presence.prototype.checkCurrentRooms = function( list ) {

@@ -1844,7 +1844,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.File.prototype.expose = function( callback ) {
 		const self = this;
-		var libConf = {
+		const libConf = {
 			functionName : 'file/expose',
 			args : {
 				path : self.path,

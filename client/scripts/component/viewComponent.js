@@ -1495,9 +1495,7 @@ in a generic link expand wrapping with a bit of UI
 		}
 		
 		function onError( e ) {
-			console.log( 'image error', e );
 			const errEl = self.template.getElement( 'image-error-tmpl', {});
-			console.log( 'errEl', errEl );
 			const leEl = e.target.parentNode.parentNode;
 			leEl.classList.toggle( 'le-error', true );
 			leEl.innerHTML = '';
