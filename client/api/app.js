@@ -1842,27 +1842,32 @@ window.Application = new fupLocal.Application();
 		const self = this;
 	}
 	
-	ns.File.prototype.expose = function( callback ) {
+	ns.File.prototype.expose = function( roomId ) {
 		const self = this;
-		const libConf = {
-			functionName : 'file/expose',
-			args : {
-				path : self.path,
-			},
-			onSuccess : success,
-			onError : err,
-		};
-		var lib = new api.Library( libConf );
-		function success( res ) {
-			self.exposeHash = res.hash;
-			self.name = res.name;
-			var link = self.getPublicLink();
-			callback( link );
-		}
-		function err( res ) {
-			console.log( 'File.expose.err', res );
-			callback( false );
-		}
+		return new Promise(( resolve, reject ) => {
+			const libConf = {
+				functionName : 'file/expose',
+				args : {
+					path         : self.path,
+					externalid   : roomId ? roomId : undefined,
+					visibility   : roomId ? 'Presence' : undefined,
+				},
+				onSuccess : success,
+				onError   : err,
+			};
+			console.log( 'libconf', libConf );
+			const lib = new api.Library( libConf );
+			function success( res ) {
+				self.exposeHash = res.hash;
+				self.name = res.name;
+				const link = self.getPublicLink();
+				resolve( link );
+			}
+			function err( res ) {
+				console.log( 'File.expose.err', res );
+				reject( false );
+			}
+		});
 	}
 	
 	ns.File.prototype.unshare = function( callback ) {

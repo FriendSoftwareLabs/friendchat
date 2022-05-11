@@ -308,6 +308,7 @@ window.library.component = window.library.component || {};
 			return new ns.Droppings( conf );
 		
 		const self = this;
+		self.roomId = conf.roomId;
 		self.toView = conf.toView;
 		self.toChat = conf.toChat;
 		
@@ -345,26 +346,28 @@ window.library.component = window.library.component || {};
 		function handleExec( e ) { self.handleExecutable( e ); }
 	}
 	
-	ns.Droppings.prototype.handleFile = function( item ) {
+	ns.Droppings.prototype.handleFile = async function( item ) {
 		const self = this;
 		const file = new api.File( item.path || item.Path );
-		if ( item.roomId )
-			file.expose( item.roomId, back );	
-		else
-			file.expose( back );
+		let link = null;
+		try {
+			link = await file.expose( self.roomId );
+		} catch( ex ) {
+			console.log( 'Dropping.handlefile expose ex', ex );
+			return;
+		}
 		
-		function back( res ) {
-			var success = !!res;
-			var msg = {
-				type : 'link',
-				data : {
-					success : success,
-					'public' : res,
-				},
-			};
-			self.toView( msg );
-			if ( success )
-				self.toChat( res );
+		const success = !!link;
+		const msg = {
+			type : 'link',
+			data : {
+				success  : success,
+				'public' : link,
+			},
+		};
+		self.toView( msg );
+		if ( success )
+			self.toChat( res );
 		}
 	}
 	

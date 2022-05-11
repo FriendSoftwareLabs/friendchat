@@ -123,7 +123,10 @@ library.view = library.view || {};
 	
 	ns.PresenceChat.prototype.init = function( state ) {
 		const self = this;
+		console.log( 'chat view init', state );
+		self.roomId = state.clientId;
 		const dropConf = {
+			roomId : self.roomId,
 			toView : toView,
 			toChat : toChat,
 		};
@@ -223,14 +226,18 @@ library.view = library.view || {};
 				if ( !items )
 					return;
 				
-				items.forEach( item => {
+				items.forEach( async item => {
 					const f = new api.File( item.Path );
-					f.expose( link => {
-						if ( !link )
-							return;
-						
-						toChat( link );
-					});
+					let link = null;
+					try {
+						ling = await f.expose( self.roomId );
+					} catch( ex ) {
+						console.log( 'file.expose err', ex );
+						toChat( false );
+						return;
+					}
+					
+					toChat( link );
 				});
 			}
 			
