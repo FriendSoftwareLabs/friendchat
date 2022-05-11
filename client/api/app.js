@@ -1880,7 +1880,7 @@ window.Application = new fupLocal.Application();
 		if ( !self.exposeHash || !self.name )
 			return null;
 		
-		const link = window.Application.domain 
+		let link = window.Application.domain 
 			+ '/sharedfile/' 
 			+ self.exposeHash 
 			+ '/' + self.name
