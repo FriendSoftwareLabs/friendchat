@@ -367,7 +367,7 @@ window.library.component = window.library.component || {};
 		};
 		self.toView( msg );
 		if ( success )
-			self.toChat( res );
+			self.toChat( link );
 	}
 	
 	ns.Droppings.prototype.handleCalendar = function( item ) {
