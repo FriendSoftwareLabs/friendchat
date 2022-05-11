@@ -230,7 +230,7 @@ library.view = library.view || {};
 					const f = new api.File( item.Path );
 					let link = null;
 					try {
-						ling = await f.expose( self.roomId );
+						link = await f.expose( self.roomId );
 					} catch( ex ) {
 						console.log( 'file.expose err', ex );
 						toChat( false );
