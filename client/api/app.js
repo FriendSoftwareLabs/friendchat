@@ -1880,7 +1880,11 @@ window.Application = new fupLocal.Application();
 		if ( !self.exposeHash || !self.name )
 			return null;
 		
-		var link = window.Application.domain + '/sharedfile/' + self.exposeHash + '/' + self.name;
+		const link = window.Application.domain 
+			+ '/sharedfile/' 
+			+ self.exposeHash 
+			+ '/' + self.name
+			+ '?authid=' + window.Application.authId;
 		link = window.encodeURI( link );
 		return link;
 	}
