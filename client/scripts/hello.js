@@ -177,6 +177,7 @@ var hello = null;
 	
 	ns.Hello.prototype.run = async function( fupConf ) {
 		const self = this;
+		console.log( 'run', fupConf );
 		self.timeNow( 'run' );
 		const userInfoLoader = self.getUserInfo();
 		self.incommingCall = new api.IncommingCall( self.config.ringTones );
@@ -221,11 +222,11 @@ var hello = null;
 		self.timeNow( 'paralells completed' );
 		const userInfo = res[ 2 ];
 		let doRun = false;
-		let openMinimized = false;
+		let mainViewConf = false;
 		if ( self.config.run )
-			openMinimized = self.handleRunConf();
+			mainViewConf = self.handleRunConf();
 		
-		self.openMain( openMinimized );
+		self.openMain( mainViewConf );
 		
 		handleUserInfo( userInfo );
 		/*
@@ -847,32 +848,41 @@ var hello = null;
 		}
 	}
 	
-	ns.Hello.prototype.openMain = function( openMinimized ) {
+	ns.Hello.prototype.openMain = function( mainViewconf ) {
 		const self = this;
 		self.timeNow( 'openMain' );
-		self.main.open( openMinimized );
+		self.main.open( mainViewconf );
 	}
 	
 	ns.Hello.prototype.handleRunConf = function() {
 		const self = this;
 		const data = self.config.run;
+		if ( 'invisible' == data )
+			return {
+				invisible : true,
+			};
+		
 		if ( 'live-invite' === data.type )
-			return true;
+			return {
+				minimized : true,
+			};
 		
 		if ( data.events )
 			return self.handleRunEvents( data.events );
 		
-		return false;
+		return null;
 	}
 	
 	ns.Hello.prototype.handleRunEvents = function( events ) {
 		const self = this;
 		if ( !events || !events.length )
-			return false;
+			return null;
 		
 		events.forEach( e => hello.app.handleSystem( e ));
 		
-		return true;
+		return {
+			minimized : true,
+		};
 	}
 	
 	ns.Hello.prototype.reconnect = function() {
@@ -1479,10 +1489,10 @@ var hello = null;
 		self.view.activate();
 	}
 	
-	ns.Main.prototype.open = function( openMinimized ) {
+	ns.Main.prototype.open = function( mainViewConf ) {
 		const self = this;
-		if ( null == self.openMinimized )
-			self.openMinimized = openMinimized || false;
+		if ( null == self.mainViewConf )
+			self.mainViewConf = mainViewConf || false;
 		
 		const initConf = {
 			mainFragments : hello.mainCommonFragments,
@@ -1633,13 +1643,16 @@ var hello = null;
 	
 	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
 		const self = this;
-		const winConf = {
-			title     : hello.config.appName || 'Friend Chat',
-			width     : 440,
-			height    : 600,
-			//mainView  : true,
-			minimized : self.openMinimized || undefined,
-		};
+		const winConf = self.mainViewConf || {};
+		
+		winConf.title  = hello.config.appName || 'Friend Chat';
+		winConf.width  = 440;
+		winConf.height = 600;
+		
+		console.log( 'openSimpleView', {
+			mainViewConf : self.mainViewConf,
+			winConf      : winConf,
+		});
 		
 		self.view = hello.app.createView(
 			'html/mainSimple.html',

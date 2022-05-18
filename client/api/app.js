@@ -1096,6 +1096,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.register = async function( msg ) {
 		const self = this;
+		console.log( 'app.register', msg );
 		window.origin  = msg.origin;
 		self.domain    = msg.domain;
 		self.locale    = msg.locale;
@@ -1172,6 +1173,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.initialize = function( msg ) {
 		const self = this;
+		console.log( 'app.initialize', msg );
 		if ( msg )
 			delete msg.dosDrivers;
 		
