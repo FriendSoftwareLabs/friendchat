@@ -237,6 +237,10 @@ var friend = window.friend || {}; // already instanced stuff
 			eventSink,
 		);
 		
+		console.log( 'app.View.windowConf', windowConf );
+		if ( true != windowConf.liveView )
+			windowConf.sidebarManaged = true;
+		
 		windowConf.requireDoneLoading = true;
 		self.app.sendMessage({
 			type   : 'view',

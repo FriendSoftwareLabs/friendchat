@@ -779,6 +779,7 @@ library.view = library.view || {};
 				title              : title,
 				width              : width,
 				height             : height,
+				liveView           : true,
 				fullscreenenabled  : true,
 			};
 			
