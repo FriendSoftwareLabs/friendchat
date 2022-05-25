@@ -237,7 +237,6 @@ var friend = window.friend || {}; // already instanced stuff
 			eventSink,
 		);
 		
-		console.log( 'app.View.windowConf', windowConf );
 		if ( true != windowConf.liveView )
 			windowConf.sidebarManaged = true;
 		
@@ -1100,7 +1099,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.register = async function( msg ) {
 		const self = this;
-		console.log( 'app.register', msg );
 		window.origin  = msg.origin;
 		self.domain    = msg.domain;
 		self.locale    = msg.locale;
@@ -1987,10 +1985,6 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleGetDirectory = function( msg ) {
 		const self = this;
-		console.log( 'handleGetDirectory', {
-			msg : msg,
-			doors : self.doors,
-		});
 		var door = self.doors[ msg.doorId ];
 		if ( !door ) {
 			consolelog( 'Doormant.handleGetDirectory - no door for', { m : msg, d : self.doors });
@@ -2024,12 +2018,6 @@ window.Application = new fupLocal.Application();
 		
 		door.execute( event, execBack );
 		function execBack( err , res ) {
-			console.log( 'handleExecute, execBack', {
-				event : event,
-				door  : door,
-				res   : res,
-				err   : err,
-			});
 			self.sendBack( err, res, event );
 		}
 	}
@@ -2068,7 +2056,6 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.sendEvent = function( eventObj ) {
 		const self = this;
-		console.log( 'dormant.sendEvent', eventObj );
 		eventObj.method = 'emit';
 		self.send( eventObj );
 	}
@@ -2179,12 +2166,6 @@ friend.Dormant = new fupLocal.Dormant;
 		let path = dir.fullPath;
 		let target = self.dirs[ path ];
 		let parent = self.dirs[ dir.parentPath ];
-		console.log( 'remove', {
-			dir  : dir,
-			dirs : self.dirs,
-			target : target,
-			parent : parent,
-		});
 		if ( !target )
 			return;
 		
@@ -2229,13 +2210,6 @@ friend.Dormant = new fupLocal.Dormant;
 		const fnPath = event.dormantPath;
 		const fnName = event.dormantCommand;
 		let   fnArgs = event.dormantArgs;
-		console.log( 'Door.execute', {
-			e    : event    ,
-			path : fnPath   ,
-			name : fnName   ,
-			args : fnArgs   ,
-			dirs : self.dirs,
-		});
 		
 		//let path = self.normalizePath( 'Functions/' );
 		const path = self.normalizePath( fnPath );
@@ -2247,7 +2221,6 @@ friend.Dormant = new fupLocal.Dormant;
 			return;
 		}
 		
-		console.log( 'found fun item', fun );
 		if ( !fun.execute || !fun.execute.apply ) {
 			console.log( '..but no funtion to execute', fun );
 			callback( 'ERR_DORMANT_NO_FUN', null );
@@ -2329,7 +2302,6 @@ api.DoorItem.prototype.itemize = function() {
 	const self = this;
 	const items = [];
 	self.items.forEach( serialize );
-	console.log( 'itemize', items );
 	return items;
 	
 	function serialize( item ) {
@@ -2370,7 +2342,6 @@ api.DoorItem.prototype.baseInit = function() {
 //
 api.DoorDir = function( conf, parentPath ) {
 	const self = this;
-	console.log( 'DoorDir', conf );
 	self.iconClass = conf.icon || 'Directory';
 	self.type = 'Directory';
 	self.fileName = conf.path;
@@ -2453,7 +2424,6 @@ api.DoorEvent.prototype = Object.create( api.DoorItem.prototype );
 
 api.DoorEvent.prototype.emit = function( data ) {
 	const self = this;
-	console.log( 'DoorEvent.emit', [ self, data, self.send ]);
 	const event = {
 		path : self.fullPath + self.title,
 		data : data,
@@ -2467,7 +2437,6 @@ api.DoorEvent.prototype.close = function() {
 
 api.DoorEvent.prototype.init = function() {
 	const self = this;
-	console.log( 'DoorEvent.init', self );
 };
 
 //

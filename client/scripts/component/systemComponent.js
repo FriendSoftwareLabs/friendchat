@@ -534,10 +534,11 @@ window.library.component = window.library.component || {};
 	
 	ns.PresenceService.prototype.emitEvent = function( event, data ) {
 		const self = this;
-		console.log( 'PresenceService.emitEvent', [ event, data, self.dormantEvents ]);
 		const dormantHandler = self.dormantEvents[ event ];
-		if ( null == dormantHandler )
+		if ( null == dormantHandler ) {
+			console.log( 'PresenceService.emitEvent - no handler for', [ event, data ]);
 			return;
+		}
 		
 		dormantHandler.emit( data );
 	}
@@ -601,6 +602,14 @@ window.library.component = window.library.component || {};
 			title : 'UserUpdate',
 		}, 'Events/' );
 		
+		const roomUnread = new api.DoorEvent({
+			title : 'RoomUnread',
+		}, 'Events/' );
+		
+		const roomMentions = new api.DoorEvent({
+			title : 'RoomMentions',
+		}, 'Events/' );
+		
 		hello.dormant.addFun( msgToFID );
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
@@ -611,23 +620,19 @@ window.library.component = window.library.component || {};
 		hello.dormant.addEvent( roomRemove );
 		hello.dormant.addEvent( roomUpdate );
 		hello.dormant.addEvent( userUpdate );
+		hello.dormant.addEvent( roomUnread );
+		hello.dormant.addEvent( roomMentions );
 		
 		self.dormantEvents = {
 			'roomAdd'        : roomAdd,
 			'roomRemove'     : roomRemove,
 			'roomUpdate'     : roomUpdate,
+			'roomUnread'     : roomUnread,
+			'roomMentions'   : roomMentions,
 			'identityUpdate' : userUpdate,
 		};
 		
 		function sendMsgToFID( fId, message, open ) {
-			/*
-			console.log( 'sendMsgToFID', {
-				fId       : fId,
-				message   : message,
-				open      : open,
-			});
-			*/
-			
 			return new Promise(( resolve, reject ) => {
 				if ( !self.presence ) {
 					reject( 'ERR_NO_SERVICE' );
@@ -642,7 +647,6 @@ window.library.component = window.library.component || {};
 				.catch( msgFail );
 				
 				function msgSent( res ) {
-					//console.log( 'sendMsgToFID - msgSent', res );
 					resolve( res );
 				}
 				
@@ -654,22 +658,18 @@ window.library.component = window.library.component || {};
 		}
 		
 		function listRoomsFun() {
-			console.log( 'PresenceService.listRooms', self.presence );
 			return new Promise(( resolve, reject ) => {
 				if ( !self.presence ) {
 					reject( 'ERR_NO_SERVICE' );
 					return;
 				}
 				
-				console.log( 'listRoomsFun, presence', self.presence );
 				const rooms = self.presence.listRoomsDormant();
-				console.log( 'listRooms', rooms );
 				resolve( rooms );
 			});
 		}
 		
 		async function openRoomFun( roomId ) {
-			console.log( 'openRoomFun', roomId );
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' );
 			
@@ -679,12 +679,11 @@ window.library.component = window.library.component || {};
 		}
 		
 		async function openChatFun( fUserId ) {
-			console.log( 'openChatFun', fUserId );
+			console.log( 'openChatFun - NYI', fUserId );
 			
 		}
 		
 		async function getIdentityFun( fUserId ) {
-			console.log( 'getIdentity', fUserId );
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' );
 			

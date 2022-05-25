@@ -354,6 +354,7 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.recentMessage = function( message, from, time, opts ) {
 		const self = this;
+		console.log( 'recentMessage', [ message, from, time, opts ]);
 		if ( !self.activity ) {
 			console.log( 'Contact.recentMessgae - activity missing', self );
 			return null;
@@ -435,6 +436,12 @@ library.contact = library.contact || {};
 			data : opts,
 		};
 		self.view.send( uptd );
+		if ( hello.dormant && self.service )
+			self.service.emitEvent( 'roomUnread', {
+				roomId : self.clientId, 
+				unread : self.messagesWaiting, 
+			});
+		
 		
 		if ( !!message )
 			return self.recentMessage( message, from, time, opts );
@@ -445,7 +452,14 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.setUnreadMessages = function( unread ) {
 		const self = this;
+		console.log( 'setUnreadMessages', unread );
 		self.messagesWaiting = unread || 0;
+		if ( hello.dormant && self.service )
+			self.service.emitEvent( 'roomUnread', {
+				roomId : self.clientId, 
+				unread : self.messagesWaiting, 
+			});
+		
 		const opts = {
 			broadcast : true,
 			unread    : self.messagesWaiting,
@@ -464,6 +478,12 @@ library.contact = library.contact || {};
 			self.mentionsWaiting = 0;
 		}
 		
+		if ( hello.dormant && self.service )
+			self.service.emitEvent( 'roomMentions', {
+				roomId   : self.clientId, 
+				mentions : self.mentionsWaiting || 0, 
+			});
+		
 		const opts = {
 			broadcast : true,
 			mentions  : self.mentionsWaiting,
@@ -475,6 +495,13 @@ library.contact = library.contact || {};
 	ns.Contact.prototype.setMentions = function( mentions ) {
 		const self = this;
 		self.mentionsWaiting = mentions || 0;
+		
+		if ( hello.dormant && self.service )
+			self.service.emitEvent( 'roomMentions', {
+				roomId   : self.clientId, 
+				mentions : self.mentionsWaiting, 
+			});
+		
 		const opts = {
 			broadcast : true,
 			mentions  : self.mentionsWaiting,
@@ -504,7 +531,7 @@ library.contact = library.contact || {};
 		if ( !hello.intercept )
 			throw new Error( 'intercept has not been initiated' );
 		
-		var intercept = hello.intercept.check( message );
+		const intercept = hello.intercept.check( message );
 		if ( intercept ) {
 			return intercept;
 		}
