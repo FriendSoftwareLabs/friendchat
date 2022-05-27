@@ -354,7 +354,13 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.recentMessage = function( message, from, time, opts ) {
 		const self = this;
-		console.log( 'recentMessage', [ message, from, time, opts ]);
+		console.trace( 'recentMessage', [ message, from, time, opts ]);
+		if ( hello.dormant && self.service )
+			self.service.emitEvent( 'roomUnread', {
+				roomId : self.clientId, 
+				unread : self.messagesWaiting, 
+			});
+		
 		if ( !self.activity ) {
 			console.log( 'Contact.recentMessgae - activity missing', self );
 			return null;
@@ -412,6 +418,7 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.messageWaiting = function( isWaiting, message, from, time ) {
 		const self = this;
+		console.log( 'messageWaiting', [ isWaiting, message, from, time ] );
 		if ( isWaiting )
 			self.messagesWaiting++;
 		else {
@@ -436,6 +443,7 @@ library.contact = library.contact || {};
 			data : opts,
 		};
 		self.view.send( uptd );
+		
 		if ( hello.dormant && self.service )
 			self.service.emitEvent( 'roomUnread', {
 				roomId : self.clientId, 
@@ -3268,6 +3276,7 @@ library.contact = library.contact || {};
 		self.type = 'presence';
 		self.data = conf.contact.identity;
 		self.idc = conf.idCache;
+		self.service = conf.service;
 		self.host = conf.host;
 		self.user = conf.user;
 		self.userId = conf.userId;
