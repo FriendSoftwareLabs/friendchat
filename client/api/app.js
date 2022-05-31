@@ -229,6 +229,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
 		self.fromView.on( 'open-file', e => self.openFile( e ));
 		self.fromView.on( 'call-friend', e => { self.doThingieCall( e.type, e.data ); });
+		self.fromView.on( 'focus', e => self.handleFocus( e ));
 		//self.fromView.on( 'call-library', e => self.doLibraryCall( e ));
 		
 		library.component.RequestNode.call( self,
@@ -337,7 +338,7 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.View.prototype.handleMinimized = function( isMinimized ) {
 		const self = this;
 		if ( !self.isMinimized && !isMinimized )
-			self.handleFocus();
+			self.handleFocus( true );
 			
 		if ( isMinimized === self.isMinimized )
 			return;
@@ -355,9 +356,13 @@ var friend = window.friend || {}; // already instanced stuff
 		self.emit( 'maximized', self.isMaximized );
 	}
 	
-	ns.View.prototype.handleFocus = function() {
+	ns.View.prototype.handleFocus = function( hasFocus ) {
 		const self = this;
-		self.emit( 'focused', true );
+		if ( self.hasFocus === hasFocus )
+			return;
+		
+		self.hasFocus = hasFocus;
+		self.emit( 'focused', self.hasFocus );
 	}
 	
 	ns.View.prototype.handleNotification = function( notie ) {
@@ -882,7 +887,7 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		//console.log( 'appEvent.receiveEvent', msg );
+		//console.log( 'app.receiveEvent', msg );
 		
 		msg.origin = e.origin;
 		const handler = self.commandMap[ msg.command ];
@@ -1175,7 +1180,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.initialize = function( msg ) {
 		const self = this;
-		console.log( 'app.initialize', msg );
 		if ( msg )
 			delete msg.dosDrivers;
 		
@@ -1887,8 +1891,7 @@ window.Application = new fupLocal.Application();
 		let link = window.Application.domain 
 			+ '/sharedfile/' 
 			+ self.exposeHash 
-			+ '/' + self.name
-			+ '?authid=' + window.Application.authId;
+			+ '/' + self.name;
 		link = window.encodeURI( link );
 		return link;
 	}

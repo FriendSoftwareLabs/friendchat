@@ -552,7 +552,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.blur = function( msg ) {
 		const self = this;
-		//console.log( 'view.blur', msg );
+		//console.log( 'view.blur', self );
 	}
 	
 	
@@ -1211,7 +1211,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.activated = function() {
 		const self = this;
-		if ( self.isActive )
+		if ( true === self.isActive )
 			return;
 		
 		self.handle({
@@ -1222,11 +1222,12 @@ var friend = window.friend || {};
 		self.isActive = true;
 		document.body.focus();
 		document.body.classList.toggle( 'activated', true );
+		self.sendTypeEvent( 'focus', true );
 	}
 	
 	ns.View.prototype.deactivated = function() {
 		const self = this;
-		if ( !self.isActive )
+		if ( false === self.isActive )
 			return;
 		
 		self.handle({
@@ -1236,6 +1237,7 @@ var friend = window.friend || {};
 		
 		self.isActive = false;
 		document.body.classList.toggle( 'activated', false );
+		self.sendTypeEvent( 'focus', false );
 	}
 	
 	ns.View.prototype.handleViewFlag = function( e ) {

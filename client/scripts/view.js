@@ -89,6 +89,14 @@ library.view = library.view || {};
 		return self.view.isMinimized;
 	}
 	
+	ns.PresenceChat.prototype.checkFocus = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.hasFocus;
+	}
+	
 	ns.PresenceChat.prototype.updateState = function( state ) {
 		const self = this;
 		self.isPrivate = !!state.isPrivate;

@@ -171,10 +171,18 @@ library.contact = library.contact || {};
 	// returns a promise
 	ns.Contact.prototype.onChatMessage = function( msg, silent ) {
 		const self = this;
-		if ( self.chatView && !self.chatView.checkMinimized())
-			return self.whenChatOpen( msg, silent );
-		else
-			return self.whenChatClosed( msg, silent );
+		if ( hello.config.mode == 'jeanie' ) {
+			if ( self.chatView && self.chatView.checkFocus())
+				return self.whenChatOpen( msg, silent );
+			else
+				return self.whenChatClosed( msg, silent );
+		}
+		else {
+			if ( self.chatView && !self.chatView.checkMinimized())
+				return self.whenChatOpen( msg, silent );
+			else
+				return self.whenChatClosed( msg, silent );
+		}
 	}
 	
 	ns.Contact.prototype.whenChatClosed = function( msg, silent ) {
@@ -223,8 +231,14 @@ library.contact = library.contact || {};
 			if ( self.checkMsgBeepSetting())
 				hello.playMsgAlert();
 			
-			if ( !self.chatView.checkMinimized())
-				return;
+			if ( 'jeanie' == hello.config.mode ) {
+				if ( self.chatView.checkFocus())
+					return;
+			}
+			else {
+				if ( !self.chatView.checkMinimized())
+					return;
+			}
 			
 			const message =  self.formatNotifyText( msg );
 			const notie = {
@@ -354,7 +368,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.recentMessage = function( message, from, time, opts ) {
 		const self = this;
-		console.trace( 'recentMessage', [ message, from, time, opts ]);
 		if ( hello.dormant && self.service )
 			self.service.emitEvent( 'roomUnread', {
 				roomId : self.clientId, 
@@ -418,11 +431,10 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.messageWaiting = function( isWaiting, message, from, time ) {
 		const self = this;
-		console.log( 'messageWaiting', [ isWaiting, message, from, time ] );
 		if ( isWaiting )
 			self.messagesWaiting++;
 		else {
-			if ( 0 === self.mentionWaiting )
+			if ( 0 === self.messagesWaiting )
 				return;
 			
 			self.messagesWaiting = 0;
@@ -460,7 +472,6 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.setUnreadMessages = function( unread ) {
 		const self = this;
-		console.log( 'setUnreadMessages', unread );
 		self.messagesWaiting = unread || 0;
 		if ( hello.dormant && self.service )
 			self.service.emitEvent( 'roomUnread', {
@@ -480,7 +491,7 @@ library.contact = library.contact || {};
 		if ( isWaiting )
 			self.mentionsWaiting++;
 		else {
-			if ( 0 === self.mentionWaiting )
+			if ( 0 === self.mentionsWaiting )
 				return;
 			
 			self.mentionsWaiting = 0;
@@ -1298,14 +1309,15 @@ library.contact = library.contact || {};
 		self.isMinimized = isMinz;
 		if ( !isMinz ) {
 			self.sendCounterReset();
-			//self.messageWaiting( false );
-			//self.mentionWaiting( false );
 		}
 		
 	}
 	
-	ns.PresenceRoom.prototype.handleFocused = function() {
+	ns.PresenceRoom.prototype.handleFocused = function( hasFocus ) {
 		const self = this;
+		if ( true != hasFocus )
+			return;
+		
 		self.sendCounterReset();
 	}
 	
@@ -1388,8 +1400,15 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.handleMention = function( e ) {
 		const self = this;
 		hello.playMsgAlert();
-		if ( self.chatView && !self.chatView.checkMinimized())
-			return;
+		console.log( 'handleMention', [ e, hello.config.mode ]);
+		if ( hello.config.mode == 'jeanie' ) {
+			if ( self.chatView && self.chatView.checkFocus())
+				return;
+		}
+		else {
+			if ( self.chatView && !self.chatView.checkMinimized())
+				return;
+		}
 		
 		self.mentionWaiting( true );
 	}
@@ -1587,12 +1606,23 @@ library.contact = library.contact || {};
 		if ( checkHasActivity( relation )) {
 			const msg = self.lastMessage.data;
 			self.recentMessage( msg.message, msg.from, msg.time );
-			if ( self.chatView && !self.chatView.checkMinimized()) {
-				self.setUnreadMessages( 0 );
-				self.setMentions( 0 );
-			} else {
-				self.setUnreadMessages( relation.unread );
-				self.setMentions( relation.mentions );
+			if ( hello.config.mode == 'jeanie' ) {
+				if ( self.chatView && self.chatView.checkFocus()) {
+					self.setUnreadMessages( 0 );
+					self.setMentions( 0 );
+				} else {
+					self.setUnreadMessages( relation.unread );
+					self.setMentions( relation.mentions );
+				}
+			}
+			else {
+				if ( self.chatView && !self.chatView.checkMinimized()) {
+					self.setUnreadMessages( 0 );
+					self.setMentions( 0 );
+				} else {
+					self.setUnreadMessages( relation.unread );
+					self.setMentions( relation.mentions );
+				}
 			}
 		} else {
 			self.setUnreadMessages( 0 );
@@ -3508,13 +3538,24 @@ library.contact = library.contact || {};
 		if ( checkHasActivity( rel )) {
 			const msg = self.lastMessage.data;
 			self.recentMessage( msg.message, msg.from, msg.time );
-			if ( self.chatView && !self.chatView.checkMinimized()) {
-				self.setUnreadMessages( 0 );
-				self.setMentions( 0 );
+			if ( 'jeanie' == hello.config.mode ) {
+				if ( self.chatView && !self.chatView.checkFocus()) {
+					self.setUnreadMessages( 0 );
+					self.setMentions( 0 );
+				} else {
+					self.setUnreadMessages( rel.unread );
+					self.setMentions( rel.mentions );
+				}
 			} else {
-				self.setUnreadMessages( rel.unread );
-				self.setMentions( rel.mentions );
+				if ( self.chatView && !self.chatView.checkMinimized()) {
+					self.setUnreadMessages( 0 );
+					self.setMentions( 0 );
+				} else {
+					self.setUnreadMessages( rel.unread );
+					self.setMentions( rel.mentions );
+				}
 			}
+			
 		} else {
 			self.setUnreadMessages( 0 );
 			self.setMentions( 0 );
