@@ -1473,10 +1473,23 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.expandImage = async function( a, mime ) {
 		const self = this;
-		const src = a.href;
+		let src = a.href;
+		const fshared = !!src.indexOf( '/sharedfile/' );
+		if ( fshared ) {
+			console.log( 'found shared file', [ src, window.View ]);
+			src += '?authid' + window.View.authId;
+			console.log( 'src authid', src );
+			const res = await window.fetch( src );
+			const blob = await res.blob();
+			
+			src = URL.createObjectURL( blob );
+			console.log( 'src', src );
+		}
+		
 		const conf = {
 			src : src,
 		};
+		console.log( 'img conf', conf );
 		const htmlElement = self.template.getElement( 'image-expand-tmpl', conf );
 		
 		return {
@@ -1491,6 +1504,7 @@ in a generic link expand wrapping with a bit of UI
 		function onClick( e ) {
 			e.preventDefault();
 			e.stopPropagation();
+			console.log( 'onClick', src );
 			self.openImage( src );
 		}
 		
