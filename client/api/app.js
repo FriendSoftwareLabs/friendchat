@@ -362,6 +362,7 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		
 		self.hasFocus = hasFocus;
+		console.log( 'app.view.focus', [ self.id, self.hasFocus ]);
 		self.emit( 'focused', self.hasFocus );
 	}
 	

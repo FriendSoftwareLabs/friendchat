@@ -1214,6 +1214,7 @@ var friend = window.friend || {};
 		if ( true === self.isActive )
 			return;
 		
+		console.log( 'view.activated', self.id );
 		self.handle({
 			type : 'focus',
 			data : true,
@@ -1230,6 +1231,7 @@ var friend = window.friend || {};
 		if ( false === self.isActive )
 			return;
 		
+		console.log( 'view.deactivated', self.id );
 		self.handle({
 			type : 'focus',
 			data : false,
