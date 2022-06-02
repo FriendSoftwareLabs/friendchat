@@ -1285,6 +1285,10 @@ in a generic link expand wrapping with a bit of UI
 			if ( !url || !url.length )
 				reject( 'no u' );
 			
+			if ( !!url.indexOf( '/sharedfile/' ))
+				url += '?authid=' + window.View.authId;
+			
+			console.log( 'urlCheck', url );
 			const extParts = url.split( '.' );
 			const fileExt = extParts.pop();
 			const fileParts = url.split( '/' );
@@ -1468,7 +1472,7 @@ in a generic link expand wrapping with a bit of UI
 		let src = a.href;
 		const fshared = !!src.indexOf( '/sharedfile/' );
 		if ( fshared ) {
-			src += '?authid' + window.View.authId;
+			src += '?authid=' + window.View.authId;
 			const res = await window.fetch( src );
 			const blob = await res.blob();
 			
