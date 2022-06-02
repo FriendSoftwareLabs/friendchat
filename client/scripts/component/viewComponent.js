@@ -1386,7 +1386,7 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.replace = function( a, conf ) {
 		const self = this;
-		const href = a.href;
+		const href = conf.href || a.href;
 		const file = conf.mime;
 		const type = conf.type;
 		const content = conf.content;
@@ -1430,14 +1430,6 @@ in a generic link expand wrapping with a bit of UI
 		if ( null != onError )
 			content.addEventListener( 'error', onError, false );
 		
-		/*
-		const headA = el.querySelector( '.link-expand-ui a' );
-		if ( null == headA )
-			return;
-		*/
-		
-		
-		
 		function onDL( e ) {
 			window.View.saveLink( a.href, file.fileName );
 		}
@@ -1476,9 +1468,7 @@ in a generic link expand wrapping with a bit of UI
 		let src = a.href;
 		const fshared = !!src.indexOf( '/sharedfile/' );
 		if ( fshared ) {
-			console.log( 'found shared file', [ src, window.View ]);
 			src += '?authid' + window.View.authId;
-			console.log( 'src authid', src );
 			const res = await window.fetch( src );
 			const blob = await res.blob();
 			
@@ -1489,11 +1479,11 @@ in a generic link expand wrapping with a bit of UI
 		const conf = {
 			src : src,
 		};
-		console.log( 'img conf', conf );
 		const htmlElement = self.template.getElement( 'image-expand-tmpl', conf );
 		
 		return {
 			type      : 'image',
+			href      : src,
 			mime      : mime,
 			content   : htmlElement,
 			bgDefault : true,
@@ -1504,8 +1494,8 @@ in a generic link expand wrapping with a bit of UI
 		function onClick( e ) {
 			e.preventDefault();
 			e.stopPropagation();
-			console.log( 'onClick', src );
-			self.openImage( src );
+			console.log( 'onClick', a.href );
+			self.openImage( a.href );
 		}
 		
 		function onError( e ) {
