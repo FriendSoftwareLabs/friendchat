@@ -576,6 +576,18 @@ window.library.component = window.library.component || {};
 			execute : openRoomFun,
 		}, 'Functions/' );
 		
+		const createRoom = new api.DoorFun({
+			title   : 'CreateRoom',
+			execute : createRoomFun,
+		}, 'Functions/' );
+		
+		/*
+		const addUserToRoom = new api.DoorFun({
+			title   : 'AddUserToRoom',
+			execute : addUserToRoomFun,
+		}, 'Functions/' );
+		*/
+		
 		const roomAdd = new api.DoorEvent({
 			title : 'RoomAdd',
 		}, 'Events/' );
@@ -613,6 +625,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addFun( msgToFID );
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
+		hello.dormant.addFun( createRoom );
 		hello.dormant.addFun( openChat );
 		hello.dormant.addFun( getIdentity );
 		
@@ -678,8 +691,19 @@ window.library.component = window.library.component || {};
 			});
 		}
 		
+		async function createRoomFun( roomName ) {
+			console.log( 'createRoomFun', roomName );
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			const room = await self.presence.createRoom({ name : roomName });
+			console.log( 'createRoomFun returns', room );
+			return room;
+		}
+		
 		async function openChatFun( fUserId ) {
 			console.log( 'openChatFun - NYI', fUserId );
+			throw new Error( 'NYI_LOL' );
 			
 		}
 		

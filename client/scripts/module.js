@@ -2364,13 +2364,17 @@ library.module = library.module || {};
 		self.acc.send( event );
 	}
 	
-	ns.Presence.prototype.createRoom = function( conf ) {
+	ns.Presence.prototype.createRoom = async function( conf ) {
 		const self = this;
+		console.log( 'createRoom', conf );
 		const create = {
 			type : 'room-create',
 			data : conf,
 		};
-		self.toAccount( create );
+		
+		const res = await self.acc.request( create );
+		console.log( 'createRoom res', res );
+		return res;
 	}
 	
 	ns.Presence.prototype.joinRoom = function( conf ) {
