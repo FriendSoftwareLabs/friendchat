@@ -581,6 +581,11 @@ window.library.component = window.library.component || {};
 			execute : createRoomFun,
 		}, 'Functions/' );
 		
+		const addUserToRoom = new api.DoorFun({
+			title   : 'AddUsersToRoom',
+			execute : addUsersToRoomFun,
+		}, 'Functions/' );
+		
 		/*
 		const addUserToRoom = new api.DoorFun({
 			title   : 'AddUserToRoom',
@@ -626,6 +631,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
 		hello.dormant.addFun( createRoom );
+		hello.dormant.addFun( addUserToRoom );
 		hello.dormant.addFun( openChat );
 		hello.dormant.addFun( getIdentity );
 		
@@ -699,6 +705,14 @@ window.library.component = window.library.component || {};
 			const room = await self.presence.createRoom({ name : roomName });
 			console.log( 'createRoomFun returns', room );
 			return room;
+		}
+		
+		async function addUsersToRoomFun( roomId, conf ) {
+			console.log( 'addUsersToRoom', [ roomId, conf ]);
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return await self.presence.showInviterFor( roomId, conf );
 		}
 		
 		async function openChatFun( fUserId ) {

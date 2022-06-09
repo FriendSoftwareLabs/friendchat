@@ -1361,7 +1361,11 @@ library.contact = library.contact || {};
 			onClose,
 			eventSink
 		);
-		self.inviter.on( 'add', add );
+		
+		if ( 'jeanie' == hello.config.mode )
+			self.inviter.on( 'add', add );
+		else
+			self.inviter.on( 'add', invite );
 		
 		function onClose() {
 			if ( self.inviter )
@@ -1375,6 +1379,7 @@ library.contact = library.contact || {};
 		}
 		
 		function add( user ) {
+			console.log( 'inviter.add', user );
 			const roomAdd = {
 				type : 'room-add',
 				data : user,
@@ -1383,6 +1388,20 @@ library.contact = library.contact || {};
 			const inv = {
 				type : 'invite',
 				data : roomAdd,
+			};
+			self.send( inv );
+		}
+		
+		function invite( user ) {
+			console.log( 'inviter.invite', user );
+			const roomInvite = {
+				type : 'room-invite',
+				data : user,
+			};
+			
+			const inv = {
+				type : 'invite',
+				data : roomInvite,
 			};
 			self.send( inv );
 		}

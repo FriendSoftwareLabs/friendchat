@@ -679,6 +679,18 @@ library.module = library.module || {};
 		});
 	}
 	
+	ns.Presence.prototype.showInviterFor = async function( roomId, conf ) {
+		const self = this;
+		console.log( 'Presence.showIviterFor', [ roomId, conf ]);
+		const room = await self.getRoom( roomId );
+		console.log( 'showInviterFor room', room );
+		if ( null == room )
+			throw 'ERR_NO_ROOM';
+		
+		room.showInviter();
+		return true;
+	}
+	
 	ns.Presence.prototype.getIdentity = async function( clientId ) {
 		const self = this;
 		let id = await self.lookupIdentity( clientId );
