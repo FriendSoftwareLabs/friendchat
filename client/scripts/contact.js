@@ -1268,17 +1268,15 @@ library.contact = library.contact || {};
 		self.chatView.on( 'chat', e => self.sendChatEvent( e ));
 		self.chatView.on( 'live', goLive );
 		self.chatView.on( 'contact-open', e => self.handleContactOpen( e ));
+		self.chatView.on( 'get-identity', e => self.handleGetId( e ));
 		self.chatView.on( 'invite-show', e => self.showInviter( e ));
 		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
 		self.chatView.on( 'minimized', e => self.handleMinimized( e ));
 		self.chatView.on( 'focused', e => self.handleFocused( e ));
 		self.chatView.on( 'close', e => self.closeChat());
-		self.chatView.on( 'get-identity', e => self.handleGetId( e ));
+		self.chatView.on( 'ready', e => self.chatReady( e ));
 		
 		function eventSink( e ) { console.log( 'unhandled chat view event', e ); }
-		function onClose( e ) {
-			self.closeChat();
-		}
 		
 		function goLive( e ) {
 			if ( 'video' === e )
@@ -1321,6 +1319,18 @@ library.contact = library.contact || {};
 		self.sendCounterReset();
 	}
 	
+	ns.PresenceRoom.prototype.chatReady = function( e ) {
+		const self = this;
+		console.log( 'PR.chatReady', e );
+		if ( 'jeanie' != hello.config.mode )
+			return;
+		
+		self.service.emitEvent( 'viewOpen', {
+			roomId : self.clientId,
+			viewId : self.chatView.view.id
+		});
+	}
+	
 	ns.PresenceRoom.prototype.closeChat = function() {
 		const self = this;
 		if ( !self.chatView )
@@ -1330,6 +1340,15 @@ library.contact = library.contact || {};
 		delete self.chatView;
 		cView.close();
 		self.updateActive();
+		
+		if ( 'jeanie' != hello.config.mode )
+			return;
+		
+		console.log( 'closeChat', cView );
+		self.service.emitEvent( 'viewClosed', {
+			roomId : self.clientId,
+			viewId : cView.view.id,
+		});
 	}
 	
 	ns.PresenceRoom.prototype.handleGetId = async function( userId ) {
@@ -4044,10 +4063,11 @@ library.contact = library.contact || {};
 		
 		self.chatView.on( 'close', onClose );
 		self.chatView.on( 'chat', e => self.sendChatEvent( e ));
-		self.chatView.on( 'live', goLive );
+		self.chatView.on( 'ready', e => self.chatReady( e ));
 		self.chatView.on( 'focused', e => self.handleFocused( e ));
 		self.chatView.on( 'close-back', e => self.handleCloseBack( e ));
 		self.chatView.on( 'get-identity', e => self.handleGetId( e ));
+		self.chatView.on( 'live', goLive );
 		
 		self.updateActive();
 		
