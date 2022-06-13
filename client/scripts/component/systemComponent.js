@@ -635,6 +635,10 @@ window.library.component = window.library.component || {};
 			title : 'RoomViewClosed',
 		}, 'Events/' );
 		
+		const roomLiveState = new api.DoorEvent({
+			title : 'RoomLiveState',
+		}, 'Events/' );
+		
 		hello.dormant.addFun( msgToFID );
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
@@ -648,6 +652,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addEvent( roomUpdate );
 		hello.dormant.addEvent( roomViewOpen );
 		hello.dormant.addEvent( roomViewClosed );
+		hello.dormant.addEvent( roomLiveState );
 		hello.dormant.addEvent( userUpdate );
 		hello.dormant.addEvent( roomUnread );
 		hello.dormant.addEvent( roomMentions );
@@ -660,6 +665,7 @@ window.library.component = window.library.component || {};
 			'viewClosed'     : roomViewClosed,
 			'roomUnread'     : roomUnread,
 			'roomMentions'   : roomMentions,
+			'roomLiveState'  : roomLiveState,
 			'identityUpdate' : userUpdate,
 		};
 		

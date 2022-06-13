@@ -3148,6 +3148,10 @@ library.contact = library.contact || {};
 			'live-state' : state,
 		};
 		
+		if ( self.service && hello.dormant ) {
+			self.service.emitEvent( 'roomLiveState', state );
+		}
+		
 		if ( !isClient ) {
 			self.activity.updateItem( self.clientId, opts );
 			return;
@@ -3225,6 +3229,9 @@ library.contact = library.contact || {};
 				'live-state' : state
 			};
 			self.activity.updateItem( self.clientId, opts );
+			if ( self.service && hello.dormant ) {
+				self.service.emitEvent( 'roomLiveState', state );
+			}
 		}
 		
 		function close( sendLeave ) {
@@ -3746,6 +3753,10 @@ library.contact = library.contact || {};
 				opts
 			);
 			
+			if ( self.service && hello.dormant ) {
+				self.service.emitEvent( 'roomLiveState', self.liveState );
+			}
+			
 			self.postCallNotification();
 		}
 		
@@ -3763,6 +3774,10 @@ library.contact = library.contact || {};
 				Date.now(),
 				opts
 			);
+			
+			if ( self.service && hello.dormant ) {
+				self.service.emitEvent( 'roomLiveState', self.liveState );
+			}
 		}
 		
 		function toView( state ) {
@@ -3803,6 +3818,10 @@ library.contact = library.contact || {};
 			Date.now(),
 			opts
 		);
+		
+		if ( self.service && hello.dormant ) {
+			self.service.emitEvent( 'roomLiveState', self.liveState );
+		}
 		
 		
 		const init = event.live;
@@ -3906,6 +3925,10 @@ library.contact = library.contact || {};
 				type : 'live-state',
 				data : self.liveState,
 			});
+		
+		if ( self.service && hello.dormant ) {
+				self.service.emitEvent( 'roomLiveState', self.liveState );
+			}
 		
 		if ( null == self.activity )
 			return;
