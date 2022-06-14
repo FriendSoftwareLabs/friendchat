@@ -3136,6 +3136,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLiveOpen = async function( event ) {
 		const self = this;
+		console.log( 'handleLiveOpen', event );
 		const liveId = event.clientId;
 		const userJoin = {
 			type : 'user-join',
@@ -3149,7 +3150,10 @@ library.contact = library.contact || {};
 		};
 		
 		if ( self.service && hello.dormant ) {
-			self.service.emitEvent( 'roomLiveState', state );
+			self.service.emitEvent( 'roomLiveState', {
+				roomId : self.clientId,
+				state  : state,
+			});
 		}
 		
 		if ( !isClient ) {
@@ -3230,7 +3234,10 @@ library.contact = library.contact || {};
 			};
 			self.activity.updateItem( self.clientId, opts );
 			if ( self.service && hello.dormant ) {
-				self.service.emitEvent( 'roomLiveState', state );
+				self.service.emitEvent( 'roomLiveState', {
+					roomId : self.clientId,
+					state  : state,
+				});
 			}
 		}
 		
@@ -3754,7 +3761,10 @@ library.contact = library.contact || {};
 			);
 			
 			if ( self.service && hello.dormant ) {
-				self.service.emitEvent( 'roomLiveState', self.liveState );
+				self.service.emitEvent( 'roomLiveState', {
+					roomId : self.clientId,
+					state  : self.liveState,
+				});
 			}
 			
 			self.postCallNotification();
@@ -3776,7 +3786,10 @@ library.contact = library.contact || {};
 			);
 			
 			if ( self.service && hello.dormant ) {
-				self.service.emitEvent( 'roomLiveState', self.liveState );
+				self.service.emitEvent( 'roomLiveState', {
+					roomId : self.clientId,
+					state  : self.liveState,
+				});
 			}
 		}
 		
@@ -3820,7 +3833,10 @@ library.contact = library.contact || {};
 		);
 		
 		if ( self.service && hello.dormant ) {
-			self.service.emitEvent( 'roomLiveState', self.liveState );
+			self.service.emitEvent( 'roomLiveState', {
+				roomId : self.clientId,
+				state  : self.liveState,
+			});
 		}
 		
 		
@@ -3927,8 +3943,11 @@ library.contact = library.contact || {};
 			});
 		
 		if ( self.service && hello.dormant ) {
-				self.service.emitEvent( 'roomLiveState', self.liveState );
-			}
+			self.service.emitEvent( 'roomLiveState', {
+				roomId : self.clientId,
+				state  : self.liveState,
+			});
+		}
 		
 		if ( null == self.activity )
 			return;
