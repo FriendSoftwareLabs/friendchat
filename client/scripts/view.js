@@ -314,6 +314,14 @@ library.view = library.view || {};
 			width : 400,
 			height : 500,
 		};
+		
+		if ( hello.config.mode == 'jeanie' ) {
+			windowConf.title = '';
+			windowConf.dialog = true;
+		}
+		
+		console.log( 'inviter wConf', windowConf );
+		
 		const viewConf = {
 			roomName  : self.roomName,
 			idList    : idList,
