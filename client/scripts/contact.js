@@ -52,6 +52,14 @@ library.contact = library.contact || {};
 	
 	// Public
 	
+	/*
+		implement for each contact type probably
+	*/
+	ns.Contact.prototype.getInfo = function() {
+		const self = this;
+		return self.identity || null;
+	}
+	
 	ns.Contact.prototype.show = function() {
 		const self = this;
 		if ( self.chatView )
@@ -771,6 +779,17 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype = Object.create( ns.Contact.prototype );
 	
 	// Public
+	
+	ns.PresenceRoom.prototype.getInfo = function() {
+		const self = this;
+		console.log( 'PresenceRoom.getInfo', self );
+		const idCopy = JSON.parse( JSON.stringify( self.identity ));
+		 if ( null != self.workgroups && null != self.workgroups.assigned )
+		 	idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId );
+		 
+		console.log( 'info', idCopy );
+		return idCopy;
+	}
 	
 	ns.PresenceRoom.prototype.sendMessage = function( message, openView ) {
 		const self = this;
@@ -1538,6 +1557,7 @@ library.contact = library.contact || {};
 		}
 		
 		self.updateActive();
+		self.emit( 'open', true );
 		
 		function selfIsUser() {
 			const is = !!self.users[ self.userId ];
@@ -3030,6 +3050,13 @@ library.contact = library.contact || {};
 			
 			if ( self.activity )
 				self.activity.updateItem( self.clientId, opts );
+			
+			if ( self.service && 'jeanie' == hello.config.mode ) {
+				self.service.emitEvent( 'roomLiveState', {
+					roomId : self.clientId,
+					peers  : self.peers.length,
+				});
+			}
 		}
 		
 		function notPID( peerId ) {
@@ -3203,6 +3230,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLiveClose = function( event ) {
 		const self = this;
+		console.log( 'handleLiveClose', event );
 		const sessionId = event.sessionId;
 		const liveId = event.clientId;
 		// close without clientId means user left live, close all the things

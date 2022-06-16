@@ -675,7 +675,7 @@ library.module = library.module || {};
 		const self = this;
 		const rIds = Object.keys( self.rooms );
 		return rIds.map( rId => {
-			return self.rooms[ rId ].identity;
+			return self.rooms[ rId ].getInfo();
 		});
 	}
 	
@@ -1711,9 +1711,9 @@ library.module = library.module || {};
 		self.checkIdBacklog( cId );
 		self.resolveChatLoaded( 'contact', cId );
 		if ( self.service && hello.dormant ) {
-			const idCopy = JSON.parse( JSON.stringify( room.identity ));
-			idCopy.isPrivate = true;
-			self.service.emitEvent( 'roomAdd', idCopy );
+			const info = room.getInfo();
+			info.isPrivate = true;
+			self.service.emitEvent( 'roomAdd', info );
 		}
 	}
 	
@@ -2472,13 +2472,17 @@ library.module = library.module || {};
 		self.toView( addRoom );
 		
 		room.on( 'contact', contactEvent );
+		room.once( 'open', onOpen );
 		
-		self.checkIdBacklog( cId );
-		self.resolveChatLoaded( 'room', cId );
-		if ( self.service && hello.dormant ) {
-			const idCopy = JSON.parse( JSON.stringify( room.identity ));
-			idCopy.isPrivate = false;
-			self.service.emitEvent( 'roomAdd', idCopy );
+		function onOpen( yep ) {
+			console.log( 'onOpen', [ room, yep ]);
+			self.checkIdBacklog( cId );
+			self.resolveChatLoaded( 'room', cId );
+			if ( self.service && hello.dormant ) {
+				const info = room.getInfo();
+				info.isPrivate = false;
+				self.service.emitEvent( 'roomAdd', info );
+			}
 		}
 		
 		return room;
