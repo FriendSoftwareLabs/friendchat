@@ -782,12 +782,10 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.getInfo = function() {
 		const self = this;
-		console.log( 'PresenceRoom.getInfo', self );
 		const idCopy = JSON.parse( JSON.stringify( self.identity ));
 		 if ( null != self.workgroups && null != self.workgroups.assigned )
 		 	idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId );
 		 
-		console.log( 'info', idCopy );
 		return idCopy;
 	}
 	

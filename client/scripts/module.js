@@ -2475,7 +2475,6 @@ library.module = library.module || {};
 		room.once( 'open', onOpen );
 		
 		function onOpen( yep ) {
-			console.log( 'onOpen', [ room, yep ]);
 			self.checkIdBacklog( cId );
 			self.resolveChatLoaded( 'room', cId );
 			if ( self.service && hello.dormant ) {
