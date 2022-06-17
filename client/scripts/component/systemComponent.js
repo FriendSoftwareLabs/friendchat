@@ -605,6 +605,10 @@ window.library.component = window.library.component || {};
 			title : 'RoomUpdate',
 		}, 'Events/' );
 		
+		const roomInviteClose = new api.DoorEvent({
+			title : 'RoomInviteClose',
+		}, 'Events/' );
+		
 		const getIdentity = new api.DoorFun({
 			title   : 'GetIdentity',
 			execute : getIdentityFun,
@@ -650,6 +654,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addEvent( roomAdd );
 		hello.dormant.addEvent( roomRemove );
 		hello.dormant.addEvent( roomUpdate );
+		hello.dormant.addEvent( roomInviteClose );
 		hello.dormant.addEvent( roomViewOpen );
 		hello.dormant.addEvent( roomViewClosed );
 		hello.dormant.addEvent( roomLiveState );
@@ -658,15 +663,16 @@ window.library.component = window.library.component || {};
 		hello.dormant.addEvent( roomMentions );
 		
 		self.dormantEvents = {
-			'roomAdd'        : roomAdd,
-			'roomRemove'     : roomRemove,
-			'roomUpdate'     : roomUpdate,
-			'viewOpen'       : roomViewOpen,
-			'viewClosed'     : roomViewClosed,
-			'roomUnread'     : roomUnread,
-			'roomMentions'   : roomMentions,
-			'roomLiveState'  : roomLiveState,
-			'identityUpdate' : userUpdate,
+			'roomAdd'         : roomAdd,
+			'roomRemove'      : roomRemove,
+			'roomUpdate'      : roomUpdate,
+			'roomInviteClose' : roomInviteClose,
+			'viewOpen'        : roomViewOpen,
+			'viewClosed'      : roomViewClosed,
+			'roomUnread'      : roomUnread,
+			'roomMentions'    : roomMentions,
+			'roomLiveState'   : roomLiveState,
+			'identityUpdate'  : userUpdate,
 		};
 		
 		function sendMsgToFID( fId, message, open ) {

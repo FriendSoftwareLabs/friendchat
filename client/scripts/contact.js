@@ -1408,6 +1408,10 @@ library.contact = library.contact || {};
 				self.inviter.close();
 			
 			delete self.inviter;
+			if ( self.service && hello.dormant )
+				self.service.emitEvent( 'roomInviteClose', {
+					roomId : self.clientId,
+				});
 		}
 		
 		function eventSink() {
