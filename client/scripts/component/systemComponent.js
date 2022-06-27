@@ -581,6 +581,16 @@ window.library.component = window.library.component || {};
 			execute : createRoomFun,
 		}, 'Functions/' );
 		
+		const openLive = new api.DoorFun({
+			title   : 'OpenLive',
+			execute : openLiveFun,
+		}, 'Functions/' );
+		
+		const closeLive = new api.DoorFun({
+			title   : 'CloseLive',
+			execute : closeLiveFun,
+		}, 'Functions/' );
+		
 		const addUserToRoom = new api.DoorFun({
 			title   : 'AddUsersToRoom',
 			execute : addUsersToRoomFun,
@@ -647,6 +657,8 @@ window.library.component = window.library.component || {};
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
 		hello.dormant.addFun( createRoom );
+		hello.dormant.addFun( openLive );
+		hello.dormant.addFun( closeLive );
 		hello.dormant.addFun( addUserToRoom );
 		hello.dormant.addFun( openChat );
 		hello.dormant.addFun( getIdentity );
@@ -729,6 +741,22 @@ window.library.component = window.library.component || {};
 			const room = await self.presence.createRoom({ name : roomName });
 			console.log( 'createRoomFun returns', room );
 			return room;
+		}
+		
+		async function openLiveFun( roomId ) {
+			console.log( 'dormant.openLive', roomId );
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return self.presence.openLive( roomId );
+		}
+		
+		async function closeLiveFun( roomId ) {
+			console.log( 'dormant.closeLive', roomId );
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return self.presence.closeLive( roomId );
 		}
 		
 		async function addUsersToRoomFun( roomId, conf ) {

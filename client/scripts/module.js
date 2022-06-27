@@ -1107,24 +1107,24 @@ library.module = library.module || {};
 		});
 	}
 	
-	ns.Presence.prototype.openLive = function( roomName ) {
+	ns.Presence.prototype.openLive = async function( roomId ) {
 		const self = this;
-		let cIds = Object.keys( self.contacts );
-		let room = null;
-		cIds.some( cId => {
-			let r = self.contacts[ cId ];
-			if ( roomName === r.identity.name ) {
-				room = r;
-				return true;
-			}
-			
-			return false;
-		});
-		
+		const room = self.getLocalChat( roomId );
+		console.log( 'p.openLive', room );
 		if ( !room )
 			return false;
 		
 		room.joinLive();
+	}
+	
+	ns.Presence.prototype.closeLive = async function( roomId ) {
+		const self = this;
+		const room = self.getLocalChat( roomId );
+		console.log( 'p.closeLive', room );
+		if ( null == room )
+			return false;
+		
+		room.closeLive();
 	}
 	
 	ns.Presence.prototype.leave = function( roomId ) {
