@@ -736,14 +736,27 @@ library.view = library.view || {};
 			self.clearTitle();
 		
 		self.titleId = friendUP.tool.uid( 'title' );
-		const avatarKlass = await self.users.getAvatarKlass( id.clientId );
-		const conf = {
-			id             : self.titleId,
-			roomName       : self.room.name,
-			avatarCssKlass : avatarKlass,
-		};
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
+			console.log( 'set hash' );
+			const conf = {
+				id             : self.titleId,
+				roomName       : self.room.name,
+			};
+			
+			self.titleEl = friend.template.getElement( 'group-title-hash-tmpl', conf );
+			
+		} else {
+			const avatarKlass = await self.users.getAvatarKlass( id.clientId );
+			const conf = {
+				id             : self.titleId,
+				roomName       : self.room.name,
+				avatarCssKlass : avatarKlass,
+			};
+			
+			self.titleEl = friend.template.getElement( 'group-title-avatar-tmpl', conf );
+		}
 		
-		self.titleEl = friend.template.getElement( 'group-title-tmpl', conf );
+		
 		self.titleContainer.appendChild( self.titleEl );
 	}
 	
