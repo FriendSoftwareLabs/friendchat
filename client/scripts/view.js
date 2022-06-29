@@ -869,7 +869,7 @@ library.view = library.view || {};
 		self.view.on( 'close'      , ohOkayThen );
 		self.view.on( 'loaded', e => console.log( 'live loaded', e ));
 		self.view.on( 'ready', e => self.liveReady());
-		self.view.on( 'focused', e => {});
+		//self.view.on( 'focused', e => {});
 		self.view.on( 'minimized', e => {});
 		self.view.on( 'maximized', e => {});
 		

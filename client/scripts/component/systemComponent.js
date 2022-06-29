@@ -653,6 +653,10 @@ window.library.component = window.library.component || {};
 			title : 'RoomLiveState',
 		}, 'Events/' );
 		
+		const liveHasFocus = new api.DoorEvent({
+			title : 'LiveHasFocus',
+		},	'Events/' );
+		
 		hello.dormant.addFun( msgToFID );
 		hello.dormant.addFun( listRooms );
 		hello.dormant.addFun( openRoom );
@@ -672,6 +676,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addEvent( roomLiveState );
 		hello.dormant.addEvent( userUpdate );
 		hello.dormant.addEvent( roomUnread );
+		hello.dormant.addEvent( liveHasFocus );
 		hello.dormant.addEvent( roomMentions );
 		
 		self.dormantEvents = {
@@ -684,6 +689,7 @@ window.library.component = window.library.component || {};
 			'roomUnread'      : roomUnread,
 			'roomMentions'    : roomMentions,
 			'roomLiveState'   : roomLiveState,
+			'liveHasFocus'    : liveHasFocus,
 			'identityUpdate'  : userUpdate,
 		};
 		

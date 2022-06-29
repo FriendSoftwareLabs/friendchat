@@ -873,6 +873,13 @@ library.contact = library.contact || {};
 		self.live.on( 'invite', invite );
 		self.live.on( 'live-name', liveName );
 		self.live.on( 'view-switch', viewSwitch );
+		self.live.on( 'focused', e => {
+			console.log( 'focused', e );
+			self.service.emitEvent( 'liveHasFocus', {
+				roomId   : self.clientId,
+				hasFocus : e,
+			});
+		});
 		
 		function chat( e ) { self.sendChatEvent( e ); }
 		function invite( e ) { self.inviteToServer( e ); }
