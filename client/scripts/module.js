@@ -532,6 +532,7 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.removeRoom = function( clientId ) {
 		const self = this;
+		console.log( 'removeRoom', clientId );
 		const room = self.rooms[ clientId ];
 		if ( !room )
 			return;

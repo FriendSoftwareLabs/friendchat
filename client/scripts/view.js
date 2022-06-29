@@ -316,7 +316,7 @@ library.view = library.view || {};
 		};
 		
 		if ( hello.config.mode == 'jeanie' ) {
-			windowConf.title = '';
+			windowConf.title = ' ';
 			windowConf.dialog = true;
 		}
 		
