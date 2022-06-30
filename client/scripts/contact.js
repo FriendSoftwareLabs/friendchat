@@ -3061,9 +3061,14 @@ library.contact = library.contact || {};
 				self.activity.updateItem( self.clientId, opts );
 			
 			if ( self.service && 'jeanie' == hello.config.mode ) {
+				let hasFocus = null;
+				if ( self.live )
+					hasFocus = self.live.checkFocus();
+				
 				self.service.emitEvent( 'roomLiveState', {
-					roomId : self.clientId,
-					peers  : self.peers.length,
+					roomId   : self.clientId,
+					peers    : self.peers.length,
+					hasFocus : hasFocus,
 				});
 			}
 		}
@@ -3186,9 +3191,14 @@ library.contact = library.contact || {};
 		};
 		
 		if ( self.service && hello.dormant ) {
+			let hasFocus = null;
+			if ( self.live )
+				hasFocus = self.live.checkFocus();
+			
 			self.service.emitEvent( 'roomLiveState', {
-				roomId : self.clientId,
-				state  : state,
+				roomId   : self.clientId,
+				state    : state,
+				hasFocus : hasFocus,
 			});
 		}
 		
@@ -3271,9 +3281,14 @@ library.contact = library.contact || {};
 			};
 			self.activity.updateItem( self.clientId, opts );
 			if ( self.service && hello.dormant ) {
+				let hasFocus = null;
+				if ( self.live )
+					hasFocus = self.live.checkFocus();
+				
 				self.service.emitEvent( 'roomLiveState', {
-					roomId : self.clientId,
-					state  : state,
+					roomId   : self.clientId,
+					state    : state,
+					hasFocus : hasFocus,
 				});
 			}
 		}
@@ -3798,9 +3813,14 @@ library.contact = library.contact || {};
 			);
 			
 			if ( self.service && hello.dormant ) {
+				let hasFocus = null;
+				if ( self.live )
+					hasFocus = self.live.checkFocus();
+				
 				self.service.emitEvent( 'roomLiveState', {
-					roomId : self.clientId,
-					state  : self.liveState,
+					roomId   : self.clientId,
+					state    : self.liveState,
+					hasFocus : hasFocus
 				});
 			}
 			
@@ -3823,9 +3843,14 @@ library.contact = library.contact || {};
 			);
 			
 			if ( self.service && hello.dormant ) {
+				let hasFocus = null;
+				if ( self.live )
+					hasFocus = self.live.checkFocus();
+				
 				self.service.emitEvent( 'roomLiveState', {
-					roomId : self.clientId,
-					state  : self.liveState,
+					roomId   : self.clientId,
+					state    : self.liveState,
+					hasFocus : hasFocus,
 				});
 			}
 		}
@@ -3870,9 +3895,14 @@ library.contact = library.contact || {};
 		);
 		
 		if ( self.service && hello.dormant ) {
+			let hasFocus = null;
+			if ( self.live )
+				hasFocus = self.live.checkFocus();
+			
 			self.service.emitEvent( 'roomLiveState', {
-				roomId : self.clientId,
-				state  : self.liveState,
+				roomId   : self.clientId,
+				state    : self.liveState,
+				hasFocus : hasFocus,
 			});
 		}
 		
@@ -3980,9 +4010,14 @@ library.contact = library.contact || {};
 			});
 		
 		if ( self.service && hello.dormant ) {
+			let hasFocus = null;
+			if ( self.live )
+				hasFocus = self.live.checkFocus();
+			
 			self.service.emitEvent( 'roomLiveState', {
-				roomId : self.clientId,
-				state  : self.liveState,
+				roomId   : self.clientId,
+				state    : self.liveState,
+				hasFocus : hasFocus,
 			});
 		}
 		

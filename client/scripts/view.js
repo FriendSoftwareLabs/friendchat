@@ -691,6 +691,14 @@ library.view = library.view || {};
 		self.view.activate();
 	}
 	
+	ns.Live.prototype.checkFocus = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.hasFocus;
+	}
+	
 	ns.Live.prototype.checkMinimized = function() {
 		const self = this;
 		if ( !self.view )
