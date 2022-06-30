@@ -2319,6 +2319,14 @@ library.rtc = library.rtc || {};
 		self.view.show();
 	}
 	
+	ns.RtcSession.prototype.checkFocus = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.checkFocus();
+	}
+	
 	//
 	ns.RtcSession.prototype.send = function( event ) {
 		const self = this;
