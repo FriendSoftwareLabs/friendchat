@@ -660,6 +660,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.initialize = async function( conf ) {
 		const self = this;
+		console.log( 'view.initialize', conf );
 		self.id = conf.viewId;
 		self.applicationId = conf.applicationId;
 		self.authId = conf.authId;
@@ -1211,6 +1212,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.activated = function() {
 		const self = this;
+		console.log( 'activated', self.isActive )
 		if ( true === self.isActive )
 			return;
 		

@@ -693,6 +693,7 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.checkFocus = function() {
 		const self = this;
+		console.log( 'checkFocus', self?.view?.hasFocus );
 		if ( !self.view )
 			return null;
 		

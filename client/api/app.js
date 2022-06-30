@@ -70,6 +70,7 @@ var friend = window.friend || {}; // already instanced stuff
 		self.app = window.Application;
 		
 		self.viewName = self.id;
+		self.hasFocus = false;
 		
 		self.initView( eventSink );
 	}
@@ -358,6 +359,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleFocus = function( hasFocus ) {
 		const self = this;
+		console.log( 'handleFocus', [ self.hasFocus, hasFocus ]);
 		if ( self.hasFocus === hasFocus )
 			return;
 		
