@@ -146,6 +146,7 @@ var friend = window.friend || {};
 	
 	ns.ViewEvent.prototype.notify = function( msg ) {
 		const self = this;
+		console.log( 'notify', msg );
 		const handler = self.notifyMap[ msg.method ];
 		if ( !handler ) {
 			console.log( 'unkown notify event', msg );
