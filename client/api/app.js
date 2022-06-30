@@ -359,7 +359,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.handleFocus = function( hasFocus ) {
 		const self = this;
-		console.log( 'handleFocus', [ self.hasFocus, hasFocus ]);
 		if ( self.hasFocus === hasFocus )
 			return;
 		

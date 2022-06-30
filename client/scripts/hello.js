@@ -257,6 +257,7 @@ var hello = null;
 			if ( self.config.dev )
 				self.app.setDev( null, hello.identity.alias );
 			
+			console.log( 'userInfo', userInfo );
 			if ( 'API' === self.identity.level ) {
 				self.runGuest();
 				return;
@@ -787,13 +788,11 @@ var hello = null;
 	
 	ns.Hello.prototype.doLogin = function() {
 		const self = this;
-		/*
 		console.log( 'doLogin', {
 			login    : self.login,
 			loggedIn : self.loggedIn,
 			account  : self.account,
 		});
-		*/
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;
@@ -821,14 +820,12 @@ var hello = null;
 	
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
-		/*
 		console.log( 'hello.doRelogin', {
 			login    : self.login,
 			loggedin : self.loggedIn,
 			account  : self.account,
 			tried    : self.triedRelogin,
 		});
-		*/
 		self.triedRelogin = true;
 		const acc = {
 			clientId : self.account.clientId,
@@ -857,6 +854,7 @@ var hello = null;
 	ns.Hello.prototype.handleRunConf = function() {
 		const self = this;
 		const data = self.config.run;
+		console.log( 'handleRunConf', data );
 		if ( 'invisible' == data )
 			return {
 				invisible : true,

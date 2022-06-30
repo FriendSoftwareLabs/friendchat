@@ -143,11 +143,13 @@ ns.SocketManager.prototype.bindPool = function() {
 		
 		function checkAuth( msg ) {
 			clearDMZ( socket );
+			log( 'checkAuth', msg, 3 );
 			self.authenticate( msg, socket );
 		}
 		
 		function checkSession( msg ) {
 			clearDMZ( socket );
+			log( 'checkSession', msg, 3 );
 			self.checkSession( msg, socket );
 		}
 		
