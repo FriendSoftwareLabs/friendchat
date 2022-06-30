@@ -654,12 +654,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.setGroupUI = function() {
 		const self = this;
-		/*
-		if ( self.contactStatus ) {
-			self.contactStatus.close();
-			delete self.contactStatus;
-		}
-		*/
 		
 		self.usersEl.classList.toggle( 'hidden', false );
 		self.toggleUserListBtn( true );
@@ -689,6 +683,9 @@ library.view = library.view || {};
 		};
 		self.titleEl = friend.template.getElement( 'contact-title-tmpl', conf );
 		self.titleContainer.appendChild( self.titleEl );
+		
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' )
+			return;
 		
 		const statusConf = {
 			containerId : stateId,
@@ -798,6 +795,9 @@ library.view = library.view || {};
 	ns.Presence.prototype.handleOnline = function( isOnline ) {
 		const self = this;
 		if ( !self.isPrivate )
+			return;
+		
+		if ( !self.contactStatus )
 			return;
 		
 		let state = isOnline ? 'online' : 'offline';
