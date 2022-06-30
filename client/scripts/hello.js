@@ -257,7 +257,7 @@ var hello = null;
 			if ( self.config.dev )
 				self.app.setDev( null, hello.identity.alias );
 			
-			console.log( 'userInfo', userInfo );
+			console.log( 'userInfo', [ userInfo, hello.identity ]);
 			if ( 'API' === self.identity.level ) {
 				self.runGuest();
 				return;
