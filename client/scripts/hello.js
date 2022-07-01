@@ -306,6 +306,7 @@ var hello = null;
 	
 	ns.Hello.prototype.runGuest = function() {
 		const self = this;
+		console.log( 'runGuest' );
 		self.timeNow( 'runGuest' );
 		self.doGuestThings();
 	}
