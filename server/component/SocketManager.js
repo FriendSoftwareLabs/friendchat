@@ -178,6 +178,7 @@ ns.SocketManager.prototype.releasePool = function() {
 
 ns.SocketManager.prototype.authenticate = async function( bundle, socket ) {
 	const self = this;
+	log( 'authenticate', socket.id );
 	if ( !bundle ) {
 		log( 'authenticate - no bundle', bundle );
 		close();
