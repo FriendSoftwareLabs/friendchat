@@ -125,17 +125,41 @@ ns.SocketManager.prototype.bindPool = function() {
 			conn : conn,
 		};
 		const socket = new Socket( conf );
-		const patience = 1000 * 10; // 10 seconds before closing the socket,
+		const patience = 1000 * 1; // 10 seconds before closing the socket,
 		                            //if no auth message is received
 		log( 'new socket with id', sid );
-		socket.authTimeout = setTimeout( closeSocket, patience );
+		let tries = 1;
 		socket.on( 'authenticate', checkAuth );
 		socket.on( 'session', checkSession );
-		const authChallenge = {
-			type : 'authenticate',
-			data : null,
-		};
-		socket.sendConn( authChallenge );
+		sendAuth();
+		
+		/*
+		const promp = {
+			type : 'torbjørn',
+			data : 'promp',
+		}
+		
+		socket.sendConn( promp );
+		*/
+		
+		function retryMaybe() {
+			log( 'retryMaybe', tries );
+			tries++;
+			if ( tries > 10 )
+				closeSocket();
+			else
+				sendAuth();
+		}
+		
+		function sendAuth() {
+			socket.authTimeout = setTimeout( retryMaybe, patience );
+			const authChallenge = {
+				type    : 'authenticate',
+				data    : null,
+				attempt : tries,
+			};
+			socket.sendConn( authChallenge );
+		}
 		
 		function closeSocket() {
 			removeListeners( socket );
