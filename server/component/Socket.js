@@ -386,6 +386,7 @@ ns.Socket.prototype.sendOnSocket = function( msgObj ) {
 		}
 		
 		const msgString = toString( msgObj );
+		log( 'sendOnSocket', msgString );
 		try {
 			self.conn.send( msgString, done );
 		} catch ( e ) {

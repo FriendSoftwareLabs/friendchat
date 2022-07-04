@@ -155,7 +155,7 @@ ns.SocketManager.prototype.bindPool = function() {
 		}
 		
 		function clearDMZ( socket ) {
-			log( 'socket timed out', socket.id );
+			log( 'clearDMZ', socket.id );
 			if ( socket.authTimeout )
 				clearTimeout( socket.authTimeout );
 			
