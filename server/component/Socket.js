@@ -192,6 +192,7 @@ ns.Socket.prototype.bind = function() {
 	self.conn.on( 'error', e => self.connError( e ));
 	self.conn.on( 'close', e => self.connClose( e ));
 	self.conn.on( 'message', e => self.receiveMessage( e ));
+	log( 'bind done' );
 }
 
 ns.Socket.prototype.unbind = function() {
@@ -211,6 +212,7 @@ ns.Socket.prototype.sendId = function() {
 		data : self.id,
 	}
 	
+	log( 'sendId', self.id );
 	self.sendOnSocket( id );
 }
 
@@ -221,6 +223,9 @@ ns.Socket.prototype.receiveMessage = function( msgString ) {
 		log( 'receiveMessage - could not JSON', msgString );
 		return;
 	}
+	
+	if ( !self.authenticated )
+		log( 'received', msgObj );
 	
 	self.handleEvent( msgObj );
 }
@@ -377,6 +382,9 @@ ns.Socket.prototype.sendOnSocket = function( msgObj ) {
 		}
 		
 		const msgString = toString( msgObj );
+		if ( !self.authenticated )
+			log( 'sendOnSocket', msgString );
+		
 		try {
 			self.conn.send( msgString, done );
 		} catch ( e ) {
