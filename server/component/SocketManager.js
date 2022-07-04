@@ -330,7 +330,7 @@ ns.SocketManager.prototype.bind = function( socket ) {
 	socket.on( 'msg'     , e => self.receiveMessage( e, sId ));
 	
 	//socket.authenticate( true );
-	setTimeout( coffebreak, 50 );
+	setTimeout( coffeebreak, 50 );
 	function coffeebreak() {
 		socket.authenticate( true );
 	}
