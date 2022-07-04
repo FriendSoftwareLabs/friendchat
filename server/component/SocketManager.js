@@ -144,18 +144,15 @@ ns.SocketManager.prototype.bindPool = function() {
 		
 		function checkAuth( msg ) {
 			clearDMZ( socket );
-			log( 'checkAuth', msg, 3 );
 			self.authenticate( msg, socket );
 		}
 		
 		function checkSession( msg ) {
 			clearDMZ( socket );
-			log( 'checkSession', msg, 3 );
 			self.checkSession( msg, socket );
 		}
 		
 		function clearDMZ( socket ) {
-			log( 'clearDMZ', socket.id );
 			if ( socket.authTimeout )
 				clearTimeout( socket.authTimeout );
 			
@@ -333,6 +330,12 @@ ns.SocketManager.prototype.bind = function( socket ) {
 	socket.on( 'msg'     , e => self.receiveMessage( e, sId ));
 	
 	socket.authenticate( true );
+	/*
+	setTimeout( coffebreak, 50 );
+	function coffeebreak() {
+		
+	}
+	*/
 }
 
 ns.SocketManager.prototype.receiveMessage = function( msg, socketId ) {
