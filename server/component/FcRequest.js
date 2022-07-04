@@ -48,6 +48,7 @@ ns.FcRequest.prototype.post = function( conf ) {
 	var query = querystring.stringify( conf.data );
 	var opts = self.buildPostOptions( conf.path, query.length );
 	var req = https.request( opts, reqBack );
+	log( 'fc query', query, 3 );
 	req.write( query );
 	function reqBack( res ) {
 		var chunks = '';
@@ -71,6 +72,7 @@ ns.FcRequest.prototype.post = function( conf ) {
 
 ns.FcRequest.prototype.response = function( response, conf ) {
 	const self = this;
+	log( 'fc response', response );
 	const ok = response.indexOf( 'ok<!--separate-->' ); // derp
 	if ( -1 == ok ) {
 		log( 'oopsie response', response );
