@@ -329,13 +329,11 @@ ns.SocketManager.prototype.bind = function( socket ) {
 	socket.on( 'session' , e => self.handleSession(  e, sId ));
 	socket.on( 'msg'     , e => self.receiveMessage( e, sId ));
 	
-	socket.authenticate( true );
-	/*
+	//socket.authenticate( true );
 	setTimeout( coffebreak, 50 );
 	function coffeebreak() {
-		
+		socket.authenticate( true );
 	}
-	*/
 }
 
 ns.SocketManager.prototype.receiveMessage = function( msg, socketId ) {
