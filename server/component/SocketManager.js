@@ -127,6 +127,7 @@ ns.SocketManager.prototype.bindPool = function() {
 		const socket = new Socket( conf );
 		const patience = 1000 * 10; // 10 seconds before closing the socket,
 		                            //if no auth message is received
+		log( 'new socket with id', sid );
 		socket.authTimeout = setTimeout( closeSocket, patience );
 		socket.on( 'authenticate', checkAuth );
 		socket.on( 'session', checkSession );
@@ -154,7 +155,7 @@ ns.SocketManager.prototype.bindPool = function() {
 		}
 		
 		function clearDMZ( socket ) {
-			log( 'socket timed out' );
+			log( 'socket timed out' socket.id );
 			if ( socket.authTimeout )
 				clearTimeout( socket.authTimeout );
 			
@@ -325,6 +326,7 @@ ns.SocketManager.prototype.authRequest = function( token, socket ) {
 ns.SocketManager.prototype.bind = function( socket ) {
 	const self = this;
 	const sId = socket.id;
+	log( 'bind', sId );
 	self.sockets[ sId ] = socket;
 	socket.on( 'close'   , e => { self.removeSocket( sId );	});
 	socket.on( 'session' , e => self.handleSession(  e, sId ));

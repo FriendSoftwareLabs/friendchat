@@ -30,6 +30,7 @@ ns.Socket = function( conf ) {
 		return new ns.Socket( conf );
 	
 	const self = this;
+	log( 'create socket', conf, 3 );
 	events.Emitter.call( self );
 	self.id = conf.id;
 	self.conn = conf.conn;
@@ -87,11 +88,20 @@ ns.Socket.prototype.authenticate = function( success ) {
 		type : 'authenticate',
 		data : true,
 	};
+	
+	log( 'authenticate', {
+		sid  : self.id,
+		conn : self.conn,
+	});
 	return self.sendOnSocket( auth );
 }
 
 ns.Socket.prototype.attach = function( conn ) {
 	const self = this;
+	log( 'attach', {
+		sid  : self.id,
+		conn : self.conn,
+	});
 	if ( !conn )
 		throw new Error( 'u wot m8? Socket.attach - no conn' );
 	
@@ -112,6 +122,7 @@ ns.Socket.prototype.attach = function( conn ) {
 
 ns.Socket.prototype.detach = function() {
 	const self = this;
+	log( 'detach', self.id );
 	self.cleanup();
 	const conn = self.conn;
 	delete self.conn;
@@ -139,6 +150,7 @@ ns.Socket.prototype.kill = function() {
 // used from socketmanager
 ns.Socket.prototype.close = function() {
 	const self = this;
+	log( 'close', self.id );
 	self.emitterClose();
 	self.cleanup();
 	self.closeWs();
