@@ -133,15 +133,6 @@ ns.SocketManager.prototype.bindPool = function() {
 		socket.on( 'session', checkSession );
 		sendAuth();
 		
-		/*
-		const promp = {
-			type : 'torbjørn',
-			data : 'promp',
-		}
-		
-		socket.sendConn( promp );
-		*/
-		
 		function retryMaybe() {
 			log( 'retryMaybe', tries );
 			tries++;

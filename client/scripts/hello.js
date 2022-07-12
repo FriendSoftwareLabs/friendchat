@@ -306,7 +306,8 @@ var hello = null;
 	
 	ns.Hello.prototype.runGuest = function() {
 		const self = this;
-		console.log( 'runGuest' );
+		self.isGuest = true;
+		console.log( 'runGuest', self.isGuest );
 		self.timeNow( 'runGuest' );
 		self.doGuestThings();
 	}
@@ -687,6 +688,7 @@ var hello = null;
 				inviteHost    : 'leeloo',
 			};
 			new library.view.RtcAsk( askConf, askBack );
+			
 			return; // prevents unknown data thingie, down there *points*
 			
 			function askBack( res ) {
@@ -698,7 +700,11 @@ var hello = null;
 				setupUser( res );
 			}
 			
-			function setupUser( options ) {
+			async function setupUser( options ) {
+				console.log( 'setupUser', {
+					options : options,
+					conf    : conf,
+				})
 				self.loggedIn = true;
 				let identity = conf.data.identity || {
 					name   : options.name,
@@ -715,12 +721,21 @@ var hello = null;
 						identity : identity,
 					},
 				};
+				console.log( 'inviteBundle', inviteBundle );
 				self.setAuthBundle( inviteBundle );
-				initPresenceConnection( connBack );
-				
-				function connBack() {
-					self.setupLiveRoom( options.permissions );
+				try {
+					await initPresenceConnection();
+				} catch( ex ) {
+					console.log( 'guest login failed', {
+						options : options,
+						conf    : conf,
+						bundle  : inviteBundle,
+					});
+					
+					self.quit();
 				}
+				
+				self.setupLiveRoom( options.permissions );
 			}
 		}
 		
@@ -760,25 +775,34 @@ var hello = null;
 		hello.log.show();
 		*/
 		
-		function initPresenceConnection( callback ) {
-			const conf = self.config.run;
-			if ( !conf.data && !conf.data.host ) {
-				console.log( 'missing host', conf );
-				return;
-			}
-			
-			const host = library.tool.buildDestination( 'wss://', conf.data.host );
-			self.conn = new library.system.Connection( host, onWSState );
-			self.items = new library.system.Items();
-			self.intercept = new library.system.Interceptor();
-			self.conn.connect();
-			
-			function onWSState( e ) { self.updateConnState( e ); }
+		function initPresenceConnection() {
+			return new Promise(( resolve, reject ) => {
+				const conf = self.config.run;
+				if ( !conf.data && !conf.data.host ) {
+					console.log( 'missing host', conf );
+					return;
+				}
+				
+				const host = library.tool.buildDestination( 'wss://', conf.data.host );
+				self.conn = new library.system.Connection( host, onWSState );
+				self.items = new library.system.Items();
+				self.intercept = new library.system.Interceptor();
+				self.conn.connect();
+				
+				function onWSState( e ) {
+					console.log( 'onWSState', e );
+					//self.updateConnState( e );
+				}
+			});
 		}
 	}
 	
 	ns.Hello.prototype.setupLiveRoom = function( permissions ) {
 		const self = this;
+		console.log( 'setupLiveRoom', {
+			conn  : self.conn,
+			perms : permissions,
+		});
 		new library.component.GuestAccount( self.conn, permissions, onclose );
 		function onclose() {
 			self.quit();
@@ -938,6 +962,7 @@ var hello = null;
 	
 	ns.Hello.prototype.handleConnAuth = function( state ) {
 		const self = this;
+		console.log( 'handleConnAuth', state );
 		const authed = state.data;
 		if ( !authed )
 			return;
