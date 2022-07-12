@@ -791,6 +791,11 @@ var hello = null;
 				
 				function onWSState( e ) {
 					console.log( 'onWSState', e );
+					if ( 'session' == e.type )
+						resolve( e.data );
+					
+					if ( self.guest )
+						self.guest.updateConnState( e );
 					//self.updateConnState( e );
 				}
 			});

@@ -46,6 +46,11 @@ library.component = library.component || {};
 		delete self.onClose;
 	}
 	
+	ns.GuestAccount.prototype.updateConnState = function( event ) {
+		const self = this;
+		console.log( 'GuestAccount.updateConnState', event );
+	}
+	
 	// Private
 	
 	ns.GuestAccount.prototype.init = function() {
