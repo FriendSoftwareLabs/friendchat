@@ -738,6 +738,18 @@ library.module = library.module || {};
 		}
 	}
 	
+	ns.Presence.prototype.getRoomMeta = async function( roomId ) {
+		const self = this;
+		const room = self.getLocalChat( roomId );
+		console.log( 'getRoomMeta', roomId, room );
+		if ( null == room )
+			throw 'ERR_NO_ROOM';
+		
+		const meta = await room.getMeta();
+		console.log( 'getRoomMeta, meta', meta );
+		return meta;
+	}
+	
 	ns.Presence.prototype.verifyActivities = async function( cIdList ) {
 		const self = this;
 		if ( !self.isOnline )

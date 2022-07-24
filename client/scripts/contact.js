@@ -789,6 +789,29 @@ library.contact = library.contact || {};
 		return idCopy;
 	}
 	
+	ns.PresenceRoom.prototype.getMeta = async function() {
+		const self = this;
+		console.log( 'getMeta', self );
+		let peers = null;
+		if ( self.peers.length )
+			peers = {
+				type : 'peers',
+				data : {
+					peerIds : self.peers,
+				},
+			};
+		
+		const activity = await self.activity.read( self.clientId );
+		console.log( 'activity', activity );
+		
+		const meta = {
+			identity     : self.identity,
+			lastActivity : null,
+			live         : peers,
+		};
+		return meta;
+	}
+	
 	ns.PresenceRoom.prototype.sendMessage = function( message, openView ) {
 		const self = this;
 		const msg = {
@@ -1650,6 +1673,7 @@ library.contact = library.contact || {};
 			relation.unread = relation.unreadMessages;
 		
 		const activityItem = await self.activity.read( self.clientId );
+		console.log( 'room activityItem', activityItem );
 		if ( activityItem ) {
 			self.updateRelationFromActivity(
 				relation,
@@ -3630,11 +3654,23 @@ library.contact = library.contact || {};
 			rel.unread = rel.unreadMessages;
 		
 		const activityItem = await self.activity.read( self.clientId );
-		if ( activityItem )
+		console.log( 'priv activityItem', activityItem );
+		if ( activityItem ) {
 			self.updateRelationFromActivity(
 				rel,
 				activityItem.data.options
 			);
+			
+			if ( 'jeanie' == hello.config.mode 
+				&& 'live' == activityItem.type
+				&& activityItem.data.message.indexOf( 'missed' ) != -1 ) {
+					self.service.emitEvent( 'roomLiveState', {
+					roomId   : self.clientId,
+					state    : { description : 'incoming' },
+					hasFocus : null,
+				});
+			}
+		}
 		
 		if ( null == self.lastMessage )
 			return;
