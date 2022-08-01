@@ -341,7 +341,10 @@ ns.SocketManager.prototype.bind = function( socket ) {
 	const sId = socket.id;
 	log( 'bind', sId );
 	self.sockets[ sId ] = socket;
-	socket.on( 'close'   , e => { self.removeSocket( sId );	});
+	socket.on( 'close'   , e => {
+		log( 'socket called close' );
+		self.removeSocket( sId );
+	});
 	socket.on( 'session' , e => self.handleSession(  e, sId ));
 	socket.on( 'msg'     , e => self.receiveMessage( e, sId ));
 	
@@ -369,6 +372,11 @@ ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 	const self = this;
 	const stored = self.getStoredSession( sessionId );
 	const session = self.getSession( sessionId );
+	log( 'checkSession', {
+		sid        : sessionId,
+		stored     : stored,
+		hasSession : !!session,
+	});
 	if ( null != stored ) {
 		self.bind( socket );
 		await self.loginSession( stored, socket );
@@ -384,6 +392,7 @@ ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 	} else
 		self.replaceSession( session, socket );
 	
+	log( 'checkSession failed, closing socket', sessionId );
 	socket.close();
 }
 

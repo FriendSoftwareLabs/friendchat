@@ -134,6 +134,7 @@ ns.Socket.prototype.unsetSession = function() {
 // used from account or internally
 ns.Socket.prototype.kill = function() {
 	const self = this;
+	log( 'kill', self.id );
 	self.cleanup();
 	self.emit( 'close' );
 }
@@ -192,7 +193,6 @@ ns.Socket.prototype.bind = function() {
 	self.conn.on( 'error', e => self.connError( e ));
 	self.conn.on( 'close', e => self.connClose( e ));
 	self.conn.on( 'message', e => self.receiveMessage( e ));
-	log( 'bind done' );
 }
 
 ns.Socket.prototype.unbind = function() {

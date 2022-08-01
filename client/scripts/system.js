@@ -1846,10 +1846,12 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketAuth = function( success ) {
 		const self = this;
+		/*
 		if ( self.sessionId ) {
 			self.connect();
 			return;
 		}
+		*/
 		
 		self.onstate({
 			type : 'authenticate',
