@@ -333,6 +333,12 @@ library.view = library.view || {};
 		self.userId     = state.userId;
 		self.contactId  = state.contactId;
 		
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
+			const am = document.getElementById( 'attachment-menu' );
+			if ( null != am )
+				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true );
+		}
+		
 		// selecting constructors
 		let UserCtrl = library.component.UserCtrl;
 		let MsgBuilder = library.component.MsgBuilder;
