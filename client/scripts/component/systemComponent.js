@@ -596,6 +596,11 @@ window.library.component = window.library.component || {};
 			execute : addUsersToRoomFun,
 		}, 'Functions/' );
 		
+		const openSettings = new api.DoorFun({
+			title   : 'OpenSettings',
+			execute : openSettingsFun,
+		}, 'Functions/' );
+		
 		/*
 		const addUserToRoom = new api.DoorFun({
 			title   : 'AddUserToRoom',
@@ -784,6 +789,11 @@ window.library.component = window.library.component || {};
 				throw new Error( 'ERR_NO_SERVICE' );
 			
 			return await self.presence.getFriendContact( fUserId );
+		}
+		
+		async function openSettingsFun() {
+			console.log( 'openSettingsFun' );
+			hello.account.showSettings();
 		}
 	}
 	

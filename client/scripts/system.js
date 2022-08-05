@@ -1249,16 +1249,20 @@ library.rtc = library.rtc || {};
 		if ( self.settingsView )
 			return;
 		
-		var conf = {
-			type : 'account',
-			windowConf : {
-				title : Application.i18n('i18n_account_settings'),
-				width : 350,
-				height : 400,
-			},
-			onsave : saveHandler,
-			onclose : closeHandler,
-			settings : data,
+		const winConf = {
+			title    : Application.i18n('i18n_account_settings'),
+			width    : 350,
+			height   : 400,
+		};
+		if ( 'jeanie' === hello.config.mode )
+			winConf.dialog = true;
+		
+		const conf = {
+			type       : 'account',
+			windowConf : winConf,
+			onsave     : saveHandler,
+			onclose    : closeHandler,
+			settings   : data,
 		};
 		self.settingsView = new library.view.Settings( conf );
 		
@@ -1268,7 +1272,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Account.prototype.saveSetting = function( data, callback ) {
 		const self = this;
-		var msg = {
+		const msg = {
 			type : 'setting',
 			data : data,
 		};
@@ -1280,7 +1284,7 @@ library.rtc = library.rtc || {};
 		if ( self.settingsView )
 			self.settingsView.saved( update );
 		
-		var handler = self.updateMap[ update.setting ];
+		const handler = self.updateMap[ update.setting ];
 		if ( !handler ) {
 			console.log( 'no handler for ', update );
 			return;
