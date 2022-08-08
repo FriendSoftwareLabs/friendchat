@@ -794,7 +794,7 @@ window.library.component = window.library.component || {};
 		
 		async function openSettingsFun() {
 			console.log( 'openSettingsFun' );
-			hello.account.showSettings();
+			hello.account.getSettings();
 		}
 	}
 	

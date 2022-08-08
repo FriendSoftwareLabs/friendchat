@@ -536,7 +536,6 @@ library.component = library.component || {};
 			return false;
 		}
 		
-		console.log( 'sendOnSocket', msgObj );
 		const msgStr = friendUP.tool.stringify( msgObj );
 		try {
 			self.ws.send( msgStr );

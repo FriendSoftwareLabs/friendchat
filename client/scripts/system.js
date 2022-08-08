@@ -1178,7 +1178,7 @@ library.rtc = library.rtc || {};
 		
 		hello.setSettings( self.settings );
 		self.conn = new library.system.Message({
-			id : 'account',
+			id      : 'account',
 			handler : receiveMsg,
 		});
 		function receiveMsg( e ) { self.receiveMsg( e ); }
