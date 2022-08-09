@@ -842,7 +842,7 @@ placeholder,
 setting
 -->
 <script id="settings-status-tmpl" type="text/html">
-<div id="<%= setting %>-status" class="status fortify">
+<div id="<%= setting %>-status" class="hidden status fortify">
 	<i class="good fa fa-fw fa-check"></i>
 	<i class="changed fa fa-fw fa-pencil-square hidden"></i>
 	<i class="working fa fa-fw fa-spin fa-cog hidden"></i>
@@ -935,7 +935,8 @@ status,
 	</div>
 	<div class="input expand group row end">
 		<div class="fortify">
-			<input id="<%= setting %>" type="checkbox" <%= checked %>>
+			<input id="<%= setting %>" type="checkbox" <%= checked % class="gui-check-input">>
+			<div class="gui-check-proxy"></div>
 		</div>
 		<div class="checklabel">
 			&nbsp;
