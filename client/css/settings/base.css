@@ -75,12 +75,11 @@
 
 .gui-check-proxy {
 	cursor           : pointer;
-	display          : block;
 	border           : 1px solid #ADADAD;
 	border-radius    : 6px;
 	background-color : #DDD;
 	width            : 32px;
-	height           : 16px;
+	height           : 18px;
 	position         : relative;
 	transition       : all 0.2s;
 }
@@ -101,14 +100,14 @@
 
 .gui-check-input:checked + .gui-check-proxy
 {
-	background-color: #27AE60;
-	border-color: #27AE60;
+	background-color : #27AE60;
+	border-color     : #27AE60;
 }
 
 .gui-check-input:checked + .gui-check-proxy:after
 {
-	left: 16px;
-	border-color: #27AE60;
+	left         : 14px;
+	border-color : #27AE60;
 }
 
 .setting.singlecheck .checklabel {
