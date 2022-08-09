@@ -372,14 +372,14 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.confirmedPassword = function( setting ) {
 		const self = this;
-		var label = self.labelMap[ setting ] || setting;
-		var value = self.settings[ setting ] || '';
-		var tmplConf = {
+		const label = self.labelMap[ setting ] || setting;
+		const value = self.settings[ setting ] || '';
+		const tmplConf = {
 			setting : setting,
 			label : label,
 			value : value,
 		};
-		var id = build();
+		const id = build();
 		bind( id );
 		
 		function build() {
@@ -390,17 +390,17 @@ library.view = library.view || {};
 		}
 		
 		function bind( id ) {
-			var form = document.getElementById( id );
-			var inputPass = document.getElementById( setting );
-			var inputPassPlain = document.getElementById( setting + '-plain' );
-			var inputConfirm = document.getElementById( setting + '-confirm' );
-			var inputConfirmPlain = document.getElementById( setting + '-plain-confirm' );
+			const form = document.getElementById( id );
+			const inputPass = document.getElementById( setting );
+			const inputPassPlain = document.getElementById( setting + '-plain' );
+			const inputConfirm = document.getElementById( setting + '-confirm' );
+			const inputConfirmPlain = document.getElementById( setting + '-plain-confirm' );
 			
-			var btnShowPlain = document.getElementById( setting + '-show-plain' );
-			var btnShowSecure = document.getElementById( setting + '-show-secure' );
+			const btnShowPlain = document.getElementById( setting + '-show-plain' );
+			const btnShowSecure = document.getElementById( setting + '-show-secure' );
 			
-			var btnSubmit = document.getElementById( setting + '-btn-submit' );
-			var btnError = document.getElementById( setting + '-btn-error' );
+			const btnSubmit = document.getElementById( setting + '-btn-submit' );
+			const btnError = document.getElementById( setting + '-btn-error' );
 			
 			form.addEventListener( 'submit', submit, false );
 			
@@ -537,36 +537,39 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.singleCheck = function( setting ) {
 		const self = this;
-		var isChecked = !!self.settings[ setting ];
-		var label = self.labelMap[ setting ];
+		const isChecked = !!self.settings[ setting ];
+		const label = self.labelMap[ setting ];
 		
 		if ( typeof( isChecked ) === 'undefined' ) {
 			console.log( 'no setting for', setting );
 			return;
 		}
 		
-		var id = build();
+		const id = build();
 		bind( id );
 		
 		function build() {
-			var status = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			var conf = {
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const conf = {
 				setting : setting,
 				label : label,
 				checked : isChecked ? 'checked' : '',
 				status : status,
 			};
-			var element = hello.template.getElement( 'settings-singlecheck-tmpl', conf );
+			const element = hello.template.getElement( 'settings-singlecheck-tmpl', conf );
 			self.container.appendChild( element );
 			return element.id;
 		}
 		
 		function bind( id ) {
-			var form = document.getElementById( id );
-			var input = form.querySelector( 'input' );
+			const form = document.getElementById( id );
+			const input = form.querySelector( 'input' );
+			const proxy = form.querySelector( 'gui-check-proxy' );
 			
 			form.addEventListener( 'submit', formSubmit, false );
 			input.addEventListener( 'click', click, false );
+			if ( null != proxy )
+				proxy.addEventListener( 'click', check, false );
 			
 			self.updateMap[ setting ] = updateHandler;
 			function updateHandler( value ) {
@@ -580,6 +583,12 @@ library.view = library.view || {};
 			}
 			
 			function click( e ) {
+				save();
+			}
+			
+			function check( e ) {
+				console.log( 'check', input.checked );
+				input.checked = !input.checked;
 				save();
 			}
 			
