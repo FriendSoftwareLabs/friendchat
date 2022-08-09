@@ -564,10 +564,11 @@ library.view = library.view || {};
 		function bind( id ) {
 			const form = document.getElementById( id );
 			const input = form.querySelector( 'input' );
-			const proxy = form.querySelector( 'gui-check-proxy' );
+			const proxy = form.querySelector( '.gui-check-proxy' );
 			
 			form.addEventListener( 'submit', formSubmit, false );
 			input.addEventListener( 'click', click, false );
+			console.log( 'proxy', proxy );
 			if ( null != proxy )
 				proxy.addEventListener( 'click', check, false );
 			
