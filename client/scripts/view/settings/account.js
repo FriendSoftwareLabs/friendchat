@@ -46,11 +46,24 @@ library.view = library.view || {};
 			//'onNewScreen',
 			//'minimalUI',
 			//'advancedUI',
-			'compactChat',
+			//'compactChat',
 			'showSaveLinks',
-			'expandFileLinks',
-			'hideInSearch',
+			//'expandFileLinks',
+			//'hideInSearch',
 		];
+		
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
+			self.validKeys = self.validKeys.filter( key => {
+				if ( key == 'roomAlert' )
+					return true;
+				
+				if ( key == 'privateAlert' )
+					return true;
+				
+				return false;
+			});
+		}
+		
 		self.displayOrder = self.validKeys;
 		self.labelMap = {
 			'skipPass'        : View.i18n( 'i18n_autologin' ),
@@ -64,8 +77,14 @@ library.view = library.view || {};
 			'compactChat'     : View.i18n( 'i18n_compact_chat' ),
 			'showSaveLinks'   : View.i18n( 'i18n_save_links_to_file' ),
 			'expandFileLinks' : View.i18n( 'i18n_expand_file_links' ),
-			'hideInSearch' : View.i18n( 'i18n_hide_from_search' ),
+			'hideInSearch'    : View.i18n( 'i18n_hide_from_search' ),
 		};
+		
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
+			self.labelMap[ 'roomAlert' ] = View.i18n( 'i18n_sound_notification' );
+			self.labelMap[ 'privateAlert' ] = View.i18n( 'i18n_sound_notification' );
+		}
+		
 		self.defaultMap = {};
 		self.buildMap = {
 			'skipPass'        : singleCheck,
@@ -83,6 +102,13 @@ library.view = library.view || {};
 		};
 		
 		function singleCheck( setting ) { self.singleCheck( setting ); }
+		
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
+			self.sections = {
+				'channels' : [ 'roomAlert' ],
+				'privates' : [ 'privateAlert' ],
+			};
+		}
 	}
 	
 })( library.view );

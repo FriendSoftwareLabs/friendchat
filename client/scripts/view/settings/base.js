@@ -97,13 +97,28 @@ library.view = library.view || {};
 		
 		self.settings = {};
 		self.setSettings( data.settings );
+		
+		if ( null != self.sections )
+			self.addSections();
+		
 		self.bindSettings();
 		
 		self.view.ready();
 	}
 	
+	ns.Settings.prototype.addSections = function() {
+		const self = this;
+		console.log( 'addSections', self.sections );
+		const sKeys = Object.keys( self.sections );
+		sKeys.forEach( sKey => {
+			sConf = self.sections[ sKey ];
+			self.buildSection( sKey, sConf );
+		});
+	}
+	
 	ns.Settings.prototype.setSettings = function( data ) {
 		const self = this;
+		console.log( 'setSettings', data );
 		data.settings = data.settings || {};
 		self.validKeys.forEach( add );
 		function add( setting ) {
@@ -116,9 +131,37 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.Settings.prototype.getContainer = function( setting ) {
+		const self = this
+		console.log( 'getContainer', setting )
+		if ( null == self.sections )
+			return self.container
+		
+		let container = null
+		self.sectionIds.forEach( sKey => {
+			if ( null != container )
+				return
+			
+			const settings = self.sections[ sKey ];
+			const yep = settings.some( s => s === setting )
+			if ( !yep )
+				return false
+			
+			const id = sKey + '-section';
+			container = document.getElementById( id );
+		});
+		
+		console.log( 'getContainer return', container )
+		if ( null == container )
+			return self.container
+		else
+			return container
+		
+	}
+	
 	ns.Settings.prototype.bindSettings = function() {
 		const self = this;
-		var settings = self.displayOrder.filter( setting => {
+		const settings = self.displayOrder.filter( setting => {
 				return self.validKeys.some( valid => setting == valid )
 			});
 		
@@ -134,24 +177,35 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.Settings.prototype.buildSection = function( section, conf ) {
+		const self = this;
+		const tConf = {
+			section : section,
+			label   : self.labelMap[ section ] || section;
+		};
+		const el = hello.template.get( 'settings-section-tmpl', tConf );
+		self.container.appendChild( el );
+	}
+	
 	
 	ns.Settings.prototype.setTextInput = function( setting ) {
 		const self = this;
-		var label = self.labelMap[ setting ] || setting;
-		var value = self.settings[ setting ] || '';
-		var tmplConf = {
+		const label = self.labelMap[ setting ] || setting;
+		const value = self.settings[ setting ] || '';
+		const tmplConf = {
 			setting : setting,
-			label : label,
-			value : value,
-			status : null,
+			label   : label,
+			value   : value,
+			status  : null,
 		};
-		var id = build();
+		const id = build();
 		bind( id );
 		
 		function build() {
 			tmplConf.status = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			var element = hello.template.getElement( 'settings-plaintext-tmpl', tmplConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-plaintext-tmpl', tmplConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -199,8 +253,9 @@ library.view = library.view || {};
 		
 		function build() {
 			tmplConf.status = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			var element = hello.template.getElement( 'settings-number-tmpl', tmplConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-number-tmpl', tmplConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -273,8 +328,9 @@ library.view = library.view || {};
 		
 		function build() {
 			tmplConf.status = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			var element = hello.template.getElement( 'settings-securetext-tmpl', tmplConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-securetext-tmpl', tmplConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -383,8 +439,9 @@ library.view = library.view || {};
 		bind( id );
 		
 		function build() {
-			var element = hello.template.getElement( 'password-input-tmpl', tmplConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'password-input-tmpl', tmplConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			
 			return element.id;
 		}
@@ -557,7 +614,8 @@ library.view = library.view || {};
 				status : status,
 			};
 			const element = hello.template.getElement( 'settings-singlecheck-tmpl', conf );
-			self.container.appendChild( element );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -620,10 +678,11 @@ library.view = library.view || {};
 		bind( id );
 		
 		function build() {
-			var checkers = checkerKeys.map( buildCheck );
+			const checkers = checkerKeys.map( buildCheck );
 			checkConf.checkers = checkers.join( '' );
-			var element = hello.template.getElement( 'settings-checkbox-tmpl', checkConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-checkbox-tmpl', checkConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -686,9 +745,9 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.setTextarea = function( setting ) {
 		const self = this;
-		var label = self.labelMap[ setting ] || setting;
-		var value = self.settings[ setting ];
-		var conf = {
+		const label = self.labelMap[ setting ] || setting;
+		const value = self.settings[ setting ];
+		const conf = {
 			setting : setting,
 			label :label,
 			value : value,
@@ -697,10 +756,11 @@ library.view = library.view || {};
 		bind( id );
 		
 		function build() {
-			var status = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting });
 			conf.status = status;
-			var element = hello.template.getElement( 'settings-textarea-tmpl', conf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-textarea-tmpl', conf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -744,10 +804,11 @@ library.view = library.view || {};
 		bind( id );
 		
 		function build( conf ) {
-			var status = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting });
 			conf.status = status;
-			var element = hello.template.getElement( 'settings-fileselect-tmpl', conf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-fileselect-tmpl', conf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
