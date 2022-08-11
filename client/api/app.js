@@ -424,6 +424,7 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.doClose = function() {
 		const self = this;
+		console.log( 'View.doClose', [ self.ready, self.onclose ])
 		self.ready = false;
 		const onclose = self.onclose;
 		delete self.onclose;

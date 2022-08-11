@@ -1266,7 +1266,10 @@ library.rtc = library.rtc || {};
 		};
 		self.settingsView = new library.view.Settings( conf );
 		
-		function closeHandler() { self.settingsView = null; }
+		function closeHandler() { 
+			console.log( 'settings close handler' );
+			self.settingsView = null;
+		}
 		function saveHandler( data, callback ) { self.saveSetting( data, callback ); }
 	}
 	
