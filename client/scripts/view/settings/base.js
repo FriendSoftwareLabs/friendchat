@@ -186,7 +186,7 @@ library.view = library.view || {};
 			section : section,
 			label   : self.labelMap[ section ] || section,
 		};
-		const el = hello.template.get( 'settings-section-tmpl', tConf );
+		const el = hello.template.getElement( 'settings-section-tmpl', tConf );
 		self.container.appendChild( el );
 	}
 	
