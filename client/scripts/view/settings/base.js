@@ -137,21 +137,28 @@ library.view = library.view || {};
 			return self.container
 		
 		let container = null
-		self.sectionIds.forEach( sKey => {
+		self.sectionIds.some( sKey => {
+			console.log( 'looking in', sKey )
 			if ( null != container )
-				return
+				return true
 			
 			const settings = self.sections[ sKey ]
+			console.log( 'getcontainer, checking settings', settings )
 			const yep = settings.some( s => s === setting )
-			if ( !yep )
+			if ( !yep ) {
+				console.log( 'not found in', [ setting, settings ])
 				return false
+			}
 			
 			const id = sKey + '-section';
 			const sectionEl = document.getElementById( id )
-			if ( null == sectionEl )
+			if ( null == sectionEl ) {
+				console.log( 'could not find el', [ sKey, id ])
 				return false
+			}
 			
 			container = sectionEl.querySelector( 'section-settings' )
+			return true
 		})
 		
 		console.log( 'getContainer return', container )
