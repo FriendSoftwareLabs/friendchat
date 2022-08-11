@@ -110,8 +110,8 @@ library.view = library.view || {};
 		console.log( 'addSections', self.sections );
 		const sKeys = Object.keys( self.sections );
 		sKeys.forEach( sKey => {
-			sConf = self.sections[ sKey ];
-			self.buildSection( sKey, sConf );
+			const sConf = self.sections[ sKey ]
+			self.buildSection( sKey, sConf )
 		});
 	}
 	
