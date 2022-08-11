@@ -147,8 +147,11 @@ library.view = library.view || {};
 				return false
 			
 			const id = sKey + '-section';
-			container = document.getElementById( id )?
-				.querySelector( 'section-settings' );
+			sectionEl = document.getElementById( id )
+			if ( null == sectionEl )
+				return false
+			
+			container = sectionEl.querySelector( 'section-settings' );
 		});
 		
 		console.log( 'getContainer return', container )
