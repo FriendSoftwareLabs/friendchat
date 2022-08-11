@@ -184,12 +184,11 @@ library.view = library.view || {};
 		const self = this;
 		const tConf = {
 			section : section,
-			label   : self.labelMap[ section ] || section;
+			label   : self.labelMap[ section ] || section,
 		};
 		const el = hello.template.get( 'settings-section-tmpl', tConf );
 		self.container.appendChild( el );
 	}
-	
 	
 	ns.Settings.prototype.setTextInput = function( setting ) {
 		const self = this;
