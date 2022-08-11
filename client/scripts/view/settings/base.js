@@ -106,26 +106,26 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.addSections = function() {
-		const self = this;
-		console.log( 'addSections', self.sections );
-		const sKeys = Object.keys( self.sections );
-		sKeys.forEach( sKey => {
+		const self = this
+		console.log( 'addSections', self.sections )
+		self.sectionIds = Object.keys( self.sections )
+		self.sectionIds.forEach( sKey => {
 			const sConf = self.sections[ sKey ]
 			self.buildSection( sKey, sConf )
-		});
+		})
 	}
 	
 	ns.Settings.prototype.setSettings = function( data ) {
 		const self = this;
-		console.log( 'setSettings', data );
-		data.settings = data.settings || {};
-		self.validKeys.forEach( add );
+		console.log( 'setSettings', data )
+		data.settings = data.settings || {}
+		self.validKeys.forEach( add )
 		function add( setting ) {
-			var value = get( setting );
-			self.settings[ setting ] = value;
+			var value = get( setting )
+			self.settings[ setting ] = value
 			
 			function get( setting ) {
-				return data[ setting ] || data.settings[ setting ];
+				return data[ setting ] || data.settings[ setting ]
 			}
 		}
 	}
@@ -141,7 +141,7 @@ library.view = library.view || {};
 			if ( null != container )
 				return
 			
-			const settings = self.sections[ sKey ];
+			const settings = self.sections[ sKey ]
 			const yep = settings.some( s => s === setting )
 			if ( !yep )
 				return false
@@ -151,8 +151,8 @@ library.view = library.view || {};
 			if ( null == sectionEl )
 				return false
 			
-			container = sectionEl.querySelector( 'section-settings' );
-		});
+			container = sectionEl.querySelector( 'section-settings' )
+		})
 		
 		console.log( 'getContainer return', container )
 		if ( null == container )
