@@ -147,7 +147,7 @@ library.view = library.view || {};
 				return false
 			
 			const id = sKey + '-section';
-			sectionEl = document.getElementById( id )
+			const sectionEl = document.getElementById( id )
 			if ( null == sectionEl )
 				return false
 			
