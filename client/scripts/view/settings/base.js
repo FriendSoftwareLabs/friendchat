@@ -157,7 +157,8 @@ library.view = library.view || {};
 				return false
 			}
 			
-			container = sectionEl.querySelector( 'section-settings' )
+			console.log( 'found el', sectionEl )
+			container = sectionEl.querySelector( '.section-settings' )
 			return true
 		})
 		
