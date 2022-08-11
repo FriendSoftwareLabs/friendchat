@@ -93,14 +93,13 @@ library.view = library.view || {};
 		self.container = document.getElementById( 'settings' );
 		
 		self.bindEvents();
-		self.setup( Object.keys( data.settings));
-		
-		self.settings = {};
-		self.setSettings( data.settings );
+		self.setup( Object.keys( data.settings ));
 		
 		if ( null != self.sections )
 			self.addSections();
 		
+		self.settings = {};
+		self.setSettings( data.settings );
 		self.bindSettings();
 		
 		self.view.ready();
@@ -148,7 +147,8 @@ library.view = library.view || {};
 				return false
 			
 			const id = sKey + '-section';
-			container = document.getElementById( id );
+			container = document.getElementById( id )?
+				.querySelector( 'section-settings' );
 		});
 		
 		console.log( 'getContainer return', container )

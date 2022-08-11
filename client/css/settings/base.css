@@ -126,3 +126,7 @@
 	white-space   : normal;
 	word-break    : break-word;
 }
+
+.section-settings {
+	padding-left : 0.5em;
+}

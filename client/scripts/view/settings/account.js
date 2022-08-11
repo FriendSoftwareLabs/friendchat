@@ -78,6 +78,8 @@ library.view = library.view || {};
 			'showSaveLinks'   : View.i18n( 'i18n_save_links_to_file' ),
 			'expandFileLinks' : View.i18n( 'i18n_expand_file_links' ),
 			'hideInSearch'    : View.i18n( 'i18n_hide_from_search' ),
+			'channels'        : View.i18n( 'i18n_channels' ),
+			'privates'        : View.i18n( 'i18n_private_chat' ),
 		};
 		
 		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
