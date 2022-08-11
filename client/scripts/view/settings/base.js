@@ -107,8 +107,8 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.addSections = function() {
 		const self = this
-		console.log( 'addSections', self.sections )
 		self.sectionIds = Object.keys( self.sections )
+		console.log( 'addSections', [ self.sections, self.sectionIds ]);
 		self.sectionIds.forEach( sKey => {
 			const sConf = self.sections[ sKey ]
 			self.buildSection( sKey, sConf )
@@ -132,7 +132,7 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.getContainer = function( setting ) {
 		const self = this
-		console.log( 'getContainer', setting )
+		console.log( 'getContainer', [ setting, self.sections, self.sectionIds ])
 		if ( null == self.sections )
 			return self.container
 		
