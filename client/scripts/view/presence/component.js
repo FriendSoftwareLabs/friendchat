@@ -3738,6 +3738,7 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.setLiveAllowed = function( isAllowed ) {
 		const self = this
+		console.log( 'setLiveAllowed', [ isAllowed, self.userLive ])
 		if ( self.userLive )
 			isAllowed = true
 		
@@ -3863,7 +3864,7 @@ var hello = window.hello || {};
 		self.peers.insertBefore( peerEl, self.peerCount );
 		self.peerList.push( peerId );
 		if ( userId === self.userId )
-			self.userLive = true;
+			self.setUserLive( true )
 		
 		self.updateIconState();
 		self.updateStacking();
@@ -3887,12 +3888,21 @@ var hello = window.hello || {};
 		const pIdx = self.peerList.indexOf( peerId );
 		self.peerList.splice( pIdx, 1 );
 		if ( userId === self.userId )
-			self.userLive = false;
+			self.setUserLive( false )
 		
 		self.updateIconState();
 		self.updateStacking();
 		
 		//self.updateVisibility();
+	}
+	
+	ns.LiveStatus.prototype.setUserLive = function( isLive ) {
+		const self = this
+		console.log( 'setUserLive', isLive )
+		self.userLive = isLive;
+		if ( self.userLive && !self.allowLive )
+			self.setLiveAllowed( true );
+			
 	}
 	
 	ns.LiveStatus.prototype.updateVisibility = function() {
