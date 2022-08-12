@@ -3735,6 +3735,23 @@ var hello = window.hello || {};
 		}
 	}
 	
+	ns.LiveStatus.prototype.setLiveAllowed = function( isAllowed ) {
+		const self = this
+		self.allowLive = isAllowed
+		const reason = 'Only one live session at a time is allowed'
+		if ( disable ) {
+			self.videoBtn.setAttribute( 'disabled', '' )
+			self.audioBtn.setAttribute( 'disabled', '' )
+			self.videoBtn.setAttribute( 'title', reason )
+			self.audioBtn.setAttribute( 'title', reason )
+		} else {
+			self.videoBtn.removeAttribute( 'disabled' )
+			self.audioBtn.removeAttribute( 'disabled' )
+			self.videoBtn.removeAttribute( 'title' )
+			self.audioBtn.removeAttribute( 'title' )
+		}
+	}
+	
 	ns.LiveStatus.prototype.close = function() {
 		const self = this;
 		if ( self.users && self.stateEventId )

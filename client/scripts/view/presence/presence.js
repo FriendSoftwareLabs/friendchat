@@ -112,8 +112,6 @@ library.view = library.view || {};
 		self.titleContainer = document.getElementById( 'room-title' );
 		// buttons?
 		self.backBtn = document.getElementById( 'room-back' );
-		self.goVideoBtn = document.getElementById( 'upgrade-to-video' );
-		self.goAudioBtn = document.getElementById( 'upgrade-to-audio' );
 		self.toggleUsersBtn = document.getElementById( 'show-hide-btn' );
 		self.inviteBtn = document.getElementById( 'invite-btn' );
 		
@@ -126,8 +124,6 @@ library.view = library.view || {};
 		
 		//
 		self.backBtn.addEventListener( 'click', closeBack, false );
-		self.goVideoBtn.addEventListener( 'click', goVideoClick, false );
-		self.goAudioBtn.addEventListener( 'click', goAudioClick, false );
 		self.toggleUsersBtn.addEventListener( 'click', toggleUserList, false );
 		self.inviteBtn.addEventListener( 'click', showInviter, false );
 		
@@ -171,8 +167,6 @@ library.view = library.view || {};
 		};
 		
 		function closeBack( e ) { self.closeBack(); }
-		function goVideoClick( e ) { self.goLive( 'video' ); }
-		function goAudioClick( e ) { self.goLive( 'audio' ); }
 		
 		function toggleUserList( e ) {
 			e.stopPropagation();
@@ -934,18 +928,9 @@ library.view = library.view || {};
 	ns.Presence.prototype.handleLiveDisable = function( disable ) {
 		const self = this
 		console.log( 'view.handleLiveDisable', disable );
-		self.liveAllowed = !disable;
-		if ( disable ) {
-			self.goVideoBtn.setAttribute( 'disabled', '' )
-			self.goAudioBtn.setAttribute( 'disabled', '' )
-			self.goVideoBtn.setAttribute( 'title', 'beep boop' )
-			self.goAudioBtn.setAttribute( 'title', 'beep boop' )
-		} else {
-			self.goVideoBtn.removeAttribute( 'disabled' )
-			self.goAudioBtn.removeAttribute( 'disabled' )
-			self.goVideoBtn.removeAttribute( 'title' )
-			self.goAudioBtn.removeAttribute( 'title' )
-		}
+		self.liveAllowed = !disable
+		if ( null != self.liveStatus )
+			self.liveStatus.setLiveAllowed( !disable )
 		
 	}
 	

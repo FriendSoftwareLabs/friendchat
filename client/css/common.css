@@ -931,6 +931,10 @@ html body .hidden {
 	display: none !important;
 }
 
+html body *:disabled {
+	color : red;
+}
+
 /* search */
 
 #search-bar {
