@@ -849,7 +849,7 @@ library.contact = library.contact || {};
 		if ( null == self.chatView )
 			return
 		
-		if ( null != self.live )
+		if ( !allowLive && null != self.live )
 			return
 		
 		const livable = {
