@@ -3708,6 +3708,7 @@ var hello = window.hello || {};
 		self.users = users;
 		self.userId = userId;
 		
+		self.userLive = false;
 		self.peerIdMap = {};
 		self.peerList = [];
 		
@@ -3737,8 +3738,11 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.setLiveAllowed = function( isAllowed ) {
 		const self = this
+		if ( self.userLive )
+			isAllowed = true
+		
 		self.allowLive = isAllowed
-		const reason = 'Only one live session at a time is allowed'
+		const reason = window.View.i18n( 'i18n_you_are_in_another_live_call' )
 		self.videoBtn.classList.toggle( 'disabled', !isAllowed )
 		self.audioBtn.classList.toggle( 'disabled', !isAllowed )
 		if ( !isAllowed ) {

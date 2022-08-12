@@ -865,23 +865,27 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		const self = this;
-		if ( hello.config.hideLive ) {
-			console.log( 'PresenceRoom.joinLive - blocked by conf', hello.config );
-			return;
+		if ( hello.config.hideLive || (
+				'jeanie' != hello?.config?.mode
+				&& hello.rtc.hasSession()
+			)) {
+			console.log( 'PresenceRoom.joinLive - blocked by conf', 
+				[ hello.config, hello.rtc.hasSession() ])
+			return
 		}
 		
 		// check if room has been initialized
 		if ( self.live ) {
-			self.live.show();
-			return; // we already are in a live _in this room_
+			self.live.show()
+			return // we already are in a live _in this room_
 		}
 		
 		if ( !self.settings ) {
-			self.goLivePending = conf || {};
-			return;
+			self.goLivePending = conf || {}
+			return
 		}
 		
-		const liveId = friendUP.tool.uid( 'lc' );
+		const liveId = friendUP.tool.uid( 'lc' )
 		conf = conf || {};
 		conf.clientId = liveId;
 		conf.roomId = self.clientId;
