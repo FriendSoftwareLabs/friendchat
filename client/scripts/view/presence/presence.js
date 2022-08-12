@@ -256,6 +256,10 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.goLive = function( type ) {
 		const self = this;
+		console.log( 'view.Presence.goLive, allow?', self.liveAllowed );
+		if ( !self.liveAllowed )
+			return;
+		
 		const goLive = {
 			type : 'live',
 			data : type,
@@ -300,6 +304,7 @@ library.view = library.view || {};
 		self.conn.on( 'mention-list'   , e => self.setMentionParsing( e ));
 		self.conn.on( 'at-list'        , e => self.setAtParsing( e ));
 		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
+		self.conn.on( 'live-disable'   , e => self.handleLiveDisable( e ));
 		
 		function initialize( e ) {
 			try {
@@ -318,20 +323,25 @@ library.view = library.view || {};
 	 
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
+		console.log( 'view.Presence.init', conf );
 		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		
 		hello.template = friend.template;
 		const state = conf.state;
 		
 		// things
-		self.clientId   = state.clientId;
-		self.isPrivate  = state.isPrivate;
-		self.isView     = state.isView;
-		self.persistent = state.persistent;
-		self.room       = state.room;
-		self.ownerId    = state.ownerId;
-		self.userId     = state.userId;
-		self.contactId  = state.contactId;
+		self.clientId    = state.clientId;
+		self.isPrivate   = state.isPrivate;
+		self.isView      = state.isView;
+		self.persistent  = state.persistent;
+		self.room        = state.room;
+		self.ownerId     = state.ownerId;
+		self.userId      = state.userId;
+		self.contactId   = state.contactId;
+		self.liveAllowed = ( null != state.liveAllowed ) ? state.liveAllowed : true
+		
+		if ( !self.liveAllowed )
+			self.handleLiveDisable( true );
 		
 		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
 			const am = document.getElementById( 'attachment-menu' );
@@ -919,6 +929,24 @@ library.view = library.view || {};
 		self.users.updateIdentity( update );
 		if ( self.isPrivate )
 			self.updateContactTitle( update );
+	}
+	
+	ns.Presence.prototype.handleLiveDisable = function( disable ) {
+		const self = this
+		console.log( 'view.handleLiveDisable', disable );
+		self.liveAllowed = !disable;
+		if ( disable ) {
+			self.goVideoBtn.setAttribute( 'disabled', '' )
+			self.goAudioBtn.setAttribute( 'disabled', '' )
+			self.goVideoBtn.setAttribute( 'title', 'beep boop' )
+			self.goAudioBtn.setAttribute( 'title', 'beep boop' )
+		} else {
+			self.goVideoBtn.removeAttribute( 'disabled' )
+			self.goAudioBtn.removeAttribute( 'disabled' )
+			self.goVideoBtn.removeAttribute( 'title' )
+			self.goAudioBtn.removeAttribute( 'title' )
+		}
+		
 	}
 	
 	// things

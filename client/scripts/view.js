@@ -1173,10 +1173,7 @@ library.view = library.view || {};
 		
 		self.bindView();
 		
-		function closed( msg ) { 
-			console.log( 'app.view.Settings closed' )
-			self.handleClose( msg ); 
-		}
+		function closed( msg ) { self.handleClose( msg ); }
 	}
 	
 	ns.Settings.prototype.bindView = function() {
@@ -1189,10 +1186,7 @@ library.view = library.view || {};
 		function selectFile( msg ) { self.selectFile( msg ); }
 		function saveSetting( msg ) { self.pepareSave( msg ); }
 		function bufferValue( msg ) { self.setBuffer( msg ); }
-		function isDone( msg ) { 
-			console.log( 'app.view.Settings isDone' )
-			self.isDone( msg );
-		}
+		function isDone( msg ) { self.isDone( msg ); }
 		
 	}
 	
@@ -1266,7 +1260,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.handleClose = function() {
 		const self = this;
-		console.log( 'app.view.Settings.handleClose' );
 		self.flushBuffer();
 		self.view = null;
 		self.onclose( true );
@@ -1274,7 +1267,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.close = function() {
 		const self = this;
-		console.log( 'app.view.Settings.close' )
 		self.view.close();
 		self.view = null;
 	}

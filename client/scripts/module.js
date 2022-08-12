@@ -672,6 +672,19 @@ library.module = library.module || {};
 		self.reconnect();
 	}
 	
+	ns.Presence.prototype.setIsLive = function( isLive ) {
+		const self = this
+		console.log( 'setIsLive', [ isLive, self.roomIds, self.contactIds ])
+		self.roomIds.forEach( rId => {
+			const room = self.rooms[ rId ]
+			room.setLiveAllowed( !isLive )
+		})
+		self.contactIds.forEach( cId => {
+			const contact = self.contacts[ cId ]
+			contact.setLiveAllowed( !isLive );
+		})
+	}
+	
 	ns.Presence.prototype.listRoomsDormant = function() {
 		const self = this;
 		const rIds = Object.keys( self.rooms );

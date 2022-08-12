@@ -424,7 +424,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.doClose = function() {
 		const self = this;
-		console.log( 'app.View.doClose', [ self.ready, self.onclose ])
 		self.ready = false;
 		const onclose = self.onclose;
 		delete self.onclose;
@@ -1486,9 +1485,6 @@ var friend = window.friend || {}; // already instanced stuff
 		}
 		
 		const msgString = friendUP.tool.stringify( msg );
-		if ( 'close' == msg.method )
-			console.log( 'sending close to friend', [ msg, msgString ])
-		
 		window.parent.postMessage( msgString, window.origin || '*' );
 	}
 	

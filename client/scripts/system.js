@@ -1014,6 +1014,11 @@ library.rtc = library.rtc || {};
 		let session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
 		self.sessions[ sId ] = session;
 		self.sessionIds.push( sId );
+		if ( hello.config.mode == 'jeanie' && hello.service ) {
+			console.log( 'rtccontrol jeanie things, is live' );
+			hello.service.setIsLive( true );
+		}
+		
 		const sess = {
 			type : 'add',
 			data : {
@@ -1047,6 +1052,10 @@ library.rtc = library.rtc || {};
 		
 		delete self.sessions[ sId ];
 		self.sessionIds = Object.keys( self.sessions );
+		if ( hello.config.mode == 'jeanie' && hello.service ) {
+			console.log( 'rtccontrol jeanie things, no live' );
+			hello.service.setIsLive( false );
+		}
 		
 		const remove = {
 			type : 'remove',

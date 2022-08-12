@@ -463,6 +463,11 @@ window.library.component = window.library.component || {};
 		return await self.presence.setAccountSetting( key, value );
 	}
 	
+	ns.PresenceService.prototype.setIsLive = function( isLive ) {
+		const self = this;
+		self.presence.setIsLive( isLive );
+	}
+	
 	ns.PresenceService.prototype.sendMsgToFID = function( uId, message, open ) {
 		const self = this;
 		if ( '--open' === open )

@@ -843,6 +843,23 @@ library.contact = library.contact || {};
 		return msg.from + ": " + msg.message;
 	}
 	
+	ns.PresenceRoom.prototype.setLiveAllowed = function( allowLive ) {
+		const self = this
+		console.log( 'setLiveAllowed', [ allowLive, self.chatView ]);
+		if ( null == self.chatView )
+			return
+		
+		if ( null != self.live )
+			return
+		
+		const livable = {
+			type : 'live-disable',
+			data : !allowLive,
+		}
+		
+		self.toChat( livable );
+	}
+	
 	ns.PresenceRoom.prototype.joinLive = function( conf ) {
 		const self = this;
 		if ( hello.config.hideLive ) {
@@ -1297,6 +1314,7 @@ library.contact = library.contact || {};
 			workgroups  : s.workgroups,
 			mentionList : s.mentionList,
 			atList      : s.atList,
+			liveAllowed : !hello.rtc.hasSession(),
 		};
 		
 		if ( preView ) {
@@ -4201,6 +4219,7 @@ library.contact = library.contact || {};
 			mentionList : self.mentionList,
 			atList      : self.atList,
 			guestAvatar : self.guestAvatar,
+			liveAllowed : !hello.rtc.hasSession(),
 		};
 		
 		if ( preView ) {
