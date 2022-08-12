@@ -3739,7 +3739,7 @@ var hello = window.hello || {};
 		const self = this
 		self.allowLive = isAllowed
 		const reason = 'Only one live session at a time is allowed'
-		if ( disable ) {
+		if ( !isAllowed ) {
 			self.videoBtn.setAttribute( 'disabled', '' )
 			self.audioBtn.setAttribute( 'disabled', '' )
 			self.videoBtn.setAttribute( 'title', reason )
