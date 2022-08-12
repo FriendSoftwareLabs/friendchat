@@ -334,9 +334,6 @@ library.view = library.view || {};
 		self.contactId   = state.contactId;
 		self.liveAllowed = ( null != state.liveAllowed ) ? state.liveAllowed : true
 		
-		if ( !self.liveAllowed )
-			self.handleLiveDisable( true );
-		
 		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
 			const am = document.getElementById( 'attachment-menu' );
 			if ( null != am )
@@ -395,6 +392,9 @@ library.view = library.view || {};
 			self.liveStatus.update( state.peerList );
 			self.liveStatus.on( 'show', e => self.goLive( e ));
 			self.liveStatus.on( 'join', e => self.goLive( e ));
+			
+			if ( !self.liveAllowed )
+				self.handleLiveDisable( true );
 		}
 		
 		// get logs when scrolling to top

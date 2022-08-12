@@ -845,6 +845,9 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.setLiveAllowed = function( allowLive ) {
 		const self = this
+		if ( 'jeanie' != hello?.config?.mode )
+			return;
+		
 		console.log( 'setLiveAllowed', [ allowLive, self.chatView ]);
 		if ( null == self.chatView )
 			return
