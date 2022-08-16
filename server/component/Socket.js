@@ -250,7 +250,7 @@ ns.Socket.prototype.handleVerify = function( timestamp ) {
 
 ns.Socket.prototype.resetPingTimer = function() {
 	const self = this
-	log( 'resetPingTimer', null != self.pingInterval )
+	log( 'resetPingTimer', null == self.pingInterval )
 	if ( null == self.pingInterval )
 		return
 	
