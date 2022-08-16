@@ -35,7 +35,7 @@ ns.Socket = function( conf ) {
 	self.conn = conf.conn;
 	
 	self.pingInterval = null; // holds the 'setInterval' id for pings
-	self.pingStep = 1000 * 15; // 10 sec - time between pings sent
+	self.pingStep = 1000 * 15; // 15 sec - time between pings sent
 	self.pingTimeout = 1000 * 10;
 	self.pingTimers = {};
 	self.authenticated = false;
@@ -214,7 +214,7 @@ ns.Socket.prototype.sendId = function() {
 
 ns.Socket.prototype.receiveMessage = function( msgString ) {
 	const self = this;
-	var msgObj = toJSON( msgString );
+	const msgObj = toJSON( msgString );
 	if( !msgObj ) {
 		log( 'receiveMessage - could not JSON', msgString );
 		return;
@@ -224,8 +224,10 @@ ns.Socket.prototype.receiveMessage = function( msgString ) {
 }
 
 ns.Socket.prototype.handleEvent = function( event ) {
-	const self = this;
-	var handler = self.connMap[ event.type ];
+	const self = this
+	self.resetPingTimer()
+	
+	const handler = self.connMap[ event.type ];
 	if ( handler ) {
 		handler( event.data );
 		return;
@@ -244,6 +246,16 @@ ns.Socket.prototype.handleVerify = function( timestamp ) {
 		data : timestamp,
 	};
 	self.sendOnSocket( reply );
+}
+
+ns.Socket.prototype.resetPingTimer = function() {
+	const self = this
+	if ( null != self.pingInterval )
+		return
+	
+	clearInterval( self.pingInterval )
+	self.pingInterval = null
+	self.doPing()
 }
 
 ns.Socket.prototype.doPing = function() {
@@ -274,6 +286,7 @@ ns.Socket.prototype.sendPing = async function() {
 		return;
 	}
 	
+	log( 'sendPing' )
 	const now = Date.now();
 	const pingMsg = {
 		type : 'ping',
@@ -382,7 +395,7 @@ ns.Socket.prototype.sendOnSocket = function( msgObj ) {
 		}
 
 		function done( err ) {
-			var success = !err;
+			const success = !err;
 			resolve( success );
 		}
 	});
