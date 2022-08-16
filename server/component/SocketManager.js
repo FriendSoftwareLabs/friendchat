@@ -382,7 +382,6 @@ ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 	} else
 		self.replaceSession( session, socket );
 	
-	log( 'checkSession failed, closing socket', sessionId );
 	socket.close();
 }
 
