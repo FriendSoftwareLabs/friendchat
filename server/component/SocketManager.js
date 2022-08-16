@@ -249,7 +249,6 @@ ns.SocketManager.prototype.validateAuthToken = function( bundle ) {
 		validatedToken.authId = tokens.authId.toString();
 		validatedToken.userId = tokens.userId.toString();
 	} catch ( e ) {
-		log( 'validateAuthToken - tokens failed .toString()', tokens );
 		return false;
 	}
 	
