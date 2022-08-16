@@ -751,17 +751,14 @@ window.library.component = window.library.component || {};
 		}
 		
 		async function createRoomFun( roomName ) {
-			console.log( 'createRoomFun', roomName );
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' );
 			
 			const room = await self.presence.createRoom({ name : roomName });
-			console.log( 'createRoomFun returns', room );
 			return room;
 		}
 		
 		async function openLiveFun( roomId ) {
-			console.log( 'dormant.openLive', roomId );
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' );
 			
@@ -769,7 +766,6 @@ window.library.component = window.library.component || {};
 		}
 		
 		async function closeLiveFun( roomId ) {
-			console.log( 'dormant.closeLive', roomId );
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' );
 			
@@ -777,7 +773,6 @@ window.library.component = window.library.component || {};
 		}
 		
 		async function addUsersToRoomFun( roomId, conf ) {
-			console.log( 'addUsersToRoom', [ roomId, conf ]);
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' );
 			
@@ -798,7 +793,6 @@ window.library.component = window.library.component || {};
 		}
 		
 		async function openSettingsFun() {
-			console.log( 'openSettingsFun' );
 			hello.account.getSettings();
 		}
 	}

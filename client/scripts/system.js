@@ -1015,7 +1015,6 @@ library.rtc = library.rtc || {};
 		self.sessions[ sId ] = session;
 		self.sessionIds.push( sId );
 		if ( hello.config.mode == 'jeanie' && hello.service ) {
-			console.log( 'rtccontrol jeanie things, is live' );
 			hello.service.setIsLive( true );
 		}
 		
@@ -1053,7 +1052,6 @@ library.rtc = library.rtc || {};
 		delete self.sessions[ sId ];
 		self.sessionIds = Object.keys( self.sessions );
 		if ( hello.config.mode == 'jeanie' && hello.service ) {
-			console.log( 'rtccontrol jeanie things, no live' );
 			hello.service.setIsLive( false );
 		}
 		
@@ -1276,7 +1274,6 @@ library.rtc = library.rtc || {};
 		self.settingsView = new library.view.Settings( conf );
 		
 		function closeHandler() { 
-			console.log( 'settings close handler' );
 			self.settingsView = null;
 		}
 		function saveHandler( data, callback ) { self.saveSetting( data, callback ); }
@@ -2349,7 +2346,6 @@ library.rtc = library.rtc || {};
 	ns.RtcSession.prototype.send = function( event ) {
 		const self = this;
 		if ( !self.view )  {
-			console.log( '!rtc.session.view - queueueueueuing', event );
 			self.sendQueue.push( event );
 			return;
 		}
@@ -3260,7 +3256,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setRemoved = function( id ) {
 		const self = this;
-		//console.log( 'setRemoved', id );
 		const lock = self.removed[ id ];
 		if ( null != lock )
 			window.clearTimeout( lock );
@@ -3275,7 +3270,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.unsetRemoved = function( id ) {
 		const self = this;
-		//console.log( 'unsetRemoved', id );
 		const lock = self.removed[ id ];
 		if ( null == lock )
 			return;
@@ -3510,17 +3504,9 @@ Searchable collection(s) of users, rooms and other odds and ends
 		async function updateForModule( mId ) {
 			const mod = self.getModule( mId );
 			const isOnline = mod.getOnlineStatus();
-			/*
-			console.log( 'app.Activity.updateIdentities, is online?', {
-				mod      : mod,
-				isOnline : isOnline,
-			});
-			*/
 			
-			if ( !isOnline ) {
-				//console.log( 'Activity.updateidentities - no online', mId );
+			if ( !isOnline )
 				return;
-			}
 			
 			let itemIds = getModuleIds( mId );
 			if ( !itemIds || !itemIds.length )

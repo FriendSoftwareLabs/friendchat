@@ -96,7 +96,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.View.prototype.setFlag = function( flag, value ) {
 		const self = this;
-		//console.log( 'app.View.setFlag', [ flag, value ]);
 		const msg = {
 			method : 'setFlag',
 			data   : {
@@ -802,7 +801,6 @@ var friend = window.friend || {}; // already instanced stuff
 				type : type,
 				data : data,
 			};
-			//console.log( 'AppEvent - unhandled event', e );
 			self.receiveMessage( e );
 		}
 	}
@@ -939,7 +937,6 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.handleShell = function( msg ) {
 		const self = this;
-		//console.log( 'handleShell', msg );
 		const cb = self.getCallback( msg.shellId );
 		if ( null == cb )
 			return;
@@ -951,7 +948,6 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 		const type = msg.viewId;
 		if ( !type || !msg.data ) {
-			//console.log( 'weird event', msg );
 			return;
 		}
 		
@@ -1864,7 +1860,6 @@ window.Application = new fupLocal.Application();
 				onSuccess : success,
 				onError   : err,
 			};
-			console.log( 'libconf', libConf );
 			const lib = new api.Library( libConf );
 			function success( res ) {
 				self.exposeHash = res.hash;
@@ -1995,13 +1990,11 @@ window.Application = new fupLocal.Application();
 		}
 		
 		var dir = door.getDirectory( msg );
-		//console.log( 'handleGetDirectory - dir', dir );
 		self.sendBack( null, dir, msg );
 	}
 	
 	ns.Dormant.prototype.handleUpdateTitle = function( msg ) {
 		const self = this;
-		//console.log( 'handleUpdateTitle', msg );
 		var door = self.doors[ msg.doorId ];
 		if ( !door ) {
 			console.log( 'Doormant - no door for', { m : msg, d : self.doors });
@@ -2013,7 +2006,6 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.handleExecute = function( event ) {
 		const self = this;
-		//console.log( 'handleExecute', event );
 		const door = self.doors[ event.doorId ];
 		if ( !door ) {
 			console.log( 'handleExecute - no door', { e : event, self : self });
@@ -2033,7 +2025,6 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.set = function( doorObj ) {
 		const self = this;
-		//console.log( 'setDoor', doorObj );
 		var doorId = friendUP.tool.uid( 'door' );
 		doorObj.doorId = doorId;
 		self.doors[ doorId ] = doorObj;
@@ -2042,7 +2033,6 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.get = function( doorId ) {
 		const self = this;
-		//console.log( 'getDoor', doorId );
 		return self.doors[ doorId ];
 	}
 	
@@ -2136,7 +2126,6 @@ friend.Dormant = new fupLocal.Dormant;
 			return;
 		}
 		
-		//console.log( 'addFun', item );
 		dir.funs[ item.title ] = item;
 		dir.items.push( item );
 	}
@@ -2185,7 +2174,6 @@ friend.Dormant = new fupLocal.Dormant;
 	ns.Door.prototype.getDirectory = function( msg ) {
 		const self = this;
 		const path = self.normalizePath( msg.path );
-		//console.log( 'getDirectory', msg );
 		const dir = self.dirs[ msg.path ];
 		if ( !dir ) {
 			console.log( 'Dormant / Door.getDirectory - no dir found', {
@@ -2253,7 +2241,6 @@ friend.Dormant = new fupLocal.Dormant;
 	
 	ns.Door.prototype.normalizePath = function( path ) {
 		const self = this;
-		//console.log( 'normalizePath', path );
 		if ( !path ) {
 			/*
 			try {
@@ -2273,7 +2260,6 @@ friend.Dormant = new fupLocal.Dormant;
 	
 	ns.Door.prototype.init = function() {
 		const self = this;
-		//console.log( 'Door.init', self );
 		self.basePath = self.title + ':';
 		self.baseRX = new RegExp( '^' + self.basePath, '' );
 		
@@ -2495,7 +2481,6 @@ api.DoorEvent.prototype.init = function() {
 				source.start();
 				source.addEventListener( 'ended', onEnd );
 				function onEnd( e ) {
-					//console.log( 'onEnd', e );
 					self.source = null;
 					resolve( true );
 				}
@@ -2552,7 +2537,6 @@ api.DoorEvent.prototype.init = function() {
 			return false;
 		}
 		
-		//console.log( 'buff', buff );
 		self.fileBuffer = buff;
 		return true;
 		
@@ -2572,7 +2556,6 @@ api.DoorEvent.prototype.init = function() {
 		function load() {
 			return new Promise(( resolve, reject ) => {
 				var req = new XMLHttpRequest();
-				//console.log( 'load', self.path );
 				req.open( 'GET', self.path, true );
 				req.responseType = 'arraybuffer';
 				req.onload = loaded;

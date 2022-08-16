@@ -88,7 +88,6 @@ ns.Socket.prototype.authenticate = function( success ) {
 		data : true,
 	};
 	
-	log( 'authenticate', self.id );
 	return self.sendOnSocket( auth );
 }
 
@@ -134,7 +133,6 @@ ns.Socket.prototype.unsetSession = function() {
 // used from account or internally
 ns.Socket.prototype.kill = function() {
 	const self = this;
-	log( 'kill', self.id );
 	self.cleanup();
 	self.emit( 'close' );
 }
@@ -142,7 +140,6 @@ ns.Socket.prototype.kill = function() {
 // used from socketmanager
 ns.Socket.prototype.close = function() {
 	const self = this;
-	log( 'close', self.id );
 	self.emitterClose();
 	self.cleanup();
 	self.closeWs();
@@ -212,7 +209,6 @@ ns.Socket.prototype.sendId = function() {
 		data : self.id,
 	}
 	
-	log( 'sendId', self.id );
 	self.sendOnSocket( id );
 }
 
@@ -382,9 +378,6 @@ ns.Socket.prototype.sendOnSocket = function( msgObj ) {
 		}
 		
 		const msgString = toString( msgObj );
-		if ( !self.authenticated )
-			log( 'sendOnSocket', msgString );
-		
 		try {
 			self.conn.send( msgString, done );
 		} catch ( e ) {

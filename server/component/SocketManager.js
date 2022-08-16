@@ -127,14 +127,13 @@ ns.SocketManager.prototype.bindPool = function() {
 		const socket = new Socket( conf );
 		const patience = 1000 * 1; // 10 seconds before closing the socket,
 		                            //if no auth message is received
-		log( 'new socket with id', sid );
+		
 		let tries = 1;
 		socket.on( 'authenticate', checkAuth );
 		socket.on( 'session', checkSession );
 		sendAuth();
 		
 		function retryMaybe() {
-			log( 'retryMaybe', tries );
 			tries++;
 			if ( tries > 10 )
 				closeSocket();
@@ -193,7 +192,6 @@ ns.SocketManager.prototype.releasePool = function() {
 
 ns.SocketManager.prototype.authenticate = async function( bundle, socket ) {
 	const self = this;
-	log( 'authenticate', socket.id );
 	if ( !bundle ) {
 		log( 'authenticate - no bundle', bundle );
 		close();
@@ -339,10 +337,8 @@ ns.SocketManager.prototype.authRequest = function( token, socket ) {
 ns.SocketManager.prototype.bind = function( socket ) {
 	const self = this;
 	const sId = socket.id;
-	log( 'bind', sId );
 	self.sockets[ sId ] = socket;
 	socket.on( 'close'   , e => {
-		log( 'socket called close' );
 		self.removeSocket( sId );
 	});
 	socket.on( 'session' , e => self.handleSession(  e, sId ));
@@ -372,11 +368,6 @@ ns.SocketManager.prototype.checkSession = async function( sessionId, socket ) {
 	const self = this;
 	const stored = self.getStoredSession( sessionId );
 	const session = self.getSession( sessionId );
-	log( 'checkSession', {
-		sid        : sessionId,
-		stored     : stored,
-		hasSession : !!session,
-	});
 	if ( null != stored ) {
 		self.bind( socket );
 		await self.loginSession( stored, socket );

@@ -88,11 +88,6 @@ library.component = library.component || {};
 	*/
 	ns.Socket.prototype.verifyWS = async function() {
 		const self = this;
-		console.log( 'Socket.verify', {
-			id    : self.id,
-			ws    : self.ws,
-			state : self.state,
-		});
 		if ( null == self.ws )
 			return false;
 		
@@ -157,7 +152,6 @@ library.component = library.component || {};
 	// whats the server going to do? cry more lol
 	ns.Socket.prototype.close = function( code, reason ) {
 		const self = this;
-		console.trace( 'app.Socket.close', self.id );
 		const sq = self.sendQueue;
 		self.unsetSession();
 		self.allowReconnect = false;
@@ -416,11 +410,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleVerify = function( timestamp ) {
 		const self = this;
-		console.log( 'Socket.handleVerify', {
-			id         : self.id,
-			timestamp  : timestamp,
-			verifyBack : self.verifyBack,
-		});
 		if ( null == self.verifyBack )
 			return;
 		
@@ -429,7 +418,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleAuth = function( success ) {
 		const self = this;
-		console.log( 'handleAuth', success );
 		hello.timeNow( 'ws handleAuth' );
 		if ( null == success ) {
 			self.sendAuth();
@@ -453,7 +441,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleSession = function( sessionId ) {
 		const self = this;
-		console.log( 'handleSession', sessionId );
 		hello.timeNow( 'ws handleSession' );
 		if ( !sessionId )
 			self.session = null;
@@ -495,7 +482,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.sendAuth = function() {
 		const self = this;
-		console.log( 'sendAuth', self.session );
 		if ( self.session ) {
 			self.restartSession();
 			return;
@@ -518,20 +504,24 @@ library.component = library.component || {};
 	ns.Socket.prototype.sendOnSocket = function( msgObj, force ) {
 		const self = this;
 		if ( !wsReady() ) {
+			/*
 			console.log( 'Socket.sendOnSocket - WS not ready, queueing', {
 				msg : msgObj,
 				sid : self.id,
-			});
+			})
+			*/
 			queue( msgObj );
 			return false;
 		}
 		
 		if ( !socketReady( force )) {
+			/*
 			console.log( 'Socket.sendOnSocket - socket not ready, queueing', {
 				msg     : msgObj,
 				session : self.session,
 				socket  : self.id
 			})
+			*/
 			queue( msgObj );
 			return false;
 		}

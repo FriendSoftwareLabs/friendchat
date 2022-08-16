@@ -532,7 +532,6 @@ library.module = library.module || {};
 	
 	ns.BaseModule.prototype.removeRoom = function( clientId ) {
 		const self = this;
-		console.log( 'removeRoom', clientId );
 		const room = self.rooms[ clientId ];
 		if ( !room )
 			return;
@@ -668,13 +667,11 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.appResume = function() {
 		const self = this;
-		console.log( 'Presence.appResume' );
 		self.reconnect();
 	}
 	
 	ns.Presence.prototype.setIsLive = function( isLive ) {
 		const self = this
-		console.log( 'setIsLive', [ isLive, self.roomIds, self.contactIds ])
 		self.roomIds.forEach( rId => {
 			const room = self.rooms[ rId ]
 			room.setLiveAllowed( !isLive )
@@ -695,9 +692,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.showInviterFor = async function( roomId, conf ) {
 		const self = this;
-		console.log( 'Presence.showIviterFor', [ roomId, conf ]);
 		const room = await self.getRoom( roomId );
-		console.log( 'showInviterFor room', room );
 		if ( null == room )
 			throw 'ERR_NO_ROOM';
 		
@@ -754,12 +749,10 @@ library.module = library.module || {};
 	ns.Presence.prototype.getRoomMeta = async function( roomId ) {
 		const self = this;
 		const room = self.getLocalChat( roomId );
-		console.log( 'getRoomMeta', roomId, room );
 		if ( null == room )
 			throw 'ERR_NO_ROOM';
 		
 		const meta = await room.getMeta();
-		console.log( 'getRoomMeta, meta', meta );
 		return meta;
 	}
 	
@@ -1136,7 +1129,6 @@ library.module = library.module || {};
 	ns.Presence.prototype.openLive = async function( roomId ) {
 		const self = this;
 		const room = self.getLocalChat( roomId );
-		console.log( 'p.openLive', room );
 		if ( !room )
 			return false;
 		
@@ -1146,7 +1138,6 @@ library.module = library.module || {};
 	ns.Presence.prototype.closeLive = async function( roomId ) {
 		const self = this;
 		const room = self.getLocalChat( roomId );
-		console.log( 'p.closeLive', room );
 		if ( null == room )
 			return false;
 		
@@ -2288,7 +2279,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleIdUpdated = function( id, key ) {
 		const self = this;
-		console.log( 'handleIdUpdated', [ id, key ]);
 		const userId = id.clientId;
 		if ( key && ( 'isOnline' === key )) {
 			self.handleUserOnline( userId, id.isOnline );
@@ -2404,14 +2394,12 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.createRoom = async function( conf ) {
 		const self = this;
-		console.log( 'createRoom', conf );
 		const create = {
 			type : 'room-create',
 			data : conf,
 		};
 		
 		const res = await self.acc.request( create );
-		console.log( 'createRoom res', res );
 		return res;
 	}
 	

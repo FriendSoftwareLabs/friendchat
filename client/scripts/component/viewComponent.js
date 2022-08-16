@@ -1288,7 +1288,6 @@ in a generic link expand wrapping with a bit of UI
 			if ( !!url.indexOf( '/sharedfile/' ))
 				url += '?authid=' + window.View.authId;
 			
-			console.log( 'urlCheck', url );
 			const extParts = url.split( '.' );
 			const fileExt = extParts.pop();
 			const fileParts = url.split( '/' );
@@ -1477,7 +1476,6 @@ in a generic link expand wrapping with a bit of UI
 			const blob = await res.blob();
 			
 			src = URL.createObjectURL( blob );
-			console.log( 'src', src );
 		}
 		
 		const conf = {
@@ -1498,7 +1496,6 @@ in a generic link expand wrapping with a bit of UI
 		function onClick( e ) {
 			e.preventDefault();
 			e.stopPropagation();
-			console.log( 'onClick', a.href );
 			self.openImage( a.href );
 		}
 		
@@ -1677,19 +1674,13 @@ Friend disk paths, so do those things with them i guess
 	ns.PathExpand.prototype.work = function( el ) {
 		const self = this;
 		const links = el.querySelectorAll( 'fp' );
-		console.log( 'pathexpand - work', {
-			el    : el,
-			links : links,
-		});
 		Array.prototype.forEach.call( links, expand );
 		
 		function expand( fp ) {
-			console.log( 'expand', fp );
 			const path = fp.href.toString();
 			
 			
 			async function success( mime ) {
-				console.log( 'success', mime );
 				let handler = self.mimeMap[ mime.type ];
 				if ( !handler )
 					return;
@@ -2139,15 +2130,6 @@ Friend disk paths, so do those things with them i guess
 		const inputStr = self.ta.value;
 		const inputPos = self.ta.selectionStart;
 		const inputSelection = self.ta.selectionStart !== self.ta.selectionEnd;
-		/*
-		console.log( 'checkChange', {
-			inputStr : inputStr,
-			inputPos : inputPos,
-			inputSelection : inputSelection,
-			currentStr : self.currentInput,
-			currentPos : self.currentPos,
-		});
-		*/
 		let strChange = false;
 		if ( inputStr !== self.currentInput )
 			strChange = true;

@@ -250,7 +250,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.goLive = function( type ) {
 		const self = this;
-		console.log( 'view.Presence.goLive, allow?', self.liveAllowed );
 		if ( !self.liveAllowed )
 			return;
 		
@@ -317,7 +316,6 @@ library.view = library.view || {};
 	 
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
-		console.log( 'view.Presence.init', conf );
 		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		
 		hello.template = friend.template;
@@ -744,7 +742,6 @@ library.view = library.view || {};
 		
 		self.titleId = friendUP.tool.uid( 'title' );
 		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
-			console.log( 'set hash' );
 			const conf = {
 				id             : self.titleId,
 				roomName       : self.room.name,
@@ -927,7 +924,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleLiveDisable = function( disable ) {
 		const self = this
-		console.log( 'view.handleLiveDisable', disable );
 		self.liveAllowed = !disable
 		if ( null != self.liveStatus )
 			self.liveStatus.setLiveAllowed( !disable )

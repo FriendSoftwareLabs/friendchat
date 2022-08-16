@@ -3738,7 +3738,6 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.setLiveAllowed = function( isAllowed ) {
 		const self = this
-		console.log( 'setLiveAllowed', [ isAllowed, self.userLive ])
 		if ( self.userLive )
 			isAllowed = true
 		
@@ -3898,7 +3897,6 @@ var hello = window.hello || {};
 	
 	ns.LiveStatus.prototype.setUserLive = function( isLive ) {
 		const self = this
-		console.log( 'setUserLive', isLive )
 		self.userLive = isLive;
 		if ( self.userLive && !self.allowLive )
 			self.setLiveAllowed( true );

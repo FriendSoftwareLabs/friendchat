@@ -131,7 +131,6 @@ library.view = library.view || {};
 	
 	ns.PresenceChat.prototype.init = function( state ) {
 		const self = this;
-		console.log( 'chat view init', state );
 		self.roomId = state.clientId;
 		const dropConf = {
 			roomId : self.roomId,
@@ -319,8 +318,6 @@ library.view = library.view || {};
 			windowConf.title = ' ';
 			windowConf.dialog = true;
 		}
-		
-		console.log( 'inviter wConf', windowConf );
 		
 		const viewConf = {
 			roomName  : self.roomName,
@@ -693,7 +690,6 @@ library.view = library.view || {};
 	
 	ns.Live.prototype.checkFocus = function() {
 		const self = this;
-		console.log( 'checkFocus', self?.view?.hasFocus );
 		if ( !self.view )
 			return null;
 		
@@ -876,7 +872,7 @@ library.view = library.view || {};
 		self.view.on( 'local-setting', localSetting );
 		self.view.on( 'drag-n-drop', heyYouDroppedThis );
 		self.view.on( 'close'      , ohOkayThen );
-		self.view.on( 'loaded', e => console.log( 'live loaded', e ));
+		self.view.on( 'loaded', e => {});
 		self.view.on( 'ready', e => self.liveReady());
 		//self.view.on( 'focused', e => {});
 		self.view.on( 'minimized', e => {});

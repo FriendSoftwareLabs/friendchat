@@ -791,7 +791,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.getMeta = async function() {
 		const self = this;
-		console.log( 'getMeta', self );
 		let peers = null;
 		if ( self.peers.length )
 			peers = {
@@ -802,7 +801,6 @@ library.contact = library.contact || {};
 			};
 		
 		const activity = await self.activity.read( self.clientId );
-		console.log( 'activity', activity );
 		
 		const meta = {
 			identity     : self.identity,
@@ -848,7 +846,6 @@ library.contact = library.contact || {};
 		if ( 'jeanie' != hello?.config?.mode )
 			return;
 		
-		console.log( 'setLiveAllowed', [ allowLive, self.chatView ]);
 		if ( null == self.chatView )
 			return
 		
@@ -921,7 +918,6 @@ library.contact = library.contact || {};
 		self.live.on( 'live-name', liveName );
 		self.live.on( 'view-switch', viewSwitch );
 		self.live.on( 'focused', e => {
-			console.log( 'focused', e );
 			self.service.emitEvent( 'liveHasFocus', {
 				roomId   : self.clientId,
 				hasFocus : e,
@@ -1393,7 +1389,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.chatReady = function( e ) {
 		const self = this;
-		console.log( 'PR.chatReady', e );
 		if ( 'jeanie' != hello.config.mode )
 			return;
 		
@@ -1416,7 +1411,6 @@ library.contact = library.contact || {};
 		if ( 'jeanie' != hello.config.mode )
 			return;
 		
-		console.log( 'closeChat', cView );
 		self.service.emitEvent( 'viewClosed', {
 			roomId : self.clientId,
 			viewId : cView.view.id,
@@ -1474,7 +1468,6 @@ library.contact = library.contact || {};
 		}
 		
 		function add( user ) {
-			console.log( 'inviter.add', user );
 			const roomAdd = {
 				type : 'room-add',
 				data : user,
@@ -1488,7 +1481,6 @@ library.contact = library.contact || {};
 		}
 		
 		function invite( user ) {
-			console.log( 'inviter.invite', user );
 			const roomInvite = {
 				type : 'room-invite',
 				data : user,
@@ -1514,7 +1506,6 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.handleMention = function( e ) {
 		const self = this;
 		hello.playMsgAlert();
-		console.log( 'handleMention', [ e, hello.config.mode ]);
 		if ( hello.config.mode == 'jeanie' ) {
 			if ( self.chatView && self.chatView.checkFocus())
 				return;
@@ -1698,7 +1689,6 @@ library.contact = library.contact || {};
 			relation.unread = relation.unreadMessages;
 		
 		const activityItem = await self.activity.read( self.clientId );
-		console.log( 'room activityItem', activityItem );
 		if ( activityItem ) {
 			self.updateRelationFromActivity(
 				relation,
@@ -2425,7 +2415,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleRoomUpdate = function( update ) {
 		const self = this;
-		console.log( 'handleRoomUpdate', update, self.service );
 		const name = update.name;
 		self.identity.name = name;
 		self.identity.avatar = update.avatar;
@@ -3226,7 +3215,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLiveOpen = async function( event ) {
 		const self = this;
-		console.log( 'handleLiveOpen', event );
 		const liveId = event.clientId;
 		const userJoin = {
 			type : 'user-join',
@@ -3298,7 +3286,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleLiveClose = function( event ) {
 		const self = this;
-		console.log( 'handleLiveClose', event );
 		const sessionId = event.sessionId;
 		const liveId = event.clientId;
 		// close without clientId means user left live, close all the things
@@ -3679,7 +3666,6 @@ library.contact = library.contact || {};
 			rel.unread = rel.unreadMessages;
 		
 		const activityItem = await self.activity.read( self.clientId );
-		console.log( 'priv activityItem', activityItem );
 		if ( activityItem ) {
 			self.updateRelationFromActivity(
 				rel,

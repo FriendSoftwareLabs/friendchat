@@ -177,7 +177,6 @@ var hello = null;
 	
 	ns.Hello.prototype.run = async function( fupConf ) {
 		const self = this;
-		console.log( 'run', fupConf );
 		self.timeNow( 'run' );
 		const userInfoLoader = self.getUserInfo();
 		self.incommingCall = new api.IncommingCall( self.config.ringTones );
@@ -257,7 +256,6 @@ var hello = null;
 			if ( self.config.dev )
 				self.app.setDev( null, hello.identity.alias );
 			
-			console.log( 'userInfo', [ userInfo, hello.identity ]);
 			if ( 'API' === self.identity.level ) {
 				self.runGuest();
 				return;
@@ -307,7 +305,6 @@ var hello = null;
 	ns.Hello.prototype.runGuest = function() {
 		const self = this;
 		self.isGuest = true;
-		console.log( 'runGuest', self.isGuest );
 		self.timeNow( 'runGuest' );
 		self.doGuestThings();
 	}
@@ -315,9 +312,10 @@ var hello = null;
 	ns.Hello.prototype.initDormant = function() {
 		const self = this;
 		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
-			console.log( '--- ENABLING DORMANT APPARENTLY ---' );
-			self.dormantEnabled = true;
+			if ( hello?.config?.mode != 'jeanie' )
+				console.log( '--- ENABLING DORMANT APPARENTLY ---' );
 			
+			self.dormantEnabled = true;
 			if ( self.config.iWouldLikeOtherAppsToReadMyLogsBecausePrivacyIsOverrated )
 				self.dormantAllowRead = true;
 			if ( self.config.letOtherAppsSpamMyContactsWithGenuineOffersThatAreNotScams )
@@ -701,10 +699,6 @@ var hello = null;
 			}
 			
 			async function setupUser( options ) {
-				console.log( 'setupUser', {
-					options : options,
-					conf    : conf,
-				})
 				self.loggedIn = true;
 				let identity = conf.data.identity || {
 					name   : options.name,
@@ -721,7 +715,6 @@ var hello = null;
 						identity : identity,
 					},
 				};
-				console.log( 'inviteBundle', inviteBundle );
 				self.setAuthBundle( inviteBundle );
 				try {
 					await initPresenceConnection();
@@ -790,7 +783,6 @@ var hello = null;
 				self.conn.connect();
 				
 				function onWSState( e ) {
-					console.log( 'onWSState', e );
 					if ( 'session' == e.type )
 						resolve( e.data );
 					
@@ -804,10 +796,6 @@ var hello = null;
 	
 	ns.Hello.prototype.setupLiveRoom = function( permissions ) {
 		const self = this;
-		console.log( 'setupLiveRoom', {
-			conn  : self.conn,
-			perms : permissions,
-		});
 		new library.component.GuestAccount( self.conn, permissions, onclose );
 		function onclose() {
 			self.quit();
@@ -818,11 +806,6 @@ var hello = null;
 	
 	ns.Hello.prototype.doLogin = function() {
 		const self = this;
-		console.log( 'doLogin', {
-			login    : self.login,
-			loggedIn : self.loggedIn,
-			account  : self.account,
-		});
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;
@@ -850,12 +833,6 @@ var hello = null;
 	
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
-		console.log( 'hello.doRelogin', {
-			login    : self.login,
-			loggedin : self.loggedIn,
-			account  : self.account,
-			tried    : self.triedRelogin,
-		});
 		self.triedRelogin = true;
 		const acc = {
 			clientId : self.account.clientId,
@@ -884,7 +861,6 @@ var hello = null;
 	ns.Hello.prototype.handleRunConf = function() {
 		const self = this;
 		const data = self.config.run;
-		console.log( 'handleRunConf', data );
 		if ( 'invisible' == data )
 			return {
 				invisible : true,
@@ -915,7 +891,6 @@ var hello = null;
 	
 	ns.Hello.prototype.reconnect = function() {
 		const self = this;
-		console.trace( 'hello.reconnect', self.conn );
 		if ( self.conn )
 			self.conn.connect();
 		else
@@ -967,7 +942,6 @@ var hello = null;
 	
 	ns.Hello.prototype.handleConnAuth = function( state ) {
 		const self = this;
-		console.log( 'handleConnAuth', state );
 		const authed = state.data;
 		if ( !authed )
 			return;
@@ -1677,11 +1651,6 @@ var hello = null;
 		winConf.title  = hello.config.appName || 'Friend Chat';
 		winConf.width  = 440;
 		winConf.height = 600;
-		
-		console.log( 'openSimpleView', {
-			mainViewConf : self.mainViewConf,
-			winConf      : winConf,
-		});
 		
 		self.view = hello.app.createView(
 			'html/mainSimple.html',
