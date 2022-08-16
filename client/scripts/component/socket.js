@@ -584,8 +584,10 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.resetPingSwing = function() {
 		const self = this
+		console.log( 'resetPingSwing', null == self.pingInterval )
 		if ( null == self.pingInterval )
 			return
+		
 		
 		window.clearInterval( self.pingInterval )
 		self.pingInterval = null
