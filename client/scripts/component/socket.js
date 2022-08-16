@@ -584,7 +584,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.resetPingSwing = function() {
 		const self = this
-		console.log( 'resetPingSwing', null == self.pingInterval )
 		if ( null == self.pingInterval )
 			return
 		
@@ -596,7 +595,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.sendPing = function() {
 		const self = this;
-		console.log( 'sendPing' );
 		if ( !self.pingInterval ) {
 			self.stopPing();
 			return;

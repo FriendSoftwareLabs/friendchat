@@ -250,7 +250,6 @@ ns.Socket.prototype.handleVerify = function( timestamp ) {
 
 ns.Socket.prototype.resetPingTimer = function() {
 	const self = this
-	log( 'resetPingTimer', null == self.pingInterval )
 	if ( null == self.pingInterval )
 		return
 	
@@ -287,7 +286,6 @@ ns.Socket.prototype.sendPing = async function() {
 		return;
 	}
 	
-	log( 'sendPing' )
 	const now = Date.now();
 	const pingMsg = {
 		type : 'ping',
