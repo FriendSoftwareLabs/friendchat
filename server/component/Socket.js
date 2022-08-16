@@ -220,9 +220,6 @@ ns.Socket.prototype.receiveMessage = function( msgString ) {
 		return;
 	}
 	
-	if ( !self.authenticated )
-		log( 'received', msgObj );
-	
 	self.handleEvent( msgObj );
 }
 
