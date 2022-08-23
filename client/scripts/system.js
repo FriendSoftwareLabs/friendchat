@@ -1014,6 +1014,10 @@ library.rtc = library.rtc || {};
 		let session = new library.rtc.RtcSession( conf, eventSink, onclose, sessionClosed );
 		self.sessions[ sId ] = session;
 		self.sessionIds.push( sId );
+		if ( hello.config.mode == 'jeanie' && hello.service ) {
+			hello.service.setIsLive( true );
+		}
+		
 		const sess = {
 			type : 'add',
 			data : {
@@ -1047,6 +1051,9 @@ library.rtc = library.rtc || {};
 		
 		delete self.sessions[ sId ];
 		self.sessionIds = Object.keys( self.sessions );
+		if ( hello.config.mode == 'jeanie' && hello.service ) {
+			hello.service.setIsLive( false );
+		}
 		
 		const remove = {
 			type : 'remove',
@@ -1178,7 +1185,7 @@ library.rtc = library.rtc || {};
 		
 		hello.setSettings( self.settings );
 		self.conn = new library.system.Message({
-			id : 'account',
+			id      : 'account',
 			handler : receiveMsg,
 		});
 		function receiveMsg( e ) { self.receiveMsg( e ); }
@@ -1249,26 +1256,32 @@ library.rtc = library.rtc || {};
 		if ( self.settingsView )
 			return;
 		
-		var conf = {
-			type : 'account',
-			windowConf : {
-				title : Application.i18n('i18n_account_settings'),
-				width : 350,
-				height : 400,
-			},
-			onsave : saveHandler,
-			onclose : closeHandler,
-			settings : data,
+		const winConf = {
+			title    : Application.i18n('i18n_account_settings'),
+			width    : 350,
+			height   : 400,
+		};
+		if ( 'jeanie' === hello.config.mode )
+			winConf.dialog = true;
+		
+		const conf = {
+			type       : 'account',
+			windowConf : winConf,
+			onsave     : saveHandler,
+			onclose    : closeHandler,
+			settings   : data,
 		};
 		self.settingsView = new library.view.Settings( conf );
 		
-		function closeHandler() { self.settingsView = null; }
+		function closeHandler() { 
+			self.settingsView = null;
+		}
 		function saveHandler( data, callback ) { self.saveSetting( data, callback ); }
 	}
 	
 	ns.Account.prototype.saveSetting = function( data, callback ) {
 		const self = this;
-		var msg = {
+		const msg = {
 			type : 'setting',
 			data : data,
 		};
@@ -1280,7 +1293,7 @@ library.rtc = library.rtc || {};
 		if ( self.settingsView )
 			self.settingsView.saved( update );
 		
-		var handler = self.updateMap[ update.setting ];
+		const handler = self.updateMap[ update.setting ];
 		if ( !handler ) {
 			console.log( 'no handler for ', update );
 			return;
@@ -1846,10 +1859,12 @@ library.rtc = library.rtc || {};
 	
 	ns.Connection.prototype.socketAuth = function( success ) {
 		const self = this;
+		/*
 		if ( self.sessionId ) {
 			self.connect();
 			return;
 		}
+		*/
 		
 		self.onstate({
 			type : 'authenticate',
@@ -2319,11 +2334,18 @@ library.rtc = library.rtc || {};
 		self.view.show();
 	}
 	
+	ns.RtcSession.prototype.checkFocus = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.checkFocus();
+	}
+	
 	//
 	ns.RtcSession.prototype.send = function( event ) {
 		const self = this;
 		if ( !self.view )  {
-			console.log( '!rtc.session.view - queueueueueuing', event );
 			self.sendQueue.push( event );
 			return;
 		}
@@ -2469,6 +2491,11 @@ library.rtc = library.rtc || {};
 		self.door.addFun( item );
 	}
 	
+	ns.Dormant.prototype.addEvent = function( item ) {
+		const self = this;
+		self.door.addEvent( item );
+	}
+	
 	ns.Dormant.prototype.remove = function( item ) {
 		const self = this;
 		self.door.remove( item );
@@ -2501,6 +2528,11 @@ library.rtc = library.rtc || {};
 			title : 'Functions',
 			path  : 'Functions/',
 		}, '' );
+		
+		const fEv = new api.DoorDir({
+			title : 'Events',
+			path  : 'Events/',
+		});
 		
 		/*
 		const modDir = new api.DoorDir({
@@ -2543,6 +2575,7 @@ library.rtc = library.rtc || {};
 		*/
 		
 		self.addDir( fDir );
+		self.addDir( fEv );
 		//self.addDir( modDir );
 		self.addFun( quitFun );
 		
@@ -3223,7 +3256,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.setRemoved = function( id ) {
 		const self = this;
-		//console.log( 'setRemoved', id );
 		const lock = self.removed[ id ];
 		if ( null != lock )
 			window.clearTimeout( lock );
@@ -3238,7 +3270,6 @@ Searchable collection(s) of users, rooms and other odds and ends
 	
 	ns.Activity.prototype.unsetRemoved = function( id ) {
 		const self = this;
-		//console.log( 'unsetRemoved', id );
 		const lock = self.removed[ id ];
 		if ( null == lock )
 			return;
@@ -3473,17 +3504,9 @@ Searchable collection(s) of users, rooms and other odds and ends
 		async function updateForModule( mId ) {
 			const mod = self.getModule( mId );
 			const isOnline = mod.getOnlineStatus();
-			/*
-			console.log( 'app.Activity.updateIdentities, is online?', {
-				mod      : mod,
-				isOnline : isOnline,
-			});
-			*/
 			
-			if ( !isOnline ) {
-				//console.log( 'Activity.updateidentities - no online', mId );
+			if ( !isOnline )
 				return;
-			}
 			
 			let itemIds = getModuleIds( mId );
 			if ( !itemIds || !itemIds.length )

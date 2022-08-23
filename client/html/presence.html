@@ -47,20 +47,6 @@
 					>
 						<i class="fa fa-fw fa-cog"></i>
 					</button>
-					<button id="upgrade-to-video"
-						class="IconButton button hidden"
-						title="{i18n_go_live}"
-						type="button"
-					>
-						<i class="fa fa-fw fa-video-camera"></i>
-					</button>
-					<button id="upgrade-to-audio"
-						class="IconButton button hidden"
-						title="{i18n_go_live}"
-						type="button"
-					>
-						<i class="fa fa-fw fa-microphone"></i>
-					</button>
 					<button id="show-hide-btn"
 						class="IconButton button hidden LED"
 						title="{i18n_show_hide_userlist}"
@@ -156,14 +142,29 @@
 </div>
 </script>
 
-<!-- Group title
+<!-- Group title ava
 id,
 avatarCssKlass,
 roomName,
 -->
-<script id="group-title-tmpl" type="text/html">
+<script id="group-title-avatar-tmpl" type="text/html">
 <div id="<%= id %>" class="title-grp group row start <%= avatarCssKlass %>">
 	<div class="avatar room fortify">
+	</div>
+	<div class="title-name expand">
+		<%= roomName %>
+	</div>
+</div>
+</script>
+
+<!-- Group title hash
+id,
+roomName,
+-->
+<script id="group-title-hash-tmpl" type="text/html">
+<div id="<%= id %>" class="title-grp group row start">
+	<div class="hash fortify">
+		#
 	</div>
 	<div class="title-name expand">
 		<%= roomName %>

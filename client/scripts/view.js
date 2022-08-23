@@ -89,6 +89,14 @@ library.view = library.view || {};
 		return self.view.isMinimized;
 	}
 	
+	ns.PresenceChat.prototype.checkFocus = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.hasFocus;
+	}
+	
 	ns.PresenceChat.prototype.updateState = function( state ) {
 		const self = this;
 		self.isPrivate = !!state.isPrivate;
@@ -123,7 +131,9 @@ library.view = library.view || {};
 	
 	ns.PresenceChat.prototype.init = function( state ) {
 		const self = this;
+		self.roomId = state.clientId;
 		const dropConf = {
+			roomId : self.roomId,
 			toView : toView,
 			toChat : toChat,
 		};
@@ -223,14 +233,18 @@ library.view = library.view || {};
 				if ( !items )
 					return;
 				
-				items.forEach( item => {
+				items.forEach( async item => {
 					const f = new api.File( item.Path );
-					f.expose( link => {
-						if ( !link )
-							return;
-						
-						toChat( link );
-					});
+					let link = null;
+					try {
+						link = await f.expose( self.roomId );
+					} catch( ex ) {
+						console.log( 'file.expose err', ex );
+						toChat( false );
+						return;
+					}
+					
+					toChat( link );
 				});
 			}
 			
@@ -299,6 +313,12 @@ library.view = library.view || {};
 			width : 400,
 			height : 500,
 		};
+		
+		if ( hello.config.mode == 'jeanie' ) {
+			windowConf.title = ' ';
+			windowConf.dialog = true;
+		}
+		
 		const viewConf = {
 			roomName  : self.roomName,
 			idList    : idList,
@@ -668,6 +688,14 @@ library.view = library.view || {};
 		self.view.activate();
 	}
 	
+	ns.Live.prototype.checkFocus = function() {
+		const self = this;
+		if ( !self.view )
+			return null;
+		
+		return self.view.hasFocus;
+	}
+	
 	ns.Live.prototype.checkMinimized = function() {
 		const self = this;
 		if ( !self.view )
@@ -772,6 +800,7 @@ library.view = library.view || {};
 				title              : title,
 				width              : width,
 				height             : height,
+				liveView           : true,
 				fullscreenenabled  : true,
 			};
 			
@@ -843,9 +872,9 @@ library.view = library.view || {};
 		self.view.on( 'local-setting', localSetting );
 		self.view.on( 'drag-n-drop', heyYouDroppedThis );
 		self.view.on( 'close'      , ohOkayThen );
-		self.view.on( 'loaded', e => console.log( 'live loaded', e ));
+		self.view.on( 'loaded', e => {});
 		self.view.on( 'ready', e => self.liveReady());
-		self.view.on( 'focused', e => {});
+		//self.view.on( 'focused', e => {});
 		self.view.on( 'minimized', e => {});
 		self.view.on( 'maximized', e => {});
 		

@@ -406,7 +406,6 @@ inherits from EventEmitter
 	
 	ns.RequestNode.prototype.initRequestNode = function() {
 		const self = this;
-		//console.log( 'initRequestNOde', self.type );
 	}
 	
 	ns.RequestNode.prototype.handle = function( event ) {
@@ -585,8 +584,6 @@ inherits from EventEmitter
 			self.onready( msg.data );
 			return;
 		}
-		
-		//console.log( 'subview.' + self.type + '.handleMessage - no handler for', msg );
 	}
 	
 	ns.SubView.prototype.send = function( msg ) {

@@ -3708,6 +3708,7 @@ var hello = window.hello || {};
 		self.users = users;
 		self.userId = userId;
 		
+		self.userLive = false;
 		self.peerIdMap = {};
 		self.peerList = [];
 		
@@ -3732,6 +3733,24 @@ var hello = window.hello || {};
 		
 		function isNotInList( cId, list ) {
 			return !list.some( lId => lId === cId );
+		}
+	}
+	
+	ns.LiveStatus.prototype.setLiveAllowed = function( isAllowed ) {
+		const self = this
+		if ( self.userLive )
+			isAllowed = true
+		
+		self.allowLive = isAllowed
+		const reason = window.View.i18n( 'i18n_you_are_in_another_live_call' )
+		self.videoBtn.classList.toggle( 'disabled', !isAllowed )
+		self.audioBtn.classList.toggle( 'disabled', !isAllowed )
+		if ( !isAllowed ) {
+			self.videoBtn.setAttribute( 'title', reason )
+			self.audioBtn.setAttribute( 'title', reason )
+		} else {
+			self.videoBtn.removeAttribute( 'title' )
+			self.audioBtn.removeAttribute( 'title' )
 		}
 	}
 	
@@ -3844,7 +3863,7 @@ var hello = window.hello || {};
 		self.peers.insertBefore( peerEl, self.peerCount );
 		self.peerList.push( peerId );
 		if ( userId === self.userId )
-			self.userLive = true;
+			self.setUserLive( true )
 		
 		self.updateIconState();
 		self.updateStacking();
@@ -3868,12 +3887,20 @@ var hello = window.hello || {};
 		const pIdx = self.peerList.indexOf( peerId );
 		self.peerList.splice( pIdx, 1 );
 		if ( userId === self.userId )
-			self.userLive = false;
+			self.setUserLive( false )
 		
 		self.updateIconState();
 		self.updateStacking();
 		
 		//self.updateVisibility();
+	}
+	
+	ns.LiveStatus.prototype.setUserLive = function( isLive ) {
+		const self = this
+		self.userLive = isLive;
+		if ( self.userLive && !self.allowLive )
+			self.setLiveAllowed( true );
+			
 	}
 	
 	ns.LiveStatus.prototype.updateVisibility = function() {

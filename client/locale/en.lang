@@ -466,3 +466,7 @@ i18n_confirm_delete : Confirm delete
 i18n_the_message_will_be_deleted : The message will be deleted
 i18n_delete : Delete
 i18n_message_deleted_by : Message deleted by
+i18n_image_failed_to_load : Image failed to load
+i18n_add_to : Add to
+i18n_sound_notification : Sound notification
+i18n_you_are_in_another_live_call : You are currently engaged in another live call

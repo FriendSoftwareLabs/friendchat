@@ -1285,6 +1285,9 @@ in a generic link expand wrapping with a bit of UI
 			if ( !url || !url.length )
 				reject( 'no u' );
 			
+			if ( !!url.indexOf( '/sharedfile/' ))
+				url += '?authid=' + window.View.authId;
+			
 			const extParts = url.split( '.' );
 			const fileExt = extParts.pop();
 			const fileParts = url.split( '/' );
@@ -1386,11 +1389,13 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.replace = function( a, conf ) {
 		const self = this;
-		const href = a.href;
+		const href = conf.href || a.href;
 		const file = conf.mime;
 		const type = conf.type;
 		const content = conf.content;
 		const onClick = conf.onClick;
+		const onError = conf.onError;
+		
 		let bgDef = '';
 		if ( true == conf.bgDefault )
 			bgDef = 'BackgroundDefault';
@@ -1422,16 +1427,11 @@ in a generic link expand wrapping with a bit of UI
 		ext.addEventListener( 'click', onExt, false );
 		
 		
-		if ( null == onClick )
-			return;
+		if ( null != onClick )
+			content.addEventListener( 'click', onClick, false );
 		
-		/*
-		const headA = el.querySelector( '.link-expand-ui a' );
-		if ( null == headA )
-			return;
-		*/
-		
-		content.addEventListener( 'click', onClick, false );
+		if ( null != onError )
+			content.addEventListener( 'error', onError, false );
 		
 		function onDL( e ) {
 			window.View.saveLink( a.href, file.fileName );
@@ -1468,7 +1468,16 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.expandImage = async function( a, mime ) {
 		const self = this;
-		const src = a.href;
+		let src = a.href;
+		const fshared = !!src.indexOf( '/sharedfile/' );
+		if ( fshared ) {
+			src += '?authid=' + window.View.authId;
+			const res = await window.fetch( src );
+			const blob = await res.blob();
+			
+			src = URL.createObjectURL( blob );
+		}
+		
 		const conf = {
 			src : src,
 		};
@@ -1476,16 +1485,26 @@ in a generic link expand wrapping with a bit of UI
 		
 		return {
 			type      : 'image',
+			href      : src,
 			mime      : mime,
 			content   : htmlElement,
 			bgDefault : true,
 			onClick   : onClick,
-		}
+			onError   : onError,
+		};
 		
 		function onClick( e ) {
 			e.preventDefault();
 			e.stopPropagation();
-			self.openImage( src );
+			self.openImage( a.href );
+		}
+		
+		function onError( e ) {
+			const errEl = self.template.getElement( 'image-error-tmpl', {});
+			const leEl = e.target.parentNode.parentNode;
+			leEl.classList.toggle( 'le-error', true );
+			leEl.innerHTML = '';
+			leEl.appendChild( errEl );
 		}
 	}
 	
@@ -1655,19 +1674,13 @@ Friend disk paths, so do those things with them i guess
 	ns.PathExpand.prototype.work = function( el ) {
 		const self = this;
 		const links = el.querySelectorAll( 'fp' );
-		console.log( 'pathexpand - work', {
-			el    : el,
-			links : links,
-		});
 		Array.prototype.forEach.call( links, expand );
 		
 		function expand( fp ) {
-			console.log( 'expand', fp );
 			const path = fp.href.toString();
 			
 			
 			async function success( mime ) {
-				console.log( 'success', mime );
 				let handler = self.mimeMap[ mime.type ];
 				if ( !handler )
 					return;
@@ -2117,15 +2130,6 @@ Friend disk paths, so do those things with them i guess
 		const inputStr = self.ta.value;
 		const inputPos = self.ta.selectionStart;
 		const inputSelection = self.ta.selectionStart !== self.ta.selectionEnd;
-		/*
-		console.log( 'checkChange', {
-			inputStr : inputStr,
-			inputPos : inputPos,
-			inputSelection : inputSelection,
-			currentStr : self.currentInput,
-			currentPos : self.currentPos,
-		});
-		*/
 		let strChange = false;
 		if ( inputStr !== self.currentInput )
 			strChange = true;

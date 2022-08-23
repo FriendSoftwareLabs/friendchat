@@ -46,6 +46,11 @@ library.component = library.component || {};
 		delete self.onClose;
 	}
 	
+	ns.GuestAccount.prototype.updateConnState = function( event ) {
+		const self = this;
+		//console.log( 'GuestAccount.updateConnState', event );
+	}
+	
 	// Private
 	
 	ns.GuestAccount.prototype.init = function() {
@@ -67,7 +72,6 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.handleAccount = function( loginEvent ) {
 		const self = this;
-		console.log( 'handleAccount', loginEvent );
 		const accId = loginEvent.data;
 		self.accountId = accId;
 		self.acc = new library.component.RequestNode( accId, self.conn, accSink, null, true );
@@ -85,7 +89,6 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.handleInit = function( state ) {
 		const self = this;
-		console.log( 'guest.handleInit', state );
 		if ( self.account )
 			return;
 		
@@ -106,7 +109,6 @@ library.component = library.component || {};
 	
 	ns.GuestAccount.prototype.handleJoinedRoom = function( event ) {
 		const self = this;
-		console.log( 'Guest.handleJoinedRoom', event );
 		const conf = event.joined;
 		self.roomId = conf.clientId;
 		const roomConf = {
@@ -188,7 +190,6 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleInit = function( state ) {
 		const self = this;
-		console.log( 'GuestRoom.handleInit', state );
 		self.users = state.users;
 		self.identities = state.identities || {};
 		const perms = self.permissions || {
@@ -240,7 +241,6 @@ library.component = library.component || {};
 		}
 		function liveName( e ) { self.handleLiveName( e ); }
 		function onclose( e ) {
-			console.log( 'guestroom onclose')
 			const leave = {
 				type : 'leave',
 			};
@@ -304,7 +304,6 @@ library.component = library.component || {};
 			if ( !self.live )
 				return;
 			
-			console.log( 'guest.live.opne', event );
 			const open = event.data;
 			const clietId = open.clientId;
 			const init = open.live;
@@ -344,7 +343,6 @@ library.component = library.component || {};
 	
 	ns.GuestRoom.prototype.handleLiveToRoom = function( event ) {
 		const self = this;
-		console.log( 'handleLiveToRoom', event );
 		const live = {
 			type : 'live',
 			data : event,

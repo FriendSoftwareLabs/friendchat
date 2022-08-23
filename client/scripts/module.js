@@ -547,6 +547,10 @@ library.module = library.module || {};
 		
 		if ( self.activity )
 			self.activity.remove( clientId );
+		
+		if ( self.service && hello.dormant ) {
+			self.service.emitEvent( 'roomRemove', { roomId : clientId });
+		}
 	}
 	
 	ns.BaseModule.prototype.setLocalData = function( data, callback ) {
@@ -663,8 +667,37 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.appResume = function() {
 		const self = this;
-		console.log( 'Presence.appResume' );
 		self.reconnect();
+	}
+	
+	ns.Presence.prototype.setIsLive = function( isLive ) {
+		const self = this
+		self.roomIds.forEach( rId => {
+			const room = self.rooms[ rId ]
+			room.setLiveAllowed( !isLive )
+		})
+		self.contactIds.forEach( cId => {
+			const contact = self.contacts[ cId ]
+			contact.setLiveAllowed( !isLive );
+		})
+	}
+	
+	ns.Presence.prototype.listRoomsDormant = function() {
+		const self = this;
+		const rIds = Object.keys( self.rooms );
+		return rIds.map( rId => {
+			return self.rooms[ rId ].getInfo();
+		});
+	}
+	
+	ns.Presence.prototype.showInviterFor = async function( roomId, conf ) {
+		const self = this;
+		const room = await self.getRoom( roomId );
+		if ( null == room )
+			throw 'ERR_NO_ROOM';
+		
+		room.showInviter();
+		return true;
 	}
 	
 	ns.Presence.prototype.getIdentity = async function( clientId ) {
@@ -711,6 +744,16 @@ library.module = library.module || {};
 				}
 			});
 		}
+	}
+	
+	ns.Presence.prototype.getRoomMeta = async function( roomId ) {
+		const self = this;
+		const room = self.getLocalChat( roomId );
+		if ( null == room )
+			throw 'ERR_NO_ROOM';
+		
+		const meta = await room.getMeta();
+		return meta;
 	}
 	
 	ns.Presence.prototype.verifyActivities = async function( cIdList ) {
@@ -1083,24 +1126,22 @@ library.module = library.module || {};
 		});
 	}
 	
-	ns.Presence.prototype.openLive = function( roomName ) {
+	ns.Presence.prototype.openLive = async function( roomId ) {
 		const self = this;
-		let cIds = Object.keys( self.contacts );
-		let room = null;
-		cIds.some( cId => {
-			let r = self.contacts[ cId ];
-			if ( roomName === r.identity.name ) {
-				room = r;
-				return true;
-			}
-			
-			return false;
-		});
-		
+		const room = self.getLocalChat( roomId );
 		if ( !room )
 			return false;
 		
 		room.joinLive();
+	}
+	
+	ns.Presence.prototype.closeLive = async function( roomId ) {
+		const self = this;
+		const room = self.getLocalChat( roomId );
+		if ( null == room )
+			return false;
+		
+		room.closeLive();
 	}
 	
 	ns.Presence.prototype.leave = function( roomId ) {
@@ -1668,6 +1709,7 @@ library.module = library.module || {};
 			parentView : self.parentView,
 			idCache    : self.idc,
 			activity   : self.activity,
+			service    : self.service,
 			host       : host,
 			user       : self.identity,
 			userId     : self.accountId,
@@ -1685,6 +1727,11 @@ library.module = library.module || {};
 		
 		self.checkIdBacklog( cId );
 		self.resolveChatLoaded( 'contact', cId );
+		if ( self.service && hello.dormant ) {
+			const info = room.getInfo();
+			info.isPrivate = true;
+			self.service.emitEvent( 'roomAdd', info );
+		}
 	}
 	
 	ns.Presence.prototype.setChatLoading = function( type, clientId ) {
@@ -1820,6 +1867,10 @@ library.module = library.module || {};
 		self.toView( cRem );
 		if ( self.activity )
 			self.activity.remove( clientId );
+		
+		if ( self.service && hello.dormant ) {
+			self.service.emitEvent( 'roomRemove', { roomId : clientId });
+		}
 	}
 	
 	ns.Presence.prototype.handleContactEvent = function( wrap ) {
@@ -2253,6 +2304,9 @@ library.module = library.module || {};
 			const room = self.rooms[ rId ];
 			room.updateIdentity( uptd );
 		});
+		
+		if ( hello.dormant && self.service )
+			self.service.emitEvent( 'identityUpdate', id );
 	}
 	
 	ns.Presence.prototype.checkCurrentRooms = function( list ) {
@@ -2338,13 +2392,15 @@ library.module = library.module || {};
 		self.acc.send( event );
 	}
 	
-	ns.Presence.prototype.createRoom = function( conf ) {
+	ns.Presence.prototype.createRoom = async function( conf ) {
 		const self = this;
 		const create = {
 			type : 'room-create',
 			data : conf,
 		};
-		self.toAccount( create );
+		
+		const res = await self.acc.request( create );
+		return res;
 	}
 	
 	ns.Presence.prototype.joinRoom = function( conf ) {
@@ -2412,6 +2468,7 @@ library.module = library.module || {};
 			parentView : self.parentView,
 			idCache    : self.idc,
 			activity   : self.activity,
+			service    : self.service,
 			host       : host,
 			user       : self.identity,
 			userId     : self.accountId,
@@ -2429,9 +2486,17 @@ library.module = library.module || {};
 		self.toView( addRoom );
 		
 		room.on( 'contact', contactEvent );
+		room.once( 'open', onOpen );
 		
-		self.checkIdBacklog( cId );
-		self.resolveChatLoaded( 'room', cId );
+		function onOpen( yep ) {
+			self.checkIdBacklog( cId );
+			self.resolveChatLoaded( 'room', cId );
+			if ( self.service && hello.dormant ) {
+				const info = room.getInfo();
+				info.isPrivate = false;
+				self.service.emitEvent( 'roomAdd', info );
+			}
+		}
 		
 		return room;
 		

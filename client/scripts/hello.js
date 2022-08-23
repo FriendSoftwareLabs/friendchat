@@ -221,11 +221,11 @@ var hello = null;
 		self.timeNow( 'paralells completed' );
 		const userInfo = res[ 2 ];
 		let doRun = false;
-		let openMinimized = false;
+		let mainViewConf = false;
 		if ( self.config.run )
-			openMinimized = self.handleRunConf();
+			mainViewConf = self.handleRunConf();
 		
-		self.openMain( openMinimized );
+		self.openMain( mainViewConf );
 		
 		handleUserInfo( userInfo );
 		/*
@@ -304,6 +304,7 @@ var hello = null;
 	
 	ns.Hello.prototype.runGuest = function() {
 		const self = this;
+		self.isGuest = true;
 		self.timeNow( 'runGuest' );
 		self.doGuestThings();
 	}
@@ -311,9 +312,10 @@ var hello = null;
 	ns.Hello.prototype.initDormant = function() {
 		const self = this;
 		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
-			console.log( '--- ENABLING DORMANT APPARENTLY ---' );
-			self.dormantEnabled = true;
+			if ( hello?.config?.mode != 'jeanie' )
+				console.log( '--- ENABLING DORMANT APPARENTLY ---' );
 			
+			self.dormantEnabled = true;
 			if ( self.config.iWouldLikeOtherAppsToReadMyLogsBecausePrivacyIsOverrated )
 				self.dormantAllowRead = true;
 			if ( self.config.letOtherAppsSpamMyContactsWithGenuineOffersThatAreNotScams )
@@ -684,6 +686,7 @@ var hello = null;
 				inviteHost    : 'leeloo',
 			};
 			new library.view.RtcAsk( askConf, askBack );
+			
 			return; // prevents unknown data thingie, down there *points*
 			
 			function askBack( res ) {
@@ -695,7 +698,7 @@ var hello = null;
 				setupUser( res );
 			}
 			
-			function setupUser( options ) {
+			async function setupUser( options ) {
 				self.loggedIn = true;
 				let identity = conf.data.identity || {
 					name   : options.name,
@@ -713,11 +716,19 @@ var hello = null;
 					},
 				};
 				self.setAuthBundle( inviteBundle );
-				initPresenceConnection( connBack );
-				
-				function connBack() {
-					self.setupLiveRoom( options.permissions );
+				try {
+					await initPresenceConnection();
+				} catch( ex ) {
+					console.log( 'guest login failed', {
+						options : options,
+						conf    : conf,
+						bundle  : inviteBundle,
+					});
+					
+					self.quit();
 				}
+				
+				self.setupLiveRoom( options.permissions );
 			}
 		}
 		
@@ -757,20 +768,29 @@ var hello = null;
 		hello.log.show();
 		*/
 		
-		function initPresenceConnection( callback ) {
-			const conf = self.config.run;
-			if ( !conf.data && !conf.data.host ) {
-				console.log( 'missing host', conf );
-				return;
-			}
-			
-			const host = library.tool.buildDestination( 'wss://', conf.data.host );
-			self.conn = new library.system.Connection( host, onWSState );
-			self.items = new library.system.Items();
-			self.intercept = new library.system.Interceptor();
-			self.conn.connect();
-			
-			function onWSState( e ) { self.updateConnState( e ); }
+		function initPresenceConnection() {
+			return new Promise(( resolve, reject ) => {
+				const conf = self.config.run;
+				if ( !conf.data && !conf.data.host ) {
+					console.log( 'missing host', conf );
+					return;
+				}
+				
+				const host = library.tool.buildDestination( 'wss://', conf.data.host );
+				self.conn = new library.system.Connection( host, onWSState );
+				self.items = new library.system.Items();
+				self.intercept = new library.system.Interceptor();
+				self.conn.connect();
+				
+				function onWSState( e ) {
+					if ( 'session' == e.type )
+						resolve( e.data );
+					
+					if ( self.guest )
+						self.guest.updateConnState( e );
+					//self.updateConnState( e );
+				}
+			});
 		}
 	}
 	
@@ -786,13 +806,6 @@ var hello = null;
 	
 	ns.Hello.prototype.doLogin = function() {
 		const self = this;
-		/*
-		console.log( 'doLogin', {
-			login    : self.login,
-			loggedIn : self.loggedIn,
-			account  : self.account,
-		});
-		*/
 		if ( self.login ) {
 			self.login.close();
 			self.login = null;
@@ -820,14 +833,6 @@ var hello = null;
 	
 	ns.Hello.prototype.doRelogin = function() {
 		const self = this;
-		/*
-		console.log( 'hello.doRelogin', {
-			login    : self.login,
-			loggedin : self.loggedIn,
-			account  : self.account,
-			tried    : self.triedRelogin,
-		});
-		*/
 		self.triedRelogin = true;
 		const acc = {
 			clientId : self.account.clientId,
@@ -847,37 +852,45 @@ var hello = null;
 		}
 	}
 	
-	ns.Hello.prototype.openMain = function( openMinimized ) {
+	ns.Hello.prototype.openMain = function( mainViewconf ) {
 		const self = this;
 		self.timeNow( 'openMain' );
-		self.main.open( openMinimized );
+		self.main.open( mainViewconf );
 	}
 	
 	ns.Hello.prototype.handleRunConf = function() {
 		const self = this;
 		const data = self.config.run;
+		if ( 'invisible' == data )
+			return {
+				invisible : true,
+			};
+		
 		if ( 'live-invite' === data.type )
-			return true;
+			return {
+				minimized : true,
+			};
 		
 		if ( data.events )
 			return self.handleRunEvents( data.events );
 		
-		return false;
+		return null;
 	}
 	
 	ns.Hello.prototype.handleRunEvents = function( events ) {
 		const self = this;
 		if ( !events || !events.length )
-			return false;
+			return null;
 		
 		events.forEach( e => hello.app.handleSystem( e ));
 		
-		return true;
+		return {
+			minimized : true,
+		};
 	}
 	
 	ns.Hello.prototype.reconnect = function() {
 		const self = this;
-		console.trace( 'hello.reconnect', self.conn );
 		if ( self.conn )
 			self.conn.connect();
 		else
@@ -1479,10 +1492,10 @@ var hello = null;
 		self.view.activate();
 	}
 	
-	ns.Main.prototype.open = function( openMinimized ) {
+	ns.Main.prototype.open = function( mainViewConf ) {
 		const self = this;
-		if ( null == self.openMinimized )
-			self.openMinimized = openMinimized || false;
+		if ( null == self.mainViewConf )
+			self.mainViewConf = mainViewConf || false;
 		
 		const initConf = {
 			mainFragments : hello.mainCommonFragments,
@@ -1633,13 +1646,11 @@ var hello = null;
 	
 	ns.Main.prototype.openSimpleView = function( initConf, onClose ) {
 		const self = this;
-		const winConf = {
-			title     : hello.config.appName || 'Friend Chat',
-			width     : 440,
-			height    : 600,
-			//mainView  : true,
-			minimized : self.openMinimized || undefined,
-		};
+		const winConf = self.mainViewConf || {};
+		
+		winConf.title  = hello.config.appName || 'Friend Chat';
+		winConf.width  = 440;
+		winConf.height = 600;
 		
 		self.view = hello.app.createView(
 			'html/mainSimple.html',

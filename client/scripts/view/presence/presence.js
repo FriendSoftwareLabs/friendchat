@@ -112,8 +112,6 @@ library.view = library.view || {};
 		self.titleContainer = document.getElementById( 'room-title' );
 		// buttons?
 		self.backBtn = document.getElementById( 'room-back' );
-		self.goVideoBtn = document.getElementById( 'upgrade-to-video' );
-		self.goAudioBtn = document.getElementById( 'upgrade-to-audio' );
 		self.toggleUsersBtn = document.getElementById( 'show-hide-btn' );
 		self.inviteBtn = document.getElementById( 'invite-btn' );
 		
@@ -126,8 +124,6 @@ library.view = library.view || {};
 		
 		//
 		self.backBtn.addEventListener( 'click', closeBack, false );
-		self.goVideoBtn.addEventListener( 'click', goVideoClick, false );
-		self.goAudioBtn.addEventListener( 'click', goAudioClick, false );
 		self.toggleUsersBtn.addEventListener( 'click', toggleUserList, false );
 		self.inviteBtn.addEventListener( 'click', showInviter, false );
 		
@@ -171,8 +167,6 @@ library.view = library.view || {};
 		};
 		
 		function closeBack( e ) { self.closeBack(); }
-		function goVideoClick( e ) { self.goLive( 'video' ); }
-		function goAudioClick( e ) { self.goLive( 'audio' ); }
 		
 		function toggleUserList( e ) {
 			e.stopPropagation();
@@ -256,6 +250,9 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.goLive = function( type ) {
 		const self = this;
+		if ( !self.liveAllowed )
+			return;
+		
 		const goLive = {
 			type : 'live',
 			data : type,
@@ -300,6 +297,7 @@ library.view = library.view || {};
 		self.conn.on( 'mention-list'   , e => self.setMentionParsing( e ));
 		self.conn.on( 'at-list'        , e => self.setAtParsing( e ));
 		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
+		self.conn.on( 'live-disable'   , e => self.handleLiveDisable( e ));
 		
 		function initialize( e ) {
 			try {
@@ -324,14 +322,21 @@ library.view = library.view || {};
 		const state = conf.state;
 		
 		// things
-		self.clientId   = state.clientId;
-		self.isPrivate  = state.isPrivate;
-		self.isView     = state.isView;
-		self.persistent = state.persistent;
-		self.room       = state.room;
-		self.ownerId    = state.ownerId;
-		self.userId     = state.userId;
-		self.contactId  = state.contactId;
+		self.clientId    = state.clientId;
+		self.isPrivate   = state.isPrivate;
+		self.isView      = state.isView;
+		self.persistent  = state.persistent;
+		self.room        = state.room;
+		self.ownerId     = state.ownerId;
+		self.userId      = state.userId;
+		self.contactId   = state.contactId;
+		self.liveAllowed = ( null != state.liveAllowed ) ? state.liveAllowed : true
+		
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
+			const am = document.getElementById( 'attachment-menu' );
+			if ( null != am )
+				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true );
+		}
 		
 		// selecting constructors
 		let UserCtrl = library.component.UserCtrl;
@@ -385,6 +390,9 @@ library.view = library.view || {};
 			self.liveStatus.update( state.peerList );
 			self.liveStatus.on( 'show', e => self.goLive( e ));
 			self.liveStatus.on( 'join', e => self.goLive( e ));
+			
+			if ( !self.liveAllowed )
+				self.handleLiveDisable( true );
 		}
 		
 		// get logs when scrolling to top
@@ -654,12 +662,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.setGroupUI = function() {
 		const self = this;
-		/*
-		if ( self.contactStatus ) {
-			self.contactStatus.close();
-			delete self.contactStatus;
-		}
-		*/
 		
 		self.usersEl.classList.toggle( 'hidden', false );
 		self.toggleUserListBtn( true );
@@ -689,6 +691,9 @@ library.view = library.view || {};
 		};
 		self.titleEl = friend.template.getElement( 'contact-title-tmpl', conf );
 		self.titleContainer.appendChild( self.titleEl );
+		
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' )
+			return;
 		
 		const statusConf = {
 			containerId : stateId,
@@ -736,14 +741,26 @@ library.view = library.view || {};
 			self.clearTitle();
 		
 		self.titleId = friendUP.tool.uid( 'title' );
-		const avatarKlass = await self.users.getAvatarKlass( id.clientId );
-		const conf = {
-			id             : self.titleId,
-			roomName       : self.room.name,
-			avatarCssKlass : avatarKlass,
-		};
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
+			const conf = {
+				id             : self.titleId,
+				roomName       : self.room.name,
+			};
+			
+			self.titleEl = friend.template.getElement( 'group-title-hash-tmpl', conf );
+			
+		} else {
+			const avatarKlass = await self.users.getAvatarKlass( id.clientId );
+			const conf = {
+				id             : self.titleId,
+				roomName       : self.room.name,
+				avatarCssKlass : avatarKlass,
+			};
+			
+			self.titleEl = friend.template.getElement( 'group-title-avatar-tmpl', conf );
+		}
 		
-		self.titleEl = friend.template.getElement( 'group-title-tmpl', conf );
+		
 		self.titleContainer.appendChild( self.titleEl );
 	}
 	
@@ -785,6 +802,9 @@ library.view = library.view || {};
 	ns.Presence.prototype.handleOnline = function( isOnline ) {
 		const self = this;
 		if ( !self.isPrivate )
+			return;
+		
+		if ( !self.contactStatus )
 			return;
 		
 		let state = isOnline ? 'online' : 'offline';
@@ -900,6 +920,14 @@ library.view = library.view || {};
 		self.users.updateIdentity( update );
 		if ( self.isPrivate )
 			self.updateContactTitle( update );
+	}
+	
+	ns.Presence.prototype.handleLiveDisable = function( disable ) {
+		const self = this
+		self.liveAllowed = !disable
+		if ( null != self.liveStatus )
+			self.liveStatus.setLiveAllowed( !disable )
+		
 	}
 	
 	// things

@@ -36,6 +36,11 @@
 	margin-bottom : 0.2em;
 }
 
+#room-title .hash {
+	font-size   : 150%;
+	font-weight : bold;
+}
+
 .title-grp {
 	position : relative;
 	-webkit-mask-image : linear-gradient(

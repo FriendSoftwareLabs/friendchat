@@ -50,7 +50,7 @@ library.component = library.component || {};
 		self.state = 'new';
 		self.allowReconnect = true;
 		self.pingInterval = null; // reference to setInterval id
-		self.pingStep = 1000 * 15; // time between pings
+		self.pingStep = 1000 * 14; // time between pings
 		self.pingTimeouts = {}; // references to timeouts for sent pings
 		self.pingMaxTime = 1000 * 5; // timeout
 		self.reconnectDelay = 100; // milliseconds. NB! this is multiplied by reconnectScale,
@@ -88,13 +88,6 @@ library.component = library.component || {};
 	*/
 	ns.Socket.prototype.verifyWS = async function() {
 		const self = this;
-		/*
-		console.log( 'Socket.verify', {
-			id    : self.id,
-			ws    : self.ws,
-			state : self.state,
-		});
-		*/
 		if ( null == self.ws )
 			return false;
 		
@@ -159,7 +152,6 @@ library.component = library.component || {};
 	// whats the server going to do? cry more lol
 	ns.Socket.prototype.close = function( code, reason ) {
 		const self = this;
-		//console.log( 'app.Socket.close', self.id );
 		const sq = self.sendQueue;
 		self.unsetSession();
 		self.allowReconnect = false;
@@ -400,6 +392,8 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleMessage = function( e ) {
 		const self = this;
+		self.resetPingSwing()
+		
 		const msg = friendUP.tool.objectify( e.data );
 		const handler = self.messageMap[ msg.type ];
 		if ( !handler ) {
@@ -418,13 +412,6 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handleVerify = function( timestamp ) {
 		const self = this;
-		/*
-		console.log( 'Socket.handleVerify', {
-			id         : self.id,
-			timestamp  : timestamp,
-			verifyBack : self.verifyBack,
-		});
-		*/
 		if ( null == self.verifyBack )
 			return;
 		
@@ -519,20 +506,24 @@ library.component = library.component || {};
 	ns.Socket.prototype.sendOnSocket = function( msgObj, force ) {
 		const self = this;
 		if ( !wsReady() ) {
+			/*
 			console.log( 'Socket.sendOnSocket - WS not ready, queueing', {
 				msg : msgObj,
 				sid : self.id,
-			});
+			})
+			*/
 			queue( msgObj );
 			return false;
 		}
 		
 		if ( !socketReady( force )) {
+			/*
 			console.log( 'Socket.sendOnSocket - socket not ready, queueing', {
 				msg     : msgObj,
 				session : self.session,
 				socket  : self.id
 			})
+			*/
 			queue( msgObj );
 			return false;
 		}
@@ -591,15 +582,26 @@ library.component = library.component || {};
 		function ping() { self.sendPing(); }
 	}
 	
-	ns.Socket.prototype.sendPing = function( msg ) {
+	ns.Socket.prototype.resetPingSwing = function() {
+		const self = this
+		if ( null == self.pingInterval )
+			return
+		
+		
+		window.clearInterval( self.pingInterval )
+		self.pingInterval = null
+		self.startPing()
+	}
+	
+	ns.Socket.prototype.sendPing = function() {
 		const self = this;
 		if ( !self.pingInterval ) {
 			self.stopPing();
 			return;
 		}
 		
-		var timestamp = Date.now();
-		var ping = {
+		const timestamp = Date.now();
+		const ping = {
 			type : 'ping',
 			data : timestamp,
 		};
@@ -607,8 +609,8 @@ library.component = library.component || {};
 		self.sendOnSocket( ping );
 		
 		// set timeout
-		var tsStr = timestamp.toString();
-		var timeoutId = window.setTimeout( triggerTimeout, self.pingMaxTime );
+		const tsStr = timestamp.toString();
+		const timeoutId = window.setTimeout( triggerTimeout, self.pingMaxTime );
 		self.pingTimeouts[ tsStr ] = timeoutId;
 		function triggerTimeout() {
 			self.handlePingTimeout();
@@ -622,16 +624,16 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.handlePong = function( timestamp ) {
 		const self = this;
-		var timeSent = timestamp;
-		var tsStr = timeSent.toString();
-		var timeoutId  = self.pingTimeouts[ tsStr ];
+		const timeSent = timestamp;
+		const tsStr = timeSent.toString();
+		const timeoutId  = self.pingTimeouts[ tsStr ];
 		if ( timeoutId ) {
 			window.clearTimeout( timeoutId );
 			delete self.pingTimeouts[ tsStr ];
 		}
 		
-		var now = Date.now();
-		var pingTime = now - timeSent;
+		const now = Date.now();
+		const pingTime = now - timeSent;
 		self.setState( 'ping', pingTime );
 	}
 	
@@ -642,7 +644,7 @@ library.component = library.component || {};
 	
 	ns.Socket.prototype.sendPong = function( data ) {
 		const self = this;
-		var pongMsg = {
+		const pongMsg = {
 			type : 'pong',
 			data : data,
 		}

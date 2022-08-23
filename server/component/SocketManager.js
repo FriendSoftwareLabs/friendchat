@@ -125,16 +125,31 @@ ns.SocketManager.prototype.bindPool = function() {
 			conn : conn,
 		};
 		const socket = new Socket( conf );
-		const patience = 1000 * 10; // 10 seconds before closing the socket,
+		const patience = 1000 * 1; // 10 seconds before closing the socket,
 		                            //if no auth message is received
-		socket.authTimeout = setTimeout( closeSocket, patience );
+		
+		let tries = 1;
 		socket.on( 'authenticate', checkAuth );
 		socket.on( 'session', checkSession );
-		const authChallenge = {
-			type : 'authenticate',
-			data : null,
-		};
-		socket.sendConn( authChallenge );
+		sendAuth();
+		
+		function retryMaybe() {
+			tries++;
+			if ( tries > 10 )
+				closeSocket();
+			else
+				sendAuth();
+		}
+		
+		function sendAuth() {
+			socket.authTimeout = setTimeout( retryMaybe, patience );
+			const authChallenge = {
+				type    : 'authenticate',
+				data    : null,
+				attempt : tries,
+			};
+			socket.sendConn( authChallenge );
+		}
 		
 		function closeSocket() {
 			removeListeners( socket );
@@ -234,7 +249,6 @@ ns.SocketManager.prototype.validateAuthToken = function( bundle ) {
 		validatedToken.authId = tokens.authId.toString();
 		validatedToken.userId = tokens.userId.toString();
 	} catch ( e ) {
-		log( 'validateAuthToken - tokens failed .toString()', tokens );
 		return false;
 	}
 	
@@ -323,11 +337,17 @@ ns.SocketManager.prototype.bind = function( socket ) {
 	const self = this;
 	const sId = socket.id;
 	self.sockets[ sId ] = socket;
-	socket.on( 'close'   , e => { self.removeSocket( sId );	});
+	socket.on( 'close'   , e => {
+		self.removeSocket( sId );
+	});
 	socket.on( 'session' , e => self.handleSession(  e, sId ));
 	socket.on( 'msg'     , e => self.receiveMessage( e, sId ));
 	
-	socket.authenticate( true );
+	//socket.authenticate( true );
+	setTimeout( coffeebreak, 50 );
+	function coffeebreak() {
+		socket.authenticate( true );
+	}
 }
 
 ns.SocketManager.prototype.receiveMessage = function( msg, socketId ) {

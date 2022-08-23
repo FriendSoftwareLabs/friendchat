@@ -37,11 +37,11 @@ Each PU is self contained, and can be enabled, disabled or
 updated through the Parser interface. It is identified 
 with a unique string, these are the ones currently available:
 
-- Emojii     : converts certain text into image elements
-- LinkStd    : discovers links and converts them into <a> elements
-- FriendPath : discovers friend disk paths and converts them into <fp> elements
-- WsToEntity : Converts various whitespace to html
-- NL2BR      : Replaces \r\n with a <br>
+- Emojii           : converts certain text into image elements
+- LinkStd          : discovers links and converts them into <a> elements
+- FriendPath       : discovers friend disk paths and converts them into <fp> elements
+- WsToEntity       : Converts various whitespace to html
+- NL2BR            : Replaces \r\n with a <br>
 - BreakLongStrings : Splits long strings by inserting a tiny whitespace
 
 Any new PU should be extended from the base 'Parse' object, to get some

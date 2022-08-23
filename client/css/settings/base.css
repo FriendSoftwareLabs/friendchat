@@ -15,11 +15,11 @@
 }
 
 .setting {
-	padding : 0.3em 0.5em;
+	padding : 0.3em 0.8em;
 }
 
 .label {
-	width         : 9em;
+	width         : 15em;
 	padding-right : 0.5em;
 	text-align    : left;
 	line-height   : 2em;
@@ -60,13 +60,54 @@
 }
 
 .wrap textarea {
-	width : 100%;
+	width  : 100%;
 	height : 6em;
 	resize : none;
 }
 
 .setting.singlecheck {
 	
+}
+
+.gui-check-input {
+	display : none;
+}
+
+.gui-check-proxy {
+	cursor           : pointer;
+	border           : 1px solid #ADADAD;
+	border-radius    : 6px;
+	background-color : #DDD;
+	width            : 32px;
+	height           : 18px;
+	position         : relative;
+	transition       : all 0.2s;
+}
+
+.gui-check-proxy:after
+{
+	content          : '';
+	background-color : #FFF;
+	border           : 1px solid #ABABAB;
+	border-radius    : 5px;
+	width            : 14px;
+	height           : 14px;
+	position         : absolute;
+	top              : 0;
+	left             : 0;
+	transition       : all 0.2s;
+}
+
+.gui-check-input:checked + .gui-check-proxy
+{
+	background-color : #27AE60;
+	border-color     : #27AE60;
+}
+
+.gui-check-input:checked + .gui-check-proxy:after
+{
+	left         : 14px;
+	border-color : #27AE60;
 }
 
 .setting.singlecheck .checklabel {
@@ -84,4 +125,12 @@
 	text-overflow : ellipsis;
 	white-space   : normal;
 	word-break    : break-word;
+}
+
+.section {
+	padding-left: 0.5em;
+}
+
+.section-settings {
+	
 }

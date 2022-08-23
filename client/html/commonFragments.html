@@ -566,6 +566,17 @@ src
 <img class="le-item MousePointer" src="<%= src %>"></img>
 </script>
 
+<!-- image-error-tmpl
+-->
+<script id="image-error-tmpl" type="text/html">
+<div class="image-error group row start">
+	<i class="fa fa-fw fa-close"></i>
+	<div>
+		{i18n_image_failed_to_load}
+	</div>
+</div>
+</script>
+
 <!-- audio-expand-tmpl
 src
 -->
@@ -826,12 +837,26 @@ placeholder,
 
 <!-- SETTINGS COMMON FRAGMENTS -->
 
+<!-- section
+section,
+label
+-->
+<script id="settings-section-tmpl" type="text/html">
+<div id="<%= section %>-section" class="section">
+	<div class="section-label">
+		<%= label %>
+	</div>
+	<div class="section-settings">
+	</div>
+</div>
+</script>
+
 
 <!-- status
 setting
 -->
 <script id="settings-status-tmpl" type="text/html">
-<div id="<%= setting %>-status" class="status fortify">
+<div id="<%= setting %>-status" class="hidden status fortify">
 	<i class="good fa fa-fw fa-check"></i>
 	<i class="changed fa fa-fw fa-pencil-square hidden"></i>
 	<i class="working fa fa-fw fa-spin fa-cog hidden"></i>
@@ -924,7 +949,8 @@ status,
 	</div>
 	<div class="input expand group row end">
 		<div class="fortify">
-			<input id="<%= setting %>" type="checkbox" <%= checked %>>
+			<input id="<%= setting %>" class="gui-check-input" type="checkbox" <%= checked %>>
+			<div class="gui-check-proxy"></div>
 		</div>
 		<div class="checklabel">
 			&nbsp;

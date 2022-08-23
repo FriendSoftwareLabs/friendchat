@@ -308,6 +308,7 @@ window.library.component = window.library.component || {};
 			return new ns.Droppings( conf );
 		
 		const self = this;
+		self.roomId = conf.roomId;
 		self.toView = conf.toView;
 		self.toChat = conf.toChat;
 		
@@ -345,23 +346,28 @@ window.library.component = window.library.component || {};
 		function handleExec( e ) { self.handleExecutable( e ); }
 	}
 	
-	ns.Droppings.prototype.handleFile = function( item ) {
+	ns.Droppings.prototype.handleFile = async function( item ) {
 		const self = this;
 		const file = new api.File( item.path || item.Path );
-		file.expose( back );
-		function back( res ) {
-			var success = !!res;
-			var msg = {
-				type : 'link',
-				data : {
-					success : success,
-					'public' : res,
-				},
-			};
-			self.toView( msg );
-			if ( success )
-				self.toChat( res );
+		let link = null;
+		try {
+			link = await file.expose( self.roomId );
+		} catch( ex ) {
+			console.log( 'Dropping.handlefile expose ex', ex );
+			return;
 		}
+		
+		const success = !!link;
+		const msg = {
+			type : 'link',
+			data : {
+				success  : success,
+				'public' : link,
+			},
+		};
+		self.toView( msg );
+		if ( success )
+			self.toChat( link );
 	}
 	
 	ns.Droppings.prototype.handleCalendar = function( item ) {
@@ -396,6 +402,7 @@ window.library.component = window.library.component || {};
 	ns.PresenceService = function( presence ) {
 		const self = this;
 		self.presence = presence;
+		self.dormantEvents = {};
 		/*
 		self.oninvite = conf.oninvite;
 		self.onidentity = conf.onidentity;
@@ -454,6 +461,11 @@ window.library.component = window.library.component || {};
 	ns.PresenceService.prototype.setAccountSetting = async function( key, value ) {
 		const self = this;
 		return await self.presence.setAccountSetting( key, value );
+	}
+	
+	ns.PresenceService.prototype.setIsLive = function( isLive ) {
+		const self = this;
+		self.presence.setIsLive( isLive );
 	}
 	
 	ns.PresenceService.prototype.sendMsgToFID = function( uId, message, open ) {
@@ -525,6 +537,17 @@ window.library.component = window.library.component || {};
 		self.presence.handleServiceEvent( event );
 	}
 	
+	ns.PresenceService.prototype.emitEvent = function( event, data ) {
+		const self = this;
+		const dormantHandler = self.dormantEvents[ event ];
+		if ( null == dormantHandler ) {
+			console.log( 'PresenceService.emitEvent - no handler for', [ event, data ]);
+			return;
+		}
+		
+		dormantHandler.emit( data );
+	}
+	
 	ns.PresenceService.prototype.close = function() {
 		const self = this;
 		delete self.service;
@@ -548,17 +571,140 @@ window.library.component = window.library.component || {};
 			execute : sendMsgToFID,
 		}, 'Functions/' );
 		
+		const listRooms = new api.DoorFun({
+			title   : 'ListRooms',
+			execute : listRoomsFun,
+		}, 'Functions/' );
+		
+		const openRoom = new api.DoorFun({
+			title   : 'OpenRoom',
+			execute : openRoomFun,
+		}, 'Functions/' );
+		
+		const createRoom = new api.DoorFun({
+			title   : 'CreateRoom',
+			execute : createRoomFun,
+		}, 'Functions/' );
+		
+		const openLive = new api.DoorFun({
+			title   : 'OpenLive',
+			execute : openLiveFun,
+		}, 'Functions/' );
+		
+		const closeLive = new api.DoorFun({
+			title   : 'CloseLive',
+			execute : closeLiveFun,
+		}, 'Functions/' );
+		
+		const addUserToRoom = new api.DoorFun({
+			title   : 'AddUsersToRoom',
+			execute : addUsersToRoomFun,
+		}, 'Functions/' );
+		
+		const openSettings = new api.DoorFun({
+			title   : 'OpenSettings',
+			execute : openSettingsFun,
+		}, 'Functions/' );
+		
+		/*
+		const addUserToRoom = new api.DoorFun({
+			title   : 'AddUserToRoom',
+			execute : addUserToRoomFun,
+		}, 'Functions/' );
+		*/
+		
+		const roomAdd = new api.DoorEvent({
+			title : 'RoomAdd',
+		}, 'Events/' );
+		
+		const roomRemove = new api.DoorEvent({
+			title : 'RoomRemove',
+		}, 'Events/' );
+		
+		const roomUpdate = new api.DoorEvent({
+			title : 'RoomUpdate',
+		}, 'Events/' );
+		
+		const roomInviteClose = new api.DoorEvent({
+			title : 'RoomInviteClose',
+		}, 'Events/' );
+		
+		const getIdentity = new api.DoorFun({
+			title   : 'GetIdentity',
+			execute : getIdentityFun,
+		}, 'Functions/' );
+		
+		const openChat = new api.DoorFun({
+			title   : 'OpenChat',
+			execute : openChatFun,
+		}, 'Functions/' );
+		
+		const userUpdate = new api.DoorEvent({
+			title : 'UserUpdate',
+		}, 'Events/' );
+		
+		const roomUnread = new api.DoorEvent({
+			title : 'RoomUnread',
+		}, 'Events/' );
+		
+		const roomMentions = new api.DoorEvent({
+			title : 'RoomMentions',
+		}, 'Events/' );
+		
+		const roomViewOpen = new api.DoorEvent({
+			title : 'RoomViewOpen',
+		}, 'Events/' );
+		
+		const roomViewClosed = new api.DoorEvent({
+			title : 'RoomViewClosed',
+		}, 'Events/' );
+		
+		const roomLiveState = new api.DoorEvent({
+			title : 'RoomLiveState',
+		}, 'Events/' );
+		
+		const liveHasFocus = new api.DoorEvent({
+			title : 'LiveHasFocus',
+		},	'Events/' );
+		
 		hello.dormant.addFun( msgToFID );
+		hello.dormant.addFun( listRooms );
+		hello.dormant.addFun( openRoom );
+		hello.dormant.addFun( createRoom );
+		hello.dormant.addFun( openLive );
+		hello.dormant.addFun( closeLive );
+		hello.dormant.addFun( addUserToRoom );
+		hello.dormant.addFun( openChat );
+		hello.dormant.addFun( getIdentity );
+		hello.dormant.addFun( openSettings );
+		
+		hello.dormant.addEvent( roomAdd );
+		hello.dormant.addEvent( roomRemove );
+		hello.dormant.addEvent( roomUpdate );
+		hello.dormant.addEvent( roomInviteClose );
+		hello.dormant.addEvent( roomViewOpen );
+		hello.dormant.addEvent( roomViewClosed );
+		hello.dormant.addEvent( roomLiveState );
+		hello.dormant.addEvent( userUpdate );
+		hello.dormant.addEvent( roomUnread );
+		hello.dormant.addEvent( liveHasFocus );
+		hello.dormant.addEvent( roomMentions );
+		
+		self.dormantEvents = {
+			'roomAdd'         : roomAdd,
+			'roomRemove'      : roomRemove,
+			'roomUpdate'      : roomUpdate,
+			'roomInviteClose' : roomInviteClose,
+			'viewOpen'        : roomViewOpen,
+			'viewClosed'      : roomViewClosed,
+			'roomUnread'      : roomUnread,
+			'roomMentions'    : roomMentions,
+			'roomLiveState'   : roomLiveState,
+			'liveHasFocus'    : liveHasFocus,
+			'identityUpdate'  : userUpdate,
+		};
 		
 		function sendMsgToFID( fId, message, open ) {
-			/*
-			console.log( 'sendMsgToFID', {
-				fId       : fId,
-				message   : message,
-				open      : open,
-			});
-			*/
-			
 			return new Promise(( resolve, reject ) => {
 				if ( !self.presence ) {
 					reject( 'ERR_NO_SERVICE' );
@@ -573,7 +719,6 @@ window.library.component = window.library.component || {};
 				.catch( msgFail );
 				
 				function msgSent( res ) {
-					//console.log( 'sendMsgToFID - msgSent', res );
 					resolve( res );
 				}
 				
@@ -582,6 +727,73 @@ window.library.component = window.library.component || {};
 					reject( err );
 				}
 			});
+		}
+		
+		function listRoomsFun() {
+			return new Promise(( resolve, reject ) => {
+				if ( !self.presence ) {
+					reject( 'ERR_NO_SERVICE' );
+					return;
+				}
+				
+				const rooms = self.presence.listRoomsDormant();
+				resolve( rooms );
+			});
+		}
+		
+		async function openRoomFun( roomId ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return await self.presence.openChat({ 
+				id : roomId,
+			});
+		}
+		
+		async function createRoomFun( roomName ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			const room = await self.presence.createRoom({ name : roomName });
+			return room;
+		}
+		
+		async function openLiveFun( roomId ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return self.presence.openLive( roomId );
+		}
+		
+		async function closeLiveFun( roomId ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return self.presence.closeLive( roomId );
+		}
+		
+		async function addUsersToRoomFun( roomId, conf ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return await self.presence.showInviterFor( roomId, conf );
+		}
+		
+		async function openChatFun( fUserId ) {
+			console.log( 'openChatFun - NYI', fUserId );
+			throw new Error( 'NYI_LOL' );
+			
+		}
+		
+		async function getIdentityFun( fUserId ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			return await self.presence.getFriendContact( fUserId );
+		}
+		
+		async function openSettingsFun() {
+			hello.account.getSettings();
 		}
 	}
 	

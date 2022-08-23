@@ -1014,6 +1014,7 @@ library.rtc = library.rtc || {};
 				return;
 			}
 			
+			
 			self.conn.getStats()
 				.then( ook )
 				.catch( eek );
@@ -2548,7 +2549,7 @@ library.rtc = library.rtc || {};
 			.catch( bonk );
 		
 		function bonk( err ) {
-			console.log( 'RTCStats.getStats - failed to get stats', err );
+			//console.log( 'RTCStats.getStats - failed to get stats', err );
 		}
 		
 		function statsBack( raw ) {

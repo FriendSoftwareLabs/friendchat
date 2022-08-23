@@ -93,7 +93,10 @@ library.view = library.view || {};
 		self.container = document.getElementById( 'settings' );
 		
 		self.bindEvents();
-		self.setup( Object.keys( data.settings));
+		self.setup( Object.keys( data.settings ));
+		
+		if ( null != self.sections )
+			self.addSections();
 		
 		self.settings = {};
 		self.setSettings( data.settings );
@@ -102,23 +105,74 @@ library.view = library.view || {};
 		self.view.ready();
 	}
 	
+	ns.Settings.prototype.addSections = function() {
+		const self = this
+		self.sectionIds = Object.keys( self.sections )
+		console.log( 'addSections', [ self.sections, self.sectionIds ]);
+		self.sectionIds.forEach( sKey => {
+			const sConf = self.sections[ sKey ]
+			self.buildSection( sKey, sConf )
+		})
+	}
+	
 	ns.Settings.prototype.setSettings = function( data ) {
 		const self = this;
-		data.settings = data.settings || {};
-		self.validKeys.forEach( add );
+		console.log( 'setSettings', data )
+		data.settings = data.settings || {}
+		self.validKeys.forEach( add )
 		function add( setting ) {
-			var value = get( setting );
-			self.settings[ setting ] = value;
+			var value = get( setting )
+			self.settings[ setting ] = value
 			
 			function get( setting ) {
-				return data[ setting ] || data.settings[ setting ];
+				return data[ setting ] || data.settings[ setting ]
 			}
 		}
 	}
 	
+	ns.Settings.prototype.getContainer = function( setting ) {
+		const self = this
+		console.log( 'getContainer', [ setting, self.sections, self.sectionIds ])
+		if ( null == self.sections )
+			return self.container
+		
+		let container = null
+		self.sectionIds.some( sKey => {
+			console.log( 'looking in', sKey )
+			if ( null != container )
+				return true
+			
+			const settings = self.sections[ sKey ]
+			console.log( 'getcontainer, checking settings', settings )
+			const yep = settings.some( s => s === setting )
+			if ( !yep ) {
+				console.log( 'not found in', [ setting, settings ])
+				return false
+			}
+			
+			const id = sKey + '-section';
+			const sectionEl = document.getElementById( id )
+			if ( null == sectionEl ) {
+				console.log( 'could not find el', [ sKey, id ])
+				return false
+			}
+			
+			console.log( 'found el', sectionEl )
+			container = sectionEl.querySelector( '.section-settings' )
+			return true
+		})
+		
+		console.log( 'getContainer return', container )
+		if ( null == container )
+			return self.container
+		else
+			return container
+		
+	}
+	
 	ns.Settings.prototype.bindSettings = function() {
 		const self = this;
-		var settings = self.displayOrder.filter( setting => {
+		const settings = self.displayOrder.filter( setting => {
 				return self.validKeys.some( valid => setting == valid )
 			});
 		
@@ -134,24 +188,34 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.Settings.prototype.buildSection = function( section, conf ) {
+		const self = this;
+		const tConf = {
+			section : section,
+			label   : self.labelMap[ section ] || section,
+		};
+		const el = hello.template.getElement( 'settings-section-tmpl', tConf );
+		self.container.appendChild( el );
+	}
 	
 	ns.Settings.prototype.setTextInput = function( setting ) {
 		const self = this;
-		var label = self.labelMap[ setting ] || setting;
-		var value = self.settings[ setting ] || '';
-		var tmplConf = {
+		const label = self.labelMap[ setting ] || setting;
+		const value = self.settings[ setting ] || '';
+		const tmplConf = {
 			setting : setting,
-			label : label,
-			value : value,
-			status : null,
+			label   : label,
+			value   : value,
+			status  : null,
 		};
-		var id = build();
+		const id = build();
 		bind( id );
 		
 		function build() {
 			tmplConf.status = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			var element = hello.template.getElement( 'settings-plaintext-tmpl', tmplConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-plaintext-tmpl', tmplConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -199,8 +263,9 @@ library.view = library.view || {};
 		
 		function build() {
 			tmplConf.status = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			var element = hello.template.getElement( 'settings-number-tmpl', tmplConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-number-tmpl', tmplConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -273,8 +338,9 @@ library.view = library.view || {};
 		
 		function build() {
 			tmplConf.status = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			var element = hello.template.getElement( 'settings-securetext-tmpl', tmplConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-securetext-tmpl', tmplConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -372,35 +438,36 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.confirmedPassword = function( setting ) {
 		const self = this;
-		var label = self.labelMap[ setting ] || setting;
-		var value = self.settings[ setting ] || '';
-		var tmplConf = {
+		const label = self.labelMap[ setting ] || setting;
+		const value = self.settings[ setting ] || '';
+		const tmplConf = {
 			setting : setting,
 			label : label,
 			value : value,
 		};
-		var id = build();
+		const id = build();
 		bind( id );
 		
 		function build() {
-			var element = hello.template.getElement( 'password-input-tmpl', tmplConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'password-input-tmpl', tmplConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			
 			return element.id;
 		}
 		
 		function bind( id ) {
-			var form = document.getElementById( id );
-			var inputPass = document.getElementById( setting );
-			var inputPassPlain = document.getElementById( setting + '-plain' );
-			var inputConfirm = document.getElementById( setting + '-confirm' );
-			var inputConfirmPlain = document.getElementById( setting + '-plain-confirm' );
+			const form = document.getElementById( id );
+			const inputPass = document.getElementById( setting );
+			const inputPassPlain = document.getElementById( setting + '-plain' );
+			const inputConfirm = document.getElementById( setting + '-confirm' );
+			const inputConfirmPlain = document.getElementById( setting + '-plain-confirm' );
 			
-			var btnShowPlain = document.getElementById( setting + '-show-plain' );
-			var btnShowSecure = document.getElementById( setting + '-show-secure' );
+			const btnShowPlain = document.getElementById( setting + '-show-plain' );
+			const btnShowSecure = document.getElementById( setting + '-show-secure' );
 			
-			var btnSubmit = document.getElementById( setting + '-btn-submit' );
-			var btnError = document.getElementById( setting + '-btn-error' );
+			const btnSubmit = document.getElementById( setting + '-btn-submit' );
+			const btnError = document.getElementById( setting + '-btn-error' );
 			
 			form.addEventListener( 'submit', submit, false );
 			
@@ -537,36 +604,41 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.singleCheck = function( setting ) {
 		const self = this;
-		var isChecked = !!self.settings[ setting ];
-		var label = self.labelMap[ setting ];
+		const isChecked = !!self.settings[ setting ];
+		const label = self.labelMap[ setting ];
 		
 		if ( typeof( isChecked ) === 'undefined' ) {
 			console.log( 'no setting for', setting );
 			return;
 		}
 		
-		var id = build();
+		const id = build();
 		bind( id );
 		
 		function build() {
-			var status = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			var conf = {
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const conf = {
 				setting : setting,
 				label : label,
 				checked : isChecked ? 'checked' : '',
 				status : status,
 			};
-			var element = hello.template.getElement( 'settings-singlecheck-tmpl', conf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-singlecheck-tmpl', conf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
 		function bind( id ) {
-			var form = document.getElementById( id );
-			var input = form.querySelector( 'input' );
+			const form = document.getElementById( id );
+			const input = form.querySelector( 'input' );
+			const proxy = form.querySelector( '.gui-check-proxy' );
 			
 			form.addEventListener( 'submit', formSubmit, false );
 			input.addEventListener( 'click', click, false );
+			console.log( 'proxy', proxy );
+			if ( null != proxy )
+				proxy.addEventListener( 'click', check, false );
 			
 			self.updateMap[ setting ] = updateHandler;
 			function updateHandler( value ) {
@@ -580,6 +652,12 @@ library.view = library.view || {};
 			}
 			
 			function click( e ) {
+				save();
+			}
+			
+			function check( e ) {
+				console.log( 'check', input.checked );
+				input.checked = !input.checked;
 				save();
 			}
 			
@@ -610,10 +688,11 @@ library.view = library.view || {};
 		bind( id );
 		
 		function build() {
-			var checkers = checkerKeys.map( buildCheck );
+			const checkers = checkerKeys.map( buildCheck );
 			checkConf.checkers = checkers.join( '' );
-			var element = hello.template.getElement( 'settings-checkbox-tmpl', checkConf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-checkbox-tmpl', checkConf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -676,9 +755,9 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.setTextarea = function( setting ) {
 		const self = this;
-		var label = self.labelMap[ setting ] || setting;
-		var value = self.settings[ setting ];
-		var conf = {
+		const label = self.labelMap[ setting ] || setting;
+		const value = self.settings[ setting ];
+		const conf = {
 			setting : setting,
 			label :label,
 			value : value,
@@ -687,10 +766,11 @@ library.view = library.view || {};
 		bind( id );
 		
 		function build() {
-			var status = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting });
 			conf.status = status;
-			var element = hello.template.getElement( 'settings-textarea-tmpl', conf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-textarea-tmpl', conf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		
@@ -734,10 +814,11 @@ library.view = library.view || {};
 		bind( id );
 		
 		function build( conf ) {
-			var status = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting });
 			conf.status = status;
-			var element = hello.template.getElement( 'settings-fileselect-tmpl', conf );
-			self.container.appendChild( element );
+			const element = hello.template.getElement( 'settings-fileselect-tmpl', conf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
 			return element.id;
 		}
 		

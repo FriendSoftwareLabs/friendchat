@@ -552,7 +552,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.blur = function( msg ) {
 		const self = this;
-		//console.log( 'view.blur', msg );
+		//console.log( 'view.blur', self );
 	}
 	
 	
@@ -1203,7 +1203,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.activate = function() {
 		const self = this;
-		var msg = {
+		const msg = {
 			method : 'activate',
 		};
 		self.sendViewEvent( msg );
@@ -1211,7 +1211,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.activated = function() {
 		const self = this;
-		if ( self.isActive )
+		if ( true === self.isActive )
 			return;
 		
 		self.handle({
@@ -1222,11 +1222,12 @@ var friend = window.friend || {};
 		self.isActive = true;
 		document.body.focus();
 		document.body.classList.toggle( 'activated', true );
+		self.sendTypeEvent( 'focus', true );
 	}
 	
 	ns.View.prototype.deactivated = function() {
 		const self = this;
-		if ( !self.isActive )
+		if ( false === self.isActive )
 			return;
 		
 		self.handle({
@@ -1236,6 +1237,7 @@ var friend = window.friend || {};
 		
 		self.isActive = false;
 		document.body.classList.toggle( 'activated', false );
+		self.sendTypeEvent( 'focus', false );
 	}
 	
 	ns.View.prototype.handleViewFlag = function( e ) {
@@ -1786,7 +1788,7 @@ window.View = new api.View();
 	ns.FileMaker = function( sourceName ) {
 		const self = this;
 		self.name = sourceName || 'file';
-		self.saveDir = 'Home:FriendChat/';
+		self.saveDir = 'Home:Chat Files/';
 		self.dirFiles = null;
 		self.dirChecked = false;
 		self.dup = 1;

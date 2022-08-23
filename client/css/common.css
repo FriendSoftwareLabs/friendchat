@@ -931,6 +931,10 @@ html body .hidden {
 	display: none !important;
 }
 
+html body *.disabled {
+	color : #9e8181!important;
+}
+
 /* search */
 
 #search-bar {
