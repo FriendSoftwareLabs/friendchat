@@ -591,7 +591,7 @@ library.rtc = library.rtc || {};
 
 
 /* screenShare
-
+ // deprecated, in favor of using browser api
 */
 (function( ns, undefined ) {
 	ns.ScreenShare = function() {
@@ -801,7 +801,7 @@ library.rtc = library.rtc || {};
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false;
+		self.spam = true;
 		
 		self.init();
 	}
@@ -1229,7 +1229,7 @@ library.rtc = library.rtc || {};
 		if ( self.iceComplete )
 			return;
 		
-		var msg = {
+		const msg = {
 			type : 'candidate',
 			data : cand,
 		};
@@ -1424,15 +1424,13 @@ library.rtc = library.rtc || {};
 		findCodec( 'H264', lines );
 		findCodec( 'VP9', lines );
 		
-		/*
-		self.log( 'the things', {
-			mVideo : mVideo,
-			mVideoLine : mVideoLine,
+		self.log( 'reorderCodecs, the things', {
+			mVideo         : mVideo,
+			mVideoLine     : mVideoLine,
 			mVideoProtocol : mVideoProtocol,
-			mVideoCodecs : mVideoCodecs,
-			codecIds : codecIds,
+			mVideoCodecs   : mVideoCodecs,
+			codecIds       : codecIds,
 		});
-		*/
 		
 		if ( !codecIds.length ) {
 			self.log( 'Session.reordercodec - no relevant codecs found' );
@@ -1657,7 +1655,7 @@ library.rtc = library.rtc || {};
 		
 		function nope( err ) {
 			self.log( 'error setting remote SDP answer: ', err );
-			var errTest = 'DOMException: Failed to set remote answer sdp:'
+			const errTest = 'DOMException: Failed to set remote answer sdp:'
 			+ ' Failed to push down transport description:'
 			+ ' Failed to set ssl role for the channel.';
 			
@@ -1672,12 +1670,12 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.rollbackSignalingState = function() {
 		const self = this;
-		var opt = {
+		const opt = {
 			type : 'rollback',
 			sdp : null,
 		};
 		
-		var rollback = new window.RTCSessionDescription();
+		const rollback = new window.RTCSessionDescription();
 		rollback.type = 'rollback';
 		self.conn.setLocalDescription( rollback )
 			.then( goodie )
@@ -1723,7 +1721,7 @@ library.rtc = library.rtc || {};
 			 + '- other side is done sending', candidate );
 			return;
 		}
-		var ICECandidate = new window.RTCIceCandidate( candidate );
+		const ICECandidate = new window.RTCIceCandidate( candidate );
 		self.conn.addIceCandidate( ICECandidate )
 			.then( iceCandidateAdded )
 			.catch( addIceCandidateErr );
@@ -2417,9 +2415,10 @@ library.rtc = library.rtc || {};
 })( library.rtc );
 
 (function( ns, undefined ) {
-	ns.RTCStats = function( browser ) {
+	ns.RTCStats = function( browser, label ) {
 		const self = this;
 		self.browser = browser;
+		self.label = label;
 		
 		self.rtcConn = null;
 		self.baseRate = 500;
@@ -2428,6 +2427,8 @@ library.rtc = library.rtc || {};
 		self.statsCache = {};
 		
 		library.component.EventEmitter.call( self );
+		
+		self.spam = true;
 		
 		self.init();
 	}
@@ -2451,12 +2452,14 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.RTCStats.prototype.stop = function() {
-		const self = this;
-		self.clearPollers();
+		const self = this
+		self.log( 'stop' )
+		self.clearPollers()
 	}
 	
 	ns.RTCStats.prototype.trackAdded = function( track ) {
 		const self = this;
+		self.log( 'trackAdded', track )
 		const id = track.id;
 		const k = track.kind;
 		if ( 'audio' == k )
@@ -2511,8 +2514,22 @@ library.rtc = library.rtc || {};
 		const self = this;
 	}
 	
+	ns.RTCStats.prototype.log = function( ...args ) {
+		const self = this
+		if ( true != self.spam )
+			return
+		
+		let desc = args.shift()
+		desc = 'RTCStats > ' + desc
+		if ( null != self.label )
+			desc = self.label + ' ' + desc
+		
+		console.log( desc, ...args )
+	}
+	
 	ns.RTCStats.prototype.setPollers = function() {
 		const self = this;
+		self.log( 'setPollers' )
 		self.clearPollers();
 		
 		self.baseInterval = window.setInterval( getStats, self.baseRate );
@@ -2528,6 +2545,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.clearPollers = function() {
 		const self = this;
+		self.log( 'clearPollers' )
 		if ( null != self.baseInterval ) {
 			window.clearInterval( self.baseInterval );
 			delete self.baseInterval;
@@ -2541,6 +2559,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.getStats = function() {
 		const self = this;
+		self.log( 'getStats', !!self.rtcConn )
 		if ( !self.rtcConn )
 			return;
 		
@@ -2549,11 +2568,12 @@ library.rtc = library.rtc || {};
 			.catch( bonk );
 		
 		function bonk( err ) {
-			//console.log( 'RTCStats.getStats - failed to get stats', err );
+			self.log( 'getStats - failed to get stats', err );
 		}
 		
 		function statsBack( raw ) {
 			self.raw = raw;
+			self.log( 'statsBack', raw )
 			self.emitBase();
 			if ( self.extendedChecked )
 				return;
@@ -2602,11 +2622,17 @@ library.rtc = library.rtc || {};
 			video : video,
 		};
 		
+		self.log( 'emitBase', base )
 		self.emit( 'base', base );
 	}
 	
 	ns.RTCStats.prototype.discoverTrack = function( id ) {
 		const self = this;
+		self.log( 'discoverTrack', { 
+			id  : id,
+			raw : self.raw,
+		})
+		
 		if ( null == self.raw )
 			return;
 		
@@ -2641,6 +2667,7 @@ library.rtc = library.rtc || {};
 			self.vDiscover = null;
 		}
 		
+		self.log( 'discoverTrack - track', track );
 		return track;
 	}
 	
