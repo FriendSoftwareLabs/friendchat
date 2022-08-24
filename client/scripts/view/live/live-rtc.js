@@ -2758,7 +2758,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( self.stats )
 			self.stats.close();
 		
-		self.stats = new library.rtc.RTCStats( self.browser );
+		const id = self.identity;
+		const name = id.name;
+		self.stats = new library.rtc.RTCStats( self.browser, name );
 		self.stats.on( 'base', e => self.handleBaseStats( e ));
 		self.stats.on( 'extended', e => self.handleFullStats( e ));
 	}
@@ -3625,9 +3627,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.releaseRemoteMedia = function() {
-		var self = this;
-		self.log( 'releaseRemoteMedia', self.remoteMedia );
-		var stream = self.remoteMedia;
+		const self = this
+		self.log( 'releaseRemoteMedia', self.remoteMedia )
+		const stream = self.remoteMedia;
 		delete self.remoteMedia;
 		
 		if ( !stream )
@@ -3648,11 +3650,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.bindTrack = function( track ) {
-		var self = this;
+		const self = this
+		self.log( 'bindTrack', track )
 		if ( !track )
 			return;
 		
-		var kind = track.kind;
+		const kind = track.kind;
 		track.onmute = onMute;
 		track.onunmute = onUnMute;
 		track.onended = onEnded;
@@ -3660,8 +3663,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( track.getConstraints )
 			self.log( 'track.getConstraints', track.getConstraints() );
 		
-		self.log( kind + '-track, onMute', e );
-		self.log( kind + '-track, onUnMute', e );
 		function onEnded( e ) {
 			self.log( kind + '-track, onEnded', e );
 			self.emitStreamState();
@@ -3670,7 +3671,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.releaseTrack = function( track ) {
-		var self = this;
+		const self = this;
 		if ( !track )
 			return;
 		
@@ -3756,12 +3757,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !stats || !stats.inbound )
 			return;
 		
-		/*
 		self.log( 'checkStats', stats );
 		const trans = stats.transport;
 		const inn = stats.inbound;
 		const audio = inn.audio;
 		const video = inn.video;
+		let report = null;
 		if ( trans )
 			checkTransport( trans, audio, video );
 		if ( audio )
@@ -3769,9 +3770,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( video )
 			checkVideo( video );
 		
+		report.sessionState = self.session.state
+		report.remoteTracks = self.remoteMedia.getTracks()
+		
+		self.log( 'report', report );
+		
 		function checkTransport( t, a, v ) {
 			const p = t.pair;
-			const report = {
+			report = {
 				ping         : t.ping,
 				bandwidthOut : ( p.availableOutgoingBitrate / 8 ),
 				sendRate     : t.sendRate,
@@ -3786,34 +3792,35 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				report.videoPackets = v.packetRate;
 				report.videoPLoss   = v.packetLoss;
 			}
-			
-			self.log( 'checkTransport', report );
 		}
 		
 		function checkAudio( a ) {
-			return;
-			
-			if ( !self.receiving.audio )
+			if ( !self.receiving.audio ) {
+				report.audioExpected = false;
 				return;
+			}
 			
-			const t = a.track;
+			const t = a.track
+			report.audio = t;
 			if ( null == t.volumeLevel )
 				return;
 			
 			if ( 0 == t.volumeLevel && !self.remoteMute ) {
 				self.log( 'checkAudio - AMBER ALERT NO AUDIO', a );
-				
 				self.refreshAudio();
 			}
 		}
 		
 		function checkVideo( v ) {
-			if ( !self.receiving.video )
-				return;
+			if ( !self.receiving.video ) {
+				report.videoExpected = false
+				return
+			}
 			
-			const c = v.codec;
-			const t = v.track;
-			self.log( 'track', t );
+			const c = v.codec
+			const t = v.track
+			report.video = t
+			report.videoCodec = c
 			if ( !t.frameHeight || !t.frameWidth ) {
 				self.log( 'checkVideo - OHSHIT RESTARTING', v );
 				if ( !self.useDefaultCodec ) {
@@ -3825,7 +3832,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					self.refreshVideo();
 			}
 		}
-		*/
+		
 	}
 	
 	ns.Peer.prototype.refreshAudio = function() {

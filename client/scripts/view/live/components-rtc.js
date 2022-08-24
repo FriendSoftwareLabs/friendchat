@@ -2573,7 +2573,7 @@ library.rtc = library.rtc || {};
 		
 		function statsBack( raw ) {
 			self.raw = raw;
-			self.log( 'statsBack', raw )
+			self.log( 'statsBack, raw', raw )
 			self.emitBase();
 			if ( self.extendedChecked )
 				return;
@@ -2648,7 +2648,6 @@ library.rtc = library.rtc || {};
 			const tId = t.trackIdentifier;
 			if ( tId != id )
 				return;
-			
 			
 			track = t;
 			type = t.kind;
@@ -2775,9 +2774,9 @@ library.rtc = library.rtc || {};
 				const t = v.track;
 				if ( c ) {
 					const time = v.timestamp;
-					const bps = getRate( c.time, time, c.bytesReceived, v.bytesReceived );
+					const bps = getRate( c.time, time, c.bytesReceived  , v.bytesReceived );
 					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived );
-					const lps = getRate( c.time, time, c.packetsLost, v.packetsLost );
+					const lps = getRate( c.time, time, c.packetsLost    , v.packetsLost );
 					v.byteRate = bps;
 					v.packetRate = pps;
 					v.packetLoss = lps;
