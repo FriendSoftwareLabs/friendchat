@@ -2545,6 +2545,9 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.clearPollers = function() {
 		const self = this;
+		if ( null == self.baseInterval && null == self.extendedInterval )
+			return
+		
 		self.log( 'clearPollers' )
 		if ( null != self.baseInterval ) {
 			window.clearInterval( self.baseInterval );
@@ -2569,6 +2572,7 @@ library.rtc = library.rtc || {};
 		
 		function bonk( err ) {
 			self.log( 'getStats - failed to get stats', err );
+			self.emitError( err );
 		}
 		
 		function statsBack( raw ) {
@@ -2580,6 +2584,13 @@ library.rtc = library.rtc || {};
 			
 			self.emitExtended();
 		}
+	}
+	
+	ns.RTCStats.prototype.emitError = function( err ) {
+		const self = this
+		self.emit( 'error', { 
+			error : err,
+		})
 	}
 	
 	ns.RTCStats.prototype.emitBase = function() {

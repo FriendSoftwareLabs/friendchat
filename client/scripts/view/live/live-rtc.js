@@ -2763,6 +2763,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.stats = new library.rtc.RTCStats( self.browser, name );
 		self.stats.on( 'base', e => self.handleBaseStats( e ));
 		self.stats.on( 'extended', e => self.handleFullStats( e ));
+		self.stats.on( 'error', e => self.handleStatsError( e ))
 	}
 	
 	ns.Peer.prototype.closeStats = function() {
@@ -3712,20 +3713,44 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.refreshTheThing();
 	}
 	
+	ns.Peer.prototype.handleStatsError = function( err ) {
+		const self = this
+		self.log( 'handleStatsError', {
+			err   : err,
+			grace : null != self.statsErrorGracePeriod,
+		})
+		if ( null != self.statsErrorGracePeriod )
+			return
+		
+		self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 5 )
+		function looksFucky() {
+			self.log( 'looksFucky, restart' )
+			self.statsErrorGracePeriod = null
+			self.restart()
+		}
+		
+	}
+	
 	ns.Peer.prototype.handleFullStats = function( stats ) {
 		const self = this;
 		if ( 'error' == stats.type ) {
-			self.log( 'Peer.handleFullStats - err', stats );
-			return;
+			self.log( 'Peer.handleFullStats - err', stats )
+			return
 		}
 		
-		self.checkStats( stats.data );
-		//self.emit( 'state', stats );
+		self.checkStats( stats.data )
+		//self.emit( 'state', stats )
 	}
 	
 	ns.Peer.prototype.handleBaseStats = function( base ) {
 		const self = this;
 		self.log( 'base stats', base ); //spammy!
+		if ( null != self.statsErrorGracePeriod ) {
+			self.log( 'clearing error grace period' )
+			window.clearTimeout( self.statsErrorGracePeriod )
+			self.statsErrorGracePeriod = null;
+		}
+		
 		if ( !self.baseStats ) {
 			self.baseStats = base;
 			return;
@@ -3758,6 +3783,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		self.log( 'checkStats', stats );
+		if ( null != self.statsErrorGracePeriod ) {
+			self.log( 'clearing error grace period' )
+			window.clearTimeout( self.statsErrorGracePeriod )
+			self.statsErrorGracePeriod = null;
+		}
+		
 		const trans = stats.transport;
 		const inn = stats.inbound;
 		const audio = inn.audio;
