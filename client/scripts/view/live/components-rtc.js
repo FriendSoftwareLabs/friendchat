@@ -2871,7 +2871,7 @@ library.rtc = library.rtc || {};
 				data : res,
 			};
 			
-			self.emit( 'extended', event );
+			self.emit( 'extended', event )
 		}
 	}
 	

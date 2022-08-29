@@ -2504,7 +2504,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	// healthcheck is optional and will abort restart if things look ok
 	ns.Peer.prototype.restart = function( checkHealth ) {
 		const self = this;
-		self.log( 'Peer.restart', checkHealth );
+		self.log( '--- Peer.restart ----------------------------------------', checkHealth );
 		if ( checkHealth ) {
 			let healthy = self.checkIsHealthy();
 			self.log( 'healthy', healthy );
@@ -3817,11 +3817,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( a ) {
 				report.audioPackets = a.packetRate;
 				report.audioPLoss   = a.packetLoss;
+			} else {
+				if ( self.receiving?.audio )
+					report.audioMissing = true
 			}
+			
 			
 			if ( v ) {
 				report.videoPackets = v.packetRate;
 				report.videoPLoss   = v.packetLoss;
+			} else {
+				if ( self.receiving?.video )
+					report.videoMissing = true
 			}
 		}
 		
