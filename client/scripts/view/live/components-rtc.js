@@ -2460,26 +2460,27 @@ library.rtc = library.rtc || {};
 	ns.RTCStats.prototype.trackAdded = function( track ) {
 		const self = this;
 		self.log( 'trackAdded', track )
-		const id = track.id;
-		const k = track.kind;
+		const id = track.id
+		const k = track.kind
 		if ( 'audio' == k )
-			self.aDiscover = track;
+			self.aDiscover = track
 		if ( 'video' == k )
-			self.vDiscover = track;
+			self.vDiscover = track
 		
-		self.discoverTrack( id );
+		self.discoverTrack( id )
 	}
 	
 	ns.RTCStats.prototype.trackRemoved = function( type ) {
 		const self = this;
+		self.log( 'trackRemoved', type )
 		if ( 'audio' == type ) {
-			self.aId = null;
-			self.aDiscover = null;
+			self.aId = null
+			self.aDiscover = null
 		}
 		
 		if ( 'video' == type ) {
-			self.vId = null;
-			self.vDiscover = null;
+			self.vId = null
+			self.vDiscover = null
 		}
 	}
 	
@@ -2668,16 +2669,16 @@ library.rtc = library.rtc || {};
 			return null;
 		
 		if ( 'audio' == type ) {
-			self.aId = track.id;
-			self.aDiscover = null;
+			self.aId = track.id
+			self.aDiscover = null
 		}
 		
 		if ( 'video' == type ) {
-			self.vId = track.id;
-			self.vDiscover = null;
+			self.vId = track.id
+			self.vDiscover = null
 		}
 		
-		self.log( 'discoverTrack - track', track );
+		self.log( 'discoverTrack - track', track )
 		return track;
 	}
 	
@@ -2693,7 +2694,7 @@ library.rtc = library.rtc || {};
 		stats.forEach( item => { 
 			const type = item.type;
 			const id = item.id;
-			if ( !byType[ type ])
+			if ( null == byType[ type ])
 				byType[ type ] = [];
 			
 			byType[ type ].push( item );
@@ -2728,18 +2729,18 @@ library.rtc = library.rtc || {};
 				if ( !track.remoteSource )
 					return;
 				
-				const cache = self.statsCache[ kind ];
+				const cache = self.statsCache[ kind ]
 				if ( cache && cache.id !== trackId ) {
-					self.statsCache[ kind ] = null;
-					return;
+					self.log( 'innie - invalid track id', [ cache, track ])
+					self.statsCache[ kind ] = null
 				}
 				
-				/*
 				self.log( 'innie', {
+					kind  : kind,
 					rtp   : rtp,
 					track : track,
-				});
-				*/
+				})
+				
 				const type = rtp.mediaType;
 				const codec = things[ rtp.codecId ];
 				rtp.track = track;
