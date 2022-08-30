@@ -3806,6 +3806,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.log( 'report', report );
 		
+		if ( report.audioMissing || report.videoMissing )
+			self.restart();
+		
 		function checkTransport( t, a, v ) {
 			const p = t.pair;
 			report = {
