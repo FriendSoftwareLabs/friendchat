@@ -3756,6 +3756,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
+		/*
+		if ( null == base.audio && null == base.video ) {
+			self.log( 'handleBaseStats - all nulls, refreshing' )
+			self.refreshMeta()
+			return
+		}
+		*/
+		
 		const curr = self.baseStats;
 		if ( null == curr.video && base.video ) {
 			self.emit( 'change-video-res', base.video );
@@ -3803,8 +3811,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		report.sessionState = self.session.state
 		report.remoteTracks = self.remoteMedia.getTracks()
+		report.receive = self.receive
+		report.receiving = self.receiving
 		
-		self.log( 'report', report );
+		self.log( 'report', report )
 		
 		if ( report.audioMissing || report.videoMissing )
 			self.restart();

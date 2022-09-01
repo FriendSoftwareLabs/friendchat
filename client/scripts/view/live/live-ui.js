@@ -496,7 +496,7 @@ library.component = library.component || {};
 		self.resizeWait = setTimeout( resizeThrottle, 50 );
 		
 		function callResize( peerId ) {
-			var peer = self.peers[ peerId ];
+			const peer = self.peers[ peerId ]
 			peer.doResize();
 		}
 		
