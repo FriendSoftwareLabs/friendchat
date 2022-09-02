@@ -2718,7 +2718,19 @@ library.rtc = library.rtc || {};
 		const res = {};
 		const inn = byType[ 'inbound-rtp' ];
 		const out = byType[ 'outbound-rtp' ];
+		let multiAudio = false
+		let aT = false
 		res.inbound = buildInnieStats( inn, byId );
+		if ( !aT ) {
+			self.log( 'no audio track found' )
+		}
+		
+		if ( multiAudio ) {
+			self.log( 'multiple audio tracks found' )
+			self.emitError( 'ERR_MULTI_TRACKS' )
+			return
+		}
+		
 		res.transport = buildTransport( byType, byId );
 		res.raw = {
 			byId   : byId,
@@ -2731,16 +2743,16 @@ library.rtc = library.rtc || {};
 				return null;
 			
 			const res = {};
-			rtps.forEach( rtp => {
+			rtps.some( rtp => {
 				const id = rtp.id;
 				const track = things[ rtp.trackId ];
 				if ( !track )
-					return;
+					return false
 				
 				const trackId = track.trackIdentifier;
 				const kind = track.kind;
 				if ( !track.remoteSource )
-					return;
+					return false
 				
 				const cache = self.statsCache[ kind ]
 				if ( cache && cache.id !== trackId ) {
@@ -2758,13 +2770,24 @@ library.rtc = library.rtc || {};
 				const codec = things[ rtp.codecId ];
 				rtp.track = track;
 				rtp.codec = codec;
-				if ( 'audio' == type )
-					setAudioDeltas( rtp );
+				if ( 'audio' == type ) {
+					if ( true == aT ) {
+						self.log( 'multiple audio tracks found' )
+						multiAudio = true
+						return true
+					}
+					
+					aT = true
+					setAudioDeltas( rtp )
+				}
 				if ( 'video' == type )
 					setVideoDeltas( rtp );
 				
 				res[ type ] = rtp;
+				
+				return false
 			});
+			
 			return res;
 			
 			function setAudioDeltas( a ) {

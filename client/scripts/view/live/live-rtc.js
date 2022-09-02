@@ -3719,13 +3719,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			err   : err,
 			grace : null != self.statsErrorGracePeriod,
 		})
-		if ( null != self.statsErrorGracePeriod )
-			return
+		if ( 'ERR_MULTI_TRACKS' == err ) {
+			if ( null != self.extendedError )
+				return
+			
+			self.extendedError = window.setTimeout( looksFucky, 1000 * 5 )
+		}
 		
-		self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 5 )
+		if ( 'ERR_INVALID_STATE' == err ) {
+			if ( null != self.statsErrorGracePeriod )
+				return
+			
+			self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 3 )
+		}
+		
 		function looksFucky() {
 			self.log( 'looksFucky, restart' )
+			if ( null != self.extendedError )
+				window.clearTimeout( self.extendedError )
+			if ( null != self.statsErrorGracePeriod )
+				window.clearTimeout( self.statsErrorGracePeriod )
+			
 			self.statsErrorGracePeriod = null
+			self.extendedError = null
 			self.restart()
 		}
 		
@@ -3791,10 +3807,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		self.log( 'checkStats', stats );
-		if ( null != self.statsErrorGracePeriod ) {
+		if ( null != self.extendedError ) {
 			self.log( 'clearing error grace period' )
-			window.clearTimeout( self.statsErrorGracePeriod )
-			self.statsErrorGracePeriod = null;
+			window.clearTimeout( self.extendedError )
+			self.extendedError = null
 		}
 		
 		const trans = stats.transport;
