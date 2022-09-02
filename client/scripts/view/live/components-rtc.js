@@ -2639,7 +2639,7 @@ library.rtc = library.rtc || {};
 				aDisc  : self.aDiscover,
 				vId    : self.vId,
 				vDisc  : self.vDiscover,
-				tracks : self.raw.filter( item => item.type == 'track' ),
+				//tracks : self.raw.filter( item => item.type == 'track' ),
 			})
 		} else
 			self.log( 'emitBase', base )
