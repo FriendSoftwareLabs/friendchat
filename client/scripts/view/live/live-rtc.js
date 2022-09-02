@@ -3713,20 +3713,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.refreshTheThing();
 	}
 	
-	ns.Peer.prototype.handleStatsError = function( err ) {
+	ns.Peer.prototype.handleStatsError = function( e ) {
 		const self = this
 		self.log( 'handleStatsError', {
-			err   : err,
+			err   : e,
 			grace : null != self.statsErrorGracePeriod,
+			ext   : null != self.extendedError,
 		})
-		if ( 'ERR_MULTI_TRACKS' == err ) {
+		if ( 'ERR_MULTI_TRACKS' == e.error ) {
 			if ( null != self.extendedError )
 				return
 			
 			self.extendedError = window.setTimeout( looksFucky, 1000 * 5 )
 		}
 		
-		if ( 'ERR_INVALID_STATE' == err ) {
+		if ( 'ERR_INVALID_STATE' == e.error ) {
 			if ( null != self.statsErrorGracePeriod )
 				return
 			

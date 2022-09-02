@@ -2772,7 +2772,6 @@ library.rtc = library.rtc || {};
 				rtp.codec = codec;
 				if ( 'audio' == type ) {
 					if ( true == aT ) {
-						self.log( 'multiple audio tracks found' )
 						multiAudio = true
 						return true
 					}
