@@ -63,13 +63,13 @@ library.rtc = library.rtc || {};
 			}
 			
 			function checkErrors( res ) {
-				console.log( 'checkErrors', res );
-				isCrit = false;
+				console.log( 'checkErrors', res )
+				let isCrit = false
 				if ( 'error' === res.type )
-					isCrit = true;
+					isCrit = true
 				
-				self.setHasError( isCrit );
-				callback( isCrit, res.browser );
+				self.setHasError( isCrit )
+				callback( isCrit, res.browser )
 			}
 			
 			function uiClick( type ) {

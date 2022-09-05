@@ -1055,8 +1055,11 @@ library.rtc = library.rtc || {};
 	ns.Session.prototype.close = function() {
 		const self = this;
 		self.log( 'session.close' );
-		if ( self.negotiationNeededWaiting )
-			window.clearTimeout( self.negotiationNeededWaiting );
+		if ( null != self.negotiationNeededWaiting )
+			window.clearTimeout( self.negotiationNeededWaiting )
+		
+		if ( null != self.iceTimeout )
+			window.clearTimeout( self.iceTimeout )
 		
 		delete self.negotiationNeededWaiting;
 		
