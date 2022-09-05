@@ -2567,6 +2567,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.getStats = function() {
 		const self = this;
+		self.log( 'getStats', !!self.rtcConn )
 		if ( !self.rtcConn )
 			return;
 		
@@ -2581,6 +2582,7 @@ library.rtc = library.rtc || {};
 		
 		function statsBack( raw ) {
 			self.raw = raw;
+			self.log( 'statsBack, raw', raw )
 			self.emitBase();
 			if ( self.extendedChecked )
 				return;
