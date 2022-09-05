@@ -801,7 +801,7 @@ library.rtc = library.rtc || {};
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = true;
+		self.spam = false;
 		
 		self.init();
 	}
@@ -2428,7 +2428,7 @@ library.rtc = library.rtc || {};
 		
 		library.component.EventEmitter.call( self );
 		
-		self.spam = true;
+		self.spam = false;
 		
 		self.init();
 	}
