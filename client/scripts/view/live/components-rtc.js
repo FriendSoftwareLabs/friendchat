@@ -2460,31 +2460,33 @@ library.rtc = library.rtc || {};
 	ns.RTCStats.prototype.trackAdded = function( track ) {
 		const self = this;
 		self.log( 'trackAdded', track )
-		const id = track.id;
-		const k = track.kind;
+		const id = track.id
+		const k = track.kind
 		if ( 'audio' == k )
-			self.aDiscover = track;
+			self.aDiscover = track
 		if ( 'video' == k )
-			self.vDiscover = track;
+			self.vDiscover = track
 		
-		self.discoverTrack( id );
+		self.discoverTrack( id )
 	}
 	
 	ns.RTCStats.prototype.trackRemoved = function( type ) {
 		const self = this;
+		self.log( 'trackRemoved', type )
 		if ( 'audio' == type ) {
-			self.aId = null;
-			self.aDiscover = null;
+			self.aId = null
+			self.aDiscover = null
 		}
 		
 		if ( 'video' == type ) {
-			self.vId = null;
-			self.vDiscover = null;
+			self.vId = null
+			self.vDiscover = null
 		}
 	}
 	
 	ns.RTCStats.prototype.updateSource = function( webRTCSession ) {
 		const self = this;
+		self.log( 'updateSource', webRTCSession )
 		if ( null == webRTCSession ) {
 			self.rtcConn = null;
 			self.stop();
@@ -2550,13 +2552,13 @@ library.rtc = library.rtc || {};
 		
 		self.log( 'clearPollers' )
 		if ( null != self.baseInterval ) {
-			window.clearInterval( self.baseInterval );
-			delete self.baseInterval;
+			window.clearInterval( self.baseInterval )
+			delete self.baseInterval
 		}
 		
 		if ( null != self.extendedInterval ) {
-			window.clearInterval( self.extendedInterval );
-			delete self.extendedInterval;
+			window.clearInterval( self.extendedInterval )
+			delete self.extendedInterval
 		}
 	}
 	
@@ -2582,7 +2584,7 @@ library.rtc = library.rtc || {};
 			if ( self.extendedChecked )
 				return;
 			
-			self.emitExtended();
+			self.emitExtended()
 		}
 	}
 	
@@ -2633,8 +2635,18 @@ library.rtc = library.rtc || {};
 			video : video,
 		};
 		
-		self.log( 'emitBase', base )
-		self.emit( 'base', base );
+		if ( null == audio && null == video ) {
+			self.log( 'emitBase nulls', {
+				aId    : self.aId,
+				aDisc  : self.aDiscover,
+				vId    : self.vId,
+				vDisc  : self.vDiscover,
+				//tracks : self.raw.filter( item => item.type == 'track' ),
+			})
+		} else
+			self.log( 'emitBase', base )
+		
+		self.emit( 'base', base )
 	}
 	
 	ns.RTCStats.prototype.discoverTrack = function( id ) {
@@ -2644,8 +2656,10 @@ library.rtc = library.rtc || {};
 			raw : self.raw,
 		})
 		
-		if ( null == self.raw )
-			return;
+		if ( null == self.raw ) {
+			self.log( 'discoverTrack - now raw' )
+			return
+		}
 		
 		let track = null;
 		let type = null;
@@ -2656,6 +2670,7 @@ library.rtc = library.rtc || {};
 			if ( !t.remoteSource )
 				return;
 			
+			self.log( 'discoverTrack - checking t', t )
 			const tId = t.trackIdentifier;
 			if ( tId != id )
 				return;
@@ -2664,47 +2679,60 @@ library.rtc = library.rtc || {};
 			type = t.kind;
 		});
 		
-		if ( !track )
+		if ( !track ) {
+			self.log( 'discoverTrack - no track found for', id )
 			return null;
+		}
 		
 		if ( 'audio' == type ) {
-			self.aId = track.id;
-			self.aDiscover = null;
+			self.aId = track.id
+			self.aDiscover = null
 		}
 		
 		if ( 'video' == type ) {
-			self.vId = track.id;
-			self.vDiscover = null;
+			self.vId = track.id
+			self.vDiscover = null
 		}
 		
-		self.log( 'discoverTrack - track', track );
-		return track;
+		self.log( 'discoverTrack - track', track )
+		return track
 	}
 	
 	ns.RTCStats.prototype.emitExtended = function() {
 		const self = this;
 		if ( !self.raw )
-			return;
+			return
 		
-		self.extendedChecked = true;
-		const stats = self.raw;
-		const byType = {};
-		const byId = {};
+		self.extendedChecked = true
+		const stats = self.raw
+		const byType = {}
+		const byId = {}
 		stats.forEach( item => { 
 			const type = item.type;
 			const id = item.id;
-			if ( !byType[ type ])
+			if ( null == byType[ type ])
 				byType[ type ] = [];
 			
 			byType[ type ].push( item );
 			byId[ id ] = item;
-		});
+		})
 		
 		const res = {};
 		const inn = byType[ 'inbound-rtp' ];
 		const out = byType[ 'outbound-rtp' ];
+		let multiAudio = false
+		let aT = false
 		res.inbound = buildInnieStats( inn, byId );
-		//res.outbound = buildOutieStats( out, byId );
+		if ( !aT ) {
+			self.log( 'no audio track found' )
+		}
+		
+		if ( multiAudio ) {
+			self.log( 'multiple audio tracks found' )
+			self.emitError( 'ERR_MULTI_TRACKS' )
+			return
+		}
+		
 		res.transport = buildTransport( byType, byId );
 		res.raw = {
 			byId   : byId,
@@ -2717,40 +2745,50 @@ library.rtc = library.rtc || {};
 				return null;
 			
 			const res = {};
-			rtps.forEach( rtp => {
+			rtps.some( rtp => {
 				const id = rtp.id;
 				const track = things[ rtp.trackId ];
 				if ( !track )
-					return;
+					return false
 				
 				const trackId = track.trackIdentifier;
 				const kind = track.kind;
 				if ( !track.remoteSource )
-					return;
+					return false
 				
-				const cache = self.statsCache[ kind ];
+				const cache = self.statsCache[ kind ]
 				if ( cache && cache.id !== trackId ) {
-					self.statsCache[ kind ] = null;
-					return;
+					self.log( 'innie - invalid track id', [ cache, track ])
+					self.statsCache[ kind ] = null
 				}
 				
-				/*
 				self.log( 'innie', {
+					kind  : kind,
 					rtp   : rtp,
 					track : track,
-				});
-				*/
+				})
+				
 				const type = rtp.mediaType;
 				const codec = things[ rtp.codecId ];
 				rtp.track = track;
 				rtp.codec = codec;
-				if ( 'audio' == type )
-					setAudioDeltas( rtp );
+				if ( 'audio' == type ) {
+					if ( true == aT ) {
+						multiAudio = true
+						return true
+					}
+					
+					aT = true
+					setAudioDeltas( rtp )
+				}
 				if ( 'video' == type )
 					setVideoDeltas( rtp );
 				
 				res[ type ] = rtp;
+				
+				return false
 			});
+			
 			return res;
 			
 			function setAudioDeltas( a ) {

@@ -3713,19 +3713,36 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.refreshTheThing();
 	}
 	
-	ns.Peer.prototype.handleStatsError = function( err ) {
+	ns.Peer.prototype.handleStatsError = function( e ) {
 		const self = this
 		self.log( 'handleStatsError', {
-			err   : err,
+			err   : e,
 			grace : null != self.statsErrorGracePeriod,
+			ext   : null != self.extendedError,
 		})
-		if ( null != self.statsErrorGracePeriod )
-			return
+		if ( 'ERR_MULTI_TRACKS' == e.error ) {
+			if ( null != self.extendedError )
+				return
+			
+			self.extendedError = window.setTimeout( looksFucky, 1000 * 5 )
+		}
 		
-		self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 5 )
+		if ( 'ERR_INVALID_STATE' == e.error ) {
+			if ( null != self.statsErrorGracePeriod )
+				return
+			
+			self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 3 )
+		}
+		
 		function looksFucky() {
 			self.log( 'looksFucky, restart' )
+			if ( null != self.extendedError )
+				window.clearTimeout( self.extendedError )
+			if ( null != self.statsErrorGracePeriod )
+				window.clearTimeout( self.statsErrorGracePeriod )
+			
 			self.statsErrorGracePeriod = null
+			self.extendedError = null
 			self.restart()
 		}
 		
@@ -3756,6 +3773,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		}
 		
+		/*
+		if ( null == base.audio && null == base.video ) {
+			self.log( 'handleBaseStats - all nulls, refreshing' )
+			self.refreshMeta()
+			return
+		}
+		*/
+		
 		const curr = self.baseStats;
 		if ( null == curr.video && base.video ) {
 			self.emit( 'change-video-res', base.video );
@@ -3783,10 +3808,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		self.log( 'checkStats', stats );
-		if ( null != self.statsErrorGracePeriod ) {
+		if ( null != self.extendedError ) {
 			self.log( 'clearing error grace period' )
-			window.clearTimeout( self.statsErrorGracePeriod )
-			self.statsErrorGracePeriod = null;
+			window.clearTimeout( self.extendedError )
+			self.extendedError = null
 		}
 		
 		const trans = stats.transport;
@@ -3803,8 +3828,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		report.sessionState = self.session.state
 		report.remoteTracks = self.remoteMedia.getTracks()
+		report.receive = self.receive
+		report.receiving = self.receiving
 		
-		self.log( 'report', report );
+		self.log( 'report', report )
 		
 		if ( report.audioMissing || report.videoMissing )
 			self.restart();

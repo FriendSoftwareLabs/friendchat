@@ -4100,7 +4100,10 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	ns.Overlay.prototype.positionOutside = function( pos ) {
 		const self = this;
 		const screen = self.getScreenSpace();
-		const anchor = self.getElPosition( self.anchor );
+		const anchor = self.getElPosition( self.anchor )
+		if ( null == anchor )
+			return
+		
 		/*
 		console.log( 'outside', {
 			pos    : pos,
@@ -4188,6 +4191,9 @@ The menu will remove itself if it loses focus or a menu item is clicked
 		//console.log( 'inside', pos );
 		const screen = self.getScreenSpace();
 		const anchor = self.getElPosition( self.anchor );
+		if ( null == anchor )
+			return
+		
 		if ( pos.cover )
 			setCover();
 		else
@@ -4294,6 +4300,11 @@ The menu will remove itself if it loses focus or a menu item is clicked
 	
 	ns.Overlay.prototype.getElPosition = function( el ) {
 		const self = this;
+		if ( null == el || null == el.getBoundingClientRect ) {
+			console.trace( 'Overlay.getElPosition - invalid el' )
+			return null
+		}
+		
 		const elRekt = el.getBoundingClientRect();
 		const pos = {
 			x1 : elRekt.x,
