@@ -2814,17 +2814,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			peerName
 		);
 		
-		self.session.on( 'track-add'   , e => self.trackAdded( e ));
-		self.session.on( 'track-remove', e => self.trackRemoved( e ));
-		self.session.on( 'nostream'    , e => self.sendNoStream( type ));
-		self.session.on( 'state'       , e => self.handleSessionStateChange( e, type ));
-		self.session.on( 'error'       , e => self.handleSessionError( e ));
-		self.session.on( 'datachannel' , e => self.bindDataChannel( e ));
+		self.session.on( 'track-add'   , e => self.trackAdded( e ))
+		self.session.on( 'track-remove', e => self.trackRemoved( e ))
+		self.session.on( 'nostream'    , e => self.sendNoStream( type ))
+		self.session.on( 'state'       , e => self.handleSessionStateChange( e, type ))
+		self.session.on( 'error'       , e => self.handleSessionError( e ))
+		self.session.on( 'datachannel' , e => self.bindDataChannel( e ))
 		
 		if ( self.stats )
-			self.stats.updateSource( self.session );
+			self.stats.updateSource( self.session )
 		
-		self.showSelfie();
+		self.showSelfie()
 	}
 	
 	ns.Peer.prototype.bindDataChannel = function( channel ) {
@@ -2841,8 +2841,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function ping( e ) { self.handlePing( e ); }
 		function pong( e ) { self.handlePong( e ); }
 	}
-	
-	//
 	
 	ns.Peer.prototype.sendOpen = function() {
 		const self = this;
@@ -3312,7 +3310,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.streamAdded = function( stream ) {
 		const self = this;
-		self.log( 'Peer.streamAdded - legacy event ABORT ABORT ABORT', stream );
+		console.trace( 'Peer.streamAdded - legacy event ABORT ABORT ABORT', stream );
 	}
 	
 	ns.Peer.prototype.trackAdded = function( track ) {

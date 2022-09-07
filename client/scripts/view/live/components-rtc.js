@@ -1169,7 +1169,6 @@ library.rtc = library.rtc || {};
 		self.log( 'PeerConnection conf', peerConf );
 		self.conn = new window.RTCPeerConnection( peerConf );
 		self.conn.onconnectionstatechange = connStateChange;
-		//self.conn.onaddstream = streamAdded;
 		self.conn.ontrack = onTrack;
 		self.conn.ondatachannel = dataChannel;
 		self.conn.onicecandidate = iceCandidate;
@@ -1184,7 +1183,6 @@ library.rtc = library.rtc || {};
 		self.conn.onsignalingstatechange = signalStateChange;
 		
 		function connStateChange( e ) { self.connectionStateChange( e ); }
-		function streamAdded( e ) { self.streamAdded( e ); }
 		function onTrack( e ) { self.trackAdded( e ); }
 		function dataChannel( e ) { self.dataChannelAdded( e ); }
 		function iceCandidate( e ) { self.iceCandidate( e ); }
@@ -1769,7 +1767,7 @@ library.rtc = library.rtc || {};
 		function accept() {
 			self.log( 'accept client negotiation', {
 				timeout : self.negotiationTimeout,
-				timer : self.negotiationTimer
+				timer   : self.negotiationTimer
 			});
 			
 			self.setState( 'client-negotiation' );
@@ -1797,10 +1795,10 @@ library.rtc = library.rtc || {};
 		
 		function allowNegotiation() {
 			self.log( 'allowNegotiation', {
-				state : self.conn.signalingState,
+				state   : self.conn.signalingState,
 				timeout : self.negotiationTimeout,
-				deny : self.denyNegotiation,
-				timer : self.negotiationTimer,
+				deny    : self.denyNegotiation,
+				timer   : self.negotiationTimer,
 			});
 			return (( self.conn.signalingState === 'stable' ) &&
 				!self.negotiationTimeout &&
@@ -1849,38 +1847,6 @@ library.rtc = library.rtc || {};
 		
 		const type = track.kind;
 		self.emit( 'track-remove', type );
-	}
-	
-	ns.Session.prototype.streamAdded = function( e ) {
-		const self = this;
-		//self.log( 'streamAdded - deprecated', e );
-				
-		/*
-		self.log( 'streamAdded', e );
-		if ( self.useOnTrack )
-			return;
-		
-		const stream = e.stream;
-		if ( self.useOnStream ) {
-			self.emitStream( stream );
-			return;
-		}
-		
-		// lets wait and see if onTrack fires, its preferable to use that
-		self.waitForTrack = setTimeout( checkIfTrackFired, 200 );
-		function checkIfTrackFired() {
-			// yep
-			self.log( 'checkIfTrackFired', self.useOnTrack );
-			if ( self.useOnTrack ) {
-				delete self.waitForTrack;
-				return;
-			}
-			
-			// nope
-			self.useOnStream = true;
-			self.emitStream( stream );
-		}
-		*/
 	}
 	
 	ns.Session.prototype.emitStream = function( stream ) {
@@ -2228,7 +2194,6 @@ library.rtc = library.rtc || {};
 			return;
 		
 		self.conn.onconnectionstatechange = null;
-		self.conn.onaddstream = null;
 		self.conn.ontrack = null;
 		self.conn.ondatachannel = null;
 		self.conn.onicecandidate = null;
