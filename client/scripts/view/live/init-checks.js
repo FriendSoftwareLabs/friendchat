@@ -1295,7 +1295,7 @@ library.rtc = library.rtc || {};
 			|| /^((?!chrome|android).)*safari/i.test( self.userAgent );
 		
 		// FIREFOX
-		is[ 'firefox' ] = self.userAgent.indeOf( 'Firefox/' ) >= 0;
+		is[ 'firefox' ] = self.userAgent.indexOf( 'Firefox/' ) >= 0;
 		
 		// CHROME
 		is[ 'chrome' ] = !!window.chrome;
