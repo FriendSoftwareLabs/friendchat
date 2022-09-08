@@ -2438,7 +2438,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pingTimeouts = {};
 		self.pongs = [];
 		
-		self.spam = false;
+		self.spam = true;
 		
 		self.init( conf.signal );
 	}
@@ -3722,14 +3722,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( null != self.extendedError )
 				return
 			
-			self.extendedError = window.setTimeout( looksFucky, 1000 * 5 )
+			self.extendedError = window.setTimeout( looksFucky, 1000 * 9 )
 		}
 		
 		if ( 'ERR_INVALID_STATE' == e.error ) {
 			if ( null != self.statsErrorGracePeriod )
 				return
 			
-			self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 3 )
+			self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 6 )
 		}
 		
 		function looksFucky() {

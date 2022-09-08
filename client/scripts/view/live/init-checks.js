@@ -48,12 +48,13 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkBrowser = function( userAgent, callback ) {
 		const self = this;
-		const type = 'browser-check';
-		self.startingCheck( type );
+		const type = 'browser-check'
+		self.log( 'checkBrowser', [ userAgent, navigator.userAgent ])
+		self.startingCheck( type )
 		if ( !userAgent )
-			userAgent = navigator.userAgent;
+			userAgent = navigator.userAgent
 		
-		new library.rtc.BrowserCheck( userAgent, checkBack );
+		new library.rtc.BrowserCheck( userAgent, checkBack )
 		function checkBack( res ) {
 			self.log( 'checkBrowser - res', res )
 			if ( 'success' == res.type ) {
@@ -1231,18 +1232,18 @@ library.rtc = library.rtc || {};
 	// Private
 	
 	ns.BrowserCheck.prototype.supportMap = {
-		'ie'      : 'error',
-		'edge'    : 'error',
-		'opera'   : 'warning',
+		'ie'      : 'success',
+		'edge'    : 'success',
+		'opera'   : 'success',
 		'safari'  : 'success',
 		'firefox' : 'success',
 		'chrome'  : 'success',
 		'brave'   : 'success',
 		'blink'   : 'success',
 		'samsung' : 'success',
-		'android' : 'warning',
-		'iphone'  : 'warning',
-		'unknown' : 'warning',
+		'android' : 'success',
+		'iphone'  : 'success',
+		'unknown' : 'success',
 	}
 	
 	ns.BrowserCheck.prototype.supportString = {
@@ -1267,7 +1268,7 @@ library.rtc = library.rtc || {};
 	
 	ns.BrowserCheck.prototype.mangleMobile = function() {
 		const self = this;
-		var uaId = self.getApprovedUAId();
+		const uaId = self.getApprovedUAId();
 		if ( uaId )
 			self.is[ uaId ] = true;
 		else
@@ -1294,7 +1295,7 @@ library.rtc = library.rtc || {};
 			|| /^((?!chrome|android).)*safari/i.test( self.userAgent );
 		
 		// FIREFOX
-		is[ 'firefox' ] = !!window.InstallTrigger;
+		is[ 'firefox' ] = self.userAgent.indeOf( 'Firefox/' ) >= 0;
 		
 		// CHROME
 		is[ 'chrome' ] = !!window.chrome;
@@ -1340,6 +1341,8 @@ library.rtc = library.rtc || {};
 	ns.BrowserCheck.prototype.checkCapabilities = function() {
 		const self = this;
 		const cap = {};
+		
+		// required
 		cap[ 'webAudio' ] = !!window.AudioContext;
 		cap[ 'webRTC' ] = !!window.RTCPeerConnection;
 		cap[ 'mediaDevices' ] = !!window.navigator.mediaDevices;
@@ -1347,6 +1350,9 @@ library.rtc = library.rtc || {};
 			cap[ 'getUserMedia' ] = !!window.navigator.mediaDevices.getUserMedia;
 			cap[ 'enumerateDevices' ] = !!window.navigator.mediaDevices.enumerateDevices;
 		}
+		
+		// less required
+		
 		
 		self.cap = cap;
 		console.log( 'browser checked caps', self.cap )
