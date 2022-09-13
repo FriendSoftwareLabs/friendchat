@@ -1288,7 +1288,7 @@ library.rtc = library.rtc || {};
 			|| self.userAgent.indexOf( ' OPR/' ) >= 0;
 		
 		// SAFARI
-		is[ 'safari' ] = /constructor/i.test(window.HTMLElement) 
+		is[ 'safari' ] = /constructor/i.test(window.HTMLElement ) 
 			|| (function (p)
 				{ return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] 
 				|| (typeof safari !== 'undefined' && safari.pushNotification)) 
