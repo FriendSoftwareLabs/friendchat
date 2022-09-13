@@ -3321,7 +3321,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.constrainTracks = function( tracks ) {
 		const self = this;
-		console.trace( 'constrainTracks', [ tracks, self.media ])
+		self.log( 'constrainTracks', [ tracks, self.media ])
 		return new Promise(( resolve, reject ) => {
 			if ( !self.media && !tracks ) {
 				self.logErr( 'no media, lets reject', [ tracks, self.media ]);
@@ -3333,13 +3333,19 @@ library.rtc = library.rtc || {};
 			const vTracks = media.getVideoTracks()
 			self.log( 'vTracks', vTracks )
 			if ( !vTracks.length ) {
+				self.log( 'no video tracks v0v' )
 				resolve()
 				return
 			}
 			
-			Promise.all( vTracks.map( constrain ))
-				.then( resolve )
-				.catch( reject );
+			setTimeout( doItLater, 1000 )
+			function doItLater() {
+				self.log( 'doing it now' )
+				Promise.all( vTracks.map( constrain ))
+					.then( resolve )
+					.catch( reject );
+			}
+			
 		})
 		
 		function constrain( track ) {
