@@ -2998,6 +2998,7 @@ library.rtc = library.rtc || {};
 			conf = self.setDevice( 'audio', availableDevices, conf )
 			conf = self.setDevice( 'video', availableDevices, conf )
 			
+			self.log( 'create conf', conf )
 			if ( !conf.audio && !conf.video ) {
 				self.updateMedia()
 				return
@@ -3423,20 +3424,26 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.setDevice = function( type, available, conf ) {
 		const self = this;
+		self.log( 'setDevice', [ type, available, conf ])
 		if ( !conf[ type ])
 			return conf;
 		
 		const deviceType = type + 'input';
 		let device = self.preferedDevices[ deviceType ];
-		if ( !device )
+		self.log( 'pref device', device )
+		if ( !device ) {
 			device = self.currentDevices[ deviceType ];
+			self.log( 'curr deivce', device )
+		}
 		
+		self.log( 'setDevice - device', [ type, device ])
 		if ( !device )
 			return conf;
 		
 		const avaOfType = available[ deviceType ];
 		let prefDev = null;
 		const devIds = Object.keys( avaOfType );
+		self.log( 'ava of type ids', devIds )
 		devIds.forEach( id => {
 			const dev = avaOfType[ id ];
 			if ( device.deviceId === dev.deviceId ) {
@@ -3455,6 +3462,7 @@ library.rtc = library.rtc || {};
 			}
 		});
 		
+		self.log( 'prefDev', prefDev )
 		if ( !prefDev )
 			return conf;
 		
@@ -3462,6 +3470,7 @@ library.rtc = library.rtc || {};
 			conf[ type ] = {};
 		
 		conf[ type ].deviceId = prefDev.deviceId;
+		self.log( 'setDevice - set', [ type, conf ])
 		return conf;
 	}
 	
@@ -3512,6 +3521,7 @@ library.rtc = library.rtc || {};
 			}
 			
 			function mediaCreated( media ) {
+				self.log( 'getUserMedia - mediaCreated', media )
 				self.simpleConf = null;
 				self.giveUp = false;
 				self.currentConf = null;
