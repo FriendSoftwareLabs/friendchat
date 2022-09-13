@@ -3272,21 +3272,30 @@ library.rtc = library.rtc || {};
 			const value = arr[ index ];
 			const def = defaults[ index ];
 			if ( 'frameRate' === key ) {
+				/*
 				video.frameRate = {
 					ideal : value || def,
 				}
+				*/
+				video.frameRate = value || def
 			}
 			
 			if ( 'width' === key ) {
+				/*
 				video.width = {
 					ideal : value || def,
 				}
+				*/
+				video.width = value || def
 			}
 			
 			if ( 'height' === key ) {
+				/*
 				video.height = {
 					ideal : value || def,
 				}
+				*/
+				video.height = value || def
 			}
 		}
 	}
