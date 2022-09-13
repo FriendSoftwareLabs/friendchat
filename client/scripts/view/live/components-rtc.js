@@ -3363,7 +3363,7 @@ library.rtc = library.rtc || {};
 			return track.applyConstraints( conf )
 		}
 		
-		async function constrainUserMedia( track ) {
+		function constrainUserMedia( track ) {
 			const sup = window.navigator.mediaDevices.getSupportedConstraints()
 			const capa = track.getCapabilities()
 			const curr = track.getSettings()
@@ -3376,22 +3376,21 @@ library.rtc = library.rtc || {};
 				conf  : conf,
 			})
 			
-			return true
-			
-			/*
 			return track.applyConstraints( conf )
 				.then( constrainOk )
 				.catch( constrainFail );
-			*/
-		}
-		
-		function constrainOk() {
 			
+			function constrainOk() {
+				self.log( 'constrainOk', {
+					curr : track.getSettings(),
+				})
+			}
+			
+			function constrainFail( ex ) {
+				self.logErr( 'constrainTracks - failed to apply constraints', ex );
+			}
 		}
 		
-		function constrainFail( ex ) {
-			self.logErr( 'constrainTracks - failed to apply constraints', ex );
-		}
 	}
 	
 	ns.Media.prototype.updatePreferedDevices = function( prefDev ) {
