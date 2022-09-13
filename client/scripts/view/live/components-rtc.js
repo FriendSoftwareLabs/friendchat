@@ -3322,7 +3322,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.constrainTracks = function( tracks ) {
 		const self = this;
-		self.log( 'constrainTracks', [ tracks, self.media ])
+		console.trace( 'constrainTracks', [ tracks, self.media ])
 		return new Promise(( resolve, reject ) => {
 			if ( !self.media && !tracks ) {
 				self.logErr( 'no media, lets reject', [ tracks, self.media ]);
@@ -3392,6 +3392,25 @@ library.rtc = library.rtc || {};
 				conf  : conf,
 			})
 			
+			cKeys = Object.keys( conf )
+			cKeys.forEach( key => {
+				const c = capa[ key ]
+				self.log( 'checking', [ c, conf[ key ]] )
+				if ( null == c )
+					return
+				
+				if ( null != c[ key ].max ) {
+					if ( c[ key ].max < conf[ key ])
+						conf[ key ] = c[ key ].max
+				}
+				
+				if ( null != c[ key ].min ) {
+					if ( c[ key ].min > conf[ key ])
+						conf[ key ] = c[ key ].min
+				}
+			})
+			
+			self.log( 'constrained constraints', conf )
 			return track.applyConstraints( conf )
 				.then( constrainOk )
 				.catch( constrainFail );
@@ -3425,8 +3444,10 @@ library.rtc = library.rtc || {};
 	ns.Media.prototype.setDevice = function( type, available, conf ) {
 		const self = this;
 		self.log( 'setDevice', [ type, available, conf ])
-		if ( !conf[ type ])
+		if ( !conf[ type ]) {
+			self.log( 'setDevice, type not set', conf[ type ])
 			return conf;
+		}
 		
 		const deviceType = type + 'input';
 		let device = self.preferedDevices[ deviceType ];
