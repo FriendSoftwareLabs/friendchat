@@ -3392,7 +3392,7 @@ library.rtc = library.rtc || {};
 				conf  : conf,
 			})
 			
-			cKeys = Object.keys( conf )
+			const cKeys = Object.keys( conf )
 			cKeys.forEach( key => {
 				const c = capa[ key ]
 				self.log( 'checking', [ c, conf[ key ]] )
