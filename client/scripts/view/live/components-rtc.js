@@ -3395,18 +3395,18 @@ library.rtc = library.rtc || {};
 			const cKeys = Object.keys( conf )
 			cKeys.forEach( key => {
 				const c = capa[ key ]
-				self.log( 'checking', [ c, conf[ key ]] )
+				self.log( 'checking', [ key, c, conf[ key ]] )
 				if ( null == c )
 					return
 				
-				if ( null != c[ key ].max ) {
-					if ( c[ key ].max < conf[ key ])
-						conf[ key ] = c[ key ].max
+				if ( null != c.max ) {
+					if ( c.max < conf[ key ])
+						conf[ key ] = c.max
 				}
 				
-				if ( null != c[ key ].min ) {
-					if ( c[ key ].min > conf[ key ])
-						conf[ key ] = c[ key ].min
+				if ( null != c.min ) {
+					if ( c.min > conf[ key ])
+						conf[ key ] = c.min
 				}
 			})
 			
