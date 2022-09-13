@@ -3179,8 +3179,8 @@ library.rtc = library.rtc || {};
 			
 			self.quality.level = quality.level;
 			self.quality.scale = quality.scale;
-			self.setVideoQuality();
-			self.setShareQuality();
+			self.setVideoQuality()
+			self.setShareQuality()
 			self.constrainTracks()
 				.then( constrainOk )
 				.catch( constrainFail );
@@ -3274,8 +3274,7 @@ library.rtc = library.rtc || {};
 			if ( 'frameRate' === key ) {
 				video.frameRate = {
 					ideal : value || def,
-					max   : value || def,
-				};
+				}
 			}
 			
 			if ( 'width' === key ) {
@@ -3313,6 +3312,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.constrainTracks = function( tracks ) {
 		const self = this;
+		console.trace( 'constrainTracks', [ tracks, self.media ])
 		return new Promise(( resolve, reject ) => {
 			if ( !self.media && !tracks ) {
 				self.logErr( 'no media, lets reject', [ tracks, self.media ]);
@@ -3323,10 +3323,15 @@ library.rtc = library.rtc || {};
 			const media = tracks || self.media
 			const vTracks = media.getVideoTracks()
 			self.log( 'vTracks', vTracks )
+			if ( !vTracks.length ) {
+				resolve()
+				return
+			}
+			
 			Promise.all( vTracks.map( constrain ))
 				.then( resolve )
 				.catch( reject );
-		});
+		})
 		
 		function constrain( track ) {
 			if ( self.shareVTrackId
@@ -3354,23 +3359,30 @@ library.rtc = library.rtc || {};
 				qm   : self.shareQualityMap,
 				ql   : self.quality.level,
 				conf : conf,
-			});
-			return track.applyConstraints( conf );
+			})
+			return track.applyConstraints( conf )
 		}
 		
-		function constrainUserMedia( track ) {
+		async function constrainUserMedia( track ) {
 			const sup = window.navigator.mediaDevices.getSupportedConstraints()
 			const capa = track.getCapabilities()
+			const curr = track.getSettings()
 			const conf = self.mediaConf.video
 			self.log( 'constrainUserMedia', {
 				track : track,
 				sup   : sup,
 				capa  : capa,
+				curr  : curr,
 				conf  : conf,
 			})
+			
+			return true
+			
+			/*
 			return track.applyConstraints( conf )
 				.then( constrainOk )
 				.catch( constrainFail );
+			*/
 		}
 		
 		function constrainOk() {
