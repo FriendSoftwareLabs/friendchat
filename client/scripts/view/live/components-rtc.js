@@ -3339,7 +3339,7 @@ library.rtc = library.rtc || {};
 				return
 			}
 			
-			setTimeout( doItLater, 1000 )
+			setTimeout( doItLater, 1 )
 			function doItLater() {
 				self.log( 'doing it now' )
 				Promise.all( vTracks.map( constrain ))
