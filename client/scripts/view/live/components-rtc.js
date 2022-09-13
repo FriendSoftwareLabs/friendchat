@@ -3437,8 +3437,10 @@ library.rtc = library.rtc || {};
 		}
 		
 		self.log( 'setDevice - device', [ type, device ])
-		if ( !device )
-			return conf;
+		if ( !device ) {
+			conf[ type ] = true
+			return conf
+		}
 		
 		const avaOfType = available[ deviceType ];
 		let prefDev = null;
@@ -3463,8 +3465,10 @@ library.rtc = library.rtc || {};
 		});
 		
 		self.log( 'prefDev', prefDev )
-		if ( !prefDev )
-			return conf;
+		if ( !prefDev ) {
+			conf[ type ] = true
+			return conf
+		}
 		
 		if ( 'boolean' === typeof( conf[ type ]))
 			conf[ type ] = {};
