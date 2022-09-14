@@ -3394,6 +3394,8 @@ library.rtc = library.rtc || {};
 				conf  : conf,
 			})
 			
+			delete conf[ 'frameRate' ]
+			
 			const cKeys = Object.keys( conf )
 			cKeys.forEach( key => {
 				const c = capa[ key ]
