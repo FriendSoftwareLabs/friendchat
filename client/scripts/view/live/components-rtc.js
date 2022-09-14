@@ -2890,7 +2890,8 @@ library.rtc = library.rtc || {};
 			permissions,
 			preferedDevices,
 			quality,
-			deviceSource
+			deviceSource,
+			logId
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
@@ -2908,6 +2909,7 @@ library.rtc = library.rtc || {};
 		self.recycle = false
 		self.giveUp = false
 		
+		self.logId = logId
 		self.spam = true
 		
 		self.init( quality )
@@ -3010,7 +3012,7 @@ library.rtc = library.rtc || {};
 			
 			async function mediaBack( media ) {
 				try {
-					await self.constrainTracks( media )
+					self.constrainTracks( media )
 				} catch( ex ) {
 					self.log( 'apply contstraints ex', ex )
 				}
@@ -3731,7 +3733,7 @@ library.rtc = library.rtc || {};
 		if ( !self.spam )
 			return
 		
-		let pre = 'rtc.Media ' + args.shift()
+		let pre = self.logId + 'rtc.Media ' + args.shift()
 		console.log( pre, ...args )
 	}
 	

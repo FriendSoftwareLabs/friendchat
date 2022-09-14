@@ -1664,7 +1664,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.permissions,
 			self.localSettings.preferedDevices,
 			self.mediaQuality,
-			self.sources
+			self.sources,
+			'selfie'
 		);
 		
 		self.media.on( 'media', media );
@@ -2081,10 +2082,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setupStream = function( callback, preferedDevices ) {
 		const self = this;
+		console.log( 'Selfie.setupStream', preferedDevices )
 		if ( self.streamBack ) {
-			let oldBack = self.streamBack;
-			delete self.streamBack;
-			oldBack( 'CANCELED', null );
+			let oldBack = self.streamBack
+			delete self.streamBack
+			oldBack( 'CANCELED', null )
 		}
 		
 		self.streamBack = callback;
