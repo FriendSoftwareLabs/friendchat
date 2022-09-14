@@ -3400,10 +3400,10 @@ library.rtc = library.rtc || {};
 			self.log( 'constrainUserMedia support', {
 				track : track,
 				capa  : !!track.getCapabilities,
-				capa  : !!track.getSettings,
-				capa  : !!track.applyConstraints,
+				sett  : !!track.getSettings,
+				cons  : !!track.applyConstraints,
 			})
-			if ( !!track.getCapabilities ) {
+			if ( !track.getCapabilities ) {
 				self.log( 'track does not support getCapabilities' )
 				return true
 			}
