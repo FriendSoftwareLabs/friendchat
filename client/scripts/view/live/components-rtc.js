@@ -3012,7 +3012,7 @@ library.rtc = library.rtc || {};
 			
 			async function mediaBack( media ) {
 				try {
-					self.constrainTracks( media )
+					await self.constrainTracks( media )
 				} catch( ex ) {
 					self.log( 'apply contstraints ex', ex )
 				}
@@ -3215,8 +3215,8 @@ library.rtc = library.rtc || {};
 		self.videoQualityKeys = [ 'width', 'height', 'frameRate' ];
 		self.videoQualityMap = {
 			'pixel'   : [ 128, 96, 4 ],
-			'low'     : [ 256, 192, 4 ],
-			'medium'  : [ 480, 360, 12 ],
+			'low'     : [ 320, 240, 4 ],
+			'medium'  : [ 640, 480, 12 ],
 			'normal'  : [ 960, 720, 24 ],
 			'high'    : [ 1280, 960, 60 ],
 		};
@@ -3341,12 +3341,19 @@ library.rtc = library.rtc || {};
 				return
 			}
 			
-			setTimeout( doItLater, 1500 )
-			function doItLater() {
-				self.log( 'doing it now' )
-				Promise.all( vTracks.map( constrain ))
-					.then( resolve )
-					.catch( reject );
+			setTimeout( doItLater, 1000 )
+			async function doItLater() {
+				const waiters = vTracks.map( constrain )
+				self.log( 'doing it now', waiters )
+				try {
+					await Promise.all( waiters )
+				} catch( ex ) {
+					self.log( 'doing it failed', ex )
+					reject( ex )
+					return
+				}
+				
+				resolve()
 			}
 			
 		})
@@ -3360,9 +3367,10 @@ library.rtc = library.rtc || {};
 				return constrainUserMedia( track );
 		}
 		
-		function constrainScreenShare( track ) {
-			const q = self.shareQualityMap[ self.quality.level ];
+		async function constrainScreenShare( track ) {
+			return true
 			
+			const q = self.shareQualityMap[ self.quality.level ];
 			const frameRate = q[ 0 ];
 			const conf = {
 			};
@@ -3378,58 +3386,76 @@ library.rtc = library.rtc || {};
 				ql   : self.quality.level,
 				conf : conf,
 			})
-			return track.applyConstraints( conf )
+			
+			try {
+				await track.applyConstraints( conf )
+			} catch( ex ) {
+				throw 'ERR_CONSTRAIN_FAIL'
+			}
+			
+			return true
 		}
 		
-		function constrainUserMedia( track ) {
-			const sup = window.navigator.mediaDevices.getSupportedConstraints()
-			const capa = track.getCapabilities()
-			const curr = track.getSettings()
-			const conf = self.mediaConf.video
-			self.log( 'constrainUserMedia', {
+		async function constrainUserMedia( track ) {
+			self.log( 'constrainUserMedia support', {
 				track : track,
-				sup   : sup,
-				capa  : capa,
-				curr  : curr,
-				conf  : conf,
+				capa  : !!track.getCapabilities,
+				capa  : !!track.getSettings,
+				capa  : !!track.applyConstraints,
 			})
-			
-			delete conf[ 'frameRate' ]
-			
-			const cKeys = Object.keys( conf )
-			cKeys.forEach( key => {
-				const c = capa[ key ]
-				self.log( 'checking', [ key, c, conf[ key ]] )
-				if ( null == c )
-					return
-				
-				if ( null != c.max ) {
-					if ( c.max < conf[ key ])
-						conf[ key ] = c.max
-				}
-				
-				if ( null != c.min ) {
-					if ( c.min > conf[ key ])
-						conf[ key ] = c.min
-				}
-			})
-			
-			self.log( 'constrained constraints', conf )
-			return track.applyConstraints( conf )
-				.then( constrainOk )
-				.catch( constrainFail );
-			
-			function constrainOk() {
-				self.log( 'constrainOk', {
-					curr : track.getSettings(),
-				})
+			if ( !!track.getCapabilities ) {
+				self.log( 'track does not support getCapabilities' )
+				return true
 			}
 			
-			function constrainFail( ex ) {
-				self.logErr( 'constrainTracks - failed to apply constraints', ex );
+			conf = constrainConf( conf, track )
+			
+			try {
+				await track.applyConstraints( conf )
+			} catch( ex ) {
+				self.logErr( 'constrainTracks - failed to apply constraints', ex )
+				throw ( 'ERR_CONSTRAIN_FAIL' )
+				
+			self.log( 'constrainOk', {
+				curr : track.getSettings(),
+			})
+			
+			return true
+			
+			function constrainConf( conf, track ) {
+				const sup = window.navigator.mediaDevices.getSupportedConstraints()
+				const capa = track.getCapabilities()
+				const curr = track.getSettings()
+				const conf = self.mediaConf.video
+				self.log( 'constrainConf things', {
+					sup   : sup,
+					capa  : capa,
+					curr  : curr,
+					conf  : conf,
+				})
+				
+				delete conf[ 'frameRate' ]
+				const cKeys = Object.keys( conf )
+				cKeys.forEach( key => {
+					const c = capa[ key ]
+					self.log( 'checking', [ key, c, conf[ key ]] )
+					if ( null == c )
+						return
+					
+					if ( null != c.max ) {
+						if ( c.max < conf[ key ])
+							conf[ key ] = c.max
+					}
+					
+					if ( null != c.min ) {
+						if ( c.min > conf[ key ])
+							conf[ key ] = c.min
+					}
+				})
+				
+				self.log( 'constrained constraints', conf )
 			}
 		}
-		
 	}
 	
 	ns.Media.prototype.updatePreferedDevices = function( prefDev ) {
