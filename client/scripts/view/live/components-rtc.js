@@ -3408,7 +3408,7 @@ library.rtc = library.rtc || {};
 				return true
 			}
 			
-			conf = buildConf( track )
+			const conf = buildConf( track )
 			
 			try {
 				await track.applyConstraints( conf )
