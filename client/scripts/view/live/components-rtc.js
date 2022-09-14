@@ -3415,6 +3415,7 @@ library.rtc = library.rtc || {};
 			} catch( ex ) {
 				self.logErr( 'constrainTracks - failed to apply constraints', ex )
 				throw ( 'ERR_CONSTRAIN_FAIL' )
+			}
 				
 			self.log( 'constrainOk', {
 				curr : track.getSettings(),
