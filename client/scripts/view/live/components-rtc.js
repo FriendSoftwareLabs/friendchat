@@ -3408,7 +3408,7 @@ library.rtc = library.rtc || {};
 				return true
 			}
 			
-			conf = constrainConf( conf, track )
+			conf = buildConf( track )
 			
 			try {
 				await track.applyConstraints( conf )
@@ -3422,12 +3422,12 @@ library.rtc = library.rtc || {};
 			
 			return true
 			
-			function constrainConf( conf, track ) {
+			function buildConf( track ) {
 				const sup = window.navigator.mediaDevices.getSupportedConstraints()
 				const capa = track.getCapabilities()
 				const curr = track.getSettings()
-				const conf = self.mediaConf.video
-				self.log( 'constrainConf things', {
+				const conf = JSON.parse( JSON.stringify( self.mediaConf.video ))
+				self.log( 'buildConf things', {
 					sup   : sup,
 					capa  : capa,
 					curr  : curr,
@@ -3454,6 +3454,7 @@ library.rtc = library.rtc || {};
 				})
 				
 				self.log( 'constrained constraints', conf )
+				return conf
 			}
 		}
 	}
