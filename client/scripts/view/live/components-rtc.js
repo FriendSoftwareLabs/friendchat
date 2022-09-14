@@ -801,7 +801,7 @@ library.rtc = library.rtc || {};
 		self.channels = {};
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false;
+		self.spam = false
 		
 		self.init();
 	}
@@ -980,7 +980,7 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.createDataChannel = function( deviceId, opts ) {
 		const self = this;
-		console.trace( 'Session.createDataChannel' );
+		self.log( 'Session.createDataChannel' );
 		if ( !deviceId )
 			throw new Error( 'rtc.createDataChannel - no device id' );
 		
@@ -1055,8 +1055,11 @@ library.rtc = library.rtc || {};
 	ns.Session.prototype.close = function() {
 		const self = this;
 		self.log( 'session.close' );
-		if ( self.negotiationNeededWaiting )
-			window.clearTimeout( self.negotiationNeededWaiting );
+		if ( null != self.negotiationNeededWaiting )
+			window.clearTimeout( self.negotiationNeededWaiting )
+		
+		if ( null != self.iceTimeout )
+			window.clearTimeout( self.iceTimeout )
 		
 		delete self.negotiationNeededWaiting;
 		
@@ -1166,7 +1169,6 @@ library.rtc = library.rtc || {};
 		self.log( 'PeerConnection conf', peerConf );
 		self.conn = new window.RTCPeerConnection( peerConf );
 		self.conn.onconnectionstatechange = connStateChange;
-		//self.conn.onaddstream = streamAdded;
 		self.conn.ontrack = onTrack;
 		self.conn.ondatachannel = dataChannel;
 		self.conn.onicecandidate = iceCandidate;
@@ -1181,7 +1183,6 @@ library.rtc = library.rtc || {};
 		self.conn.onsignalingstatechange = signalStateChange;
 		
 		function connStateChange( e ) { self.connectionStateChange( e ); }
-		function streamAdded( e ) { self.streamAdded( e ); }
 		function onTrack( e ) { self.trackAdded( e ); }
 		function dataChannel( e ) { self.dataChannelAdded( e ); }
 		function iceCandidate( e ) { self.iceCandidate( e ); }
@@ -1766,7 +1767,7 @@ library.rtc = library.rtc || {};
 		function accept() {
 			self.log( 'accept client negotiation', {
 				timeout : self.negotiationTimeout,
-				timer : self.negotiationTimer
+				timer   : self.negotiationTimer
 			});
 			
 			self.setState( 'client-negotiation' );
@@ -1794,10 +1795,10 @@ library.rtc = library.rtc || {};
 		
 		function allowNegotiation() {
 			self.log( 'allowNegotiation', {
-				state : self.conn.signalingState,
+				state   : self.conn.signalingState,
 				timeout : self.negotiationTimeout,
-				deny : self.denyNegotiation,
-				timer : self.negotiationTimer,
+				deny    : self.denyNegotiation,
+				timer   : self.negotiationTimer,
 			});
 			return (( self.conn.signalingState === 'stable' ) &&
 				!self.negotiationTimeout &&
@@ -1846,38 +1847,6 @@ library.rtc = library.rtc || {};
 		
 		const type = track.kind;
 		self.emit( 'track-remove', type );
-	}
-	
-	ns.Session.prototype.streamAdded = function( e ) {
-		const self = this;
-		//self.log( 'streamAdded - deprecated', e );
-				
-		/*
-		self.log( 'streamAdded', e );
-		if ( self.useOnTrack )
-			return;
-		
-		const stream = e.stream;
-		if ( self.useOnStream ) {
-			self.emitStream( stream );
-			return;
-		}
-		
-		// lets wait and see if onTrack fires, its preferable to use that
-		self.waitForTrack = setTimeout( checkIfTrackFired, 200 );
-		function checkIfTrackFired() {
-			// yep
-			self.log( 'checkIfTrackFired', self.useOnTrack );
-			if ( self.useOnTrack ) {
-				delete self.waitForTrack;
-				return;
-			}
-			
-			// nope
-			self.useOnStream = true;
-			self.emitStream( stream );
-		}
-		*/
 	}
 	
 	ns.Session.prototype.emitStream = function( stream ) {
@@ -2225,7 +2194,6 @@ library.rtc = library.rtc || {};
 			return;
 		
 		self.conn.onconnectionstatechange = null;
-		self.conn.onaddstream = null;
 		self.conn.ontrack = null;
 		self.conn.ondatachannel = null;
 		self.conn.onicecandidate = null;
@@ -2428,7 +2396,7 @@ library.rtc = library.rtc || {};
 		
 		library.component.EventEmitter.call( self );
 		
-		self.spam = false;
+		self.spam = false
 		
 		self.init();
 	}
@@ -2922,7 +2890,8 @@ library.rtc = library.rtc || {};
 			permissions,
 			preferedDevices,
 			quality,
-			deviceSource
+			deviceSource,
+			logId
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
@@ -2932,15 +2901,18 @@ library.rtc = library.rtc || {};
 		if ( !self.devices )
 			throw new Error( 'Media - no device source' );
 		
-		self.mediaConf = {};
-		self.currentDevices = {};
-		self.lastAvailable = null;
-		self.isScreenSharing = false;
-		self.setupRunning = false;
-		self.recycle = false;
-		self.giveUp = false;
+		self.mediaConf = {}
+		self.currentDevices = {}
+		self.lastAvailable = null
+		self.isScreenSharing = false
+		self.setupRunning = false
+		self.recycle = false
+		self.giveUp = false
 		
-		self.init( quality );
+		self.logId = logId
+		self.spam = false
+		
+		self.init( quality )
 	}
 	
 	ns.Media.prototype = Object.create( library.component.EventEmitter.prototype );
@@ -2980,7 +2952,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		function deviceError( err ) {
-			console.log( 'Media.create - deviceError', err );
+			self.logErr( 'Media.create - deviceError', err );
 			self.emitError( 'ERR_GET_DEVICES' );
 		}
 		
@@ -2989,182 +2961,205 @@ library.rtc = library.rtc || {};
 			let conf = {
 				audio : !!send.audio,
 				video : !!send.video,
-			};
+			}
 			
-			let current = null;
+			let current = null
 			if ( self.media ) {
-				current = self.media.getTracks();
+				current = self.media.getTracks()
 				current.forEach( t => {
 					const ts = t.getSettings();
-					const type = t.kind;
+					const type = t.kind
 					if ( false == conf[ type ])
-						return;
+						return
 					
 					if ( self.shareVTrackId && 'video' == type ) {
-						delete conf[ type ];
-						return;
+						delete conf[ type ]
+						return
 					}
 					
-					const devType = type + 'input';
-					const pref = self.preferedDevices[ devType ];
+					const devType = type + 'input'
+					const pref = self.preferedDevices[ devType ]
 					
 					if ( null == pref ) {
-						delete conf[ type ];
-						return;
+						delete conf[ type ]
+						return
 					}
 					
 					if ( ts.deviceId === pref.deviceId )
-						delete conf[ type ];
-				});
+						delete conf[ type ]
+				})
 			}
 			
 			// add quality constraints
 			if ( conf.audio )
-				conf.audio = self.mediaConf.audio || {};
+				conf.audio = {}
 			if ( conf.video )
-				conf.video = self.mediaConf.video || {};
+				conf.video = {}
 			
 			// add device preferences
-			conf = self.setDevice( 'audio', availableDevices, conf );
-			conf = self.setDevice( 'video', availableDevices, conf );
+			conf = self.setDevice( 'audio', availableDevices, conf )
+			conf = self.setDevice( 'video', availableDevices, conf )
 			
+			self.log( 'create conf', conf )
 			if ( !conf.audio && !conf.video ) {
-				self.updateMedia();
-				return;
+				self.updateMedia()
+				return
 			}
 			
 			self.getUserMedia( conf )
 				.then( mediaBack )
-				.catch( mediaError );
+				.catch( mediaError )
 			
-			function mediaBack( media ) {
-				self.setCurrentDevices( media );
-				self.updateMedia( media );
+			async function mediaBack( media ) {
+				try {
+					await self.constrainTracks( media )
+				} catch( ex ) {
+					self.log( 'apply contstraints ex', ex )
+				}
+				
+				self.setCurrentDevices( media )
+				self.updateMedia( media )
 			}
 			
 			function mediaError( err ) {
-				console.log( 'Media.create - mediaError', err );
-				self.emitError( 'ERR_MEDIA_FAILED' );
+				self.logErr( 'Media.create - mediaError', err )
+				self.emitError( 'ERR_MEDIA_FAILED' )
 			}
 		}
 	}
 	
 	ns.Media.prototype.shareScreen = async function( preferedDevices ) {
 		const self = this;
-		self.updatePreferedDevices( preferedDevices );
+		self.updatePreferedDevices( preferedDevices )
 		if ( self.shareVTrackId )
-			return true;
+			return true
 		
-		const shareMedia = new window.MediaStream();
-		const shareConf = self.mediaConf.share;
+		const shareMedia = new window.MediaStream()
+		const shareConf = self.mediaConf.share
 		const dConf = {
 			audio : false,
+			video : true,
+			/*
 			video : {
 				frameRate : shareConf.frameRate,
 			},
-		};
+			*/
+		}
 		
-		console.log( 'shareConf', shareConf );
+		self.log( 'shareConf', shareConf );
 		let dMedia = null;
 		try {
 			dMedia = await window.navigator.mediaDevices.getDisplayMedia( dConf, true )
 		} catch( ex ) {
-			console.log( 'getDisplayMedia failed', ex );
-			self.currentConf = null;
-			return false;
+			self.log( 'getDisplayMedia failed', ex )
+			self.currentConf = null
+			return false
 		}
 		
-		const track = dMedia.getVideoTracks()[ 0 ];
-		self.shareVTrackId = track.id;
-		shareMedia.addTrack( track );
+		const track = dMedia.getVideoTracks()[ 0 ]
+		self.shareVTrackId = track.id
+		shareMedia.addTrack( track )
 		
 		// done if there already is a audio track
 		if ( !needAudio()) {
-			self.updateMedia( shareMedia );
-			return true;
+			try {
+				await self.constrainTracks( shareMedia )
+			} catch( cex ) {
+				self.log( 'shareScreen - apply constraints ex', cex )
+			}
+			
+			self.updateMedia( shareMedia )
+			return true
 		}
 		
 		// add audio track
-		let devs = null;
+		self.log( 'shareScreen - add audio' )
+		let devs = null
 		try {
-			devs = await self.devices.getByType();
+			devs = await self.devices.getByType()
 		} catch( ex ) {
-			console.log( 'Media.shareScreen - addAudio devsFail', err );
-			self.emitError( 'ERR_GET_DEVICES' );
-			return false;
+			self.log( 'Media.shareScreen - addAudio devsFail', err )
+			self.emitError( 'ERR_GET_DEVICES' )
+			return false
 		}
 		
 		let aConf = {
-			audio : self.mediaConf.audio || {},
+			audio : {},
 			video : false,
-		};
-		aConf = self.setDevice( 'audio', available, aConf );
-		self.clearMedia();
+		}
+		aConf = self.setDevice( 'audio', available, aConf )
+		self.clearMedia()
 		
-		let aMedia = null;
+		let aMedia = null
 		try {
-			aMedia = await self.getUserMedia( aConf );
+			aMedia = await self.getUserMedia( aConf )
 		} catch( ex ) {
-			console.log( 'Media.shareScreen - addAudio media fail', err );
-			self.emitError( 'ERR_MEDIA_FAILED' );
-			return false;
+			self.log( 'shareScreen - addAudio media fail', err );
+			self.emitError( 'ERR_MEDIA_FAILED' )
+			return false
 		}
 		
-		let tracks = media.getAudioTracks();
-		shareMedia.addTrack( tracks[ 0 ]);
-		self.updateMedia( shareMedia );
+		let tracks = media.getAudioTracks()
+		shareMedia.addTrack( tracks[ 0 ])
+		try {
+			await self.constrainTracks( shareMedia )
+		} catch( cex ) {
+			self.log( 'shareScreen apply contraints with audio ex', cex )
+		}
 		
-		return true;
+		self.updateMedia( shareMedia )
+		
+		return true
 		
 		function needAudio() {
-			const send = self.permissions.send;
+			const send = self.permissions.send
 			if ( !send.audio )
-				return false;
+				return false
 			
 			if ( !self.media )
-				return true;
+				return true
 			
-			const aT = self.media.getAudioTracks()[ 0 ];
+			const aT = self.media.getAudioTracks()[ 0 ]
 			if ( !aT )
-				return true;
+				return true
 			else
-				return false;
+				return false
 		}
 	}
 	
 	ns.Media.prototype.unshareScreen = function() {
-		const self = this;
+		const self = this
 		if ( self.shareVTrackId ) {
-			self.removeTrack( 'video' );
-			self.shareVTrackId = null;
+			self.removeTrack( 'video' )
+			self.shareVTrackId = null
 		}
 		
 		if ( self.shareATrackId ) {
-			console.log( 'huehuehue' );
+			self.log( 'unshareScreen - screen audio track found, NYI' )
 		}
 	}
 	
 	ns.Media.prototype.getCurrentDevices = function() {
-		const self = this;
-		return self.currentDevices;
+		const self = this
+		return self.currentDevices
 	}
 	
 	ns.Media.prototype.getOpusConf = function() {
 		const self = this;
-		var args = self.opusQualityMap[ self.currentQuality ];
+		const args = self.opusQualityMap[ self.currentQuality ];
 		if ( !args )
-			return null;
+			return null
 		
-		var conf = {};
-		self.opusQualityKeys.forEach( setInConf );
-		return conf;
+		const conf = {}
+		self.opusQualityKeys.forEach( setInConf )
+		return conf
 		
 		function setInConf( key, index ) {
-			var value = args[ index ];
+			const value = args[ index ]
 			if ( null == value )
-				return;
+				return
 			
-			conf[ key ] = value;
+			conf[ key ] = value
 		}
 	}
 	
@@ -3187,9 +3182,9 @@ library.rtc = library.rtc || {};
 			
 			self.quality.level = quality.level;
 			self.quality.scale = quality.scale;
-			self.setVideoQuality();
-			self.setShareQuality();
-			self.reconstrainTracks()
+			self.setVideoQuality()
+			self.setShareQuality()
+			self.constrainTracks()
 				.then( constrainOk )
 				.catch( constrainFail );
 			
@@ -3198,7 +3193,7 @@ library.rtc = library.rtc || {};
 			}
 			
 			function constrainFail( err ) {
-				console.log( 'Media.setQuality - constrainFail', err );
+				self.logErr( 'Media.setQuality - constrainFail', err );
 				reject( self.quality );
 			}
 		});
@@ -3220,8 +3215,8 @@ library.rtc = library.rtc || {};
 		self.videoQualityKeys = [ 'width', 'height', 'frameRate' ];
 		self.videoQualityMap = {
 			'pixel'   : [ 128, 96, 4 ],
-			'low'     : [ 256, 192, 4 ],
-			'medium'  : [ 480, 360, 12 ],
+			'low'     : [ 320, 240, 4 ],
+			'medium'  : [ 640, 480, 12 ],
 			'normal'  : [ 960, 720, 24 ],
 			'high'    : [ 1280, 960, 60 ],
 		};
@@ -3264,7 +3259,7 @@ library.rtc = library.rtc || {};
 		const arr = self.videoQualityMap[ level ];
 		const defaults = self.videoQualityMap[ 'normal' ];
 		if ( !arr ) {
-			console.log( 'setVideoQuality - invalid level or missing in map', {
+			self.logErr( 'setVideoQuality - invalid level or missing in map', {
 				level     : level,
 				available : self.videoQualityMap,
 			});
@@ -3280,22 +3275,30 @@ library.rtc = library.rtc || {};
 			const value = arr[ index ];
 			const def = defaults[ index ];
 			if ( 'frameRate' === key ) {
+				/*
 				video.frameRate = {
 					ideal : value || def,
-					max   : value || def,
-				};
+				}
+				*/
+				video.frameRate = value || def
 			}
 			
 			if ( 'width' === key ) {
+				/*
 				video.width = {
 					ideal : value || def,
 				}
+				*/
+				video.width = value || def
 			}
 			
 			if ( 'height' === key ) {
+				/*
 				video.height = {
 					ideal : value || def,
 				}
+				*/
+				video.height = value || def
 			}
 		}
 	}
@@ -3316,23 +3319,47 @@ library.rtc = library.rtc || {};
 			share[ key ] = value;
 		});
 		self.mediaConf.share = share;
-		console.log( 'setShareQuality', self.mediaConf.share );
+		self.log( 'setShareQuality', self.mediaConf.share );
 	}
 	
-	ns.Media.prototype.reconstrainTracks = function() {
-		const self = this;
+	ns.Media.prototype.constrainTracks = function( tracks ) {
+		const self = this
+		self.log( 'constrainTracks', [ tracks, self.media ])
 		return new Promise(( resolve, reject ) => {
-			if ( !self.media ) {
-				console.log( 'no media, lets reject' );
+			resolve( true )
+			return
+			
+			if ( !self.media && !tracks ) {
+				self.logErr( 'no media, lets reject', [ tracks, self.media ]);
 				reject( 'ERR_NO_MEDIA' );
 				return;
 			}
 			
-			const vTracks = self.media.getVideoTracks();
-			Promise.all( vTracks.map( constrain ))
-				.then( resolve )
-				.catch( reject );
-		});
+			const media = tracks || self.media
+			const vTracks = media.getVideoTracks()
+			self.log( 'vTracks', vTracks )
+			if ( !vTracks.length ) {
+				self.log( 'no video tracks v0v' )
+				resolve()
+				return
+			}
+			
+			setTimeout( doItLater, 1000 )
+			async function doItLater() {
+				const waiters = vTracks.map( constrain )
+				self.log( 'doing it now', waiters )
+				try {
+					await Promise.all( waiters )
+				} catch( ex ) {
+					self.log( 'doing it failed', ex )
+					reject( ex )
+					return
+				}
+				
+				resolve()
+			}
+			
+		})
 		
 		function constrain( track ) {
 			if ( self.shareVTrackId
@@ -3343,9 +3370,10 @@ library.rtc = library.rtc || {};
 				return constrainUserMedia( track );
 		}
 		
-		function constrainScreenShare( track ) {
-			const q = self.shareQualityMap[ self.quality.level ];
+		async function constrainScreenShare( track ) {
+			return true
 			
+			const q = self.shareQualityMap[ self.quality.level ];
 			const frameRate = q[ 0 ];
 			const conf = {
 			};
@@ -3360,23 +3388,78 @@ library.rtc = library.rtc || {};
 				qm   : self.shareQualityMap,
 				ql   : self.quality.level,
 				conf : conf,
-			});
-			return track.applyConstraints( conf );
-		}
-		
-		function constrainUserMedia( track ) {
-			const conf = self.mediaConf.video;
-			return track.applyConstraints( conf )
-				.then( constrainOk )
-				.catch( constrainFail );
-		}
-		
-		function constrainOk() {
+			})
 			
+			try {
+				await track.applyConstraints( conf )
+			} catch( ex ) {
+				throw 'ERR_CONSTRAIN_FAIL'
+			}
+			
+			return true
 		}
 		
-		function constrainFail( ex ) {
-			console.log( 'Media.reconstrainTracks - failed to apply constraints', ex );
+		async function constrainUserMedia( track ) {
+			self.log( 'constrainUserMedia support', {
+				track : track,
+				capa  : !!track.getCapabilities,
+				sett  : !!track.getSettings,
+				cons  : !!track.applyConstraints,
+			})
+			if ( !track.getCapabilities ) {
+				self.log( 'track does not support getCapabilities' )
+				return true
+			}
+			
+			const conf = buildConf( track )
+			
+			try {
+				await track.applyConstraints( conf )
+			} catch( ex ) {
+				self.logErr( 'constrainTracks - failed to apply constraints', ex )
+				throw ( 'ERR_CONSTRAIN_FAIL' )
+			}
+				
+			self.log( 'constrainOk', {
+				curr : track.getSettings(),
+			})
+			
+			return true
+			
+			function buildConf( track ) {
+				const sup = window.navigator.mediaDevices.getSupportedConstraints()
+				const capa = track.getCapabilities()
+				const curr = track.getSettings()
+				const conf = JSON.parse( JSON.stringify( self.mediaConf.video ))
+				self.log( 'buildConf things', {
+					sup   : sup,
+					capa  : capa,
+					curr  : curr,
+					conf  : conf,
+				})
+				
+				delete conf[ 'frameRate' ]
+				const cKeys = Object.keys( conf )
+				cKeys.forEach( key => {
+					const c = capa[ key ]
+					self.log( 'checking', [ key, c, conf[ key ]] )
+					if ( null == c )
+						return
+					
+					if ( null != c.max ) {
+						if ( c.max < conf[ key ])
+							conf[ key ] = c.max
+					}
+					
+					if ( null != c.min ) {
+						if ( c.min > conf[ key ])
+							conf[ key ] = c.min
+					}
+				})
+				
+				self.log( 'constrained constraints', conf )
+				return conf
+			}
 		}
 	}
 	
@@ -3395,20 +3478,30 @@ library.rtc = library.rtc || {};
 	
 	ns.Media.prototype.setDevice = function( type, available, conf ) {
 		const self = this;
-		if ( !conf[ type ])
+		self.log( 'setDevice', [ type, available, conf ])
+		if ( !conf[ type ]) {
+			self.log( 'setDevice, type not set', conf[ type ])
 			return conf;
+		}
 		
 		const deviceType = type + 'input';
 		let device = self.preferedDevices[ deviceType ];
-		if ( !device )
+		self.log( 'pref device', device )
+		if ( !device ) {
 			device = self.currentDevices[ deviceType ];
+			self.log( 'curr deivce', device )
+		}
 		
-		if ( !device )
-			return conf;
+		self.log( 'setDevice - device', [ type, device ])
+		if ( !device ) {
+			conf[ type ] = true
+			return conf
+		}
 		
 		const avaOfType = available[ deviceType ];
 		let prefDev = null;
 		const devIds = Object.keys( avaOfType );
+		self.log( 'ava of type ids', devIds )
 		devIds.forEach( id => {
 			const dev = avaOfType[ id ];
 			if ( device.deviceId === dev.deviceId ) {
@@ -3427,13 +3520,17 @@ library.rtc = library.rtc || {};
 			}
 		});
 		
-		if ( !prefDev )
-			return conf;
+		self.log( 'prefDev', prefDev )
+		if ( !prefDev ) {
+			conf[ type ] = true
+			return conf
+		}
 		
 		if ( 'boolean' === typeof( conf[ type ]))
 			conf[ type ] = {};
 		
 		conf[ type ].deviceId = prefDev.deviceId;
+		self.log( 'setDevice - set', [ type, conf ])
 		return conf;
 	}
 	
@@ -3457,7 +3554,7 @@ library.rtc = library.rtc || {};
 			function failure( err ) { mediaFailed( err, conf ); }
 			
 			function mediaFailed( err, conf ) {
-				console.log( 'mediaFailed', {
+				self.logErr( 'mediaFailed', {
 					err        : err,
 					conf       : conf,
 					noFallBack : noFallback,
@@ -3484,6 +3581,7 @@ library.rtc = library.rtc || {};
 			}
 			
 			function mediaCreated( media ) {
+				self.log( 'getUserMedia - mediaCreated', media )
 				self.simpleConf = null;
 				self.giveUp = false;
 				self.currentConf = null;
@@ -3661,6 +3759,21 @@ library.rtc = library.rtc || {};
 		try {
 			track.stop();
 		} catch( e ) {}
+	}
+	
+	ns.Media.prototype.log = function( ...args ) {
+		const self = this
+		if ( !self.spam )
+			return
+		
+		let pre = self.logId + 'rtc.Media ' + args.shift()
+		console.log( pre, ...args )
+	}
+	
+	ns.Media.prototype.logErr = function( ...args ) {
+		const self = this
+		let pre = 'ERR rtc.Media ' + args.shift()
+		console.trace( pre, ...args )
 	}
 	
 })( library.rtc );

@@ -1664,7 +1664,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.permissions,
 			self.localSettings.preferedDevices,
 			self.mediaQuality,
-			self.sources
+			self.sources,
+			'selfie'
 		);
 		
 		self.media.on( 'media', media );
@@ -2081,10 +2082,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setupStream = function( callback, preferedDevices ) {
 		const self = this;
+		console.log( 'Selfie.setupStream', preferedDevices )
 		if ( self.streamBack ) {
-			let oldBack = self.streamBack;
-			delete self.streamBack;
-			oldBack( 'CANCELED', null );
+			let oldBack = self.streamBack
+			delete self.streamBack
+			oldBack( 'CANCELED', null )
 		}
 		
 		self.streamBack = callback;
@@ -2438,7 +2440,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pingTimeouts = {};
 		self.pongs = [];
 		
-		self.spam = false;
+		self.spam = false
 		
 		self.init( conf.signal );
 	}
@@ -2814,17 +2816,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			peerName
 		);
 		
-		self.session.on( 'track-add'   , e => self.trackAdded( e ));
-		self.session.on( 'track-remove', e => self.trackRemoved( e ));
-		self.session.on( 'nostream'    , e => self.sendNoStream( type ));
-		self.session.on( 'state'       , e => self.handleSessionStateChange( e, type ));
-		self.session.on( 'error'       , e => self.handleSessionError( e ));
-		self.session.on( 'datachannel' , e => self.bindDataChannel( e ));
+		self.session.on( 'track-add'   , e => self.trackAdded( e ))
+		self.session.on( 'track-remove', e => self.trackRemoved( e ))
+		self.session.on( 'nostream'    , e => self.sendNoStream( type ))
+		self.session.on( 'state'       , e => self.handleSessionStateChange( e, type ))
+		self.session.on( 'error'       , e => self.handleSessionError( e ))
+		self.session.on( 'datachannel' , e => self.bindDataChannel( e ))
 		
 		if ( self.stats )
-			self.stats.updateSource( self.session );
+			self.stats.updateSource( self.session )
 		
-		self.showSelfie();
+		self.showSelfie()
 	}
 	
 	ns.Peer.prototype.bindDataChannel = function( channel ) {
@@ -2841,8 +2843,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function ping( e ) { self.handlePing( e ); }
 		function pong( e ) { self.handlePong( e ); }
 	}
-	
-	//
 	
 	ns.Peer.prototype.sendOpen = function() {
 		const self = this;
@@ -3312,7 +3312,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.streamAdded = function( stream ) {
 		const self = this;
-		self.log( 'Peer.streamAdded - legacy event ABORT ABORT ABORT', stream );
+		console.trace( 'Peer.streamAdded - legacy event ABORT ABORT ABORT', stream );
 	}
 	
 	ns.Peer.prototype.trackAdded = function( track ) {
@@ -3724,14 +3724,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( null != self.extendedError )
 				return
 			
-			self.extendedError = window.setTimeout( looksFucky, 1000 * 5 )
+			self.extendedError = window.setTimeout( looksFucky, 1000 * 9 )
 		}
 		
 		if ( 'ERR_INVALID_STATE' == e.error ) {
 			if ( null != self.statsErrorGracePeriod )
 				return
 			
-			self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 3 )
+			self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 6 )
 		}
 		
 		function looksFucky() {

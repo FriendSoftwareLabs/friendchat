@@ -30,11 +30,13 @@ library.rtc = library.rtc || {};
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		self.ui = statusMsg;
+		self.ui = statusMsg
 		
-		self.hasError = false;
-		self.canContinue = true;
-		self.checksDone = null;
+		self.hasError = false
+		self.canContinue = true
+		self.checksDone = null
+		
+		self.spam = true
 		
 		self.init();
 	}
@@ -46,13 +48,15 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkBrowser = function( userAgent, callback ) {
 		const self = this;
-		const type = 'browser-check';
-		self.startingCheck( type );
+		const type = 'browser-check'
+		self.log( 'checkBrowser', [ userAgent, navigator.userAgent ])
+		self.startingCheck( type )
 		if ( !userAgent )
-			userAgent = navigator.userAgent;
+			userAgent = navigator.userAgent
 		
-		new library.rtc.BrowserCheck( userAgent, checkBack );
+		new library.rtc.BrowserCheck( userAgent, checkBack )
 		function checkBack( res ) {
+			self.log( 'checkBrowser - res', res )
 			if ( 'success' == res.type ) {
 				callback( null, res.browser );
 				done();
@@ -63,13 +67,13 @@ library.rtc = library.rtc || {};
 			}
 			
 			function checkErrors( res ) {
-				console.log( 'checkErrors', res );
-				isCrit = false;
+				console.log( 'checkErrors', res )
+				let isCrit = false
 				if ( 'error' === res.type )
-					isCrit = true;
+					isCrit = true
 				
-				self.setHasError( isCrit );
-				callback( isCrit, res.browser );
+				self.setHasError( isCrit )
+				callback( isCrit, res.browser )
 			}
 			
 			function uiClick( type ) {
@@ -89,43 +93,46 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkSignal = function( conn, type ) {
 		const self = this;
+		self.log( 'checkSignal', [ conn, type ])
 		if ( 'host' === type )
-			self.ui.showHostSignal();
+			self.ui.showHostSignal()
 		
-		var type = type + '-signal';
-		self.startingCheck( type );
+		var type = type + '-signal'
+		self.startingCheck( type )
 		var uptd = {
 			desc : conn.url,
-		};
+		}
 		updateUi( uptd );
-		var localState = {
-			open : conn.onopen,
+		const localState = {
+			open  : conn.onopen,
 			close : conn.onclose,
-		};
+		}
 		conn.onopen = onopen;
 		conn.onclose = onclose;
 		localState.checkTimeout = window.setTimeout( resultTimeout, 20000 );
 		
 		function onopen() {
+			self.log( 'checkSignal - onopen', type )
 			restoreHandlers();
 			cancelResultTimeout();
 						
-			var success = {
-				type : 'success',
+			const success = {
+				type    : 'success',
 				message : '',
-			};
+			}
 			updateUi( success );
 			self.setCheckDone( type );
 			conn.onopen.apply( this, arguments );
 		}
 		
 		function onclose( errMsg ) {
-			errMsg = errMsg || 'connection error';
+			self.log( 'checkSignal - onclose', errMsg )
+			errMsg = errMsg || 'connection error'
 			restoreHandlers();
 			cancelResultTimeout();
 			
-			var err = {
-				type : 'error',
+			const err = {
+				type    : 'error',
 				message : errMsg,
 			}
 			updateUi( err );
@@ -171,26 +178,17 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkICE = function( conf ) {
 		const self = this;
+		self.log( 'checkICE', conf )
 		const checkId = 'ice-servers-check';
 		self.startingCheck( checkId, conf );
 		let hasTURN = false;
 		let TURNPass = false;
 		const errors = [];
-		//conf.forEach( addToView );
 		new library.rtc.ICECheck( conf, stepBack, doneBack );
 		
-		/*
-		function addToView( server ) {
-			const state = {
-				type : 'add',
-				server : server,
-			};
-			self.ui.updateICEServers( state );
-		}
-		*/
-		
 		function stepBack( result ) {
-			const isTURN = checkIsTURN( result.server );
+			self.log( 'checkICE - stepBack', result )
+			const isTURN = checkIsTURN( result.server )
 			if ( TURNPass )
 				return;
 			
@@ -213,6 +211,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		function doneBack() {
+			self.log( 'checkICE - doneBack', [ hasTURN, TURNPass, errors ])
 			if ( hasTURN && !TURNPass ) {
 				showStatus( 'error', 'ERR_NO_TURN' );
 				return;
@@ -247,6 +246,7 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkAudioInput = function( mediaStream, preferedDevices ) {
 		const self = this;
+		self.log( 'checkAudioInput', [ mediaStream, preferedDevices ])
 		const checkId = 'audio-input-check';
 		self.startingCheck( checkId );
 		self.ui.once( checkId, uiClick );
@@ -276,7 +276,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		function checkBack( hasInput ) {
-			console.log( 'checkBack', hasInput );
+			self.log( 'checkAudioInput - checkBack', hasInput )
 			if ( null != warnTimeout )
 				window.clearTimeout( warnTimeout );
 			
@@ -295,7 +295,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		function checkErr( err ) {
-			console.log( 'checkAudioDevice checkErr', err );
+			self.log( 'checkAudioInput - checkErr', err );
 			setError( err );
 		}
 		
@@ -334,6 +334,7 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.checkDeviceAccess = function( permissions ) {
 		const self = this;
+		self.log( 'checkDeviceAccess', permissions )
 		const checkId = 'devices-check';
 		self.startingCheck( checkId );
 		return new Promise(( resolve, reject ) => {
@@ -344,6 +345,7 @@ library.rtc = library.rtc || {};
 				.catch( abortErr );
 			
 			function devsBack( devs ) {
+				self.log( 'checkDeviceAccess - devsBack', devs )
 				devices = devs;
 				checkAccess( devices )
 					.then( accessBack )
@@ -351,7 +353,8 @@ library.rtc = library.rtc || {};
 			}
 			
 			function accessBack( access ) {
-				access = access;
+				access = access
+				self.log( 'checkDeviceAccess - accessBack', access )
 				if ( permissions.audio && !access.audio )
 					permissions.audio = false;
 				
@@ -362,6 +365,7 @@ library.rtc = library.rtc || {};
 			}
 			
 			function abortErr( err ) {
+				self.log( 'checkDeviceAccess - abortErr', err )
 				reject( err );
 			}
 		});
@@ -800,12 +804,13 @@ library.rtc = library.rtc || {};
 		} // askPermission
 		
 		function done( perms, devs ) {
+			self.log( 'checkDeviceAccess - done', perms, devs )
 			self.setCheckDone( checkId );
 			resolve( perms, devs );
 		}
 		
 		function error( err, perms, devs ) {
-			console.trace( 'error', err );
+			self.log( 'checkDeviceAccess - error', err );
 			self.setHasError( true );
 			const type = getType( err );
 			const state = {
@@ -845,6 +850,7 @@ library.rtc = library.rtc || {};
 	ns.InitChecks.prototype.checkSourceReady = function( hasMedia, mediaErr ) {
 		const self = this;
 		const checkId = 'source-check';
+		self.log( 'checkSourceReady', hasMedia, mediaErr )
 		let ready = hasMedia;
 		self.startingCheck( checkId );
 		if ( ready ) {
@@ -929,10 +935,11 @@ library.rtc = library.rtc || {};
 			'devices-check'     : false,
 		};
 		
-		//self.ui.on( 'close', onclose );
-		//self.ui.on( 'close-live', e => self.done( true ));
-		//self.ui.on( 'continue', oncontinue );
-		//self.ui.on( 'source-select', onsource );
+		/*
+		self.ui.on( 'close', onclose );
+		self.ui.on( 'close-live', e => self.done( true ));
+		self.ui.on( 'continue', oncontinue );
+		self.ui.on( 'source-select', onsource );
 		
 		function onclose( statusId ) {
 			self.passCheck( statusId );
@@ -949,6 +956,7 @@ library.rtc = library.rtc || {};
 			self.emit( 'source-select', checkId );
 			self.passCheck( checkId );
 		}
+		*/
 	}
 	
 	ns.InitChecks.prototype.setHasError = function( critical ) {
@@ -962,13 +970,15 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.startingCheck = function( id ) {
 		const self = this;
+		self.log( 'startingCheck', id )
 		self.checksDone[ id ] = false;
 	}
 	
 	ns.InitChecks.prototype.setCheckDone = function( id ) {
 		const self = this;
+		self.log( 'setCheckDone', id )
 		if ( null == self.checksDone[ id ]) {
-			console.log( 'setCheckDone - no check for', id );
+			self.log( 'setCheckDone - no check for', id );
 			return;
 		}
 		
@@ -979,7 +989,7 @@ library.rtc = library.rtc || {};
 		}
 		
 		if ( !isDone() ) {
-			console.log( 'not done yet', self.checksDone );
+			self.log( 'not done yet', self.checksDone );
 			return;
 		}
 		
@@ -1000,8 +1010,19 @@ library.rtc = library.rtc || {};
 	
 	ns.InitChecks.prototype.done = function( forceClose ) {
 		const self = this;
+		self.log( 'done', forceClose )
 		self.emit( 'done', forceClose );
 		//self.ondone( forceClose );
+	}
+	
+	ns.InitChecks.prototype.log = function( ...args ) {
+		const self = this
+		if ( !self.spam )
+			return
+		
+		const detail = args.shift()
+		const desc = 'InitChecks ' + detail
+		console.log( desc, ...args )
 	}
 	
 })( library.rtc );
@@ -1211,18 +1232,18 @@ library.rtc = library.rtc || {};
 	// Private
 	
 	ns.BrowserCheck.prototype.supportMap = {
-		'ie'      : 'error',
-		'edge'    : 'error',
-		'opera'   : 'warning',
+		'ie'      : 'success',
+		'edge'    : 'success',
+		'opera'   : 'success',
 		'safari'  : 'success',
 		'firefox' : 'success',
 		'chrome'  : 'success',
 		'brave'   : 'success',
 		'blink'   : 'success',
 		'samsung' : 'success',
-		'android' : 'warning',
-		'iphone'  : 'warning',
-		'unknown' : 'warning',
+		'android' : 'success',
+		'iphone'  : 'success',
+		'unknown' : 'success',
 	}
 	
 	ns.BrowserCheck.prototype.supportString = {
@@ -1247,7 +1268,7 @@ library.rtc = library.rtc || {};
 	
 	ns.BrowserCheck.prototype.mangleMobile = function() {
 		const self = this;
-		var uaId = self.getApprovedUAId();
+		const uaId = self.getApprovedUAId();
 		if ( uaId )
 			self.is[ uaId ] = true;
 		else
@@ -1267,14 +1288,14 @@ library.rtc = library.rtc || {};
 			|| self.userAgent.indexOf( ' OPR/' ) >= 0;
 		
 		// SAFARI
-		is[ 'safari' ] = /constructor/i.test(window.HTMLElement) 
+		is[ 'safari' ] = /constructor/i.test(window.HTMLElement ) 
 			|| (function (p)
 				{ return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] 
 				|| (typeof safari !== 'undefined' && safari.pushNotification)) 
 			|| /^((?!chrome|android).)*safari/i.test( self.userAgent );
 		
 		// FIREFOX
-		is[ 'firefox' ] = !!window.InstallTrigger;
+		is[ 'firefox' ] = self.userAgent.indexOf( 'Firefox/' ) >= 0;
 		
 		// CHROME
 		is[ 'chrome' ] = !!window.chrome;
@@ -1320,6 +1341,8 @@ library.rtc = library.rtc || {};
 	ns.BrowserCheck.prototype.checkCapabilities = function() {
 		const self = this;
 		const cap = {};
+		
+		// required
 		cap[ 'webAudio' ] = !!window.AudioContext;
 		cap[ 'webRTC' ] = !!window.RTCPeerConnection;
 		cap[ 'mediaDevices' ] = !!window.navigator.mediaDevices;
@@ -1328,7 +1351,11 @@ library.rtc = library.rtc || {};
 			cap[ 'enumerateDevices' ] = !!window.navigator.mediaDevices.enumerateDevices;
 		}
 		
+		// less required
+		
+		
 		self.cap = cap;
+		console.log( 'browser checked caps', self.cap )
 	}
 	
 	ns.BrowserCheck.prototype.checkMobile = function() {
