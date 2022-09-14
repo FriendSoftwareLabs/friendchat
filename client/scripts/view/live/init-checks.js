@@ -36,7 +36,7 @@ library.rtc = library.rtc || {};
 		self.canContinue = true
 		self.checksDone = null
 		
-		self.spam = true
+		self.spam = false
 		
 		self.init();
 	}
