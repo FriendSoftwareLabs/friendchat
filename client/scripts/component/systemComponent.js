@@ -794,7 +794,7 @@ window.library.component = window.library.component || {};
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' )
 			
-			return await self.presence.getFriendContact( fUserId );
+			return await self.presence.getFriendContact( fUserId )
 		}
 		
 		async function openSettingsFun() {
@@ -805,7 +805,7 @@ window.library.component = window.library.component || {};
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' )
 			
-			return await self.presence.
+			return await self.presence.openRoomSettings( roomId )
 		}
 		
 	}

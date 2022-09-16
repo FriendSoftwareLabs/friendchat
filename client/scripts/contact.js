@@ -781,12 +781,15 @@ library.contact = library.contact || {};
 	// Public
 	
 	ns.PresenceRoom.prototype.getInfo = function() {
-		const self = this;
-		const idCopy = JSON.parse( JSON.stringify( self.identity ));
+		const self = this
+		const idCopy = JSON.parse( JSON.stringify( self.identity ))
 		 if ( null != self.workgroups && null != self.workgroups.assigned )
-		 	idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId );
+		 	idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId )
 		 
-		return idCopy;
+		 if ( self.userId === self.ownerId )
+		 	idCopy.isOwner = true
+		 
+		return idCopy
 	}
 	
 	ns.PresenceRoom.prototype.getMeta = async function() {
@@ -1186,6 +1189,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.loadSettings = function() {
 		const self = this
+		console.log( 'loadSettings', self.identity )
 		if ( self.expectSettings )
 			return
 		
