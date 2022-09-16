@@ -1150,7 +1150,7 @@ library.view = library.view || {};
 		const self = this;
 		const filePath = 'html/settings/' + self.type + '.html';
 		const defaults = {
-			title  : Application.i18n('i18n_settings') + ' - ' + ( self.title || self.type )
+			title  : Application.i18n('i18n_settings') + ' - ' + ( self.title || self.type ),
 			width  : 420,
 			height : 400,
 		}
