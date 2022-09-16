@@ -584,27 +584,32 @@ window.library.component = window.library.component || {};
 		const createRoom = new api.DoorFun({
 			title   : 'CreateRoom',
 			execute : createRoomFun,
-		}, 'Functions/' );
+		}, 'Functions/' )
 		
 		const openLive = new api.DoorFun({
 			title   : 'OpenLive',
 			execute : openLiveFun,
-		}, 'Functions/' );
+		}, 'Functions/' )
 		
 		const closeLive = new api.DoorFun({
 			title   : 'CloseLive',
 			execute : closeLiveFun,
-		}, 'Functions/' );
+		}, 'Functions/' )
 		
 		const addUserToRoom = new api.DoorFun({
 			title   : 'AddUsersToRoom',
 			execute : addUsersToRoomFun,
-		}, 'Functions/' );
+		}, 'Functions/' )
 		
 		const openSettings = new api.DoorFun({
 			title   : 'OpenSettings',
 			execute : openSettingsFun,
-		}, 'Functions/' );
+		}, 'Functions/' )
+		
+		const openRoomSettings = new api.DoorFun({
+			title   : 'OpenRoomSettings',
+			execute : openRoomSettingsFun,
+		}, 'Functions/' )
 		
 		/*
 		const addUserToRoom = new api.DoorFun({
@@ -787,7 +792,7 @@ window.library.component = window.library.component || {};
 		
 		async function getIdentityFun( fUserId ) {
 			if ( null == self.presence )
-				throw new Error( 'ERR_NO_SERVICE' );
+				throw new Error( 'ERR_NO_SERVICE' )
 			
 			return await self.presence.getFriendContact( fUserId );
 		}
@@ -795,6 +800,14 @@ window.library.component = window.library.component || {};
 		async function openSettingsFun() {
 			hello.account.getSettings();
 		}
+		
+		async function openRoomSettingsFun( roomId ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' )
+			
+			return await self.presence.
+		}
+		
 	}
 	
 	ns.PresenceService.prototype.handle = function( event ) {

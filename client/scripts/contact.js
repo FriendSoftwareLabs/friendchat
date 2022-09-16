@@ -1185,36 +1185,37 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.loadSettings = function() {
-		const self = this;
+		const self = this
 		if ( self.expectSettings )
-			return;
+			return
 		
-		self.expectSettings = true;
+		self.expectSettings = true
 		const req = {
 			type : 'get',
-		};
+		}
+		
 		self.settings.request( req )
 			.then( settBack )
-			.catch( settBoop );
+			.catch( settBoop )
 		
 		function settBack( settings ) {
-			self.showSettings( settings );
+			self.showSettings( settings )
 		}
 		
 		function settBoop( err ) {
-			console.log( 'PresenceRoom.loadSettings - settboop', err );
+			console.log( 'PresenceRoom.loadSettings - settboop', err )
 		}
 	}
 	
 	ns.PresenceRoom.prototype.renameRoom = function( name ) {
-		const self = this;
-		throw new Error( 'PresenceRoom.renameRoom - should not be used, use settings' );
+		const self = this
+		throw new Error( 'PresenceRoom.renameRoom - should not be used, use settings' )
 	}
 	
 	ns.PresenceRoom.prototype.startVideo = function() {
-		const self = this;
+		const self = this
 		const permissions = {
-			send : {
+			send    : {
 				video : true,
 				audio : true,
 			},
@@ -1222,8 +1223,8 @@ library.contact = library.contact || {};
 				video : true,
 				audio : true,
 			},
-		};
-		self.setupLive( permissions );
+		}
+		self.setupLive( permissions )
 	}
 	
 	ns.PresenceRoom.prototype.startAudio = function() {
@@ -2071,7 +2072,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.showSettings = function( event ) {
 		const self = this;
-		const settings = event;
 		if ( !self.expectSettings )
 			return;
 		
@@ -2079,15 +2079,24 @@ library.contact = library.contact || {};
 		if ( self.settingsView )
 			return;
 		
+		let settings = {};
+		if ( 'jeanie' === hello.config.mode ) {
+			settings.roomName = event.roomName
+			settings.authorized = event.authorized
+		} else {
+			settings = event
+		}
+		
+		console.log( 'PRoom.showSettings', settings )
 		if ( settings.authorized ) {
-			const selfRemoved = settings.authorized.filter( notSelf );
-			settings.authorized = selfRemoved;
+			const selfRemoved = settings.authorized.filter( notSelf )
+			settings.authorized = selfRemoved
 			self.idc.getList( settings.authorized )
 				.then( authIdsBack )
-				.catch( authIdsFail );
+				.catch( authIdsFail )
 		}
 		else
-			showView( settings );
+			showView( settings )
 		
 		function authIdsBack( list ) {
 			const ids = {};
@@ -2104,7 +2113,7 @@ library.contact = library.contact || {};
 		
 		function authIdsFail( err ) {
 			delete settings.authorized;
-			showView( settings );
+			showView( settings )
 		}
 		
 		function showView( settings ) {
@@ -2115,6 +2124,13 @@ library.contact = library.contact || {};
 				onsave   : onSave,
 				onclose  : onClose,
 			};
+			
+			if ( 'jeanie' === hello.config.mode ) {
+				conf.windowConf = {
+					dialog : true,
+				}
+			}
+			
 			self.settingsView = new library.view.Settings( conf );
 			function onSave( keyValue ) {
 				const setting = {

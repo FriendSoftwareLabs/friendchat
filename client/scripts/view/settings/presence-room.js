@@ -36,9 +36,9 @@ library.view = library.view || {};
 	ns.PresenceRoom.prototype = Object.create( library.view.Settings.prototype );
 	
 	ns.PresenceRoom.prototype.setup = function( validKeys ) {
-		var self = this;
-		console.log( 'settings.PresenceRoom.setup', validKeys );
-		self.validKeys = validKeys;
+		const self = this;
+		console.log( 'settings.PresenceRoom.setup', validKeys )
+		self.validKeys = validKeys
 		
 		self.displayOrder = [
 			'roomName',
@@ -47,7 +47,7 @@ library.view = library.view || {};
 			'isClassroom',
 			'workgroups',
 			'authorized',
-		];
+		]
 		
 		self.labelMap = {
 			roomName    : View.i18n( 'i18n_room_name' ),

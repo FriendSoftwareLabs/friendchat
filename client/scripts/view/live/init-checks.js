@@ -38,7 +38,7 @@ library.rtc = library.rtc || {};
 		
 		self.spam = false
 		
-		self.init();
+		self.init()
 	}
 	
 	ns.InitChecks.prototype =

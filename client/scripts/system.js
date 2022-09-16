@@ -1254,15 +1254,16 @@ library.rtc = library.rtc || {};
 	ns.Account.prototype.showSettings = function( data ) {
 		const self = this;
 		if ( self.settingsView )
-			return;
+			return
 		
 		const winConf = {
 			title    : Application.i18n('i18n_account_settings'),
 			width    : 350,
 			height   : 400,
-		};
+		}
+		
 		if ( 'jeanie' === hello.config.mode )
-			winConf.dialog = true;
+			winConf.dialog = true
 		
 		const conf = {
 			type       : 'account',
@@ -1270,13 +1271,15 @@ library.rtc = library.rtc || {};
 			onsave     : saveHandler,
 			onclose    : closeHandler,
 			settings   : data,
-		};
-		self.settingsView = new library.view.Settings( conf );
+		}
+		self.settingsView = new library.view.Settings( conf )
 		
 		function closeHandler() { 
-			self.settingsView = null;
+			self.settingsView = null
 		}
-		function saveHandler( data, callback ) { self.saveSetting( data, callback ); }
+		function saveHandler( data, callback ) {
+			self.saveSetting( data, callback )
+		}
 	}
 	
 	ns.Account.prototype.saveSetting = function( data, callback ) {

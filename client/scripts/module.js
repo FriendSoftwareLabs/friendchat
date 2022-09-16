@@ -692,26 +692,36 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.showInviterFor = async function( roomId, conf ) {
 		const self = this;
-		const room = await self.getRoom( roomId );
+		const room = await self.getRoom( roomId )
 		if ( null == room )
-			throw 'ERR_NO_ROOM';
+			throw 'ERR_NO_ROOM'
 		
-		room.showInviter();
-		return true;
+		room.showInviter()
+		return true
+	}
+	
+	ns.Presence.prototype.openRoomSettings = async function( roomId ) {
+		const self = this
+		const room await self.getRoom( roomId )
+		if ( null == room )
+			throw 'ERR_NO_ROOM'
+		
+		room.loadSettings()
+		return true
 	}
 	
 	ns.Presence.prototype.getIdentity = async function( clientId ) {
-		const self = this;
-		let id = await self.lookupIdentity( clientId );
+		const self = this
+		let id = await self.lookupIdentity( clientId )
 		if ( null != id )
-			return id;
+			return id
 		
 		id = await waitFor( clientId );
 		if ( null == id ) {
-			throw 'ERR_NO_ID';
+			throw 'ERR_NO_ID'
 		}
 		
-		return id;
+		return id
 		
 		function waitFor( cId ) {
 			return new Promise(( resolve, reject ) => {
