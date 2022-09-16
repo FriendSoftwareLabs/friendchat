@@ -682,6 +682,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addFun( openChat );
 		hello.dormant.addFun( getIdentity );
 		hello.dormant.addFun( openSettings );
+		hello.dormant.addFun( openRoomSettings );
 		
 		hello.dormant.addEvent( roomAdd );
 		hello.dormant.addEvent( roomRemove );
