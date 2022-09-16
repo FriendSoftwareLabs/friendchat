@@ -702,7 +702,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.openRoomSettings = async function( roomId ) {
 		const self = this
-		const room await self.getRoom( roomId )
+		const room = await self.getRoom( roomId )
 		if ( null == room )
 			throw 'ERR_NO_ROOM'
 		
