@@ -2076,14 +2076,15 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.showSettings = function( event ) {
 		const self = this;
+		console.log( 'PRoom.showSettings event', event )
 		if ( !self.expectSettings )
-			return;
+			return
 		
 		self.expectSettings = false;
 		if ( self.settingsView )
-			return;
+			return
 		
-		let settings = {};
+		let settings = {}
 		if ( 'jeanie' === hello.config.mode ) {
 			settings.roomName = event.roomName
 			settings.authorized = event.authorized
@@ -2091,7 +2092,6 @@ library.contact = library.contact || {};
 			settings = event
 		}
 		
-		console.log( 'PRoom.showSettings', settings )
 		if ( settings.authorized ) {
 			const selfRemoved = settings.authorized.filter( notSelf )
 			settings.authorized = selfRemoved
