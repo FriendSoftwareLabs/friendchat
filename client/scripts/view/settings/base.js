@@ -806,8 +806,8 @@ library.view = library.view || {};
 		var value = self.settings[ setting ] || '';
 		var conf = {
 			setting : setting,
-			label : label,
-			value : value,
+			label   : label,
+			value   : value,
 		};
 		
 		var id = build( conf );
@@ -862,6 +862,57 @@ library.view = library.view || {};
 				var input = document.getElementById( setting );
 				input.value = result[ 0 ].Path;
 				self.save( setting, input.value );
+			}
+		}
+	}
+	
+	ns.Settings.prototype.setButton = function( setting ) {
+		const self = this
+		const label = self.labelMap[ setting ];
+		const buttLabel = self.settings[ setting ];
+		console.log( 'setButton', [ setting, label, buttLabel ])
+		
+		const id = build();
+		bind( id );
+		
+		function build() {
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const conf = {
+				setting   : setting,
+				label     : label,
+				buttLabel : buttLabel,
+				status    : status,
+			};
+			const element = hello.template.getElement( 'settings-button-tmpl', conf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
+			return element.id;
+		}
+		
+		function bind( id ) {
+			const form = document.getElementById( id );
+			const butt = form.querySelector( 'button' );
+			
+			form.addEventListener( 'submit', formSubmit, false );
+			butt.addEventListener( 'click', click, false );
+			
+			self.updateMap[ setting ] = updateHandler
+			function updateHandler( value ) {
+				console.log( 'button updateHandler', value )
+			}
+			
+			function formSubmit( e ) {
+				e.preventDefault()
+				e.stopPropagation()
+				save()
+			}
+			
+			function click( e ) {
+				save()
+			}
+			
+			function save() {
+				self.save( setting, true );
 			}
 		}
 	}

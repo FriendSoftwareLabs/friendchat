@@ -2088,6 +2088,7 @@ library.contact = library.contact || {};
 		if ( 'jeanie' === hello.config.mode ) {
 			settings.roomName = event.roomName
 			settings.authorized = event.authorized
+			settings.deleteRoom = true
 		} else {
 			settings = event
 		}
@@ -2116,6 +2117,7 @@ library.contact = library.contact || {};
 		}
 		
 		function authIdsFail( err ) {
+			console.log( 'app.PresenceRoom.showSettings, authorized authIdsFail', err )
 			delete settings.authorized;
 			showView( settings )
 		}

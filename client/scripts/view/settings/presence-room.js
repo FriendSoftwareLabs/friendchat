@@ -47,15 +47,17 @@ library.view = library.view || {};
 			'isClassroom',
 			'workgroups',
 			'authorized',
+			'deleteRoom',
 		]
 		
 		self.labelMap = {
-			roomName    : View.i18n( 'i18n_room_name' ),
+			roomName    : View.i18n( 'i18n_channel_name' ),
 			userLimit   : View.i18n( 'i18n_user_limit' ),
 			isStream    : View.i18n( 'i18n_is_stream' ),
 			isClassroom : View.i18n( 'i18n_is_classroom' ),
 			workgroups  : View.i18n( 'i18n_workgroups' ),
 			authorized  : View.i18n( 'i18n_authorized' ),
+			deleteRoom  : View.i18n( 'i18n_delete_channel' ),
 		};
 		
 		self.buildMap = {
@@ -65,6 +67,7 @@ library.view = library.view || {};
 			isClassroom : singleCheck,
 			workgroups  : assignWorkgroup,
 			authorized  : removeAuthed,
+			deleteRoom  : deleteRoom,
 		};
 		
 		function textInput( setting ) { self.setTextInput( setting ); }
@@ -72,6 +75,7 @@ library.view = library.view || {};
 		function singleCheck( setting ) { self.singleCheck( setting ); }
 		function assignWorkgroup( setting ) { self.assignWorkgroup( setting ); }
 		function removeAuthed( setting ) { self.removeAuthed( setting ); }
+		function deleteRoom( setting ) { self.deleteRoomButt( setting ); }
 	}
 	
 	ns.PresenceRoom.prototype.assignWorkgroup = function( setting ) {
@@ -279,6 +283,14 @@ library.view = library.view || {};
 			
 			el.parentNode.removeChild( el );
 		}
+		
+	}
+	
+	ns.PresenceRoom.prototype.deleteRoomButt = function( setting ) {
+		const self = this
+		console.log( 'deleteRoomButt', setting )
+		self.settings[ setting ] = View.i18n( 'i18n_delete' )
+		return self.setButton( setting )
 		
 	}
 	
