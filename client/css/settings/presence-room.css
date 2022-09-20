@@ -1,16 +1,27 @@
 
+.auth-items {
+	width: 100%;
+}
+
+.auth-item {
+	margin-bottom : 0.3em;
+}
+
 .item-avatar {
 	position            : relative;
-	height              : 2.5em;
-	width               : 2.5em;
+	height              : 2em;
+	width               : 2em;
 	border-radius       : 100%;
 	background-position : center;
 	background-size     : cover;
 }
 
 .item-name {
-	margin-left   : 1em;
 	text-overflow : ellipsis;
 	white-space   : nowrap;
 	overflow      : hidden;
+}
+
+.item-remove {
+	padding: 0.4em;
 }
