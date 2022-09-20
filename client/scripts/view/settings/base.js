@@ -47,25 +47,26 @@ library.view = library.view || {};
 		window.View.loaded();
 	}
 	
-	ns.Settings.prototype.buildView = function() {
+	ns.Settings.prototype.buildView = function( title ) {
 		const self = this;
-		console.log( 'buildView' );
-		const tmplId = 'settings-base-tmpl';
+		console.log( 'buildView' )
+		const tmplId = 'settings-base-tmpl'
 		const conf = {
-			headString : 'settings for thing',
-		};
-		const el = hello.template.getElement( tmplId, conf );
-		console.log( 'el', el );
-		document.body.appendChild( el );
+			preTitle : 'settings for:',
+			title    : title || 'nullifined',
+		}
+		const el = hello.template.getElement( tmplId, conf )
+		console.log( 'el', el )
+		document.body.appendChild( el )
 	}
 	
 	ns.Settings.prototype.bindEvents = function() {
-		const self = this;
-		var doneBtn = document.getElementById( 'done' );
+		const self = this
+		const doneBtn = document.getElementById( 'done' )
 		
-		doneBtn.addEventListener( 'click', doneClick, false );
+		doneBtn.addEventListener( 'click', doneClick, false )
 		
-		function doneClick( e ) { self.done( e ); }
+		function doneClick( e ) { self.done( e ) }
 	}
 	
 	ns.Settings.prototype.done = function( e ) {
@@ -86,20 +87,20 @@ library.view = library.view || {};
 		function saved( msg ) { self.saved( msg ); }
 	}
 	
-	ns.Settings.prototype.initialize = function( data ) {
+	ns.Settings.prototype.initialize = function( conf ) {
 		const self = this;
-		console.log( 'Settings.initalize', data );
-		self.buildView();
+		console.log( 'Settings.initalize', conf );
+		self.buildView( conf.title );
 		self.container = document.getElementById( 'settings' );
 		
 		self.bindEvents();
-		self.setup( Object.keys( data.settings ));
+		self.setup( Object.keys( conf.settings ));
 		
 		if ( null != self.sections )
 			self.addSections();
 		
 		self.settings = {};
-		self.setSettings( data.settings );
+		self.setSettings( conf.settings );
 		self.bindSettings();
 		
 		self.view.ready();

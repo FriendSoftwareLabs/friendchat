@@ -2088,7 +2088,7 @@ library.contact = library.contact || {};
 		if ( 'jeanie' === hello.config.mode ) {
 			settings.roomName = event.roomName
 			settings.authorized = event.authorized
-			settings.deleteRoom = true
+			settings.leaveRoom = true
 		} else {
 			settings = event
 		}
@@ -2125,7 +2125,7 @@ library.contact = library.contact || {};
 		function showView( settings ) {
 			const conf = {
 				type     : 'presence-room',
-				title    : self.identity.name + ' - Presence',
+				title    : self.identity.name,
 				settings : settings,
 				onsave   : onSave,
 				onclose  : onClose,
@@ -2140,9 +2140,16 @@ library.contact = library.contact || {};
 			self.settingsView = new library.view.Settings( conf );
 			function onSave( sV ) {
 				console.log( 'onSave', sV )
-				if ( 'deleteRoom' == sV.setting ) {
+				if ( 'leaveRoom' == sV.setting ) {
 					console.log( 'send leaveRoom' )
 					self.leaveRoom()
+					return
+				}
+				
+				if ( 'deleteRoom' == sV.setting ) {
+					console.log( 'send deleteRoom' )
+					//self.leaveRoom()
+					throw 'ERR_NYI'
 					return
 				}
 				
