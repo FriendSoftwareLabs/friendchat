@@ -1062,26 +1062,26 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.init = function() {
 		const self = this;
-		self.conn.on( 'initialize', init );
-		self.conn.on( 'persistent', persistent );
-		self.conn.on( 'priority', e => self.handlePriority( e ));
-		self.conn.on( 'identity', identity );
-		self.conn.on( 'authed', authed );
-		self.conn.on( 'workgroup', workgroup );
-		self.conn.on( 'invite', invite );
-		self.conn.on( 'room-update', roomUpdate );
-		self.conn.on( 'join', userJoin );
-		self.conn.on( 'leave', userLeave );
-		self.conn.on( 'live', live );
-		self.conn.on( 'chat', chat );
-		self.conn.on( 'sub-rooms', e => self.handleSubRooms( e ));
+		self.conn.on( 'initialize'   , init );
+		self.conn.on( 'persistent'   , persistent );
+		self.conn.on( 'priority'     , e => self.handlePriority( e ));
+		self.conn.on( 'identity'     , identity );
+		self.conn.on( 'authed'       , authed );
+		self.conn.on( 'workgroup'    , workgroup );
+		self.conn.on( 'invite'       , invite );
+		self.conn.on( 'room-update'  , roomUpdate );
+		self.conn.on( 'join'         , userJoin );
+		self.conn.on( 'leave'        , userLeave );
+		self.conn.on( 'live'         , live );
+		self.conn.on( 'chat'         , chat );
+		self.conn.on( 'sub-rooms'    , e => self.handleSubRooms( e ));
 		self.conn.on( 'counter-reset', e => self.handleCounterReset( e ));
-		self.conn.on( 'recent-add', e => self.handleRecentAdd( e ));
+		self.conn.on( 'recent-add'   , e => self.handleRecentAdd( e ));
 		self.conn.on( 'recent-remove', e => self.handleRecentRemove( e ));
-		self.conn.on( 'admin-add', e => self.handleAdminAdd( e ));
-		self.conn.on( 'admin-remove', e => self.handleAdminRemove( e ));
-		self.conn.on( 'at-add', e => self.handleAtNameAdd( e ));
-		self.conn.on( 'at-names', e => self.handleAtNames( e ));
+		self.conn.on( 'admin-add'    , e => self.handleAdminAdd( e ));
+		self.conn.on( 'admin-remove' , e => self.handleAdminRemove( e ));
+		self.conn.on( 'at-add'       , e => self.handleAtNameAdd( e ));
+		self.conn.on( 'at-names'     , e => self.handleAtNames( e ));
 		
 		self.settings = new library.component.RequestNode( 'settings', self.conn, settingsSink );
 		self.settings.on( 'update', e => self.handleSettingUpdate( e ));
@@ -1091,17 +1091,17 @@ library.contact = library.contact || {};
 			type : 'initialize',
 		});
 		
-		function init( e ) { self.handleInitialize( e ); }
+		function init(       e ) { self.handleInitialize( e ); }
 		function persistent( e ) { self.handlePersistent( e ); }
-		function identity( e ) { self.handleIdentity( e ); }
-		function authed( e ) { self.handleAuthed( e ); }
-		function workgroup( e ) { self.handleWorkgroup( e ); }
-		function invite( e ) { self.handleInvite( e ); }
+		function identity(   e ) { self.handleIdentity( e ); }
+		function authed(     e ) { self.handleAuthed( e ); }
+		function workgroup(  e ) { self.handleWorkgroup( e ); }
+		function invite(     e ) { self.handleInvite( e ); }
 		function roomUpdate( e ) { self.handleRoomUpdate( e ); }
-		function userJoin( e ) { self.handleJoin( e ); }
-		function userLeave( e ) { self.handleLeave( e ); }
-		function live( e ) { self.handleLive( e ); }
-		function chat( e ) { self.handleChat( e ); }
+		function userJoin(   e ) { self.handleJoin( e ); }
+		function userLeave(  e ) { self.handleLeave( e ); }
+		function live(       e ) { self.handleLive( e ); }
+		function chat(       e ) { self.handleChat( e ); }
 		
 		function settingsSink( ...args ) {
 			console.log( 'PresenceRoom - settings event sink', arguments );
@@ -1110,23 +1110,23 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.bindView = function() {
 		const self = this;
-		self.view.on( 'persist', persist );
-		self.view.on( 'settings', settings );
-		self.view.on( 'rename', rename );
-		self.view.on( 'live-video', startVideo );
-		self.view.on( 'live-audio', startAudio );
-		self.view.on( 'live-show', e => self.joinLive());
-		self.view.on( 'open-chat', chat );
-		self.view.on( 'leave-room', leave );
+		self.view.on( 'persist'    , persist );
+		self.view.on( 'settings'   , settings );
+		self.view.on( 'rename'     , rename );
+		self.view.on( 'live-video' , startVideo );
+		self.view.on( 'live-audio' , startAudio );
+		self.view.on( 'live-show'  , e => self.joinLive());
+		self.view.on( 'open-chat'  , chat );
+		self.view.on( 'leave-room' , leave );
 		self.view.on( 'invite-show', e => self.showInviter( e ));
 		
-		function persist( e ) { self.persistRoom( e ); }
-		function settings( e ) { self.loadSettings( e ); }
-		function rename( e ) { self.renameRoom( e ); }
+		function persist(    e ) { self.persistRoom( e ); }
+		function settings(   e ) { self.loadSettings( e ); }
+		function rename(     e ) { self.renameRoom( e ); }
 		function startVideo( e ) { self.startVideo( e ); }
 		function startAudio( e ) { self.startAudio( e ); }
-		function chat( e ) { self.openChat( e ); }
-		function leave( e ) { self.leaveRoom( e ); }
+		function chat(       e ) { self.openChat( e ); }
+		function leave(      e ) { self.leaveRoom( e ); }
 		
 	}
 	
@@ -2139,12 +2139,18 @@ library.contact = library.contact || {};
 			
 			self.settingsView = new library.view.Settings( conf );
 			function onSave( keyValue ) {
+				console.log( 'onSave', keyValue )
+				if ( null != keyValue.delete ) {
+					self.leaveRoom()
+					return
+				}
+				
 				const setting = {
 					type : 'setting',
 					data : keyValue,
-				};
+				}
 				
-				self.settings.send( setting );
+				self.settings.send( setting )
 			}
 			
 			function onClose( e ) {
