@@ -2125,7 +2125,7 @@ library.contact = library.contact || {};
 		function showView( settings ) {
 			const conf = {
 				type     : 'presence-room',
-				title    : self.identity.name,
+				title    : [ '#', self.identity.name ].join(''),
 				settings : settings,
 				onsave   : onSave,
 				onclose  : onClose,

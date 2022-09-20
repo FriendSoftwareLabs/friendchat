@@ -10,7 +10,8 @@
 		
 		<link rel="stylesheet" href="
 			../../css/common.css;
-			webclient/apps/FriendChat/css/settings/base.css
+			webclient/apps/FriendChat/css/settings/base.css;
+			webclient/apps/FriendChat/css/settings/presence-room.css
 		" type="text/css">
 	</head>
 	<body id="hello" class="settings BackgroundDefault bar column">
@@ -72,16 +73,19 @@ statusHTML,
 
 <!-- auth-item
 id,
+avatar,
 name,
 -->
 <script id="setting-auth-item-tmpl" type="text/html">
 <div id="<%= id %>" class="auth-item group row start">
-	<button class="IconButton item-remove">
-		<i class="fa fa-fw fa-close"></i>
-	</button>
+	<div class="item-avatar fortify" style="background-image:url(&#39;<%= avatar %>&#39;)">
+	</div>
 	<div class="item-name expand">
 		<%= name %>
 	</div>
+	<button class="IconButton fortify item-remove">
+		<i class="fa fa-fw fa-close"></i>
+	</button>
 </div>
 </script>
 

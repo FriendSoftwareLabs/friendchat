@@ -187,16 +187,16 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.removeAuthed = function( setting ) {
 		const self = this;
-		const data = self.settings[ setting ];
+		const users = self.settings[ setting ];
 		console.log( 'removeAuthed', {
 			setting  : setting,
 			settings : self.settings,
-			data     : data,
+			users     : users,
 		});
 		const state = {
 			el    : null,
-			ids   : data.ids,
-			list  : data.authed,
+			ids   : users.ids,
+			list  : users.authed,
 			idMap : {},
 		};
 		
@@ -224,30 +224,31 @@ library.view = library.view || {};
 		}
 		
 		function build() {
-			const label = self.labelMap[ setting ] || setting;
-			const statusHTML = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			const items = state.list.map( buildItem );
-			const itemsHTML = items.join( '\r\n' );
+			const label = self.labelMap[ setting ] || setting
+			const statusHTML = hello.template.get( 'settings-status-tmpl', { setting : setting })
+			const items = state.list.map( buildItem )
+			const itemsHTML = items.join( '\r\n' )
 			const conf = {
 				label      : label,
 				itemsHTML  : itemsHTML,
 				statusHTML : statusHTML,
-			};
-			const el = hello.template.getElement( 'setting-authorized-tmpl', conf );
-			self.container.appendChild( el );
-			state.el = el;
+			}
+			const el = hello.template.getElement( 'setting-authorized-tmpl', conf )
+			self.container.appendChild( el )
+			state.el = el
 			
 			function buildItem( cId ) {
-				const id = state.ids[ cId ];
-				const iId = friendUP.tool.uid( 'auth' );
-				state.idMap[ iId ] = cId;
-				state.idMap[ cId ] = iId;
+				const id = state.ids[ cId ]
+				const iId = friendUP.tool.uid( 'auth' )
+				state.idMap[ iId ] = cId
+				state.idMap[ cId ] = iId
 				const conf = {
-					id   : iId,
-					name : id.name,
-				};
-				const html = hello.template.get( 'setting-auth-item-tmpl', conf );
-				return html;
+					id     : iId,
+					avatar : id.avatar,
+					name   : id.name,
+				}
+				const html = hello.template.get( 'setting-auth-item-tmpl', conf )
+				return html
 			}
 		}
 		
