@@ -2138,16 +2138,17 @@ library.contact = library.contact || {};
 			}
 			
 			self.settingsView = new library.view.Settings( conf );
-			function onSave( keyValue ) {
-				console.log( 'onSave', keyValue )
-				if ( null != keyValue.delete ) {
+			function onSave( sV ) {
+				console.log( 'onSave', sV )
+				if ( 'deleteRoom' == sV.setting ) {
+					console.log( 'send leaveRoom' )
 					self.leaveRoom()
 					return
 				}
 				
 				const setting = {
 					type : 'setting',
-					data : keyValue,
+					data : sV,
 				}
 				
 				self.settings.send( setting )
