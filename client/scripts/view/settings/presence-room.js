@@ -257,7 +257,7 @@ library.view = library.view || {};
 			function bindItem( cId ) {
 				const itemId = state.idMap[ cId ];
 				const el = document.getElementById( itemId );
-				const btn = el.querySelector( 'button' );
+				const btn = el.querySelector( '.item-remove' );
 				btn.addEventListener( 'click', removeClick, false );
 				function removeClick( e ) {
 					e.preventDefault();
