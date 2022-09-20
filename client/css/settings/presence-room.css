@@ -1,0 +1,16 @@
+
+.item-avatar {
+	position            : relative;
+	height              : 2.5em;
+	width               : 2.5em;
+	border-radius       : 100%;
+	background-position : center;
+	background-size     : cover;
+}
+
+.item-name {
+	margin-left   : 1em;
+	text-overflow : ellipsis;
+	white-space   : nowrap;
+	overflow      : hidden;
+}
