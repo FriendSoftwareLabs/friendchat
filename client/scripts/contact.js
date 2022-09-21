@@ -1531,6 +1531,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = async function( state ) {
 		const self = this;
+		console.log( 'PRoom.handleInitialize', state )
 		self.ownerId = state.ownerId;
 		self.workConfig = state.workConfig || null;
 		self.workgroups = state.workgroups;
