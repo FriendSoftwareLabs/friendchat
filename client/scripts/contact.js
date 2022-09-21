@@ -789,6 +789,9 @@ library.contact = library.contact || {};
 		 if ( self.userId === self.ownerId )
 		 	idCopy.isOwner = true
 		 
+		 if ( true == self.isAuthed )
+		 	idCopy.isAuthed = true
+		 
 		return idCopy
 	}
 	
