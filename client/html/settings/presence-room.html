@@ -89,6 +89,31 @@ name,
 </div>
 </script>
 
+<!-- leave-room
+id,
+label,
+buttLabel,
+status,
+-->
+<script id="setting-leave-room-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting group row left">
+	<div class="label">
+		<%= label %>:
+	</div>
+	<div class="input expand group row end">
+		<div class="fortify">
+			<button id="<%= setting %>" class="button" type="checkbox">
+				<%= buttLabel %>
+			</button>
+		</div>
+		<div class="checklabel">
+			&nbsp;
+		</div>
+		<%= status %>
+	</div>
+</form>
+</script>
+
 		</div>
 	</body>
 </html>

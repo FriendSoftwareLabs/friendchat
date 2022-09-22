@@ -586,6 +586,11 @@ window.library.component = window.library.component || {};
 			execute : createRoomFun,
 		}, 'Functions/' )
 		
+		const leaveRoom = new api.DoorFun({
+			title   : 'LeaveRoom',
+			execute : leaveRoomFun,
+		}, 'Functions/' )
+		
 		const openLive = new api.DoorFun({
 			title   : 'OpenLive',
 			execute : openLiveFun,
@@ -672,29 +677,30 @@ window.library.component = window.library.component || {};
 			title : 'LiveHasFocus',
 		},	'Events/' );
 		
-		hello.dormant.addFun( msgToFID );
-		hello.dormant.addFun( listRooms );
-		hello.dormant.addFun( openRoom );
-		hello.dormant.addFun( createRoom );
-		hello.dormant.addFun( openLive );
-		hello.dormant.addFun( closeLive );
-		hello.dormant.addFun( addUserToRoom );
-		hello.dormant.addFun( openChat );
-		hello.dormant.addFun( getIdentity );
-		hello.dormant.addFun( openSettings );
-		hello.dormant.addFun( openRoomSettings );
+		hello.dormant.addFun( msgToFID )
+		hello.dormant.addFun( listRooms )
+		hello.dormant.addFun( openRoom )
+		hello.dormant.addFun( createRoom )
+		hello.dormant.addFun( leaveRoom )
+		hello.dormant.addFun( openLive )
+		hello.dormant.addFun( closeLive )
+		hello.dormant.addFun( addUserToRoom )
+		hello.dormant.addFun( openChat )
+		hello.dormant.addFun( getIdentity )
+		hello.dormant.addFun( openSettings )
+		hello.dormant.addFun( openRoomSettings )
 		
-		hello.dormant.addEvent( roomAdd );
-		hello.dormant.addEvent( roomRemove );
-		hello.dormant.addEvent( roomUpdate );
-		hello.dormant.addEvent( roomInviteClose );
-		hello.dormant.addEvent( roomViewOpen );
-		hello.dormant.addEvent( roomViewClosed );
-		hello.dormant.addEvent( roomLiveState );
-		hello.dormant.addEvent( userUpdate );
-		hello.dormant.addEvent( roomUnread );
-		hello.dormant.addEvent( liveHasFocus );
-		hello.dormant.addEvent( roomMentions );
+		hello.dormant.addEvent( roomAdd )
+		hello.dormant.addEvent( roomRemove )
+		hello.dormant.addEvent( roomUpdate )
+		hello.dormant.addEvent( roomInviteClose )
+		hello.dormant.addEvent( roomViewOpen )
+		hello.dormant.addEvent( roomViewClosed )
+		hello.dormant.addEvent( roomLiveState )
+		hello.dormant.addEvent( userUpdate )
+		hello.dormant.addEvent( roomUnread )
+		hello.dormant.addEvent( liveHasFocus )
+		hello.dormant.addEvent( roomMentions )
 		
 		self.dormantEvents = {
 			'roomAdd'         : roomAdd,
@@ -762,6 +768,14 @@ window.library.component = window.library.component || {};
 			
 			const room = await self.presence.createRoom({ name : roomName });
 			return room;
+		}
+		
+		async function leaveRoomFun( roomId ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' );
+			
+			const room = await self.presence.leaveRoom( roomId );
+			return roomId;
 		}
 		
 		async function openLiveFun( roomId ) {

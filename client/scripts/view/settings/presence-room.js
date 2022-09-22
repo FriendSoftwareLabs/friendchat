@@ -290,8 +290,55 @@ library.view = library.view || {};
 	ns.PresenceRoom.prototype.leaveRoomButt = function( setting ) {
 		const self = this
 		console.log( 'leaveRoomButt', setting )
-		self.settings[ setting ] = View.i18n( 'i18n_leave' )
-		return self.setButton( setting )
+		const label = self.labelMap[ setting ]
+		const conf = self.settings[ setting ]
+		const buttLabel = View.i18n( 'i18n_leave' )
+		console.log( 'leaveroombutt things', [ setting, label, conf ])
+		
+		const id = build()
+		bind( id )
+		
+		function build() {
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting })
+			const conf = {
+				setting   : setting,
+				warning   : View.i18n( 'i18n_warning_goes_here' ),
+				label     : label,
+				buttLabel : buttLabel,
+				status    : status,
+			}
+			const element = hello.template.getElement( 'setting-leave-room-tmpl', conf )
+			const container = self.getContainer( setting )
+			container.appendChild( element )
+			return element.id
+		}
+		
+		function bind( id ) {
+			const form = document.getElementById( id )
+			const butt = form.querySelector( 'button' )
+			
+			form.addEventListener( 'submit', formSubmit, false )
+			butt.addEventListener( 'click', click, false )
+			
+			self.updateMap[ setting ] = updateHandler
+			function updateHandler( value ) {
+				console.log( 'button updateHandler', value )
+			}
+			
+			function formSubmit( e ) {
+				e.preventDefault()
+				e.stopPropagation()
+				save()
+			}
+			
+			function click( e ) {
+				save()
+			}
+			
+			function save() {
+				self.save( setting, true );
+			}
+		}
 		
 	}
 	

@@ -2084,22 +2084,27 @@ library.contact = library.contact || {};
 		if ( !self.expectSettings )
 			return
 		
-		self.expectSettings = false;
+		self.expectSettings = false
 		if ( self.settingsView )
 			return
+		
+		if ( settings.authorized ) {
+			const selfRemoved = settings.authorized.filter( notSelf )
+			settings.authorized = selfRemoved
+		}
 		
 		let settings = {}
 		if ( 'jeanie' === hello.config.mode ) {
 			settings.roomName = event.roomName
 			settings.authorized = event.authorized
-			settings.leaveRoom = true
+			settings.leaveRoom = {
+				hasUsers : !!event.authorized?.length
+			}
 		} else {
 			settings = event
 		}
 		
 		if ( settings.authorized ) {
-			const selfRemoved = settings.authorized.filter( notSelf )
-			settings.authorized = selfRemoved
 			self.idc.getList( settings.authorized )
 				.then( authIdsBack )
 				.catch( authIdsFail )

@@ -1149,14 +1149,20 @@ library.module = library.module || {};
 		const self = this;
 		const room = self.getLocalChat( roomId );
 		if ( null == room )
-			return false;
+			return false
 		
-		room.closeLive();
+		room.closeLive()
 	}
 	
-	ns.Presence.prototype.leave = function( roomId ) {
+	ns.Presence.prototype.leaveRoom = async function( roomId ) {
 		const self = this;
-		console.log( 'Presence.leave - NYI', roomId );
+		console.log( 'Presence.leaveRoom', roomId )
+		const room = self.getLocalChat( roomId )
+		if ( null == room )
+			return false
+		
+		room.leaveRoom()
+		return true
 	}
 	
 	ns.Presence.prototype.viewSink = function( type, ...args ) {

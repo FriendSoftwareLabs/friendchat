@@ -38,13 +38,13 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.settingsInit = function() {
-		const self = this;
-		self.view = window.View;
-		hello.template = friend.template;
+		const self = this
+		self.view = window.View
+		hello.template = friend.template
 		
-		self.bindView();
+		self.bindView()
 		
-		window.View.loaded();
+		window.View.loaded()
 	}
 	
 	ns.Settings.prototype.buildView = function( title ) {
@@ -52,7 +52,7 @@ library.view = library.view || {};
 		console.log( 'buildView' )
 		const tmplId = 'settings-base-tmpl'
 		const conf = {
-			preTitle : 'settings for:',
+			preTitle : [ View.i18n( 'i18n_settings_for' ), ':' ].join( ''),
 			title    : title || 'nullifined',
 		}
 		const el = hello.template.getElement( tmplId, conf )
