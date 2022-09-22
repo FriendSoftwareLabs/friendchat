@@ -1193,7 +1193,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.loadSettings = function() {
 		const self = this
-		console.log( 'loadSettings', self.identity )
 		if ( self.expectSettings )
 			return
 		
@@ -1535,7 +1534,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = async function( state ) {
 		const self = this;
-		console.log( 'PRoom.handleInitialize', state )
 		self.ownerId = state.ownerId;
 		self.workConfig = state.workConfig || null;
 		self.workgroups = state.workgroups;
@@ -2081,7 +2079,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.showSettings = function( event ) {
 		const self = this;
-		console.log( 'PRoom.showSettings event', event )
 		if ( !self.expectSettings )
 			return
 		
@@ -2149,9 +2146,7 @@ library.contact = library.contact || {};
 			
 			self.settingsView = new library.view.Settings( conf );
 			function onSave( sV ) {
-				console.log( 'onSave', sV )
 				if ( 'leaveRoom' == sV.setting ) {
-					console.log( 'send leaveRoom' )
 					self.leaveRoom()
 					return
 				}

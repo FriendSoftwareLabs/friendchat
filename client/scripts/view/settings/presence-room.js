@@ -37,7 +37,6 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.setup = function( validKeys ) {
 		const self = this;
-		console.log( 'settings.PresenceRoom.setup', validKeys )
 		self.validKeys = validKeys
 		
 		self.displayOrder = [
@@ -275,7 +274,6 @@ library.view = library.view || {};
 		}
 		
 		function updateAuthList( event ) {
-			console.log( 'updateAuthList', event );
 			const cId = event.clientId;
 			const itemId = state.idMap[ cId ];
 			const el = document.getElementById( itemId );
@@ -289,11 +287,9 @@ library.view = library.view || {};
 	
 	ns.PresenceRoom.prototype.leaveRoomButt = function( setting ) {
 		const self = this
-		console.log( 'leaveRoomButt', setting )
 		const label = self.labelMap[ setting ]
 		const conf = self.settings[ setting ]
 		const buttLabel = View.i18n( 'i18n_leave' )
-		console.log( 'leaveroombutt things', [ setting, label, buttLabel, conf ])
 		
 		const id = build()
 		bind( id )
@@ -334,7 +330,6 @@ library.view = library.view || {};
 			
 			self.updateMap[ setting ] = updateHandler
 			function updateHandler( value ) {
-				console.log( 'button updateHandler', value )
 			}
 			
 			function formSubmit( e ) {
@@ -344,7 +339,6 @@ library.view = library.view || {};
 			
 			function leaveMaybe( e ) {
 				const conf = self.settings[ setting ]
-				console.trace( 'leaveMaybe', [ conf.warningShown, warning, buttCancel ])
 				if ( true == conf.warningShown )
 					save()
 				else
@@ -352,18 +346,15 @@ library.view = library.view || {};
 			}
 			
 			function save() {
-				console.trace( 'save' )
 				self.save( setting, true );
 			}
 			
 			function showWarning() {
-				console.trace( 'showWarning', [ warning, null == warning ])
 				if ( null == warning ) {
 					save()
 					return
 				}
 				
-				console.log( 'yep warning' )
 				const conf = self.settings[ setting ]
 				warning.classList.toggle( 'hidden', false )
 				buttCancel.classList.toggle( 'hidden', false )

@@ -1156,7 +1156,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.leaveRoom = async function( roomId ) {
 		const self = this;
-		console.log( 'Presence.leaveRoom', roomId )
 		const room = self.getLocalChat( roomId )
 		if ( null == room )
 			return false
