@@ -126,17 +126,19 @@ status,
 	<div class="label">
 		<%= label %>:
 	</div>
-	<div class="input expand group row end">
-		<div class="leave-warning">
-			<%= warning %>
-		</div>
-		<div class="fortify">
-			<button class="butt-cancel button hidden">
-				{i18n_cancel}
-			</button>
-			<button id="<%= setting %>" class="butt-leave button">
-				<%= buttLabel %>
-			</button>
+	<div class="expand group row end">
+		<div class="expand">
+			<div class="leave-warning expand hidden">
+				<%= warning %>
+			</div>
+			<div class="fortify group row end">
+				<button class="butt-cancel button hidden">
+					{i18n_cancel}
+				</button>
+				<button id="<%= setting %>" class="butt-leave button">
+					<%= buttLabel %>
+				</button>
+			</div>
 		</div>
 		<div class="checklabel">
 			&nbsp;
