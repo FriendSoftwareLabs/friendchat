@@ -1267,7 +1267,7 @@ library.rtc = library.rtc || {};
 		
 		const conf = {
 			type       : 'account',
-			title      : 'Account'
+			title      : 'Account',
 			windowConf : winConf,
 			onsave     : saveHandler,
 			onclose    : closeHandler,
