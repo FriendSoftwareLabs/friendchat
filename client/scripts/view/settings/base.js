@@ -52,7 +52,7 @@ library.view = library.view || {};
 		console.log( 'buildView' )
 		const tmplId = 'settings-base-tmpl'
 		const conf = {
-			preTitle : [ View.i18n( 'i18n_settings_for' ), ':' ].join( ''),
+			preTitle : View.i18n( 'i18n_edit' ),
 			title    : title || 'nullifined',
 		}
 		const el = hello.template.getElement( tmplId, conf )
