@@ -786,13 +786,9 @@ library.contact = library.contact || {};
 		 if ( null != self.workgroups && null != self.workgroups.assigned )
 		 	idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId )
 		 
-		 if ( self.userId === self.ownerId ) {
-		 	console.log( 'worgass', self.workgroups?.assigned )
-		 	if ( self.workgroups?.assigned )
-		 		console.log( 'haxx channel' )
-		 	else
-		 		idCopy.isOwner = true
-		 }
+		 
+		 if ( self.userId === self.ownerId && !self.workgroups?.assigned?.length )
+		 	idCopy.isOwner = true
 		 
 		 if ( true == self.isAuthed )
 		 	idCopy.isAuthed = true
