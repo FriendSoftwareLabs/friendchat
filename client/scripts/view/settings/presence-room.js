@@ -343,7 +343,7 @@ library.view = library.view || {};
 			
 			function leaveMaybe( e ) {
 				const conf = self.settings[ setting ]
-				console.log( 'leaveMaybe', [ conf, warning, buttCancel ])
+				console.trace( 'leaveMaybe', [ conf.warningShown, warning, buttCancel ])
 				if ( true == conf.warningShown )
 					save()
 				else
@@ -355,6 +355,7 @@ library.view = library.view || {};
 			}
 			
 			function showWarning() {
+				console.trace( 'showWarning' )
 				if ( null == warning ) {
 					save()
 					return
@@ -367,8 +368,11 @@ library.view = library.view || {};
 			}
 			
 			function hideWarning() {
+				const conf = self.settings[ setting ]
 				warning.classList.toggle( 'hidden', true )
 				buttCancel.classList.toggle( 'hidden', true )
+				conf.warningShown = false
+				
 			}
 		}
 		
