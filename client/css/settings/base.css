@@ -3,11 +3,11 @@
 }
 
 #hello.settings {
-	padding: 1em 0.5em;
+	padding: 1em 0.9em;
 }
 
 #title {
-	font-size   : 120%;
+	font-size   : 150%;
 	line-height : 1.8em;
 }
 
@@ -31,7 +31,7 @@
 }
 
 .setting {
-	padding : 0.3em 0.8em;
+	padding : 0.3em 0;
 }
 
 .label {
