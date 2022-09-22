@@ -2088,9 +2088,9 @@ library.contact = library.contact || {};
 		if ( self.settingsView )
 			return
 		
-		if ( settings.authorized ) {
-			const selfRemoved = settings.authorized.filter( notSelf )
-			settings.authorized = selfRemoved
+		if ( event.authorized ) {
+			const selfRemoved = event.authorized.filter( notSelf )
+			event.authorized = selfRemoved
 		}
 		
 		let settings = {}
