@@ -307,7 +307,7 @@ library.view = library.view || {};
 				buttLabel : buttLabel,
 				status    : status,
 			}
-			const tmpl = null
+			let tmpl = null
 			if ( conf.hasUsers )
 				tmpl = 'setting-leave-room-warning-tmpl'
 			else
