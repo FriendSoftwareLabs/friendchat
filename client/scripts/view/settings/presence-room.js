@@ -293,21 +293,27 @@ library.view = library.view || {};
 		const label = self.labelMap[ setting ]
 		const conf = self.settings[ setting ]
 		const buttLabel = View.i18n( 'i18n_leave' )
-		console.log( 'leaveroombutt things', [ setting, label, conf ])
+		console.log( 'leaveroombutt things', [ setting, label, buttLabel, conf ])
 		
 		const id = build()
 		bind( id )
 		
 		function build() {
 			const status = hello.template.get( 'settings-status-tmpl', { setting : setting })
-			const conf = {
+			const tmplConf = {
 				setting   : setting,
 				warning   : View.i18n( 'i18n_warning_goes_here' ),
 				label     : label,
 				buttLabel : buttLabel,
 				status    : status,
 			}
-			const element = hello.template.getElement( 'setting-leave-room-tmpl', conf )
+			const tmpl = null
+			if ( conf.hasUsers )
+				tmpl = 'setting-leave-room-warning-tmpl'
+			else
+				tmpl = 'setting-leave-room-tmpl'
+			
+			const element = hello.template.getElement( tmpl, tmplConf )
 			const container = self.getContainer( setting )
 			container.appendChild( element )
 			return element.id
@@ -315,10 +321,14 @@ library.view = library.view || {};
 		
 		function bind( id ) {
 			const form = document.getElementById( id )
-			const butt = form.querySelector( 'button' )
+			const buttLeave = form.querySelector( '.butt-leave' )
+			const buttCancel = form.querySelector( '.butt-cancel' )
+			const warning = form.querySelector( '.leave-warning' )
 			
 			form.addEventListener( 'submit', formSubmit, false )
-			butt.addEventListener( 'click', click, false )
+			buttLeave.addEventListener( 'click', leaveMaybe, false )
+			if ( buttCancel )
+				buttCancel.addEventListener( 'click', hideWarning, false )
 			
 			self.updateMap[ setting ] = updateHandler
 			function updateHandler( value ) {
@@ -331,12 +341,34 @@ library.view = library.view || {};
 				save()
 			}
 			
-			function click( e ) {
-				save()
+			function leaveMaybe( e ) {
+				const conf = self.settings[ setting ]
+				console.log( 'leaveMaybe', [ conf, warning, buttCancel ])
+				if ( true == conf.warningShown )
+					save()
+				else
+					showWarning()
 			}
 			
 			function save() {
 				self.save( setting, true );
+			}
+			
+			function showWarning() {
+				if ( null == warning ) {
+					save()
+					return
+				}
+				
+				const conf = self.settings[ setting ]
+				warning.classList.toggle( 'hidden', false )
+				buttCancel.classList.toggle( 'hidden', false )
+				conf.warningShown = true
+			}
+			
+			function hideWarning() {
+				warning.classList.toggle( 'hidden', true )
+				buttCancel.classList.toggle( 'hidden', true )
 			}
 		}
 		
