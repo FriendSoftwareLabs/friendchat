@@ -25,3 +25,12 @@
 .item-remove {
 	padding: 0.4em;
 }
+
+.leave-warning {
+	margin-bottom : 0.5em;
+	color         : #EC3459;
+}
+
+.butt-cancel {
+	margin-right : 0.5em;
+}

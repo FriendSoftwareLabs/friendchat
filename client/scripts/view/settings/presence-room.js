@@ -302,11 +302,13 @@ library.view = library.view || {};
 			const status = hello.template.get( 'settings-status-tmpl', { setting : setting })
 			const tmplConf = {
 				setting   : setting,
-				warning   : View.i18n( 'i18n_warning_goes_here' ),
+				//warning   : View.i18n( 'i18n_warning_goes_here' ),
+				warning   : 'If you want to delete this channel for all users, you must remove them first from the users list and then leave yourself',
 				label     : label,
 				buttLabel : buttLabel,
 				status    : status,
 			}
+			
 			let tmpl = null
 			if ( conf.hasUsers )
 				tmpl = 'setting-leave-room-warning-tmpl'
