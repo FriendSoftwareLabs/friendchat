@@ -338,7 +338,6 @@ library.view = library.view || {};
 			function formSubmit( e ) {
 				e.preventDefault()
 				e.stopPropagation()
-				save()
 			}
 			
 			function leaveMaybe( e ) {
@@ -351,6 +350,7 @@ library.view = library.view || {};
 			}
 			
 			function save() {
+				console.trace( 'save' )
 				self.save( setting, true );
 			}
 			
@@ -361,6 +361,7 @@ library.view = library.view || {};
 					return
 				}
 				
+				console.log( 'yep warning' )
 				const conf = self.settings[ setting ]
 				warning.classList.toggle( 'hidden', false )
 				buttCancel.classList.toggle( 'hidden', false )
