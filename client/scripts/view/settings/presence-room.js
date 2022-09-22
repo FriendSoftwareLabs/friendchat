@@ -355,7 +355,7 @@ library.view = library.view || {};
 			}
 			
 			function showWarning() {
-				console.trace( 'showWarning' )
+				console.trace( 'showWarning', [ warning, null == warning ])
 				if ( null == warning ) {
 					save()
 					return
