@@ -17,6 +17,9 @@
 	opacity      : 0.9;
 }
 
+#done {
+	margin-top : 0.7em;
+}
 
 #worgs > div,
 #worgs-items
