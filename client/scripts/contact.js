@@ -1472,7 +1472,7 @@ library.contact = library.contact || {};
 		}
 		
 		function eventSink() {
-			console.log( 'inviteer event sink', arguments );
+			//console.log( 'inviteer event sink', arguments );
 		}
 		
 		function add( user ) {
