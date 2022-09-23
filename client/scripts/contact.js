@@ -789,7 +789,7 @@ library.contact = library.contact || {};
 		if ( self.userId === self.ownerId && !self.workgroups?.assigned?.length )
 			idCopy.isOwner = true
 		
-		if ( true == self.isAuthed )
+		if ( true == self.isAuthed && !( self.userId === self.ownerId ))
 			idCopy.isAuthed = true
 		
 		return idCopy
