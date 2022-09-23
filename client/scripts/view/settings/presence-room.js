@@ -81,7 +81,6 @@ library.view = library.view || {};
 		const self = this;
 		const data = self.settings[ setting ];
 		const items = data.available;
-		console.log( 'assignWorgs', items );
 		const ids = Object.keys( items );
 		const state = {
 			assigned : data.assigned,
@@ -107,10 +106,6 @@ library.view = library.view || {};
 			
 			function buildItem( wId ) {
 				let item = state.items[ wId ];
-				console.log( 'buildItem', {
-					item  : item,
-					state : state,
-				});
 				let isAssigned = -1 !== data.assigned.indexOf( item.clientId );
 				let checked = isAssigned ? 'checked' : '';
 				const conf = {
@@ -124,7 +119,6 @@ library.view = library.view || {};
 		}
 		
 		function bind( setting, state ) {
-			console.log( 'bind', state );
 			const el = state.el;
 			el.addEventListener( 'submit', submit, false );
 			state.ids.forEach( bindChecked );
@@ -134,12 +128,6 @@ library.view = library.view || {};
 				let el = document.getElementById( id );
 				el.addEventListener( 'change', changed, false );
 				function changed( e ) {
-					console.log( 'im changed', {
-						id : id,
-						e  : e,
-						el : el,
-						c  : el.checked,
-					});
 					let value = {
 						clientId : id,
 						value    : el.checked,
@@ -149,7 +137,6 @@ library.view = library.view || {};
 			}
 			
 			function updateWorgItem( event ) {
-				console.log( 'updateWorgItem', event );
 				if ( event.clientId ) {
 					let el = document.getElementById( event.clientId );
 					el.checked = event.value;
@@ -161,7 +148,6 @@ library.view = library.view || {};
 					const cid = item.clientId;
 					const el = document.getElementById( cid );
 					const ass = event.assigned.find( assignedWorg );
-					console.log( 'ass', ass );
 					
 					if( !ass )
 						el.checked = false;
@@ -179,7 +165,6 @@ library.view = library.view || {};
 			function submit( e ) {
 				e.preventDefault();
 				e.stopPropagation();
-				console.log( 'submit', e );
 			}
 		}
 	}
@@ -187,11 +172,6 @@ library.view = library.view || {};
 	ns.PresenceRoom.prototype.removeAuthed = function( setting ) {
 		const self = this;
 		const users = self.settings[ setting ];
-		console.log( 'removeAuthed', {
-			setting  : setting,
-			settings : self.settings,
-			users     : users,
-		});
 		const state = {
 			el    : null,
 			ids   : users.ids,
@@ -208,11 +188,6 @@ library.view = library.view || {};
 			state.list.sort(( a, b ) => {
 				const aN = state.ids[ a ].name.toLowerCase();
 				const bN = state.ids[ b ].name.toLowerCase();
-				console.log( 'n', {
-					aN : aN,
-					bN : bN,
-					updown : ( aN < bN ),
-				});
 				if ( aN === bN )
 					return 0;
 				if ( aN < bN )
@@ -261,10 +236,6 @@ library.view = library.view || {};
 				function removeClick( e ) {
 					e.preventDefault();
 					e.stopPropagation();
-					console.log( 'removeClick', {
-						cId : cId,
-						iId : itemId,
-					});
 					const value = {
 						clientId : cId,
 					};

@@ -49,14 +49,12 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.buildView = function( title ) {
 		const self = this;
-		console.log( 'buildView' )
 		const tmplId = 'settings-base-tmpl'
 		const conf = {
 			preTitle : View.i18n( 'i18n_edit' ),
 			title    : title || 'nullifined',
 		}
 		const el = hello.template.getElement( tmplId, conf )
-		console.log( 'el', el )
 		document.body.appendChild( el )
 	}
 	
@@ -89,7 +87,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.initialize = function( conf ) {
 		const self = this;
-		console.log( 'Settings.initalize', conf );
 		self.buildView( conf.title );
 		self.container = document.getElementById( 'settings' );
 		
@@ -109,7 +106,6 @@ library.view = library.view || {};
 	ns.Settings.prototype.addSections = function() {
 		const self = this
 		self.sectionIds = Object.keys( self.sections )
-		console.log( 'addSections', [ self.sections, self.sectionIds ]);
 		self.sectionIds.forEach( sKey => {
 			const sConf = self.sections[ sKey ]
 			self.buildSection( sKey, sConf )
@@ -118,7 +114,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.setSettings = function( data ) {
 		const self = this;
-		console.log( 'setSettings', data )
 		data.settings = data.settings || {}
 		self.validKeys.forEach( add )
 		function add( setting ) {
@@ -133,37 +128,30 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.getContainer = function( setting ) {
 		const self = this
-		console.log( 'getContainer', [ setting, self.sections, self.sectionIds ])
 		if ( null == self.sections )
 			return self.container
 		
 		let container = null
 		self.sectionIds.some( sKey => {
-			console.log( 'looking in', sKey )
 			if ( null != container )
 				return true
 			
 			const settings = self.sections[ sKey ]
-			console.log( 'getcontainer, checking settings', settings )
 			const yep = settings.some( s => s === setting )
 			if ( !yep ) {
-				console.log( 'not found in', [ setting, settings ])
 				return false
 			}
 			
 			const id = sKey + '-section';
 			const sectionEl = document.getElementById( id )
 			if ( null == sectionEl ) {
-				console.log( 'could not find el', [ sKey, id ])
 				return false
 			}
 			
-			console.log( 'found el', sectionEl )
 			container = sectionEl.querySelector( '.section-settings' )
 			return true
 		})
 		
-		console.log( 'getContainer return', container )
 		if ( null == container )
 			return self.container
 		else
@@ -177,7 +165,6 @@ library.view = library.view || {};
 				return self.validKeys.some( valid => setting == valid )
 			});
 		
-		console.log( 'bindSettings', settings );
 		settings.forEach( build );
 		function build( setting ) {
 			var handler = self.buildMap[ setting ];
@@ -786,16 +773,13 @@ library.view = library.view || {};
 			
 			function submit( e ) {
 				e.preventDefault();
-				console.log( 'textarea submit', e.target[ 0 ].value );
 			}
 			
 			function blur( e ) {
-				console.log( 'textarea blur', textarea.value );
 				self.save( setting, textarea.value );
 			}
 			
 			function keyup( e ) {
-				console.log( 'textarea keyup', textarea.value );
 				self.buffer( setting, textarea.value );
 			}
 		}
@@ -871,7 +855,6 @@ library.view = library.view || {};
 		const self = this
 		const label = self.labelMap[ setting ];
 		const buttLabel = self.settings[ setting ];
-		console.log( 'setButton', [ setting, label, buttLabel ])
 		
 		const id = build();
 		bind( id );
@@ -1001,7 +984,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.updateSetting = function( data ) {
 		const self = this;
-		console.log( 'updateSetting', data );
 		var setting = data.setting;
 		var current = self.settings[ setting ];
 		var update = data.value;

@@ -1168,7 +1168,6 @@ library.view = library.view || {};
 			})
 		}
 		
-		console.log( 'windowConf', windowConf )
 		const initData = {
 			title    : self.title,
 			settings : self.settings,
