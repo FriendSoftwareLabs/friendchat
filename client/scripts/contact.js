@@ -783,16 +783,15 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.getInfo = function() {
 		const self = this
 		const idCopy = JSON.parse( JSON.stringify( self.identity ))
-		 if ( null != self.workgroups && null != self.workgroups.assigned )
-		 	idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId )
-		 
-		 
-		 if ( self.userId === self.ownerId && !self.workgroups?.assigned?.length )
-		 	idCopy.isOwner = true
-		 
-		 if ( true == self.isAuthed )
-		 	idCopy.isAuthed = true
-		 
+		if ( null != self.workgroups && null != self.workgroups.assigned )
+			idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId )
+		
+		if ( self.userId === self.ownerId && !self.workgroups?.assigned?.length )
+			idCopy.isOwner = true
+		
+		if ( true == self.isAuthed )
+			idCopy.isAuthed = true
+		
 		return idCopy
 	}
 	
@@ -1534,6 +1533,7 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = async function( state ) {
 		const self = this;
+		console.log( 'handleInitialize', state )
 		self.ownerId = state.ownerId;
 		self.workConfig = state.workConfig || null;
 		self.workgroups = state.workgroups;
