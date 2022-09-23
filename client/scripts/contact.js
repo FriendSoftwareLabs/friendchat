@@ -781,12 +781,19 @@ library.contact = library.contact || {};
 	// Public
 	
 	ns.PresenceRoom.prototype.getInfo = function() {
-		const self = this;
-		const idCopy = JSON.parse( JSON.stringify( self.identity ));
+		const self = this
+		const idCopy = JSON.parse( JSON.stringify( self.identity ))
 		 if ( null != self.workgroups && null != self.workgroups.assigned )
-		 	idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId );
+		 	idCopy.workgroups = self.workgroups.assigned.map( wg => wg.fUId )
 		 
-		return idCopy;
+		 
+		 if ( self.userId === self.ownerId && !self.workgroups?.assigned?.length )
+		 	idCopy.isOwner = true
+		 
+		 if ( true == self.isAuthed )
+		 	idCopy.isAuthed = true
+		 
+		return idCopy
 	}
 	
 	ns.PresenceRoom.prototype.getMeta = async function() {
@@ -1059,26 +1066,26 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.init = function() {
 		const self = this;
-		self.conn.on( 'initialize', init );
-		self.conn.on( 'persistent', persistent );
-		self.conn.on( 'priority', e => self.handlePriority( e ));
-		self.conn.on( 'identity', identity );
-		self.conn.on( 'authed', authed );
-		self.conn.on( 'workgroup', workgroup );
-		self.conn.on( 'invite', invite );
-		self.conn.on( 'room-update', roomUpdate );
-		self.conn.on( 'join', userJoin );
-		self.conn.on( 'leave', userLeave );
-		self.conn.on( 'live', live );
-		self.conn.on( 'chat', chat );
-		self.conn.on( 'sub-rooms', e => self.handleSubRooms( e ));
+		self.conn.on( 'initialize'   , init );
+		self.conn.on( 'persistent'   , persistent );
+		self.conn.on( 'priority'     , e => self.handlePriority( e ));
+		self.conn.on( 'identity'     , identity );
+		self.conn.on( 'authed'       , authed );
+		self.conn.on( 'workgroup'    , workgroup );
+		self.conn.on( 'invite'       , invite );
+		self.conn.on( 'room-update'  , roomUpdate );
+		self.conn.on( 'join'         , userJoin );
+		self.conn.on( 'leave'        , userLeave );
+		self.conn.on( 'live'         , live );
+		self.conn.on( 'chat'         , chat );
+		self.conn.on( 'sub-rooms'    , e => self.handleSubRooms( e ));
 		self.conn.on( 'counter-reset', e => self.handleCounterReset( e ));
-		self.conn.on( 'recent-add', e => self.handleRecentAdd( e ));
+		self.conn.on( 'recent-add'   , e => self.handleRecentAdd( e ));
 		self.conn.on( 'recent-remove', e => self.handleRecentRemove( e ));
-		self.conn.on( 'admin-add', e => self.handleAdminAdd( e ));
-		self.conn.on( 'admin-remove', e => self.handleAdminRemove( e ));
-		self.conn.on( 'at-add', e => self.handleAtNameAdd( e ));
-		self.conn.on( 'at-names', e => self.handleAtNames( e ));
+		self.conn.on( 'admin-add'    , e => self.handleAdminAdd( e ));
+		self.conn.on( 'admin-remove' , e => self.handleAdminRemove( e ));
+		self.conn.on( 'at-add'       , e => self.handleAtNameAdd( e ));
+		self.conn.on( 'at-names'     , e => self.handleAtNames( e ));
 		
 		self.settings = new library.component.RequestNode( 'settings', self.conn, settingsSink );
 		self.settings.on( 'update', e => self.handleSettingUpdate( e ));
@@ -1088,17 +1095,17 @@ library.contact = library.contact || {};
 			type : 'initialize',
 		});
 		
-		function init( e ) { self.handleInitialize( e ); }
+		function init(       e ) { self.handleInitialize( e ); }
 		function persistent( e ) { self.handlePersistent( e ); }
-		function identity( e ) { self.handleIdentity( e ); }
-		function authed( e ) { self.handleAuthed( e ); }
-		function workgroup( e ) { self.handleWorkgroup( e ); }
-		function invite( e ) { self.handleInvite( e ); }
+		function identity(   e ) { self.handleIdentity( e ); }
+		function authed(     e ) { self.handleAuthed( e ); }
+		function workgroup(  e ) { self.handleWorkgroup( e ); }
+		function invite(     e ) { self.handleInvite( e ); }
 		function roomUpdate( e ) { self.handleRoomUpdate( e ); }
-		function userJoin( e ) { self.handleJoin( e ); }
-		function userLeave( e ) { self.handleLeave( e ); }
-		function live( e ) { self.handleLive( e ); }
-		function chat( e ) { self.handleChat( e ); }
+		function userJoin(   e ) { self.handleJoin( e ); }
+		function userLeave(  e ) { self.handleLeave( e ); }
+		function live(       e ) { self.handleLive( e ); }
+		function chat(       e ) { self.handleChat( e ); }
 		
 		function settingsSink( ...args ) {
 			console.log( 'PresenceRoom - settings event sink', arguments );
@@ -1107,23 +1114,23 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.bindView = function() {
 		const self = this;
-		self.view.on( 'persist', persist );
-		self.view.on( 'settings', settings );
-		self.view.on( 'rename', rename );
-		self.view.on( 'live-video', startVideo );
-		self.view.on( 'live-audio', startAudio );
-		self.view.on( 'live-show', e => self.joinLive());
-		self.view.on( 'open-chat', chat );
-		self.view.on( 'leave-room', leave );
+		self.view.on( 'persist'    , persist );
+		self.view.on( 'settings'   , settings );
+		self.view.on( 'rename'     , rename );
+		self.view.on( 'live-video' , startVideo );
+		self.view.on( 'live-audio' , startAudio );
+		self.view.on( 'live-show'  , e => self.joinLive());
+		self.view.on( 'open-chat'  , chat );
+		self.view.on( 'leave-room' , leave );
 		self.view.on( 'invite-show', e => self.showInviter( e ));
 		
-		function persist( e ) { self.persistRoom( e ); }
-		function settings( e ) { self.loadSettings( e ); }
-		function rename( e ) { self.renameRoom( e ); }
+		function persist(    e ) { self.persistRoom( e ); }
+		function settings(   e ) { self.loadSettings( e ); }
+		function rename(     e ) { self.renameRoom( e ); }
 		function startVideo( e ) { self.startVideo( e ); }
 		function startAudio( e ) { self.startAudio( e ); }
-		function chat( e ) { self.openChat( e ); }
-		function leave( e ) { self.leaveRoom( e ); }
+		function chat(       e ) { self.openChat( e ); }
+		function leave(      e ) { self.leaveRoom( e ); }
 		
 	}
 	
@@ -1185,36 +1192,37 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.loadSettings = function() {
-		const self = this;
+		const self = this
 		if ( self.expectSettings )
-			return;
+			return
 		
-		self.expectSettings = true;
+		self.expectSettings = true
 		const req = {
 			type : 'get',
-		};
+		}
+		
 		self.settings.request( req )
 			.then( settBack )
-			.catch( settBoop );
+			.catch( settBoop )
 		
 		function settBack( settings ) {
-			self.showSettings( settings );
+			self.showSettings( settings )
 		}
 		
 		function settBoop( err ) {
-			console.log( 'PresenceRoom.loadSettings - settboop', err );
+			console.log( 'PresenceRoom.loadSettings - settboop', err )
 		}
 	}
 	
 	ns.PresenceRoom.prototype.renameRoom = function( name ) {
-		const self = this;
-		throw new Error( 'PresenceRoom.renameRoom - should not be used, use settings' );
+		const self = this
+		throw new Error( 'PresenceRoom.renameRoom - should not be used, use settings' )
 	}
 	
 	ns.PresenceRoom.prototype.startVideo = function() {
-		const self = this;
+		const self = this
 		const permissions = {
-			send : {
+			send    : {
 				video : true,
 				audio : true,
 			},
@@ -1222,8 +1230,8 @@ library.contact = library.contact || {};
 				video : true,
 				audio : true,
 			},
-		};
-		self.setupLive( permissions );
+		}
+		self.setupLive( permissions )
 	}
 	
 	ns.PresenceRoom.prototype.startAudio = function() {
@@ -1464,7 +1472,7 @@ library.contact = library.contact || {};
 		}
 		
 		function eventSink() {
-			console.log( 'inviteer event sink', arguments );
+			//console.log( 'inviteer event sink', arguments );
 		}
 		
 		function add( user ) {
@@ -2071,23 +2079,36 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.showSettings = function( event ) {
 		const self = this;
-		const settings = event;
 		if ( !self.expectSettings )
-			return;
+			return
 		
-		self.expectSettings = false;
+		self.expectSettings = false
 		if ( self.settingsView )
-			return;
+			return
+		
+		if ( event.authorized ) {
+			const selfRemoved = event.authorized.filter( notSelf )
+			event.authorized = selfRemoved
+		}
+		
+		let settings = {}
+		if ( 'jeanie' === hello.config.mode ) {
+			settings.roomName = event.roomName
+			settings.authorized = event.authorized
+			settings.leaveRoom = {
+				hasUsers : !!event.authorized?.length
+			}
+		} else {
+			settings = event
+		}
 		
 		if ( settings.authorized ) {
-			const selfRemoved = settings.authorized.filter( notSelf );
-			settings.authorized = selfRemoved;
 			self.idc.getList( settings.authorized )
 				.then( authIdsBack )
-				.catch( authIdsFail );
+				.catch( authIdsFail )
 		}
 		else
-			showView( settings );
+			showView( settings )
 		
 		function authIdsBack( list ) {
 			const ids = {};
@@ -2103,26 +2124,46 @@ library.contact = library.contact || {};
 		}
 		
 		function authIdsFail( err ) {
+			console.log( 'app.PresenceRoom.showSettings, authorized authIdsFail', err )
 			delete settings.authorized;
-			showView( settings );
+			showView( settings )
 		}
 		
 		function showView( settings ) {
 			const conf = {
 				type     : 'presence-room',
-				title    : self.identity.name + ' - Presence',
+				title    : [ '#', self.identity.name ].join(''),
 				settings : settings,
 				onsave   : onSave,
 				onclose  : onClose,
 			};
+			
+			if ( 'jeanie' === hello.config.mode ) {
+				conf.windowConf = {
+					dialog : true,
+				}
+			}
+			
 			self.settingsView = new library.view.Settings( conf );
-			function onSave( keyValue ) {
+			function onSave( sV ) {
+				if ( 'leaveRoom' == sV.setting ) {
+					self.leaveRoom()
+					return
+				}
+				
+				if ( 'deleteRoom' == sV.setting ) {
+					console.log( 'send deleteRoom' )
+					//self.leaveRoom()
+					throw 'ERR_NYI'
+					return
+				}
+				
 				const setting = {
 					type : 'setting',
-					data : keyValue,
-				};
+					data : sV,
+				}
 				
-				self.settings.send( setting );
+				self.settings.send( setting )
 			}
 			
 			function onClose( e ) {

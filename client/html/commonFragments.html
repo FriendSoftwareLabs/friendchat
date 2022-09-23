@@ -187,22 +187,25 @@ id
 </script>
 
 <!--
-headString
+preTitle,
+title,
 -->
 <script id="settings-base-tmpl" type="text/html">
 <div class="full-height bar column">
-	<div id="head" class="BorderBottom center-child hidden">
-		<div><%= headString %></div>
+	<div id="head" class="fortify">
+		<div id="title" class="group row start">
+			<div><%= preTitle %></div>
+			<div id="thing"><%= title %></div>
+		</div>
 	</div>
 	<div id="main" class="expand">
 		<div id="settings" class="settings ZebraList">
 		</div>
 	</div>
-	<div class="Box BorderTop fortify group row end">
-		<button id="done" type="button" class="button group row">
-			<i class="fa fa-fw fa-check"></i>
-			{i18n_done}
-		</button>
+	<div class="fortify group row end">
+		<div id="done">
+			<i class="fa fa-fw fa-check MousePointer"></i>
+		</div>
 	</div>
 </div>
 </script>
@@ -959,6 +962,33 @@ status,
 	</div>
 </form>
 </script>
+
+
+<!-- BUTTON
+setting,
+label,
+buttLabel,
+status,
+-->
+<script id="settings-button-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting group row left">
+	<div class="label">
+		<%= label %>:
+	</div>
+	<div class="input expand group row end">
+		<div class="fortify">
+			<button id="<%= setting %>" class="button" type="checkbox">
+				<%= buttLabel %>
+			</button>
+		</div>
+		<div class="checklabel">
+			&nbsp;
+		</div>
+		<%= status %>
+	</div>
+</form>
+</script>
+
 
 <!-- MULTICHECK
 setting,

@@ -10,10 +10,11 @@
 		
 		<link rel="stylesheet" href="
 			../../css/common.css;
-			webclient/apps/FriendChat/css/settings/base.css
+			webclient/apps/FriendChat/css/settings/base.css;
+			webclient/apps/FriendChat/css/settings/presence-room.css
 		" type="text/css">
 	</head>
-	<body id="hello" class="bar column">
+	<body id="hello" class="settings BackgroundDefault bar column">
 		<div id="fragments">
 		
 <!-- assigned workgroups
@@ -72,17 +73,79 @@ statusHTML,
 
 <!-- auth-item
 id,
+avatar,
 name,
 -->
 <script id="setting-auth-item-tmpl" type="text/html">
 <div id="<%= id %>" class="auth-item group row start">
-	<button class="IconButton item-remove">
-		<i class="fa fa-fw fa-close"></i>
-	</button>
+	<div class="item-avatar fortify" style="background-image:url(&#39;<%= avatar %>&#39;)">
+	</div>
 	<div class="item-name expand">
 		<%= name %>
 	</div>
+	<div class="fortify item-remove">
+		<i class="fa fa-fw fa-close"></i>
+	</div>
 </div>
+</script>
+
+<!-- leave-room
+id,
+label,
+buttLabel,
+status,
+-->
+<script id="setting-leave-room-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting group row left">
+	<div class="label">
+		<%= label %>:
+	</div>
+	<div class="input expand group row end">
+		<div class="fortify">
+			<button id="<%= setting %>" class="butt-leave button">
+				<%= buttLabel %>
+			</button>
+		</div>
+		<div class="checklabel">
+			&nbsp;
+		</div>
+		<%= status %>
+	</div>
+</form>
+</script>
+
+<!-- leave-room-warning
+id,
+label,
+buttLabel,
+warning,
+status,
+-->
+<script id="setting-leave-room-warning-tmpl" type="text/html">
+<form id="<%= setting %>-container" class="setting group row left">
+	<div class="label">
+		<%= label %>:
+	</div>
+	<div class="input expand group row end">
+		<div class="expand">
+			<div class="leave-warning expand hidden">
+				<%= warning %>
+			</div>
+			<div class="fortify group row end">
+				<button class="butt-cancel button hidden">
+					{i18n_cancel}
+				</button>
+				<button id="<%= setting %>" class="butt-leave button">
+					<%= buttLabel %>
+				</button>
+			</div>
+		</div>
+		<div class="checklabel">
+			&nbsp;
+		</div>
+		<%= status %>
+	</div>
+</form>
 </script>
 
 		</div>

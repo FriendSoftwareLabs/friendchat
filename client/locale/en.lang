@@ -470,3 +470,8 @@ i18n_image_failed_to_load : Image failed to load
 i18n_add_to : Add to
 i18n_sound_notification : Sound notification
 i18n_you_are_in_another_live_call : You are currently engaged in another live call
+i18n_channel_name : Channel name
+i18n_users : Users
+i18n_leave_channel : Leave Channel
+i18n_settings_for : Settings for
+i18n_edit : Edit

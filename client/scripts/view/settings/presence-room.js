@@ -36,9 +36,8 @@ library.view = library.view || {};
 	ns.PresenceRoom.prototype = Object.create( library.view.Settings.prototype );
 	
 	ns.PresenceRoom.prototype.setup = function( validKeys ) {
-		var self = this;
-		console.log( 'settings.PresenceRoom.setup', validKeys );
-		self.validKeys = validKeys;
+		const self = this;
+		self.validKeys = validKeys
 		
 		self.displayOrder = [
 			'roomName',
@@ -47,15 +46,17 @@ library.view = library.view || {};
 			'isClassroom',
 			'workgroups',
 			'authorized',
-		];
+			'leaveRoom',
+		]
 		
 		self.labelMap = {
-			roomName    : View.i18n( 'i18n_room_name' ),
+			roomName    : View.i18n( 'i18n_channel_name' ),
 			userLimit   : View.i18n( 'i18n_user_limit' ),
 			isStream    : View.i18n( 'i18n_is_stream' ),
 			isClassroom : View.i18n( 'i18n_is_classroom' ),
 			workgroups  : View.i18n( 'i18n_workgroups' ),
-			authorized  : View.i18n( 'i18n_authorized' ),
+			authorized  : View.i18n( 'i18n_users' ),
+			leaveRoom   : View.i18n( 'i18n_leave_channel' ),
 		};
 		
 		self.buildMap = {
@@ -65,6 +66,7 @@ library.view = library.view || {};
 			isClassroom : singleCheck,
 			workgroups  : assignWorkgroup,
 			authorized  : removeAuthed,
+			leaveRoom   : leaveRoom,
 		};
 		
 		function textInput( setting ) { self.setTextInput( setting ); }
@@ -72,13 +74,13 @@ library.view = library.view || {};
 		function singleCheck( setting ) { self.singleCheck( setting ); }
 		function assignWorkgroup( setting ) { self.assignWorkgroup( setting ); }
 		function removeAuthed( setting ) { self.removeAuthed( setting ); }
+		function leaveRoom( setting ) { self.leaveRoomButt( setting ); }
 	}
 	
 	ns.PresenceRoom.prototype.assignWorkgroup = function( setting ) {
 		const self = this;
 		const data = self.settings[ setting ];
 		const items = data.available;
-		console.log( 'assignWorgs', items );
 		const ids = Object.keys( items );
 		const state = {
 			assigned : data.assigned,
@@ -104,10 +106,6 @@ library.view = library.view || {};
 			
 			function buildItem( wId ) {
 				let item = state.items[ wId ];
-				console.log( 'buildItem', {
-					item  : item,
-					state : state,
-				});
 				let isAssigned = -1 !== data.assigned.indexOf( item.clientId );
 				let checked = isAssigned ? 'checked' : '';
 				const conf = {
@@ -121,7 +119,6 @@ library.view = library.view || {};
 		}
 		
 		function bind( setting, state ) {
-			console.log( 'bind', state );
 			const el = state.el;
 			el.addEventListener( 'submit', submit, false );
 			state.ids.forEach( bindChecked );
@@ -131,12 +128,6 @@ library.view = library.view || {};
 				let el = document.getElementById( id );
 				el.addEventListener( 'change', changed, false );
 				function changed( e ) {
-					console.log( 'im changed', {
-						id : id,
-						e  : e,
-						el : el,
-						c  : el.checked,
-					});
 					let value = {
 						clientId : id,
 						value    : el.checked,
@@ -146,7 +137,6 @@ library.view = library.view || {};
 			}
 			
 			function updateWorgItem( event ) {
-				console.log( 'updateWorgItem', event );
 				if ( event.clientId ) {
 					let el = document.getElementById( event.clientId );
 					el.checked = event.value;
@@ -158,7 +148,6 @@ library.view = library.view || {};
 					const cid = item.clientId;
 					const el = document.getElementById( cid );
 					const ass = event.assigned.find( assignedWorg );
-					console.log( 'ass', ass );
 					
 					if( !ass )
 						el.checked = false;
@@ -176,23 +165,17 @@ library.view = library.view || {};
 			function submit( e ) {
 				e.preventDefault();
 				e.stopPropagation();
-				console.log( 'submit', e );
 			}
 		}
 	}
 	
 	ns.PresenceRoom.prototype.removeAuthed = function( setting ) {
 		const self = this;
-		const data = self.settings[ setting ];
-		console.log( 'removeAuthed', {
-			setting  : setting,
-			settings : self.settings,
-			data     : data,
-		});
+		const users = self.settings[ setting ];
 		const state = {
 			el    : null,
-			ids   : data.ids,
-			list  : data.authed,
+			ids   : users.ids,
+			list  : users.authed,
 			idMap : {},
 		};
 		
@@ -205,11 +188,6 @@ library.view = library.view || {};
 			state.list.sort(( a, b ) => {
 				const aN = state.ids[ a ].name.toLowerCase();
 				const bN = state.ids[ b ].name.toLowerCase();
-				console.log( 'n', {
-					aN : aN,
-					bN : bN,
-					updown : ( aN < bN ),
-				});
 				if ( aN === bN )
 					return 0;
 				if ( aN < bN )
@@ -220,30 +198,31 @@ library.view = library.view || {};
 		}
 		
 		function build() {
-			const label = self.labelMap[ setting ] || setting;
-			const statusHTML = hello.template.get( 'settings-status-tmpl', { setting : setting });
-			const items = state.list.map( buildItem );
-			const itemsHTML = items.join( '\r\n' );
+			const label = self.labelMap[ setting ] || setting
+			const statusHTML = hello.template.get( 'settings-status-tmpl', { setting : setting })
+			const items = state.list.map( buildItem )
+			const itemsHTML = items.join( '\r\n' )
 			const conf = {
 				label      : label,
 				itemsHTML  : itemsHTML,
 				statusHTML : statusHTML,
-			};
-			const el = hello.template.getElement( 'setting-authorized-tmpl', conf );
-			self.container.appendChild( el );
-			state.el = el;
+			}
+			const el = hello.template.getElement( 'setting-authorized-tmpl', conf )
+			self.container.appendChild( el )
+			state.el = el
 			
 			function buildItem( cId ) {
-				const id = state.ids[ cId ];
-				const iId = friendUP.tool.uid( 'auth' );
-				state.idMap[ iId ] = cId;
-				state.idMap[ cId ] = iId;
+				const id = state.ids[ cId ]
+				const iId = friendUP.tool.uid( 'auth' )
+				state.idMap[ iId ] = cId
+				state.idMap[ cId ] = iId
 				const conf = {
-					id   : iId,
-					name : id.name,
-				};
-				const html = hello.template.get( 'setting-auth-item-tmpl', conf );
-				return html;
+					id     : iId,
+					avatar : id.avatar,
+					name   : id.name,
+				}
+				const html = hello.template.get( 'setting-auth-item-tmpl', conf )
+				return html
 			}
 		}
 		
@@ -252,15 +231,11 @@ library.view = library.view || {};
 			function bindItem( cId ) {
 				const itemId = state.idMap[ cId ];
 				const el = document.getElementById( itemId );
-				const btn = el.querySelector( 'button' );
+				const btn = el.querySelector( '.item-remove' );
 				btn.addEventListener( 'click', removeClick, false );
 				function removeClick( e ) {
 					e.preventDefault();
 					e.stopPropagation();
-					console.log( 'removeClick', {
-						cId : cId,
-						iId : itemId,
-					});
 					const value = {
 						clientId : cId,
 					};
@@ -270,7 +245,6 @@ library.view = library.view || {};
 		}
 		
 		function updateAuthList( event ) {
-			console.log( 'updateAuthList', event );
 			const cId = event.clientId;
 			const itemId = state.idMap[ cId ];
 			const el = document.getElementById( itemId );
@@ -278,6 +252,93 @@ library.view = library.view || {};
 				return;
 			
 			el.parentNode.removeChild( el );
+		}
+		
+	}
+	
+	ns.PresenceRoom.prototype.leaveRoomButt = function( setting ) {
+		const self = this
+		const label = self.labelMap[ setting ]
+		const conf = self.settings[ setting ]
+		const buttLabel = View.i18n( 'i18n_leave' )
+		
+		const id = build()
+		bind( id )
+		
+		function build() {
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting })
+			const tmplConf = {
+				setting   : setting,
+				//warning   : View.i18n( 'i18n_warning_goes_here' ),
+				warning   : 'If you want to delete this channel for all users, you must remove them first from the users list and then leave yourself',
+				label     : label,
+				buttLabel : buttLabel,
+				status    : status,
+			}
+			
+			let tmpl = null
+			if ( conf.hasUsers )
+				tmpl = 'setting-leave-room-warning-tmpl'
+			else
+				tmpl = 'setting-leave-room-tmpl'
+			
+			const element = hello.template.getElement( tmpl, tmplConf )
+			const container = self.getContainer( setting )
+			container.appendChild( element )
+			return element.id
+		}
+		
+		function bind( id ) {
+			const form = document.getElementById( id )
+			const buttLeave = form.querySelector( '.butt-leave' )
+			const buttCancel = form.querySelector( '.butt-cancel' )
+			const warning = form.querySelector( '.leave-warning' )
+			
+			form.addEventListener( 'submit', formSubmit, false )
+			buttLeave.addEventListener( 'click', leaveMaybe, false )
+			if ( buttCancel )
+				buttCancel.addEventListener( 'click', hideWarning, false )
+			
+			self.updateMap[ setting ] = updateHandler
+			function updateHandler( value ) {
+			}
+			
+			function formSubmit( e ) {
+				e.preventDefault()
+				e.stopPropagation()
+			}
+			
+			function leaveMaybe( e ) {
+				const conf = self.settings[ setting ]
+				if ( true == conf.warningShown )
+					save()
+				else
+					showWarning()
+			}
+			
+			function save() {
+				self.save( setting, true );
+			}
+			
+			function showWarning() {
+				if ( null == warning ) {
+					save()
+					return
+				}
+				
+				const conf = self.settings[ setting ]
+				warning.classList.toggle( 'hidden', false )
+				buttCancel.classList.toggle( 'hidden', false )
+				conf.warningShown = true
+			}
+			
+			function hideWarning() {
+				const conf = self.settings[ setting ]
+				warning.classList.toggle( 'hidden', true )
+				buttCancel.classList.toggle( 'hidden', true )
+				conf.warningShown = false
+				
+			}
 		}
 		
 	}

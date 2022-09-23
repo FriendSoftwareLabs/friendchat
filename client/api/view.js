@@ -148,7 +148,7 @@ var friend = window.friend || {};
 		const self = this;
 		const handler = self.notifyMap[ msg.method ];
 		if ( !handler ) {
-			console.log( 'unkown notify event', msg );
+			//console.log( 'unkown notify event', msg );
 			return;
 		}
 		

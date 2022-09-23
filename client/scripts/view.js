@@ -1148,16 +1148,30 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.init = function() {
 		const self = this;
-		var filePath = 'html/settings/' + self.type + '.html';
-		var windowConf = self.windowConf || {
-			title : Application.i18n('i18n_settings') + ' - ' + ( self.title || self.type ),
-			width : 420,
+		const filePath = 'html/settings/' + self.type + '.html';
+		const defaults = {
+			title  : Application.i18n('i18n_settings') + ' - ' + ( self.title || self.type ),
+			width  : 420,
 			height : 400,
-		};
+		}
+		let windowConf = null
+		if ( null == self.windowConf )
+			windowConf = defaults
+		else {
+			windowConf = self.windowConf
+			const keys = Object.keys( defaults )
+			keys.forEach( k => {
+				if ( null != windowConf[ k ])
+					return
+				
+				windowConf[ k ] = defaults[ k ]
+			})
+		}
 		
 		const initData = {
-			settings: self.settings,
-		};
+			title    : self.title,
+			settings : self.settings,
+		}
 		
 		self.view = hello.app.createView(
 			filePath,
@@ -1165,9 +1179,9 @@ library.view = library.view || {};
 			initData,
 			null,
 			closed
-		);
+		)
 		
-		self.bindView();
+		self.bindView()
 		
 		function closed( msg ) { self.handleClose( msg ); }
 	}
@@ -1175,9 +1189,9 @@ library.view = library.view || {};
 	ns.Settings.prototype.bindView = function() {
 		const self = this;
 		self.view.on( 'selectfile', selectFile );
-		self.view.on( 'save', saveSetting );
-		self.view.on( 'buffer', bufferValue );
-		self.view.on( 'done', isDone );
+		self.view.on( 'save'      , saveSetting );
+		self.view.on( 'buffer'    , bufferValue );
+		self.view.on( 'done'      , isDone );
 		
 		function selectFile( msg ) { self.selectFile( msg ); }
 		function saveSetting( msg ) { self.pepareSave( msg ); }

@@ -38,34 +38,33 @@ library.view = library.view || {};
 	}
 	
 	ns.Settings.prototype.settingsInit = function() {
-		const self = this;
-		self.view = window.View;
-		hello.template = friend.template;
+		const self = this
+		self.view = window.View
+		hello.template = friend.template
 		
-		self.bindView();
+		self.bindView()
 		
-		window.View.loaded();
+		window.View.loaded()
 	}
 	
-	ns.Settings.prototype.buildView = function() {
+	ns.Settings.prototype.buildView = function( title ) {
 		const self = this;
-		console.log( 'buildView' );
-		const tmplId = 'settings-base-tmpl';
+		const tmplId = 'settings-base-tmpl'
 		const conf = {
-			headString : 'settings for thing',
-		};
-		const el = hello.template.getElement( tmplId, conf );
-		console.log( 'el', el );
-		document.body.appendChild( el );
+			preTitle : View.i18n( 'i18n_edit' ),
+			title    : title || 'nullifined',
+		}
+		const el = hello.template.getElement( tmplId, conf )
+		document.body.appendChild( el )
 	}
 	
 	ns.Settings.prototype.bindEvents = function() {
-		const self = this;
-		var doneBtn = document.getElementById( 'done' );
+		const self = this
+		const doneBtn = document.getElementById( 'done' )
 		
-		doneBtn.addEventListener( 'click', doneClick, false );
+		doneBtn.addEventListener( 'click', doneClick, false )
 		
-		function doneClick( e ) { self.done( e ); }
+		function doneClick( e ) { self.done( e ) }
 	}
 	
 	ns.Settings.prototype.done = function( e ) {
@@ -86,20 +85,19 @@ library.view = library.view || {};
 		function saved( msg ) { self.saved( msg ); }
 	}
 	
-	ns.Settings.prototype.initialize = function( data ) {
+	ns.Settings.prototype.initialize = function( conf ) {
 		const self = this;
-		console.log( 'Settings.initalize', data );
-		self.buildView();
+		self.buildView( conf.title );
 		self.container = document.getElementById( 'settings' );
 		
 		self.bindEvents();
-		self.setup( Object.keys( data.settings ));
+		self.setup( Object.keys( conf.settings ));
 		
 		if ( null != self.sections )
 			self.addSections();
 		
 		self.settings = {};
-		self.setSettings( data.settings );
+		self.setSettings( conf.settings );
 		self.bindSettings();
 		
 		self.view.ready();
@@ -108,7 +106,6 @@ library.view = library.view || {};
 	ns.Settings.prototype.addSections = function() {
 		const self = this
 		self.sectionIds = Object.keys( self.sections )
-		console.log( 'addSections', [ self.sections, self.sectionIds ]);
 		self.sectionIds.forEach( sKey => {
 			const sConf = self.sections[ sKey ]
 			self.buildSection( sKey, sConf )
@@ -117,7 +114,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.setSettings = function( data ) {
 		const self = this;
-		console.log( 'setSettings', data )
 		data.settings = data.settings || {}
 		self.validKeys.forEach( add )
 		function add( setting ) {
@@ -132,37 +128,30 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.getContainer = function( setting ) {
 		const self = this
-		console.log( 'getContainer', [ setting, self.sections, self.sectionIds ])
 		if ( null == self.sections )
 			return self.container
 		
 		let container = null
 		self.sectionIds.some( sKey => {
-			console.log( 'looking in', sKey )
 			if ( null != container )
 				return true
 			
 			const settings = self.sections[ sKey ]
-			console.log( 'getcontainer, checking settings', settings )
 			const yep = settings.some( s => s === setting )
 			if ( !yep ) {
-				console.log( 'not found in', [ setting, settings ])
 				return false
 			}
 			
 			const id = sKey + '-section';
 			const sectionEl = document.getElementById( id )
 			if ( null == sectionEl ) {
-				console.log( 'could not find el', [ sKey, id ])
 				return false
 			}
 			
-			console.log( 'found el', sectionEl )
 			container = sectionEl.querySelector( '.section-settings' )
 			return true
 		})
 		
-		console.log( 'getContainer return', container )
 		if ( null == container )
 			return self.container
 		else
@@ -176,7 +165,6 @@ library.view = library.view || {};
 				return self.validKeys.some( valid => setting == valid )
 			});
 		
-		console.log( 'bindSettings', settings );
 		settings.forEach( build );
 		function build( setting ) {
 			var handler = self.buildMap[ setting ];
@@ -785,16 +773,13 @@ library.view = library.view || {};
 			
 			function submit( e ) {
 				e.preventDefault();
-				console.log( 'textarea submit', e.target[ 0 ].value );
 			}
 			
 			function blur( e ) {
-				console.log( 'textarea blur', textarea.value );
 				self.save( setting, textarea.value );
 			}
 			
 			function keyup( e ) {
-				console.log( 'textarea keyup', textarea.value );
 				self.buffer( setting, textarea.value );
 			}
 		}
@@ -806,8 +791,8 @@ library.view = library.view || {};
 		var value = self.settings[ setting ] || '';
 		var conf = {
 			setting : setting,
-			label : label,
-			value : value,
+			label   : label,
+			value   : value,
 		};
 		
 		var id = build( conf );
@@ -862,6 +847,56 @@ library.view = library.view || {};
 				var input = document.getElementById( setting );
 				input.value = result[ 0 ].Path;
 				self.save( setting, input.value );
+			}
+		}
+	}
+	
+	ns.Settings.prototype.setButton = function( setting ) {
+		const self = this
+		const label = self.labelMap[ setting ];
+		const buttLabel = self.settings[ setting ];
+		
+		const id = build();
+		bind( id );
+		
+		function build() {
+			const status = hello.template.get( 'settings-status-tmpl', { setting : setting });
+			const conf = {
+				setting   : setting,
+				label     : label,
+				buttLabel : buttLabel,
+				status    : status,
+			};
+			const element = hello.template.getElement( 'settings-button-tmpl', conf );
+			const container = self.getContainer( setting );
+			container.appendChild( element );
+			return element.id;
+		}
+		
+		function bind( id ) {
+			const form = document.getElementById( id );
+			const butt = form.querySelector( 'button' );
+			
+			form.addEventListener( 'submit', formSubmit, false );
+			butt.addEventListener( 'click', click, false );
+			
+			self.updateMap[ setting ] = updateHandler
+			function updateHandler( value ) {
+				console.log( 'button updateHandler', value )
+			}
+			
+			function formSubmit( e ) {
+				e.preventDefault()
+				e.stopPropagation()
+				save()
+			}
+			
+			function click( e ) {
+				save()
+			}
+			
+			function save() {
+				self.save( setting, true );
 			}
 		}
 	}
@@ -949,7 +984,6 @@ library.view = library.view || {};
 	
 	ns.Settings.prototype.updateSetting = function( data ) {
 		const self = this;
-		console.log( 'updateSetting', data );
 		var setting = data.setting;
 		var current = self.settings[ setting ];
 		var update = data.value;

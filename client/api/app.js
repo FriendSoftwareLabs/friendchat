@@ -2208,7 +2208,7 @@ friend.Dormant = new fupLocal.Dormant;
 		const parent = self.dirs[ path ];
 		const fun = parent.funs[ event.dormantCommand ];
 		if ( !fun ) {
-			console.log( 'no fun for', event );
+			//console.log( 'no fun for', event );
 			callback( 'ERR_DORMANT_NO_FUN_DOOR', null );
 			return;
 		}

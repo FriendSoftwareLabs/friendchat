@@ -2,6 +2,25 @@
 	height: 100%;
 }
 
+#hello.settings {
+	padding: 1em 0.9em;
+}
+
+#title {
+	font-size   : 150%;
+	line-height : 1.8em;
+}
+
+#thing {
+	padding-left : 0.3em;
+	font-weight  : bold;
+	opacity      : 0.9;
+}
+
+#done {
+	margin-top : 0.7em;
+}
+
 #worgs > div,
 #worgs-items
 {
@@ -15,11 +34,11 @@
 }
 
 .setting {
-	padding : 0.3em 0.8em;
+	padding : 0.3em 0;
 }
 
 .label {
-	width         : 15em;
+	width         : 13em;
 	padding-right : 0.5em;
 	text-align    : left;
 	line-height   : 2em;

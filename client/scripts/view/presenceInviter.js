@@ -42,9 +42,7 @@ library.view = library.view || {};
 	
 	ns.PresenceInviter.prototype.handleInit = function( info ) {
 		const self = this;
-		console.log( 'inviter handleInit', [ window.View ]);
 		if ( window.View.config.appConf.mode == 'jeanie' ) {
-			console.log( 'do the thing' );
 			document.getElementById( 'title' )
 				.children[ 0 ]
 				.innerHTML = window.View.i18n( 'i18n_add_to' );

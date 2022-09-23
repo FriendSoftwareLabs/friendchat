@@ -1,0 +1,36 @@
+
+.auth-items {
+	width: 100%;
+}
+
+.auth-item {
+	margin-bottom : 0.3em;
+}
+
+.item-avatar {
+	position            : relative;
+	height              : 2em;
+	width               : 2em;
+	border-radius       : 100%;
+	background-position : center;
+	background-size     : cover;
+}
+
+.item-name {
+	text-overflow : ellipsis;
+	white-space   : nowrap;
+	overflow      : hidden;
+}
+
+.item-remove {
+	padding: 0.4em;
+}
+
+.leave-warning {
+	margin-bottom : 0.5em;
+	color         : #EC3459;
+}
+
+.butt-cancel {
+	margin-right : 0.5em;
+}
