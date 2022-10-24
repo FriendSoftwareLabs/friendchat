@@ -2197,15 +2197,12 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.getAvatarStr = function() {
 		const self = this;
-		if ( !self.identity )
-			return null;
-		
-		return self.identity.avatar || null;
+		return self.peer?.identity?.avatar || null
 	}
 	
 	ns.Peer.prototype.getIdentity = function() {
 		const self = this;
-		return self.identity || {};
+		return self.peer?.identity || {}
 	}
 	
 	ns.Peer.prototype.setFastStats = function( fastRefresh ) {
@@ -2230,7 +2227,7 @@ library.component = library.component || {};
 		self.setupMenu();
 		self.initSelf();
 		if ( self.peer.identity )
-			self.updateIdentity( self.peer.identity );
+			self.updateFromIdentity();
 	}
 	
 	ns.Peer.prototype.fade = function( fadeOut ) {
@@ -2945,6 +2942,8 @@ library.component = library.component || {};
 		self.peer.on( 'audio'           , handleAudio );
 		self.peer.on( 'tracks-available', tracksAvailable )
 		self.peer.on( 'identity'        , updateIdentity );
+		self.peer.on( 'update-name'     , e => self.updateName( e ))
+		self.peer.on( 'update-avatar'   , e => self.updateAvatar( e ))
 		self.peer.on( 'nostream'        , handleNoStream );
 		self.peer.on( 'stop'            , handleStop)
 		self.peer.on( 'mute'            , isMuted );
@@ -2962,7 +2961,7 @@ library.component = library.component || {};
 		function handleVideo( e ) { self.handleVideo( e ); }
 		function handleAudio( e ) { self.handleAudio( e ); }
 		function tracksAvailable( e ) { self.handleTracksAvailable( e ); }
-		function updateIdentity( e ) { self.updateIdentity( e ); }
+		function updateIdentity( e ) { self.updateFromIdentity(); }
 		function handleNoStream( e ) { self.handleNoStream( e ); }
 		function handleStop( e ) { self.handleStop( e ); }
 		function isMuted( e ) { self.handleSelfMute( e ); }
@@ -2978,7 +2977,7 @@ library.component = library.component || {};
 		self.peer.on( 'meta'   , handleMeta );
 		self.peer.on( 'muted'  , remoteMute );
 		self.peer.on( 'blinded', remoteBlind );
-		self.peer.on( 'state'    , updateRTC );
+		self.peer.on( 'state'  , updateRTC );
 		
 		function handleMeta( e ) { self.handleMeta( e ); }
 		function remoteMute( e ) { self.toggleRemoteMute( e ); }
@@ -3513,38 +3512,32 @@ library.component = library.component || {};
 		self.rtcState.update( event );
 	}
 	
-	ns.Peer.prototype.updateIdentity = function( identity ) {
+	ns.Peer.prototype.updateFromIdentity = function() {
 		const self = this;
-		identity = identity || self.identity;
-		self.identity = identity;
-		const id = identity;
-		if ( !id ) {
-			console.log( 'updateIdentity - no identity' )
-			return;
-		}
 		
-		const name = id.liveName || id.name;
-		if ( name && name.length ) {
-			self.name.innerText = name;
-			if ( self.infoName )
-				self.infoName.innerText = name;
-			
-			self.listName.innerText = name;
-			self.menu.update( self.menuId, name );
-		}
+		const name = self.peer.getName()
+		self.updateName( name )
 		
-		if ( id.avatar && id.avatar.length ) {
-			let avatarUrl = window.encodeURI( id.avatar );
-			let avatarStyle = 'url("' + avatarUrl + '")';
-			self.avatar.style.backgroundImage = avatarStyle;
-			self.listAvatar.style.backgroundImage = avatarStyle;
-		}
+		const ava = self.peer.getAvatar()
+		self.updateAvatar( ava )
 	}
 	
 	ns.Peer.prototype.updateName = function( name ) {
 		const self = this;
 		self.name.innerText = name;
+		if ( null != self.infoName )
+			self.infoName.innerText = name;
+		
 		self.listName.innerText = name;
+		self.menu.update( self.menuId, name );
+	}
+	
+	ns.Peer.prototype.updateAvatar = function( avatar ) {
+		const self = this
+		const avatarUrl = window.encodeURI( avatar )
+		const avatarStyle = 'url("' + avatarUrl + '")'
+		self.avatar.style.backgroundImage = avatarStyle
+		self.listAvatar.style.backgroundImage = avatarStyle
 	}
 	
 	ns.Peer.prototype.handleNoStream = function() {
@@ -3936,14 +3929,15 @@ library.component = library.component || {};
 	}
 	
 	ns.Selfie.prototype.buildView = function() {
-		const self = this;
-		const avatarUrl = window.encodeURI( self.peer.avatar );
+		const self = this
+		const avatarUrl = window.encodeURI( self.peer.avatar )
 		const tmplConf = {
 			name   : self.peer.name,
 			avatar : avatarUrl || '',
-		};
-		self.el = hello.template.getElement( 'selfie-tmpl', tmplConf );
-		self.connecting.appendChild( self.el );
+		}
+		console.log( 'selfie.buildView conf', tmplConf )
+		self.el = hello.template.getElement( 'selfie-tmpl', tmplConf )
+		self.connecting.appendChild( self.el )
 	}
 	
 	ns.Selfie.prototype.bindUI = function() {

@@ -480,16 +480,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.RTC.prototype.handleIdentity = function( conf ) {
 		const self = this;
-		self.identities[ conf.userId ] = conf.identity;
-		self.updatePeerIdentity( conf.userId, conf.identity );
+		self.identities[ conf.userId ] = conf.identity
+		self.updatePeerIdentity( conf.userId, conf.identity )
 	}
 	
 	ns.RTC.prototype.handleIdentities = function( identities ) {
 		const self = this;
 		for ( let idKey in identities ) {
-			const id = identities[ idKey ];
-			self.identities[ idKey ] = id;
-			self.updatePeerIdentity( idKey, id );
+			const id = identities[ idKey ]
+			self.identities[ idKey ] = id
+			self.updatePeerIdentity( idKey, id )
 		}
 	}
 	
@@ -829,8 +829,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const conf = {
 			current : current,
-			onname : onName,
-		};
+			onname  : onName,
+		}
 		self.changeUsername = self.ui.addUIPane( 'change-username', conf );
 		self.changeUsername.show();
 		
@@ -1115,8 +1115,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const peer = self.peers[ peerId ];
 		if ( !peer ) {
 			console.log( 'no peer found for', {
-				pid : peerId,
-				id : identity,
+				pid   : peerId,
+				id    : identity,
 				peers : self.peers,
 			});
 			return;
@@ -1506,13 +1506,53 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Selfie.prototype.useDevices = function( selected ) {
-		const self = this;
-		self.setMediaSources( selected );
+		const self = this
+		self.setMediaSources( selected )
 	}
 	
-	ns.Selfie.prototype.updateIdentity = function( identity ) {
+	ns.Selfie.prototype.updateIdentity = async function( identity ) {
+		const self = this
+		if ( null == self.identity ) {
+			self.identity = identity
+			self.emit( 'identity', identity )
+			return
+		}
+		
+		if ( null != identity.liveName ) {
+			if ( self.identity.liveName != identity.name )
+				self.emit( 'update-name', identity.liveName )
+		} else {
+			if ( self.identity.name != identity.name )
+				self.emit( 'update-name', identity.name )
+		}
+		
+		if ( self.identity.avatar != identity.avatar ) {
+			const hiResAva = await window.View.getFriendAvatar( self.identity.fUserId, 'large' )
+			if ( null != hiResAva ) {
+				self.hiResAvatar = hiResAva
+				self.emit( 'update-avatar', hiResAva )
+			}
+			else
+				self.emit( 'update-avatar', identity.avatar )
+		}
+		
+		self.identity = identity
+	}
+	
+	ns.Selfie.prototype.getName = function() {
 		const self = this;
-		self.emit( 'identity', identity );
+		if ( self.identity.liveName )
+			return self.identity.liveName
+		else
+			return self.identity.name
+	}
+	
+	ns.Selfie.prototype.getAvatar = function() {
+		const self = this
+		if ( null != self.hiResAvatar )
+			return self.hiResAvatar
+		else
+			return self.identity?.avatar
 	}
 	
 	ns.Selfie.prototype.updateRoomQuality = function( quality ) {
@@ -1677,11 +1717,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.setAudioSink( self.localSettings.preferedDevices );
 		self.setupStream( done );
-		function done( err, res ) {
+		async function done( err, res ) {
 			const doneBack = self.doneBack;
 			delete self.doneBack;
 			if ( doneBack )
 				doneBack( null, res );
+			
+			const hiResAva = await window.View.getFriendAvatar( self.identity.fUserId, 'large' )
+			if ( null != hiResAva ) {
+				self.hiResAvatar = hiResAva
+				self.emit( 'update-avatar', hiResAva )
+			}
 		}
 	}
 	
@@ -2082,7 +2128,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.setupStream = function( callback, preferedDevices ) {
 		const self = this;
-		console.log( 'Selfie.setupStream', preferedDevices )
 		if ( self.streamBack ) {
 			let oldBack = self.streamBack
 			delete self.streamBack
@@ -2455,10 +2500,32 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.signal.send( event );
 	}
 	
-	ns.Peer.prototype.updateIdentity = function( identity ) {
+	ns.Peer.prototype.updateIdentity = async function( identity ) {
 		const self = this;
-		self.identity = identity;
-		self.emit( 'identity', identity );
+		if ( null == self.identity ) {
+			self.identity = identity
+			self.emit( 'identity', identity )
+			return
+		}
+		
+		if ( null != identity.liveName ) {
+			if ( self.identity.liveName != identity.name )
+				self.emit( 'update-name', identity.liveName )
+		} else {
+			if ( self.identity.name != identity.name )
+				self.emit( 'update-name', identity.name )
+		}
+		
+		if ( self.identity.avatar != identity.avatar ) {
+			const hiResAva = await window.View.getFriendAvatar( self.identity.fUserId, 'large' )
+			if ( null != hiResAva ) {
+				self.hiResAvatar = hiResAva
+				self.emit( 'update-avatar', hiResAva )
+			} else
+				self.emit( 'update-avatar', identity.avatar )
+		}
+		
+		self.identity = identity
 	}
 	
 	ns.Peer.prototype.setFocus = function( isFocus ) {
@@ -2546,17 +2613,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.getName = function() {
 		const self = this;
-		return self.identity.name;
+		if ( self.identity.liveName )
+			return self.identity.liveName
+		else
+			return self.identity.name
 	}
 	
 	ns.Peer.prototype.getAvatar = function() {
-		const self = this;
-		return self.identity.avatar;
+		const self = this
+		if ( null != self.hiResAvatar )
+			return self.hiResAvatar
+		else
+			return self.identity?.avatar
 	}
 	
 	// Private
 	
-	ns.Peer.prototype.init = function( parentSignal ) {
+	ns.Peer.prototype.init = async function( parentSignal ) {
 		const self = this;
 		// websocket / signal server path
 		self.signal = new library.component.EventNode(
@@ -2580,6 +2653,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function handleStream( e ) { self.handleSelfieStream( e ); }
 		
 		self.startSync();
+		
+		const hiResAva = await window.View.getFriendAvatar( self.identity.fUserId, 'large' )
+		if ( null != hiResAva ) {
+			self.hiResAvatar = hiResAva
+			self.emit( 'update-avatar', hiResAva )
+		}
 	}
 	
 	// peer sync

@@ -287,6 +287,59 @@ var friend = window.friend || {};
 		}
 	}
 	
+	/* getFriendAvatar
+	
+	Load the avatar of a friend user
+	
+	fUserId <string> -  id of friend user
+	size <string> - 'small' | 'medium' | 'large', defaults to small
+	
+	*/
+	
+	ns.View.prototype.getFriendAvatar = async function( fUserId, size ) {
+		const self = this
+		if ( null == fUserId )
+			throw 'ERR_MISSING_ARG_FUSERID'
+			
+		if ( null == size )
+			size = 'small'
+		
+		//
+		const baseStr = '/system.library/module/?module=system&command=getavatar'
+		const uidStr = 'fuserid=' + fUserId
+		
+		//
+		let wh = null
+		// &width=60&height=60
+		if ( 'small' == size )
+			wh = [ 60, 60 ]
+		if ( 'medium' == size )
+			wh = [ 256, 256 ]
+		if ( 'large' == size ) 
+			wh = [ 512, 512 ]
+		
+		if ( null == wh )
+			throw 'ERR_INVALID_ARG_SIZE'
+		
+		wh = [ 'width=' + wh[ 0 ], 'height=' + wh[ 1 ]]
+		const auth = 'authid=' + self.authId 
+		
+		const url = [
+			baseStr,
+			uidStr,
+			wh.join( '&' ),
+			auth,
+		].join( '&' )
+		
+		const res = await window.fetch( url )
+		//const ava = await res.text()
+		const blb = await res.blob()
+		const link = URL.createObjectURL( blb )
+		
+		return link
+	}
+	
+	
 	/* callModule
 	
 	Execute a FriendUP module
