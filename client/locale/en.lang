@@ -347,8 +347,8 @@ i18n_keep_link : Keep link
 i18n_room_name : Room name
 i18n_today : Today
 i18n_yesterday : Yesterday
-i18n_group_chat : Group chat
-i18n_private_chat : Private chat
+i18n_group_chat : Channel
+i18n_private_chat : Chat
 i18n_incoming_call : Incoming call
 i18n_take_a_picture : Take a picture
 i18n_choose_a_file : Choose a file
@@ -475,3 +475,10 @@ i18n_users : Users
 i18n_leave_channel : Leave Channel
 i18n_settings_for : Settings for
 i18n_edit : Edit
+i18n_open_in_tab : Open in tab
+i18n_download_to_device : Download to device
+i18n_save_to_jini : Save to Jeanie
+i18n_open_folder : Open folder
+i18n_file_saved : File saved
+i18n_task_failed : Task failed
+i18n_options : Options

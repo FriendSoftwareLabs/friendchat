@@ -110,7 +110,7 @@ var friend = window.friend || {};
 			msg = e.data;
 		
 		//console.log( 'View.receiveEvent, e', e );
-		//console.log( 'View.receiveEvent', msg );
+		//console.log( 'View.receiveEvent, msg', msg );
 		if ( !msg ) {
 			console.log( 'view.receiveEvent - no msg for event', e );
 			return;
@@ -216,14 +216,47 @@ var friend = window.friend || {};
 	
 	// public
 	
-	ns.View.prototype.showNotification = function( title, message, notifyId ) {
-		const self = this;
+	ns.View.prototype.showContextMenu = async function( menu, header, e ) {
+		const self = this
+		const cb = self.setPromiseCallback()
+		const showMenu = {
+			type     : 'system',
+			command  : 'showcontextmenu',
+			callback : cb.id,
+			header   : header || null,
+			menu     : menu,
+			mouse    : {
+				clientX : e.clientX,
+				clientY : e.clientY,
+				screenX : e.screenX,
+				screenY : e.screenY,
+			},
+		}
+		
+		self.sendBase( showMenu )
+		
+		const res = await cb.promise
+		if ( null == res.command )
+			return null
+		else
+			return { 
+				command : res.command,
+				data    : res.data,
+			}
+	}
+	
+	ns.View.prototype.showNotification = async function( title, message ) {
+		const self = this
+		const cb = self.setPromiseCallback()
 		const notie = {
 			title    : title,
 			text     : message,
-			notifyId : notifyId,
-		};
-		self.sendTypeEvent( 'show-notify', notie );
+			callback : cb.id,
+		}
+		self.sendTypeEvent( 'show-notify', notie )
+		
+		const click = await cb.promise
+		return click?.response
 	}
 	
 	ns.View.prototype.confirmDialog = async function( 
@@ -285,6 +318,31 @@ var friend = window.friend || {};
 				}
 			});
 		}
+	}
+	
+	ns.View.prototype.showFileDialog = async function( type, conf ) {
+		/*
+		type, ( 'open', 'save', etc )
+		optional conf:
+			path,
+			filename,
+			title,
+		*/
+		const self = this;
+		if ( null == type ) {
+			console.log( 'showFileDialog - missing things', [ type, conf ])
+			throw 'ERR_MISSING_THINGS'
+		}
+		
+		if ( null == conf )
+			conf = {}
+		
+		const fres = await self.sendTypeAsync( 'file-dialog', {
+			type : type,
+			conf : conf,
+		})
+		
+		return fres.response
 	}
 	
 	/* getFriendAvatar
@@ -424,6 +482,39 @@ var friend = window.friend || {};
 		return res;
 	}
 	
+	ns.View.prototype.openFFilePath = function( path ) {
+		const self = this
+		const open = {
+			type   : 'dos',
+			method : 'openWindowByPath',
+			path   : path,
+			flags  : {
+				//context : self.id,
+				context : '$CURRENTVIEWID', // DONT ASK; DONT TELL
+			},
+		}
+		self.sendBase( open )
+	}
+	
+	ns.View.prototype.openFFile = function( path ) {
+		const self = this
+		const open = {
+			type   : 'dos',
+			method : 'openWindowByFilename',
+			args   : {
+				fileInfo  : {
+					Path  : path,
+					flags : {
+						//context : self.id,
+						context : '$CURRENTVIEWID', // ^^^
+					},
+				},
+			},
+		}
+		
+		self.sendBase( open )
+	}
+	
 	ns.View.prototype.openFile = function( filePath, appName ) {
 		const self = this;
 		const open = {
@@ -444,6 +535,18 @@ var friend = window.friend || {};
 		self.openFile( path, appName );
 	}
 	
+	ns.View.prototype.loadFile = async function( path ) {
+		const self = this
+		const load = {
+			filePath : path,
+		}
+		const res = await self.sendTypeAsync( 'file-load', load )
+		if ( null != res.error )
+			throw res.error
+		else
+			return res.response
+	}
+	
 	ns.View.prototype.getConfig = function() {
 		const self = this;
 		return self.appConf;
@@ -454,8 +557,7 @@ var friend = window.friend || {};
 		return self.appSettings;
 	}
 	
-	ns.View.prototype.setCallback = function( callback )
-	{
+	ns.View.prototype.setCallback = function( callback ) {
 		const self = this;
 		const id = friendUP.tool.uid();
 		self.callbacks[ id ] = callback;
@@ -467,6 +569,24 @@ var friend = window.friend || {};
 		const cb = self.callbacks[ cbId ];
 		delete self.callbacks[ cbId ];
 		return cb;
+	}
+	
+	ns.View.prototype.setPromiseCallback = function() {
+		const self = this
+		const id = friendUP.tool.uid( 'pback' )
+		const cb = {
+			id      : id,
+			promise : null,
+		}
+		const p = new Promise(( resolve, reject ) => {
+			self.callbacks[ id ] = pBack
+			function pBack( event ) {
+				delete self.callbacks[ id ]
+				resolve( event )
+			}
+		})
+		cb.promise = p
+		return cb
 	}
 	
 	ns.View.prototype.executeCallback = function( cid, data )
@@ -1489,6 +1609,18 @@ body .View.Active.IconWindow ::-webkit-scrollbar-thumb
 		self.sendBase( event );
 	}
 	
+	ns.View.prototype.sendTypeAsync = function( type, data ) {
+		const self = this
+		const cb = self.setPromiseCallback()
+		const msg = {
+			callback : cb.id,
+			data     : data,
+		}
+		self.sendTypeEvent( type, msg )
+		
+		return cb.promise
+	}
+	
 	ns.View.prototype.sendBase = function( event ) {
 		const self = this;
 		event.viewId = self.id;
@@ -2362,6 +2494,22 @@ window.View = new api.View();
 	
 } )( api );
 
+
 // End paste handler -----------------------------------------------------------
 
+/*
+(() => {
+	console.log( '%c❁', 'font-size:70em; color:black;background-color:white;', window.visualViewport )
+	if ( null == window.visualViewport )
+		return
+	
+	window.visualViewport.addEventListener( 'scroll', e => {
+		console.log( 'app view VV scroll', e )
+	}, false )
+	
+	window.visualViewport.addEventListener( 'resize', e => {
+		console.log( 'app view VV resize', e )
+	}, false )
+})();
+*/
 

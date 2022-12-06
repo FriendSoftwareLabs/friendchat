@@ -1,6 +1,7 @@
 .link-expand {
-	overflow    : hidden ;
-	white-space : normal ;
+	overflow    : hidden   ;
+	white-space : normal   ;
+	position    : relative ;
 }
 
 .link-expand.le-error {
@@ -13,8 +14,8 @@
 
 .link-expand-image .link-expand-ui {
 	position      : absolute                             ;
-	top           : 0.8em                                ;
-	left          : 0.8em                                ;
+	bottom        : 0.8em                                ;
+	right         : 0.8em                                ;
 	z-index       : 1                                    ;
 	overflow      : hidden                               ;
 	border        : 1px solid rgba( 130, 130, 130, 0.4 ) ;
@@ -101,7 +102,6 @@
 .link-expand-file {
 	display        : flex        ;
 	flex-direction : row-reverse ;
-	padding-right  : 4em         ;
 }
 
 .link-expand-file .link-expand-ui {
@@ -122,7 +122,7 @@
 }
 
 .link-expand-file .le-file-meta {
-	padding-left : 0.5em;
+	padding-left : 0.1em;
 }
 
 .link-expand-file .le-file-desc {
@@ -145,16 +145,24 @@
 	opacity : 1 ;
 }
 
-#hello .File {
+#hello .le-item.File {
 	float      : unset ;
 	transition : unset ;
 	width      : unset ;
 	margin     : unset ;
+	/*
 	cursor     : unset ;
+	*/
 }
 
 #hello .File .Icon {
 	margin-left : -10px ;
+	scale       : 70%   ;
+	margin-top  : -5px  ;
+}
+
+#hello .File .Icon > div {
+	border-radius: var( --fui-border-radius-normal );
 }
 
 #hello .link-expand-image .Button {

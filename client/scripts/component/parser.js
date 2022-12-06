@@ -39,7 +39,7 @@ with a unique string, these are the ones currently available:
 
 - Emojii           : converts certain text into image elements
 - LinkStd          : discovers links and converts them into <a> elements
-- FriendPath       : discovers friend disk paths and converts them into <fp> elements
+- FriendPath       : discovers friend disk paths and converts them into <fpath> elements
 - WsToEntity       : Converts various whitespace to html
 - NL2BR            : Replaces \r\n with a <br>
 - BreakLongStrings : Splits long strings by inserting a tiny whitespace
@@ -561,31 +561,31 @@ element to the LinkExpander
 		return null;
 		
 		function makeLink( url ) {
-			var link = document.createElement( 'a' );
-			link.innerText = url;
-			link.href = makeAbsoluteUrl( url );
-			link.target = '_blank';
-			return link.outerHTML;
+			var link = document.createElement( 'a' )
+			link.innerText = url
+			link.href = makeAbsoluteUrl( url )
+			link.target = '_blank'
+			return link.outerHTML
 		}
 		
 		function makeAbsoluteUrl( url ) {
-			var match = url.match( self.prefixRX );
+			var match = url.match( self.prefixRX )
 			if ( !match ) {
-				url = 'https://' + url;
+				url = 'https://' + url
 			}
 			
-			return url;
+			return url
 		}
 	}
 	
 	ns.LinkStd.prototype.init = function() {
-		const self = this;
-		self.buildUrlRX();
-		self.buildPrefixRX();
+		const self = this
+		self.buildUrlRX()
+		self.buildPrefixRX()
 	}
 	
 	ns.LinkStd.prototype.buildUrlRX = function() {
-		const self = this;
+		const self = this
 		// taken from
 		// https://gist.github.com/dperini/729294
 		// MIT license
@@ -653,20 +653,19 @@ these will need post-procsessing by PathExpand
 	
 	ns.FriendPath.prototype.process = function( str, isLog ) {
 		const self = this;
-		const match = self.pathRX.exec( str );
-		console.log( 'FriendPath', [ str, match ]);
-		if ( match )
-			return makeLink( match[ 0 ]);
+		if ( str.includes( 'Home:' ) || str.includes( 'home:' ))
+			return null
 		
-		return null;
+		const match = self.pathRX.exec( str )
+		if ( match )
+			return makeLink( match[ 0 ])
+		
+		return null
 		
 		function makeLink( path ) {
-			const link = document.createElement( 'fp' );
-			link.innerText = path;
-			link.href = path; //makeAbsoluteUrl( path );
-			link.target = '_blank';
-			console.log( 'flink', link );
-			return link.outerHTML;
+			const fp = document.createElement( 'fpath' );
+			fp.innerText = path;
+			return fp.outerHTML;
 		}
 		
 		/*
@@ -684,8 +683,8 @@ these will need post-procsessing by PathExpand
 	// Privies
 	
 	ns.FriendPath.prototype.init = function() {
-		const self = this;
-		self.buildPathRX();
+		const self = this
+		self.buildPathRX()
 	}
 	
 	ns.FriendPath.prototype.buildPathRX = function() {
@@ -699,8 +698,7 @@ these will need post-procsessing by PathExpand
 			// file
 			"([" + allowed + "]+\\.[" + allowed + "]+$)"
 			, "i"
-		);
-		console.log( 'pathRX', self.pathRX );
+		)
 	}
 	
 })( library.component.parse );

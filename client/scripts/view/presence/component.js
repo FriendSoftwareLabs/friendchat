@@ -1569,7 +1569,7 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.updateGuests = function( guests ) {
 		const self = this;
-		console.log( 'updateGuests - NOOP', guests );
+		//console.log( 'updateGuests - NOOP', guests );
 		
 	}
 	
@@ -1792,7 +1792,7 @@ var hello = window.hello || {};
 		self.input = input;
 		self.parser = parser || null;
 		self.linkEx = linkExpand || null;
-		self.pathEx = pathExpand || null;
+		self.fpathEx = pathExpand || null;
 		
 		self.conn = null
 		self.envelopes = {};
@@ -1836,16 +1836,19 @@ var hello = window.hello || {};
 			parsed = update;
 		
 		//const orgEl = el.querySelector( '.msg-container .str' );
-		const msgEl = el.querySelector( '.msg-container .message' );
+		const msgEl = el.querySelector( '.msg-container .message' )
 		//orgEl.textContent = update;
-		msgEl.innerHTML = parsed;
+		msgEl.innerHTML = parsed
 		if ( isEdit )
-			self.setEdit( msg );
+			self.setEdit( msg )
+		
+		if ( self.fpathEx )
+			self.fpathEx.work( msgEl )
 		
 		if ( self.linkEx )
-			self.linkEx.work( msgEl );
+			self.linkEx.work( msgEl )
 		
-		self.confirmEvent( 'message', msg.msgId );
+		self.confirmEvent( 'message', msg.msgId )
 	}
 	
 	ns.MsgBuilder.prototype.editLastUserMessage = function() {
@@ -2397,7 +2400,6 @@ var hello = window.hello || {};
 			}
 			
 			function send( e ) {
-				console.log( 'send', e );
 				e.stopPropagation();
 				e.preventDefault();
 				self.sendMsgTarget();
@@ -2415,7 +2417,6 @@ var hello = window.hello || {};
 			self.input.setValue( '' );
 			
 			function onSubmit( e ) {
-				console.log( 'onSubmit', e );
 				self.sendMsgTarget( e );
 			}
 		}
@@ -2500,7 +2501,6 @@ var hello = window.hello || {};
 		if ( !self.msgTargetInput )
 			return;
 		
-		console.log( 'sendMsgTarget', message );
 		if ( null == message )
 			message = self.msgTargetInput.getValue();
 		
@@ -2883,10 +2883,13 @@ var hello = window.hello || {};
 			msgActions : actionsHtml,
 		};
 		const el = hello.template.getElement( tmplId, msgConf );
-		if ( self.linkEx )
-			self.linkEx.work( el );
+		if ( self.fpathEx )
+			self.fpathEx.work( el )
 		
-		return el;
+		if ( self.linkEx )
+			self.linkEx.work( el )
+		
+		return el
 	}
 	
 	ns.MsgBuilder.prototype.buildMsgActions = function( 
@@ -3159,7 +3162,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleRemove = async function( event ) {
 		const self = this;
-		console.log( 'MsgBuilder.handleRemove', event );
 		const msg = event.data;
 		const mId = msg.msgId;
 		const el = window.document.getElementById( mId );
@@ -3218,7 +3220,6 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.rebuildMessage = async function( msgId ) {
 		const self = this;
 		const currEl = window.document.getElementById( msgId );
-		console.log( 'rebuildMessage', [ msgId, currEl ]);
 		if ( null == currEl )
 			return false;
 		
@@ -3239,7 +3240,6 @@ var hello = window.hello || {};
 		if ( null == msgConf )
 			return;
 		
-		console.log( 'rebuildMessage - nextMsg', msgConf );
 		const conf = {
 			inGroup : false,
 			event   : msgConf.data,

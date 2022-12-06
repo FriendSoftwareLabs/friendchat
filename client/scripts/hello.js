@@ -303,41 +303,50 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.runGuest = function() {
-		const self = this;
-		self.isGuest = true;
-		self.timeNow( 'runGuest' );
-		self.doGuestThings();
+		const self = this
+		self.isGuest = true
+		self.timeNow( 'runGuest' )
+		self.doGuestThings()
 	}
 	
 	ns.Hello.prototype.initDormant = function() {
 		const self = this;
 		if ( self.config.dormantIsASecurityHoleSoLetsEnableItYOLO ) {
 			if ( hello?.config?.mode != 'jeanie' )
-				console.log( '--- ENABLING DORMANT APPARENTLY ---' );
+				console.log( '--- ENABLING DORMANT APPARENTLY ---' )
 			
-			self.dormantEnabled = true;
+			self.dormantEnabled = true
 			if ( self.config.iWouldLikeOtherAppsToReadMyLogsBecausePrivacyIsOverrated )
-				self.dormantAllowRead = true;
+				self.dormantAllowRead = true
 			if ( self.config.letOtherAppsSpamMyContactsWithGenuineOffersThatAreNotScams )
-				self.dormantAllowWrite = true;
+				self.dormantAllowWrite = true
 		}
 	}
 	
 	ns.Hello.prototype.listenSystemEvents = function() {
-		const self = this;
-		self.app.on( 'pushnotification', e => self.handlePushNotie( e ));
-		self.app.on( 'notification', e => self.handleNotie( e ));
-		self.app.on( 'app-resume', e => self.handleAppResume( e ));
-		self.app.on( 'userupdate', e => self.handleUserUpdate( e ));
-		self.app.on( 'conn-state', e => self.handleConnState( e ));
+		const self = this
+		self.app.on( 'pushnotification', e => self.handlePushNotie( e ))
+		self.app.on( 'notification', e => self.handleNotie( e ))
+		self.app.on( 'app-resume', e => self.handleAppResume( e ))
+		self.app.on( 'userupdate', e => self.handleUserUpdate( e ))
+		self.app.on( 'conn-state', e => self.handleConnState( e ))
 	}
 	
 	ns.Hello.prototype.finalizeConfig = function( hostConf ) {
-		const self = this;
-		self.timeNow( 'honst config loaded' );
-		library.tool.mergeObjects( self.config, hostConf );
-		self.config.appName = self.config.appName || 'Friend Chat';
-		self.app.setConfig( hello.config );
+		const self = this
+		self.timeNow( 'honst config loaded' )
+		library.tool.mergeObjects( self.config, hostConf )
+		self.config.appName = self.config.appName || 'Friend Chat'
+		
+		if ( 'DESKTOP' != self.app.deviceType ) {
+			if ( self.app.device.ios || self.app.device.ipad )
+				hello.config.hideLive = true
+			
+			if ( hello.config.mode == 'jeanie' )
+				hello.config.hideTitle = true
+		}
+		
+		self.app.setConfig( hello.config )
 	}
 	
 	ns.Hello.prototype.getUserInfo = function() {
@@ -345,7 +354,7 @@ var hello = null;
 		return new Promise(( resolve, reject ) => {
 			const args = {
 				id : undefined,
-			};
+			}
 			
 			const conf = {
 				module    : 'system',
@@ -353,20 +362,20 @@ var hello = null;
 				args      : args,
 				onSuccess : modBack,
 				onError   : modErr,
-			};
+			}
 			
-			const forceHTTP = true;
-			new api.Module( conf, forceHTTP );
+			const forceHTTP = true
+			new api.Module( conf, forceHTTP )
 			function modBack( res ) {
-				const data = friendUP.tool.objectify( res );
+				const data = friendUP.tool.objectify( res )
 				if ( null == data ) {
-					reject( 'ERR_INVALID_JSON' );
-					return;
+					reject( 'ERR_INVALID_JSON' )
+					return
 				}
 				
 				if ( null == data.ID ) {
-					console.log( 'getUserInfo - sus data', data );
-					reject( 'ERR_DATA_SUS' );
+					console.log( 'getUserInfo - sus data', data )
+					reject( 'ERR_DATA_SUS' )
 					return;
 				}
 				
@@ -374,10 +383,10 @@ var hello = null;
 			}
 			
 			function modErr( err ) {
-				console.log( 'getUserInfo err', err );
-				reject( false );
+				console.log( 'getUserInfo err', err )
+				reject( false )
 			}
-		});
+		})
 	}
 	
 	ns.Hello.prototype.getUserAvatar = async function( userImage ) {

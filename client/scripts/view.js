@@ -1200,16 +1200,15 @@ library.view = library.view || {};
 		
 	}
 	
-	ns.Settings.prototype.selectFile = function( data ) {
-		const self = this;
-		self.view.showFiledialog( data, selected );
-		function selected( res ) {
-			var selected = {
-				type : 'selectfile',
-				data : res,
-			};
-			self.send( selected );
+	ns.Settings.prototype.selectFile = async function( data ) {
+		const self = this
+		console.log( 'Settings.selectfile probably fix this i guess', data )
+		const res = await window.Application.showFiledialog( data.dialogType, data )
+		const selected = {
+			type : 'selectfile',
+			data : res,
 		}
+		self.send( selected )
 	}
 	
 	ns.Settings.prototype.pepareSave = function( data ) {

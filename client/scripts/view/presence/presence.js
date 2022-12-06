@@ -42,46 +42,51 @@ library.view = library.view || {};
 	}
 	
 	ns.Presence.prototype.init = function() {
-		const self = this;
-		window.View.setBody();
-		//window.View.showLoading( true );
+		const self = this
+		window.View.setBody()
 		if ( window.View.appSettings )
-			self.compact = !!window.View.appSettings.compactChat;
+			self.compact = !!window.View.appSettings.compactChat
 		
-		self.buildUserList();
+		if ( window?.View?.config?.appConf?.hideTitle ) {
+			const tit = document.getElementById( 'room-title' )
+			if ( null != tit )
+				tit.classList.toggle( 'hidden', true )
+		}
+		
+		self.buildUserList()
 		
 		// scroll to bottom on new message
-		self.messageScroller = new library.component.BottomScroller( 'messages' );
+		self.messageScroller = new library.component.BottomScroller( 'messages' )
 		
 		// highlight
 		self.highlight = new library.component.Highlight({
 			cssClass : 'Highlight',
 			listener : handleHighlight,
-		});
+		})
 		
 		function handleHighlight( e ) {
 			self.send({
 				type : 'highlight',
 				data : e,
-			});
+			})
 		}
 		
 		// drag and drop handler
 		const dropConf = {
 			targetId : 'hello',
 			ondrop   : onDrop,
-		};
-		self.drop = new library.component.Drop( dropConf );
+		}
+		self.drop = new library.component.Drop( dropConf )
 		function onDrop( event ) {
-			self.send( event );
+			self.send( event )
 		}
 		
 		//
-		self.bindUI();
-		self.bindConn();
+		self.bindUI()
+		self.bindConn()
 		
 		//
-		window.View.loaded();
+		window.View.loaded()
 	}
 	
 	ns.Presence.prototype.buildUserList = function() {
@@ -130,7 +135,7 @@ library.view = library.view || {};
 		emoPanelBtn.addEventListener( 'click', toggleEmoPanel, false );
 		inputForm.addEventListener( 'submit', inputSubmit, false );
 		submitBtn.addEventListener( 'click', inputSubmit, false );
-		attachBtn.addEventListener( 'click', attach, false );
+		attachBtn.addEventListener( 'click', attachFiles, false );
 		
 		function attach( e ) {
 			const menu = ge( 'attachment-menu' );
@@ -417,29 +422,29 @@ library.view = library.view || {};
 		
 		// link expansion
 		self.linkExpand = new library.component.LinkExpand( window.View.appSettings );
-		//self.pathExpand = new library.component.PathExpand();
+		//self.pathExpand = new library.component.FPathExpand();
 		
 		// message parsing
-		self.parser = new library.component.parse.Parser();
-		self.setMentionParsing( state.mentionList );
-		self.setAtParsing( state.atList );
-		//self.parser.use( 'FriendPath' );
-		self.parser.use( 'LinkStd' );
-		self.parser.use( 'Emojii', conf.emojii );
+		self.parser = new library.component.parse.Parser()
+		self.setMentionParsing( state.mentionList )
+		self.setAtParsing( state.atList )
+		self.parser.use( 'FriendPath' )
+		self.parser.use( 'LinkStd' )
+		self.parser.use( 'Emojii', conf.emojii )
 		
 		// multiline input
 		const inputConf = {
 			containerId     : 'input-container',
 			templateManager : friend.template,
 			enterIsNewline  : isMobile,
-		};
-		self.input = new library.component.MultiInput( inputConf );
-		self.input.on( 'state' , e => self.handleInputState( e ));
-		self.input.on( 'change', e => self.handleInputChange( e ));
-		self.input.on( 'tab'   , e => self.handleInputTab( e ));
-		self.input.on( 'arrow' , ( e, v ) => self.handleInputArrow( e, v ));
-		self.input.on( 'enter' , e => self.handleInputEnter( e ));
-		self.input.on( 'submit', e => self.handleInputSubmit( e ));
+		}
+		self.input = new library.component.MultiInput( inputConf )
+		self.input.on( 'state' , e => self.handleInputState( e ))
+		self.input.on( 'change', e => self.handleInputChange( e ))
+		self.input.on( 'tab'   , e => self.handleInputTab( e ))
+		self.input.on( 'arrow' , ( e, v ) => self.handleInputArrow( e, v ))
+		self.input.on( 'enter' , e => self.handleInputEnter( e ))
+		self.input.on( 'submit', e => self.handleInputSubmit( e ))
 		
 		// message builder
 		const msgBuilderArgs = [
@@ -451,18 +456,18 @@ library.view = library.view || {};
 			self.input,
 			self.parser,
 			self.linkExpand,
-			null, //self.pathExpand,
-		];
+			null,
+		]
 		
 		if ( isWorkroom ) {
-			msgBuilderArgs.push( self.isView );
-			msgBuilderArgs.push( state.workgroups );
+			msgBuilderArgs.push( self.isView )
+			msgBuilderArgs.push( state.workgroups )
 		}
 		
 		if ( state.isPrivate )
-			msgBuilderArgs.push( self.contactId );
+			msgBuilderArgs.push( self.contactId )
 		
-		self.msgBuilder = new MsgBuilder( ...msgBuilderArgs );
+		self.msgBuilder = new MsgBuilder( ...msgBuilderArgs )
 		
 		// input history
 		const hConf = {

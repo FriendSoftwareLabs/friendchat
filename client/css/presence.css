@@ -358,6 +358,7 @@ body[mobile] #emojii-panel-button
 	padding    : 0 0 0 0.5em;
 	text-align : right;
 	opacity    : 0.3;
+	font-size  : 90%;
 }
 
 .msg:hover,

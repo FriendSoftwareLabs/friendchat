@@ -461,20 +461,22 @@ inherits from EventEmitter
 	}
 	
 	ns.RequestNode.prototype.handleResponse = function( event ) {
-		const self = this;
-		const reqId = event.requestId;
-		const err = event.error || null;
-		const res = err ? null : ( event.response || null );
-		const handler = self._requests[ reqId ];
+		const self = this
+		const reqId = event.requestId
+		const err = event.error || null
+		const res = err ? null : ( event.response || null )
+		const handler = self._requests[ reqId ]
 		if ( !handler ) {
-			console.log( 'RequestNode.handleResponse - no handler for', {
-				event    : event,
-				handlers : self._requests,
-			});
-			return;
+			if ( self._eventsDebug ) {
+				console.log( 'RequestNode.handleResponse - no handler for', {
+					event    : event,
+					handlers : self._requests,
+				})
+			}
+			return
 		}
 		
-		handler( err, res );
+		handler( err, res )
 	}
 	
 	ns.RequestNode.prototype.callListener = async function( req ) {

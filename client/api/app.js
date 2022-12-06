@@ -153,35 +153,6 @@ var friend = window.friend || {}; // already instanced stuff
 		self._send( activate );
 	}
 	
-	ns.View.prototype.showFiledialog = function( conf, callback ) {
-		/* conf:
-		dialogType, ( 'open' default )
-		path,
-		filename,
-		title,
-		*/
-		const self = this;
-		if ( !conf || !callback ) {
-			console.log( 'showFileDialog - missing conf and / or callback' );
-			return;
-		}
-		
-		const cid = self.app.setCallback( callback );
-		const filedialog = {
-			type       : 'system',
-			command    : 'filedialog',
-			method     : 'open',
-			dialogType : conf.dialogType || 'open',
-			path       : conf.path,
-			filename   : conf.filename,
-			title      : conf.title,
-			viewId     : self.id,
-			callbackId : cid,
-		};
-		
-		self.app.sendMessage( filedialog );
-	}
-	
 	// Private
 	
 	ns.View.prototype.initView = function( eventSink ) {
@@ -189,65 +160,68 @@ var friend = window.friend || {}; // already instanced stuff
 		if ( self.path ) {
 			const filename = self.path
 				.split( '/' )
-				.slice( -1 )[ 0 ];
+				.slice( -1 )[ 0 ]
 			
-			self.viewName = filename.split( '.' )[ 0 ];
+			self.viewName = filename.split( '.' )[ 0 ]
 		}
 		
-		const windowConf = self.windowConf;
+		const windowConf = self.windowConf
 		const callbackId = self.app.setCallback( viewCreate )
 		if ( self.app.screen )
-			windowConf.screen = self.app.screen.id;
+			windowConf.screen = self.app.screen.id
 		
-		const viewConf = windowConf.viewConf || {};
-		windowConf.viewConf = viewConf;
-		viewConf.deviceType = self.app.deviceType;
-		viewConf.friendApp = self.app.friendApp;
+		const viewConf = windowConf.viewConf || {}
+		windowConf.viewConf = viewConf
+		viewConf.deviceType = self.app.deviceType
+		viewConf.device = self.app.device
+		viewConf.friendApp = self.app.friendApp
 		
 		if ( self.app.fragments )
-			viewConf.fragments = self.app.fragments;
+			viewConf.fragments = self.app.fragments
 		
 		if ( self.app.translations )
-			viewConf.translations = self.app.translations;
+			viewConf.translations = self.app.translations
 		
 		if ( null != self.app.isDev )
-			viewConf.isDev = self.app.isDev;
+			viewConf.isDev = self.app.isDev
 		
 		if ( null != self.app.appConf )
-			viewConf.appConf = self.app.appConf;
+			viewConf.appConf = self.app.appConf
 		
 		if ( null != self.app.appSettings )
-			viewConf.appSettings = self.app.appSettings;
+			viewConf.appSettings = self.app.appSettings
 		
-		self.fromView = new library.component.RequestNode( self.id, self.app );
-		self.fromView.on( 'app', e => self.toApp( e ));
-		self.fromView.on( 'log-sock', e => self.toLogSock( e ));
-		self.fromView.on( 'conn-state', e => self.toConnState( e ));
-		self.fromView.on( 'loaded', loaded );
-		self.fromView.on( 'ready', ready );
-		self.fromView.on( 'minimized', e => self.handleMinimized( e ));
-		self.fromView.on( 'show-notify', e => self.handleNotification( e ));
-		self.fromView.on( 'open-file', e => self.openFile( e ));
-		self.fromView.on( 'call-friend', e => { self.doThingieCall( e.type, e.data ); });
-		self.fromView.on( 'focus', e => self.handleFocus( e ));
+		self.fromView = new library.component.RequestNode( self.id, self.app )
+		self.fromView.on( 'app', e => self.toApp( e ))
+		self.fromView.on( 'log-sock', e => self.toLogSock( e ))
+		self.fromView.on( 'conn-state', e => self.toConnState( e ))
+		self.fromView.on( 'loaded', loaded )
+		self.fromView.on( 'ready', ready )
+		self.fromView.on( 'minimized', e => self.handleMinimized( e ))
+		self.fromView.on( 'show-notify', e => self.handleNotification( e ))
+		self.fromView.on( 'open-file', e => self.openFile( e ))
+		self.fromView.on( 'file-load', e => self.loadFile( e ))
+		self.fromView.on( 'file-dialog', e => self.handleFiledialog( e ))
+		self.fromView.on( 'call-friend', e => { self.doThingieCall( e.type, e.data ); })
+		self.fromView.on( 'focus', e => self.handleFocus( e ))
 		//self.fromView.on( 'call-library', e => self.doLibraryCall( e ));
 		
 		library.component.RequestNode.call( self,
 			null,
 			self.fromView,
 			eventSink,
-		);
+		)
 		
 		if ( true != windowConf.liveView )
-			windowConf.sidebarManaged = true;
+			windowConf.sidebarManaged = true
 		
-		windowConf.requireDoneLoading = true;
+		windowConf.requireDoneLoading = true
 		self.app.sendMessage({
 			type   : 'view',
 			viewId : self.id,
 			id     : callbackId,
 			data   : windowConf,
-		});
+		})
 		
 		function viewCreate( msg ) {
 			if ( msg.data.toUpperCase() !== 'OK' ) {
@@ -365,9 +339,42 @@ var friend = window.friend || {}; // already instanced stuff
 		self.emit( 'focused', self.hasFocus );
 	}
 	
-	ns.View.prototype.handleNotification = function( notie ) {
-		const self = this;
-		self.app.notify( notie );
+	ns.View.prototype.handleNotification = function( e ) {
+		const self = this
+		const cbId = e.callback
+		const notie = {
+			title : e.title,
+			text  : e.text,
+		}
+		if ( cbId )
+			notie.clickCallback = clickBack
+		
+		self.app.notify( notie )
+		
+		function clickBack( e ) {
+			const res = {
+				type     : 'callback',
+				callback : cbId,
+				error    : null,
+				response : e?.data,
+			}
+			self.sendMessage( res )
+		}
+		
+	}
+	
+	ns.View.prototype.handleFiledialog = async function( e ) {
+		const self = this
+		const conf = e.data
+		const fileConf = await self.app.showFileDialog( conf.type, conf.conf )
+		
+		const reply = {
+			type     : 'callback',
+			callback : e.callback,
+			error    : null,
+			response : fileConf,
+		};
+		self.sendMessage( reply );
 	}
 	
 	ns.View.prototype.openFile = function( e ) {
@@ -375,6 +382,19 @@ var friend = window.friend || {}; // already instanced stuff
 		const fP = e.filePath;
 		const aN = e.appName;
 		self.app.openFile( fP, aN );
+	}
+	
+	ns.View.prototype.loadFile = async function( conf ) {
+		const self = this
+		const file = new api.File( conf.data.filePath )
+		const data = await file.load()
+		const res = {
+			type     : 'callback',
+			callback : conf.callback,
+			error    : null,
+			response : data,
+		}
+		self.sendMessage( res )
 	}
 	
 	ns.View.prototype.doModuleCall = function( req ) {
@@ -1216,20 +1236,18 @@ var friend = window.friend || {}; // already instanced stuff
 // Application
 (function( ns, undefined ) {
 	ns.Application = function()	{
-		if ( !( this instanceof ns.Application ))
-			return new ns.Application();
-		
 		fupLocal.AppEvent.call( this );
 		
-		const self = this;
-		self.id = null; // set by register event
-		self.userId = null; // ^^^
-		self.authId = null; // ^^^
-		self.callbacks = {};
-		self.views = {};
-		self.viewIds = [];
+		const self = this
+		self.id = null // set by register event
+		self.userId = null // ^^^
+		self.authId = null // ^^^
+		self.callbacks = {}
+		self.views = {}
+		self.viewIds = []
 		
-		self.deviceType = null;
+		self.deviceType = null
+		self.device = null
 		
 		self.init();
 	}
@@ -1314,6 +1332,32 @@ var friend = window.friend || {}; // already instanced stuff
 		const sh = new api.Shell( self );
 		const res = await sh.execute( cmdLine );
 	}
+	
+	/* conf:
+		type, ( 'open', 'save', etc )
+		optional conf:
+			path,
+			filename,
+			title,
+	*/
+	ns.Application.prototype.showFileDialog = async function( type, conf ) {
+		const self = this;
+		if ( null == conf )
+			conf = {}
+		
+		const filedialog = {
+			type     : 'system',
+			command  : 'filedialog',
+			method   : type || 'open',
+			path     : conf.path || '',
+			filename : conf.fileName || '',
+			title    : conf.title || null,
+		}
+		
+		const res = await self.sendAsync( filedialog, 'callbackId' )
+		return res
+	}
+	
 	
 	// Private
 	
@@ -1444,8 +1488,13 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.notify = function( conf ) {
 		const self = this;
-		const cid = self.setCallback( conf.callback );
-		const ccid = self.setCallback( conf.clickCallback );
+		let cid = null
+		let ccid = null
+		if ( conf.callback )
+			cid = self.setCallback( conf.callback, 30 )
+		if ( conf.clickCallback )
+			ccid = self.setCallback( conf.clickCallback, 30 )
+		
 		const msg = {
 			type          : 'system',
 			command       : 'notification',
@@ -1454,7 +1503,7 @@ var friend = window.friend || {}; // already instanced stuff
 			callback      : cid,
 			clickcallback : ccid,
 		}
-		self.sendMessage( msg );
+		self.sendMessage( msg )
 	}
 	
 	ns.Application.prototype.returnCallback = function( error, result, callbackId ) {
@@ -1486,6 +1535,23 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.sendWorkspace = 
 		ns.Application.prototype.sendMessage;
+		
+	
+	ns.Application.prototype.sendAsync = function( msg, callbackType ) {
+		const self = this
+		msg.applicationId = self.id
+		msg.authId = self.authId
+		msg.userId = self.userId
+		const cb = self.setPromiseCallback()
+		
+		// why have one callback id if you can have many
+		msg[ callbackType ] = cb.id
+		
+		const msgStr = friendUP.tool.stringify( msg )
+		window.parent.postMessage( msgStr, window.origin || '*' )
+		
+		return cb.promise
+	}
 	
 	// close all views, does not quit the application
 	ns.Application.prototype.close = function()	{
@@ -1598,12 +1664,23 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this;
 	}
 	
-	ns.Application.prototype.setCallback = function( callback ) {
-		const self = this;
-		const id = friendUP.tool.uid( 'callback' );
-		self.callbacks[ id ] = callback;
+	ns.Application.prototype.setCallback = function( callback, timeoutSec ) {
+		const self = this
+		const id = friendUP.tool.uid( 'callback' )
+		self.callbacks[ id ] = callback
+		if ( null != timeoutSec )
+			window.setTimeout( callTimeout, timeoutSec * 1000 )
 		
-		return id;
+		return id
+		
+		function callTimeout() {
+			const cb = self.callbacks[ id ]
+			if ( null == cb )
+				return
+			
+			delete self.callbacks[ id ]
+			cb( null )
+		}
 	}
 	
 	ns.Application.prototype.getCallback = function( id ) {
@@ -1640,6 +1717,7 @@ var friend = window.friend || {}; // already instanced stuff
 			self.callbacks[ id ] = pBack;
 			function pBack( event ) {
 				resolve( event );
+				delete self.callbacks[ id ]
 			}
 		});
 		cb.promise = p;
@@ -1675,7 +1753,8 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.Application.prototype.init = function() {
 		const self = this;
-		self.detectDeviceType();
+		self.detectDeviceType()
+		self.setDeviceInfo()
 	}
 	
 	// DESKTOP
@@ -1725,6 +1804,41 @@ var friend = window.friend || {}; // already instanced stuff
 				type = value;
 				return true;
 			}
+		}
+	}
+	
+	ns.Application.prototype.setDeviceInfo = function() {
+		const self = this
+		if ( self.deviceType == 'DESKTOP' ) {
+			self.device = {
+				type : 'DESKTOP',
+			}
+			
+			return
+		}
+		
+		self.device = {
+			type : self.deviceType,
+			ios  : isIos(),
+			ipad : isIpad(),
+		}
+		
+		function isIpad() {
+			return [
+				'iPad Simulator',
+				'iPad',
+			].includes( navigator.platform )
+			// iPad on iOS 13 detection
+			|| ( navigator.userAgent.includes( "Mac" ) && "ontouchend" in document )
+		}
+		
+		function isIos() {
+			return [
+				'iPhone Simulator',
+				'iPod Simulator',
+				'iPhone',
+				'iPod'
+			].includes( navigator.platform )
 		}
 	}
 	
@@ -1831,20 +1945,26 @@ window.Application = new fupLocal.Application();
 // File
 (function( ns, undefined ) {
 	ns.File = function( path ) {
-		if ( !( this instanceof ns.File ))
-			return new ns.File( path );
+		const self = this
+		self.path = path
+		self.name = null
+		self.type = null
+		self.exposeHash = null
 		
-		const self = this;
-		self.path = path;
-		self.name = null;
-		self.type = null;
-		self.exposeHash = null;
-		
-		self.init();
+		self.init()
 	}
 	
-	ns.File.prototype.init = function() {
-		const self = this;
+	ns.File.prototype.load = async function() {
+		const self = this
+		const msg = {
+			type   : 'file',
+			method : 'load',
+			data   : {
+				path : self.path,
+			}
+		}
+		const data = await window.Application.sendAsync( msg, 'fileId' )
+		return data
 	}
 	
 	ns.File.prototype.expose = function( roomId ) {
@@ -1877,6 +1997,12 @@ window.Application = new fupLocal.Application();
 	ns.File.prototype.unshare = function( callback ) {
 		const self = this;
 		console.log( 'File.unshare - NYI', self.path );
+	}
+	
+	// Private
+	
+	ns.File.prototype.init = function() {
+		const self = this;
 	}
 	
 	ns.File.prototype.getPublicLink = function() {

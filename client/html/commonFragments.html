@@ -534,26 +534,36 @@ faIcon,
 </div>
 </script>
 
+<!-- context-icon-name
+faIcon,
+name
+-->
+<script id="context-icon-name" type="text/html">
+<div style="display:flex; align-items:center;">
+	<i class="fa fa-fw <%= faIcon %>" style="margin-right:0.5em;"></i>
+	<div>
+		<%= name %>
+	</div>
+</div>
+</script>
+
 <!-- LINK EXPAND FRAGMENTS -->
 
 <!-- link-expand-tmpl
 type
 bgDefault
+hideOpts
 href
-hideSave
 -->
 <script id="link-expand-tmpl" type="text/html">
 <div class="link-expand link-expand-<%= type %>">
 	<div class="link-expand-ui group row start <%= bgDefault %>">
-		<div class="pre-icon dl-btn Button IconButton center-child fortify <%= hideSave %>"
-			title="{i18n_save_to_home_fchat}"
+		<div class="pre-icon opts-btn Button IconButton center-child fortify <%= hideOpts %>"
+			title="{i18n_options}"
 		>
-			<i class="fa fa-fw fa-save"></i>
+			<i class="fa fa-fw fa-ellipsis-v"></i>
 		</div>
-		<div class="pre-icon show-link Button IconButton center-child fortify"
-			title="{i18n_open_in_new_tab}"
-		>
-			<i class="fa fa-fw fa-external-link"></i>
+		<div class="open-in-tab hidden">
 			<a href="<%= href %>" target="_blank" style="display:none;"></a>
 		</div>
 	</div>
@@ -561,6 +571,25 @@ hideSave
 	</div>
 </div>
 </script>
+
+		<!--
+		<div class="pre-icon dl-btn Button IconButton center-child fortify <%= hideSave %>"
+			title="{i18n_save_to_home_fchat}"
+		>
+			<i class="fa fa-fw fa-save"></i>
+		</div>
+		<div class="pre-icon show-link Button IconButton center-child fortify <%= hideHref %>"
+			title="{i18n_open_in_new_tab}"
+		>
+			<i class="fa fa-fw <%= hrefIcon %>"></i>
+			<a href="<%= href %>" target="_blank" style="display:none;"></a>
+		</div>
+		<div class="pre-icon open-path Button IconButton center-child fortify <%= hideFolder %>"
+			title="{i18n_open_path}"
+		>
+			<i class="fa fa-fw fa-folder-open"></i>
+		</div>
+	-->
 
 <!-- image-expand-tmpl
 src
@@ -602,7 +631,7 @@ openHTML,
 <script id="file-expand-tmpl" type="text/html">
 <div class="le-item File group row">
 	<div class="le-file-icon Icon fortify">
-		<div class="<%=typeClass%>"></div>
+		<div class="<%= typeClass %>"></div>
 	</div>
 	<div class="le-file-meta group row expand">
 		<div class="le-file-desc expand">
