@@ -321,7 +321,7 @@ library.view = library.view || {};
 	 
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
-		console.log( 'view.Presence.handleInitialize', conf )
+		console.log( 'view.Presence.handleInitialize', state.workgroups?.assigned?.length )
 		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		
 		hello.template = friend.template;
@@ -338,10 +338,16 @@ library.view = library.view || {};
 		self.contactId   = state.contactId;
 		self.liveAllowed = ( null != state.liveAllowed ) ? state.liveAllowed : true
 		
+		let showInviter = true
 		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
 			const am = document.getElementById( 'attachment-menu' );
 			if ( null != am )
 				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true );
+			
+			if ( !state.workgroups?.assigned?.length )
+			{
+				showInviter = false
+			}
 		}
 		
 		// selecting constructors
@@ -361,7 +367,7 @@ library.view = library.view || {};
 		if ( !self.isPrivate )
 			self.toggleUserListBtn( true );
 		
-		if ( !self.isPrivate && !isWorkroom && ( self.userId === self.ownerId ))
+		if ( !self.isPrivate && !isWorkroom && ( self.userId === self.ownerId && showInviter ))
 			self.inviteBtn.classList.toggle( 'hidden', false );
 		
 		//
