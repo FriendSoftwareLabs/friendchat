@@ -1927,9 +1927,9 @@ library.contact = library.contact || {};
 			return null;
 		
 		const uwgs = user.workgroups
-		const wgs = self.workgroups;
+		const wgs = self.workgroups
 		if ( !wgs )
-			return null;
+			return null
 		
 		let relevant = [];
 		if ( wgs.assigned && wgs.assigned.length ) {

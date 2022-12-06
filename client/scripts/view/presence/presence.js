@@ -321,6 +321,7 @@ library.view = library.view || {};
 	 
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
+		console.log( 'view.Presence.handleInitialize', conf )
 		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		
 		hello.template = friend.template;
