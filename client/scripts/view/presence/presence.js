@@ -344,7 +344,7 @@ library.view = library.view || {};
 			if ( null != am )
 				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true );
 			
-			if ( !state.workgroups?.assigned?.length )
+			if ( state.workgroups?.assigned?.length )
 			{
 				showInviter = false
 			}
