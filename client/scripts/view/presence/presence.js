@@ -321,11 +321,11 @@ library.view = library.view || {};
 	 
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
-		console.log( 'view.Presence.handleInitialize', state.workgroups?.assigned?.length )
 		const isMobile = ( 'MOBILE' === window.View.deviceType );
 		
 		hello.template = friend.template;
 		const state = conf.state;
+		console.log( 'view.Presence.handleInitialize', state.workgroups?.assigned?.length )
 		
 		// things
 		self.clientId    = state.clientId;
