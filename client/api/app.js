@@ -1503,6 +1503,7 @@ var friend = window.friend || {}; // already instanced stuff
 			callback      : cid,
 			clickcallback : ccid,
 		}
+		
 		self.sendMessage( msg )
 	}
 	

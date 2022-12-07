@@ -223,6 +223,9 @@ library.contact = library.contact || {};
 				//console.log( 'notify - no action', res );
 			}
 			function nClick( res ) {
+				if ( null == res )
+					return
+				
 				self.startChat();
 			}
 		}
@@ -261,6 +264,9 @@ library.contact = library.contact || {};
 				//console.log( 'notify - no action', res );
 			}
 			function nClick( res ) {
+				if ( null == res )
+					return
+				
 				self.chatView.show();
 			}
 		}
