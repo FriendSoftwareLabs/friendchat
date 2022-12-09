@@ -1585,13 +1585,15 @@ library.contact = library.contact || {};
 		
 		self.initialized = true;
 		// update main view with # of peers in a live session
-		const uptdPeers = {
-			type : 'peers',
-			data : {
-				peerIds : state.peers,
-			},
-		};
-		self.onLive( uptdPeers );
+		window.setTimeout( () => {
+			const uptdPeers = {
+				type : 'peers',
+				data : {
+					peerIds : state.peers,
+				},
+			};
+			self.onLive( uptdPeers );
+		}, 1000 )
 		
 		if ( self.chatView )
 			self.chatView.send({
@@ -3108,52 +3110,53 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.updatePeers = function( event ) {
-		const self = this;
-		const type = event.type;
-		const data = event.data;
+		const self = this
+		const type = event.type
+		const data = event.data
 		if ( 'peers' === type ) {
-			self.peers = data.peerIds;
-			update();
-			return true;
+			self.peers = data.peerIds
+			update()
+			return true
 		}
 		
-		const pId = data.peerId;
+		const pId = data.peerId
 		if ( 'join' === type ) {
-			const pIdx = self.peers.indexOf( pId );
+			const pIdx = self.peers.indexOf( pId )
 			if ( -1 != pIdx )
-				return false;
+				return false
 			
-			self.peers.push( pId );
-			update();
-			return true;
+			self.peers.push( pId )
+			update()
+			return true
 		}
 		
 		if ( 'leave' === event.type ) {
-			self.peers = self.peers.filter( notPID );
-			update();
-			return true;
+			self.peers = self.peers.filter( notPID )
+			update()
+			return true
 		}
 		
-		return false;
+		return false
 		
 		function update() {
 			const opts = {
 				live : self.peers.length,
-			};
+			}
 			
 			if ( self.activity )
-				self.activity.updateItem( self.clientId, opts );
+				self.activity.updateItem( self.clientId, opts )
 			
 			if ( self.service && 'jeanie' == hello.config.mode ) {
 				let hasFocus = null;
 				if ( self.live )
 					hasFocus = self.live.checkFocus();
 				
-				self.service.emitEvent( 'roomLiveState', {
+				const uptd = {
 					roomId   : self.clientId,
 					peers    : self.peers.length,
 					hasFocus : hasFocus,
-				});
+				}
+				self.service.emitEvent( 'roomLiveState', uptd );
 			}
 		}
 		
@@ -3163,12 +3166,12 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.setIdentity = function() {
-		const self = this;
+		const self = this
 		self.identity = {
 			clientId : self.clientId,
 			name     : self.data.name || null,
 			avatar   : self.data.avatar || null,
-		};
+		}
 	}
 	
 	ns.PresenceRoom.prototype.sendChatEvent = function( e ) {
