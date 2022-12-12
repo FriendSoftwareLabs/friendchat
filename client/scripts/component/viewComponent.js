@@ -1179,7 +1179,7 @@ in a generic link expand wrapping with a bit of UI
 		const links = el.querySelectorAll( 'a' )
 		const paths = el.querySelectorAll( 'fpath' )
 		Array.prototype.forEach.call( links, expandLink )
-		Array.prototype.forEach.call( paths, expandPath );
+		Array.prototype.forEach.call( paths, expandPath )
 		
 		async function expandLink( a ) {
 			const url = a.href.toString()
@@ -1187,7 +1187,7 @@ in a generic link expand wrapping with a bit of UI
 			try {
 				mime = await self.getMIME( url );
 			} catch( ex ) {
-				//console.log( 'LinkExpand.mime.failed', ex );
+				console.log( 'LinkExpand.getMIME failed', ex );
 				return
 			}
 			
@@ -1222,6 +1222,7 @@ in a generic link expand wrapping with a bit of UI
 				fileInfo = await self.getFFileInfo( fpath )
 			} catch( ex ) {
 				console.log( 'LinkExpand.work - expandPath getFFileInfo ex', ex )
+				return null
 			}
 			
 			const info = {
@@ -1399,6 +1400,7 @@ in a generic link expand wrapping with a bit of UI
 		return new Promise(( resolve, reject ) => {
 			if ( !url || !url.length )
 				resolve( 'no u' )
+			
 		
 			const extParts = url.split( '.' )
 			const fileExt = extParts.pop()
@@ -1411,6 +1413,7 @@ in a generic link expand wrapping with a bit of UI
 			//req.addEventListener( 'progress', reqProgress );
 			req.addEventListener( 'readystatechange', reqReadyState )
 			req.addEventListener( 'error', reqError )
+			
 			req.open( 'GET', url )
 			req.send()
 			
@@ -1428,6 +1431,12 @@ in a generic link expand wrapping with a bit of UI
 					return
 				
 				req.abort()
+				
+				if ( 'text' == mime.type && 'html' == mime.ext ) {
+					mime.type = 'web'
+					resolve( mime )
+					return
+				}
 				
 				mime.fileExt = fileExt
 				mime.fileName = fileName
@@ -1459,7 +1468,7 @@ in a generic link expand wrapping with a bit of UI
 			
 			
 			function reqError( e ) {
-				/*
+				
 				const headers = req.getAllResponseHeaders();
 				console.log( 'reqError', {
 					e : e,
@@ -1467,7 +1476,7 @@ in a generic link expand wrapping with a bit of UI
 					t : req.responseType,
 					h : headers,
 				});
-				*/
+				
 				reject( 'invalid' );
 			}
 		});
@@ -1804,7 +1813,7 @@ in a generic link expand wrapping with a bit of UI
 	
 	*/
 	ns.LinkExpand.prototype.expandAudio = async function( conf ) {
-		const self = this;
+		const self = this
 		if ( null == conf.a ) {
 			const content = await self.expandFile( conf )
 			return content
@@ -1845,7 +1854,7 @@ in a generic link expand wrapping with a bit of UI
 		const htmlElement = self.template.getElement( 'video-expand-tmpl', elConf )
 		return {
 			type    : type,
-			mime    : mime,
+			href    : src,
 			content : htmlElement,
 		}
 	}
