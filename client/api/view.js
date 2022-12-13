@@ -216,6 +216,11 @@ var friend = window.friend || {};
 	
 	// public
 	
+	ns.View.prototype.minimize = function( opts ) {
+		const self = this
+		console.log( 'View.minimize - we dont do that around here, buddy', self )
+	}
+	
 	ns.View.prototype.showContextMenu = async function( menu, header, e ) {
 		const self = this
 		const cb = self.setPromiseCallback()

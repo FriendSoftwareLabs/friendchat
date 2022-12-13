@@ -1309,8 +1309,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function broadcastScreenMode( mode ) { broadcast( 'screen-mode', mode ); }
 		function broadcastScreenShare( isSharing ) {
 			broadcast( 'screen-share', isSharing );
+			if ( isSharing )
+				self.conn.send({ 
+					type : 'screen-share',
+					data : isSharing,
+				})
+			
 			self.screenSharePresentationToggle( isSharing );
 		}
+		
 		
 		function systemMute( isMute ) {
 			self.handleSystemMute( isMute );
@@ -1406,31 +1413,31 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.RTC.prototype.handleAudioSink = function( deviceId ) {
-		const self = this;
-		self.ui.setAudioSink( deviceId );
+		const self = this
+		self.ui.setAudioSink( deviceId )
 	}
 	
 	ns.RTC.prototype.broadcast = function( event ) {
-		var self = this;
-		const pids = Object.keys( self.peers );
-		pids.forEach( send );
+		const self = this
+		const pids = Object.keys( self.peers )
+		pids.forEach( send )
 		function send( toPid ) {
-			const peer = self.peers[ toPid ];
+			const peer = self.peers[ toPid ]
 			if ( !peer )
-				return;
+				return
 			
-			peer.send( event );
+			peer.send( event )
 		}
 	}
 	
 	ns.RTC.prototype.leave = function() {
-		const self = this;
-		self.close();
+		const self = this
+		self.close()
 	}
 	
 	ns.RTC.prototype.close = function() {
-		const self = this;
-		const peerIds = Object.keys( self.peers );
+		const self = this
+		const peerIds = Object.keys( self.peers )
 		peerIds.forEach( pId =>{
 			self.closePeer( pId );
 		});

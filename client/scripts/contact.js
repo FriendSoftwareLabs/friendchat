@@ -921,39 +921,46 @@ library.contact = library.contact || {};
 		const join = {
 			type : 'live-join',
 			data : liveId,
-		};
-		self.send( join );
+		}
+		self.send( join )
 		
 		// events from live view we care about, everything else is passed on
-		self.live.on( 'chat', chat );
-		self.live.on( 'invite', invite );
-		self.live.on( 'live-name', liveName );
-		self.live.on( 'view-switch', viewSwitch );
+		self.live.on( 'chat', chat )
+		self.live.on( 'invite', invite )
+		self.live.on( 'live-name', liveName )
+		self.live.on( 'view-switch', viewSwitch )
+		
+		self.live.on( 'screen-share', e => {
+			console.log( 'app.PRoom screen-share', e )
+			if ( self.view )
+				self.view.show()
+		})
+		
 		self.live.on( 'focused', e => {
 			self.service.emitEvent( 'liveHasFocus', {
 				roomId   : self.clientId,
 				hasFocus : e,
-			});
-		});
+			})
+		})
 		
-		function chat( e ) { self.sendChatEvent( e ); }
-		function invite( e ) { self.inviteToServer( e ); }
-		function liveName( e ) { self.handleLiveName( e ); }
-		function viewSwitch( e ) { self.handleViewSwitch( e ); }
+		function chat( e ) { self.sendChatEvent( e ) }
+		function invite( e ) { self.inviteToServer( e ) }
+		function liveName( e ) { self.handleLiveName( e ) }
+		function viewSwitch( e ) { self.handleViewSwitch( e ) }
 		function onClose( e ) {
-			self.closeLive();
+			self.closeLive()
 			const leave = {
 				type : 'leave',
 			}
-			self.liveToServer( leave );
+			self.liveToServer( leave )
 		}
 		
 		function liveToServer( type, data ) {
 			const event = {
 				type : type,
 				data : data,
-			};
-			self.liveToServer( event );
+			}
+			self.liveToServer( event )
 		}
 	}
 	
