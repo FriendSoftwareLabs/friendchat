@@ -115,6 +115,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		window.View.on( 'focus', e => {
 			console.log( 'rtc view focus', [ e, self.selfie ] )
+			if ( !e )
+				return
+			
 			if ( self.selfie.isScreenSharing )
 				self.selfie.toggleShareScreen()
 		})
