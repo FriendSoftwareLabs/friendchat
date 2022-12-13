@@ -113,7 +113,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( 'star' === self.topology )
 			self.setupProxy();
 		
-		window.View.on( 'focus', e => console.log( 'rtc view focus', [ e, self.selfie ] ))
+		window.View.on( 'focus', e => {
+			console.log( 'rtc view focus', [ e, self.selfie ] )
+			if ( self.selfie.isScreenSharing )
+				self.selfie.toggleShareScreen()
+		})
 		
 		self.convertLegacyDevices();
 		self.updateMobileRestrictions();
