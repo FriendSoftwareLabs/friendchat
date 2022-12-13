@@ -932,8 +932,13 @@ library.contact = library.contact || {};
 		
 		self.live.on( 'screen-share', e => {
 			console.log( 'app.PRoom screen-share', [ e, self.chatView, self.view ])
-			if ( self.chatView )
+			if ( null == self.chatView )
+				return
+			
+			if ( e )
 				self.chatView.show()
+			else
+				self.live.show()
 		})
 		
 		self.live.on( 'focused', e => {

@@ -1389,6 +1389,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.activated = function() {
 		const self = this;
+		console.log( 'activated', self.isActive )
 		if ( true === self.isActive )
 			return;
 		
@@ -1405,6 +1406,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.deactivated = function() {
 		const self = this;
+		console.log( 'deactivated', self.isActive )
 		if ( false === self.isActive )
 			return;
 		
