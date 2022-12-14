@@ -4150,7 +4150,10 @@ library.contact = library.contact || {};
 		hello.app.notify( notie );
 		
 		function nClose() {}
-		function nClick() {
+		function nClick( res ) {
+			if ( null == res )
+				return
+			
 			self.startVideo();
 		}
 	}
