@@ -932,6 +932,9 @@ library.contact = library.contact || {};
 		
 		self.live.on( 'screen-share', e => {
 			console.log( 'app.PRoom screen-share', [ e, self.chatView, self.view ])
+			if ( 'jeanie' != hello.config.mode )
+				return
+			
 			if ( null == self.chatView )
 				return
 			
@@ -1415,7 +1418,7 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.chatReady = function( e ) {
 		const self = this;
 		if ( 'jeanie' != hello.config.mode )
-			return;
+			return
 		
 		self.service.emitEvent( 'viewOpen', {
 			roomId : self.clientId,
@@ -4162,7 +4165,11 @@ library.contact = library.contact || {};
 		hello.app.notify( notie );
 		
 		function nClose() {}
-		function nClick() {
+		function nClick( res ) {
+			conosle.log( 'nClick', res )
+			if ( null == res )
+				return
+			
 			self.startVideo();
 		}
 	}
