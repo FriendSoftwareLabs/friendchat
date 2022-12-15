@@ -931,7 +931,6 @@ library.contact = library.contact || {};
 		self.live.on( 'view-switch', viewSwitch )
 		
 		self.live.on( 'screen-share', e => {
-			console.log( 'app.PRoom screen-share', [ e, self.chatView, self.view ])
 			if ( 'jeanie' != hello.config.mode )
 				return
 			
