@@ -488,15 +488,21 @@ i.svg.camera-off {
 }
 
 #stop-share-btn {
-	position: relative;
+	position         : relative;
+	background-color : lightgrey;
+	border-radius    : 100%;
+	height: 4em;
+	width: 4em;
 }
 
 #stop-share-btn i.fa-television {
 	font-size: 4em;
 }
 #stop-share-btn i.fa-close {
-	position: absolute;
-	font-size: 2em;
+	position  : absolute;
+	font-size : 2em;
+	top       : 20%;
+	left      : 20%;
 }
 
 .peer:not(.popped ).quality-low .video {

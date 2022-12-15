@@ -3936,7 +3936,6 @@ library.component = library.component || {};
 			name   : self.peer.name,
 			avatar : avatarUrl || '',
 		}
-		console.log( 'selfie.buildView conf', tmplConf )
 		self.el = hello.template.getElement( 'selfie-tmpl', tmplConf )
 		self.connecting.appendChild( self.el )
 	}
@@ -3963,6 +3962,7 @@ library.component = library.component || {};
 			
 		self.screenshareOverlayStopBtn.addEventListener( 'click', e => {
 			console.log( 'scrOSBtn cluck', e )
+			self.peer.toggleShareScreen()
 		})
 		
 		// self.audioBtn.addEventListener( 'click', audioBtnClick, false )
