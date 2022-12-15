@@ -466,6 +466,12 @@ i.svg.camera-off {
 	display: flex;
 }
 
+#screenshare-active-overlay {
+	position: absolute;
+	top    : 0;
+	bottom : 0;
+}
+
 .peer:not(.popped ).quality-low .video {
 	transform : scale( 2 ) translate( -25%, -25% );
 }
