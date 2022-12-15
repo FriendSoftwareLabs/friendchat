@@ -481,6 +481,7 @@ i.svg.camera-off {
 #screenshare-overlay-inof i {
 	font-size   : 10em;
 	font-weight : bolder;
+	margin-left : 0.03em;
 }
 
 #screenshare-overlay-stop {
@@ -489,10 +490,14 @@ i.svg.camera-off {
 
 #stop-share-btn {
 	position         : relative;
-	background-color : lightgrey;
+	background-color : #ddd;
 	border-radius    : 100%;
 	height           : 4em;
 	width            : 4em;
+}
+
+#stop-share-btn:hover {
+	background-color: #fff;
 }
 
 #stop-share-btn i.fa-television {
