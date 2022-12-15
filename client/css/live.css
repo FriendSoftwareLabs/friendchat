@@ -470,6 +470,33 @@ i.svg.camera-off {
 	position: absolute;
 	top    : 0;
 	bottom : 0;
+	left   : 0;
+	right  : 0;
+}
+
+#screenshare-overlay-inof {
+	
+}
+
+#screenshare-overlay-inof i {
+	font-size   : 10em;
+	font-weight : bolder;
+}
+
+#screenshare-overlay-stop {
+	margin-top : 20%;
+}
+
+#stop-share-btn {
+	position: relative;
+}
+
+#stop-share-btn i.fa-television {
+	font-size: 4em;
+}
+#stop-share-btn i.fa-close {
+	position: absolute;
+	font-size: 2em;
 }
 
 .peer:not(.popped ).quality-low .video {
