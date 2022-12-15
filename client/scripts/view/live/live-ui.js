@@ -3499,14 +3499,13 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.handleScreenShare = function( isActive ) {
-		const self = this;
-		console.log( 'handleScreenShare', isActive )
-		self.stream.classList.toggle( 'hidden', isActive )
-		self.screenShare = isActive;
-		self.updateQualityLevel();
-		self.toggleStream();
-		self.doResize();
-		self.emitHasStream();
+		const self = this
+		console.log( 'peer.handleScreenShare', isActive )
+		self.screenShare = isActive
+		self.updateQualityLevel()
+		self.toggleStream()
+		self.doResize()
+		self.emitHasStream()
 	}
 	
 	ns.Peer.prototype.updateRTC = function( event ) {
@@ -4099,15 +4098,17 @@ library.component = library.component || {};
 	}
 	
 	ns.Selfie.prototype.handleScreenShare = function( isActive ) {
-		const self = this;
-		self.screenShare = isActive;
-		self.updateQualityLevel();
-		self.updateVideoMirror();
-		self.doResize();
+		const self = this
+		console.log( 'selfie.handleScreenShare', isActive )
+		self.stream.classList.toggle( 'hidden', isActive )
+		self.screenShare = isActive
+		self.updateQualityLevel()
+		self.updateVideoMirror()
+		self.doResize()
 		if ( !self.screenshareBtn )
-			return;
+			return
 		
-		self.screenshareBtn.classList.toggle( 'available', isActive );
+		self.screenshareBtn.classList.toggle( 'available', isActive )
 	}
 	
 	ns.Selfie.prototype.handleSelfMute = function( isMuted ) {
