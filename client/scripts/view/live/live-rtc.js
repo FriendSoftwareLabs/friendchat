@@ -114,6 +114,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.setupProxy();
 		
 		window.View.on( 'focus', ( e, opts ) => {
+			return
+			
 			console.log( 'rtc view focus', [ e, opts, self.selfie, window.View.config.appConf.mode ] )
 			if ( window.View.config.appConf.mode != 'jeanie' )
 				return

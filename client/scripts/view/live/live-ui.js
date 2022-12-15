@@ -3500,6 +3500,8 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.handleScreenShare = function( isActive ) {
 		const self = this;
+		console.log( 'handleScreenShare', isActive )
+		self.stream.classList.toggle( 'hidden', isActive )
 		self.screenShare = isActive;
 		self.updateQualityLevel();
 		self.toggleStream();
