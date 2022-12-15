@@ -419,6 +419,10 @@ i.svg.camera-off {
 	overflow : hidden;
 }
 
+.selfie .ui-peer-top {
+	position: absolute;
+}
+
 .peer .ui-peer-top-bar {
 	
 }
