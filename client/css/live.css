@@ -419,6 +419,10 @@ i.svg.camera-off {
 	overflow : hidden;
 }
 
+.selfie .ui-peer-top {
+	position: absolute;
+}
+
 .peer .ui-peer-top-bar {
 	
 }
@@ -464,6 +468,54 @@ i.svg.camera-off {
 
 #selfie.popped #popped-ui {
 	display: flex;
+}
+
+#screenshare-active-overlay {
+	position: absolute;
+	top    : 0;
+	bottom : 0;
+	left   : 0;
+	right  : 0;
+}
+
+#screenshare-overlay-inof {
+	
+}
+
+#screenshare-overlay-inof i {
+	font-size   : 10em;
+	font-weight : bolder;
+	margin-left : 0.03em;
+}
+
+#screenshare-overlay-stop {
+	margin-top : 20%;
+}
+
+#stop-share-btn {
+	position         : relative;
+	background-color : #ddd;
+	border-radius    : 100%;
+	height           : 4em;
+	width            : 4em;
+}
+
+#stop-share-btn:hover {
+	background-color: #fff;
+}
+
+#stop-share-btn i.fa-television {
+	position  : absolute;
+	font-size : 2.5em;
+	top       : 0.35em;
+	left      : 0.2em;
+}
+
+#stop-share-btn i.fa-close {
+	position  : absolute;
+	font-size : 1.8em;
+	top       : 0.6em;
+	left      : 0.48em;
 }
 
 .peer:not(.popped ).quality-low .video {

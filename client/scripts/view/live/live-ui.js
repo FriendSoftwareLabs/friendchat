@@ -3499,12 +3499,13 @@ library.component = library.component || {};
 	}
 	
 	ns.Peer.prototype.handleScreenShare = function( isActive ) {
-		const self = this;
-		self.screenShare = isActive;
-		self.updateQualityLevel();
-		self.toggleStream();
-		self.doResize();
-		self.emitHasStream();
+		const self = this
+		console.log( 'peer.handleScreenShare', isActive )
+		self.screenShare = isActive
+		self.updateQualityLevel()
+		self.toggleStream()
+		self.doResize()
+		self.emitHasStream()
 	}
 	
 	ns.Peer.prototype.updateRTC = function( event ) {
@@ -3935,38 +3936,46 @@ library.component = library.component || {};
 			name   : self.peer.name,
 			avatar : avatarUrl || '',
 		}
-		console.log( 'selfie.buildView conf', tmplConf )
 		self.el = hello.template.getElement( 'selfie-tmpl', tmplConf )
 		self.connecting.appendChild( self.el )
 	}
 	
 	ns.Selfie.prototype.bindUI = function() {
-		const self = this;
+		const self = this
 		// poppedui
-		self.poppedMuteBtn = document.getElementById( 'popped-mute-self' );
-		self.unpopBtn = document.getElementById( 'popped-unpop' );
+		self.poppedMuteBtn = document.getElementById( 'popped-mute-self' )
+		self.unpopBtn = document.getElementById( 'popped-unpop' )
 		
-		self.poppedMuteBtn.addEventListener( 'click', audioBtnClick, false );
-		self.unpopBtn.addEventListener( 'click', unpopClick, false );
+		self.poppedMuteBtn.addEventListener( 'click', audioBtnClick, false )
+		self.unpopBtn.addEventListener( 'click', unpopClick, false )
 		function unpopClick( e ) {
-			self.peer.emit( 'popped', !self.poppedUser );
+			self.peer.emit( 'popped', !self.poppedUser )
 		}
 		
 		// ui
-		//self.audioBtn = document.getElementById( 'mute-self' );
-		self.nameBar = self.ui.querySelector( '.ui-buttons .name-bar' );
+		// self.audioBtn = document.getElementById( 'mute-self' )
+		self.nameBar = self.ui.querySelector( '.ui-buttons .name-bar' )
 		
-		//self.audioBtn.addEventListener( 'click', audioBtnClick, false );
-		function audioBtnClick( e ) { self.peer.toggleMute(); }
+		// screenshare overlay
+		self.screenshareOverlay = document.getElementById( 'screenshare-active-overlay' )
+		self.screenshareOverlayStopBtn = document.getElementById( 'stop-share-btn' )
+			
+		self.screenshareOverlayStopBtn.addEventListener( 'click', e => {
+			console.log( 'scrOSBtn cluck', e )
+			self.peer.toggleShareScreen()
+		})
+		
+		// self.audioBtn.addEventListener( 'click', audioBtnClick, false )
+		function audioBtnClick( e ) { self.peer.toggleMute() }
 		
 		// options
-		function dragClick( e ) { self.enableDragMode(); }
+		function dragClick( e ) { self.enableDragMode() }
 		function cleanUIClick( e ) {
-			self.hideOptions();
-			self.onclean();
+			self.hideOptions()
+			self.onclean()
 		}
 		
-		//things
+		// things
 		self.queueContainer = document.getElementById( 'queue-container' );
 		
 		// 
@@ -4097,15 +4106,22 @@ library.component = library.component || {};
 	}
 	
 	ns.Selfie.prototype.handleScreenShare = function( isActive ) {
-		const self = this;
-		self.screenShare = isActive;
-		self.updateQualityLevel();
-		self.updateVideoMirror();
-		self.doResize();
-		if ( !self.screenshareBtn )
-			return;
+		const self = this
+		//self.stream.classList.toggle( 'hidden', isActive )
+		if ( isActive )
+			self.stream.style.opacity = 0
+		else
+			self.stream.style.opacity = 1
 		
-		self.screenshareBtn.classList.toggle( 'available', isActive );
+		self.screenShare = isActive
+		self.updateQualityLevel()
+		self.updateVideoMirror()
+		self.doResize()
+		self.screenshareOverlay.classList.toggle( 'hidden', !isActive )
+		if ( !self.screenshareBtn )
+			return
+		
+		self.screenshareBtn.classList.toggle( 'available', isActive )
 	}
 	
 	ns.Selfie.prototype.handleSelfMute = function( isMuted ) {

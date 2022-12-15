@@ -113,6 +113,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( 'star' === self.topology )
 			self.setupProxy();
 		
+		window.View.on( 'focus', ( e, opts ) => {
+			return
+			
+			console.log( 'rtc view focus', [ e, opts, self.selfie, window.View.config.appConf.mode ] )
+			if ( window.View.config.appConf.mode != 'jeanie' )
+				return
+			
+			if ( !e )
+				return
+			
+			if ( self.selfie.isScreenSharing )
+				self.selfie.toggleShareScreen()
+		})
+		
 		self.convertLegacyDevices();
 		self.updateMobileRestrictions();
 		self.bindUI();
@@ -1308,8 +1322,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function broadcastBlind( isBlinded ) { broadcast( 'blind', isBlinded ); }
 		function broadcastScreenMode( mode ) { broadcast( 'screen-mode', mode ); }
 		function broadcastScreenShare( isSharing ) {
-			broadcast( 'screen-share', isSharing );
-			self.screenSharePresentationToggle( isSharing );
+			self.conn.send({ 
+				type : 'screen-share',
+				data : isSharing,
+			})
+			broadcast( 'screen-share', isSharing )
+			self.screenSharePresentationToggle( isSharing )
 		}
 		
 		function systemMute( isMute ) {
@@ -1406,31 +1424,31 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.RTC.prototype.handleAudioSink = function( deviceId ) {
-		const self = this;
-		self.ui.setAudioSink( deviceId );
+		const self = this
+		self.ui.setAudioSink( deviceId )
 	}
 	
 	ns.RTC.prototype.broadcast = function( event ) {
-		var self = this;
-		const pids = Object.keys( self.peers );
-		pids.forEach( send );
+		const self = this
+		const pids = Object.keys( self.peers )
+		pids.forEach( send )
 		function send( toPid ) {
-			const peer = self.peers[ toPid ];
+			const peer = self.peers[ toPid ]
 			if ( !peer )
-				return;
+				return
 			
-			peer.send( event );
+			peer.send( event )
 		}
 	}
 	
 	ns.RTC.prototype.leave = function() {
-		const self = this;
-		self.close();
+		const self = this
+		self.close()
 	}
 	
 	ns.RTC.prototype.close = function() {
-		const self = this;
-		const peerIds = Object.keys( self.peers );
+		const self = this
+		const peerIds = Object.keys( self.peers )
 		peerIds.forEach( pId =>{
 			self.closePeer( pId );
 		});
@@ -1957,9 +1975,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.toggleShareScreen = async function() {
 		const self = this;
-		console.trace( 'toggleShareScreen', {
-			isSS : self.isScreenSharing,
-		});
 		if ( self.isScreenSharing )
 			unShare();
 		else
