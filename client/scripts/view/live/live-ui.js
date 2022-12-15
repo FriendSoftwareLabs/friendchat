@@ -4110,7 +4110,7 @@ library.component = library.component || {};
 		console.log( 'selfie.handleScreenShare', [ isActive, self.stream ])
 		//self.stream.classList.toggle( 'hidden', isActive )
 		if ( isActive )
-			self.stream.style.opacity = 0.3
+			self.stream.style.opacity = 0
 		else
 			self.stream.style.opacity = 1
 		
