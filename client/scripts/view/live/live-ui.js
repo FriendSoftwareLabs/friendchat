@@ -4099,8 +4099,13 @@ library.component = library.component || {};
 	
 	ns.Selfie.prototype.handleScreenShare = function( isActive ) {
 		const self = this
-		console.log( 'selfie.handleScreenShare', isActive )
-		self.stream.classList.toggle( 'hidden', isActive )
+		console.log( 'selfie.handleScreenShare', [ isActive, self.stream ])
+		//self.stream.classList.toggle( 'hidden', isActive )
+		if ( isActive )
+			self.stream.style.opacity = 0.4
+		else
+			self.stream.style.opacity = 1
+		
 		self.screenShare = isActive
 		self.updateQualityLevel()
 		self.updateVideoMirror()
