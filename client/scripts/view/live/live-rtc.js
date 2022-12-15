@@ -1975,9 +1975,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Selfie.prototype.toggleShareScreen = async function() {
 		const self = this;
-		console.trace( 'toggleShareScreen', {
-			isSS : self.isScreenSharing,
-		});
 		if ( self.isScreenSharing )
 			unShare();
 		else
