@@ -321,27 +321,27 @@ library.view = library.view || {};
 	 
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
-		const isMobile = ( 'MOBILE' === window.View.deviceType );
+		const isMobile = ( 'MOBILE' === window.View.deviceType )
 		
-		hello.template = friend.template;
-		const state = conf.state;
+		hello.template = friend.template
+		const state = conf.state
 		
 		// things
-		self.clientId    = state.clientId;
-		self.isPrivate   = state.isPrivate;
-		self.isView      = state.isView;
-		self.persistent  = state.persistent;
-		self.room        = state.room;
-		self.ownerId     = state.ownerId;
-		self.userId      = state.userId;
-		self.contactId   = state.contactId;
+		self.clientId    = state.clientId
+		self.isPrivate   = state.isPrivate
+		self.isView      = state.isView
+		self.persistent  = state.persistent
+		self.room        = state.room
+		self.ownerId     = state.ownerId
+		self.userId      = state.userId
+		self.contactId   = state.contactId
 		self.liveAllowed = ( null != state.liveAllowed ) ? state.liveAllowed : true
 		
 		let showInviter = true
 		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
-			const am = document.getElementById( 'attachment-menu' );
+			const am = document.getElementById( 'attachment-menu' )
 			if ( null != am )
-				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true );
+				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true )
 			
 			if ( state.workgroups?.assigned?.length )
 			{
@@ -350,24 +350,25 @@ library.view = library.view || {};
 		}
 		
 		// selecting constructors
-		let UserCtrl = library.component.UserCtrl;
-		let MsgBuilder = library.component.MsgBuilder;
-		const isWorkroom = ( state.workgroups && state.workgroups.workId );
+		let UserCtrl = library.component.UserCtrl
+		let MsgBuilder = library.component.MsgBuilder
+		const isWorkroom = ( state.workgroups && state.workgroups.workId )
 		if ( isWorkroom ) {
-			UserCtrl = ns.UserWorkCtrl;
-			MsgBuilder = ns.WorkMsgBuilder;
+			UserCtrl = ns.UserWorkCtrl
+			MsgBuilder = ns.WorkMsgBuilder
 		}
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' )
+			UserCtrl = ns.UserJeanieCtrl
 		
-		if ( self.isPrivate ) {
-			MsgBuilder = ns.PrivateMsgBuilder;
-		}
+		if ( self.isPrivate )
+			MsgBuilder = ns.PrivateMsgBuilder
 		
 		//
 		if ( !self.isPrivate )
-			self.toggleUserListBtn( true );
+			self.toggleUserListBtn( true )
 		
 		if ( !self.isPrivate && !isWorkroom && ( self.userId === self.ownerId && showInviter ))
-			self.inviteBtn.classList.toggle( 'hidden', false );
+			self.inviteBtn.classList.toggle( 'hidden', false )
 		
 		//
 		self.users = new UserCtrl(
@@ -2588,6 +2589,109 @@ library.view = library.view || {};
 			*/
 		}
 	}
+	
+})( library.view );
+
+(function( ns, undefined ) {
+	ns.UserJeanieCtrl = function(
+		conn,
+		userList,
+		adminList,
+		recentList,
+		guestList,
+		peerList,
+		workgroups,
+		room,
+		guestAvatar,
+		containerId,
+		serverConfig
+	) {
+		const self = this
+		console.log( 'UserJeanieCtrl', userList )
+		self.conf = serverConfig
+		/*
+		self.workId = null; // workgroup id for this room
+		self.superId = null; // super room workgroup id
+		self.subIds = []; // sub room workgroup ids
+		self.members = {};
+		self.memberList = {};
+		self.userToMembers = {};
+		self.memberToUser = {};
+		self.works = {};
+		self.workIds = [];
+		self.rooms = null;
+		*/
+		library.component.UserCtrl.call( self,
+			conn,
+			userList,
+			null,
+			null,
+			null,
+			peerList,
+			workgroups,
+			room,
+			guestAvatar,
+			containerId,
+			serverConfig
+		);
+	}
+	
+	ns.UserJeanieCtrl.prototype = Object.create( library.component.UserCtrl.prototype );
+	ns.UserJeanieCtrl.prototype.buildTmpl = 'user-ctrl-tmpl'
+	
+	ns.UserJeanieCtrl.prototype.initBaseGroups = function() {
+		const self = this
+		self.addBaseGroup({
+			clientId     : 'members',
+			name         : View.i18n( 'i18n_members' ),
+			sectionKlass : 'base-group group-members',
+		})
+	}
+	
+	ns.UserJeanieCtrl.prototype.initWorkgroups = function() {}
+	
+	ns.UserJeanieCtrl.prototype.setUserToGroup = function( userId ) {
+		const self = this
+		const user = self.users[ userId ]
+		if ( null == user )
+			return
+		
+		console.log( 'setUserToGroup', userId, user )
+		self.moveUserToGroup( user.id, 'members' )
+	}
+	
+})( library.view );
+
+(function( ns, undefined ) {
+	ns.GroupUserJeanie = function(
+		userId,
+		conn,
+		conf,
+		avatarId,
+	) {
+		const self = this
+		self.avatarId = avatarId
+		
+		library.component.GroupUser.call( self,
+			userId,
+			conn,
+			conf
+		)
+	}
+	
+	ns.GroupUserJeanie.prototype = Object.create( library.component.GroupUser.prototype );
+	ns.GroupUserJeanie.prototype.userTmpl = 'user-list-jini-tmpl'
+	
+	ns.GroupUserJeanie.prototype.buildElementConf = function() {
+		const self = this
+		return {
+			id       : self.id,
+			statusId : self.statusId,
+			name     : self.name,
+			avatarId : self.avatarId,
+		}
+	}
+	
 	
 })( library.view );
 

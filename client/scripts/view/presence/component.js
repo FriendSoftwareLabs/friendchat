@@ -408,6 +408,8 @@ var hello = window.hello || {};
 		self.init();
 	}
 	
+	ns.GroupUser.prototype.userTmpl = 'user-list-item-tmpl'
+	
 	// Public
 	
 	ns.GroupUser.prototype.show = function() {
@@ -506,42 +508,41 @@ var hello = window.hello || {};
 	];
 	
 	ns.GroupUser.prototype.init = function() {
-		const self = this;
-		self.statusId = friendUP.tool.uid( 'status' );
-		self.el = buildElement();
-		bindElement();
+		const self = this
+		self.statusId = friendUP.tool.uid( 'status' )
+		self.el = buildElement()
+		bindElement()
 		if ( self.state )
-			self.setState( self.state );
+			self.setState( self.state )
 		
-		delete self.state;
+		delete self.state
 		
 		function buildElement() {
-			const conf = {
-				id       : self.id,
-				statusId : self.statusId,
-				name     : self.name,
-			};
-			const el = hello.template.getElement( 'user-list-item-tmpl', conf );
+			const conf = self.buildElement()
+			const el = hello.template.getElement( self.userTmpl, conf )
 			return el;
 		}
-
+		
 		function bindElement() {
-			self.stateEl = self.el.querySelector( '.state > i' );
+			self.stateEl = self.el.querySelector( '.state > i' )
 			if ( self.isGuest )
-				return;
+				return
 			
-			self.el.addEventListener( 'click', userPoke, false );
-			/*
-			if ( 'DESKTOP' === window.View.deviceType )
-				self.el.addEventListener( 'click', userPoke, false );
-			else
-				self.el.addEventListener( 'touchend', userPoke, false );
-			*/
+			self.el.addEventListener( 'click', userPoke, false )
 			
 			function userPoke( e ) {
 				e.preventDefault();
 				self.handleClick( e );
 			}
+		}
+	}
+	
+	ns.GroupUser.prototype.buildElementConf = function() {
+		const self = this
+		return {
+			id       : self.id,
+			statusId : self.statusId,
+			name     : self.name,
 		}
 	}
 	
@@ -650,6 +651,7 @@ var hello = window.hello || {};
 	}
 	
 	ns.UserCtrl.prototype = Object.create( library.component.EventEmitter.prototype );
+	ns.UserCtrl.prototype.buildTmpl = 'user-ctrl-tmpl'
 	
 	ns.UserCtrl.prototype.initialize = async function( workgroups ) {
 		const self = this;
@@ -886,23 +888,22 @@ var hello = window.hello || {};
 		room,
 		guestAvatar
 	) {
-		const self = this;
-		self.build();
-		//self.groupList = new library.component.ListOrder( 'user-groups', [ 'name' ]);
-		self.initBaseGroups();
-		self.initWorkgroups( worgs );
-		self.addId( room );
-		self.addUserCss( 'guest-user', guestAvatar );
-		self.addUserCss( 'default-user', guestAvatar );
-		self.bindConn();
-		//self.addActive();
+		const self = this
+		self.build()
+		self.initBaseGroups()
+		self.initWorkgroups( worgs )
+		self.addId( room )
+		self.addUserCss( 'guest-user', guestAvatar )
+		self.addUserCss( 'default-user', guestAvatar )
+		self.bindConn()
 	}
 	
 	ns.UserCtrl.prototype.build = function() {
 		const self = this;
 		const container = document.getElementById( self.containerId );
 		const conf = {};
-		self.el = hello.template.getElement( 'user-ctrl-tmpl', conf );
+		console.log( 'build', self.buildTmpl )
+		self.el = hello.template.getElement( self.buildTmpl, conf );
 		container.appendChild( self.el );
 		self.detached = document.getElementById( 'user-ctrl-detached' );
 	}
@@ -1346,11 +1347,16 @@ var hello = window.hello || {};
 		if ( null != worgs )
 			id.workgroups = worgs;
 		
-		const userItem = new library.component.GroupUser(
-			userId,
-			self.conn,
-			id,
-		);
+		let GroupUser = library.component.GroupUser
+		let conf = [ userId, self.conn, id ]
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
+			GroupUser = library.view.GroupUserJeanie
+			const avatarId = self.getUserCssKlass( userId )
+			conf.push( avatarId )
+		}
+		
+		console.log( 'GroupUser', GroupUser, conf )
+		const userItem = new GroupUser( ...conf )
 		self.users[ userId ] = userItem;
 		self.userIds.push( userId );
 		self.detached.appendChild( userItem.el );
