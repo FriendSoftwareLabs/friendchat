@@ -518,7 +518,7 @@ var hello = window.hello || {};
 		delete self.state
 		
 		function buildElement() {
-			const conf = self.buildElement()
+			const conf = self.buildElementConf()
 			const el = hello.template.getElement( self.userTmpl, conf )
 			return el;
 		}
@@ -1605,9 +1605,11 @@ var hello = window.hello || {};
 			});
 			return;
 		}
+		
 		const curr = self.getGroup( user.group );
 		const to = self.getGroup( groupId );
 		
+		console.log( 'moveUserToGroup', user, groupId, to )
 		if ( user.group === groupId ) {
 			return;
 		}
