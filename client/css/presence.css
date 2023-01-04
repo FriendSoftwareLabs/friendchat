@@ -171,6 +171,10 @@ body[mobile] #emojii-panel-button
 	background-color : #F39C12;
 }
 
+.base-group.group-members {
+	color : unset;
+}
+
 .user-group .Button {
 	display     : flex;
 	line-height : 1.1em;
@@ -268,7 +272,7 @@ body[mobile] #emojii-panel-button
 	border-radius : 3px;
 }
 
-.avatar.ulist {
+.user-item .avatar {
 	width: 2em;
 	height: 2em;
 }
