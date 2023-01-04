@@ -2632,7 +2632,8 @@ library.view = library.view || {};
 			room,
 			guestAvatar,
 			containerId,
-			serverConfig
+			serverConfig,
+			true
 		);
 	}
 	

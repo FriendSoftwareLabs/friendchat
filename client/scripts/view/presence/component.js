@@ -604,7 +604,8 @@ var hello = window.hello || {};
 		room,
 		guestAvatar,
 		containerId,
-		config
+		config,
+		showOther,
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
@@ -620,14 +621,15 @@ var hello = window.hello || {};
 			config : config,
 		});
 		*/
-		self.conn = conn;
-		self.userList = userList || [];
-		self.adminList = adminList || [];
-		self.recentList = recentList || [];
-		self.guestList = guestList || [];
-		self.peerList = peerList || [];
-		self.identities = {};
-		self.containerId = containerId;
+		self.conn = conn
+		self.userList = userList || []
+		self.adminList = adminList || []
+		self.recentList = recentList || []
+		self.guestList = guestList || []
+		self.peerList = peerList || []
+		self.identities = {}
+		self.containerId = containerId
+		self.showOther = showOther || false
 		
 		self.users = {};
 		self.userIds = [];
@@ -640,8 +642,7 @@ var hello = window.hello || {};
 		self.groupsAssignedIds = [];
 		self.worgPri = 4;
 		
-		self.showOther = false;
-		self.userListActive = false;
+		self.userListActive = false
 		
 		self.init(
 			workgroups,
