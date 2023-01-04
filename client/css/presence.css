@@ -279,9 +279,10 @@ body[mobile] #emojii-panel-button
 }
 
 .user-item .avatar {
-	position : relative;
-	width    : 2em;
-	height   : 2em;
+	position   : relative;
+	width      : 1.7em;
+	height     : 1.7em;
+	margin-top : 0.2em;
 }
 
 .msg-item .msg-container {
