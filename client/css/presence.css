@@ -139,6 +139,12 @@ body[mobile] #emojii-panel-button
 	margin-top : 0.2em;
 }
 
+.user-status-jini {
+	position : absolute;
+	bottom   : 0;
+	right    : 0;
+}
+
 .user-item .name {
 	padding-left : 0.4em;
 }
@@ -273,8 +279,9 @@ body[mobile] #emojii-panel-button
 }
 
 .user-item .avatar {
-	width: 2em;
-	height: 2em;
+	position : relative;
+	width    : 2em;
+	height   : 2em;
 }
 
 .msg-item .msg-container {

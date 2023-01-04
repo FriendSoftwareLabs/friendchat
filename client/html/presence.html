@@ -750,10 +750,10 @@ name,
 avatarId,
 -->
 <script id="user-list-jini-tmpl" type="text/html">
-<div id="<%= id %>" class="user-item group row MousePointer ListItemPlain">
-	<div id="<%= statusId %>" class=user-status>
-	</div>
-	<div class="avatar <%= avatarId %>">
+<div id="<%= id %>" class="user-item group row MousePointer ListItemPlain <%= avatarId %>">
+	<div class="avatar">
+		<div id="<%= statusId %>" class=user-status-jini>
+		</div>
 	</div>
 	<div class="name expand">
 		<%= name %>
