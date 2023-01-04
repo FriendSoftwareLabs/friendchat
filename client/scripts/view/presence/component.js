@@ -655,7 +655,8 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.initialize = async function( workgroups ) {
 		const self = this;
-		//await self.setWorkgroups( workgroups );
+		console.log( 'UserCtrl.initialize', workgroups )
+		await self.setWorkgroups( workgroups );
 		const worgWaits = self.groupsAssignedIds.map( wId => self.showWorgAssigned( wId ));
 		await Promise.all( worgWaits );
 		
@@ -1170,6 +1171,7 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.setUserList = async function() {
 		const self = this;
+		console.log( 'setUserList', [ self.userList, self.showOther ])
 		if ( self.adminList ) {
 			const waitA = self.adminList.map( aId => {
 				return self.buildUser( aId );
