@@ -378,7 +378,7 @@ library.view = library.view || {};
 			state.room,
 			state.guestAvatar,
 			'users-position',
-			state.config
+			state.config,
 			state.allowedContacts,
 		)
 		

@@ -2548,6 +2548,7 @@ library.module = library.module || {};
 			host       : host,
 			user       : self.identity,
 			userId     : self.accountId,
+			allowedContacts : self.allowedContacts,
 		};
 		
 		room = new library.contact.PresenceRoom( roomConf );
@@ -3524,7 +3525,7 @@ library.module = library.module || {};
 		const contact = data.contact;
 		const cState = data.cState;
 		if ( !contact ) {
-			var cIds = Object.keys( self.contacts );
+			const cIds = Object.keys( self.contacts );
 			if ( !cIds.length && !self.nullContact ) {
 				self.nullContact = true;
 				self.viewInfo( 'message', Application.i18n('i18n_no_contacts') );
@@ -3541,7 +3542,7 @@ library.module = library.module || {};
 		if ( self.contacts[ contact.clientId ])
 			return;
 		
-		var conf = {
+		const conf = {
 			moduleId          : self.clientId,
 			parentConn        : self.conn,
 			parentView        : self.parentView,
@@ -3576,6 +3577,8 @@ library.module = library.module || {};
 				data : contact,
 			},
 		});
+		
+		self.updateAllowedContacts()
 		
 		function checkAvatar( contact ) {
 			if ( contact.imagePath )

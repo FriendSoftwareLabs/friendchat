@@ -748,14 +748,15 @@ library.contact = library.contact || {};
 // PRESENCEROOM
 (function( ns, undefined ) {
 	ns.PresenceRoom = function( conf ) {
-		const self = this;
-		self.type = 'presence';
-		self.data = conf.room;
-		self.idc = conf.idCache;
-		self.service = conf.service;
-		self.host = conf.host;
-		self.user = conf.user;
-		self.userId = conf.userId;
+		const self = this
+		self.type = 'presence'
+		self.data = conf.room
+		self.idc = conf.idCache
+		self.service = conf.service
+		self.host = conf.host
+		self.user = conf.user
+		self.userId = conf.userId
+		self.allowedContacts = conf.allowedContacts
 		
 		const room = conf.room;
 		self.isView = room.isView;
