@@ -1516,9 +1516,9 @@ library.module = library.module || {};
 		
 		// worg members
 		const allowed = {}
-		if ( self.workgroups?.ids ) {
+		if ( self.workgroups?.ids?.length ) {
 			self.workgroups.ids.forEach( wId => {
-				self.workgroups.members.forEach( uId => allowed[ uId ] = true )
+				self.workgroups.members[ wId ].forEach( uId => allowed[ uId ] = true )
 			})
 		}
 		
