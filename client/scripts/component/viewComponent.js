@@ -1432,6 +1432,14 @@ in a generic link expand wrapping with a bit of UI
 				
 				req.abort()
 				
+				if ( null != mime.ext ) {
+					const parts = mime.ext.split( ';' )
+					if ( parts[ 1 ]) {
+						mime.extFull = mime.ext
+						mime.ext = parts[ 0 ]
+					}
+				}
+				
 				if ( 'text' == mime.type && 'html' == mime.ext ) {
 					mime.type = 'web'
 					resolve( mime )
