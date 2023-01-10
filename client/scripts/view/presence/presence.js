@@ -2720,12 +2720,13 @@ library.view = library.view || {};
 		}
 	}
 	
+	ns.GroupUserJeanie.prototype.yepClick = library.component.GroupUser.prototype.handleClick
 	ns.GroupUserJeanie.prototype.handleClick = function( e ) {
 		const self = this
 		if ( !self.canOpen )
 			return
 		
-		self.prototype.handleClick()
+		self.yepClick()
 	}
 	
 	
