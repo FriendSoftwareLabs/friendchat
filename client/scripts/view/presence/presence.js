@@ -2714,7 +2714,7 @@ library.view = library.view || {};
 			statusId : self.statusId,
 			name     : self.name,
 			avatarId : self.avatarId,
-			title    : title,
+			title    : tooltip,
 		}
 	}
 	
