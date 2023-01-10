@@ -286,8 +286,8 @@ library.view = library.view || {};
 	}
 	
 	ns.Presence.prototype.toggleUserListBtn = function( show ) {
-		const self = this;
-		self.toggleUsersBtn.classList.toggle( 'hidden', !show );
+		const self = this
+		self.toggleUsersBtn.classList.toggle( 'hidden', !show )
 	}
 
 	ns.Presence.prototype.bindConn = function() {
@@ -311,14 +311,14 @@ library.view = library.view || {};
 				console.log( 'initalize ex', ex );
 			}
 		}
-		function state( e      ) { self.handleState( e ); }
-		function online( e     ) { self.handleOnline( true ); }
-		function offline( e    ) { self.handleOnline( false ); }
-		function chat( e       ) { self.handleChat( e ); }
+		function state(      e ) { self.handleState( e ); }
+		function online(     e ) { self.handleOnline( true ); }
+		function offline(    e ) { self.handleOnline( false ); }
+		function chat(       e ) { self.handleChat( e ); }
 		function persistent( e ) { self.handlePersistent( e ); }
-		function title( e      ) { self.handleTitle( e ); }
+		function title(      e ) { self.handleTitle( e ); }
 	}
-	 
+	
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
 		const isMobile = ( 'MOBILE' === window.View.deviceType )
@@ -327,26 +327,22 @@ library.view = library.view || {};
 		const state = conf.state
 		
 		// things
-		self.clientId    = state.clientId
-		self.isPrivate   = state.isPrivate
-		self.isView      = state.isView
-		self.persistent  = state.persistent
-		self.room        = state.room
+		self.room   = state.room
+		self.isView = state.isView
+		self.userId = state.userId
 		self.ownerId     = state.ownerId
-		self.userId      = state.userId
+		self.clientId    = state.clientId
 		self.contactId   = state.contactId
+		self.isPrivate   = state.isPrivate
+		self.userAdmin   = state.userAdmin
+		self.persistent  = state.persistent
 		self.liveAllowed = ( null != state.liveAllowed ) ? state.liveAllowed : true
 		
-		let showInviter = true
 		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
 			const am = document.getElementById( 'attachment-menu' )
 			if ( null != am )
 				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true )
 			
-			if ( state.workgroups?.assigned?.length )
-			{
-				showInviter = false
-			}
 		}
 		
 		// selecting constructors
@@ -367,7 +363,7 @@ library.view = library.view || {};
 		if ( !self.isPrivate )
 			self.toggleUserListBtn( true )
 		
-		if ( !self.isPrivate && !isWorkroom && ( self.userId === self.ownerId && showInviter ))
+		if ( !self.isPrivate && !isWorkroom && ( self.userId === self.ownerId && self.userAdmin ))
 			self.inviteBtn.classList.toggle( 'hidden', false )
 		
 		//
@@ -383,13 +379,14 @@ library.view = library.view || {};
 			state.guestAvatar,
 			'users-position',
 			state.config
-		);
+			state.allowedContacts,
+		)
 		
-		window.setTimeout( doInit, 1000 );
+		window.setTimeout( doInit, 1000 )
 		function doInit() {
-			self.users.initialize();
+			self.users.initialize()
 			if ( state.config && state.config.showUserList && !isMobile )
-				self.toggleUserList( true );
+				self.toggleUserList( true )
 		}
 		
 		//
@@ -2604,11 +2601,13 @@ library.view = library.view || {};
 		room,
 		guestAvatar,
 		containerId,
-		serverConfig
+		serverConfig,
+		allowedContacts,
 	) {
 		const self = this
 		console.log( 'UserJeanieCtrl', userList )
 		self.conf = serverConfig
+		self.allowedContacts = allowedContacts
 		/*
 		self.workId = null; // workgroup id for this room
 		self.superId = null; // super room workgroup id
@@ -2661,6 +2660,25 @@ library.view = library.view || {};
 		self.moveUserToGroup( user.id, 'members' )
 	}
 	
+	ns.UserJeanieCtrl.prototype.buildGroupUserConf = function( identity ) {
+		const self = this
+		const uId = identity.clientId
+		console.log( 'UJC.buildGroupUserConf', identity, uId )
+		let canOpen = self.allowedContacts[ uId ]
+		
+		const avatarId = self.getUserCssKlass( userId )
+		const conf = [
+			uId, 
+			self.conn, 
+			identity, 
+			avatarId, 
+			canOpen, 
+			library.view.GroupUserJeanie 
+		]
+		
+		return conf
+	}
+	
 })( library.view );
 
 (function( ns, undefined ) {
@@ -2669,9 +2687,11 @@ library.view = library.view || {};
 		conn,
 		conf,
 		avatarId,
+		canOpen,
 	) {
 		const self = this
 		self.avatarId = avatarId
+		self.canOpen = canOpen
 		
 		library.component.GroupUser.call( self,
 			userId,
@@ -2680,17 +2700,29 @@ library.view = library.view || {};
 		)
 	}
 	
-	ns.GroupUserJeanie.prototype = Object.create( library.component.GroupUser.prototype );
+	ns.GroupUserJeanie.prototype = Object.create( library.component.GroupUser.prototype )
 	ns.GroupUserJeanie.prototype.userTmpl = 'user-list-jini-tmpl'
 	
 	ns.GroupUserJeanie.prototype.buildElementConf = function() {
 		const self = this
+		let tooltip = 'Click to open private chat'
+		if ( !self.canOpen )
+			tooltip = 'This person is not part of your team, only channel communication available'
+			
 		return {
 			id       : self.id,
 			statusId : self.statusId,
 			name     : self.name,
 			avatarId : self.avatarId,
 		}
+	}
+	
+	ns.GroupUserJeanie.prototype.handleClick = function( e ) {
+		const self = this
+		if ( !self.canOpen )
+			return
+		
+		self.prototype.handleClick()
 	}
 	
 	

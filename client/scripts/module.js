@@ -1420,6 +1420,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = async function( state ) {
 		const self = this;
+		console.log( 'handleAccountInit', state )
 		if ( self.idc ) {
 			await self.idc.refresh();
 		}
@@ -1427,6 +1428,7 @@ library.module = library.module || {};
 			self.setupIDC( state.identities );
 		}
 		
+		self.setWorkgroups( state.workgroups )
 		self.handleIdBacklog();
 		self.updateInvites( state.invites );
 		
@@ -1459,26 +1461,85 @@ library.module = library.module || {};
 		function refreshActivity() {
 			self.activity.refresh();
 		}
+		               
 		
 		function updateAccount( account ) {
 			self.account = account;
 			const id = account.identity;
 			if ( id.name !== self.identity.name )
-				updateName();
+				updateName()
 			
 			if ( id.avatar !== self.identity.avatar )
-				updateAvatar();
+				updateAvatar()
 			
-			const cId = id.clientId;
-			self.identity = id;
+			const cId = id.clientId
+			self.identity = id
 			
 			function updateName() {
-				
+				//
 			}
 			
 			function updateAvatar() {
-				
+				//
 			}
+		}
+	}
+	
+	ns.Presence.prototype.setWorkgroups = function( worgs ) {
+		const self = this
+		console.log( 'setWorkgroups', worgs )
+		if ( null == worgs ) {
+			self.workgroups = {
+				ids : null,
+			}
+			
+			return
+		}
+		
+		self.workgroups = worgs
+		self.updateAllowedContacts()
+	}
+	
+	ns.Presence.prototype.updateAllowedContacts = function( noWait ) {
+		const self = this
+		console.log( 'updateAllowedContacts', self.allowedContactsTimeout )
+		if ( null != self.allowedContactsTimeout ) {
+			window.clearTimeout( self.allowedContactsTimeout )
+			wait()
+			return
+		}
+		
+		if ( !noWait ) {
+			wait()
+			return
+		}
+		
+		// worg members
+		const allowed = {}
+		if ( self.workgroups?.ids ) {
+			self.workgroups.ids.forEach( wId => {
+				self.workgroups.members.forEach( uId => allowed[ uId ] = true )
+			})
+		}
+		
+		// contacts
+		self.contactIds.forEach( uId => allowed[ uId ] = true )
+		
+		// list
+		console.log( 'allowed', allowed )
+		self.allowedContacts = allowed
+		
+		// tell rooms
+		self.roomIds.forEach( rId => {
+			const room = self.rooms[ rId ]
+			room.updateAllowedContacts( self.allowedContacts )
+		})
+		
+		function wait() {
+			self.allowedContactsTimeout = window.setTimeout(( ) => {
+				self.allowedContactsTimeout = null
+				self.updateAllowedContacts( true )
+			}, 100 )
 		}
 	}
 	

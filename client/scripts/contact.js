@@ -775,9 +775,10 @@ library.contact = library.contact || {};
 		self.users = {};
 		self.userIds = [];
 		self.peers = [];
-		self.isActive = false;
-		self.isMinimized = false;
-		self.initialized = false;
+		self.isActive = false
+		self.userAdmin = true
+		self.isMinimized = false
+		self.initialized = false
 		
 		self.init();
 	}
@@ -1027,6 +1028,22 @@ library.contact = library.contact || {};
 		};
 		//self.toChat( online );
 		self.updateViewUsers();
+	}
+	
+	ns.PresenceRoom.prototype.updateAllowedContacts = function( list ) {
+		const self = this;
+		console.log( 'room.updateAllowedContacts', [ self.identity, self.userAdmin, list ])
+		if ( !self.userAdmin )
+			return
+		
+		self.allowedContacts = list
+		if ( null == self.chatView )
+			return
+	
+		self.chatView.send({
+			type : 'allowed-contacts',
+			data : self.allowedContacts,
+		})
 	}
 	
 	ns.PresenceRoom.prototype.updateIdentity = function( update ) {
@@ -1325,26 +1342,28 @@ library.contact = library.contact || {};
 		
 		const s = self;
 		const initData = {
+			room   : s.identity,
+			userId : s.userId,
+			isView : s.isView,
+			config : s.workConfig,
+			atList : s.atList,
+			ownerId     : s.ownerId,
 			clientId    : s.clientId,
-			room        : s.identity,
 			roomName    : s.identity.name,
-			persistent  : s.persistent,
 			userList    : s.userIds,
+			peerList    : s.peers,
+			guestList   : s.guestList,
+			isPrivate   : s.isPrivate,
 			adminList   : s.adminList,
+			userAdmin   : self.userAdmin,
+			persistent  : s.persistent,
 			recentList  : s.recentList,
 			onlineList  : s.onlineList,
-			guestList   : s.guestList,
-			peerList    : s.peers,
-			ownerId     : s.ownerId,
-			userId      : s.userId,
-			isPrivate   : s.isPrivate,
-			isView      : s.isView,
-			config      : s.workConfig,
-			guestAvatar : s.guestAvatar,
 			workgroups  : s.workgroups,
+			guestAvatar : s.guestAvatar,
 			mentionList : s.mentionList,
-			atList      : s.atList,
 			liveAllowed : !hello.rtc.hasSession(),
+			allowedContacts : self.allowedContacts,
 		};
 		
 		if ( preView ) {
@@ -1553,17 +1572,17 @@ library.contact = library.contact || {};
 	
 	ns.PresenceRoom.prototype.handleInitialize = async function( state ) {
 		const self = this;
-		self.ownerId = state.ownerId;
-		self.workConfig = state.workConfig || null;
-		self.workgroups = state.workgroups;
-		self.adminList = state.admins || [];
-		self.onlineList = state.online || [];
-		self.recentList = state.recent || [];
-		self.guestList = state.guests || [];
-		self.authList = state.authed || [];
-		self.atNames = state.atNames || [];
-		self.atWorgs = state.atWorg || [];
-		self.persistent = state.persistent;
+		self.ownerId     = state.ownerId;
+		self.workConfig  = state.workConfig || null;
+		self.workgroups  = state.workgroups;
+		self.adminList   = state.admins  || []
+		self.onlineList  = state.online  || []
+		self.recentList  = state.recent  || []
+		self.guestList   = state.guests  || []
+		self.authList    = state.authed  || []
+		self.atNames     = state.atNames || []
+		self.atWorgs     = state.atWorg  || []
+		self.persistent  = state.persistent;
 		self.guestAvatar = state.guestAvatar;
 		if ( self.identity.name != state.name )
 			self.updateRoomIdentity( state );
@@ -1571,6 +1590,11 @@ library.contact = library.contact || {};
 		self.setUsers( state.users );
 		self.setSettings( state.settings );
 		self.setupWorkroom();
+		
+		if ( hello.config.mode == 'jeanie' ) {
+			if ( self.workgroups?.assigned?.length )
+				self.userAdmin = false
+		}
 		
 		if ( !selfIsUser())
 			self.roomIsView = true;

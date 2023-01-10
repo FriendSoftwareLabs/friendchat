@@ -1343,36 +1343,44 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.buildUser = async function( userId, worgs ) {
 		const self = this;
 		if ( self.users[ userId ])
-			return;
+			return
 		
-		self.users[ userId ] = true;
-		let id = await self.getIdentity( userId );
+		self.users[ userId ] = true
+		let id = await self.getIdentity( userId )
 		if ( null != worgs )
-			id.workgroups = worgs;
+			id.workgroups = worgs
 		
-		let GroupUser = library.component.GroupUser
-		let conf = [ userId, self.conn, id ]
-		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
-			GroupUser = library.view.GroupUserJeanie
-			const avatarId = self.getUserCssKlass( userId )
-			conf.push( avatarId )
-		}
+		const conf = self.buildGroupUserConf( id )
 		
-		console.log( 'GroupUser', GroupUser, conf )
+		console.log( 'buildUser', conf )
+		const GroupUser = conf.pop()
 		const userItem = new GroupUser( ...conf )
-		self.users[ userId ] = userItem;
-		self.userIds.push( userId );
-		self.detached.appendChild( userItem.el );
+		self.users[ userId ] = userItem
+		self.userIds.push( userId )
+		self.detached.appendChild( userItem.el )
 		if ( id.isOnline )
-			userItem.setStatus( 'online' );
+			userItem.setStatus( 'online' )
 		else
-			userItem.setStatus( 'offline' );
+			userItem.setStatus( 'offline' )
 		
-		self.setUserToGroup( userId );
-		const pIdx = self.peerList.indexOf( userId );
-		const isLive = ( -1 != pIdx );
+		self.setUserToGroup( userId )
+		const pIdx = self.peerList.indexOf( userId )
+		const isLive = ( -1 != pIdx )
 		if ( isLive )
-			self.setState( userId, 'live', true );
+			self.setState( userId, 'live', true )
+	}
+	
+	ns.UserCtrl.prototype.buildGroupUserConf = function( identity ) {
+		const self = this
+		console.log( 'UC.buildGroupUserConf', identity )
+		const conf = [ 
+			identity.clientId, 
+			self.conn, 
+			identity, 
+			library.component.GroupUser 
+		]
+		
+		return conf
 	}
 	
 	ns.UserCtrl.prototype.setUserToGroup = function( userId ) {

@@ -748,9 +748,13 @@ id,
 statusId,
 name,
 avatarId,
+title,
 -->
 <script id="user-list-jini-tmpl" type="text/html">
-<div id="<%= id %>" class="user-item group row MousePointer ListItemPlain <%= avatarId %>">
+<div id="<%= id %>" 
+	class="user-item group row MousePointer ListItemPlain <%= avatarId %>"
+	title="<%= title %>"
+>
 	<div class="avatar">
 		<div id="<%= statusId %>" class=user-status-jini>
 		</div>
