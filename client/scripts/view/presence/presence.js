@@ -2663,8 +2663,10 @@ library.view = library.view || {};
 	ns.UserJeanieCtrl.prototype.buildGroupUserConf = function( identity ) {
 		const self = this
 		const uId = identity.clientId
-		console.log( 'UJC.buildGroupUserConf', identity, uId )
-		let canOpen = self.allowedContacts[ uId ]
+		console.log( 'UJC.buildGroupUserConf', identity, uId, self.allowedContacts )
+		let canOpen = true
+		if ( self.allowedContacts )
+			canOpen = self.allowedContacts[ uId ]
 		
 		const avatarId = self.getUserCssKlass( uId )
 		const conf = [
