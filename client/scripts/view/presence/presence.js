@@ -2666,7 +2666,7 @@ library.view = library.view || {};
 		console.log( 'UJC.buildGroupUserConf', identity, uId )
 		let canOpen = self.allowedContacts[ uId ]
 		
-		const avatarId = self.getUserCssKlass( userId )
+		const avatarId = self.getUserCssKlass( uId )
 		const conf = [
 			uId, 
 			self.conn, 
