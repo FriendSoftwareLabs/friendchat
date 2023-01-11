@@ -1640,6 +1640,7 @@ library.module = library.module || {};
 		self.acc.on( 'join', joinedRoom );
 		self.acc.on( 'close', roomClosed );
 		self.acc.on( 'identity-update', e => self.handleIdUpdate( e ));
+		self.acc.on( 'workgroup-update', e => self.handleWorkgroupUpdate( e ))
 		
 		function initialize( e ) { self.handleAccountInit( e ); }
 		function relationsInit( e ) { self.handleRelationsInit( e ); }
@@ -2383,6 +2384,11 @@ library.module = library.module || {};
 		
 		if ( hello.dormant && self.service )
 			self.service.emitEvent( 'identityUpdate', id );
+	}
+	
+	ns.Presence.prototype.handleWorkgroupUpdate = function( uptd ) {
+		const self = this
+		console.log( 'handleWorkgroupUpdate', uptd )
 	}
 	
 	ns.Presence.prototype.checkCurrentRooms = function( list ) {

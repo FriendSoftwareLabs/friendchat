@@ -2632,7 +2632,7 @@ library.view = library.view || {};
 			guestAvatar,
 			containerId,
 			serverConfig,
-			true
+			true,
 		);
 	}
 	
