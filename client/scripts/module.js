@@ -2388,7 +2388,7 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleWorkgroupUpdate = function( uptd ) {
 		const self = this
-		console.log( 'handleWorkgroupUpdate', uptd )
+		console.log( 'handleWorkgroupUpdate', [ uptd, self.workgroups ])
 	}
 	
 	ns.Presence.prototype.checkCurrentRooms = function( list ) {
