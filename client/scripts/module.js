@@ -2399,7 +2399,7 @@ library.module = library.module || {};
 			return
 		
 		if ( uptd.add )
-			uptd.list.forEach( uId => curr.push( uId ))
+			uptd.add.forEach( uId => curr.push( uId ))
 		
 		if ( uptd.remove ) {
 			const fresh = curr.filter( currId => {
