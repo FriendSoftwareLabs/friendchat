@@ -292,17 +292,18 @@ library.view = library.view || {};
 
 	ns.Presence.prototype.bindConn = function() {
 		const self = this;
-		self.conn.on( 'initialize'     , initialize );
-		self.conn.on( 'state'          , state );
-		self.conn.on( 'online'         , online );
-		self.conn.on( 'offline'        , offline );
-		self.conn.on( 'chat'           , chat );
-		self.conn.on( 'persistent'     , persistent );
-		self.conn.on( 'title'          , title );
-		self.conn.on( 'mention-list'   , e => self.setMentionParsing( e ));
-		self.conn.on( 'at-list'        , e => self.setAtParsing( e ));
-		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
-		self.conn.on( 'live-disable'   , e => self.handleLiveDisable( e ));
+		self.conn.on( 'initialize'      , initialize );
+		self.conn.on( 'state'           , state );
+		self.conn.on( 'online'          , online );
+		self.conn.on( 'offline'         , offline );
+		self.conn.on( 'chat'            , chat );
+		self.conn.on( 'persistent'      , persistent );
+		self.conn.on( 'title'           , title );
+		self.conn.on( 'mention-list'    , e => self.setMentionParsing( e ));
+		self.conn.on( 'at-list'         , e => self.setAtParsing( e ));
+		self.conn.on( 'identity-update' , e => self.handleIdUpdate( e ));
+		self.conn.on( 'live-disable'    , e => self.handleLiveDisable( e ));
+		self.conn.on( 'allowed-contacts', e => self.handleUpdateAllowed( e ))
 		
 		function initialize( e ) {
 			try {
@@ -937,6 +938,12 @@ library.view = library.view || {};
 		if ( null != self.liveStatus )
 			self.liveStatus.setLiveAllowed( !disable )
 		
+	}
+	
+	ns.Presence.prototype.handleUpdateAllowed = function( allowed ) {
+		const self = this
+		console.log( 'view.Presence.handleUpdateAllowed', allowed )
+		self.users.updateAllowedContacts( allowed )
 	}
 	
 	// things
@@ -2639,6 +2646,14 @@ library.view = library.view || {};
 	ns.UserJeanieCtrl.prototype = Object.create( library.component.UserCtrl.prototype );
 	ns.UserJeanieCtrl.prototype.buildTmpl = 'user-ctrl-tmpl'
 	
+	ns.UserJeanieCtrl.prototype.updateAllowedContacts = function( allowed ) {
+		const self = this
+		console.log( 'UserJeanieCtrl.updateAllowed', [ allowed, self.userIds ])
+		self.allowedContacts = allowed
+		self.userIds.forEach( uId => self.users[ uId ].setCanOpen( allowed[ uId ]))
+	}
+	
+	
 	ns.UserJeanieCtrl.prototype.initBaseGroups = function() {
 		const self = this
 		self.addBaseGroup({
@@ -2704,12 +2719,28 @@ library.view = library.view || {};
 	
 	ns.GroupUserJeanie.prototype = Object.create( library.component.GroupUser.prototype )
 	ns.GroupUserJeanie.prototype.userTmpl = 'user-list-jini-tmpl'
+	ns.GroupUserJeanie.prototype.doOpenTxt = 'Click to open private chat'
+	ns.GroupUserJeanie.prototype.noOpenTxt = 'This person is not part of your team, only channel communication available'
+	
+	ns.GroupUserJeanie.prototype.setCanOpen = function( allow ) {
+		const self = this
+		console.log( 'setCanOpen', [ allow, self.canOpen, self.el ])
+		if ( allow === self.canOpen )
+			return
+		
+		self.canOpen = allow
+		let tooptil = self.doOpenTxt
+		if ( !self.canOpen )
+			tooptil = self.noOpenTxt
+		
+		self.el.setAttribute( 'title', tooptil )
+	}
 	
 	ns.GroupUserJeanie.prototype.buildElementConf = function() {
 		const self = this
-		let tooltip = 'Click to open private chat'
+		let tooltip = self.doOpenTxt
 		if ( !self.canOpen )
-			tooltip = 'This person is not part of your team, only channel communication available'
+			tooltip = self.noOpenTxt
 			
 		return {
 			id       : self.id,
