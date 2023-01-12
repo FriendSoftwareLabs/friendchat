@@ -688,15 +688,16 @@ html > body > div #attachment-menu button
 }
 
 [tootlip]:after {
-	content   : attr( tootlip );
-	position  : absolute;
-	left      : 0.5em;
-	top       : 0;
-	width     : 90%;
-	padding   : 0.3em;
-	border    : 1px solid #666;
-	box-shadow: 2px 2px 2px;
-	display: none;
+	content          : attr( tootlip );
+	position         : absolute;
+	left             : 0.5em;
+	top              : 0.4em;
+	width            : 90%;
+	padding          : 0.3em;
+	border           : 1px solid #aaa;
+	background-color : #eee;
+	box-shadow       : 1px 1px 3px #888;
+	display          : none;
 }
 
 [tootlip]:hover:after {
