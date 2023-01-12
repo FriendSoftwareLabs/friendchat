@@ -87,6 +87,9 @@ library.view = library.view || {};
 		
 		//
 		window.View.loaded()
+		
+		//
+		const metre = 
 	}
 	
 	ns.Presence.prototype.buildUserList = function() {

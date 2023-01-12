@@ -50,6 +50,13 @@
 	);
 }
 
+#metre {
+	position : absolute;
+	height   : 0 ;
+	width    : 1em;
+	opacity  : 0;
+}
+
 .user-hidden {
 	
 }
@@ -698,6 +705,7 @@ html > body > div #attachment-menu button
 	background-color : #eee;
 	box-shadow       : 1px 1px 3px #888;
 	display          : none;
+	z-index          : 9999;
 }
 
 [tootlip]:hover:after {
