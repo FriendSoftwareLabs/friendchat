@@ -2733,7 +2733,7 @@ library.view = library.view || {};
 		if ( !self.canOpen )
 			tooptil = self.noOpenTxt
 		
-		self.el.setAttribute( 'title', tooptil )
+		self.el.setAttribute( 'tootlip', tooptil )
 	}
 	
 	ns.GroupUserJeanie.prototype.buildElementConf = function() {

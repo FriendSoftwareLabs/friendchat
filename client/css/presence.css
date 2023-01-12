@@ -682,3 +682,20 @@ html > body > div #attachment-menu button
 	font-weight : bold;
 	padding-left : 1em;
 }
+
+[tootlip] {
+	position: relative;
+}
+
+[tootlip]:after {
+	position: absolute;
+	right   : 50%;
+	top : 50%;
+	display: none;
+}
+
+[tootlip]:hover:after {
+	display: block;
+}
+
+
