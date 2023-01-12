@@ -692,6 +692,9 @@ html > body > div #attachment-menu button
 	right   : 50%;
 	top : 50%;
 	display: none;
+	width: 4em;
+	height: 1em;
+	background-color: red;
 }
 
 [tootlip]:hover:after {
