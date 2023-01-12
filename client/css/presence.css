@@ -688,6 +688,7 @@ html > body > div #attachment-menu button
 }
 
 [tootlip]:after {
+	content : "asdasd";
 	position: absolute;
 	right   : 0;
 	top     : 0;
