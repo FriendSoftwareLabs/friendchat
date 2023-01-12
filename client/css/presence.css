@@ -689,16 +689,16 @@ html > body > div #attachment-menu button
 
 [tootlip]:after {
 	position: absolute;
-	right   : 50%;
-	top : 50%;
-	display: none;
-	width: 4em;
-	height: 1em;
+	right   : 0;
+	top     : 0;
+	
+	width   : 4em;
+	height  : 1em;
 	background-color: red;
 }
 
 [tootlip]:hover:after {
-	display: block;
+	
 }
 
 
