@@ -688,17 +688,19 @@ html > body > div #attachment-menu button
 }
 
 [tootlip]:after {
-	content  : attr( tootlip );
-	position : absolute;
-	left     : 0.5em;
-	top      : 0;
-	
-	width    : max-content;
-	background-color: red;
+	content   : attr( tootlip );
+	position  : absolute;
+	left      : 0.5em;
+	top       : 0;
+	width     : 90%;
+	padding   : 0.3em;
+	border    : 1px solid #666;
+	box-shadow: 2px 2px 2px;
+	display: none;
 }
 
 [tootlip]:hover:after {
-	
+	display: block;
 }
 
 
