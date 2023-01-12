@@ -89,7 +89,8 @@ library.view = library.view || {};
 		window.View.loaded()
 		
 		//
-		const metre = 
+		const metre = document.getElementById( 'metre' )
+		console.log( 'metre', metre )
 	}
 	
 	ns.Presence.prototype.buildUserList = function() {
