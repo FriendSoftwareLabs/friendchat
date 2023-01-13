@@ -110,7 +110,7 @@ var friend = window.friend || {};
 			msg = e.data;
 		
 		//console.log( 'View.receiveEvent, e', e );
-		console.log( 'View.receiveEvent, msg', msg );
+		//console.log( 'View.receiveEvent, msg', msg );
 		if ( !msg ) {
 			console.log( 'view.receiveEvent - no msg for event', e );
 			return;
