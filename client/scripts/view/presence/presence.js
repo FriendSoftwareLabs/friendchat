@@ -337,7 +337,7 @@ library.view = library.view || {};
 		self.conn.on( 'identity-update' , e => self.handleIdUpdate( e ));
 		self.conn.on( 'live-disable'    , e => self.handleLiveDisable( e ));
 		self.conn.on( 'allowed-contacts', e => self.handleUpdateAllowed( e ))
-		self.conn.on( 'app-settings-update' , e => console.log( 'pres view app setting', e ))
+		self.conn.on( 'app-settings-update' , e => self.handleAppSettings( e ))
 		
 		function initialize( e ) {
 			try {
@@ -978,6 +978,12 @@ library.view = library.view || {};
 		const self = this
 		console.log( 'view.Presence.handleUpdateAllowed', allowed )
 		self.users.updateAllowedContacts( allowed )
+	}
+	
+	ns.Presence.prototype.handleAppSettings = function( appSettings ) {
+		const self = this
+		console.log( 'pres view app setting', appSettings )
+		self.toggleUserList( appSettings.showUserList )
 	}
 	
 	// things
