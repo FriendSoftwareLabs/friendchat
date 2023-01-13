@@ -1293,6 +1293,11 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this
 		self.appSettings[ setting ] = value
 		console.log( 'setAppSetting', [ setting, value, self.appSettings ])
+		const uptd = {
+			type : 'app-settings',
+			data : self.appSettings,
+		}
+		self.toAllViews( uptd )
 	}
 	
 	ns.Application.prototype.setSingleInstance = function( setSingle ) {

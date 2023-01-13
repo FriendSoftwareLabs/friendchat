@@ -2590,7 +2590,6 @@ library.module = library.module || {};
 		};
 		self.toView( addRoom );
 		
-		room.on( 'user-setting', e => console.log( 'pres.room user-setting', e ))
 		room.on( 'contact', contactEvent );
 		room.once( 'open', onOpen );
 		

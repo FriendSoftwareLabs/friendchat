@@ -298,7 +298,8 @@ library.view = library.view || {};
 			const pref = {
 				type : 'user-setting',
 				data : {
-					showUserList : !isHidden,
+					setting : showUserList,
+					value   : !isHidden,
 				}
 			}
 			self.conn.send( pref )
