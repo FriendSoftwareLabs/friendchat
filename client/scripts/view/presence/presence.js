@@ -298,7 +298,7 @@ library.view = library.view || {};
 			const pref = {
 				type : 'user-setting',
 				data : {
-					setting : showUserList,
+					setting : 'showUserList',
 					value   : !isHidden,
 				}
 			}
