@@ -969,6 +969,7 @@ var friend = window.friend || {};
 	}
 	
 	ns.View.prototype.appSettingsUpdate = function( update ) {
+		const self = this
 		console.log( 'appSettingsUpdate', update )
 		self.appSettings = update
 		self.emit( 'app-settings', update )
