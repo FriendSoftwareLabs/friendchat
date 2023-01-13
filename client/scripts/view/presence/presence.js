@@ -292,6 +292,7 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.toggleUserList = function( force ) {
 		const self = this;
+		console.log( 'toggleUserList', force )
 		if ( null == force ) {
 			const isHidden = self.usersEl.classList.contains( 'users-hide' )
 			toggle( isHidden )
@@ -307,6 +308,7 @@ library.view = library.view || {};
 			toggle( force )
 		
 		function toggle( show ) {
+			console.log( 'toggle', show )
 			//self.usersEl.classList.toggle( 'hidden', !show );
 			self.msgBuilder.pauseSmoothScrolling()
 			
