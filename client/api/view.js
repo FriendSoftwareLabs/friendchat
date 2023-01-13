@@ -972,7 +972,7 @@ var friend = window.friend || {};
 		const self = this
 		console.log( 'appSettingsUpdate', update )
 		self.appSettings = update
-		self.emit( 'app-settings', update )
+		self.emit( 'app-settings-update', update )
 	}
 	
 	ns.View.prototype.initLogSock = function() {

@@ -325,7 +325,6 @@ library.view = library.view || {};
 
 	ns.Presence.prototype.bindConn = function() {
 		const self = this;
-		self.conn.on( 'app-settings'    , e => console.log( 'pres view app setting', e ))
 		self.conn.on( 'initialize'      , initialize );
 		self.conn.on( 'state'           , state );
 		self.conn.on( 'online'          , online );
@@ -338,6 +337,7 @@ library.view = library.view || {};
 		self.conn.on( 'identity-update' , e => self.handleIdUpdate( e ));
 		self.conn.on( 'live-disable'    , e => self.handleLiveDisable( e ));
 		self.conn.on( 'allowed-contacts', e => self.handleUpdateAllowed( e ))
+		self.conn.on( 'app-settings-update' , e => console.log( 'pres view app setting', e ))
 		
 		function initialize( e ) {
 			try {
