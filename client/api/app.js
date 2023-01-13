@@ -1289,6 +1289,12 @@ var friend = window.friend || {}; // already instanced stuff
 		self.appSettings = settings;
 	}
 	
+	ns.Application.prototype.setAppSetting = function( setting, value ) {
+		const self = this
+		self.appSettings[ setting ] = value
+		console.log( 'setAppSetting', [ setting, value, self.appSettings ])
+	}
+	
 	ns.Application.prototype.setSingleInstance = function( setSingle ) {
 		const self = this;
 		self.sendMessage({

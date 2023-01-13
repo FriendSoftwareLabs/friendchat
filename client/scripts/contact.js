@@ -1390,7 +1390,7 @@ library.contact = library.contact || {};
 		self.chatView.on( 'focused', e => self.handleFocused( e ));
 		self.chatView.on( 'close', e => self.closeChat());
 		self.chatView.on( 'ready', e => self.chatReady( e ));
-		self.chatView.on( 'user-setting', e => console.log( 'user-setting', e ))
+		self.chatView.on( 'user-setting', e => self.emit( 'user-setting', e ))
 		
 		function eventSink( e ) { console.log( 'unhandled chat view event', e ); }
 		

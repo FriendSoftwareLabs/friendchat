@@ -54,7 +54,7 @@ library.view = library.view || {};
 		}
 		
 		// user list setup
-		console.log( 'appSettings', window.View.appSettings )
+		console.log( 'appSettings', window.View )
 		let canShow = false
 		if ( null != window.View.appSettings.showUserList )
 			canShow = window.View.appSettings.showUserList
