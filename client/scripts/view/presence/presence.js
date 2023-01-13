@@ -53,16 +53,22 @@ library.view = library.view || {};
 				tit.classList.toggle( 'hidden', true )
 		}
 		
+		// user list setup
+		console.log( 'appSettings', window.View.appSettings )
+		let canShow = false
+		if ( null != window.View.appSettings.showUserList )
+			canShow = window.View.appSettings.showUserList
+		else {
+			const metre = document.getElementById( 'metre' )
+			const onePx = metre.clientWidth
+			const msgBox = document.getElementById( 'messages' )
+			const totPx = msgBox.clientWidth 
+			const usrPx = onePx * 12
+			const dedSpc = totPx - 960
+			canShow = usrPx < dedSpc
+			console.log( 'boxes nd thins', [ msgBox, onePx, totPx, usrPx, dedSpc, canShow ])
+		}
 		
-		const metre = document.getElementById( 'metre' )
-		const onePx = metre.clientWidth
-		console.log( 'metre', metre, onePx )
-		const msgBox = document.getElementById( 'messages' )
-		const totPx = msgBox.clientWidth 
-		const usrPx = onePx * 12
-		const dedSpc = totPx - 960
-		const canShow = usrPx < dedSpc
-		console.log( 'boxes nd thins', [ msgBox, onePx, totPx, usrPx, dedSpc, canShow ])
 		self.buildUserList( canShow )
 		
 		// scroll to bottom on new message
@@ -287,20 +293,27 @@ library.view = library.view || {};
 	ns.Presence.prototype.toggleUserList = function( force ) {
 		const self = this;
 		if ( null == force ) {
-			const isHidden = self.usersEl.classList.contains( 'users-hide' );
-			toggle( isHidden );
+			const isHidden = self.usersEl.classList.contains( 'users-hide' )
+			toggle( isHidden )
+			const pref = {
+				type : 'user-setting',
+				data {
+					showUserList : !isHidden
+				}
+			}
+			self.conn.send( pref )
 		} else
-			toggle( force );
+			toggle( force )
 		
 		function toggle( show ) {
 			//self.usersEl.classList.toggle( 'hidden', !show );
-			self.msgBuilder.pauseSmoothScrolling();
+			self.msgBuilder.pauseSmoothScrolling()
 			
 			//self.messagesEl.classList.toggle( 'SmoothScrolling', !show );
-			self.usersEl.classList.toggle( 'users-hide', !show );
-			const btnIcon = self.toggleUsersBtn.querySelector( 'i' );
-			btnIcon.classList.toggle( 'AvailableText', show );
-			self.users.setUserListActive( show );
+			self.usersEl.classList.toggle( 'users-hide', !show )
+			const btnIcon = self.toggleUsersBtn.querySelector( 'i' )
+			btnIcon.classList.toggle( 'AvailableText', show )
+			self.users.setUserListActive( show )
 		}
 	}
 	
