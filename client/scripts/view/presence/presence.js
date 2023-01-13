@@ -90,11 +90,13 @@ library.view = library.view || {};
 		
 		//
 		const metre = document.getElementById( 'metre' )
-		const oneEm = metre.clientWidth
+		const onePx = metre.clientWidth
 		console.log( 'metre', metre, oneEm )
 		const msgBox = document.getElementById( 'messages' )
-		const msgs = msgBox.children[ 0 ]
-		console.log( 'boxes', [ msgBox, msgBox.clientWidth, msgs ])
+		const totPx = msgBox.clientWidth 
+		const usrPx = onePx * 12
+		const dedSpc = totPx - 960
+		console.log( 'boxes nd thins', [ msgBox, onePx, totPx, usrPx, dedSpc ])
 	}
 	
 	ns.Presence.prototype.buildUserList = function() {
