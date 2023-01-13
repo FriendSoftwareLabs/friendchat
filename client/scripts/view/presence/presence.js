@@ -93,8 +93,8 @@ library.view = library.view || {};
 		const oneEm = metre.clientWidth
 		console.log( 'metre', metre, oneEm )
 		const msgBox = document.getElementById( 'messages' )
-		const msgs = msgBox.children[0]
-		console.log( 'boxes', [ msgBox, msgs ])
+		const msgs = msgBox.children[ 0 ]
+		console.log( 'boxes', [ msgBox, msgBox.clientwidth, msgs ])
 	}
 	
 	ns.Presence.prototype.buildUserList = function() {
