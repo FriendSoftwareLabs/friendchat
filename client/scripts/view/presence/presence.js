@@ -325,6 +325,7 @@ library.view = library.view || {};
 
 	ns.Presence.prototype.bindConn = function() {
 		const self = this;
+		self.conn.on( 'app-settings'    , e => console.log( 'pres view app setting', e ))
 		self.conn.on( 'initialize'      , initialize );
 		self.conn.on( 'state'           , state );
 		self.conn.on( 'online'          , online );
