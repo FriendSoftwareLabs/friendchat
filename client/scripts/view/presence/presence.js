@@ -91,7 +91,7 @@ library.view = library.view || {};
 		//
 		const metre = document.getElementById( 'metre' )
 		const onePx = metre.clientWidth
-		console.log( 'metre', metre, oneEm )
+		console.log( 'metre', metre, onePx )
 		const msgBox = document.getElementById( 'messages' )
 		const totPx = msgBox.clientWidth 
 		const usrPx = onePx * 12
