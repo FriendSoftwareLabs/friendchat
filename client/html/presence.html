@@ -110,10 +110,10 @@
 </script>
 
 <!-- Users list desktop
-	
+hideKlass
 -->
 <script id="users-desktop-tmpl" type="text/html">
-	<div id="users-container" class="fortify group column cover BackgroundDefault users-hide">
+	<div id="users-container" class="fortify group column cover BackgroundDefault <%= hideKlass %>">
 		<div id="users-header" class="group row start BorderBottom">
 		</div>
 		<div id="users-position" class="expand BackgroundHeavy">
@@ -122,10 +122,10 @@
 </script>
 
 <!-- Users list for other devices
-
+hideKlass
 -->
 <script id="users-other-tmpl" type="text/html">
-<div id="users-container" class="group row cover users-hide">
+<div id="users-container" class="group row cover <%= hideKlass %>">
 	<div id="users-cover" class="expand">
 	</div>
 	<div id="users-content" class="fortify group column cover BackgroundDefault">

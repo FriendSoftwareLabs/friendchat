@@ -53,7 +53,17 @@ library.view = library.view || {};
 				tit.classList.toggle( 'hidden', true )
 		}
 		
-		self.buildUserList()
+		
+		const metre = document.getElementById( 'metre' )
+		const onePx = metre.clientWidth
+		console.log( 'metre', metre, onePx )
+		const msgBox = document.getElementById( 'messages' )
+		const totPx = msgBox.clientWidth 
+		const usrPx = onePx * 12
+		const dedSpc = totPx - 960
+		const canShow = usrPx < dedSpc
+		console.log( 'boxes nd thins', [ msgBox, onePx, totPx, usrPx, dedSpc, canShow ])
+		self.buildUserList( canShow )
 		
 		// scroll to bottom on new message
 		self.messageScroller = new library.component.BottomScroller( 'messages' )
@@ -88,18 +98,9 @@ library.view = library.view || {};
 		//
 		window.View.loaded()
 		
-		//
-		const metre = document.getElementById( 'metre' )
-		const onePx = metre.clientWidth
-		console.log( 'metre', metre, onePx )
-		const msgBox = document.getElementById( 'messages' )
-		const totPx = msgBox.clientWidth 
-		const usrPx = onePx * 12
-		const dedSpc = totPx - 960
-		console.log( 'boxes nd thins', [ msgBox, onePx, totPx, usrPx, dedSpc ])
 	}
 	
-	ns.Presence.prototype.buildUserList = function() {
+	ns.Presence.prototype.buildUserList = function( show ) {
 		const self = this;
 		let tmpl = null;
 		const isDesktop = ( 'DESKTOP' === window.View.deviceType );
@@ -108,8 +109,16 @@ library.view = library.view || {};
 		else
 			tmpl = 'users-other-tmpl';
 		
+		let hideKlass = 'users-hide'
+		if ( show )
+			hideKlass = ''
+		const conf = {
+			hideKlass : hideKlass
+		}
+		
+		console.log( 'userslist conf', conf )
 		const appendEl = document.getElementById( 'main' );
-		const el = friend.template.getElement( tmpl, {});
+		const el = friend.template.getElement( tmpl, conf );
 		appendEl.appendChild( el );
 		
 		self.usersEl = document.getElementById( 'users-container' );
