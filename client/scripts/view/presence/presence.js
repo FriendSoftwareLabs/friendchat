@@ -300,7 +300,7 @@ library.view = library.view || {};
 				type : 'user-setting',
 				data : {
 					setting : 'showUserList',
-					value   : !isHidden,
+					value   : isHidden,
 				}
 			}
 			self.conn.send( pref )
