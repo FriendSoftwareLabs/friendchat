@@ -644,6 +644,11 @@ window.library.component = window.library.component || {};
 			execute : getIdentityFun,
 		}, 'Functions/' );
 		
+		const getActivity = new api.DoorFun({
+			title   : 'GetActivity',
+			execute : getActivityFun,
+		}, 'Functions/' )
+		
 		const openChat = new api.DoorFun({
 			title   : 'OpenChat',
 			execute : openChatFun,
@@ -810,6 +815,13 @@ window.library.component = window.library.component || {};
 				throw new Error( 'ERR_NO_SERVICE' )
 			
 			return await self.presence.getFriendContact( fUserId )
+		}
+		
+		async function getActivityFun( fUserId ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' )
+			
+			rturn await self.presence.getFriendContactActivity( fUserId )
 		}
 		
 		async function openSettingsFun() {

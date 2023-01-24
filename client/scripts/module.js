@@ -940,6 +940,17 @@ library.module = library.module || {};
 		}
 	}
 	
+	ns.Presence.prototype.getFriendContactActivity = async function( friendId ) {
+		const self = this
+		console.log( 'getFriendContactActivity', friendId )
+		const id = await self.idc.getByFId( friendId )
+		console.log( 'id', id )
+		const act = await self.activity.read( id.clientId )
+		console.log( 'act', act )
+		
+		return act
+	}
+	
 	ns.Presence.prototype.getFriendContact = function( friendId ) {
 		const self = this;
 		return new Promise(( resolve, reject ) => {
