@@ -952,7 +952,7 @@ library.module = library.module || {};
 		
 		const copy = {}
 		copy.message = Application.i18n( act.data.message )
-		copy.time = act.data.timestamp
+		copy.timestamp = act.data.timestamp
 		copy.timeStr = library.tool.getChatTime( act.data.timestamp )
 		return copy
 	}
