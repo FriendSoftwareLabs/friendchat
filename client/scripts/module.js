@@ -947,8 +947,14 @@ library.module = library.module || {};
 		console.log( 'id', id )
 		const act = await self.activity.read( id.clientId )
 		console.log( 'act', act )
+		if ( null == act )
+			return null
 		
-		return act
+		const copy = {}
+		copy.message = Application.i18n( act.data.message )
+		copy.time = act.data.timestamp
+		copy.timeStr = library.tool.getChatTime( act.data.timestamp )
+		return copy
 	}
 	
 	ns.Presence.prototype.getFriendContact = function( friendId ) {
