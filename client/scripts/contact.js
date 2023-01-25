@@ -431,6 +431,8 @@ library.contact = library.contact || {};
 			opts = {
 				priority : self.priority,
 			};
+			
+		self.sendServiceRoomActivity( infoMessage, null, timestamp )
 		
 		return self.activity.live(
 			self.roomType,
@@ -476,6 +478,7 @@ library.contact = library.contact || {};
 				unread : self.messagesWaiting, 
 			});
 		
+		self.sendServiceRoomActivity( message, from, time )
 		
 		if ( !!message )
 			return self.recentMessage( message, from, time, opts );
@@ -2840,6 +2843,22 @@ library.contact = library.contact || {};
 				resolve( 'unknown' );
 			}
 		});
+	}
+	
+	ns.PresenceRoom.prototype.sendServiceRoomActivity = function( message, from, timestamp ) {
+		const self = this
+		if ( !hello.dormant || !self.service )
+			return
+		
+		console.log( 'sendServiceRoomActivity', [ message, from, timestamp ])
+		
+		self.service.emitEvent( 'roomActivity', {
+			roomId    : self.clientId, 
+			from      : null,
+			message   : message, 
+			timestamp : timestamp,
+			timeStr   : friendUP.tool.getChatTime( timestamp ),
+		})
 	}
 	
 	/* TODO

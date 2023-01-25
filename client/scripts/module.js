@@ -950,7 +950,9 @@ library.module = library.module || {};
 		if ( null == act )
 			return null
 		
-		const copy = {}
+		const copy = {
+			roomId : id.clientId,
+		}
 		copy.message = Application.i18n( act.data.message )
 		copy.timestamp = act.data.timestamp
 		copy.timeStr = library.tool.getChatTime( act.data.timestamp )

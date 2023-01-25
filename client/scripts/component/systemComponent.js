@@ -666,6 +666,10 @@ window.library.component = window.library.component || {};
 			title : 'RoomMentions',
 		}, 'Events/' );
 		
+		const roomActivity = new api.DoorEvent({
+			title : 'RoomActivity',
+		}, 'Events/' )
+		
 		const roomViewOpen = new api.DoorEvent({
 			title : 'RoomViewOpen',
 		}, 'Events/' );
@@ -707,6 +711,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addEvent( roomUnread )
 		hello.dormant.addEvent( liveHasFocus )
 		hello.dormant.addEvent( roomMentions )
+		hello.dormant.addEvent( roomActivity )
 		
 		self.dormantEvents = {
 			'roomAdd'         : roomAdd,
@@ -717,6 +722,7 @@ window.library.component = window.library.component || {};
 			'viewClosed'      : roomViewClosed,
 			'roomUnread'      : roomUnread,
 			'roomMentions'    : roomMentions,
+			'roomActivity'    : roomActivity,
 			'roomLiveState'   : roomLiveState,
 			'liveHasFocus'    : liveHasFocus,
 			'identityUpdate'  : userUpdate,
