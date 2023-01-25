@@ -382,6 +382,7 @@ library.contact = library.contact || {};
 	
 	ns.Contact.prototype.recentMessage = function( message, from, time, opts ) {
 		const self = this;
+		console.log( 'recentMessage', [ message, from, time, opts ] )
 		if ( hello.dormant && self.service )
 			self.service.emitEvent( 'roomUnread', {
 				roomId : self.clientId, 
@@ -404,6 +405,8 @@ library.contact = library.contact || {};
 			from = '';
 		if ( null == time )
 			time = Date.now();
+		
+		self.sendServiceRoomActivity( message, from, time )
 		
 		let res = null;
 		const args = [
