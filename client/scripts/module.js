@@ -954,6 +954,7 @@ library.module = library.module || {};
 			roomId : id.clientId,
 		}
 		copy.message = Application.i18n( act.data.message )
+		copy.from = null
 		copy.timestamp = act.data.timestamp
 		copy.timeStr = library.tool.getChatTime( act.data.timestamp )
 		return copy
@@ -964,21 +965,21 @@ library.module = library.module || {};
 		return new Promise(( resolve, reject ) => {
 			const getFC = {
 				friendId : friendId,
-			};
+			}
 			const req = {
 				type : 'friend-get',
 				data : getFC,
-			};
+			}
 			self.acc.request( req )
 				.then( resolve )
-				.catch( reject );
-		});
+				.catch( reject )
+		})
 	}
 	
 	ns.Presence.prototype.addContact = async function( clientId ) {
 		const self = this;
 		if ( self.contacts[ clientId ]) {
-			return clientId;
+			return clientId
 		}
 		
 		const loader = self.contactLoading[ clientId ];

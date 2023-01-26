@@ -387,28 +387,28 @@ library.contact = library.contact || {};
 			self.service.emitEvent( 'roomUnread', {
 				roomId : self.clientId, 
 				unread : self.messagesWaiting, 
-			});
+			})
 		
 		if ( !self.activity ) {
-			console.log( 'Contact.recentMessgae - activity missing', self );
-			return null;
+			console.log( 'Contact.recentMessgae - activity missing', self )
+			return null
 		}
 		
-		const intercept = self.checkIntercept( message );
+		const intercept = self.checkIntercept( message )
 		if ( intercept )
-			return null;
+			return null
 		
 		if ( null == message )
-			throw new Error( 'app.Contact.recentMessage - message is required' );
+			throw new Error( 'app.Contact.recentMessage - message is required' )
 		
 		if ( null == from )
-			from = '';
+			from = ''
 		if ( null == time )
-			time = Date.now();
+			time = Date.now()
 		
 		self.sendServiceRoomActivity( message, from, time )
 		
-		let res = null;
+		let res = null
 		const args = [
 			self.roomType,
 			self.clientId,
@@ -417,8 +417,8 @@ library.contact = library.contact || {};
 			message,
 			time,
 			opts
-		];
-		return self.activity.message( ...args );
+		]
+		return self.activity.message( ...args )
 	}
 	
 	ns.Contact.prototype.recentLive = function( infoMessage, direction, timestamp, opts ) {
