@@ -3827,6 +3827,12 @@ library.contact = library.contact || {};
 			self.setUnreadMessages( 0 );
 			self.setMentions( 0 );
 			console.log( 'LM', self.lastMessage, activityItem )
+			const msg = activityItem.data
+			let from = null
+			if ( msg.from && msg.from.length )
+				from = msg.from
+			
+			self.sendServiceRoomActivity( msg.message, from, msg.timestamp )
 		}
 		
 		function checkHasActivity( rel ) {
