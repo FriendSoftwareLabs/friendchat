@@ -2064,6 +2064,9 @@ library.contact = library.contact || {};
 			return false;
 		}
 		
+		console.log( 'setLastMessage', lm, msg )
+		self.sendServiceRoomActivity( msg.message, from, msg.timestamp )
+		
 		if ( null == from )
 			return false;
 		
