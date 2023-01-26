@@ -3771,6 +3771,7 @@ library.contact = library.contact || {};
 		if ( !rel )
 			return;
 		
+		console.log( 'contact.updateRelation', rel )
 		self.relation = rel;
 		if ( null != rel.lastMessage ) {
 			self.setLastMessage( rel.lastMessage );
@@ -3825,6 +3826,7 @@ library.contact = library.contact || {};
 		} else {
 			self.setUnreadMessages( 0 );
 			self.setMentions( 0 );
+			console.log( 'LM', self.lastMessage, activityItem )
 		}
 		
 		function checkHasActivity( rel ) {
