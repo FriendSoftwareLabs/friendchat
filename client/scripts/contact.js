@@ -481,7 +481,7 @@ library.contact = library.contact || {};
 				unread : self.messagesWaiting, 
 			});
 		
-		self.sendServiceRoomActivity( message, from, time )
+		//self.sendServiceRoomActivity( message, from, time )
 		
 		if ( !!message )
 			return self.recentMessage( message, from, time, opts );
