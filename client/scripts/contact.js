@@ -1794,8 +1794,9 @@ library.contact = library.contact || {};
 				}
 			}
 		} else {
-			self.setUnreadMessages( 0 );
-			self.setMentions( 0 );
+			self.setUnreadMessages( 0 )
+			self.setMentions( 0 )
+			console.log( 'LM', self.lastMessage )
 		}
 		
 		function checkHasActivity( rel ) {
