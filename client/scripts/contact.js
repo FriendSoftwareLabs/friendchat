@@ -2862,7 +2862,7 @@ library.contact = library.contact || {};
 		
 		self.service.emitEvent( 'roomActivity', {
 			roomId    : self.clientId, 
-			from      : null,
+			from      : from,
 			message   : message, 
 			timestamp : timestamp,
 			timeStr   : friendUP.tool.getChatTime( timestamp ),
