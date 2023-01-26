@@ -2855,7 +2855,10 @@ library.contact = library.contact || {};
 		if ( !hello.dormant || !self.service )
 			return
 		
-		console.log( 'sendServiceRoomActivity', [ message, from, timestamp ])
+		if ( null == message )
+			console.trace( 'sendServiceRoomActivity', [ message, from, timestamp ])
+		else
+			console.log( 'sendServiceRoomActivity', [ message, from, timestamp ])
 		
 		self.service.emitEvent( 'roomActivity', {
 			roomId    : self.clientId, 
