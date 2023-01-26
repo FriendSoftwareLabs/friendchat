@@ -1746,6 +1746,7 @@ library.contact = library.contact || {};
 			return;
 		}
 		
+		console.log( 'updateRelation', relation )
 		self.relation = relation;
 		await self.setLastMessage( relation.lastMessage );
 		if ( relation.unreadMessages )
