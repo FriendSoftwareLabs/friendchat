@@ -2500,7 +2500,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pingTimeouts = {};
 		self.pongs = [];
 		
-		self.spam = false
+		self.spam = true
 		
 		self.init( conf.signal );
 	}
@@ -3081,6 +3081,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		const rtcState = self.session.getRTCState();
+		self.log( 'rtcState', rtcState )
 		if ( 'stable' === rtcState.signal )
 			return true;
 		else

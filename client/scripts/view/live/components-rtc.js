@@ -200,14 +200,15 @@ library.rtc = library.rtc || {};
 		self.source = source;
 		self.onSpeaking = onSpeaking;
 		
-		self.isSpeaking = false;
-		self.speakingLimit = 16;
-		self.speakingTicks = 5;
-		self.notSpeakingLimit = 5;
-		self.notSpeakingTicks = 20;
-		self.notSpeakingWait = 1000 * 2;
-		self.notSpeakingTimeout = null;
-		self.init();
+		self.isSpeaking = false
+		self.speakingLimit = 16
+		self.speakingTicks = 5
+		self.notSpeakingLimit = 5
+		self.notSpeakingTicks = 20
+		self.notSpeakingWait = 1000 * 2
+		self.notSpeakingTimeout = null
+		
+		self.init()
 	}
 	
 	// Public
@@ -759,51 +760,51 @@ library.rtc = library.rtc || {};
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		opts = opts || {};
-		self.type = type;
-		self.id = 'webrtc-' + self.type;
-		self.isHost = isHost || false;
-		self.signal = signal;
-		self.media = media;
-		self.rtc = rtcConf;
-		self.useDefaultCodec = opts.useDefaultCodec;
-		self.modifySDP = opts.modifySDP || null;
-		self.peerId = opts.peerId || null;
-		self.bundlePolicy = opts.bundlePolicy || null;
-		self.peerName = peerName || '';
-		self.browser = browser || 'chrome';
-		
-		self.log( 'Session', type );
+		opts = opts || {}
+		self.type = type
+		self.id = 'webrtc-' + self.type
+		self.isHost = isHost || false
+		self.signal = signal
+		self.media = media
+		self.rtc = rtcConf
+		self.useDefaultCodec = opts.useDefaultCodec
+		self.modifySDP = opts.modifySDP || null
+		self.peerId = opts.peerId || null
+		self.bundlePolicy = opts.bundlePolicy || null
+		self.peerName = peerName || ''
+		self.browser = browser || 'chrome'
 		
 		// peer connection, holder of streams
-		self.conn = null;
-		self.state = 'nominal';
-		self.senders = {};
+		self.conn = null
+		self.state = 'nominal'
+		self.senders = {}
 		self.waiters = {
 			add    : {},
 			remove : {},
 		};
-		self.remoteTracks = {};
+		self.remoteTracks = {}
 		//self.useOnTrack = false;
 		//self.useOnStream = false;
 		
-		self.iceCandidates = [];
-		self.negotiationWaiting = false;
-		self.negotiationTimeout = null;
-		self.negotiationTimer = 1000 * 10;
-		self.denyNegotiation = false;
+		self.iceCandidates = []
+		self.negotiationWaiting = false
+		self.negotiationTimeout = null
+		self.negotiationTimer = 1000 * 10
+		self.denyNegotiation = false
 		
-		self.iceTimeoutMs = 1000 * 6;
+		self.iceTimeoutMs = 1000 * 6
 		
-		self.statsCache = {};
+		self.statsCache = {}
 		
 		// data channels
-		self.channels = {};
+		self.channels = {}
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false
+		self.spam = true
 		
-		self.init();
+		self.log( 'Session', type )
+		
+		self.init()
 	}
 	
 	ns.Session.prototype = Object.create( library.component.EventEmitter.prototype );

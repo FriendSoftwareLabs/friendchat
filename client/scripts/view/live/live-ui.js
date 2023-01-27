@@ -3510,6 +3510,7 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.updateRTC = function( event ) {
 		const self = this;
+		console.log( 'updateRTC', event )
 		self.rtcState.update( event );
 	}
 	
@@ -4208,29 +4209,35 @@ library.component = library.component || {};
 // RTCState
 (function( ns, undefined ) {
 	ns.RTCState = function( conf ) {
-		if ( !( this instanceof ns.RTCState ))
-			return new ns.RTCState( conf );
+		const self = this
+		self.parentId = conf.peerId
 		
-		const self = this;
-		self.parentId = conf.peerId;
+		self.currentSpinner = 'waiting'
+		self.spinMap = {}
+		self.traceTim = null
 		
-		self.currentSpinner = 'waiting';
-		self.spinMap = {};
-		
-		self.init();
+		self.init()
 	}
 	
 	// PUBLIC
 	
 	ns.RTCState.prototype.update = function( event ) {
 		const self = this;
-		const handler = self.typeMap[ event.type ];
+		const handler = self.typeMap[ event.type ]
+		
 		if ( !handler ) {
-			console.log( 'unknown event type', event );
-			return;
+			if ( null == self.traceTim ) {
+				console.trace( 'unknown event type', event );
+				self.traceTim = window.setTimeout( allowTrace, 1000 * 30 )
+			}
+			return
 		}
 		
-		handler( event.data );
+		handler( event.data )
+		
+		function allowTrace() {
+			self.tranceTime = null
+		}
 	}
 	
 	ns.RTCState.prototype.show = function() {
