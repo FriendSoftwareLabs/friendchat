@@ -2860,6 +2860,9 @@ library.contact = library.contact || {};
 		else
 			console.log( 'sendServiceRoomActivity', [ message, from, timestamp ])
 		
+		if ( null != message )
+			message = Application.i18n( message )
+		
 		self.service.emitEvent( 'roomActivity', {
 			roomId    : self.clientId, 
 			from      : from,
