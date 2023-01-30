@@ -2586,8 +2586,32 @@ library.rtc = library.rtc || {};
 			if ( self.vDiscover )
 				vT = self.discoverTrack( self.vDiscover.id );
 		}
-		else
-			vT = self.raw.get( self.vId );
+		else {
+			const get = self.raw.get( self.vId );
+			let feach = null
+			self.raw.forEach( t => {
+				if ( 'track' != t.type )
+					return
+				
+				console.log( 'feach track', t )
+				if ( !t.remoteSource )
+					return
+				
+				if ( 'video' != t.kind )
+					return
+				
+				feach = t
+			})
+			self.log( 'base video', {
+				get   : get,
+				feach : feach,
+			})
+			
+			if ( get )
+				vT = get
+			if ( feach )
+				vT = feach
+		}
 		
 		let audio = null;
 		let video = null;
