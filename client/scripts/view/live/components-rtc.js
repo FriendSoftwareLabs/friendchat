@@ -2634,17 +2634,18 @@ library.rtc = library.rtc || {};
 		
 		function get( tId ) {
 			self.log( 'get', [ tId, tracks ])
-			if ( null == tracks )
-					self.raw.map( item => {
-				if ( 'track' != item.type )
-					return null
+			if ( null == tracks ) {
+				tracks = []
+				self.raw.forEach( item => {
+					if ( 'track' != item.type )
+						return null
+					
+					if ( !t.remoteSource )
+						return null
 				
-				if ( !t.remoteSource )
-					return null
-				
-				return item
-			}).filter( item => item != null )
-			
+					tracks.push( item )
+				})
+			}
 			let track = null
 			tracks.some( t => {
 				self.log( 'get checking', t )
