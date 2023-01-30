@@ -2431,10 +2431,14 @@ library.rtc = library.rtc || {};
 		self.log( 'trackAdded', track )
 		const id = track.id
 		const k = track.kind
-		if ( 'audio' == k )
+		if ( 'audio' == k ) {
+			self.aId = null
 			self.aDiscover = track
-		if ( 'video' == k )
+		}
+		if ( 'video' == k ) {
+			self.vId = null
 			self.vDiscover = track
+		}
 		
 		self.discoverTrack( id )
 	}
@@ -2588,8 +2592,10 @@ library.rtc = library.rtc || {};
 		let audio = null;
 		let video = null;
 		self.log( 'emitbase sources', {
-			aT : aT,
-			vT : vT,
+			aId : self.aId,
+			aT  : aT,
+			vId : self.vId,
+			vT  : vT,
 		})
 		
 		if ( null != aT ) {
