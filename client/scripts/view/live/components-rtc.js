@@ -2640,7 +2640,7 @@ library.rtc = library.rtc || {};
 					if ( 'track' != item.type )
 						return null
 					
-					if ( !t.remoteSource )
+					if ( !item.remoteSource )
 						return null
 				
 					tracks.push( item )
