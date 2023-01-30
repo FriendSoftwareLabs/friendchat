@@ -2397,7 +2397,7 @@ library.rtc = library.rtc || {};
 		
 		library.component.EventEmitter.call( self );
 		
-		self.spam = false
+		self.spam = true
 		
 		self.init();
 	}
@@ -2626,7 +2626,7 @@ library.rtc = library.rtc || {};
 		})
 		
 		if ( null == self.raw ) {
-			self.log( 'discoverTrack - now raw' )
+			self.log( 'discoverTrack - no raw' )
 			return
 		}
 		
@@ -2640,13 +2640,13 @@ library.rtc = library.rtc || {};
 				return;
 			
 			self.log( 'discoverTrack - checking t', t )
-			const tId = t.trackIdentifier;
+			const tId = t.trackIdentifier
 			if ( tId != id )
-				return;
+				return
 			
-			track = t;
-			type = t.kind;
-		});
+			track = t
+			type = t.kind
+		})
 		
 		if ( !track ) {
 			self.log( 'discoverTrack - no track found for', id )

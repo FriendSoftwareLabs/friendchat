@@ -4281,8 +4281,8 @@ library.component = library.component || {};
 			stream  : handleStream,
 			error   : handleError,
 			stats   : handleStats,
-			nominal : e => self.handleNominal( e ),
-		};
+			signal  : e => self.handleSignal( e ),
+		}
 		
 		function handleRTC( e ) { self.handleRTCState( e ); }
 		function handleStream( e ) { self.handleStreamState( e ); }
@@ -4501,7 +4501,7 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.RTCState.prototype.handleNominal = function( e ) {
+	ns.RTCState.prototype.handleSignal = function( e ) {
 		
 	}
 	
