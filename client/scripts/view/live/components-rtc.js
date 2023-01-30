@@ -2573,45 +2573,25 @@ library.rtc = library.rtc || {};
 		if ( null == self.raw )
 			return;
 		
+		let tracks = null
+		
+		console.log( 'tracks', tracks )
 		let vT = null;
 		let aT = null;
 		if ( null == self.aId ) {
 			if ( self.aDiscover )
 				aT = self.discoverTrack( self.aDiscover.id );
 		}
-		else
-			aT = self.raw.get( self.aId );
+		else {
+			aT = get( self.aId )
+		}
 		
 		if ( null == self.vId ) {
 			if ( self.vDiscover )
 				vT = self.discoverTrack( self.vDiscover.id );
 		}
-		else {
-			const get = self.raw.get( self.vId );
-			let feach = null
-			self.raw.forEach( t => {
-				if ( 'track' != t.type )
-					return
-				
-				console.log( 'feach track', t )
-				if ( !t.remoteSource )
-					return
-				
-				if ( 'video' != t.kind )
-					return
-				
-				feach = t
-			})
-			self.log( 'base video', {
-				get   : get,
-				feach : feach,
-			})
-			
-			if ( get )
-				vT = get
-			if ( feach )
-				vT = feach
-		}
+		else
+			vT = get( self.vId )
 		
 		let audio = null;
 		let video = null;
@@ -2651,6 +2631,34 @@ library.rtc = library.rtc || {};
 			self.log( 'emitBase', base )
 		
 		self.emit( 'base', base )
+		
+		function get( tId ) {
+			self.log( 'get', [ tId, tracks )
+			if ( null == tracks )
+					self.raw.map( item => {
+				if ( 'track' != item.type )
+					return null
+				
+				if ( !t.remoteSource )
+					return null
+				
+				return item
+			}).filter( item => item != null )
+			
+			let track = null
+			tracks.some( t => {
+				self.log( 'get checking', t )
+				if ( tId != t.trackIdentifier )
+					return false
+				
+				track = t
+				return true
+			})
+			
+			self.log( 'get result', track )
+			
+			return track
+		}
 	}
 	
 	ns.RTCStats.prototype.discoverTrack = function( id ) {
