@@ -2587,6 +2587,11 @@ library.rtc = library.rtc || {};
 		
 		let audio = null;
 		let video = null;
+		self.log( 'emitbase sources', {
+			aT : aT,
+			vT : vT,
+		})
+		
 		if ( null != aT ) {
 			audio = {
 				level : aT.audioLevel,
@@ -2654,12 +2659,12 @@ library.rtc = library.rtc || {};
 		}
 		
 		if ( 'audio' == type ) {
-			self.aId = track.id
+			self.aId = track.trackIdentifier
 			self.aDiscover = null
 		}
 		
 		if ( 'video' == type ) {
-			self.vId = track.id
+			self.vId = track.trackIdentifier
 			self.vDiscover = null
 		}
 		
