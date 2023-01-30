@@ -2633,7 +2633,7 @@ library.rtc = library.rtc || {};
 		self.emit( 'base', base )
 		
 		function get( tId ) {
-			self.log( 'get', [ tId, tracks )
+			self.log( 'get', [ tId, tracks ])
 			if ( null == tracks )
 					self.raw.map( item => {
 				if ( 'track' != item.type )
