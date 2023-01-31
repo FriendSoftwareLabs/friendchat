@@ -2730,10 +2730,13 @@ library.rtc = library.rtc || {};
 			byId[ id ] = item;
 		})
 		
+		self.log( 'byId', byId )
+		self.log( 'byType', byType )
 		const res = {};
 		const inn = byType[ 'inbound-rtp' ];
 		const out = byType[ 'outbound-rtp' ];
 		let multiAudio = false
+		let WHNotSet = false
 		let aT = false
 		res.inbound = buildInnieStats( inn, byId );
 		if ( !aT ) {
@@ -2743,6 +2746,12 @@ library.rtc = library.rtc || {};
 		if ( multiAudio ) {
 			self.log( 'multiple audio tracks found' )
 			self.emitError( 'ERR_MULTI_TRACKS' )
+			return
+		}
+		
+		if ( WHNotSet ) {
+			self.log( 'width / height not set yet' )
+			self.emitError( 'ERR_WIDTH_HEIGHT_MISSING' )
 			return
 		}
 		
@@ -2760,18 +2769,19 @@ library.rtc = library.rtc || {};
 			const res = {};
 			rtps.some( rtp => {
 				const id = rtp.id;
-				const track = things[ rtp.trackId ];
+				const track = things[ rtp.trackIdentifier ]
+				self.log( 'rtp', rtp, track )
 				if ( !track )
 					return false
 				
-				const trackId = track.trackIdentifier;
-				const kind = track.kind;
 				if ( !track.remoteSource )
 					return false
 				
+				const tId = track.trackIdentifier
+				const kind = track.kind
 				const cache = self.statsCache[ kind ]
-				if ( cache && cache.id !== trackId ) {
-					self.log( 'innie - invalid track id', [ cache, track ])
+				if ( cache && cache.id !== tId ) {
+					self.log( 'innie - stale track in cache, nulling', [ cache, track ])
 					self.statsCache[ kind ] = null
 				}
 				
@@ -2780,6 +2790,11 @@ library.rtc = library.rtc || {};
 					rtp   : rtp,
 					track : track,
 				})
+				
+				if ( null == rtp.frameHeight || null == rtp.frameWidth ) {
+					WHNotSet = true
+					return
+				}
 				
 				const type = rtp.mediaType;
 				const codec = things[ rtp.codecId ];
@@ -2794,8 +2809,10 @@ library.rtc = library.rtc || {};
 					aT = true
 					setAudioDeltas( rtp )
 				}
-				if ( 'video' == type )
+				if ( 'video' == type ) {
+					
 					setVideoDeltas( rtp );
+				}
 				
 				res[ type ] = rtp;
 				
@@ -2845,7 +2862,7 @@ library.rtc = library.rtc || {};
 				}
 				
 				self.statsCache.video = {
-					id              : t.id,
+					id              : t.trackIdentifier,
 					time            : v.timestamp,
 					bytesReceived   : v.bytesReceived,
 					packetsReceived : v.packetsReceived,

@@ -3814,12 +3814,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			err   : e,
 			grace : null != self.statsErrorGracePeriod,
 			ext   : null != self.extendedError,
+			wh    : null != self.statsWHError,
 		})
 		if ( 'ERR_MULTI_TRACKS' == e.error ) {
 			if ( null != self.extendedError )
 				return
 			
 			self.extendedError = window.setTimeout( looksFucky, 1000 * 9 )
+		}
+		
+		if ( 'ERR_WIDTH_HEIGHT_MISSING' == e.error ) {
+			if ( null != self.statsWHError )
+				return
+			
+			self.statsWHError = window.setTimeout( looksFucky, 1000 * 4 )
 		}
 		
 		if ( 'ERR_INVALID_STATE' == e.error ) {
@@ -3831,6 +3839,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function looksFucky() {
 			self.log( 'looksFucky, restart' )
+			if ( null != self.statsWHError )
+				window.clearTimeout( self.statsWHError )
 			if ( null != self.extendedError )
 				window.clearTimeout( self.extendedError )
 			if ( null != self.statsErrorGracePeriod )
@@ -3838,6 +3848,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.statsErrorGracePeriod = null
 			self.extendedError = null
+			self.statsWHError = null
+			
 			self.restart()
 		}
 		
@@ -3875,6 +3887,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return
 		}
 		*/
+		if ( base.video?.height && null != self.statsWHError ) {
+			self.log( 'base stats found height, clear wherr', base.video )
+			window.clearTimeout( self.statsWHError )
+			self.statsWHError = null
+		}
 		
 		const curr = self.baseStats;
 		if ( null == curr.video && base.video ) {
@@ -3975,6 +3992,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkVideo( v ) {
+			self.log( 'checkVideo', v )
 			if ( !self.receiving.video ) {
 				report.videoExpected = false
 				return
