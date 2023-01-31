@@ -2742,9 +2742,12 @@ library.rtc = library.rtc || {};
 		let WHNotSet = false
 		let aT = false
 		res.inbound = buildInnieStats( inn, byId );
+		
+		/*
 		if ( !aT ) {
 			self.log( 'no audio track found' )
 		}
+		*/
 		
 		if ( multiAudio ) {
 			self.log( 'multiple audio tracks found' )
@@ -2794,15 +2797,10 @@ library.rtc = library.rtc || {};
 					track : track,
 				})
 				
-				if ( null == rtp.frameHeight || null == rtp.frameWidth ) {
-					WHNotSet = true
-					return
-				}
-				
-				const type = rtp.mediaType;
-				const codec = things[ rtp.codecId ];
-				rtp.track = track;
-				rtp.codec = codec;
+				const type = rtp.mediaType
+				const codec = things[ rtp.codecId ]
+				rtp.track = track
+				rtp.codec = codec
 				if ( 'audio' == type ) {
 					if ( true == aT ) {
 						multiAudio = true
@@ -2812,17 +2810,21 @@ library.rtc = library.rtc || {};
 					aT = true
 					setAudioDeltas( rtp )
 				}
+				
 				if ( 'video' == type ) {
-					
-					setVideoDeltas( rtp );
+					if ( null == rtp.frameHeight || null == rtp.frameWidth ) {
+						WHNotSet = true
+						return
+					}
+					setVideoDeltas( rtp )
 				}
 				
-				res[ type ] = rtp;
+				res[ type ] = rtp
 				
 				return false
-			});
+			})
 			
-			return res;
+			return res
 			
 			function setAudioDeltas( a ) {
 				const c = self.statsCache.audio;
