@@ -3828,7 +3828,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( null != self.statsWHError )
 				return
 			
-			self.statsWHError = window.setTimeout( looksFucky, 1000 * 4 )
+			self.statsWHError = window.setTimeout( looksFucky, 1000 * 6 )
 		}
 		
 		if ( 'ERR_INVALID_STATE' == e.error ) {
