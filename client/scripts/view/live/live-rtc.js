@@ -3114,17 +3114,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.doRestart = function() {
-		const self = this;
-		self.log( 'doRestart', self.state );
-		console.trace( 'doRestart trace', self.state )
+		const self = this
+		self.log( 'doRestart', self.state )
+		console.trace( 'doRestart trace' )
 		if ( 'sync-meta' === self.state ) {
 			self.log( 'doRestart - syncing meta already, aborting' );
-			return;
+			return
 		}
 		
-		self.doStop();
+		self.doStop()
 		if ( self.isHost )
-			self.sendMeta();
+			self.sendMeta()
 	}
 	
 	ns.Peer.prototype.doStop = function( sid ) {
