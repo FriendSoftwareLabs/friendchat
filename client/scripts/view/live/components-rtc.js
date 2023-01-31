@@ -2721,13 +2721,13 @@ library.rtc = library.rtc || {};
 		const byType = {}
 		const byId = {}
 		stats.forEach( item => { 
-			const type = item.type;
-			const id = item.id;
+			const type = item.type
+			const id = item.trackIdentifier || item.id
 			if ( null == byType[ type ])
-				byType[ type ] = [];
+				byType[ type ] = []
 			
-			byType[ type ].push( item );
-			byId[ id ] = item;
+			byType[ type ].push( item )
+			byId[ id ] = item
 		})
 		
 		self.log( 'byId', byId )
