@@ -2722,7 +2722,10 @@ library.rtc = library.rtc || {};
 		const byId = {}
 		stats.forEach( item => { 
 			const type = item.type
-			const id = item.trackIdentifier || item.id
+			let id = item.id
+			if ( 'track' == type )
+				id = item.trackIdentifier
+			
 			if ( null == byType[ type ])
 				byType[ type ] = []
 			
