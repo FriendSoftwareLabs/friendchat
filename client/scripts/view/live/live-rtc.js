@@ -3116,6 +3116,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.doRestart = function() {
 		const self = this;
 		self.log( 'doRestart', self.state );
+		console.trace( 'doRestart trace', self.state )
 		if ( 'sync-meta' === self.state ) {
 			self.log( 'doRestart - syncing meta already, aborting' );
 			return;
@@ -3946,7 +3947,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.log( 'report', report )
 		
 		if ( report.audioMissing || report.videoMissing )
-			self.restart();
+			self.restart()
 		
 		function checkTransport( t, a, v ) {
 			const p = t.pair;
