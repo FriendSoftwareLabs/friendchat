@@ -2552,7 +2552,7 @@ library.rtc = library.rtc || {};
 		
 		function statsBack( raw ) {
 			self.raw = raw;
-			self.log( 'statsBack, raw', raw )
+			//self.log( 'statsBack, raw', raw )
 			self.emitBase();
 			if ( self.extendedChecked )
 				return;
@@ -2593,6 +2593,8 @@ library.rtc = library.rtc || {};
 		
 		let audio = null;
 		let video = null;
+		
+		/*
 		self.log( 'emitbase sources', {
 			tracks : tracks,
 			aId : self.aId,
@@ -2600,6 +2602,7 @@ library.rtc = library.rtc || {};
 			vId : self.vId,
 			vT  : vT,
 		})
+		*/
 		
 		if ( null != aT ) {
 			audio = {
@@ -2618,6 +2621,7 @@ library.rtc = library.rtc || {};
 			video : video,
 		};
 		
+		/*
 		if ( null == audio && null == video ) {
 			self.log( 'emitBase nulls', {
 				aId    : self.aId,
@@ -2628,6 +2632,7 @@ library.rtc = library.rtc || {};
 			})
 		} else
 			self.log( 'emitBase', base )
+		*/
 		
 		self.emit( 'base', base )
 		
@@ -2659,18 +2664,12 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.discoverTrack = function( id ) {
 		const self = this;
-		self.log( 'discoverTrack', { 
-			id  : id,
-			raw : self.raw,
-		})
-		
-		if ( null == self.raw ) {
-			self.log( 'discoverTrack - no raw' )
+		self.log( 'discoverTrack', id, ( null != self.raw ))
+		if ( null == self.raw )
 			return
-		}
 		
-		let track = null;
-		let type = null;
+		let track = null
+		let type = null
 		self.raw.forEach( t => {
 			if ( 'track' != t.type )
 				return;
@@ -2678,7 +2677,6 @@ library.rtc = library.rtc || {};
 			if ( !t.remoteSource )
 				return;
 			
-			self.log( 'discoverTrack - checking t', t )
 			const tId = t.trackIdentifier
 			if ( tId != id )
 				return
@@ -2736,6 +2734,7 @@ library.rtc = library.rtc || {};
 		let multiAudio = false
 		let WHNotSet = false
 		let aT = false
+		console.log( 'inn', inn, byId )
 		res.inbound = buildInnieStats( inn, byId );
 		
 		/*
@@ -2767,7 +2766,10 @@ library.rtc = library.rtc || {};
 			if ( !rtps || !things )
 				return null;
 			
-			const res = {};
+			if ( !rtps.length )
+				self.log( 'rtps empty' )
+			
+			const res = {}
 			rtps.some( rtp => {
 				const id = rtp.id;
 				const track = things[ rtp.trackIdentifier ]
@@ -2778,6 +2780,7 @@ library.rtc = library.rtc || {};
 				if ( !track.remoteSource )
 					return false
 				
+				self.log( 'innie rtp', rtp )
 				const tId = track.trackIdentifier
 				const kind = track.kind
 				const cache = self.statsCache[ kind ]
@@ -2814,6 +2817,7 @@ library.rtc = library.rtc || {};
 					setVideoDeltas( rtp )
 				}
 				
+				self.log( 'setting RTP', [ type, rtp ])
 				res[ type ] = rtp
 				
 				return false

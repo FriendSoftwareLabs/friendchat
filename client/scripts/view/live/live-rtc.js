@@ -3932,7 +3932,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( !stats || !stats.inbound )
 			return;
 		
-		self.log( 'checkStats', stats );
 		if ( null != self.extendedError ) {
 			self.log( 'clearing error grace period' )
 			window.clearTimeout( self.extendedError )
@@ -3943,6 +3942,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const inn = stats.inbound;
 		const audio = inn.audio;
 		const video = inn.video;
+		self.log( 'check extended stats',  {
+			stats : stats,
+			audio : audio,
+			video : video,
+		});
 		let report = null;
 		if ( trans )
 			checkTransport( trans, audio, video );
