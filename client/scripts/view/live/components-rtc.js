@@ -2770,16 +2770,19 @@ library.rtc = library.rtc || {};
 				return null
 			}
 			
-			if ( !rtps.length )
+			if ( !rtps.length ) {
 				self.log( 'rtps empty' )
+				return null
+			}
 			
 			const res = {}
 			rtps.some( rtp => {
-				const id = rtp.id;
 				const track = things[ rtp.trackIdentifier ]
 				self.log( 'rtp', {
-					rtp   : JSON.stringify( rtp ), 
-					track : JSON.stringify( track ),
+					rtp    : rtp,
+					track  : track,
+					jrtp   : JSON.stringify( rtp ), 
+					jtrack : JSON.stringify( track ),
 				})
 				
 				if ( !track ) {
