@@ -3116,6 +3116,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	ns.Peer.prototype.doRestart = function() {
 		const self = this
 		self.log( 'doRestart', self.state )
+		
+		if ( null != self.statsWHError )
+			window.clearTimeout( self.statsWHError )
+		if ( null != self.extendedError )
+			window.clearTimeout( self.extendedError )
+		if ( null != self.statsErrorGracePeriod )
+			window.clearTimeout( self.statsErrorGracePeriod )
+		
+		self.statsErrorGracePeriod = null
+		self.extendedError = null
+		self.statsWHError = null
+		
 		console.trace( 'doRestart trace' )
 		if ( 'sync-meta' === self.state ) {
 			self.log( 'doRestart - syncing meta already, aborting' );
