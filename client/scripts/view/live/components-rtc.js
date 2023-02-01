@@ -2781,7 +2781,7 @@ library.rtc = library.rtc || {};
 			const res = {}
 			rtps.some( rtp => {
 				const id = rtp.trackIdentifier || rtp.trackId
-				const track = things[ tId ]
+				const track = things[ id ]
 				self.log( 'rtp', {
 					rtp    : rtp,
 					track  : track,
