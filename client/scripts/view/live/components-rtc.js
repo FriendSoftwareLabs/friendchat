@@ -2574,8 +2574,6 @@ library.rtc = library.rtc || {};
 			return;
 		
 		let tracks = null
-		
-		console.log( 'tracks', tracks )
 		let vT = null;
 		let aT = null;
 		if ( null == self.aId ) {
@@ -2596,6 +2594,7 @@ library.rtc = library.rtc || {};
 		let audio = null;
 		let video = null;
 		self.log( 'emitbase sources', {
+			tracks : tracks,
 			aId : self.aId,
 			aT  : aT,
 			vId : self.vId,
@@ -2633,7 +2632,6 @@ library.rtc = library.rtc || {};
 		self.emit( 'base', base )
 		
 		function get( tId ) {
-			self.log( 'get', [ tId, tracks ])
 			if ( null == tracks ) {
 				tracks = []
 				self.raw.forEach( item => {
@@ -2648,15 +2646,12 @@ library.rtc = library.rtc || {};
 			}
 			let track = null
 			tracks.some( t => {
-				self.log( 'get checking', t )
 				if ( tId != t.trackIdentifier )
 					return false
 				
 				track = t
 				return true
 			})
-			
-			self.log( 'get result', track )
 			
 			return track
 		}
