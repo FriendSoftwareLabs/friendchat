@@ -2779,7 +2779,7 @@ library.rtc = library.rtc || {};
 				const track = things[ rtp.trackIdentifier ]
 				self.log( 'rtp', {
 					rtp   : JSON.stringify( rtp ), 
-					track : JSON.stringify( track ))
+					track : JSON.stringify( track ),
 				})
 				
 				if ( !track ) {
