@@ -2715,15 +2715,20 @@ library.rtc = library.rtc || {};
 		const byId = {}
 		stats.forEach( item => { 
 			const type = item.type
-			let id = item.id
+			const id = item.id
+			let tId = null
 			if ( 'track' == type )
-				id = item.trackIdentifier
+				tId = item.trackIdentifier
 			
 			if ( null == byType[ type ])
 				byType[ type ] = []
 			
 			byType[ type ].push( item )
-			byId[ id ] = item
+			
+			if ( null != id )
+				byId[ id ] = item
+			if ( null != tId )
+				byId[ tId ] = item
 		})
 		
 		self.log( 'byId', byId )
@@ -2734,8 +2739,6 @@ library.rtc = library.rtc || {};
 		let multiAudio = false
 		let WHNotSet = false
 		let aT = false
-		if ( null == inn || !inn.length )
-			console.log( 'inn is BONK', inn )
 		
 		res.inbound = buildInnieStats( inn, byId );
 		
@@ -2777,7 +2780,8 @@ library.rtc = library.rtc || {};
 			
 			const res = {}
 			rtps.some( rtp => {
-				const track = things[ rtp.trackIdentifier ]
+				const id = rtp.trackIdentifier || rtp.trackId
+				const track = things[ tId ]
 				self.log( 'rtp', {
 					rtp    : rtp,
 					track  : track,
