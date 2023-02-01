@@ -2691,12 +2691,12 @@ library.rtc = library.rtc || {};
 		}
 		
 		if ( 'audio' == type ) {
-			self.aId = track.trackIdentifier
+			self.aId = track.trackIdentifier || track.id
 			self.aDiscover = null
 		}
 		
 		if ( 'video' == type ) {
-			self.vId = track.trackIdentifier
+			self.vId = track.trackIdentifier || track.id
 			self.vDiscover = null
 		}
 		
@@ -2734,7 +2734,9 @@ library.rtc = library.rtc || {};
 		let multiAudio = false
 		let WHNotSet = false
 		let aT = false
-		console.log( 'inn', inn, byId )
+		if ( null == inn || !inn.length )
+			console.log( 'inn is BONK', inn )
+		
 		res.inbound = buildInnieStats( inn, byId );
 		
 		/*
@@ -2763,8 +2765,10 @@ library.rtc = library.rtc || {};
 		done( res );
 		
 		function buildInnieStats( rtps, things ) {
-			if ( !rtps || !things )
-				return null;
+			if ( !rtps || !things ) {
+				self.log( 'innie undef')
+				return null
+			}
 			
 			if ( !rtps.length )
 				self.log( 'rtps empty' )
@@ -2773,12 +2777,20 @@ library.rtc = library.rtc || {};
 			rtps.some( rtp => {
 				const id = rtp.id;
 				const track = things[ rtp.trackIdentifier ]
-				self.log( 'rtp', rtp, track )
-				if ( !track )
-					return false
+				self.log( 'rtp', {
+					rtp   : JSON.stringify( rtp ), 
+					track : JSON.stringify( track ))
+				})
 				
-				if ( !track.remoteSource )
+				if ( !track ) {
+					self.log( 'no track found for rtp', JSON.stringify( rtp ))
 					return false
+				}
+				
+				if ( !track.remoteSource ) {
+					self.log( 'track is not remote source', JSON.stringify( track ))
+					return false
+				}
 				
 				self.log( 'innie rtp', rtp )
 				const tId = track.trackIdentifier
@@ -2812,7 +2824,7 @@ library.rtc = library.rtc || {};
 				if ( 'video' == type ) {
 					if ( null == rtp.frameHeight || null == rtp.frameWidth ) {
 						WHNotSet = true
-						return
+						return true
 					}
 					setVideoDeltas( rtp )
 				}
