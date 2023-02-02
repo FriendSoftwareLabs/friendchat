@@ -2500,7 +2500,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pingTimeouts = {};
 		self.pongs = [];
 		
-		self.spam = true
+		self.spam = false
 		
 		self.init( conf.signal );
 	}
