@@ -3128,7 +3128,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.extendedError = null
 		self.statsWHError = null
 		
-		console.trace( 'doRestart trace' )
 		if ( 'sync-meta' === self.state ) {
 			self.log( 'doRestart - syncing meta already, aborting' );
 			return

@@ -1579,18 +1579,18 @@ library.component = library.component || {};
 		let currSpeaker = null;
 		let lastSpeaker = null;
 		if ( null != self.currentSpeaker )
-			currSpeaker = self.peers[ self.currentSpeaker ];
+			currSpeaker = self.peers[ self.currentSpeaker ]
 		
 		if ( null != self.lastSpeaker )
-			lastSpeaker = self.peers[ self.lastSpeaker ];
+			lastSpeaker = self.peers[ self.lastSpeaker ]
 		
 		if ( !currSpeaker && lastSpeaker ) {
 			if ( self.gridSwap ) {
 				if ( self.gridSwap.in == self.lastSpeaker ) {
-					console.log( 'updateThumbsGrid - already swapping to lastSpeaker' );
-					return;
+					//console.log( 'updateThumbsGrid - already swapping to lastSpeaker' );
+					return
 				} else
-					await self.clearGridSwap();
+					await self.clearGridSwap()
 			}
 			
 			self.showInMain( lastSpeaker );
@@ -3510,7 +3510,6 @@ library.component = library.component || {};
 	
 	ns.Peer.prototype.updateRTC = function( event ) {
 		const self = this;
-		console.log( 'updateRTC', event )
 		self.rtcState.update( event );
 	}
 	

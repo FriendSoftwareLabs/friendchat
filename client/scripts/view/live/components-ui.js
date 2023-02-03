@@ -325,7 +325,7 @@ library.component = library.component || {};
 		const self = this;
 		self.setupCanvas();
 		if ( !self.el ) {
-			console.log( 'AudioVisualizer.start - no el', self );
+			//console.log( 'AudioVisualizer.start - no el', self )
 			return;
 		}
 		
