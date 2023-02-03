@@ -3474,8 +3474,8 @@ library.component = library.component || {};
 		
 		function toggle( visible ) {
 			if ( !self.stream ) {
-				console.log( 'togglestream - no stream' );
-				return;
+				//console.log( 'togglestream - no stream' );
+				return
 			}
 			
 			self.stream.classList.toggle( 'hidden', !visible );
