@@ -1139,4 +1139,112 @@ inherits from EventEmitter
 		self.current = null;
 	}
 	
-})( library.component );
+})( library.component )
+
+(function( ns, undefined ) {
+	ns.MultiLog = function( opts ) {
+		const self = this
+		
+		self.init( opts )
+	}
+	
+	 // public
+	 
+	 ns.MultiLog.prototype.log = function( ...inn ) {
+	 	const self = this
+	 	if ( self.toStrings )
+	 		self.chopToStrings( inn )
+	 	else
+	 		console.log( ...inn )
+	 }
+	 
+	 ns.MultiLog.prototype.trace = function() {
+	 	
+	 }
+	 
+	 // private
+	
+	ns.MultiLog.prototype.init = function( opts ) {
+		const self = this
+		console.log( 'ML.init', {
+			dt   : window.View.deviceType,
+			fapp : window.View.friendApp,
+		})
+		
+		const dev = window.View.deviceType || 'DESKTOP'
+		self.toStrings = ( dev !== 'DESKTOP' )
+		
+		if ( opts?.alwaysChop )
+			self.toStrings = true
+		
+		console.log( 'ML.init toStrings', self.toStrings )
+	}
+	
+	ns.MultiLog.prototype.chopToStrings = function( inn ) {
+		let firstArg = null
+		let open = false
+		inn.forEach( arg => {
+			if ( null == firstArg ) {
+				firstArg = arg
+			} else {
+				console.group()
+				open = true
+			}
+			
+			const isBasic = (( typeof arg == 'string' ) || ( typeof arg == 'number' ))
+			if ( isBasic ) {
+				self.outputStr( arg )
+				return
+			}
+			
+			if ( 'array' == typeof arg ) {
+				self.expandArr( arg )
+				return
+			}
+			
+			// obj prob
+			self.expandObj( arg )
+			
+		})
+		
+		if ( open )
+			console.groupEnd()
+		
+	}
+	
+	ns.MultiLog.prototype.outputStr = function( arg ) {
+		const self = this
+		arg = String( arg )
+		if ( arg.length < 100 ) {
+			console.log( arg )
+			return
+		}
+		
+		const out = arg.split( ',' )
+		console.group( 'split' )
+		console.log( ...out )
+		console.groupEnd()
+	}
+	
+	ns.MultiLog.prototype.expandArr = function( arr ) {
+		const self = this
+		console.log( 'expandArr', arr )
+		console.log( '[' )
+		console.group( '[' )
+		arr.forEach( item => {
+			JSON.stringify( item )
+		})
+		console.groupEnd( ']' )
+		console.log( ']' )
+	}
+	
+	ns.MultiLog.prototype.expandObj = function( obj ) {
+		const self = this
+		console.log( 'expandObj', obj )
+		console.group()
+		const str = JSON.stringify( obj )
+		self.outputStr( str )
+		console.groupEnd()
+	}
+	
+})( library.component )

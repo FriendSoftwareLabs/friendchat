@@ -2489,20 +2489,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.isBlind = false;
 		self.isMute = false;
 		
-		self.metaInterval = null;
-		self.syncInterval = null;
-		self.syncStamp = null;
-		self.isHost = null;
+		self.metaInterval = null
+		self.syncInterval = null
+		self.syncStamp = null
+		self.isHost = null
 		
-		self.pingInterval = null;
-		self.pingStep = 1000 * 3;
-		self.pingTimeout = 1000 * 10;
-		self.pingTimeouts = {};
-		self.pongs = [];
+		self.pingInterval = null
+		self.pingStep = 1000 * 3
+		self.pingTimeout = 1000 * 10
+		self.pingTimeouts = {}
+		self.pongs = []
 		
-		self.spam = false
+		self.spam = true
 		
-		self.init( conf.signal );
+		self.init( conf.signal )
 	}
 	
 	ns.Peer.prototype = Object.create( library.component.EventEmitter.prototype );

@@ -800,7 +800,7 @@ library.rtc = library.rtc || {};
 		self.channels = {}
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false
+		self.spam = true
 		
 		self.log( 'Session', type )
 		
@@ -2385,35 +2385,35 @@ library.rtc = library.rtc || {};
 
 (function( ns, undefined ) {
 	ns.RTCStats = function( browser, label ) {
-		const self = this;
-		self.browser = browser;
-		self.label = label;
+		const self = this
+		self.browser = browser
+		self.label = label
 		
-		self.rtcConn = null;
-		self.baseRate = 500;
-		self.extendedRate = 1000 * 4;
-		self.extendedChecked = false;
-		self.statsCache = {};
+		self.rtcConn = null
+		self.baseRate = 500
+		self.extendedRate = 1000 * 4
+		self.extendedChecked = false
+		self.statsCache = {}
 		
-		library.component.EventEmitter.call( self );
+		library.component.EventEmitter.call( self )
 		
-		self.spam = false
+		self.spam = new library.component.MultiLog({ alwaysChop : true })
 		
-		self.init();
+		self.init()
 	}
 	
-	ns.RTCStats.prototype = Object.create( library.component.EventEmitter.prototype );
+	ns.RTCStats.prototype = Object.create( library.component.EventEmitter.prototype )
 	
 	// Public
 	
 	ns.RTCStats.prototype.setRate = function( rate ) {
-		const self = this;
+		const self = this
 		if ( null == rate )
-			self.baseRate = 500;
+			self.baseRate = 500
 		else
-			self.baseRate = rate;
+			self.baseRate = rate
 		
-		self.setPollers();
+		self.setPollers()
 	}
 	
 	ns.RTCStats.prototype.resume = function() {
@@ -2491,7 +2491,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.log = function( ...args ) {
 		const self = this
-		if ( true != self.spam )
+		if ( null == self.spam )
 			return
 		
 		let desc = args.shift()
@@ -2499,7 +2499,8 @@ library.rtc = library.rtc || {};
 		if ( null != self.label )
 			desc = self.label + ' ' + desc
 		
-		console.log( desc, ...args )
+		self.spam.log( desc, ...args )
+		//console.log( desc, ...args )
 	}
 	
 	ns.RTCStats.prototype.setPollers = function() {
