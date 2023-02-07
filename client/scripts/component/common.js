@@ -1139,7 +1139,7 @@ inherits from EventEmitter
 		self.current = null;
 	}
 	
-})( library.component )
+})( library.component );
 
 (function( ns, undefined ) {
 	ns.MultiLog = function( opts ) {
@@ -1247,4 +1247,4 @@ inherits from EventEmitter
 		console.groupEnd()
 	}
 	
-})( library.component )
+})( library.component );
