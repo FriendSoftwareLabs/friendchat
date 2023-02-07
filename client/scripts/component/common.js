@@ -1198,14 +1198,7 @@ inherits from EventEmitter
 				return
 			}
 			
-			if ( 'array' == typeof arg ) {
-				self.expandArr( arg )
-				return
-			}
-			
-			// obj prob
-			self.expandObj( arg )
-			
+			self.expandItem( arg )
 		})
 		
 		if ( open )
@@ -1227,13 +1220,21 @@ inherits from EventEmitter
 		console.groupEnd()
 	}
 	
+	ns.MultiLog.prototype.expandItem = function( item ) {
+		const self = this
+		if ( 'array' == typeof item )
+			self.expandArr( item )
+		else
+			self.expandObj( item )
+	}
+	
 	ns.MultiLog.prototype.expandArr = function( arr ) {
 		const self = this
-		console.log( 'expandArr', arr )
+		//console.log( 'expandArr', arr )
 		console.log( '[' )
 		console.group( '[' )
 		arr.forEach( item => {
-			JSON.stringify( item )
+			self.expandItem( item )
 		})
 		console.groupEnd( ']' )
 		console.log( ']' )
@@ -1241,8 +1242,13 @@ inherits from EventEmitter
 	
 	ns.MultiLog.prototype.expandObj = function( obj ) {
 		const self = this
-		console.log( 'expandObj', obj )
 		console.group()
+		if ( null == obj ) {
+			console.log( 'nulldefined' )
+			console.groupEnd()
+			return
+		}
+		
 		let str = null
 		try {
 			str = JSON.stringify( obj )
@@ -1255,7 +1261,7 @@ inherits from EventEmitter
 			ks.forEach( k => {
 				const v = obj[ k ]
 				console.log( k + ' : ' )
-				self.expandObj( v )
+				self.expandItem( v )
 			})
 			
 			console.log( '}' )
