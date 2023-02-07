@@ -1249,10 +1249,7 @@ inherits from EventEmitter
 			return
 		}
 		
-		let str = null
-		try {
-			str = JSON.stringify( obj )
-		} catch( ex ) {}
+		const str = notCirc( obj )
 		if ( null != str )
 			self.outputStr( str )
 		else {
@@ -1260,13 +1257,26 @@ inherits from EventEmitter
 			const ks = Object.keys( obj )
 			ks.forEach( k => {
 				const v = obj[ k ]
-				console.log( k + ' : ' )
-				self.expandItem( v )
+				if ( notCirc( v )) {
+					console.log( k + ' : ' )
+					self.expandItem( v )
+				} else
+					console.log( '[circular]' )
 			})
 			
 			console.log( '}' )
 		}
 		console.groupEnd()
+		
+		function notCirc( thing ) {
+			try {
+				str = JSON.stringify( obj )
+			} catch( ex ) {
+				return false
+			}
+			
+			return str
+		}
 	}
 	
 })( library.component );
