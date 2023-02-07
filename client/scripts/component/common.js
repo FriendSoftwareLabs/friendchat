@@ -1257,7 +1257,7 @@ inherits from EventEmitter
 		else {
 			const str = objToString( obj )
 			console.log( '{' )
-			self.outputStr()
+			self.outputStr( str )
 			console.log( '}' )
 		}
 		console.groupEnd()
