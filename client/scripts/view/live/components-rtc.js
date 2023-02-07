@@ -2491,7 +2491,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.log = function( ...args ) {
 		const self = this
-		if ( null == self.spam )
+		if ( !self.spam )
 			return
 		
 		let desc = args.shift()
@@ -2499,8 +2499,8 @@ library.rtc = library.rtc || {};
 		if ( null != self.label )
 			desc = self.label + ' ' + desc
 		
-		self.spam.log( desc, ...args )
-		//console.log( desc, ...args )
+		//self.spam.log( desc, ...args )
+		console.log( desc, ...args )
 	}
 	
 	ns.RTCStats.prototype.setPollers = function() {
