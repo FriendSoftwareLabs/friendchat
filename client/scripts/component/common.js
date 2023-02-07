@@ -1185,6 +1185,7 @@ inherits from EventEmitter
 		let firstArg = null
 		let open = false
 		inn.forEach( arg => {
+			console.log( 'chopToStrings', inn )
 			if ( null == firstArg ) {
 				firstArg = arg
 			} else {
@@ -1222,6 +1223,7 @@ inherits from EventEmitter
 	
 	ns.MultiLog.prototype.expandItem = function( item ) {
 		const self = this
+		console.log( 'expandITem', item )
 		if ( 'array' == typeof item )
 			self.expandArr( item )
 		else
@@ -1244,7 +1246,7 @@ inherits from EventEmitter
 		const self = this
 		console.group()
 		if ( null == obj ) {
-			console.log( 'nulldefined' )
+			console.log( 'nullfined' )
 			console.groupEnd()
 			return
 		}
@@ -1261,7 +1263,7 @@ inherits from EventEmitter
 					console.log( k + ' : ' )
 					self.expandItem( v )
 				} else
-					console.log( '[circular]' )
+					console.log( '[circular]: ' + k )
 			})
 			
 			console.log( '}' )
