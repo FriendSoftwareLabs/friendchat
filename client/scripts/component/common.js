@@ -1243,8 +1243,23 @@ inherits from EventEmitter
 		const self = this
 		console.log( 'expandObj', obj )
 		console.group()
-		const str = JSON.stringify( obj )
-		self.outputStr( str )
+		let str = null
+		try {
+			str = JSON.stringify( obj )
+		} catch( ex ) {}
+		if ( null != str )
+			self.outputStr( str )
+		else {
+			console.log( '{' )
+			const ks = Object.keys( obj )
+			ks.forEach( k => {
+				const v = obj[ k ]
+				console.log( k + ' : ' )
+				self.expandObj( v )
+			})
+			
+			console.log( '}' )
+		}
 		console.groupEnd()
 	}
 	
