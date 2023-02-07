@@ -2851,6 +2851,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.setupStats = function() {
 		const self = this;
+		console.log( 'setupStats', window.View )
+		if ( 1 )
+			return
+			
 		if ( self.stats )
 			self.stats.close();
 		
