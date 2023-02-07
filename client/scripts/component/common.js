@@ -1255,17 +1255,9 @@ inherits from EventEmitter
 		if ( str )
 			self.outputStr( str )
 		else {
+			const str = objToString( obj )
 			console.log( '{' )
-			const ks = Object.keys( obj )
-			ks.forEach( k => {
-				const v = obj[ k ]
-				if ( notCirc( v )) {
-					console.log( k + ' : ' )
-					self.expandItem( v )
-				} else
-					console.log( '[circular]: ' + k )
-			})
-			
+			self.outputStr()
 			console.log( '}' )
 		}
 		console.groupEnd()
@@ -1277,6 +1269,14 @@ inherits from EventEmitter
 				return false
 			}
 			
+			return str
+		}
+		
+		function objToString ( obj ) {
+			let str = ''
+			for ( const [ p, val ] of Object.entries( obj )) {
+				str += `${p} : ${val}\n`
+			}
 			return str
 		}
 	}
