@@ -1252,7 +1252,7 @@ inherits from EventEmitter
 		}
 		
 		const str = notCirc( obj )
-		if ( null != str )
+		if ( str )
 			self.outputStr( str )
 		else {
 			console.log( '{' )
