@@ -1181,6 +1181,7 @@ inherits from EventEmitter
 	}
 	
 	ns.MultiLog.prototype.chopToStrings = function( inn ) {
+		const self = this
 		let firstArg = null
 		let open = false
 		inn.forEach( arg => {
