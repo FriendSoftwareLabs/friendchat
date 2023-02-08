@@ -1003,24 +1003,25 @@ library.rtc = library.rtc || {};
 	}
 	
 	ns.Session.prototype.getStats = function() {
-		const self = this;
+		const self = this
 		return new Promise(( ook, eek ) => {
 			if ( null == self.conn ) {
-				eek( 'ERR_NO_CONN' );
-				return;
+				eek( 'ERR_NO_CONN' )
+				return
 			}
 			
+			/*
 			if ( 'nominal' != self.state ) {
-				eek( 'ERR_INVALID_STATE' );
-				return;
+				eek( 'ERR_INVALID_STATE' )
+				return
 			}
-			
+			*/
 			
 			self.conn.getStats()
 				.then( ook )
-				.catch( eek );
+				.catch( eek )
 			
-		});
+		})
 	}
 	
 	ns.Session.prototype.negotiate = function() {
@@ -2536,30 +2537,27 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
-	ns.RTCStats.prototype.getStats = function() {
+	ns.RTCStats.prototype.getStats = async function() {
 		const self = this;
 		self.log( 'getStats', !!self.rtcConn )
 		if ( !self.rtcConn )
 			return;
 		
-		self.rtcConn.getStats()
-			.then( statsBack )
-			.catch( bonk );
-		
-		function bonk( err ) {
-			self.log( 'getStats - failed to get stats', err );
-			self.emitError( err );
+		let raw = null
+		try {
+			raw = await self.rtcConn.getStats()
+		} catch( ex ) {
+			self.log( 'getStats ex', ex )
+			self.emitError( 'ERR_INVALID_STATE' )
 		}
 		
-		function statsBack( raw ) {
-			self.raw = raw;
-			//self.log( 'statsBack, raw', raw )
-			self.emitBase();
-			if ( self.extendedChecked )
-				return;
-			
-			self.emitExtended()
-		}
+		self.raw = raw
+		self.log( 'statsBack, raw', raw )
+		self.emitBase()
+		if ( self.extendedChecked )
+			return
+		
+		self.emitExtended()
 	}
 	
 	ns.RTCStats.prototype.emitError = function( err ) {
