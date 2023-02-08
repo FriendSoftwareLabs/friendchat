@@ -3937,9 +3937,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.checkStats = function( stats ) {
-		const self = this;
+		const self = this
 		if ( !stats || !stats.inbound )
-			return;
+			return
 		
 		if ( null != self.extendedError ) {
 			self.log( 'clearing error grace period' )
@@ -3947,22 +3947,27 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.extendedError = null
 		}
 		
-		const trans = stats.transport;
-		const inn = stats.inbound;
-		const audio = inn.audio;
-		const video = inn.video;
+		const trans = stats.transport
+		const inn = stats.inbound
+		const audio = inn.audio
+		const video = inn.video
 		self.log( 'check extended stats',  {
 			stats : stats,
+			trans : trans,
 			audio : audio,
 			video : video,
-		});
-		let report = null;
-		if ( trans )
-			checkTransport( trans, audio, video );
+		})
+		let report = null
+		if ( null == trans ) {
+			self.log( 'checkStats - no transport, lets not', stats )
+			return
+		}
+		
+		checkTransport( trans, audio, video )
 		if ( audio )
-			checkAudio( audio );
+			checkAudio( audio )
 		if ( video )
-			checkVideo( video );
+			checkVideo( video )
 		
 		report.sessionState = self.session.state
 		report.remoteTracks = self.remoteMedia.getTracks()
@@ -3977,6 +3982,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkTransport( t, a, v ) {
+			self.log( 'checkTransport', [ t, a, v ])
 			const p = t.pair;
 			report = {
 				ping         : t.ping,
@@ -4003,6 +4009,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkAudio( a ) {
+			self.log( 'checkAudio', a )
+			report = report || {}
 			if ( !self.receiving.audio ) {
 				report.audioExpected = false;
 				return;
@@ -4021,6 +4029,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function checkVideo( v ) {
 			self.log( 'checkVideo', v )
+			report = report || {}
 			if ( !self.receiving.video ) {
 				report.videoExpected = false
 				return
