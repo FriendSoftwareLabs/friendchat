@@ -3836,25 +3836,31 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			if ( null != self.extendedError )
 				return
 			
-			self.extendedError = window.setTimeout( looksFucky, 1000 * 9 )
+			self.log( 'starting MULTI_TRACKS timer' )
+			self.extendedError = window.setTimeout(() =>
+				looksFucky( 'ERR_MULTI_TRACKS' ), 1000 * 9 )
 		}
 		
 		if ( 'ERR_WIDTH_HEIGHT_MISSING' == e.error ) {
 			if ( null != self.statsWHError )
 				return
 			
-			self.statsWHError = window.setTimeout( looksFucky, 1000 * 6 )
+			self.log( 'starting WIDTH_HEIGHT timer' )
+			self.statsWHError = window.setTimeout(() => 
+				looksFucky( 'ERR_WIDTH_HEIGHT_MISSING' ), 1000 * 6 )
 		}
 		
 		if ( 'ERR_INVALID_STATE' == e.error ) {
 			if ( null != self.statsErrorGracePeriod )
 				return
 			
-			self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 6 )
+			self.log( 'starting INVALID_STATE timer' )
+			self.statsErrorGracePeriod = window.setTimeout(() => 
+				looksFucky( 'ERR_INVALID_STATE' ), 1000 * 16 )
 		}
 		
-		function looksFucky() {
-			self.log( 'looksFucky, restart' )
+		function looksFucky( err ) {
+			self.log( 'looksFucky, restart', err )
 			if ( null != self.statsWHError )
 				window.clearTimeout( self.statsWHError )
 			if ( null != self.extendedError )

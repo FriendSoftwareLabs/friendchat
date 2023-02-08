@@ -2397,7 +2397,7 @@ library.rtc = library.rtc || {};
 		
 		library.component.EventEmitter.call( self )
 		
-		self.spam = new library.component.MultiLog({ alwaysChop : true })
+		self.spam = true
 		
 		self.init()
 	}
