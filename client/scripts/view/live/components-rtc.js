@@ -2593,7 +2593,6 @@ library.rtc = library.rtc || {};
 		let audio = null;
 		let video = null;
 		
-		/*
 		self.log( 'emitbase sources', {
 			tracks : tracks,
 			aId : self.aId,
@@ -2601,7 +2600,6 @@ library.rtc = library.rtc || {};
 			vId : self.vId,
 			vT  : vT,
 		})
-		*/
 		
 		if ( null != aT ) {
 			audio = {
