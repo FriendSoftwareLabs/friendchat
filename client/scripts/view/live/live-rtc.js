@@ -3860,7 +3860,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function looksFucky( err ) {
-			self.log( 'looksFucky, restart', err )
 			if ( null != self.statsWHError )
 				window.clearTimeout( self.statsWHError )
 			if ( null != self.extendedError )
@@ -3871,6 +3870,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			self.statsErrorGracePeriod = null
 			self.extendedError = null
 			self.statsWHError = null
+			
+			if ( self.screenShare && ( err == 'ERR_WIDTH_HEIGHT_MISSING' ))
+				return
+			
+			self.log( 'looksFucky, restart', err )
 			
 			self.restart()
 		}
