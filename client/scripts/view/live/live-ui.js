@@ -4215,6 +4215,8 @@ library.component = library.component || {};
 		self.spinMap = {}
 		self.traceTim = null
 		
+		self.spam = true
+		
 		self.init()
 	}
 	
@@ -4222,6 +4224,7 @@ library.component = library.component || {};
 	
 	ns.RTCState.prototype.update = function( event ) {
 		const self = this;
+		self.log( 'update', event )
 		const handler = self.typeMap[ event.type ]
 		
 		if ( !handler ) {
@@ -4271,6 +4274,16 @@ library.component = library.component || {};
 			show = false;
 		
 		self.main.classList.toggle( 'hidden', !show );
+	}
+	
+	ns.RTCState.prototype.log = function( ...inn ) {
+		const self = this
+		if ( !self.spam )
+			return
+		
+		let desc = inn.pop()
+		desc = 'RTCState > ' + desc
+		console.log( desc, ...inn )
 	}
 	
 	ns.RTCState.prototype.init = function() {
@@ -4369,13 +4382,14 @@ library.component = library.component || {};
 	
 	ns.RTCState.prototype.setSpinner = function( type, level ) {
 		const self = this;
-		const prev = self.currentSpinner;
-		level = self.getLevel( level );
-		self.spinMap[ type ] = level;
-		level = getMaxLevel();
+		self.log( 'setSpinner', type, level )
+		const prev = self.currentSpinner
+		level = self.getLevel( level )
+		self.spinMap[ type ] = level
+		level = getMaxLevel()
 		
 		if ( prev === level )
-			return;
+			return
 		
 		hideOld( prev );
 		showNew( level );
@@ -4419,6 +4433,7 @@ library.component = library.component || {};
 			return;
 		}
 		*/
+		self.log( 'handleRTCState', event )
 		
 		if ( 'routing' === event.type ) {
 			self.rtcRouting.textContent = event.data.data;
@@ -4431,21 +4446,22 @@ library.component = library.component || {};
 	}
 	
 	ns.RTCState.prototype.handleStats = function( data ) {
-		const self = this;
+		const self = this
+		self.log( 'handleStats', data )
 		const trans = data.transport;
 		if ( trans.receiveRate ) {
-			const KBs = Math.round( trans.receiveRate / 1024 );
-			self.rtcReceiving.textContent =  KBs + ' KB/s';
+			const KBs = Math.round( trans.receiveRate / 1024 )
+			self.rtcReceiving.textContent =  KBs + ' KB/s'
 		}
 		
 		if ( trans.bytesReceived ) {
-			const total = ( trans.bytesReceived / 1024 / 1024 ).toFixed( 1 );
-			self.rtcReceived.textContent =  total + ' MB';
+			const total = ( trans.bytesReceived / 1024 / 1024 ).toFixed( 1 )
+			self.rtcReceived.textContent =  total + ' MB'
 		}
 		
 		if ( null != trans.ping ) {
 			if ( self.rtcPing )
-				self.rtcPing.set( trans.ping );
+				self.rtcPing.set( trans.ping )
 		}
 		
 		if ( trans.pair ) {
@@ -4501,11 +4517,13 @@ library.component = library.component || {};
 	}
 	
 	ns.RTCState.prototype.handleSignal = function( e ) {
-		
+		self = this
+		self.log( 'handleSignal', e )
 	}
 	
 	ns.RTCState.prototype.handleStreamState = function( data ) {
-		const self = this;
+		const self = this
+		self.log( 'handleStreamState', data )
 		if ( data.tracks )
 			setAudioVideo( data.tracks );
 		
