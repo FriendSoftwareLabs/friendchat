@@ -4281,7 +4281,7 @@ library.component = library.component || {};
 		if ( !self.spam )
 			return
 		
-		let desc = inn.pop()
+		let desc = inn.shift()
 		desc = 'RTCState > ' + desc
 		console.log( desc, ...inn )
 	}
@@ -4304,7 +4304,7 @@ library.component = library.component || {};
 		try {
 			self.bind();
 		} catch( ex ) {
-			console.log( 'bind ex', ex );
+			self.log( 'bind ex', ex );
 		}
 		
 		const rtcPingBar = self.mainState
