@@ -2391,7 +2391,7 @@ library.rtc = library.rtc || {};
 		self.label = label
 		
 		self.rtcConn = null
-		self.baseRate = 500
+		self.baseRate = 1000
 		self.extendedRate = 1000 * 4
 		self.extendedChecked = false
 		self.statsCache = {}
@@ -2410,7 +2410,7 @@ library.rtc = library.rtc || {};
 	ns.RTCStats.prototype.setRate = function( rate ) {
 		const self = this
 		if ( null == rate )
-			self.baseRate = 500
+			self.baseRate = 1000
 		else
 			self.baseRate = rate
 		
@@ -2667,10 +2667,12 @@ library.rtc = library.rtc || {};
 		
 		let track = null
 		let type = null
+		const tracks = []
 		self.raw.forEach( t => {
 			if ( 'track' != t.type )
 				return;
 			
+			tracks.push( t )
 			if ( !t.remoteSource )
 				return;
 			
@@ -2683,8 +2685,11 @@ library.rtc = library.rtc || {};
 		})
 		
 		if ( !track ) {
-			self.log( 'discoverTrack - no track found for', id )
-			return null;
+			self.log( 'discoverTrack - no track found for', {
+				id     : id,
+				tracks : tracks,
+			})
+			return null
 		}
 		
 		if ( 'audio' == type ) {
@@ -2992,7 +2997,7 @@ library.rtc = library.rtc || {};
 		self.giveUp = false
 		
 		self.logId = logId
-		self.spam = false
+		self.spam = true
 		
 		self.init( quality )
 	}
