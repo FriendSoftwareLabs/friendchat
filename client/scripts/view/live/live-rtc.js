@@ -3889,7 +3889,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.checkStats( stats.data )
-		//self.emit( 'state', stats )
+		self.emit( 'state', stats )
 	}
 	
 	ns.Peer.prototype.handleBaseStats = function( base ) {
@@ -4236,22 +4236,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.emitStreamState = function( state ) {
-		var self = this;
+		const self = this
 		if ( state )
-			self.streamState = state;
+			self.streamState = state
 		
-		state = state || self.streamState;
-		const tracks = getTracks();
-		const constraints = getConstraints();
+		state = state || self.streamState
+		const tracks = getTracks()
+		const constraints = getConstraints()
 		
-		var streamState = {
+		const streamState = {
 			type : 'stream',
 			data : {
 				type        : state,
 				tracks      : tracks,
 				constraints : constraints,
 			}
-		};
+		}
 		
 		self.emit( 'state', streamState );
 		
