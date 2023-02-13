@@ -3318,10 +3318,10 @@ library.rtc = library.rtc || {};
 		
 		self.shareQualityKeys = [ 'frameRate' ];
 		self.shareQualityMap = {
-			'pixel'   : [ 1 ],
-			'low'     : [ 1 ],
-			'medium'  : [ 2 ],
-			'normal'  : [ 4 ],
+			'pixel'   : [ 2 ],
+			'low'     : [ 2 ],
+			'medium'  : [ 4 ],
+			'normal'  : [ 8 ],
 			'high'    : [ 24 ],
 		};
 		
