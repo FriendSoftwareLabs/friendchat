@@ -2711,6 +2711,13 @@ library.rtc = library.rtc || {};
 		if ( !self.raw )
 			return
 		
+		self.log( 'emitExtended - look for', {
+			a : self.aId,
+			v : self.vId,
+			aD : self.aDiscover,
+			vD : self.aDiscover,
+		})
+		
 		self.extendedChecked = true
 		const stats = self.raw
 		const byType = {}
@@ -2736,8 +2743,8 @@ library.rtc = library.rtc || {};
 		self.log( 'byId', byId )
 		self.log( 'byType', byType )
 		const res = {};
-		const inn = byType[ 'inbound-rtp' ];
-		const out = byType[ 'outbound-rtp' ];
+		const inn = byType[ 'inbound-rtp' ]
+		const out = byType[ 'outbound-rtp' ]
 		let multiAudio = false
 		let WHNotSet = false
 		let aT = false
@@ -2821,6 +2828,9 @@ library.rtc = library.rtc || {};
 				rtp.track = track
 				rtp.codec = codec
 				if ( 'audio' == type ) {
+					if ( null == self.aId )
+						return false
+					
 					if ( true == aT ) {
 						multiAudio = true
 						return true
@@ -2831,6 +2841,9 @@ library.rtc = library.rtc || {};
 				}
 				
 				if ( 'video' == type ) {
+					if ( null == self.vId )
+						return false
+					
 					if ( null == rtp.frameHeight || null == rtp.frameWidth ) {
 						WHNotSet = true
 						return true
