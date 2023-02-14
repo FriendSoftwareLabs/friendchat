@@ -4041,6 +4041,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				self.log( 'XXX pliCount', v.pliCount )
 			}
 			
+			if ( v.jitter )
+			
 			report = report || {}
 			if ( !self.receiving.video ) {
 				report.videoExpected = false

@@ -4343,12 +4343,13 @@ library.component = library.component || {};
 		self.audioInput = self.audio.querySelector( '.state-audio-input .state-value' );
 		self.audioLost = self.audio.querySelector( '.state-audio-lost .state-value' );
 		
-		self.video = streamState.querySelector( '.state-video' );
-		self.videoTrack = self.video.querySelector( '.state-video-track .state-value' );
-		self.videoCodec = self.video.querySelector( '.state-video-codec .state-value' );
-		self.videoSize = self.video.querySelector( '.state-video-size .state-value' );
-		self.videoFPS = self.video.querySelector( '.state-video-fps .state-value' );
-		self.videoLost = self.video.querySelector( '.state-video-lost .state-value' );
+		self.video = streamState.querySelector( '.state-video' )
+		self.videoTrack = self.video.querySelector( '.state-video-track .state-value' )
+		self.videoCodec = self.video.querySelector( '.state-video-codec .state-value' )
+		self.videoSize = self.video.querySelector( '.state-video-size .state-value' )
+		self.videoFPS = self.video.querySelector( '.state-video-fps .state-value' )
+		self.videoJitter = self.video.querySelector( '.state-video-jitter .state-value' )
+		self.videoLost = self.video.querySelector( '.state-video-lost .state-value' )
 		
 		self.stateError = self.mainState
 			.querySelector( '.main-state-error .state-value' );
@@ -4468,7 +4469,7 @@ library.component = library.component || {};
 		if ( trans.pair ) {
 			const bandWidth = trans.pair.availableOutgoingBitrate || 0;
 			const maxKBit = ( bandWidth / 8 / 1024 ).toFixed( 1 );
-			self.rtcBandwidth.textContent = maxKBit + ' KBytes';
+			self.rtcBandwidth.textContent = maxKBit + ' KB/s';
 		}
 		
 		const inn = data.inbound;
@@ -4515,6 +4516,11 @@ library.component = library.component || {};
 					self.videoFPS.textContent = v.framesPerSecond
 				else
 					self.videoFPS.textContent = '--'
+				
+				if ( null != v.jitter )
+					self.videoJitter.textContent = v.jitter
+				else
+					self.videoJitter.textContent = '--'
 			}
 			
 			const pLoss = v.packetLoss || 0;
