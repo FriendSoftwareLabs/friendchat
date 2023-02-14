@@ -4033,6 +4033,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function checkVideo( v ) {
 			self.log( 'checkVideo', v )
+			if ( !v.firCount ) {
+				self.log( 'XXX firCount', v.firCount )
+			}
+			
+			if ( !v.pliCount ) {
+				self.log( 'XXX pliCount', v.pliCount )
+			}
+			
 			report = report || {}
 			if ( !self.receiving.video ) {
 				report.videoExpected = false

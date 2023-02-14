@@ -4347,6 +4347,7 @@ library.component = library.component || {};
 		self.videoTrack = self.video.querySelector( '.state-video-track .state-value' );
 		self.videoCodec = self.video.querySelector( '.state-video-codec .state-value' );
 		self.videoSize = self.video.querySelector( '.state-video-size .state-value' );
+		self.videoFPS = self.video.querySelector( '.state-video-fps .state-value' );
 		self.videoLost = self.video.querySelector( '.state-video-lost .state-value' );
 		
 		self.stateError = self.mainState
@@ -4501,14 +4502,19 @@ library.component = library.component || {};
 		
 		function setVideo( v ) {
 			const codec = v.codec;
-			if ( null != codec )
+			if ( null != codec && null != self.videoCodec )
 				self.videoCodec.textContent = codec.mimeType.split( '/' )[ 1 ];
 			
 			const t = v.track;
+			self.log( 'track', t )
 			if ( null != t ) {
 				const h = t.frameHeight;
 				const w = t.frameWidth;
 				self.videoSize.textContent = w + 'x' + h;
+				if ( t.framesPerSecond )
+					self.videoFPS.textContent = t.framesPerSecond
+				else
+					self.videoFPS.textContent = '--'
 			}
 			
 			const pLoss = v.packetLoss || 0;

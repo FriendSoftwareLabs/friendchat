@@ -2913,14 +2913,14 @@ library.rtc = library.rtc || {};
 			if ( !byType.transport )
 				return null;
 			
-			const t = byType.transport[ 0 ];
-			const p = byId[ t.selectedCandidatePairId ];
-			const local = byId[ p.localCandidateId ];
-			const remote = byId[ p.remoteCandidateId ];
-			t.pair = p;
-			t.local = local;
-			t.remote = remote;
-			const c = self.statsCache.transport;
+			const t = byType.transport[ 0 ]
+			const p = byId[ t.selectedCandidatePairId ]
+			const local = byId[ p.localCandidateId ]
+			const remote = byId[ p.remoteCandidateId ]
+			t.pair = p
+			t.local = local
+			t.remote = remote
+			const c = self.statsCache.transport
 			if ( c ) {
 				const time = t.timestamp;
 				const sent = t.bytesSent;
