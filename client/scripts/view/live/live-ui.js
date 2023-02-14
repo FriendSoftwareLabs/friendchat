@@ -4511,8 +4511,8 @@ library.component = library.component || {};
 				const h = t.frameHeight;
 				const w = t.frameWidth;
 				self.videoSize.textContent = w + 'x' + h;
-				if ( t.framesPerSecond )
-					self.videoFPS.textContent = t.framesPerSecond
+				if ( v.framesPerSecond )
+					self.videoFPS.textContent = v.framesPerSecond
 				else
 					self.videoFPS.textContent = '--'
 			}
