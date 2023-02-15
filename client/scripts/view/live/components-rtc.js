@@ -2948,17 +2948,16 @@ library.rtc = library.rtc || {};
 				|| null == b1
 				|| null == b2
 			) {
-				return null;
+				return null
 			}
 			
-			const dt = t2 - t1;
-			const db = b2 - b1;
+			const dt = t2 - t1
+			const db = b2 - b1
 			
-			self.log( 'scale', scale )
 			// things per second
 			scale = scale / dt
 			const tps = +( 1.0 * db * scale ).toFixed( 4 )
-			/*
+			
 			self.log( 'rate', {
 				t1 : t1,
 				t2 : t2,
@@ -2969,9 +2968,9 @@ library.rtc = library.rtc || {};
 				scale : scale,
 				tps : tps,
 			});
-			*/
-			//self.log( 'tps', tps );
-			return tps;
+			
+			//self.log( 'tps', tps )
+			return tps
 		}
 		
 		function done( res ) {
