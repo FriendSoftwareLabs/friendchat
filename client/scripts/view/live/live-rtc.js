@@ -3119,7 +3119,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.doRestart = function() {
 		const self = this
-		self.log( 'doRestart', self.state )
+		self.log( 'YYY doRestart', self.state )
 		
 		if ( null != self.statsWHError )
 			window.clearTimeout( self.statsWHError )
