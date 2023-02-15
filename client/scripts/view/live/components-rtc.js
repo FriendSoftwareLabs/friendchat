@@ -2585,7 +2585,7 @@ library.rtc = library.rtc || {};
 		if ( null == aTrack )
 			return
 		
-		self.log( 'alevel track', track )
+		self.log( 'alevel track', aTrack )
 		self.emit( 'audio-level', aTrack.audioLevel )
 	}
 	
