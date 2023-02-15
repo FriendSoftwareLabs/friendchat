@@ -2258,9 +2258,9 @@ library.component = library.component || {};
 		const self = this;
 		let rate = null;
 		if ( self.showAsSpeaker || self.isSpeaker )
-			rate = 50;
+			rate = 50
 		if ( self.fastRefresh )
-			rate = 20;
+			rate = 20
 		
 		self.peer.setStatsRate( rate );
 	}
