@@ -2892,7 +2892,7 @@ library.rtc = library.rtc || {};
 					const bps = getRate( c.time, time, c.bytesReceived  , v.bytesReceived )
 					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived )
 					const lps = getRate( c.time, time, c.packetsLost    , v.packetsLost )
-					const fps = getRate( c.time, time, c.framesRx       , v.framesReceived, 1.0 )
+					const fps = getRate( c.time, time, c.framesRx       , v.framesReceived )
 					v.byteRate = bps
 					v.packetRate = pps
 					v.packetLoss = lps
@@ -2942,7 +2942,7 @@ library.rtc = library.rtc || {};
 			return t;
 		}
 		
-		function getRate( t1, t2, b1, b2, scale=1000.0 ) {
+		function getRate( t1, t2, b1, b2 ) {
 			if ( null == t1
 				|| null == t2
 				|| null == b1
@@ -2955,7 +2955,7 @@ library.rtc = library.rtc || {};
 			const db = b2 - b1
 			
 			// things per second
-			scale = scale / dt
+			const scale = 1000.0 / dt
 			const tps = +( 1.0 * db * scale ).toFixed( 4 )
 			
 			self.log( 'rate', {
