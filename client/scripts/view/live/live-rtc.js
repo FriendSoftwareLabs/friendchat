@@ -2861,8 +2861,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const id = self.identity;
 		const name = id.name;
 		self.stats = new library.rtc.RTCStats( self.browser, name );
-		self.stats.on( 'base', e => self.handleBaseStats( e ));
-		self.stats.on( 'extended', e => self.handleFullStats( e ));
+		self.stats.on( 'audio-level', self.handleStatsAudioLevel( e ))
+		self.stats.on( 'base', e => self.handleBaseStats( e ))
+		self.stats.on( 'extended', e => self.handleFullStats( e ))
 		self.stats.on( 'error', e => self.handleStatsError( e ))
 	}
 	
@@ -3881,6 +3882,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 	}
 	
+	ns.Peer.prototype.handleStatsAudioLevel = function( num ) {
+		const self = this
+		self.log( 'on stats audiolevel', num )
+		self.emit( 'audio-level', num )
+	}
+	
 	ns.Peer.prototype.handleFullStats = function( stats ) {
 		const self = this;
 		if ( 'error' == stats.type ) {
@@ -3898,12 +3905,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( null != self.statsErrorGracePeriod ) {
 			self.log( 'clearing error grace period' )
 			window.clearTimeout( self.statsErrorGracePeriod )
-			self.statsErrorGracePeriod = null;
+			self.statsErrorGracePeriod = null
 		}
 		
 		if ( !self.baseStats ) {
-			self.baseStats = base;
-			return;
+			self.baseStats = base
+			return
 		}
 		
 		/*
@@ -3921,23 +3928,25 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const curr = self.baseStats;
 		if ( null == curr.video && base.video ) {
-			self.emit( 'change-video-res', base.video );
+			self.emit( 'change-video-res', base.video )
 		}
 		
 		if ( curr.video && base.video ) {
 			if ( curr.video.width != base.video.width )
-				self.emit( 'change-video-res', base.video );
+				self.emit( 'change-video-res', base.video )
 		}
 		
 		if ( curr.video && ( null == base.video )) {
-			self.emit( 'change-video-res', null );
+			self.emit( 'change-video-res', null )
 		}
 		
+		/*
 		if ( curr.audio && base.audio ) {
-			self.emit( 'audio-level', base.audio.level );
+			self.emit( 'audio-level', base.audio.level )
 		}
+		*/
 		
-		self.baseStats = base;
+		self.baseStats = base
 	}
 	
 	ns.Peer.prototype.checkStats = function( stats ) {

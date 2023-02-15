@@ -2570,10 +2570,25 @@ library.rtc = library.rtc || {};
 		if ( null == raw )
 			return
 		
-		self.log( 'alevel stats', raw )
-		raw.forEach( item => {
-			self.log( 'alevel item', item )
+		let aTrack = null
+		raw.some( item => {
+			if ( null == item.trackIdentifier )
+				return false
+			
+			if ( item.trackIdentifier == self.aId )
+				aTrack = item
+			
+			if ( null == aTrack )
+				return false
+			else
+				return true
 		})
+		
+		if ( null == aTrack )
+			return
+		
+		self.log( 'alevel track', track )
+		self.emit( 'audio-level', aTrack.audioLevel )
 	}
 	
 	ns.RTCStats.prototype.getStats = async function() {
