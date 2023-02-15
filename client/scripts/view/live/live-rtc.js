@@ -3953,6 +3953,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const trans = stats.transport
 		const inn = stats.inbound
+		const raw = stats.raw
 		const audio = inn.audio
 		const video = inn.video
 		self.log( 'check extended stats',  {
@@ -3961,6 +3962,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			audio : audio,
 			video : video,
 		})
+		if ( null != raw )
+			checkOutgoing( raw.byType )
+		
 		let report = null
 		if ( null == trans ) {
 			self.log( 'checkStats - no transport, lets not', stats )
@@ -4063,6 +4067,17 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				} else
 					self.refreshVideo();
 			}
+		}
+		
+		function checkOutgoing( byType ) {
+			self.log( 'checkOut', byType )
+			const out = byType[ 'outbound-rtp' ]
+			out.forEach( ortp => {
+				if ( 'video' != ortp.kind )
+					return
+				
+				self.log( 'ortp v', ortp )
+			})
 		}
 		
 	}
