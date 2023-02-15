@@ -2392,6 +2392,7 @@ library.rtc = library.rtc || {};
 		
 		self.rtcConn = null
 		self.baseRate = 1000
+		self.audioRate = 1000
 		self.extendedRate = 1000 * 4
 		self.extendedChecked = false
 		self.statsCache = {}
@@ -2410,9 +2411,9 @@ library.rtc = library.rtc || {};
 	ns.RTCStats.prototype.setRate = function( rate ) {
 		const self = this
 		if ( null == rate )
-			self.baseRate = 1000
+			self.setAudioRate = 1000
 		else
-			self.baseRate = rate
+			self.setAudioRate = rate
 		
 		self.setPollers()
 	}
@@ -2507,16 +2508,21 @@ library.rtc = library.rtc || {};
 	ns.RTCStats.prototype.setPollers = function() {
 		const self = this;
 		self.log( 'setPollers' )
-		self.clearPollers();
+		self.clearPollers()
 		
-		self.baseInterval = window.setInterval( getStats, self.baseRate );
-		function getStats() {
-			self.getStats();
+		self.audioInterval = window.setInterval( getAudio, self.audioRate )
+		function getAudio() {
+			self.getAudioLevel()
 		}
 		
-		self.extendedInterval = window.setInterval( checkExt, self.extendedRate );
+		self.baseInterval = window.setInterval( getStats, self.baseRate )
+		function getStats() {
+			self.getStats()
+		}
+		
+		self.extendedInterval = window.setInterval( checkExt, self.extendedRate )
 		function checkExt() {
-			self.extendedChecked = false;
+			self.extendedChecked = false
 		}
 	}
 	
@@ -2537,10 +2543,29 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
+	ns.RTCStats.prototype.getAudioLevel = async function() {
+		const self = this
+		if ( !self.rtcConn )
+			return
+		
+		if ( null == self.aId )
+			return
+		
+		let raw = null
+		try {
+			raw = await self.rtcConn.getStats( self.aId )
+		} catch( ex ) {
+			self.log( 'getAudioLevel getStats ex', ex )
+			self.emitError( 'ERR_INVALID_STATE' )
+		}
+		
+		self.log( 'raw a', raw )
+	}
+	
 	ns.RTCStats.prototype.getStats = async function() {
 		const self = this;
 		if ( !self.rtcConn )
-			return;
+			return
 		
 		let raw = null
 		try {
