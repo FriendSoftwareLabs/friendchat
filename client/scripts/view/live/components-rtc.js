@@ -2571,17 +2571,15 @@ library.rtc = library.rtc || {};
 			return
 		
 		let aTrack = null
-		raw.some( item => {
+		raw.forEach( item => {
+			if ( null != aTrack )
+				return
+			
 			if ( null == item.trackIdentifier )
 				return false
 			
 			if ( item.trackIdentifier == self.aId )
 				aTrack = item
-			
-			if ( null == aTrack )
-				return false
-			else
-				return true
 		})
 		
 		if ( null == aTrack )
