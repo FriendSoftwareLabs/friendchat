@@ -2567,7 +2567,13 @@ library.rtc = library.rtc || {};
 			self.emitError( 'ERR_INVALID_STATE' )
 		}
 		
-		self.log( 'raw a', raw )
+		if ( null == raw )
+			return
+		
+		self.log( 'alevel stats', raw )
+		raw.forEach( item => {
+			self.log( 'alevel item', item )
+		})
 	}
 	
 	ns.RTCStats.prototype.getStats = async function() {
