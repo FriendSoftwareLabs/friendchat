@@ -2958,6 +2958,7 @@ library.rtc = library.rtc || {};
 			const scale = 1000.0 / dt
 			const tps = +( 1.0 * db * scale ).toFixed( dec )
 			
+			/*
 			self.log( 'rate', {
 				t1 : t1,
 				t2 : t2,
@@ -2968,6 +2969,7 @@ library.rtc = library.rtc || {};
 				scale : scale,
 				tps : tps,
 			});
+			*/
 			
 			//self.log( 'tps', tps )
 			return tps
