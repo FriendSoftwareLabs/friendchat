@@ -1002,7 +1002,7 @@ library.rtc = library.rtc || {};
 		channel.close();
 	}
 	
-	ns.Session.prototype.getStats = function() {
+	ns.Session.prototype.getStats = function( selector ) {
 		const self = this
 		return new Promise(( ook, eek ) => {
 			if ( null == self.conn ) {
@@ -1017,7 +1017,7 @@ library.rtc = library.rtc || {};
 			}
 			*/
 			
-			self.conn.getStats()
+			self.conn.getStats( selector )
 				.then( ook )
 				.catch( eek )
 			
