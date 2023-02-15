@@ -2440,10 +2440,12 @@ library.rtc = library.rtc || {};
 		if ( 'audio' == k ) {
 			self.aId = null
 			self.aDiscover = track
+			self.aTrack = null
 		}
 		if ( 'video' == k ) {
 			self.vId = null
 			self.vDiscover = track
+			self.vTrack = null
 		}
 		
 		self.discoverTrack( id )
@@ -2455,11 +2457,13 @@ library.rtc = library.rtc || {};
 		if ( 'audio' == type ) {
 			self.aId = null
 			self.aDiscover = null
+			self.aTrack = null
 		}
 		
 		if ( 'video' == type ) {
 			self.vId = null
 			self.vDiscover = null
+			self.vTrack = null
 		}
 	}
 	
@@ -2557,7 +2561,7 @@ library.rtc = library.rtc || {};
 		
 		let raw = null
 		try {
-			raw = await self.rtcConn.getStats( self.aId )
+			raw = await self.rtcConn.getStats( self.aTrack )
 		} catch( ex ) {
 			self.log( 'getAudioLevel getStats ex', ex )
 			self.emitError( 'ERR_INVALID_STATE' )
@@ -2604,7 +2608,7 @@ library.rtc = library.rtc || {};
 		let aT = null;
 		if ( null == self.aId ) {
 			if ( self.aDiscover )
-				aT = self.discoverTrack( self.aDiscover.id );
+				aT = self.discoverTrack( self.aDiscover.id )
 		}
 		else {
 			aT = get( self.aId )
@@ -2612,7 +2616,7 @@ library.rtc = library.rtc || {};
 		
 		if ( null == self.vId ) {
 			if ( self.vDiscover )
-				vT = self.discoverTrack( self.vDiscover.id );
+				vT = self.discoverTrack( self.vDiscover.id )
 		}
 		else
 			vT = get( self.vId )
@@ -2721,11 +2725,13 @@ library.rtc = library.rtc || {};
 		
 		if ( 'audio' == type ) {
 			self.aId = track.trackIdentifier || track.id
+			self.aTrack = self.aDiscover
 			self.aDiscover = null
 		}
 		
 		if ( 'video' == type ) {
 			self.vId = track.trackIdentifier || track.id
+			self.vTrack = self.vDiscover
 			self.vDiscover = null
 		}
 		
