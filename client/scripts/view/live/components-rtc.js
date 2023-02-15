@@ -2539,7 +2539,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.getStats = async function() {
 		const self = this;
-		self.log( 'getStats', !!self.rtcConn )
 		if ( !self.rtcConn )
 			return;
 		
@@ -2552,7 +2551,6 @@ library.rtc = library.rtc || {};
 		}
 		
 		self.raw = raw
-		self.log( 'statsBack, raw', raw )
 		self.emitBase()
 		if ( self.extendedChecked )
 			return
@@ -2887,16 +2885,19 @@ library.rtc = library.rtc || {};
 			}
 			
 			function setVideoDeltas( v ) {
-				const c = self.statsCache.video;
-				const t = v.track;
+				const c = self.statsCache.video
+				const t = v.track
 				if ( c ) {
-					const time = v.timestamp;
-					const bps = getRate( c.time, time, c.bytesReceived  , v.bytesReceived );
-					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived );
-					const lps = getRate( c.time, time, c.packetsLost    , v.packetsLost );
-					v.byteRate = bps;
-					v.packetRate = pps;
-					v.packetLoss = lps;
+					const time = v.timestamp
+					const bps = getRate( c.time, time, c.bytesReceived  , v.bytesReceived )
+					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived )
+					const lps = getRate( c.time, time, c.packetsLost    , v.packetsLost )
+					const fps = getRate( c.time, time, c.framesRx       , v.framesReceived, 1 )
+					v.byteRate = bps
+					v.packetRate = pps
+					v.packetLoss = lps
+					v.fps = fps
+					
 				}
 				
 				self.statsCache.video = {
@@ -2905,7 +2906,8 @@ library.rtc = library.rtc || {};
 					bytesReceived   : v.bytesReceived,
 					packetsReceived : v.packetsReceived,
 					packetsLost     : v.packetsLost,
-				};
+					framesRx        : v.framesReceived,
+				}
 			}
 		}
 		
@@ -2927,7 +2929,7 @@ library.rtc = library.rtc || {};
 				const recv = t.bytesReceived;
 				t.sendRate = getRate( c.time, time, c.sent, sent );
 				t.receiveRate = getRate( c.time, time, c.recv, recv );
-				t.ping = Math.round(( p.totalRoundTripTime / p.responsesReceived ) * 1000 );
+				t.ping = Math.round(( p.totalRoundTripTime / p.responsesReceived ) * 1000 )
 			}
 			
 			self.statsCache.transport = {
@@ -2940,7 +2942,7 @@ library.rtc = library.rtc || {};
 			return t;
 		}
 		
-		function getRate( t1, t2, b1, b2 ) {
+		function getRate( t1, t2, b1, b2, scale=1000.0 ) {
 			if ( null == t1
 				|| null == t2
 				|| null == b1
@@ -2953,8 +2955,8 @@ library.rtc = library.rtc || {};
 			const db = b2 - b1;
 			
 			// things per second
-			const scale = 1000.0 / dt;
-			const tps = +( 1.0 * db * scale ).toFixed( 4 );
+			scale = scale / dt
+			const tps = +( 1.0 * db * scale ).toFixed( 4 )
 			/*
 			self.log( 'rate', {
 				t1 : t1,
