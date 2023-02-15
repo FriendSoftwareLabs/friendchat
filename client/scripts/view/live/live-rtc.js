@@ -2861,7 +2861,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const id = self.identity;
 		const name = id.name;
 		self.stats = new library.rtc.RTCStats( self.browser, name );
-		self.stats.on( 'audio-level', self.handleStatsAudioLevel( e ))
+		self.stats.on( 'audio-level', e => self.handleStatsAudioLevel( e ))
 		self.stats.on( 'base', e => self.handleBaseStats( e ))
 		self.stats.on( 'extended', e => self.handleFullStats( e ))
 		self.stats.on( 'error', e => self.handleStatsError( e ))
