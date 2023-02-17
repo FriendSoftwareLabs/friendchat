@@ -831,7 +831,10 @@ library.rtc = library.rtc || {};
 		self.log( 'addTrack', track )
 		const sender = self.conn.addTrack( track )
 		const params = sender.getParameters()
-		self.log( 'addTrack sender', sender, params )
+		self.log( 'addTrack sender', {
+			sender : sender, 
+			params : params, })
+		
 		self.senders[ kind ] = sender
 	}
 	
