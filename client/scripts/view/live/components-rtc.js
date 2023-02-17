@@ -2403,7 +2403,7 @@ library.rtc = library.rtc || {};
 		
 		library.component.EventEmitter.call( self )
 		
-		self.spam = true
+		self.spam = false
 		
 		self.init()
 	}
