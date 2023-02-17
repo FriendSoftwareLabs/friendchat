@@ -830,8 +830,8 @@ library.rtc = library.rtc || {};
 		
 		self.log( 'addTrack', track )
 		const sender = self.conn.addTrack( track )
-		const params = sender.getPramameters()
-		self.log( 'sender', sender, params )
+		const params = sender.getParameters()
+		self.log( 'addTrack sender', sender, params )
 		self.senders[ kind ] = sender
 	}
 	
@@ -951,7 +951,7 @@ library.rtc = library.rtc || {};
 		function add( track ) {
 			const sender = self.conn.addTrack( track, stream )
 			const params = sender.getParameters()
-			self.log( 'add track params', params )
+			self.log( 'addStream semder params', params )
 			self.senders.push( sender )
 		}
 		
