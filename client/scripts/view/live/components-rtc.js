@@ -3484,13 +3484,11 @@ library.rtc = library.rtc || {};
 		const self = this
 		self.log( 'constrainTracks', [ tracks, self.media ])
 		return new Promise(( resolve, reject ) => {
-			resolve( true )
-			return
 			
 			if ( !self.media && !tracks ) {
 				self.logErr( 'no media, lets reject', [ tracks, self.media ]);
 				reject( 'ERR_NO_MEDIA' );
-				return;
+				return
 			}
 			
 			const media = tracks || self.media
