@@ -826,11 +826,13 @@ library.rtc = library.rtc || {};
 			return 'ERR_NO_CONN';
 		
 		if ( self.senders[ kind ])
-			return self.replaceTrack( kind );
+			return self.replaceTrack( kind )
 		
-		self.log( 'addTrack', track );
-		const sender = self.conn.addTrack( track );
-		self.senders[ kind ] = sender;
+		self.log( 'addTrack', track )
+		const sender = self.conn.addTrack( track )
+		const params = sender.getPramameters()
+		self.log( 'sender', sender, params )
+		self.senders[ kind ] = sender
 	}
 	
 	ns.Session.prototype.replaceTrack = function( kind ) {
@@ -3525,9 +3527,9 @@ library.rtc = library.rtc || {};
 			if ( self.shareVTrackId
 				&& track.id === self.shareVTrackId
 			) {
-				return constrainScreenShare( track );
+				return constrainScreenShare( track )
 			} else
-				return constrainUserMedia( track );
+				return constrainUserMedia( track )
 		}
 		
 		async function constrainScreenShare( track ) {
