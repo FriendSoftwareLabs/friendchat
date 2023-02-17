@@ -2851,7 +2851,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.setupStats = function() {
 		const self = this;
-		console.log( 'setupStats', window.View )
 		if ( window.View?.config?.deviceType != 'DESKTOP' )
 			return
 			
@@ -3884,7 +3883,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleStatsAudioLevel = function( num ) {
 		const self = this
-		self.log( 'on stats audiolevel', num )
 		self.emit( 'audio-level', num )
 	}
 	
@@ -4079,7 +4077,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkOutgoing( byType ) {
-			self.log( 'checkOut', byType )
 			const out = byType[ 'outbound-rtp' ]
 			out.forEach( ortp => {
 				if ( 'video' != ortp.kind )

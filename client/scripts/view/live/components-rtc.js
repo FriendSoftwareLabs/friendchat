@@ -3522,7 +3522,7 @@ library.rtc = library.rtc || {};
 		function constrain( track ) {
 			const settings = track.getSettings()
 			const params = track.getParameters()
-			console.log( 'constrain', track, settings, params )
+			self.log( 'constrain', track, settings, params )
 			if ( self.shareVTrackId
 				&& track.id === self.shareVTrackId
 			) {
