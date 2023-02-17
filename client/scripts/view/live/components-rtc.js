@@ -947,8 +947,8 @@ library.rtc = library.rtc || {};
 		done();
 		
 		function add( track ) {
-			const sender = self.conn.addTrack( track, stream );
-			const params = sender.getParameters();
+			const sender = self.conn.addTrack( track, stream )
+			const params = sender.getParameters()
 			self.senders.push( sender );
 		}
 		
@@ -3520,6 +3520,9 @@ library.rtc = library.rtc || {};
 		})
 		
 		function constrain( track ) {
+			const settings = track.getSettings()
+			const params = track.getParameters()
+			console.log( 'constrain', track, settings, params )
 			if ( self.shareVTrackId
 				&& track.id === self.shareVTrackId
 			) {
