@@ -4091,10 +4091,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				self.log( 'qld', [ ortp, qld ])
 			})
 			
-			if ( null == qld )
+			if ( null == qld ) {
+				self.lastQLDBW = null
+				self.QLDBWHistory = []
 				return
+			}
 			
 			const curr = qld.bandwidth
+			if ( null == self.lastQLDBW ) {
+				self.lastQLDBW = curr
+				return
+			}
+			
 			const last = self.lastQLDBW
 			const delta = curr - last
 			
