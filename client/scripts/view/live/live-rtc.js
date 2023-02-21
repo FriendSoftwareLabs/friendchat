@@ -4087,7 +4087,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				if ( 'video' != ortp.kind )
 					return
 				
-				qld = ortp.qualityLimitDurations
+				qld = ortp.qualityLimitationDurations
 				self.log( 'qld', [ ortp, qld ])
 			})
 			
