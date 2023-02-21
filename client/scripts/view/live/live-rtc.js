@@ -4106,7 +4106,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			const last = self.lastQLDBW
 			const delta = curr - last
 			
-			self.lastQLDBW
+			self.lastQLDBW = curr
 			self.log( 'YYY', {
 				qld     : qld,
 				delta   : delta,
