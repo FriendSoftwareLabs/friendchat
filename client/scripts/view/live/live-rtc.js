@@ -4088,7 +4088,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					return
 				
 				qld = ortp.qualityLimitDurations
-				self.log( 'qld', [ ortp, sql ])
+				self.log( 'qld', [ ortp, qld ])
 			})
 			
 			if ( null == qld )
