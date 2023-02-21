@@ -4100,7 +4100,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.lastQLDBW
 			self.log( 'YYY', {
-				ortp    : ortp, 
 				qld     : qld,
 				delta   : delta,
 				last    : self.lastQLDBW,
