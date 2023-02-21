@@ -2465,29 +2465,29 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		self.conf = conf;
-		self.id = conf.id;
-		self.identity = conf.identity;
-		self.permissions = conf.permissions;
-		self.isFocus = conf.isFocus;
-		self.rtcConf = conf.rtcConf;
-		self.onremove = conf.onremove; // when the remote peer initiates a close, call this
-		self.closeCmd = conf.closeCmd; // closing from this end ( ui click f.ex. )
-		self.selfie = conf.selfie;
-		self.signal = null;
+		self.conf = conf
+		self.id = conf.id
+		self.identity = conf.identity
+		self.permissions = conf.permissions
+		self.isFocus = conf.isFocus
+		self.rtcConf = conf.rtcConf
+		self.onremove = conf.onremove // when the remote peer initiates a close, call this
+		self.closeCmd = conf.closeCmd // closing from this end ( ui click f.ex. )
+		self.selfie = conf.selfie
+		self.signal = null
 		
-		self.alpha = null;
-		self.session = null;
+		self.alpha = null
+		self.session = null
 		//self.sessions = {};
-		self.tracks = {};
+		self.tracks = {}
 		self.remoteMedia = null;
 		self.receiving = {
 			video : false,
 			audio : false,
 		};
 		
-		self.isBlind = false;
-		self.isMute = false;
+		self.isBlind = false
+		self.isMute = false
 		
 		self.metaInterval = null
 		self.syncInterval = null
@@ -2499,6 +2499,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pingTimeout = 1000 * 10
 		self.pingTimeouts = {}
 		self.pongs = []
+		
+		self.QLDBWHistory = []
 		
 		self.spam = true
 		
@@ -3127,6 +3129,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			window.clearTimeout( self.extendedError )
 		if ( null != self.statsErrorGracePeriod )
 			window.clearTimeout( self.statsErrorGracePeriod )
+		self.QLDBWHistory = []
+		self.lastQLDBW = 0
 		
 		self.statsErrorGracePeriod = null
 		self.extendedError = null
@@ -4078,12 +4082,39 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function checkOutgoing( byType ) {
 			const out = byType[ 'outbound-rtp' ]
+			let qld = null
 			out.forEach( ortp => {
 				if ( 'video' != ortp.kind )
 					return
 				
-				self.log( 'YYY', ortp )
+				qld = ortp.qualityLimitDurations
 			})
+			
+			const curr = qld.bandwidth
+			const last = self.lastQLDBW
+			const delta = curr - last
+			
+			self.lastQLDBW
+			self.log( 'YYY', {
+				ortp    : ortp, 
+				qld     : qld,
+				delta   : delta,
+				last    : self.lastQLDBW,
+				history : self.QLDBWHistory,
+			})
+			
+			self.QLDBWHistory.push( delta )
+			if ( self.QLDBWHistory.length > 10 )
+				self.QLDBWHistory.shift()
+			
+			let qlevel = 'normal'
+			let setRate = null
+			if ( 0 ) {
+				qlevel = 'low'
+				setRate = 8000.0
+			}
+			
+			self.session.setQualityLevel( qlevel, setRate )
 		}
 		
 	}
