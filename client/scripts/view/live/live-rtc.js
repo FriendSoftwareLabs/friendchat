@@ -4088,7 +4088,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 					return
 				
 				qld = ortp.qualityLimitDurations
+				self.log( 'qld', [ ortp, sql ])
 			})
+			
+			if ( null == qld )
+				return
 			
 			const curr = qld.bandwidth
 			const last = self.lastQLDBW
