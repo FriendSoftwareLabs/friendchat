@@ -1026,10 +1026,6 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.getStats = function( selector ) {
 		const self = this
-		self.log( 'getStats', {
-			selector : selector,
-			remTrs   : self.remoteTracks,
-		})
 		return new Promise(( ook, eek ) => {
 			if ( null == self.conn ) {
 				eek( 'ERR_NO_CONN' )
