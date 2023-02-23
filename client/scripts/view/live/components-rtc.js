@@ -2409,7 +2409,6 @@ library.rtc = library.rtc || {};
 (function( ns, undefined ) {
 	ns.RTCStats = function( browser, label ) {
 		const self = this
-		console.log( 'RTCStats', [ browser, label ] )
 		self.browser = browser
 		self.label = label
 		
@@ -2422,7 +2421,7 @@ library.rtc = library.rtc || {};
 		
 		library.component.EventEmitter.call( self )
 		
-		self.spam = false
+		self.spam = true
 		
 		self.init()
 	}
@@ -2730,14 +2729,20 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.discoverTrack = function( id ) {
 		const self = this;
-		self.log( 'discoverTrack', id, ( null != self.raw ))
+		self.log( 'discoverTrack', {
+			id    : id,
+			adisc : self.aDiscover,
+			vdisc : self.vDiscover,
+		})
 		if ( null == self.raw )
 			return
 		
 		let track = null
 		let type = null
+		const items = []
 		const tracks = []
 		self.raw.forEach( t => {
+			items.push( t )
 			if ( 'track' != t.type )
 				return;
 			
@@ -2752,6 +2757,8 @@ library.rtc = library.rtc || {};
 			track = t
 			type = t.kind
 		})
+		
+		self.log( 'discoverTrakc - items', items )
 		
 		if ( !track ) {
 			self.log( 'discoverTrack - no track found for', {
@@ -3064,7 +3071,6 @@ library.rtc = library.rtc || {};
 (function( ns, undefined ) {
 	ns.RTCStatsFirefox = function( browser, label ) {
 		const self = this
-		console.log( 'RTCStatsFirefox', [ browser, label ] )
 		library.rtc.RTCStats.call( self, browser, label )
 	}
 	
@@ -3075,6 +3081,48 @@ library.rtc = library.rtc || {};
 		self.log( 'emitBase firefox stats' )
 		if ( null == self.raw )
 			return
+	}
+	
+	ns.RTCStatsFirefox.prototype.getAudioLevel = async function() {
+		const self = this
+		if ( !self.rtcConn )
+			return
+		
+		if ( null == self.aTrack )
+			return
+		
+		self.log( 'getALvl - aTrack', self.aTrack )
+		let raw = null
+		try {
+			raw = await self.rtcConn.getStats( self.aTrack )
+		} catch( ex ) {
+			self.log( 'getAudioLevel getStats ex', ex )
+			self.emitError( 'ERR_INVALID_STATE' )
+		}
+		
+		self.log( 'getALvl - raw', raw )
+		
+		if ( null == raw )
+			return
+		
+		let aTrack = null
+		raw.forEach( item => {
+			self.log( 'getALvl - item', item )
+			if ( null != aTrack )
+				return
+			
+			if ( null == item.trackIdentifier )
+				return false
+			
+			if ( item.trackIdentifier == self.aId )
+				aTrack = item
+		})
+		
+		if ( null == aTrack )
+			return
+		
+		self.log( 'alevel track', aTrack )
+		self.emit( 'audio-level', aTrack.audioLevel )
 	}
 	
 })( library.rtc );
