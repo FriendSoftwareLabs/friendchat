@@ -3063,8 +3063,8 @@ library.rtc = library.rtc || {};
 (function( ns, undefined ) {
 	ns.RTCStatsFirefox = function( browser, label ) {
 		const self = this
-		
 		library.rtc.RTCStats.call( self, browser, label )
+		self.log( 'RTCStatsFirefox' )
 	}
 	
 	ns.RTCStatsFirefox.prototype = Object.create( library.rtc.RTCStats.prototype )
