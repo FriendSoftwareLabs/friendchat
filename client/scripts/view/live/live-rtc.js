@@ -4570,8 +4570,12 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.PeerFirefox.prototype.initStats = function() {
 		const self = this
-		self.log( 'firefox peer initStats' )
-		self.stats = new library.rtc.RTCStatsFirefox( self.browser, self.identity.name )
+		self.log( 'firefox peer initStats', library.rtc.RTCStatsFirefox )
+		try {
+			self.stats = new library.rtc.RTCStatsFirefox( self.browser, self.identity.name )
+		} catch( ex ) {
+			self.log( 'firefox initstats ex', ex )
+		}
 	}
 	
 })( library.rtc );
