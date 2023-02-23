@@ -1106,16 +1106,18 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function closeCmd() { self.closePeer( peerId ); }
 		
 		function getPeerConstructor( browser ) {
+			console.log( 'getPeerCons', browser )
+			
 			if ( 'safari' === browser )
-				return library.rtc.PeerSafari;
+				return library.rtc.PeerSafari
 			
 			if ( 'firefox' === browser )
-				return library.rtc.PeerFirefox;
+				return library.rtc.PeerFirefox
 			
 			if ( 'brave' === browser )
-				return library.rtc.PeerBrave;
+				return library.rtc.PeerBrave
 			
-			return library.rtc.Peer;
+			return library.rtc.Peer
 		}
 	}
 	
@@ -2852,16 +2854,24 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.setupStats = function() {
-		const self = this;
+		const self = this
 		if ( window.View?.config?.deviceType != 'DESKTOP' )
 			return
 			
 		if ( self.stats )
-			self.stats.close();
+			self.stats.close()
 		
-		const id = self.identity;
-		const name = id.name;
-		self.stats = new library.rtc.RTCStats( self.browser, name );
+		self.initStats()
+		self.bindStats()
+	}
+	
+	ns.Peer.prototype.initStats = function() {
+		const self = this
+		self.stats = new library.rtc.RTCStats( self.browser, self.identity.name )
+	}
+	
+	ns.Peer.prototype.bindStats = function() {
+		const self = this
 		self.stats.on( 'audio-level', e => self.handleStatsAudioLevel( e ))
 		self.stats.on( 'base', e => self.handleBaseStats( e ))
 		self.stats.on( 'extended', e => self.handleFullStats( e ))
@@ -4556,6 +4566,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( 'safari' === browser )
 			self.isHost = true;
 		*/
+	}
+	
+	ns.PeerFirefox.prototype.initStats = function() {
+		const self = this
+		self.stats = new library.rtc.RTCStatsFirefox( self.browser, self.identity.name )
 	}
 	
 })( library.rtc );

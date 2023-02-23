@@ -2407,6 +2407,24 @@ library.rtc = library.rtc || {};
 })( library.rtc );
 
 (function( ns, undefined ) {
+	ns.RTCStatsFirefox = function( browser, label ) {
+		const self = this
+		
+		library.rtc.RTCStats.call( self, browser, label )
+	}
+	
+	ns.RTCStatsFirefox.prototype = Object.create( library.rtc.RTCStats.prototype )
+	
+	ns.RTCStatsFirefox.prototype.emitBase = function() {
+		const self = this
+		self.log( 'emitBase firefox stats' )
+		if ( null == self.raw )
+			return
+	}
+	
+})( library.rtc );
+
+(function( ns, undefined ) {
 	ns.RTCStats = function( browser, label ) {
 		const self = this
 		self.browser = browser
@@ -2638,7 +2656,7 @@ library.rtc = library.rtc || {};
 	ns.RTCStats.prototype.emitBase = function() {
 		const self = this;
 		if ( null == self.raw )
-			return;
+			return
 		
 		let tracks = null
 		let vT = null;

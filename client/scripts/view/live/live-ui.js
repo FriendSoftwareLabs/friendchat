@@ -4451,6 +4451,9 @@ library.component = library.component || {};
 		const self = this
 		self.log( 'handleStats', data )
 		const trans = data.transport;
+		if ( null == trans )
+			return
+		
 		if ( trans.receiveRate ) {
 			const KBs = Math.round( trans.receiveRate / 1024 )
 			self.rtcReceiving.textContent =  KBs + ' KB/s'
