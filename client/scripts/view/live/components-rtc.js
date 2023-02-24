@@ -3397,8 +3397,6 @@ library.rtc = library.rtc || {};
 			
 			const t = {}
 			let pair = null
-			self.log( 'fixy pairs', byType[ 'candidate-pair' ])
-			
 			byType[ 'candidate-pair' ].some( p => {
 				if ( p.selected != true )
 					return false
@@ -3411,25 +3409,32 @@ library.rtc = library.rtc || {};
 			const local = byId[ pair.localCandidateId ]
 			const remote = byId[ pair.remoteCandidateId ]
 			
-			self.log( 'fixy trans', [ pair, local, remote ])
 			t.pair = pair
 			t.local = local
 			t.remote = remote
+			const rmt = byType[ 'remote-inbound-rtp' ]
+			self.log( 'rmt', rmt )
 			const c = self.statsCache.transport
+			self.log( 'fixy trans', {
+				pair   : pair,
+				local  : local,
+				remote : remote,
+				cache  : c,
+			})
 			if ( c ) {
-				const time = t.timestamp;
-				const sent = t.bytesSent;
-				const recv = t.bytesReceived;
-				t.sendRate = getRate( c.time, time, c.sent, sent );
-				t.receiveRate = getRate( c.time, time, c.recv, recv );
+				const time = pair.timestamp
+				const sent = pair.bytesSent
+				const recv = pair.bytesReceived
+				t.sendRate = getRate( c.time, time, c.sent, sent )
+				t.receiveRate = getRate( c.time, time, c.recv, recv )
 				t.ping = Math.round(( pair.totalRoundTripTime / pair.responsesReceived ) * 1000 )
 			}
 			
 			self.statsCache.transport = {
-				id   : t.id,
-				sent : t.bytesSent,
-				recv : t.bytesReceived,
-				time : t.timestamp,
+				id   : pair.id,
+				sent : pair.bytesSent,
+				recv : pair.bytesReceived,
+				time : pair.timestamp,
 			};
 			
 			return t

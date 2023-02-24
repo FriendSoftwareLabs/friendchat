@@ -4488,20 +4488,20 @@ library.component = library.component || {};
 			setVideo( video );
 		
 		function setAudio( a ) {
-			const codec = a.codec;
+			const codec = a.codec
 			if ( null != codec )
 				self.audioCodec.textContent = codec.mimeType.split( '/' )[ 1 ];
 			
-			const t = a.track;
+			const t = a
 			if ( null != t ) {
 				const volume = ( t.energyRate * 1.0 )
-					.toFixed( 3 );
+					.toFixed( 3 )
 				
-				self.audioInput.textContent = volume;
+				self.audioInput.textContent = volume
 			}
 			
-			const pLoss = a.packetLoss || 0;
-			self.audioLost.textContent = pLoss;
+			const pLoss = a.packetLoss || 0
+			self.audioLost.textContent = pLoss
 		}
 		
 		function setVideo( v ) {
@@ -4509,7 +4509,7 @@ library.component = library.component || {};
 			if ( null != codec && null != self.videoCodec )
 				self.videoCodec.textContent = codec.mimeType.split( '/' )[ 1 ];
 			
-			const t = v.track;
+			const t = v
 			self.log( 'track', t )
 			if ( null != t ) {
 				const h = t.frameHeight;
