@@ -3076,13 +3076,6 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStatsFirefox.prototype = Object.create( library.rtc.RTCStats.prototype )
 	
-	ns.RTCStatsFirefox.prototype.emitBase = function() {
-		const self = this
-		self.log( 'emitBase firefox stats' )
-		if ( null == self.raw )
-			return
-	}
-	
 	ns.RTCStatsFirefox.prototype.trackAdded = function( track ) {
 		const self = this;
 		self.log( 'fixy trackAdded', track )
@@ -3131,7 +3124,6 @@ library.rtc = library.rtc || {};
 		
 		let aRTP = null
 		raw.forEach( item => {
-			self.log( 'getALvl - item', item )
 			if ( null != aRTP )
 				return
 			
@@ -3151,8 +3143,9 @@ library.rtc = library.rtc || {};
 		self.emit( 'audio-level', aRTP.audioLevel )
 	}
 	
-	ns.RTCStats.prototype.emitBase = function() {
-		const self = this;
+	ns.RTCStatsFirefox.prototype.emitBase = function() {
+		const self = this
+		self.log( 'fixy emitBase', self.raw )
 		if ( null == self.raw )
 			return
 		
