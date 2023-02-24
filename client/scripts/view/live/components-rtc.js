@@ -3129,24 +3129,95 @@ library.rtc = library.rtc || {};
 		if ( null == raw )
 			return
 		
-		let aTrack = null
+		let aRTP = null
 		raw.forEach( item => {
 			self.log( 'getALvl - item', item )
-			if ( null != aTrack )
+			if ( null != aRTP )
 				return
 			
-			if ( null == item.trackIdentifier )
-				return false
+			if ( 'audio' != item.kind )
+				return
 			
-			if ( item.trackIdentifier == self.aId )
-				aTrack = item
+			if ( 'inbound-rtp' != item.type )
+				return
+			
+			aRTP = item
 		})
 		
-		if ( null == aTrack )
+		if ( null == aRTP )
 			return
 		
-		self.log( 'alevel track', aTrack )
-		self.emit( 'audio-level', aTrack.audioLevel )
+		self.log( 'alevel rtp', aRTP )
+		self.emit( 'audio-level', aRTP.audioLevel )
+	}
+	
+	ns.RTCStats.prototype.emitBase = function() {
+		const self = this;
+		if ( null == self.raw )
+			return
+		
+		let rtps = []
+		let vRTP = null
+		let aRTP = null
+		self.raw.forEach( item => {
+			if ( 'inbound-rtp' != item.type )
+				return
+			
+			self.log( 'fixy emitbase rtp', item )
+			if ( !item.remoteSource )
+				return
+			
+			rtps.push( item )
+			
+			if ( 'audio' == item.kind )
+				aRTP = item
+			if ( 'video' == item.kind )
+				vRTP = item
+				
+		})
+		
+		let audio = null
+		let video = null
+		
+		self.log( 'fixy emitbase sources', {
+			rtps : rtps,
+			vrtp : vRTP,
+			artp : aRTP,
+		})
+		
+		if ( null != aRTP ) {
+			audio = {
+				level : aRTP.audioLevel,
+			}
+		}
+		
+		if ( null != vRTP ) {
+			video = {
+				height : vRTP.frameHeight,
+				width  : vRTP.frameWidth,
+			}
+		}
+		const base = {
+			audio : audio,
+			video : video,
+		}
+		
+		/*
+		if ( null == audio && null == video ) {
+			self.log( 'emitBase nulls', {
+				aId    : self.aId,
+				aDisc  : self.aDiscover,
+				vId    : self.vId,
+				vDisc  : self.vDiscover,
+				//tracks : self.raw.filter( item => item.type == 'track' ),
+			})
+		} else
+			self.log( 'emitBase', base )
+		*/
+		
+		self.emit( 'base', base )
+		
+		
 	}
 	
 })( library.rtc );
