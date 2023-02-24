@@ -3432,7 +3432,7 @@ library.rtc = library.rtc || {};
 				time : t.timestamp,
 			};
 			
-			return t;
+			return t
 		}
 		
 		function getRate( t1, t2, b1, b2, dec=4 ) {
