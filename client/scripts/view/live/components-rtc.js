@@ -3291,16 +3291,6 @@ library.rtc = library.rtc || {};
 					jrtp   : JSON.stringify( rtp ), 
 				})
 				
-				if ( !track ) {
-					self.log( 'no track found for rtp', JSON.stringify( rtp ))
-					return false
-				}
-				
-				if ( !track.remoteSource ) {
-					self.log( 'track is not remote source', JSON.stringify( track ))
-					return false
-				}
-				
 				self.log( 'innie rtp', rtp )
 				const kind = rtp.kind
 				const cache = self.statsCache[ kind ]
