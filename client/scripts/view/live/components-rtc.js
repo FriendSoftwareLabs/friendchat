@@ -3408,8 +3408,8 @@ library.rtc = library.rtc || {};
 			})
 			
 			self.log( 'fixy selected', pair )
-			const local = byId[ p.localCandidateId ]
-			const remote = byId[ p.remoteCandidateId ]
+			const local = byId[ pair.localCandidateId ]
+			const remote = byId[ pair.remoteCandidateId ]
 			
 			self.log( 'fixy trans', [ pair, local, remote ])
 			t.pair = pair
@@ -3422,7 +3422,7 @@ library.rtc = library.rtc || {};
 				const recv = t.bytesReceived;
 				t.sendRate = getRate( c.time, time, c.sent, sent );
 				t.receiveRate = getRate( c.time, time, c.recv, recv );
-				t.ping = Math.round(( p.totalRoundTripTime / p.responsesReceived ) * 1000 )
+				t.ping = Math.round(( pair.totalRoundTripTime / pair.responsesReceived ) * 1000 )
 			}
 			
 			self.statsCache.transport = {
