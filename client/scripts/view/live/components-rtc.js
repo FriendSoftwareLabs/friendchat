@@ -3157,9 +3157,6 @@ library.rtc = library.rtc || {};
 				return
 			
 			self.log( 'fixy emitbase rtp', item )
-			if ( !item.remoteSource )
-				return
-			
 			rtps.push( item )
 			
 			if ( 'audio' == item.kind )
