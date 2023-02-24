@@ -3117,8 +3117,6 @@ library.rtc = library.rtc || {};
 			self.emitError( 'ERR_INVALID_STATE' )
 		}
 		
-		self.log( 'getALvl - raw', raw )
-		
 		if ( null == raw )
 			return
 		
@@ -3139,13 +3137,11 @@ library.rtc = library.rtc || {};
 		if ( null == aRTP )
 			return
 		
-		self.log( 'alevel rtp', aRTP )
 		self.emit( 'audio-level', aRTP.audioLevel )
 	}
 	
 	ns.RTCStatsFirefox.prototype.emitBase = function() {
 		const self = this
-		self.log( 'fixy emitBase', self.raw )
 		if ( null == self.raw )
 			return
 		
@@ -3156,7 +3152,6 @@ library.rtc = library.rtc || {};
 			if ( 'inbound-rtp' != item.type )
 				return
 			
-			self.log( 'fixy emitbase rtp', item )
 			rtps.push( item )
 			
 			if ( 'audio' == item.kind )
@@ -3229,7 +3224,8 @@ library.rtc = library.rtc || {};
 		stats.forEach( item => { 
 			const type = item.type
 			const id = item.id
-			let tId = null
+			if ( id )
+				byId[ id ] = item
 			
 			if ( null == byType[ type ])
 				byType[ type ] = []
