@@ -3295,10 +3295,8 @@ library.rtc = library.rtc || {};
 					self.statsCache[ kind ] = null
 				}
 				
-				const type = rtp.type
 				const codec = things[ rtp.codecId ]
 				self.log( 'innie', {
-					type  : type,
 					kind  : kind,
 					rtp   : rtp,
 					cache : cache,
@@ -3306,7 +3304,7 @@ library.rtc = library.rtc || {};
 				})
 				
 				rtp.codec = codec
-				if ( 'audio' == type ) {
+				if ( 'audio' == kind ) {
 					if ( null == self.aId )
 						return false
 					
@@ -3319,7 +3317,7 @@ library.rtc = library.rtc || {};
 					setAudioDeltas( rtp )
 				}
 				
-				if ( 'video' == type ) {
+				if ( 'video' == kind ) {
 					if ( null == self.vId )
 						return false
 					
@@ -3331,8 +3329,8 @@ library.rtc = library.rtc || {};
 					setVideoDeltas( rtp )
 				}
 				
-				self.log( 'setting RTP', [ type, rtp ])
-				res[ type ] = rtp
+				self.log( 'setting RTP', [ kind, rtp ])
+				res[ kind ] = rtp
 				
 				return false
 			})
