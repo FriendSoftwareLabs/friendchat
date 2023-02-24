@@ -3392,14 +3392,27 @@ library.rtc = library.rtc || {};
 		}
 		
 		function buildTransport( byType, byId ) {
-			if ( !byType.transport )
-				return null;
+			if ( null == byType[ 'candidate-pair' ] )
+				return null
 			
-			const t = byType.transport[ 0 ]
-			const p = byId[ t.selectedCandidatePairId ]
+			const t = {}
+			let pair = null
+			self.log( 'fixy pairs', byType[ 'candidate-pair' ])
+			
+			byType[ 'candidate-pair' ].some( p => {
+				if ( p.selected != true )
+					return false
+				
+				pair = p
+				return true
+			})
+			
+			self.log( 'fixy selected', pair )
 			const local = byId[ p.localCandidateId ]
 			const remote = byId[ p.remoteCandidateId ]
-			t.pair = p
+			
+			self.log( 'fixy trans', [ pair, local, remote ])
+			t.pair = pair
 			t.local = local
 			t.remote = remote
 			const c = self.statsCache.transport
