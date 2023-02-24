@@ -3083,6 +3083,30 @@ library.rtc = library.rtc || {};
 			return
 	}
 	
+	ns.RTCStatsFirefox.prototype.trackAdded = function( track ) {
+		const self = this;
+		self.log( 'fixy trackAdded', track )
+		const id = track.id
+		const k = track.kind
+		if ( 'audio' == k ) {
+			self.aId = null
+			self.aDiscover = null
+			self.aTrack = track
+		}
+		if ( 'video' == k ) {
+			self.vId = null
+			self.vDiscover = null
+			self.vTrack = track
+		}
+		
+		self.discoverTrack( id )
+	}
+	
+	ns.RTCStats.prototype.discoverTrack = function( id ) {
+		const self = this;
+		return id
+	}
+	
 	ns.RTCStatsFirefox.prototype.getAudioLevel = async function() {
 		const self = this
 		if ( !self.rtcConn )
