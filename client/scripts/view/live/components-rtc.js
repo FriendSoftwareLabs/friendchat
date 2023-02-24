@@ -3082,12 +3082,12 @@ library.rtc = library.rtc || {};
 		const id = track.id
 		const k = track.kind
 		if ( 'audio' == k ) {
-			self.aId = null
+			self.aId = id
 			self.aDiscover = null
 			self.aTrack = track
 		}
 		if ( 'video' == k ) {
-			self.vId = null
+			self.vId = id
 			self.vDiscover = null
 			self.vTrack = track
 		}
@@ -3211,8 +3211,6 @@ library.rtc = library.rtc || {};
 			return
 		
 		self.log( 'fixy emitExtended - look for', {
-			a : self.aId,
-			v : self.vId,
 			aT : self.aTrack,
 			vT : self.vTrack,
 		})
@@ -3305,7 +3303,7 @@ library.rtc = library.rtc || {};
 				
 				rtp.codec = codec
 				if ( 'audio' == kind ) {
-					if ( null == self.aId )
+					if ( null == self.aTrack )
 						return false
 					
 					if ( true == aT ) {
@@ -3318,7 +3316,7 @@ library.rtc = library.rtc || {};
 				}
 				
 				if ( 'video' == kind ) {
-					if ( null == self.vId )
+					if ( null == self.vTrack )
 						return false
 					
 					if ( null == rtp.frameHeight || null == rtp.frameWidth ) {
@@ -3340,6 +3338,7 @@ library.rtc = library.rtc || {};
 			function setAudioDeltas( a ) {
 				const c = self.statsCache.audio
 				const t = a
+				self.log( 'setAudioDeltas', [ c, a, t ])
 				if ( c ) {
 					t.audioEnergy = t.totalAudioEnergy * 10000
 					t.volumeLevel = +( t.audioLevel * 100 ).toFixed( 2 )
@@ -3367,6 +3366,7 @@ library.rtc = library.rtc || {};
 			function setVideoDeltas( v ) {
 				const c = self.statsCache.video
 				const t = v
+				self.log( 'setVideoDeltas', [ c, v, t ])
 				if ( c ) {
 					const time = v.timestamp
 					const bps = getRate( c.time, time, c.bytesReceived  , v.bytesReceived )
