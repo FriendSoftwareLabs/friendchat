@@ -3093,7 +3093,7 @@ library.rtc = library.rtc || {};
 		self.discoverTrack( id )
 	}
 	
-	ns.RTCStatsFireFox.prototype.discoverTrack = function( id ) {
+	ns.RTCStatsFirefox.prototype.discoverTrack = function( id ) {
 		const self = this;
 		return id
 	}
