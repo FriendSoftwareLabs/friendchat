@@ -2869,11 +2869,9 @@ library.rtc = library.rtc || {};
 			rtps.some( rtp => {
 				const id = rtp.trackIdentifier || rtp.trackId
 				const track = things[ id ]
-				self.log( 'rtp', {
+				self.log( 'innie rtp', {
 					rtp    : rtp,
 					track  : track,
-					jrtp   : JSON.stringify( rtp ), 
-					jtrack : JSON.stringify( track ),
 				})
 				
 				if ( !track ) {
@@ -2886,7 +2884,6 @@ library.rtc = library.rtc || {};
 					return false
 				}
 				
-				self.log( 'innie rtp', rtp )
 				const tId = track.trackIdentifier
 				const kind = track.kind
 				const cache = self.statsCache[ kind ]
@@ -2899,13 +2896,14 @@ library.rtc = library.rtc || {};
 					kind  : kind,
 					rtp   : rtp,
 					track : track,
+					aId   : self.aId,
+					vId   : self.vId,
 				})
 				
-				const type = rtp.mediaType
 				const codec = things[ rtp.codecId ]
 				rtp.track = track
 				rtp.codec = codec
-				if ( 'audio' == type ) {
+				if ( 'audio' == kind ) {
 					if ( null == self.aId )
 						return false
 					
@@ -2918,7 +2916,7 @@ library.rtc = library.rtc || {};
 					setAudioDeltas( rtp )
 				}
 				
-				if ( 'video' == type ) {
+				if ( 'video' == kind ) {
 					if ( null == self.vId )
 						return false
 					
@@ -2929,8 +2927,8 @@ library.rtc = library.rtc || {};
 					setVideoDeltas( rtp )
 				}
 				
-				self.log( 'setting RTP', [ type, rtp ])
-				res[ type ] = rtp
+				self.log( 'setting RTP', [ kind, rtp ])
+				res[ kind ] = rtp
 				
 				return false
 			})
@@ -3095,7 +3093,7 @@ library.rtc = library.rtc || {};
 		self.discoverTrack( id )
 	}
 	
-	ns.RTCStats.prototype.discoverTrack = function( id ) {
+	ns.RTCStatsFireFox.prototype.discoverTrack = function( id ) {
 		const self = this;
 		return id
 	}

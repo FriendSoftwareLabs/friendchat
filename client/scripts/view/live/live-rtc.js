@@ -4045,7 +4045,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return;
 			}
 			
-			const t = a
+			const t = a.track || a
 			report.audio = t
 			if ( null == t.volumeLevel )
 				return;
@@ -4075,7 +4075,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			const c = v.codec
-			const t = v
+			const t = v.track || v
 			report.video = t
 			report.videoCodec = c
 			if ( !t.frameHeight || !t.frameWidth ) {
