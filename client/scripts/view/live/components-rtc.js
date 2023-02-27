@@ -3421,10 +3421,14 @@ library.rtc = library.rtc || {};
 				remote : remote,
 				cache  : c,
 			})
+			
+			const sent = pair.bytesSent
+			const recv = pair.bytesReceived
+			t.bytesSent = sent
+			t.bytesReceived = recv
+			
 			if ( c ) {
 				const time = pair.timestamp
-				const sent = pair.bytesSent
-				const recv = pair.bytesReceived
 				t.sendRate = getRate( c.time, time, c.sent, sent )
 				t.receiveRate = getRate( c.time, time, c.recv, recv )
 				t.ping = Math.round(( pair.totalRoundTripTime / pair.responsesReceived ) * 1000 )

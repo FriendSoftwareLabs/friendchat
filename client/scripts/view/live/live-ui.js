@@ -4459,7 +4459,7 @@ library.component = library.component || {};
 			self.rtcReceiving.textContent =  KBs + ' KB/s'
 		}
 		
-		if ( trans.bytesReceived ) {
+		if ( trans.pair.bytesReceived ) {
 			const total = ( trans.bytesReceived / 1024 / 1024 ).toFixed( 1 )
 			self.rtcReceived.textContent =  total + ' MB'
 		}
@@ -4521,7 +4521,7 @@ library.component = library.component || {};
 					self.videoFPS.textContent = '--'
 				
 				if ( null != v.jitter )
-					self.videoJitter.textContent = v.jitter
+					self.videoJitter.textContent = v.jitter.toFixed( 1 )
 				else
 					self.videoJitter.textContent = '--'
 			}
