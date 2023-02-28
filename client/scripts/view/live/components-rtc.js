@@ -3106,7 +3106,6 @@ library.rtc = library.rtc || {};
 		if ( null == self.aTrack )
 			return
 		
-		self.log( 'getALvl - aTrack', self.aTrack )
 		let raw = null
 		try {
 			raw = await self.rtcConn.getStats( self.aTrack )
