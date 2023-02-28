@@ -2995,10 +2995,13 @@ library.rtc = library.rtc || {};
 			
 			const t = byType.transport[ 0 ]
 			const p = byId[ t.selectedCandidatePairId ]
-			self.log( 'bT t/p', {
-				t : t,
-				p : p,
-			})
+			if ( null == p ) {
+				self.log( 'bT null p', {
+					t : t,
+					p : p,
+				})
+				return null
+			}
 			const local = byId[ p.localCandidateId ]
 			const remote = byId[ p.remoteCandidateId ]
 			t.pair = p
