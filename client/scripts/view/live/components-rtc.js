@@ -2991,10 +2991,14 @@ library.rtc = library.rtc || {};
 		
 		function buildTransport( byType, byId ) {
 			if ( !byType.transport )
-				return null;
+				return null
 			
 			const t = byType.transport[ 0 ]
 			const p = byId[ t.selectedCandidatePairId ]
+			self.log( 'bT t/p', {
+				t : t,
+				p : p,
+			})
 			const local = byId[ p.localCandidateId ]
 			const remote = byId[ p.remoteCandidateId ]
 			t.pair = p
