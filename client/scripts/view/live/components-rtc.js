@@ -3287,7 +3287,7 @@ library.rtc = library.rtc || {};
 				const kind = rtp.kind
 				const cache = self.statsCache[ kind ]
 				if ( cache && cache.id !== rtp.id ) {
-					self.log( 'innie - stale track in cache, nulling', [ cache, track ])
+					self.log( 'innie - stale track in cache, nulling', cache )
 					self.statsCache[ kind ] = null
 				}
 				
@@ -3404,6 +3404,9 @@ library.rtc = library.rtc || {};
 			})
 			
 			self.log( 'fixy selected', pair )
+			if ( null == pair )
+				return null
+			
 			const local = byId[ pair.localCandidateId ]
 			const remote = byId[ pair.remoteCandidateId ]
 			

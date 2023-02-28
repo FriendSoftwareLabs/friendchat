@@ -4459,11 +4459,6 @@ library.component = library.component || {};
 			self.rtcReceiving.textContent =  KBs + ' KB/s'
 		}
 		
-		if ( trans.pair.bytesReceived ) {
-			const total = ( trans.bytesReceived / 1024 / 1024 ).toFixed( 1 )
-			self.rtcReceived.textContent =  total + ' MB'
-		}
-		
 		if ( null != trans.ping ) {
 			if ( self.rtcPing )
 				self.rtcPing.set( trans.ping )
@@ -4473,6 +4468,10 @@ library.component = library.component || {};
 			const bandWidth = trans.pair.availableOutgoingBitrate || 0;
 			const maxKBit = ( bandWidth / 8 / 1024 ).toFixed( 1 );
 			self.rtcBandwidth.textContent = maxKBit + ' KB/s';
+			if ( trans.pair.bytesReceived ) {
+				const total = ( trans.bytesReceived / 1024 / 1024 ).toFixed( 1 )
+				self.rtcReceived.textContent =  total + ' MB'
+			}
 		}
 		
 		const inn = data.inbound;
