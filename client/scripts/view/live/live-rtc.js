@@ -3913,9 +3913,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	
 	ns.Peer.prototype.handleBaseStats = function( base ) {
 		const self = this;
-		self.log( 'base stats', base ) //spammy!
+		//self.log( 'base stats', base ) //spammy!
 		if ( null != self.statsErrorGracePeriod ) {
-			self.log( 'clearing error grace period' )
 			window.clearTimeout( self.statsErrorGracePeriod )
 			self.statsErrorGracePeriod = null
 		}
@@ -3933,7 +3932,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		*/
 		if ( base.video?.height && null != self.statsWHError ) {
-			self.log( 'base stats found height, clear wherr', base.video )
 			window.clearTimeout( self.statsWHError )
 			self.statsWHError = null
 		}
@@ -3967,7 +3965,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return
 		
 		if ( null != self.extendedError ) {
-			self.log( 'clearing error grace period' )
 			window.clearTimeout( self.extendedError )
 			self.extendedError = null
 		}
@@ -4011,7 +4008,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkTransport( t, a, v ) {
-			self.log( 'checkTransport', [ t, a, v ])
 			const p = t.pair;
 			report = {
 				ping         : t.ping,
@@ -4038,7 +4034,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkAudio( a ) {
-			self.log( 'checkAudio', a )
 			report = report || {}
 			if ( !self.receiving.audio ) {
 				report.audioExpected = false;
@@ -4057,7 +4052,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkVideo( v ) {
-			self.log( 'checkVideo', v )
 			if ( v.firCount ) {
 				self.log( 'XXX firCount', v.firCount )
 			}
