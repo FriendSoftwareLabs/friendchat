@@ -4094,7 +4094,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				advancePosition( stab, type )
 				stab[ type ][ stab.pos[ type ]] = value
 				
-				function advancePosition(  )
+				function advancePosition( s, t ) {}
 			}
 			
 		}
