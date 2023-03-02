@@ -4101,6 +4101,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function checkOutgoing( byType ) {
 			const out = byType[ 'outbound-rtp' ]
+			if ( null == out ) {
+				self.log( 'checkOutgoing - outbound-rtp not found', out )
+				return
+			}
+			
 			let qld = null
 			out.forEach( ortp => {
 				if ( 'video' != ortp.kind )
