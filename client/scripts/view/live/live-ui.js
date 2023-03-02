@@ -774,15 +774,15 @@ library.component = library.component || {};
 		const self = this;
 		const peer = self.peers[ peerId ];
 		if ( !peer ) {
-			console.log( 'live - no peer found for ', peerId );
-			return;
+			console.log( 'live - no peer found for ', peerId )
+			return
 		}
-		1
-		let model = peer.peer;
+		
+		let model = peer.peer
 		//model.release( 'video' );
 		if ( 'selfie' === peerId ) {
-			model.release( 'room-quality' );
-			model.release( 'popped' );
+			model.release( 'room-quality' )
+			model.release( 'popped' )
 		}
 		
 		self.maybeCloseThumbMenu( peerId );
@@ -3362,17 +3362,17 @@ library.component = library.component || {};
 		const deviceId = self.audioSinkId || '';
 		if ( !self.stream ) {
 			self.audioSinkId = deviceId;
-			console.log( 'setAudioSink - no stream' );
-			return;
+			//console.log( 'setAudioSink - no stream' )
+			return
 		}
 		
 		if ( !self.stream.setSinkId ) {
-			console.log( 'setAudioSink - setSinkId is not supported' );
-			return;
+			//console.log( 'setAudioSink - setSinkId is not supported' )
+			return
 		}
 		
 		if ( !self.isAudio )
-			return;
+			return
 		
 		/*
 		if ( self.stream.sinkId === deviceId ) {
@@ -3393,14 +3393,14 @@ library.component = library.component || {};
 			console.log( 'failed to set audio sink', {
 				err : err,
 				did : deviceId,
-			});
+			})
 			self.audioSinkId = null;
 			const status = {
 				type    : 'warning',
 				message : 'WARN_AUDIO_SINK_NOT_ALLOWED',
 				events  : [ 'close' ],
-			};
-			self.emit( 'status', status );
+			}
+			self.emit( 'status', status )
 		}
 	}
 	

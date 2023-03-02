@@ -1106,8 +1106,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		function closeCmd() { self.closePeer( peerId ); }
 		
 		function getPeerConstructor( browser ) {
-			console.log( 'getPeerCons', browser )
-			
 			if ( 'safari' === browser )
 				return library.rtc.PeerSafari
 			
@@ -1130,11 +1128,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const peer = self.peers[ peerId ];
 		if ( !peer ) {
+			/*
 			console.log( 'no peer found for', {
 				pid   : peerId,
 				id    : identity,
 				peers : self.peers,
-			});
+			})
+			*/
 			return;
 		}
 		
