@@ -4215,7 +4215,7 @@ library.component = library.component || {};
 		self.spinMap = {}
 		self.traceTim = null
 		
-		self.spam = true
+		self.spam = false
 		
 		self.init()
 	}

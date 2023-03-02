@@ -2504,7 +2504,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.QLDBWHistory = []
 		
-		self.spam = true
+		self.spam = false
 		
 		self.init( conf.signal )
 	}
@@ -2594,22 +2594,25 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		self.log( '--- Peer.restart ----------------------------------------', checkHealth );
 		if ( checkHealth ) {
-			let healthy = self.checkIsHealthy();
-			self.log( 'healthy', healthy );
+			let healthy = self.checkIsHealthy()
+			self.log( 'healthy', healthy )
 			if ( healthy )
-				return;
+				return
 		}
 		
-		sendRestart();
-		self.state = '';
-		self.doRestart();
+		sendRestart()
+		self.state = ''
+		self.doRestart()
 		
 		function sendRestart() {
-			self.log( 'sendRestart' );
+			if ( null == self.signal )
+				return
+			
+			self.log( 'sendRestart' )
 			let restart = {
 				type : 'restart',
 			};
-			self.signal.send( restart );
+			self.signal.send( restart )
 		}
 	}
 	
@@ -4052,15 +4055,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkVideo( v ) {
-			if ( v.firCount ) {
-				self.log( 'XXX firCount', v.firCount )
-			}
+			checkCount( v, 'fir' )
+			checkCount( v, 'pli' )
 			
-			if ( v.pliCount ) {
-				self.log( 'XXX pliCount', v.pliCount )
-			}
-			
-			if ( v.jitter )
+			if ( v.jitter ) {}
 			
 			report = report || {}
 			if ( !self.receiving.video ) {
@@ -4082,6 +4080,23 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				} else
 					self.refreshVideo();
 			}
+			
+			function checkCount( stats, type ) {
+				let value = stats[ type ]
+				const stab = self.stability
+				self.log( 'checkCount', [ stats, type, value, stab[ type ] ])
+				if ( null == stab[ type ])
+					stab[ type ] = []
+				
+				if ( null == value )
+					value = 0
+				
+				advancePosition( stab, type )
+				stab[ type ][ stab.pos[ type ]] = value
+				
+				function advancePosition(  )
+			}
+			
 		}
 		
 		function checkOutgoing( byType ) {
