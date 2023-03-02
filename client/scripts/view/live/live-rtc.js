@@ -4055,8 +4055,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkVideo( v ) {
-			checkCount( v, 'fir' )
-			checkCount( v, 'pli' )
+			//checkCount( v, 'fir' )
+			//checkCount( v, 'pli' )
 			
 			if ( v.jitter ) {}
 			
