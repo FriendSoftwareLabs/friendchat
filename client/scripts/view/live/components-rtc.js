@@ -920,20 +920,27 @@ library.rtc = library.rtc || {};
 		delete self.senders[ kind ];
 	}
 	
-	ns.Session.prototype.setQualityLevel = function( level, bitrate ) {
+	ns.Session.prototype.setQualityLevel = function( level ) {
 		const self = this
-		self.log( 'setQualityLevel', [ level, bitrate, self.senders.video ])
+		self.log( 'setQualityLevel', [ level, self.senders.video ])
 		if ( null == self.senders.video )
 			return
-		
-		if ( null == level )
-			level = 'normal'
 		
 		const params = self.senders.video.getParameters()
 		self.log( 'setQualityLevel params', params )
 		let setRate = null
-		if ( 'low' == level )
-			setRate = bitrate
+		if ( 'low' == level ) {
+			setRate = 1000
+			params.degradationPreference = 'maintain-resolution'
+		}
+		else {
+			setRate = 10000
+			params.degradationPreference = 'balanced'
+		}
+		
+		//
+		
+		self.senders.video.setParameters( params )
 	}
 	
 	ns.Session.prototype.addStream = function( stream ) {

@@ -2503,6 +2503,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.pongs = []
 		
 		self.QLDBWHistory = []
+		self.stability = {
+			position : 0
+		}
 		
 		self.spam = false
 		
@@ -3144,6 +3147,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			window.clearTimeout( self.statsErrorGracePeriod )
 		self.QLDBWHistory = []
 		self.lastQLDBW = 0
+		self.stability = {
+			position : 0
+		}
 		
 		self.statsErrorGracePeriod = null
 		self.extendedError = null
@@ -4004,6 +4010,8 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		report.receiving = self.receiving
 		
 		self.log( 'report', report )
+		if ( report.pliIssue )
+			self.session.setQualityLevel( 'low' )
 		
 		if ( report.audioMissing || report.videoMissing ) {
 			self.log( 'BONK ^^^^^' )
@@ -4055,12 +4063,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkVideo( v ) {
-			//checkCount( v, 'fir' )
-			//checkCount( v, 'pli' )
+			report = report || {}
+			self.log( 'checkVideo - stab', self.stability )
+			const pos = advanceStabilityPosition( self.stability )
+			report.firIssue = checkCount( v, 'fir', pos )
+			report.pliIssue = checkCount( v, 'pli', pos )
 			
 			if ( v.jitter ) {}
 			
-			report = report || {}
 			if ( !self.receiving.video ) {
 				report.videoExpected = false
 				return
@@ -4071,30 +4081,67 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			report.video = t
 			report.videoCodec = c
 			if ( !t.frameHeight || !t.frameWidth ) {
-				self.log( 'checkVideo - OHSHIT RESTARTING', v );
+				self.log( 'checkVideo - OHSHIT RESTARTING', v )
 				if ( !self.useDefaultCodec ) {
-					self.useDefaultCodec = true;
-					self.refreshMeta();
+					self.useDefaultCodec = true
+					self.refreshMeta()
 					if ( self.session )
-						self.session.setDefaultCodec( self.useDefaultCodec );
+						self.session.setDefaultCodec( self.useDefaultCodec )
 				} else
-					self.refreshVideo();
+					self.refreshVideo()
 			}
 			
-			function checkCount( stats, type ) {
+			function checkCount( stats, type, pos ) {
 				let value = stats[ type ]
 				const stab = self.stability
-				self.log( 'checkCount', [ stats, type, value, stab[ type ] ])
+				self.log( 'checkCount', [ stats, type, value, stab[ type ] ], pos )
 				if ( null == stab[ type ])
 					stab[ type ] = []
 				
+				// update history
 				if ( null == value )
 					value = 0
 				
-				advancePosition( stab, type )
-				stab[ type ][ stab.pos[ type ]] = value
+				stab[ type ][ pos ] = value
 				
-				function advancePosition( s, t ) {}
+				// check delta
+				let low = null
+				let hi = null
+				if ( stab[ type ].length < 5 )
+					return false
+				
+				stab[ type ].forEach( v => {
+					if ( null == v )
+						return
+					
+					if ( low == null ) {
+						low = v
+						hi = v
+						return
+					}
+					
+					if ( v < low )
+						low = v
+					if ( v > hi )
+						hi = v
+				})
+				
+				self.log( 'hi/low', [ hi, low ])
+				if ( hi - low > 1 ) {
+					stab[ type ] = []
+					return true
+				}
+				else
+					return false
+			}
+			
+			function advanceStabilityPosition( s ) {
+				if ( 9 == s.position )
+					s.position = 0
+				else
+					s.position++
+				
+				return s.position
 			}
 			
 		}
@@ -4149,7 +4196,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				setRate = 8000.0
 			}
 			
-			self.session.setQualityLevel( qlevel, setRate )
+			self.session.setQualityLevel( qlevel )
 		}
 		
 	}
