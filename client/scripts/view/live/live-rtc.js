@@ -4217,10 +4217,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			let setRate = null
 			if ( 0 ) {
 				qlevel = 'low'
-				setRate = 8000.0
 			}
 			
-			self.session.setQualityLevel( qlevel )
+			//self.session.setQualityLevel( qlevel )
 		}
 		
 	}

@@ -943,6 +943,7 @@ library.rtc = library.rtc || {};
 			params.degradationPreference = 'balanced'
 		}
 		
+		params.encodings[ 0 ].maxBitrate = setRate
 		//
 		
 		self.senders.video.setParameters( params )
