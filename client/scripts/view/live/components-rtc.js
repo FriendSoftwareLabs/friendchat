@@ -922,6 +922,9 @@ library.rtc = library.rtc || {};
 	
 	ns.Session.prototype.setQualityLevel = function( level ) {
 		const self = this
+		if ( self.qualityLevel == level )
+			return
+		
 		self.log( 'setQualityLevel', [ level, self.senders.video ])
 		if ( null == self.senders.video )
 			return
@@ -930,10 +933,12 @@ library.rtc = library.rtc || {};
 		self.log( 'setQualityLevel params', params )
 		let setRate = null
 		if ( 'low' == level ) {
+			self.qualityLevel = level
 			setRate = 1000
 			params.degradationPreference = 'maintain-resolution'
 		}
 		else {
+			self.qualityLevel = 'normal'
 			setRate = 10000
 			params.degradationPreference = 'balanced'
 		}
