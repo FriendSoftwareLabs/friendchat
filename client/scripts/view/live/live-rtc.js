@@ -4086,6 +4086,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function checkVideo( v ) {
 			report = report || {}
+			const c = v.codec
+			const t = v.track || v
+			
 			self.log( 'checkVideo - stab', self.stability )
 			const pos = advanceStabilityPosition( self.stability )
 			report.firIssue = checkCount( v, 'fir', pos )
@@ -4098,8 +4101,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				return
 			}
 			
-			const c = v.codec
-			const t = v.track || v
 			report.video = t
 			report.videoCodec = c
 			if ( !t.frameHeight || !t.frameWidth ) {
@@ -4114,9 +4115,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			}
 			
 			function checkCount( stats, type, pos ) {
+				type = type + 'Count'
 				let value = stats[ type ]
 				const stab = self.stability
-				self.log( 'checkCount', [ stats, type, value, stab[ type ] ], pos )
+				self.log( 'checkCount', [ stats, type, value, stab[ type ], pos ] )
 				if ( null == stab[ type ])
 					stab[ type ] = []
 				
