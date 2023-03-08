@@ -2679,7 +2679,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.startSync();
 		
-		const hiResAva = await window.View.getFriendAvatar( self.identity.fUserId, 'large' )
+		let hiResAva = null
+		try {
+			hiResAva = await window.View.getFriendAvatar( self.identity.fUserId, 'large' )
+		} catch( ex ) {
+			self.log( 'hiResAva ex', [ ex, self.identity ])
+		}
+		
 		if ( null != hiResAva ) {
 			self.hiResAvatar = hiResAva
 			self.emit( 'update-avatar', hiResAva )
@@ -3145,6 +3151,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			window.clearTimeout( self.extendedError )
 		if ( null != self.statsErrorGracePeriod )
 			window.clearTimeout( self.statsErrorGracePeriod )
+		if ( null != self.statsTransError )
+			window.clearTimeout( self.statsTransError )
+		
 		self.QLDBWHistory = []
 		self.lastQLDBW = 0
 		self.stability = {
@@ -3154,6 +3163,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		self.statsErrorGracePeriod = null
 		self.extendedError = null
 		self.statsWHError = null
+		self.statsTransError = null
 		
 		if ( 'sync-meta' === self.state ) {
 			self.log( 'doRestart - syncing meta already, aborting' );
@@ -3854,7 +3864,9 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			grace : null != self.statsErrorGracePeriod,
 			ext   : null != self.extendedError,
 			wh    : null != self.statsWHError,
+			trans : null != self.statsTransError,
 		})
+		
 		if ( 'ERR_MULTI_TRACKS' == e.error ) {
 			if ( null != self.extendedError )
 				return
@@ -3864,13 +3876,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				looksFucky( 'ERR_MULTI_TRACKS' ), 1000 * 9 )
 		}
 		
+		if ( 'ERR_NO_TRANSPORT' == e.error ) {
+			if ( null != self.statsTransError )
+				return
+			
+			self.log( 'starting ERR_NO_TRANSPORT timer' )
+			self.statsTransError = window.setTimeout(() =>
+				looksFucky( 'ERR_NO_TRANSPORT' ), 1000 * 9 )
+		}
+		
 		if ( 'ERR_WIDTH_HEIGHT_MISSING' == e.error ) {
 			if ( null != self.statsWHError )
 				return
 			
 			self.log( 'starting WIDTH_HEIGHT timer' )
 			self.statsWHError = window.setTimeout(() => 
-				looksFucky( 'ERR_WIDTH_HEIGHT_MISSING' ), 1000 * 6 )
+				looksFucky( 'ERR_WIDTH_HEIGHT_MISSING' ), 1000 * 9 )
 		}
 		
 		if ( 'ERR_INVALID_STATE' == e.error ) {
@@ -3993,9 +4014,10 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			checkOutgoing( raw.byType )
 		
 		let report = null
-		if ( null == trans ) {
-			self.log( 'checkStats - no transport, lets not', stats )
-			return
+		if ( null != trans && null != self.statsTransError ) {
+			self.log( 'checkStats - has transport, lets' )
+			window.clearTimeout( self.statsTransError )
+			self.statsTransError = null
 		}
 		
 		checkTransport( trans, audio, video )

@@ -800,7 +800,7 @@ library.rtc = library.rtc || {};
 		self.channels = {}
 		
 		// rtc specific logging ( automatic host / client prefix )
-		self.spam = false
+		self.spam = true
 		
 		self.log( 'Session', type )
 		
@@ -2854,12 +2854,17 @@ library.rtc = library.rtc || {};
 			return
 		}
 		
-		res.transport = buildTransport( byType, byId );
+		res.transport = buildTransport( byType, byId )
+		if ( null == res.transport ) {
+			self.emitError( 'ERR_NO_TRANSPORT' )
+			return
+		}
+		
 		res.raw = {
 			byId   : byId,
 			byType : byType,
-		};
-		done( res );
+		}
+		done( res )
 		
 		function buildInnieStats( rtps, things ) {
 			if ( !rtps || !things ) {

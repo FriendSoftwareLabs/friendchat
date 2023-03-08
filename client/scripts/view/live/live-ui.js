@@ -1119,21 +1119,24 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.updateMenuItems = function() {
-		const self = this;
-		const selfie = self.peers[ 'selfie' ];
-		if ( !selfie )
-			return;
+		const self = this
+		if ( null == self.menu )
+			return
 		
-		const hasVideo = selfie.hasVideo;
-		let enable = hasVideo;
-		const isMode = ( !!self.presenterId || !!self.showThumbs );
+		const selfie = self.peers[ 'selfie' ]
+		if ( !selfie )
+			return
+		
+		const hasVideo = selfie.hasVideo
+		let enable = hasVideo
+		const isMode = ( !!self.presenterId || !!self.showThumbs )
 		if ( isMode )
-			enable = false;
+			enable = false
 		
 		if ( enable )
-			self.menu.enable( 'popped' );
+			self.menu.enable( 'popped' )
 		else
-			self.menu.disable( 'popped' );
+			self.menu.disable( 'popped' )
 		
 	}
 	
