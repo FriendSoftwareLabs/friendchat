@@ -4032,7 +4032,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		report.receiving = self.receiving
 		
 		self.log( 'report', report )
-		if ( !report.pliIssue )
+		if ( report.pliIssue )
 			self.session.setQualityLevel( 'low' )
 		
 		if ( report.audioMissing || report.videoMissing ) {
@@ -4151,7 +4151,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				})
 				
 				self.log( 'hi/low', [ hi, low ])
-				if ( hi - low > 1 ) {
+				if ( hi - low > 0 ) {
 					stab[ type ] = []
 					return true
 				}
