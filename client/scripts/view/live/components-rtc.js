@@ -934,7 +934,7 @@ library.rtc = library.rtc || {};
 		let setRate = null
 		if ( 'low' == level ) {
 			self.qualityLevel = level
-			setRate = 1000
+			setRate = 2000
 			params.degradationPreference = 'maintain-resolution'
 		}
 		else {
