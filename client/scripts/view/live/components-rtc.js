@@ -939,7 +939,7 @@ library.rtc = library.rtc || {};
 		}
 		else {
 			self.qualityLevel = 'normal'
-			setRate = 500000
+			setRate = null
 			params.degradationPreference = 'balanced'
 		}
 		
