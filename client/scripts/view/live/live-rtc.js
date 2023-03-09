@@ -4032,8 +4032,11 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		report.receiving = self.receiving
 		
 		self.log( 'report', report )
-		if ( report.pliIssue )
+		
+		if ( report.pliIssue || report.firIssue ) {
+			self.log( 'call setQualityLevel', self.stability )
 			self.session.setQualityLevel( 'low' )
+		}
 		
 		if ( report.audioMissing || report.videoMissing ) {
 			self.log( 'BONK ^^^^^' )
@@ -4089,7 +4092,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			const c = v.codec
 			const t = v.track || v
 			
-			self.log( 'checkVideo - stab', self.stability )
 			const pos = advanceStabilityPosition( self.stability )
 			report.firIssue = checkCount( v, 'fir', pos )
 			report.pliIssue = checkCount( v, 'pli', pos )
@@ -4118,7 +4120,6 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				type = type + 'Count'
 				let value = stats[ type ]
 				const stab = self.stability
-				self.log( 'checkCount', [ stats, type, value, stab[ type ], pos ] )
 				if ( null == stab[ type ])
 					stab[ type ] = []
 				
@@ -4151,7 +4152,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 				})
 				
 				self.log( 'hi/low', [ hi, low ])
-				if ( hi - low > 0 ) {
+				if ( hi - low > 5 ) {
 					stab[ type ] = []
 					return true
 				}
