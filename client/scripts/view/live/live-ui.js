@@ -774,15 +774,15 @@ library.component = library.component || {};
 		const self = this;
 		const peer = self.peers[ peerId ];
 		if ( !peer ) {
-			console.log( 'live - no peer found for ', peerId );
-			return;
+			console.log( 'live - no peer found for ', peerId )
+			return
 		}
-		1
-		let model = peer.peer;
+		
+		let model = peer.peer
 		//model.release( 'video' );
 		if ( 'selfie' === peerId ) {
-			model.release( 'room-quality' );
-			model.release( 'popped' );
+			model.release( 'room-quality' )
+			model.release( 'popped' )
 		}
 		
 		self.maybeCloseThumbMenu( peerId );
@@ -1119,21 +1119,24 @@ library.component = library.component || {};
 	}
 	
 	ns.UI.prototype.updateMenuItems = function() {
-		const self = this;
-		const selfie = self.peers[ 'selfie' ];
-		if ( !selfie )
-			return;
+		const self = this
+		if ( null == self.menu )
+			return
 		
-		const hasVideo = selfie.hasVideo;
-		let enable = hasVideo;
-		const isMode = ( !!self.presenterId || !!self.showThumbs );
+		const selfie = self.peers[ 'selfie' ]
+		if ( !selfie )
+			return
+		
+		const hasVideo = selfie.hasVideo
+		let enable = hasVideo
+		const isMode = ( !!self.presenterId || !!self.showThumbs )
 		if ( isMode )
-			enable = false;
+			enable = false
 		
 		if ( enable )
-			self.menu.enable( 'popped' );
+			self.menu.enable( 'popped' )
 		else
-			self.menu.disable( 'popped' );
+			self.menu.disable( 'popped' )
 		
 	}
 	
@@ -1579,18 +1582,18 @@ library.component = library.component || {};
 		let currSpeaker = null;
 		let lastSpeaker = null;
 		if ( null != self.currentSpeaker )
-			currSpeaker = self.peers[ self.currentSpeaker ];
+			currSpeaker = self.peers[ self.currentSpeaker ]
 		
 		if ( null != self.lastSpeaker )
-			lastSpeaker = self.peers[ self.lastSpeaker ];
+			lastSpeaker = self.peers[ self.lastSpeaker ]
 		
 		if ( !currSpeaker && lastSpeaker ) {
 			if ( self.gridSwap ) {
 				if ( self.gridSwap.in == self.lastSpeaker ) {
-					console.log( 'updateThumbsGrid - already swapping to lastSpeaker' );
-					return;
+					//console.log( 'updateThumbsGrid - already swapping to lastSpeaker' );
+					return
 				} else
-					await self.clearGridSwap();
+					await self.clearGridSwap()
 			}
 			
 			self.showInMain( lastSpeaker );
@@ -2258,9 +2261,9 @@ library.component = library.component || {};
 		const self = this;
 		let rate = null;
 		if ( self.showAsSpeaker || self.isSpeaker )
-			rate = 50;
+			rate = 50
 		if ( self.fastRefresh )
-			rate = 20;
+			rate = 20
 		
 		self.peer.setStatsRate( rate );
 	}
@@ -3362,17 +3365,17 @@ library.component = library.component || {};
 		const deviceId = self.audioSinkId || '';
 		if ( !self.stream ) {
 			self.audioSinkId = deviceId;
-			console.log( 'setAudioSink - no stream' );
-			return;
+			//console.log( 'setAudioSink - no stream' )
+			return
 		}
 		
 		if ( !self.stream.setSinkId ) {
-			console.log( 'setAudioSink - setSinkId is not supported' );
-			return;
+			//console.log( 'setAudioSink - setSinkId is not supported' )
+			return
 		}
 		
 		if ( !self.isAudio )
-			return;
+			return
 		
 		/*
 		if ( self.stream.sinkId === deviceId ) {
@@ -3393,14 +3396,14 @@ library.component = library.component || {};
 			console.log( 'failed to set audio sink', {
 				err : err,
 				did : deviceId,
-			});
+			})
 			self.audioSinkId = null;
 			const status = {
 				type    : 'warning',
 				message : 'WARN_AUDIO_SINK_NOT_ALLOWED',
 				events  : [ 'close' ],
-			};
-			self.emit( 'status', status );
+			}
+			self.emit( 'status', status )
 		}
 	}
 	
@@ -3474,8 +3477,8 @@ library.component = library.component || {};
 		
 		function toggle( visible ) {
 			if ( !self.stream ) {
-				console.log( 'togglestream - no stream' );
-				return;
+				//console.log( 'togglestream - no stream' );
+				return
 			}
 			
 			self.stream.classList.toggle( 'hidden', !visible );
@@ -4208,29 +4211,38 @@ library.component = library.component || {};
 // RTCState
 (function( ns, undefined ) {
 	ns.RTCState = function( conf ) {
-		if ( !( this instanceof ns.RTCState ))
-			return new ns.RTCState( conf );
+		const self = this
+		self.parentId = conf.peerId
 		
-		const self = this;
-		self.parentId = conf.peerId;
+		self.currentSpinner = 'waiting'
+		self.spinMap = {}
+		self.traceTim = null
 		
-		self.currentSpinner = 'waiting';
-		self.spinMap = {};
+		self.spam = false
 		
-		self.init();
+		self.init()
 	}
 	
 	// PUBLIC
 	
 	ns.RTCState.prototype.update = function( event ) {
 		const self = this;
-		const handler = self.typeMap[ event.type ];
+		self.log( 'update', event )
+		const handler = self.typeMap[ event.type ]
+		
 		if ( !handler ) {
-			console.log( 'unknown event type', event );
-			return;
+			if ( null == self.traceTim ) {
+				console.trace( 'unknown event type', event );
+				self.traceTim = window.setTimeout( allowTrace, 1000 * 30 )
+			}
+			return
 		}
 		
-		handler( event.data );
+		handler( event.data )
+		
+		function allowTrace() {
+			self.tranceTime = null
+		}
 	}
 	
 	ns.RTCState.prototype.show = function() {
@@ -4267,6 +4279,16 @@ library.component = library.component || {};
 		self.main.classList.toggle( 'hidden', !show );
 	}
 	
+	ns.RTCState.prototype.log = function( ...inn ) {
+		const self = this
+		if ( !self.spam )
+			return
+		
+		let desc = inn.shift()
+		desc = 'RTCState > ' + desc
+		console.log( desc, ...inn )
+	}
+	
 	ns.RTCState.prototype.init = function() {
 		const self = this;
 		self.typeMap = {
@@ -4274,8 +4296,8 @@ library.component = library.component || {};
 			stream  : handleStream,
 			error   : handleError,
 			stats   : handleStats,
-			nominal : e => self.handleNominal( e ),
-		};
+			signal  : e => self.handleSignal( e ),
+		}
 		
 		function handleRTC( e ) { self.handleRTCState( e ); }
 		function handleStream( e ) { self.handleStreamState( e ); }
@@ -4285,7 +4307,7 @@ library.component = library.component || {};
 		try {
 			self.bind();
 		} catch( ex ) {
-			console.log( 'bind ex', ex );
+			self.log( 'bind ex', ex );
 		}
 		
 		const rtcPingBar = self.mainState
@@ -4324,11 +4346,13 @@ library.component = library.component || {};
 		self.audioInput = self.audio.querySelector( '.state-audio-input .state-value' );
 		self.audioLost = self.audio.querySelector( '.state-audio-lost .state-value' );
 		
-		self.video = streamState.querySelector( '.state-video' );
-		self.videoTrack = self.video.querySelector( '.state-video-track .state-value' );
-		self.videoCodec = self.video.querySelector( '.state-video-codec .state-value' );
-		self.videoSize = self.video.querySelector( '.state-video-size .state-value' );
-		self.videoLost = self.video.querySelector( '.state-video-lost .state-value' );
+		self.video = streamState.querySelector( '.state-video' )
+		self.videoTrack = self.video.querySelector( '.state-video-track .state-value' )
+		self.videoCodec = self.video.querySelector( '.state-video-codec .state-value' )
+		self.videoSize = self.video.querySelector( '.state-video-size .state-value' )
+		self.videoFPS = self.video.querySelector( '.state-video-fps .state-value' )
+		self.videoJitter = self.video.querySelector( '.state-video-jitter .state-value' )
+		self.videoLost = self.video.querySelector( '.state-video-lost .state-value' )
 		
 		self.stateError = self.mainState
 			.querySelector( '.main-state-error .state-value' );
@@ -4363,13 +4387,14 @@ library.component = library.component || {};
 	
 	ns.RTCState.prototype.setSpinner = function( type, level ) {
 		const self = this;
-		const prev = self.currentSpinner;
-		level = self.getLevel( level );
-		self.spinMap[ type ] = level;
-		level = getMaxLevel();
+		self.log( 'setSpinner', type, level )
+		const prev = self.currentSpinner
+		level = self.getLevel( level )
+		self.spinMap[ type ] = level
+		level = getMaxLevel()
 		
 		if ( prev === level )
-			return;
+			return
 		
 		hideOld( prev );
 		showNew( level );
@@ -4413,6 +4438,7 @@ library.component = library.component || {};
 			return;
 		}
 		*/
+		self.log( 'handleRTCState', event )
 		
 		if ( 'routing' === event.type ) {
 			self.rtcRouting.textContent = event.data.data;
@@ -4425,27 +4451,30 @@ library.component = library.component || {};
 	}
 	
 	ns.RTCState.prototype.handleStats = function( data ) {
-		const self = this;
+		const self = this
+		self.log( 'handleStats', data )
 		const trans = data.transport;
-		if ( trans.receiveRate ) {
-			const KBs = Math.round( trans.receiveRate / 1024 );
-			self.rtcReceiving.textContent =  KBs + ' KB/s';
-		}
+		if ( null == trans )
+			return
 		
-		if ( trans.bytesReceived ) {
-			const total = ( trans.bytesReceived / 1024 / 1024 ).toFixed( 1 );
-			self.rtcReceived.textContent =  total + ' MB';
+		if ( trans.receiveRate ) {
+			const KBs = Math.round( trans.receiveRate / 1024 )
+			self.rtcReceiving.textContent =  KBs + ' KB/s'
 		}
 		
 		if ( null != trans.ping ) {
 			if ( self.rtcPing )
-				self.rtcPing.set( trans.ping );
+				self.rtcPing.set( trans.ping )
 		}
 		
 		if ( trans.pair ) {
 			const bandWidth = trans.pair.availableOutgoingBitrate || 0;
 			const maxKBit = ( bandWidth / 8 / 1024 ).toFixed( 1 );
-			self.rtcBandwidth.textContent = maxKBit + ' KBytes';
+			self.rtcBandwidth.textContent = maxKBit + ' KB/s';
+			if ( trans.pair.bytesReceived ) {
+				const total = ( trans.bytesReceived / 1024 / 1024 ).toFixed( 1 )
+				self.rtcReceived.textContent =  total + ' MB'
+			}
 		}
 		
 		const inn = data.inbound;
@@ -4461,32 +4490,42 @@ library.component = library.component || {};
 			setVideo( video );
 		
 		function setAudio( a ) {
-			const codec = a.codec;
+			const codec = a.codec
 			if ( null != codec )
 				self.audioCodec.textContent = codec.mimeType.split( '/' )[ 1 ];
 			
-			const t = a.track;
+			const t = a
 			if ( null != t ) {
 				const volume = ( t.energyRate * 1.0 )
-					.toFixed( 3 );
+					.toFixed( 3 )
 				
-				self.audioInput.textContent = volume;
+				self.audioInput.textContent = volume
 			}
 			
-			const pLoss = a.packetLoss || 0;
-			self.audioLost.textContent = pLoss;
+			const pLoss = a.packetLoss || 0
+			self.audioLost.textContent = pLoss
 		}
 		
 		function setVideo( v ) {
 			const codec = v.codec;
-			if ( null != codec )
+			if ( null != codec && null != self.videoCodec )
 				self.videoCodec.textContent = codec.mimeType.split( '/' )[ 1 ];
 			
-			const t = v.track;
+			const t = v
+			self.log( 'track', t )
 			if ( null != t ) {
 				const h = t.frameHeight;
 				const w = t.frameWidth;
 				self.videoSize.textContent = w + 'x' + h;
+				if ( v.fps )
+					self.videoFPS.textContent = v.fps
+				else
+					self.videoFPS.textContent = '--'
+				
+				if ( null != v.jitter )
+					self.videoJitter.textContent = v.jitter.toFixed( 1 )
+				else
+					self.videoJitter.textContent = '--'
 			}
 			
 			const pLoss = v.packetLoss || 0;
@@ -4494,12 +4533,14 @@ library.component = library.component || {};
 		}
 	}
 	
-	ns.RTCState.prototype.handleNominal = function( e ) {
-		
+	ns.RTCState.prototype.handleSignal = function( e ) {
+		self = this
+		self.log( 'handleSignal', e )
 	}
 	
 	ns.RTCState.prototype.handleStreamState = function( data ) {
-		const self = this;
+		const self = this
+		self.log( 'handleStreamState', data )
 		if ( data.tracks )
 			setAudioVideo( data.tracks );
 		

@@ -200,14 +200,15 @@ library.rtc = library.rtc || {};
 		self.source = source;
 		self.onSpeaking = onSpeaking;
 		
-		self.isSpeaking = false;
-		self.speakingLimit = 16;
-		self.speakingTicks = 5;
-		self.notSpeakingLimit = 5;
-		self.notSpeakingTicks = 20;
-		self.notSpeakingWait = 1000 * 2;
-		self.notSpeakingTimeout = null;
-		self.init();
+		self.isSpeaking = false
+		self.speakingLimit = 16
+		self.speakingTicks = 5
+		self.notSpeakingLimit = 5
+		self.notSpeakingTicks = 20
+		self.notSpeakingWait = 1000 * 2
+		self.notSpeakingTimeout = null
+		
+		self.init()
 	}
 	
 	// Public
@@ -759,51 +760,51 @@ library.rtc = library.rtc || {};
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		opts = opts || {};
-		self.type = type;
-		self.id = 'webrtc-' + self.type;
-		self.isHost = isHost || false;
-		self.signal = signal;
-		self.media = media;
-		self.rtc = rtcConf;
-		self.useDefaultCodec = opts.useDefaultCodec;
-		self.modifySDP = opts.modifySDP || null;
-		self.peerId = opts.peerId || null;
-		self.bundlePolicy = opts.bundlePolicy || null;
-		self.peerName = peerName || '';
-		self.browser = browser || 'chrome';
-		
-		self.log( 'Session', type );
+		opts = opts || {}
+		self.type = type
+		self.id = 'webrtc-' + self.type
+		self.isHost = isHost || false
+		self.signal = signal
+		self.media = media
+		self.rtc = rtcConf
+		self.useDefaultCodec = opts.useDefaultCodec
+		self.modifySDP = opts.modifySDP || null
+		self.peerId = opts.peerId || null
+		self.bundlePolicy = opts.bundlePolicy || null
+		self.peerName = peerName || ''
+		self.browser = browser || 'chrome'
 		
 		// peer connection, holder of streams
-		self.conn = null;
-		self.state = 'nominal';
-		self.senders = {};
+		self.conn = null
+		self.state = 'nominal'
+		self.senders = {}
 		self.waiters = {
 			add    : {},
 			remove : {},
 		};
-		self.remoteTracks = {};
+		self.remoteTracks = {}
 		//self.useOnTrack = false;
 		//self.useOnStream = false;
 		
-		self.iceCandidates = [];
-		self.negotiationWaiting = false;
-		self.negotiationTimeout = null;
-		self.negotiationTimer = 1000 * 10;
-		self.denyNegotiation = false;
+		self.iceCandidates = []
+		self.negotiationWaiting = false
+		self.negotiationTimeout = null
+		self.negotiationTimer = 1000 * 10
+		self.denyNegotiation = false
 		
-		self.iceTimeoutMs = 1000 * 6;
+		self.iceTimeoutMs = 1000 * 6
 		
-		self.statsCache = {};
+		self.statsCache = {}
 		
 		// data channels
-		self.channels = {};
+		self.channels = {}
 		
 		// rtc specific logging ( automatic host / client prefix )
 		self.spam = false
 		
-		self.init();
+		self.log( 'Session', type )
+		
+		self.init()
 	}
 	
 	ns.Session.prototype = Object.create( library.component.EventEmitter.prototype );
@@ -825,11 +826,16 @@ library.rtc = library.rtc || {};
 			return 'ERR_NO_CONN';
 		
 		if ( self.senders[ kind ])
-			return self.replaceTrack( kind );
+			return self.replaceTrack( kind )
 		
-		self.log( 'addTrack', track );
-		const sender = self.conn.addTrack( track );
-		self.senders[ kind ] = sender;
+		self.log( 'addTrack', track )
+		const sender = self.conn.addTrack( track )
+		const params = sender.getParameters()
+		self.log( 'addTrack sender', {
+			sender : sender, 
+			params : params, })
+		
+		self.senders[ kind ] = sender
 	}
 	
 	ns.Session.prototype.replaceTrack = function( kind ) {
@@ -914,6 +920,35 @@ library.rtc = library.rtc || {};
 		delete self.senders[ kind ];
 	}
 	
+	ns.Session.prototype.setQualityLevel = function( level ) {
+		const self = this
+		if ( self.qualityLevel == level )
+			return
+		
+		self.log( 'setQualityLevel', [ level, self.senders.video ])
+		if ( null == self.senders.video )
+			return
+		
+		const params = self.senders.video.getParameters()
+		self.log( 'setQualityLevel params', params )
+		let setRate = null
+		if ( 'low' == level ) {
+			self.qualityLevel = level
+			setRate = 150000
+			params.degradationPreference = 'maintain-resolution'
+		}
+		else {
+			self.qualityLevel = 'normal'
+			setRate = null
+			params.degradationPreference = 'balanced'
+		}
+		
+		params.encodings[ 0 ].maxBitrate = setRate
+		//
+		
+		self.senders.video.setParameters( params )
+	}
+	
 	ns.Session.prototype.addStream = function( stream ) {
 		const self = this;
 		self.log( 'addStream', {
@@ -946,9 +981,10 @@ library.rtc = library.rtc || {};
 		done();
 		
 		function add( track ) {
-			const sender = self.conn.addTrack( track, stream );
-			const params = sender.getParameters();
-			self.senders.push( sender );
+			const sender = self.conn.addTrack( track, stream )
+			const params = sender.getParameters()
+			self.log( 'addStream semder params', params )
+			self.senders.push( sender )
 		}
 		
 		function legacyAddStream( stream ) {
@@ -1001,25 +1037,26 @@ library.rtc = library.rtc || {};
 		channel.close();
 	}
 	
-	ns.Session.prototype.getStats = function() {
-		const self = this;
+	ns.Session.prototype.getStats = function( selector ) {
+		const self = this
 		return new Promise(( ook, eek ) => {
 			if ( null == self.conn ) {
-				eek( 'ERR_NO_CONN' );
-				return;
+				eek( 'ERR_NO_CONN' )
+				return
 			}
 			
+			/*
 			if ( 'nominal' != self.state ) {
-				eek( 'ERR_INVALID_STATE' );
-				return;
+				eek( 'ERR_INVALID_STATE' )
+				return
 			}
+			*/
 			
-			
-			self.conn.getStats()
+			self.conn.getStats( selector )
 				.then( ook )
-				.catch( eek );
+				.catch( eek )
 			
-		});
+		})
 	}
 	
 	ns.Session.prototype.negotiate = function() {
@@ -2384,35 +2421,36 @@ library.rtc = library.rtc || {};
 
 (function( ns, undefined ) {
 	ns.RTCStats = function( browser, label ) {
-		const self = this;
-		self.browser = browser;
-		self.label = label;
+		const self = this
+		self.browser = browser
+		self.label = label
 		
-		self.rtcConn = null;
-		self.baseRate = 500;
-		self.extendedRate = 1000 * 4;
-		self.extendedChecked = false;
-		self.statsCache = {};
+		self.rtcConn = null
+		self.baseRate = 1000
+		self.audioRate = 1000
+		self.extendedRate = 1000 * 4
+		self.extendedChecked = false
+		self.statsCache = {}
 		
-		library.component.EventEmitter.call( self );
+		library.component.EventEmitter.call( self )
 		
 		self.spam = false
 		
-		self.init();
+		self.init()
 	}
 	
-	ns.RTCStats.prototype = Object.create( library.component.EventEmitter.prototype );
+	ns.RTCStats.prototype = Object.create( library.component.EventEmitter.prototype )
 	
 	// Public
 	
 	ns.RTCStats.prototype.setRate = function( rate ) {
-		const self = this;
+		const self = this
 		if ( null == rate )
-			self.baseRate = 500;
+			self.setAudioRate = 1000
 		else
-			self.baseRate = rate;
+			self.setAudioRate = rate
 		
-		self.setPollers();
+		self.setPollers()
 	}
 	
 	ns.RTCStats.prototype.resume = function() {
@@ -2430,10 +2468,16 @@ library.rtc = library.rtc || {};
 		self.log( 'trackAdded', track )
 		const id = track.id
 		const k = track.kind
-		if ( 'audio' == k )
+		if ( 'audio' == k ) {
+			self.aId = null
 			self.aDiscover = track
-		if ( 'video' == k )
+			self.aTrack = null
+		}
+		if ( 'video' == k ) {
+			self.vId = null
 			self.vDiscover = track
+			self.vTrack = null
+		}
 		
 		self.discoverTrack( id )
 	}
@@ -2444,11 +2488,13 @@ library.rtc = library.rtc || {};
 		if ( 'audio' == type ) {
 			self.aId = null
 			self.aDiscover = null
+			self.aTrack = null
 		}
 		
 		if ( 'video' == type ) {
 			self.vId = null
 			self.vDiscover = null
+			self.vTrack = null
 		}
 	}
 	
@@ -2486,7 +2532,7 @@ library.rtc = library.rtc || {};
 	
 	ns.RTCStats.prototype.log = function( ...args ) {
 		const self = this
-		if ( true != self.spam )
+		if ( !self.spam )
 			return
 		
 		let desc = args.shift()
@@ -2494,22 +2540,28 @@ library.rtc = library.rtc || {};
 		if ( null != self.label )
 			desc = self.label + ' ' + desc
 		
+		//self.spam.log( desc, ...args )
 		console.log( desc, ...args )
 	}
 	
 	ns.RTCStats.prototype.setPollers = function() {
 		const self = this;
 		self.log( 'setPollers' )
-		self.clearPollers();
+		self.clearPollers()
 		
-		self.baseInterval = window.setInterval( getStats, self.baseRate );
-		function getStats() {
-			self.getStats();
+		self.audioInterval = window.setInterval( getAudio, self.audioRate )
+		function getAudio() {
+			self.getAudioLevel()
 		}
 		
-		self.extendedInterval = window.setInterval( checkExt, self.extendedRate );
+		self.baseInterval = window.setInterval( getStats, self.baseRate )
+		function getStats() {
+			self.getStats()
+		}
+		
+		self.extendedInterval = window.setInterval( checkExt, self.extendedRate )
 		function checkExt() {
-			self.extendedChecked = false;
+			self.extendedChecked = false
 		}
 	}
 	
@@ -2530,30 +2582,63 @@ library.rtc = library.rtc || {};
 		}
 	}
 	
-	ns.RTCStats.prototype.getStats = function() {
-		const self = this;
-		self.log( 'getStats', !!self.rtcConn )
+	ns.RTCStats.prototype.getAudioLevel = async function() {
+		const self = this
 		if ( !self.rtcConn )
-			return;
+			return
 		
-		self.rtcConn.getStats()
-			.then( statsBack )
-			.catch( bonk );
+		if ( null == self.aId )
+			return
 		
-		function bonk( err ) {
-			self.log( 'getStats - failed to get stats', err );
-			self.emitError( err );
+		let raw = null
+		try {
+			raw = await self.rtcConn.getStats( self.aTrack )
+		} catch( ex ) {
+			self.log( 'getAudioLevel getStats ex', ex )
+			self.emitError( 'ERR_INVALID_STATE' )
 		}
 		
-		function statsBack( raw ) {
-			self.raw = raw;
-			self.log( 'statsBack, raw', raw )
-			self.emitBase();
-			if ( self.extendedChecked )
-				return;
+		if ( null == raw )
+			return
+		
+		let aTrack = null
+		raw.forEach( item => {
+			if ( null != aTrack )
+				return
 			
-			self.emitExtended()
+			if ( null == item.trackIdentifier )
+				return false
+			
+			if ( item.trackIdentifier == self.aId )
+				aTrack = item
+		})
+		
+		if ( null == aTrack )
+			return
+		
+		self.log( 'alevel track', aTrack )
+		self.emit( 'audio-level', aTrack.audioLevel )
+	}
+	
+	ns.RTCStats.prototype.getStats = async function() {
+		const self = this;
+		if ( !self.rtcConn )
+			return
+		
+		let raw = null
+		try {
+			raw = await self.rtcConn.getStats()
+		} catch( ex ) {
+			self.log( 'getStats ex', ex )
+			self.emitError( 'ERR_INVALID_STATE' )
 		}
+		
+		self.raw = raw
+		self.emitBase()
+		if ( self.extendedChecked )
+			return
+		
+		self.emitExtended()
 	}
 	
 	ns.RTCStats.prototype.emitError = function( err ) {
@@ -2566,26 +2651,37 @@ library.rtc = library.rtc || {};
 	ns.RTCStats.prototype.emitBase = function() {
 		const self = this;
 		if ( null == self.raw )
-			return;
+			return
 		
+		let tracks = null
 		let vT = null;
 		let aT = null;
 		if ( null == self.aId ) {
 			if ( self.aDiscover )
-				aT = self.discoverTrack( self.aDiscover.id );
+				aT = self.discoverTrack( self.aDiscover.id )
 		}
-		else
-			aT = self.raw.get( self.aId );
+		else {
+			aT = get( self.aId )
+		}
 		
 		if ( null == self.vId ) {
 			if ( self.vDiscover )
-				vT = self.discoverTrack( self.vDiscover.id );
+				vT = self.discoverTrack( self.vDiscover.id )
 		}
 		else
-			vT = self.raw.get( self.vId );
+			vT = get( self.vId )
 		
 		let audio = null;
 		let video = null;
+		
+		self.log( 'emitbase sources', {
+			tracks : tracks,
+			aId : self.aId,
+			aT  : aT,
+			vId : self.vId,
+			vT  : vT,
+		})
+		
 		if ( null != aT ) {
 			audio = {
 				level : aT.audioLevel,
@@ -2603,6 +2699,7 @@ library.rtc = library.rtc || {};
 			video : video,
 		};
 		
+		/*
 		if ( null == audio && null == video ) {
 			self.log( 'emitBase nulls', {
 				aId    : self.aId,
@@ -2613,52 +2710,86 @@ library.rtc = library.rtc || {};
 			})
 		} else
 			self.log( 'emitBase', base )
+		*/
 		
 		self.emit( 'base', base )
+		
+		function get( tId ) {
+			if ( null == tracks ) {
+				tracks = []
+				self.raw.forEach( item => {
+					if ( 'track' != item.type )
+						return null
+					
+					if ( !item.remoteSource )
+						return null
+				
+					tracks.push( item )
+				})
+			}
+			let track = null
+			tracks.some( t => {
+				if ( tId != t.trackIdentifier )
+					return false
+				
+				track = t
+				return true
+			})
+			
+			return track
+		}
 	}
 	
 	ns.RTCStats.prototype.discoverTrack = function( id ) {
 		const self = this;
-		self.log( 'discoverTrack', { 
-			id  : id,
-			raw : self.raw,
+		self.log( 'discoverTrack', {
+			id    : id,
+			adisc : self.aDiscover,
+			vdisc : self.vDiscover,
 		})
-		
-		if ( null == self.raw ) {
-			self.log( 'discoverTrack - now raw' )
+		if ( null == self.raw )
 			return
-		}
 		
-		let track = null;
-		let type = null;
+		let track = null
+		let type = null
+		const items = []
+		const tracks = []
 		self.raw.forEach( t => {
+			items.push( t )
 			if ( 'track' != t.type )
 				return;
 			
+			tracks.push( t )
 			if ( !t.remoteSource )
 				return;
 			
-			self.log( 'discoverTrack - checking t', t )
-			const tId = t.trackIdentifier;
+			const tId = t.trackIdentifier
 			if ( tId != id )
-				return;
+				return
 			
-			track = t;
-			type = t.kind;
-		});
+			track = t
+			type = t.kind
+		})
+		
+		self.log( 'discoverTrakc - items', items )
 		
 		if ( !track ) {
-			self.log( 'discoverTrack - no track found for', id )
-			return null;
+			self.log( 'discoverTrack - no track found for', {
+				id     : id,
+				tracks : tracks,
+			})
+			return null
 		}
 		
 		if ( 'audio' == type ) {
-			self.aId = track.id
+			self.aId = track.trackIdentifier || track.id
+			self.aTrack = self.aDiscover
 			self.aDiscover = null
 		}
 		
 		if ( 'video' == type ) {
-			self.vId = track.id
+			self.vId = track.trackIdentifier || track.id
+			self.vTrack = self.vDiscover
 			self.vDiscover = null
 		}
 		
@@ -2671,29 +2802,51 @@ library.rtc = library.rtc || {};
 		if ( !self.raw )
 			return
 		
+		self.log( 'emitExtended - look for', {
+			a : self.aId,
+			v : self.vId,
+			aD : self.aDiscover,
+			vD : self.aDiscover,
+		})
+		
 		self.extendedChecked = true
 		const stats = self.raw
 		const byType = {}
 		const byId = {}
 		stats.forEach( item => { 
-			const type = item.type;
-			const id = item.id;
-			if ( null == byType[ type ])
-				byType[ type ] = [];
+			const type = item.type
+			const id = item.id
+			let tId = null
+			if ( 'track' == type )
+				tId = item.trackIdentifier
 			
-			byType[ type ].push( item );
-			byId[ id ] = item;
+			if ( null == byType[ type ])
+				byType[ type ] = []
+			
+			byType[ type ].push( item )
+			
+			if ( null != id )
+				byId[ id ] = item
+			if ( null != tId )
+				byId[ tId ] = item
 		})
 		
+		self.log( 'byId', byId )
+		self.log( 'byType', byType )
 		const res = {};
-		const inn = byType[ 'inbound-rtp' ];
-		const out = byType[ 'outbound-rtp' ];
+		const inn = byType[ 'inbound-rtp' ]
+		const out = byType[ 'outbound-rtp' ]
 		let multiAudio = false
+		let WHNotSet = false
 		let aT = false
+		
 		res.inbound = buildInnieStats( inn, byId );
+		
+		/*
 		if ( !aT ) {
 			self.log( 'no audio track found' )
 		}
+		*/
 		
 		if ( multiAudio ) {
 			self.log( 'multiple audio tracks found' )
@@ -2701,32 +2854,59 @@ library.rtc = library.rtc || {};
 			return
 		}
 		
-		res.transport = buildTransport( byType, byId );
+		if ( WHNotSet ) {
+			self.log( 'width / height not set yet' )
+			self.emitError( 'ERR_WIDTH_HEIGHT_MISSING' )
+			return
+		}
+		
+		res.transport = buildTransport( byType, byId )
+		if ( null == res.transport ) {
+			self.emitError( 'ERR_NO_TRANSPORT' )
+			return
+		}
+		
 		res.raw = {
 			byId   : byId,
 			byType : byType,
-		};
-		done( res );
+		}
+		done( res )
 		
 		function buildInnieStats( rtps, things ) {
-			if ( !rtps || !things )
-				return null;
+			if ( !rtps || !things ) {
+				self.log( 'innie undef')
+				return null
+			}
 			
-			const res = {};
+			if ( !rtps.length ) {
+				self.log( 'rtps empty' )
+				return null
+			}
+			
+			const res = {}
 			rtps.some( rtp => {
-				const id = rtp.id;
-				const track = things[ rtp.trackId ];
-				if ( !track )
-					return false
+				const id = rtp.trackIdentifier || rtp.trackId
+				const track = things[ id ]
+				self.log( 'innie rtp', {
+					rtp    : rtp,
+					track  : track,
+				})
 				
-				const trackId = track.trackIdentifier;
-				const kind = track.kind;
-				if ( !track.remoteSource )
+				if ( !track ) {
+					self.log( 'no track found for rtp', JSON.stringify( rtp ))
 					return false
+				}
 				
+				if ( !track.remoteSource ) {
+					self.log( 'track is not remote source', JSON.stringify( track ))
+					return false
+				}
+				
+				const tId = track.trackIdentifier
+				const kind = track.kind
 				const cache = self.statsCache[ kind ]
-				if ( cache && cache.id !== trackId ) {
-					self.log( 'innie - invalid track id', [ cache, track ])
+				if ( cache && cache.id !== tId ) {
+					self.log( 'innie - stale track in cache, nulling', [ cache, track ])
 					self.statsCache[ kind ] = null
 				}
 				
@@ -2734,13 +2914,17 @@ library.rtc = library.rtc || {};
 					kind  : kind,
 					rtp   : rtp,
 					track : track,
+					aId   : self.aId,
+					vId   : self.vId,
 				})
 				
-				const type = rtp.mediaType;
-				const codec = things[ rtp.codecId ];
-				rtp.track = track;
-				rtp.codec = codec;
-				if ( 'audio' == type ) {
+				const codec = things[ rtp.codecId ]
+				rtp.track = track
+				rtp.codec = codec
+				if ( 'audio' == kind ) {
+					if ( null == self.aId )
+						return false
+					
 					if ( true == aT ) {
 						multiAudio = true
 						return true
@@ -2749,15 +2933,25 @@ library.rtc = library.rtc || {};
 					aT = true
 					setAudioDeltas( rtp )
 				}
-				if ( 'video' == type )
-					setVideoDeltas( rtp );
 				
-				res[ type ] = rtp;
+				if ( 'video' == kind ) {
+					if ( null == self.vId )
+						return false
+					
+					if ( null == rtp.frameHeight || null == rtp.frameWidth ) {
+						WHNotSet = true
+						return true
+					}
+					setVideoDeltas( rtp )
+				}
+				
+				self.log( 'setting RTP', [ kind, rtp ])
+				res[ kind ] = rtp
 				
 				return false
-			});
+			})
 			
-			return res;
+			return res
 			
 			function setAudioDeltas( a ) {
 				const c = self.statsCache.audio;
@@ -2787,47 +2981,58 @@ library.rtc = library.rtc || {};
 			}
 			
 			function setVideoDeltas( v ) {
-				const c = self.statsCache.video;
-				const t = v.track;
+				const c = self.statsCache.video
+				const t = v.track
 				if ( c ) {
-					const time = v.timestamp;
-					const bps = getRate( c.time, time, c.bytesReceived  , v.bytesReceived );
-					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived );
-					const lps = getRate( c.time, time, c.packetsLost    , v.packetsLost );
-					v.byteRate = bps;
-					v.packetRate = pps;
-					v.packetLoss = lps;
+					const time = v.timestamp
+					const bps = getRate( c.time, time, c.bytesReceived  , v.bytesReceived )
+					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived )
+					const lps = getRate( c.time, time, c.packetsLost    , v.packetsLost )
+					const fps = getRate( c.time, time, c.framesRx       , v.framesReceived, 2 )
+					v.byteRate = bps
+					v.packetRate = pps
+					v.packetLoss = lps
+					v.fps = fps
+					
 				}
 				
 				self.statsCache.video = {
-					id              : t.id,
+					id              : t.trackIdentifier,
 					time            : v.timestamp,
 					bytesReceived   : v.bytesReceived,
 					packetsReceived : v.packetsReceived,
 					packetsLost     : v.packetsLost,
-				};
+					framesRx        : v.framesReceived,
+				}
 			}
 		}
 		
 		function buildTransport( byType, byId ) {
 			if ( !byType.transport )
-				return null;
+				return null
 			
-			const t = byType.transport[ 0 ];
-			const p = byId[ t.selectedCandidatePairId ];
-			const local = byId[ p.localCandidateId ];
-			const remote = byId[ p.remoteCandidateId ];
-			t.pair = p;
-			t.local = local;
-			t.remote = remote;
-			const c = self.statsCache.transport;
+			const t = byType.transport[ 0 ]
+			const p = byId[ t.selectedCandidatePairId ]
+			if ( null == p ) {
+				self.log( 'bT null p', {
+					t : t,
+					p : p,
+				})
+				return null
+			}
+			const local = byId[ p.localCandidateId ]
+			const remote = byId[ p.remoteCandidateId ]
+			t.pair = p
+			t.local = local
+			t.remote = remote
+			const c = self.statsCache.transport
 			if ( c ) {
 				const time = t.timestamp;
 				const sent = t.bytesSent;
 				const recv = t.bytesReceived;
 				t.sendRate = getRate( c.time, time, c.sent, sent );
 				t.receiveRate = getRate( c.time, time, c.recv, recv );
-				t.ping = Math.round(( p.totalRoundTripTime / p.responsesReceived ) * 1000 );
+				t.ping = Math.round(( p.totalRoundTripTime / p.responsesReceived ) * 1000 )
 			}
 			
 			self.statsCache.transport = {
@@ -2840,21 +3045,22 @@ library.rtc = library.rtc || {};
 			return t;
 		}
 		
-		function getRate( t1, t2, b1, b2 ) {
+		function getRate( t1, t2, b1, b2, dec=4 ) {
 			if ( null == t1
 				|| null == t2
 				|| null == b1
 				|| null == b2
 			) {
-				return null;
+				return null
 			}
 			
-			const dt = t2 - t1;
-			const db = b2 - b1;
+			const dt = t2 - t1
+			const db = b2 - b1
 			
 			// things per second
-			const scale = 1000.0 / dt;
-			const tps = +( 1.0 * db * scale ).toFixed( 4 );
+			const scale = 1000.0 / dt
+			const tps = +( 1.0 * db * scale ).toFixed( dec )
+			
 			/*
 			self.log( 'rate', {
 				t1 : t1,
@@ -2867,8 +3073,9 @@ library.rtc = library.rtc || {};
 				tps : tps,
 			});
 			*/
-			//self.log( 'tps', tps );
-			return tps;
+			
+			//self.log( 'tps', tps )
+			return tps
 		}
 		
 		function done( res ) {
@@ -2882,6 +3089,431 @@ library.rtc = library.rtc || {};
 	}
 	
 })( library.rtc );
+
+
+(function( ns, undefined ) {
+	ns.RTCStatsFirefox = function( browser, label ) {
+		const self = this
+		library.rtc.RTCStats.call( self, browser, label )
+	}
+	
+	ns.RTCStatsFirefox.prototype = Object.create( library.rtc.RTCStats.prototype )
+	
+	ns.RTCStatsFirefox.prototype.trackAdded = function( track ) {
+		const self = this;
+		self.log( 'fixy trackAdded', track )
+		const id = track.id
+		const k = track.kind
+		if ( 'audio' == k ) {
+			self.aId = id
+			self.aDiscover = null
+			self.aTrack = track
+		}
+		if ( 'video' == k ) {
+			self.vId = id
+			self.vDiscover = null
+			self.vTrack = track
+		}
+		
+		self.discoverTrack( id )
+	}
+	
+	ns.RTCStatsFirefox.prototype.discoverTrack = function( id ) {
+		const self = this;
+		return id
+	}
+	
+	ns.RTCStatsFirefox.prototype.getAudioLevel = async function() {
+		const self = this
+		if ( !self.rtcConn )
+			return
+		
+		if ( null == self.aTrack )
+			return
+		
+		let raw = null
+		try {
+			raw = await self.rtcConn.getStats( self.aTrack )
+		} catch( ex ) {
+			self.log( 'getAudioLevel getStats ex', ex )
+			self.emitError( 'ERR_INVALID_STATE' )
+		}
+		
+		if ( null == raw )
+			return
+		
+		let aRTP = null
+		raw.forEach( item => {
+			if ( null != aRTP )
+				return
+			
+			if ( 'audio' != item.kind )
+				return
+			
+			if ( 'inbound-rtp' != item.type )
+				return
+			
+			aRTP = item
+		})
+		
+		if ( null == aRTP )
+			return
+		
+		self.emit( 'audio-level', aRTP.audioLevel )
+	}
+	
+	ns.RTCStatsFirefox.prototype.emitBase = function() {
+		const self = this
+		if ( null == self.raw )
+			return
+		
+		let rtps = []
+		let vRTP = null
+		let aRTP = null
+		self.raw.forEach( item => {
+			if ( 'inbound-rtp' != item.type )
+				return
+			
+			rtps.push( item )
+			
+			if ( 'audio' == item.kind )
+				aRTP = item
+			if ( 'video' == item.kind )
+				vRTP = item
+				
+		})
+		
+		let audio = null
+		let video = null
+		
+		self.log( 'fixy emitbase sources', {
+			rtps : rtps,
+			vrtp : vRTP,
+			artp : aRTP,
+		})
+		
+		if ( null != aRTP ) {
+			audio = {
+				level : aRTP.audioLevel,
+			}
+		}
+		
+		if ( null != vRTP ) {
+			video = {
+				height : vRTP.frameHeight,
+				width  : vRTP.frameWidth,
+			}
+		}
+		const base = {
+			audio : audio,
+			video : video,
+		}
+		
+		/*
+		if ( null == audio && null == video ) {
+			self.log( 'emitBase nulls', {
+				aId    : self.aId,
+				aDisc  : self.aDiscover,
+				vId    : self.vId,
+				vDisc  : self.vDiscover,
+				//tracks : self.raw.filter( item => item.type == 'track' ),
+			})
+		} else
+			self.log( 'emitBase', base )
+		*/
+		
+		self.emit( 'base', base )
+		
+		
+	}
+	
+	ns.RTCStatsFirefox.prototype.emitExtended = function() {
+		const self = this
+		if ( !self.raw )
+			return
+		
+		self.log( 'fixy emitExtended - look for', {
+			aT : self.aTrack,
+			vT : self.vTrack,
+		})
+		
+		self.extendedChecked = true
+		const stats = self.raw
+		const byType = {}
+		const byId = {}
+		stats.forEach( item => { 
+			const type = item.type
+			const id = item.id
+			if ( id )
+				byId[ id ] = item
+			
+			if ( null == byType[ type ])
+				byType[ type ] = []
+			
+			byType[ type ].push( item )
+		})
+		
+		self.log( 'byId', byId )
+		self.log( 'byType', byType )
+		const res = {}
+		const inn = byType[ 'inbound-rtp' ]
+		const out = byType[ 'outbound-rtp' ]
+		let multiAudio = false
+		let WHNotSet = false
+		let aT = false
+		
+		res.inbound = buildInnieStats( inn, byId )
+		
+		/*
+		if ( !aT ) {
+			self.log( 'no audio track found' )
+		}
+		*/
+		
+		if ( multiAudio ) {
+			self.log( 'multiple audio tracks found' )
+			self.emitError( 'ERR_MULTI_TRACKS' )
+			return
+		}
+		
+		if ( WHNotSet ) {
+			self.log( 'width / height not set yet' )
+			self.emitError( 'ERR_WIDTH_HEIGHT_MISSING' )
+			return
+		}
+		
+		res.transport = buildTransport( byType, byId );
+		res.raw = {
+			byId   : byId,
+			byType : byType,
+		};
+		done( res );
+		
+		function buildInnieStats( rtps, things ) {
+			if ( !rtps || !things ) {
+				self.log( 'innie undef')
+				return null
+			}
+			
+			if ( !rtps.length ) {
+				self.log( 'rtps empty' )
+				return null
+			}
+			
+			const res = {}
+			rtps.some( rtp => {
+				self.log( 'rtp', {
+					rtp    : rtp,
+					jrtp   : JSON.stringify( rtp ), 
+				})
+				
+				self.log( 'innie rtp', rtp )
+				const kind = rtp.kind
+				const cache = self.statsCache[ kind ]
+				if ( cache && cache.id !== rtp.id ) {
+					self.log( 'innie - stale track in cache, nulling', cache )
+					self.statsCache[ kind ] = null
+				}
+				
+				const codec = things[ rtp.codecId ]
+				self.log( 'innie', {
+					kind  : kind,
+					rtp   : rtp,
+					cache : cache,
+					codec : codec,
+				})
+				
+				rtp.codec = codec
+				if ( 'audio' == kind ) {
+					if ( null == self.aTrack )
+						return false
+					
+					if ( true == aT ) {
+						multiAudio = true
+						return true
+					}
+					
+					aT = true
+					setAudioDeltas( rtp )
+				}
+				
+				if ( 'video' == kind ) {
+					if ( null == self.vTrack )
+						return false
+					
+					if ( null == rtp.frameHeight || null == rtp.frameWidth ) {
+						WHNotSet = true
+						return true
+					}
+					
+					setVideoDeltas( rtp )
+				}
+				
+				self.log( 'setting RTP', [ kind, rtp ])
+				res[ kind ] = rtp
+				
+				return false
+			})
+			
+			return res
+			
+			function setAudioDeltas( a ) {
+				const c = self.statsCache.audio
+				const t = a
+				self.log( 'setAudioDeltas', [ c, a, t ])
+				if ( c ) {
+					t.audioEnergy = t.totalAudioEnergy * 10000
+					t.volumeLevel = +( t.audioLevel * 100 ).toFixed( 2 )
+					const time = a.timestamp
+					const bps = getRate( c.time, time, c.bytesReceived, a.bytesReceived )
+					const pps = getRate( c.time, time, c.packetsReceived, a.packetsReceived )
+					const lps = getRate( c.time, time, c.packetsLost, a.packetsLost )
+					const eps = getRate( c.time, time, c.audioEnergy, t.audioEnergy )
+					a.byteRate = bps
+					a.packetRate = pps
+					a.packetLoss = lps
+					t.energyRate = eps
+				}
+				
+				self.statsCache.audio = {
+					id              : t.id,
+					time            : a.timestamp,
+					bytesReceived   : a.bytesReceived,
+					packetsReceived : a.packetsReceived,
+					packetsLost     : a.packetsLost,
+					audioEnergy     : t.audioEnergy,
+				}
+			}
+			
+			function setVideoDeltas( v ) {
+				const c = self.statsCache.video
+				const t = v
+				self.log( 'setVideoDeltas', [ c, v, t ])
+				if ( c ) {
+					const time = v.timestamp
+					const bps = getRate( c.time, time, c.bytesReceived  , v.bytesReceived )
+					const pps = getRate( c.time, time, c.packetsReceived, v.packetsReceived )
+					const lps = getRate( c.time, time, c.packetsLost    , v.packetsLost )
+					const fps = getRate( c.time, time, c.framesRx       , v.framesReceived, 2 )
+					v.byteRate = bps
+					v.packetRate = pps
+					v.packetLoss = lps
+					v.fps = fps
+					
+				}
+				
+				self.statsCache.video = {
+					id              : t.id,
+					time            : v.timestamp,
+					bytesReceived   : v.bytesReceived,
+					packetsReceived : v.packetsReceived,
+					packetsLost     : v.packetsLost,
+					framesRx        : v.framesReceived,
+				}
+			}
+		}
+		
+		function buildTransport( byType, byId ) {
+			if ( null == byType[ 'candidate-pair' ] )
+				return null
+			
+			const t = {}
+			let pair = null
+			byType[ 'candidate-pair' ].some( p => {
+				if ( p.selected != true )
+					return false
+				
+				pair = p
+				return true
+			})
+			
+			self.log( 'fixy selected', pair )
+			if ( null == pair )
+				return null
+			
+			const local = byId[ pair.localCandidateId ]
+			const remote = byId[ pair.remoteCandidateId ]
+			
+			t.pair = pair
+			t.local = local
+			t.remote = remote
+			const rmt = byType[ 'remote-inbound-rtp' ]
+			self.log( 'rmt', rmt )
+			const c = self.statsCache.transport
+			self.log( 'fixy trans', {
+				pair   : pair,
+				local  : local,
+				remote : remote,
+				cache  : c,
+			})
+			
+			const sent = pair.bytesSent
+			const recv = pair.bytesReceived
+			t.bytesSent = sent
+			t.bytesReceived = recv
+			
+			if ( c ) {
+				const time = pair.timestamp
+				t.sendRate = getRate( c.time, time, c.sent, sent )
+				t.receiveRate = getRate( c.time, time, c.recv, recv )
+				t.ping = Math.round(( pair.totalRoundTripTime / pair.responsesReceived ) * 1000 )
+			}
+			
+			self.statsCache.transport = {
+				id   : pair.id,
+				sent : pair.bytesSent,
+				recv : pair.bytesReceived,
+				time : pair.timestamp,
+			};
+			
+			return t
+		}
+		
+		function getRate( t1, t2, b1, b2, dec=4 ) {
+			if ( null == t1
+				|| null == t2
+				|| null == b1
+				|| null == b2
+			) {
+				return null
+			}
+			
+			const dt = t2 - t1
+			const db = b2 - b1
+			
+			// things per second
+			const scale = 1000.0 / dt
+			const tps = +( 1.0 * db * scale ).toFixed( dec )
+			
+			/*
+			self.log( 'rate', {
+				t1 : t1,
+				t2 : t2,
+				b1 : b1,
+				b2 : b2,
+				dt : dt,
+				db : db,
+				scale : scale,
+				tps : tps,
+			});
+			*/
+			
+			//self.log( 'tps', tps )
+			return tps
+		}
+		
+		function done( res ) {
+			const event = {
+				type : 'stats',
+				data : res,
+			};
+			
+			self.emit( 'extended', event )
+		}
+	}
+	
+})( library.rtc );
+
 
 
 // media
@@ -3231,10 +3863,10 @@ library.rtc = library.rtc || {};
 		
 		self.shareQualityKeys = [ 'frameRate' ];
 		self.shareQualityMap = {
-			'pixel'   : [ 1 ],
-			'low'     : [ 1 ],
-			'medium'  : [ 2 ],
-			'normal'  : [ 4 ],
+			'pixel'   : [ 2 ],
+			'low'     : [ 2 ],
+			'medium'  : [ 4 ],
+			'normal'  : [ 8 ],
 			'high'    : [ 24 ],
 		};
 		
@@ -3326,13 +3958,11 @@ library.rtc = library.rtc || {};
 		const self = this
 		self.log( 'constrainTracks', [ tracks, self.media ])
 		return new Promise(( resolve, reject ) => {
-			resolve( true )
-			return
 			
 			if ( !self.media && !tracks ) {
 				self.logErr( 'no media, lets reject', [ tracks, self.media ]);
 				reject( 'ERR_NO_MEDIA' );
-				return;
+				return
 			}
 			
 			const media = tracks || self.media
@@ -3362,12 +3992,15 @@ library.rtc = library.rtc || {};
 		})
 		
 		function constrain( track ) {
+			const settings = track.getSettings()
+			//const params = track.getParameters()
+			self.log( 'constrain', track, settings )
 			if ( self.shareVTrackId
 				&& track.id === self.shareVTrackId
 			) {
-				return constrainScreenShare( track );
+				return constrainScreenShare( track )
 			} else
-				return constrainUserMedia( track );
+				return constrainUserMedia( track )
 		}
 		
 		async function constrainScreenShare( track ) {
