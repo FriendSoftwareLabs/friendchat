@@ -2507,7 +2507,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			position : 0
 		}
 		
-		self.spam = true
+		self.spam = false
 		
 		self.init( conf.signal )
 	}
