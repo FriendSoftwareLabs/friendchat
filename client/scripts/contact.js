@@ -1797,7 +1797,7 @@ library.contact = library.contact || {};
 		} else {
 			self.setUnreadMessages( 0 )
 			self.setMentions( 0 )
-			console.log( 'LM', self.lastMessage, activityItem )
+			console.log( 'LM - send this?', self.lastMessage, activityItem )
 		}
 		
 		function checkHasActivity( rel ) {
@@ -3832,6 +3832,9 @@ library.contact = library.contact || {};
 		} else {
 			self.setUnreadMessages( 0 );
 			self.setMentions( 0 );
+			if ( null == activityItem )
+				return
+			
 			console.log( 'LM', self.lastMessage, activityItem )
 			const msg = activityItem.data
 			let from = null
