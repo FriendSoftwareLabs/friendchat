@@ -4028,6 +4028,8 @@ library.contact = library.contact || {};
 				if ( self.live )
 					hasFocus = self.live.checkFocus();
 				
+				self.sendServiceRoomActivity( 'i18n_missed_call', null, Date.now() )
+				
 				self.service.emitEvent( 'roomLiveState', {
 					roomId   : self.clientId,
 					state    : self.liveState,
