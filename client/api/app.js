@@ -2176,14 +2176,17 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.sendBack = function( err, data, event ) {
 		const self = this;
-		var msg = {
+		if ( null == data )
+			console.log( 'sending back a null', [ data, event ])
+		
+		const msg = {
 			method     : 'callback',
 			callbackId : event.callbackId,
 			doorId     : event.doorId,
 			data       : data,
 			error      : err,
-		};
-		self.send( msg );
+		}
+		self.send( msg )
 	}
 	
 	ns.Dormant.prototype.sendEvent = function( eventObj ) {

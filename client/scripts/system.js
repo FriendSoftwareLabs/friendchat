@@ -3098,10 +3098,8 @@ Searchable collection(s) of users, rooms and other odds and ends
 		let item = null;
 		let opts = null;
 		item = self.cIdMap[ clientId ];
-		if ( null == item ) {
-			console.log( 'Activity, no item for', clientId )
+		if ( null == item )
 			return null
-		}
 		
 		const id = item.data.id;
 		opts = self.localOpts[ id ];

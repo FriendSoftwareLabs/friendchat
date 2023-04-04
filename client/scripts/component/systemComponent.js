@@ -828,11 +828,8 @@ window.library.component = window.library.component || {};
 			if ( null == self.presence )
 				throw new Error( 'ERR_NO_SERVICE' )
 			
-			const ret = await self.presence.getFriendContactActivity( fUserId )
-			if ( null == ret )
-				console.log( 'returning null for', fUserId )
 			
-			return ret
+			return await self.presence.getFriendContactActivity( fUserId )
 		}
 		
 		async function openSettingsFun() {
