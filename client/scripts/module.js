@@ -945,7 +945,7 @@ library.module = library.module || {};
 		const id = await self.idc.getByFId( friendId )
 		console.log( 'gFCA - id', id.name )
 		const act = await self.activity.read( id.clientId )
-		console.log( 'gFCA - act', id.name )
+		console.log( 'gFCA - act', id.name, act )
 		if ( null == act )
 			return null
 		
