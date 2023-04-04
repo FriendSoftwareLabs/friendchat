@@ -934,7 +934,7 @@ library.module = library.module || {};
 					name       : id.name,
 					avatar     : id.avatar,
 					isOnline   : id.isOnline,
-				};
+				}
 				return item;
 			}
 		}
@@ -942,11 +942,8 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.getFriendContactActivity = async function( friendId ) {
 		const self = this
-		console.log( 'getFriendContactActivity', friendId )
 		const id = await self.idc.getByFId( friendId )
-		console.log( 'id', id )
 		const act = await self.activity.read( id.clientId )
-		console.log( 'act', act )
 		if ( null == act )
 			return null
 		
