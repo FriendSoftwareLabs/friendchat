@@ -943,7 +943,9 @@ library.module = library.module || {};
 	ns.Presence.prototype.getFriendContactActivity = async function( friendId ) {
 		const self = this
 		const id = await self.idc.getByFId( friendId )
+		console.log( 'gFCA - id', id.name )
 		const act = await self.activity.read( id.clientId )
+		console.log( 'gFCA - act', id.name )
 		if ( null == act )
 			return null
 		
