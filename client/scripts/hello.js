@@ -1180,7 +1180,8 @@ var hello = null;
 	}
 	
 	ns.Hello.prototype.handlePushNotie = function( event ) {
-		const self = this;
+		const self = this
+		console.log( 'handlePushNotie', event )
 		if ( !event || !event.extra ) {
 			console.trace( 'hello.handlePushNotie - not valid event', event );
 			return false;

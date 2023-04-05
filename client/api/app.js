@@ -906,7 +906,7 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		//console.log( 'app.receiveEvent', msg );
+		console.log( 'app.receiveEvent', msg );
 		
 		msg.origin = e.origin;
 		const handler = self.commandMap[ msg.command ];
@@ -976,32 +976,32 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.appMessage = function( msg ) {
 		const self = this;
-		const type = msg.command || msg.callback;
-		self.emit( type, msg.data );
+		const type = msg.command || msg.callback
+		self.emit( type, msg.data )
 	}
 	
 	ns.AppEvent.prototype.handleSystem = function( msg ) {
-		const self = this;
-		const cbId = msg.callback;
-		const future = self.emit( msg.method, msg.data );
+		const self = this
+		const cbId = msg.callback
+		const future = self.emit( msg.method, msg.data )
 		if ( !cbId )
-			return;
+			return
 		
 		if ( !future ) {
-			self.returnCallback( null, null, cbId );
-			return;
+			self.returnCallback( null, null, cbId )
+			return
 		}
 		
 		future
 			.then( resBack )
-			.catch( errBack );
+			.catch( errBack )
 		
 		function resBack( res ) {
-			self.returnCallback( null, res, cbId );
+			self.returnCallback( null, res, cbId )
 		}
 		
 		function errBack( err ) {
-			self.returnCallback( err, null, cbId );
+			self.returnCallback( err, null, cbId )
 		}
 	}
 	
@@ -1140,9 +1140,18 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.ready = function() {
 		const self = this
+		if ( null == self.registerMsg )
+		{
+			console.log( 'app.ready - no registerMsg yet, wait 100' )
+			window.setTimeout(() => {
+				self.ready()
+			}, 100 )
+		}
+		
 		console.log( 'app.ready', self.registerMsg )
 		self.registered( self.registerMsg )
-		delete self.registerMsg
+		self.registerMsg
+		
 	}
 	
 	ns.AppEvent.prototype.registered = function( data ) {
