@@ -381,8 +381,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.Contact.prototype.recentMessage = function( message, from, time, opts ) {
-		const self = this;
-		console.log( 'recentMessage', [ message, from, time, opts ] )
+		const self = this
 		if ( hello.dormant && self.service )
 			self.service.emitEvent( 'roomUnread', {
 				roomId : self.clientId, 
@@ -3774,10 +3773,9 @@ library.contact = library.contact || {};
 	ns.PresenceContact.prototype.updateRelation = async function( rel ) {
 		const self = this;
 		if ( !rel )
-			return;
+			return
 		
-		console.log( 'contact.updateRelation', rel )
-		self.relation = rel;
+		self.relation = rel
 		if ( null != rel.lastMessage ) {
 			self.setLastMessage( rel.lastMessage );
 			self.relation.lastMessage = self.lastMessage;
@@ -3834,7 +3832,6 @@ library.contact = library.contact || {};
 			if ( null == activityItem )
 				return
 			
-			console.log( 'LM', self.lastMessage, activityItem )
 			const msg = activityItem.data
 			let from = null
 			if ( msg.from && msg.from.length )
