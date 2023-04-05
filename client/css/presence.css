@@ -705,7 +705,7 @@ html > body > div #attachment-menu button
 	background-color : #eee;
 	box-shadow       : 1px 1px 3px #888;
 	display          : none;
-	z-index          : 9999;
+	z-index          : 9998;
 }
 
 [ tootlip]:after {
@@ -714,7 +714,7 @@ html > body > div #attachment-menu button
 	height           : 1em;
 	width            : 1em;
 	left             : 30%;
-	top              : 1.3em;
+	top              : 1.31em;
 	border           : 1px solid #aaa;
 	background-color : #eee;
 	display          : none;
