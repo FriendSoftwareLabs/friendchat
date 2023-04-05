@@ -1038,8 +1038,7 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceRoom.prototype.updateAllowedContacts = function( list ) {
-		const self = this;
-		console.log( 'room.updateAllowedContacts', [ self.identity, self.userAdmin, list ])
+		const self = this
 		if ( !self.userAdmin )
 			return
 		
@@ -1746,7 +1745,6 @@ library.contact = library.contact || {};
 			return;
 		}
 		
-		console.log( 'updateRelation', relation )
 		self.relation = relation;
 		await self.setLastMessage( relation.lastMessage );
 		if ( relation.unreadMessages )
@@ -1797,7 +1795,6 @@ library.contact = library.contact || {};
 		} else {
 			self.setUnreadMessages( 0 )
 			self.setMentions( 0 )
-			console.log( 'LM - send this?', self.lastMessage, activityItem )
 		}
 		
 		function checkHasActivity( rel ) {

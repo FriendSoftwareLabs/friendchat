@@ -2176,9 +2176,6 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.sendBack = function( err, data, event ) {
 		const self = this;
-		if ( null == data )
-			console.log( 'sending back a null', [ data, event ])
-		
 		const msg = {
 			method     : 'callback',
 			callbackId : event.callbackId,
@@ -2186,6 +2183,7 @@ window.Application = new fupLocal.Application();
 			data       : data,
 			error      : err,
 		}
+		
 		self.send( msg )
 	}
 	
