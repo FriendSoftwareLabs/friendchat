@@ -185,6 +185,9 @@ var hello = null;
 		self.main = new library.system.Main();
 		const mainLoader = self.main.initialize();
 		self.listenSystemEvents();
+		
+		self.app.ready()
+		
 		if ( !self.config ) {
 			self.showConnStatus({
 				type : 'error',
@@ -330,6 +333,8 @@ var hello = null;
 		self.app.on( 'app-resume', e => self.handleAppResume( e ))
 		self.app.on( 'userupdate', e => self.handleUserUpdate( e ))
 		self.app.on( 'conn-state', e => self.handleConnState( e ))
+		
+		console.log( 'listenSystemEvents done' )
 	}
 	
 	ns.Hello.prototype.finalizeConfig = function( hostConf ) {

@@ -1130,32 +1130,40 @@ var friend = window.friend || {}; // already instanced stuff
 		self.authId    = msg.authId;
 		self.friendApp = msg.friendApp;
 		
-		await self.setLocale( null );
+		await self.setLocale( null )
 		
-		self.registered( msg );
-		self.initialize( msg );
+		self.registerMsg = msg
+		//self.registered( msg );
+		self.initialize( msg )
 		
 	}
 	
+	ns.AppEvent.prototype.ready = function() {
+		const self = this
+		console.log( 'app.ready', self.registerMsg )
+		self.registered( self.registerMsg )
+		delete self.registerMsg
+	}
+	
 	ns.AppEvent.prototype.registered = function( data ) {
-		const self = this;
+		const self = this
 		const msg = {
 			type             : 'notify',
 			data             : 'registered',
 			registerCallback : data.registerCallback,
-		};
-		self.sendMessage( msg );
+		}
+		self.sendMessage( msg )
 	}
 	
 	ns.AppEvent.prototype.handleNotify = function( msg ) {
 		const self = this;
-		const handler = self.notifyMap[ msg.method ];
+		const handler = self.notifyMap[ msg.method ]
 		if ( !handler ) {
 			//console.log( 'app.AppEvent.notify - no handler for ', msg );
-			return;
+			return
 		}
 		
-		handler( msg );
+		handler( msg )
 	}
 	
 	ns.AppEvent.prototype.closeView = function( msg ) {

@@ -694,11 +694,11 @@ html > body > div #attachment-menu button
 	position: relative;
 }
 
-[tootlip]:after {
+[tootlip]:before {
 	content          : attr( tootlip );
 	position         : absolute;
 	left             : 0.5em;
-	top              : 0.4em;
+	top              : 1.6em;
 	width            : 90%;
 	padding          : 0.3em;
 	border           : 1px solid #aaa;
@@ -708,6 +708,19 @@ html > body > div #attachment-menu button
 	z-index          : 9999;
 }
 
+[ tootlip]:after {
+	content          : " ";
+	position         : absolute;
+	left             : 40%;
+	top              : 1.3em;
+	border           : 1px solid #aaa;
+	background-color : red;
+	display          : none;
+	z-index          : 9999;
+	transform        : rotate(45deg);
+}
+
+[tootlip]:hover:before,
 [tootlip]:hover:after {
 	display: block;
 }
