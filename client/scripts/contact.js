@@ -1339,13 +1339,13 @@ library.contact = library.contact || {};
 		if ( !self.initialized )
 			return;
 		
-		self.openChatPending = null;
+		self.openChatPending = null
 		if ( self.chatView ) {
-			self.chatView.show();
-			return;
+			self.chatView.show()
+			return
 		}
 		
-		const s = self;
+		const s = self
 		const initData = {
 			room   : s.identity,
 			userId : s.userId,
@@ -1360,7 +1360,7 @@ library.contact = library.contact || {};
 			guestList   : s.guestList,
 			isPrivate   : s.isPrivate,
 			adminList   : s.adminList,
-			userAdmin   : self.userAdmin,
+			userAdmin   : s.userAdmin,
 			persistent  : s.persistent,
 			recentList  : s.recentList,
 			onlineList  : s.onlineList,
@@ -1368,18 +1368,18 @@ library.contact = library.contact || {};
 			guestAvatar : s.guestAvatar,
 			mentionList : s.mentionList,
 			liveAllowed : !hello.rtc.hasSession(),
-			allowedContacts : self.allowedContacts,
-		};
+			allowedContacts : s.allowedContacts,
+		}
 		
 		if ( preView ) {
-			self.chatView = preView;
-			preView.updateState( initData );
+			self.chatView = preView
+			preView.updateState( initData )
 		}
 		else {
 			self.chatView = new library.view.PresenceChat(
 				initData,
 				self.isPrivate
-			);
+			)
 		}
 		
 		self.sendCounterReset();
@@ -4325,16 +4325,22 @@ library.contact = library.contact || {};
 	}
 	
 	ns.PresenceContact.prototype.openChatView = function( notification, preView ) {
-		const self = this;
-		self.openChatPending = false;
-		self.hasNotification = !!notification;
+		const self = this
+		console.log( 'openChatView', {
+			self    : self,
+			noti    : notification,
+			preView : preView,
+		})
+		
+		self.openChatPending = false
+		self.hasNotification = !!notification
 		
 		if ( self.chatView ) {
-			self.chatView.show();
+			self.chatView.show()
 			if ( preView )
-				preView.close();
+				preView.close()
 			
-			return;
+			return
 		}
 		
 		const initData = {
@@ -4352,15 +4358,15 @@ library.contact = library.contact || {};
 			atList      : self.atList,
 			guestAvatar : self.guestAvatar,
 			liveAllowed : !hello.rtc.hasSession(),
-		};
+		}
 		
 		if ( preView ) {
-			self.chatView = preView;
-			self.chatView.updateState( initData );
+			self.chatView = preView
+			self.chatView.updateState( initData )
 		} else
-			self.chatView = new library.view.PresenceChat( initData );
+			self.chatView = new library.view.PresenceChat( initData )
 			
-		self.sendCounterReset();
+		self.sendCounterReset()
 		
 		self.chatView.on( 'close', onClose );
 		self.chatView.on( 'chat', e => self.sendChatEvent( e ));
