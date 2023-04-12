@@ -1107,15 +1107,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		function getPeerConstructor( browser ) {
 			if ( 'safari' === browser )
-				return library.rtc.PeerSafari;
+				return library.rtc.PeerSafari
 			
 			if ( 'firefox' === browser )
-				return library.rtc.PeerFirefox;
+				return library.rtc.PeerFirefox
 			
 			if ( 'brave' === browser )
-				return library.rtc.PeerBrave;
+				return library.rtc.PeerBrave
 			
-			return library.rtc.Peer;
+			return library.rtc.Peer
 		}
 	}
 	
@@ -1128,11 +1128,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		const peer = self.peers[ peerId ];
 		if ( !peer ) {
+			/*
 			console.log( 'no peer found for', {
 				pid   : peerId,
 				id    : identity,
 				peers : self.peers,
-			});
+			})
+			*/
 			return;
 		}
 		
@@ -2465,44 +2467,49 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		library.component.EventEmitter.call( self );
 		
-		self.conf = conf;
-		self.id = conf.id;
-		self.identity = conf.identity;
-		self.permissions = conf.permissions;
-		self.isFocus = conf.isFocus;
-		self.rtcConf = conf.rtcConf;
-		self.onremove = conf.onremove; // when the remote peer initiates a close, call this
-		self.closeCmd = conf.closeCmd; // closing from this end ( ui click f.ex. )
-		self.selfie = conf.selfie;
-		self.signal = null;
+		self.conf = conf
+		self.id = conf.id
+		self.identity = conf.identity
+		self.permissions = conf.permissions
+		self.isFocus = conf.isFocus
+		self.rtcConf = conf.rtcConf
+		self.onremove = conf.onremove // when the remote peer initiates a close, call this
+		self.closeCmd = conf.closeCmd // closing from this end ( ui click f.ex. )
+		self.selfie = conf.selfie
+		self.signal = null
 		
-		self.alpha = null;
-		self.session = null;
+		self.alpha = null
+		self.session = null
 		//self.sessions = {};
-		self.tracks = {};
+		self.tracks = {}
 		self.remoteMedia = null;
 		self.receiving = {
 			video : false,
 			audio : false,
 		};
 		
-		self.isBlind = false;
-		self.isMute = false;
+		self.isBlind = false
+		self.isMute = false
 		
-		self.metaInterval = null;
-		self.syncInterval = null;
-		self.syncStamp = null;
-		self.isHost = null;
+		self.metaInterval = null
+		self.syncInterval = null
+		self.syncStamp = null
+		self.isHost = null
 		
-		self.pingInterval = null;
-		self.pingStep = 1000 * 3;
-		self.pingTimeout = 1000 * 10;
-		self.pingTimeouts = {};
-		self.pongs = [];
+		self.pingInterval = null
+		self.pingStep = 1000 * 3
+		self.pingTimeout = 1000 * 10
+		self.pingTimeouts = {}
+		self.pongs = []
+		
+		self.QLDBWHistory = []
+		self.stability = {
+			position : 0
+		}
 		
 		self.spam = false
 		
-		self.init( conf.signal );
+		self.init( conf.signal )
 	}
 	
 	ns.Peer.prototype = Object.create( library.component.EventEmitter.prototype );
@@ -2590,22 +2597,25 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		const self = this;
 		self.log( '--- Peer.restart ----------------------------------------', checkHealth );
 		if ( checkHealth ) {
-			let healthy = self.checkIsHealthy();
-			self.log( 'healthy', healthy );
+			let healthy = self.checkIsHealthy()
+			self.log( 'healthy', healthy )
 			if ( healthy )
-				return;
+				return
 		}
 		
-		sendRestart();
-		self.state = '';
-		self.doRestart();
+		sendRestart()
+		self.state = ''
+		self.doRestart()
 		
 		function sendRestart() {
-			self.log( 'sendRestart' );
+			if ( null == self.signal )
+				return
+			
+			self.log( 'sendRestart' )
 			let restart = {
 				type : 'restart',
 			};
-			self.signal.send( restart );
+			self.signal.send( restart )
 		}
 	}
 	
@@ -2669,7 +2679,13 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.startSync();
 		
-		const hiResAva = await window.View.getFriendAvatar( self.identity.fUserId, 'large' )
+		let hiResAva = null
+		try {
+			hiResAva = await window.View.getFriendAvatar( self.identity.fUserId, 'large' )
+		} catch( ex ) {
+			self.log( 'hiResAva ex', [ ex, self.identity ])
+		}
+		
 		if ( null != hiResAva ) {
 			self.hiResAvatar = hiResAva
 			self.emit( 'update-avatar', hiResAva )
@@ -2850,15 +2866,27 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.setupStats = function() {
-		const self = this;
+		const self = this
+		if ( window.View?.config?.deviceType != 'DESKTOP' )
+			return
+			
 		if ( self.stats )
-			self.stats.close();
+			self.stats.close()
 		
-		const id = self.identity;
-		const name = id.name;
-		self.stats = new library.rtc.RTCStats( self.browser, name );
-		self.stats.on( 'base', e => self.handleBaseStats( e ));
-		self.stats.on( 'extended', e => self.handleFullStats( e ));
+		self.initStats()
+		self.bindStats()
+	}
+	
+	ns.Peer.prototype.initStats = function() {
+		const self = this
+		self.stats = new library.rtc.RTCStats( self.browser, self.identity.name )
+	}
+	
+	ns.Peer.prototype.bindStats = function() {
+		const self = this
+		self.stats.on( 'audio-level', e => self.handleStatsAudioLevel( e ))
+		self.stats.on( 'base', e => self.handleBaseStats( e ))
+		self.stats.on( 'extended', e => self.handleFullStats( e ))
 		self.stats.on( 'error', e => self.handleStatsError( e ))
 	}
 	
@@ -3081,6 +3109,7 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return;
 		
 		const rtcState = self.session.getRTCState();
+		self.log( 'rtcState', rtcState )
 		if ( 'stable' === rtcState.signal )
 			return true;
 		else
@@ -3113,16 +3142,37 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.doRestart = function() {
-		const self = this;
-		self.log( 'doRestart', self.state );
-		if ( 'sync-meta' === self.state ) {
-			self.log( 'doRestart - syncing meta already, aborting' );
-			return;
+		const self = this
+		self.log( 'YYY doRestart', self.state )
+		
+		if ( null != self.statsWHError )
+			window.clearTimeout( self.statsWHError )
+		if ( null != self.extendedError )
+			window.clearTimeout( self.extendedError )
+		if ( null != self.statsErrorGracePeriod )
+			window.clearTimeout( self.statsErrorGracePeriod )
+		if ( null != self.statsTransError )
+			window.clearTimeout( self.statsTransError )
+		
+		self.QLDBWHistory = []
+		self.lastQLDBW = 0
+		self.stability = {
+			position : 0
 		}
 		
-		self.doStop();
+		self.statsErrorGracePeriod = null
+		self.extendedError = null
+		self.statsWHError = null
+		self.statsTransError = null
+		
+		if ( 'sync-meta' === self.state ) {
+			self.log( 'doRestart - syncing meta already, aborting' );
+			return
+		}
+		
+		self.doStop()
 		if ( self.isHost )
-			self.sendMeta();
+			self.sendMeta()
 	}
 	
 	ns.Peer.prototype.doStop = function( sid ) {
@@ -3813,23 +3863,49 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			err   : e,
 			grace : null != self.statsErrorGracePeriod,
 			ext   : null != self.extendedError,
+			wh    : null != self.statsWHError,
+			trans : null != self.statsTransError,
 		})
+		
 		if ( 'ERR_MULTI_TRACKS' == e.error ) {
 			if ( null != self.extendedError )
 				return
 			
-			self.extendedError = window.setTimeout( looksFucky, 1000 * 9 )
+			self.log( 'starting MULTI_TRACKS timer' )
+			self.extendedError = window.setTimeout(() =>
+				looksFucky( 'ERR_MULTI_TRACKS' ), 1000 * 9 )
+		}
+		
+		if ( 'ERR_NO_TRANSPORT' == e.error ) {
+			if ( null != self.statsTransError )
+				return
+			
+			self.log( 'starting ERR_NO_TRANSPORT timer' )
+			self.statsTransError = window.setTimeout(() =>
+				looksFucky( 'ERR_NO_TRANSPORT' ), 1000 * 9 )
+		}
+		
+		if ( 'ERR_WIDTH_HEIGHT_MISSING' == e.error ) {
+			if ( null != self.statsWHError )
+				return
+			
+			self.log( 'starting WIDTH_HEIGHT timer' )
+			self.statsWHError = window.setTimeout(() => 
+				looksFucky( 'ERR_WIDTH_HEIGHT_MISSING' ), 1000 * 9 )
 		}
 		
 		if ( 'ERR_INVALID_STATE' == e.error ) {
 			if ( null != self.statsErrorGracePeriod )
 				return
 			
-			self.statsErrorGracePeriod = window.setTimeout( looksFucky, 1000 * 6 )
+			self.log( 'starting INVALID_STATE timer' )
+			self.statsErrorGracePeriod = window.setTimeout(() => 
+				looksFucky( 'ERR_INVALID_STATE' ), 1000 * 16 )
 		}
 		
-		function looksFucky() {
-			self.log( 'looksFucky, restart' )
+		function looksFucky( err ) {
+			if ( null != self.statsWHError )
+				window.clearTimeout( self.statsWHError )
 			if ( null != self.extendedError )
 				window.clearTimeout( self.extendedError )
 			if ( null != self.statsErrorGracePeriod )
@@ -3837,9 +3913,21 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			
 			self.statsErrorGracePeriod = null
 			self.extendedError = null
+			self.statsWHError = null
+			
+			if ( self.screenShare && ( err == 'ERR_WIDTH_HEIGHT_MISSING' ))
+				return
+			
+			self.log( 'looksFucky, restart', err )
+			
 			self.restart()
 		}
 		
+	}
+	
+	ns.Peer.prototype.handleStatsAudioLevel = function( num ) {
+		const self = this
+		self.emit( 'audio-level', num )
 	}
 	
 	ns.Peer.prototype.handleFullStats = function( stats ) {
@@ -3850,21 +3938,20 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		self.checkStats( stats.data )
-		//self.emit( 'state', stats )
+		self.emit( 'state', stats )
 	}
 	
 	ns.Peer.prototype.handleBaseStats = function( base ) {
 		const self = this;
-		self.log( 'base stats', base ); //spammy!
+		//self.log( 'base stats', base ) //spammy!
 		if ( null != self.statsErrorGracePeriod ) {
-			self.log( 'clearing error grace period' )
 			window.clearTimeout( self.statsErrorGracePeriod )
-			self.statsErrorGracePeriod = null;
+			self.statsErrorGracePeriod = null
 		}
 		
 		if ( !self.baseStats ) {
-			self.baseStats = base;
-			return;
+			self.baseStats = base
+			return
 		}
 		
 		/*
@@ -3874,51 +3961,70 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 			return
 		}
 		*/
+		if ( base.video?.height && null != self.statsWHError ) {
+			window.clearTimeout( self.statsWHError )
+			self.statsWHError = null
+		}
 		
 		const curr = self.baseStats;
 		if ( null == curr.video && base.video ) {
-			self.emit( 'change-video-res', base.video );
+			self.emit( 'change-video-res', base.video )
 		}
 		
 		if ( curr.video && base.video ) {
 			if ( curr.video.width != base.video.width )
-				self.emit( 'change-video-res', base.video );
+				self.emit( 'change-video-res', base.video )
 		}
 		
 		if ( curr.video && ( null == base.video )) {
-			self.emit( 'change-video-res', null );
+			self.emit( 'change-video-res', null )
 		}
 		
+		/*
 		if ( curr.audio && base.audio ) {
-			self.emit( 'audio-level', base.audio.level );
+			self.emit( 'audio-level', base.audio.level )
 		}
+		*/
 		
-		self.baseStats = base;
+		self.baseStats = base
 	}
 	
 	ns.Peer.prototype.checkStats = function( stats ) {
-		const self = this;
+		const self = this
 		if ( !stats || !stats.inbound )
-			return;
+			return
 		
-		self.log( 'checkStats', stats );
 		if ( null != self.extendedError ) {
-			self.log( 'clearing error grace period' )
 			window.clearTimeout( self.extendedError )
 			self.extendedError = null
 		}
 		
-		const trans = stats.transport;
-		const inn = stats.inbound;
-		const audio = inn.audio;
-		const video = inn.video;
-		let report = null;
-		if ( trans )
-			checkTransport( trans, audio, video );
+		const trans = stats.transport
+		const inn = stats.inbound
+		const raw = stats.raw
+		const audio = inn.audio
+		const video = inn.video
+		self.log( 'check extended stats',  {
+			stats : stats,
+			trans : trans,
+			audio : audio,
+			video : video,
+		})
+		if ( null != raw )
+			checkOutgoing( raw.byType )
+		
+		let report = null
+		if ( null != trans && null != self.statsTransError ) {
+			self.log( 'checkStats - has transport, lets' )
+			window.clearTimeout( self.statsTransError )
+			self.statsTransError = null
+		}
+		
+		checkTransport( trans, audio, video )
 		if ( audio )
-			checkAudio( audio );
+			checkAudio( audio )
 		if ( video )
-			checkVideo( video );
+			checkVideo( video )
 		
 		report.sessionState = self.session.state
 		report.remoteTracks = self.remoteMedia.getTracks()
@@ -3927,8 +4033,15 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		
 		self.log( 'report', report )
 		
-		if ( report.audioMissing || report.videoMissing )
-			self.restart();
+		if ( report.pliIssue || report.firIssue ) {
+			self.log( 'call setQualityLevel', self.stability )
+			self.session.setQualityLevel( 'low' )
+		}
+		
+		if ( report.audioMissing || report.videoMissing ) {
+			self.log( 'BONK ^^^^^' )
+			//self.restart()
+		}
 		
 		function checkTransport( t, a, v ) {
 			const p = t.pair;
@@ -3957,13 +4070,14 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkAudio( a ) {
+			report = report || {}
 			if ( !self.receiving.audio ) {
 				report.audioExpected = false;
 				return;
 			}
 			
-			const t = a.track
-			report.audio = t;
+			const t = a.track || a
+			report.audio = t
 			if ( null == t.volumeLevel )
 				return;
 			
@@ -3974,25 +4088,139 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		}
 		
 		function checkVideo( v ) {
+			report = report || {}
+			const c = v.codec
+			const t = v.track || v
+			
+			const pos = advanceStabilityPosition( self.stability )
+			report.firIssue = checkCount( v, 'fir', pos )
+			report.pliIssue = checkCount( v, 'pli', pos )
+			
+			if ( v.jitter ) {}
+			
 			if ( !self.receiving.video ) {
 				report.videoExpected = false
 				return
 			}
 			
-			const c = v.codec
-			const t = v.track
 			report.video = t
 			report.videoCodec = c
 			if ( !t.frameHeight || !t.frameWidth ) {
-				self.log( 'checkVideo - OHSHIT RESTARTING', v );
+				self.log( 'checkVideo - OHSHIT RESTARTING', v )
 				if ( !self.useDefaultCodec ) {
-					self.useDefaultCodec = true;
-					self.refreshMeta();
+					self.useDefaultCodec = true
+					self.refreshMeta()
 					if ( self.session )
-						self.session.setDefaultCodec( self.useDefaultCodec );
+						self.session.setDefaultCodec( self.useDefaultCodec )
 				} else
-					self.refreshVideo();
+					self.refreshVideo()
 			}
+			
+			function checkCount( stats, type, pos ) {
+				type = type + 'Count'
+				let value = stats[ type ]
+				const stab = self.stability
+				if ( null == stab[ type ])
+					stab[ type ] = []
+				
+				// update history
+				if ( null == value )
+					value = 0
+				
+				stab[ type ][ pos ] = value
+				
+				// check delta
+				let low = null
+				let hi = null
+				if ( stab[ type ].length < 5 )
+					return false
+				
+				stab[ type ].forEach( v => {
+					if ( null == v )
+						return
+					
+					if ( low == null ) {
+						low = v
+						hi = v
+						return
+					}
+					
+					if ( v < low )
+						low = v
+					if ( v > hi )
+						hi = v
+				})
+				
+				self.log( 'hi/low', [ hi, low ])
+				if ( hi - low > 5 ) {
+					stab[ type ] = []
+					return true
+				}
+				else
+					return false
+			}
+			
+			function advanceStabilityPosition( s ) {
+				if ( 9 == s.position )
+					s.position = 0
+				else
+					s.position++
+				
+				return s.position
+			}
+			
+		}
+		
+		function checkOutgoing( byType ) {
+			const out = byType[ 'outbound-rtp' ]
+			if ( null == out ) {
+				self.log( 'checkOutgoing - outbound-rtp not found', out )
+				return
+			}
+			
+			let qld = null
+			out.forEach( ortp => {
+				if ( 'video' != ortp.kind )
+					return
+				
+				qld = ortp.qualityLimitationDurations
+				self.log( 'qld', [ ortp, qld ])
+			})
+			
+			if ( null == qld ) {
+				self.lastQLDBW = null
+				self.QLDBWHistory = []
+				return
+			}
+			
+			const curr = qld.bandwidth
+			if ( null == self.lastQLDBW ) {
+				self.lastQLDBW = curr
+				return
+			}
+			
+			const last = self.lastQLDBW
+			const delta = curr - last
+			
+			self.lastQLDBW = curr
+			self.log( 'YYY', {
+				qld     : qld,
+				delta   : delta,
+				last    : self.lastQLDBW,
+				history : self.QLDBWHistory,
+			})
+			
+			self.QLDBWHistory.push( delta )
+			if ( self.QLDBWHistory.length > 10 )
+				self.QLDBWHistory.shift()
+			
+			let qlevel = 'normal'
+			let setRate = null
+			if ( 0 ) {
+				qlevel = 'low'
+			}
+			
+			//self.session.setQualityLevel( qlevel )
 		}
 		
 	}
@@ -4176,22 +4404,22 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 	}
 	
 	ns.Peer.prototype.emitStreamState = function( state ) {
-		var self = this;
+		const self = this
 		if ( state )
-			self.streamState = state;
+			self.streamState = state
 		
-		state = state || self.streamState;
-		const tracks = getTracks();
-		const constraints = getConstraints();
+		state = state || self.streamState
+		const tracks = getTracks()
+		const constraints = getConstraints()
 		
-		var streamState = {
+		const streamState = {
 			type : 'stream',
 			data : {
 				type        : state,
 				tracks      : tracks,
 				constraints : constraints,
 			}
-		};
+		}
 		
 		self.emit( 'state', streamState );
 		
@@ -4423,6 +4651,16 @@ Atleast we should be pretty safe against any unwanted pregnancies.
 		if ( 'safari' === browser )
 			self.isHost = true;
 		*/
+	}
+	
+	ns.PeerFirefox.prototype.initStats = function() {
+		const self = this
+		self.log( 'firefox peer initStats', library.rtc.RTCStatsFirefox )
+		try {
+			self.stats = new library.rtc.RTCStatsFirefox( self.browser, self.identity.name )
+		} catch( ex ) {
+			self.log( 'firefox initstats ex', ex )
+		}
 	}
 	
 })( library.rtc );

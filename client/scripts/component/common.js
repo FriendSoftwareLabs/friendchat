@@ -1161,3 +1161,145 @@ inherits from EventEmitter
 	}
 	
 })( library.component );
+
+(function( ns, undefined ) {
+	ns.MultiLog = function( opts ) {
+		const self = this
+		
+		self.init( opts )
+	}
+	
+	 // public
+	 
+	 ns.MultiLog.prototype.log = function( ...inn ) {
+	 	const self = this
+	 	if ( self.toStrings )
+	 		self.chopToStrings( inn )
+	 	else
+	 		console.log( ...inn )
+	 }
+	 
+	 ns.MultiLog.prototype.trace = function() {
+	 	
+	 }
+	 
+	 // private
+	
+	ns.MultiLog.prototype.init = function( opts ) {
+		const self = this
+		console.log( 'ML.init', {
+			dt   : window.View.deviceType,
+			fapp : window.View.friendApp,
+		})
+		
+		const dev = window.View.deviceType || 'DESKTOP'
+		self.toStrings = ( dev !== 'DESKTOP' )
+		
+		if ( opts?.alwaysChop )
+			self.toStrings = true
+		
+		console.log( 'ML.init toStrings', self.toStrings )
+	}
+	
+	ns.MultiLog.prototype.chopToStrings = function( inn ) {
+		const self = this
+		let firstArg = null
+		let open = false
+		inn.forEach( arg => {
+			console.log( 'chopToStrings', inn )
+			if ( null == firstArg ) {
+				firstArg = arg
+			} else {
+				console.group()
+				open = true
+			}
+			
+			const isBasic = (( typeof arg == 'string' ) || ( typeof arg == 'number' ))
+			if ( isBasic ) {
+				self.outputStr( arg )
+				return
+			}
+			
+			self.expandItem( arg )
+		})
+		
+		if ( open )
+			console.groupEnd()
+		
+	}
+	
+	ns.MultiLog.prototype.outputStr = function( arg ) {
+		const self = this
+		arg = String( arg )
+		if ( arg.length < 100 ) {
+			console.log( arg )
+			return
+		}
+		
+		const out = arg.split( ',' )
+		console.group( 'split' )
+		console.log( ...out )
+		console.groupEnd()
+	}
+	
+	ns.MultiLog.prototype.expandItem = function( item ) {
+		const self = this
+		console.log( 'expandITem', item )
+		if ( 'array' == typeof item )
+			self.expandArr( item )
+		else
+			self.expandObj( item )
+	}
+	
+	ns.MultiLog.prototype.expandArr = function( arr ) {
+		const self = this
+		//console.log( 'expandArr', arr )
+		console.log( '[' )
+		console.group( '[' )
+		arr.forEach( item => {
+			self.expandItem( item )
+		})
+		console.groupEnd( ']' )
+		console.log( ']' )
+	}
+	
+	ns.MultiLog.prototype.expandObj = function( obj ) {
+		const self = this
+		console.group()
+		if ( null == obj ) {
+			console.log( 'nullfined' )
+			console.groupEnd()
+			return
+		}
+		
+		const str = notCirc( obj )
+		if ( str )
+			self.outputStr( str )
+		else {
+			const str = objToString( obj )
+			console.log( '{' )
+			self.outputStr( str )
+			console.log( '}' )
+		}
+		console.groupEnd()
+		
+		function notCirc( thing ) {
+			try {
+				str = JSON.stringify( obj )
+			} catch( ex ) {
+				return false
+			}
+			
+			return str
+		}
+		
+		function objToString ( obj ) {
+			let str = ''
+			for ( const [ p, val ] of Object.entries( obj )) {
+				str += `${p} : ${val}\n`
+			}
+			return str
+		}
+	}
+	
+})( library.component );

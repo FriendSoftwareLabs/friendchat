@@ -1540,8 +1540,8 @@ var hello = window.hello || {};
 		const type = update.type;
 		const data = update.data;
 		if ( !type || !data ) {
-			console.log( 'UserCtrl.handleLive, invalid', update );
-			return;
+			//console.log( 'UserCtrl.handleLive, invalid', update )
+			return
 		}
 		
 		if ( 'peers' == type ) {

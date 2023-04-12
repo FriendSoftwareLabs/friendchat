@@ -325,7 +325,7 @@ library.component = library.component || {};
 		const self = this;
 		self.setupCanvas();
 		if ( !self.el ) {
-			console.log( 'AudioVisualizer.start - no el', self );
+			//console.log( 'AudioVisualizer.start - no el', self )
 			return;
 		}
 		
@@ -603,15 +603,14 @@ library.component = library.component || {};
 	// Private
 	
 	ns.LiveChat.prototype.init = function( conf, templateManager ) {
-		const self = this;
-		console.log( 'LiveChat.init - conf', conf );
+		const self = this
 		// build
-		let parent = document.getElementById( conf.containerId );
+		let parent = document.getElementById( conf.containerId )
 		let tmplConf = {
 			welcomeRoomName : conf.roomName || '',
-		};
-		self.el = hello.template.getElement( 'live-chat-tmpl', tmplConf );
-		parent.appendChild( self.el );
+		}
+		self.el = hello.template.getElement( 'live-chat-tmpl', tmplConf )
+		parent.appendChild( self.el )
 		
 		// components
 		let leConf = {

@@ -482,3 +482,5 @@ i18n_open_folder : Open folder
 i18n_file_saved : File saved
 i18n_task_failed : Task failed
 i18n_options : Options
+i18n_frame_rate : Frame rate
+i18n_jitter : Jitter

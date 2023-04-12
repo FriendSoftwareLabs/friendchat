@@ -1353,9 +1353,7 @@ library.rtc = library.rtc || {};
 		
 		// less required
 		
-		
-		self.cap = cap;
-		console.log( 'browser checked caps', self.cap )
+		self.cap = cap
 	}
 	
 	ns.BrowserCheck.prototype.checkMobile = function() {

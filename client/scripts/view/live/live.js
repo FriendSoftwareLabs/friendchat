@@ -172,17 +172,16 @@ library.component = library.component || {};
 	}
 	
 	ns.Init.prototype.closeAllTheThings = function() {
-		const self = this;
-		console.trace( 'Live.closeAllTheThings' );
+		const self = this
 		if ( self.rtc )
-			self.rtc.close();
+			self.rtc.close()
 		
 		if ( self.ui )
-			self.ui.close();
+			self.ui.close()
 		
 		window.View.sendMessage({
 			type : 'close',
-		});
+		})
 	}
 	
 })( library.view );
