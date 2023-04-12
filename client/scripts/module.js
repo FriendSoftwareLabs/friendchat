@@ -1437,7 +1437,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleAccountInit = async function( state ) {
 		const self = this;
-		console.log( 'handleAccountInit', state )
 		if ( self.idc ) {
 			await self.idc.refresh();
 		}
@@ -1504,7 +1503,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.setWorkgroups = function( worgs ) {
 		const self = this
-		console.log( 'setWorkgroups', worgs )
 		if ( null == worgs ) {
 			self.workgroups = {
 				ids : null,
@@ -1519,7 +1517,6 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.updateAllowedContacts = function( noWait ) {
 		const self = this
-		console.log( 'updateAllowedContacts', self.allowedContactsTimeout )
 		if ( null != self.allowedContactsTimeout ) {
 			window.clearTimeout( self.allowedContactsTimeout )
 			wait()
@@ -1543,7 +1540,6 @@ library.module = library.module || {};
 		self.contactIds.forEach( uId => allowed[ uId ] = true )
 		
 		// list
-		console.log( 'allowed', allowed )
 		self.allowedContacts = allowed
 		
 		// tell rooms

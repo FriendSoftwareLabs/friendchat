@@ -54,7 +54,6 @@ library.view = library.view || {};
 		}
 		
 		// user list setup
-		console.log( 'appSettings', window.View )
 		let canShow = false
 		if ( null != window.View.appSettings.showUserList )
 			canShow = window.View.appSettings.showUserList
@@ -66,7 +65,6 @@ library.view = library.view || {};
 			const usrPx = onePx * 12
 			const dedSpc = totPx - 960
 			canShow = usrPx < dedSpc
-			console.log( 'boxes nd thins', [ msgBox, onePx, totPx, usrPx, dedSpc, canShow ])
 		}
 		
 		self.buildUserList( canShow )
@@ -122,7 +120,6 @@ library.view = library.view || {};
 			hideKlass : hideKlass
 		}
 		
-		console.log( 'userslist conf', conf )
 		const appendEl = document.getElementById( 'main' );
 		const el = friend.template.getElement( tmpl, conf );
 		appendEl.appendChild( el );
@@ -292,7 +289,6 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.toggleUserList = function( force ) {
 		const self = this;
-		console.log( 'toggleUserList', force )
 		if ( null == force ) {
 			const isHidden = self.usersEl.classList.contains( 'users-hide' )
 			toggle( isHidden )
@@ -308,7 +304,6 @@ library.view = library.view || {};
 			toggle( force )
 		
 		function toggle( show ) {
-			console.log( 'toggle', show )
 			//self.usersEl.classList.toggle( 'hidden', !show );
 			self.msgBuilder.pauseSmoothScrolling()
 			
@@ -978,13 +973,11 @@ library.view = library.view || {};
 	
 	ns.Presence.prototype.handleUpdateAllowed = function( allowed ) {
 		const self = this
-		console.log( 'view.Presence.handleUpdateAllowed', allowed )
 		self.users.updateAllowedContacts( allowed )
 	}
 	
 	ns.Presence.prototype.handleAppSettings = function( appSettings ) {
 		const self = this
-		console.log( 'pres view app setting', appSettings )
 		self.toggleUserList( appSettings.showUserList )
 	}
 	
@@ -2690,7 +2683,6 @@ library.view = library.view || {};
 	
 	ns.UserJeanieCtrl.prototype.updateAllowedContacts = function( allowed ) {
 		const self = this
-		console.log( 'UserJeanieCtrl.updateAllowed', [ allowed, self.userIds ])
 		self.allowedContacts = allowed
 		self.userIds.forEach( uId => self.users[ uId ].setCanOpen( allowed[ uId ]))
 	}
@@ -2713,14 +2705,12 @@ library.view = library.view || {};
 		if ( null == user )
 			return
 		
-		console.log( 'setUserToGroup', userId, user )
 		self.moveUserToGroup( user.id, 'members' )
 	}
 	
 	ns.UserJeanieCtrl.prototype.buildGroupUserConf = function( identity ) {
 		const self = this
 		const uId = identity.clientId
-		console.log( 'UJC.buildGroupUserConf', identity, uId, self.allowedContacts )
 		let canOpen = true
 		if ( self.allowedContacts )
 			canOpen = self.allowedContacts[ uId ]
@@ -2766,7 +2756,6 @@ library.view = library.view || {};
 	
 	ns.GroupUserJeanie.prototype.setCanOpen = function( allow ) {
 		const self = this
-		console.log( 'setCanOpen', [ allow, self.canOpen, self.el ])
 		if ( allow === self.canOpen )
 			return
 		

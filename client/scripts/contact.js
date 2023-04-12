@@ -2614,7 +2614,6 @@ library.contact = library.contact || {};
 	ns.PresenceRoom.prototype.handleLive = async function( event ) {
 		const self = this;
 		const type = event.type;
-		console.log( 'handleLive', type, event )
 		if ( 'open' === type ) {
 			self.handleLiveOpen( event.data );
 			return;
@@ -2851,11 +2850,6 @@ library.contact = library.contact || {};
 		const self = this
 		if ( !hello.dormant || !self.service )
 			return
-		
-		if ( null == message )
-			console.trace( 'sendServiceRoomActivity', [ message, from, timestamp ])
-		else
-			console.log( 'sendServiceRoomActivity', [ message, from, timestamp ])
 		
 		if ( null != message )
 			message = Application.i18n( message )
@@ -4117,12 +4111,7 @@ library.contact = library.contact || {};
 		self.peers = self.peers.filter( pId => pId != self.userId );
 		const others = self.peers.some( pId => pId != self.userId );
 		let state = others ? 'others' : 'none';
-		console.log( 'contact.handleLiveClose', {
-			sid : sessionId,
-			liveId : liveId,
-			others : others,
-			state  : state,
-		})
+		
 		// close without liveId means user left live, close all the things
 		if ( null == liveId ) {
 			self.liveState.user = false;
