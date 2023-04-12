@@ -906,7 +906,7 @@ var friend = window.friend || {}; // already instanced stuff
 			return;
 		}
 		
-		console.log( 'app.receiveEvent', msg );
+		//console.log( 'app.receiveEvent', msg );
 		
 		msg.origin = e.origin;
 		const handler = self.commandMap[ msg.command ];
@@ -1309,7 +1309,6 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Application.prototype.setAppSetting = function( setting, value ) {
 		const self = this
 		self.appSettings[ setting ] = value
-		console.log( 'setAppSetting', [ setting, value, self.appSettings ])
 		const uptd = {
 			type : 'app-settings',
 			data : self.appSettings,
