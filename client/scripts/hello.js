@@ -1314,15 +1314,19 @@ var hello = null;
 		*/
 		
 		function getPreView( extra ) {
-			const roomId = extra.roomId;
-			const roomName = extra.title;
-			let view = self.preViews[ roomId ];
+			const roomId = extra.roomId
+			const conf = {
+				roomId    : roomId,
+				name      : extra.title,
+				isPrivate : true,
+			}
+			let view = self.preViews[ roomId ]
 			if ( null != view )
-				return view;
+				return view
 			
-			view = new library.view.PresenceChat( null, roomName, true );
-			self.preViews[ roomId ] = view;
-			return view;
+			view = new library.view.PresenceChat( null, conf )
+			self.preViews[ roomId ] = view
+			return view
 		}
 	}
 	

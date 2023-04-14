@@ -1376,13 +1376,10 @@ library.contact = library.contact || {};
 			preView.updateState( initData )
 		}
 		else {
-			self.chatView = new library.view.PresenceChat(
-				initData,
-				self.isPrivate
-			)
+			self.chatView = new library.view.PresenceChat( initData	)
 		}
 		
-		self.sendCounterReset();
+		self.sendCounterReset()
 		
 		self.chatView.on( 'chat', e => self.sendChatEvent( e ));
 		self.chatView.on( 'live', goLive );
