@@ -131,6 +131,7 @@ library.view = library.view || {};
 	
 	ns.PresenceChat.prototype.init = function( state ) {
 		const self = this;
+		console.log( 'PC.init state', state )
 		self.roomId = state.clientId;
 		const dropConf = {
 			roomId : self.roomId,
