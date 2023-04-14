@@ -976,32 +976,32 @@ var friend = window.friend || {}; // already instanced stuff
 	
 	ns.AppEvent.prototype.appMessage = function( msg ) {
 		const self = this;
-		const type = msg.command || msg.callback;
-		self.emit( type, msg.data );
+		const type = msg.command || msg.callback
+		self.emit( type, msg.data )
 	}
 	
 	ns.AppEvent.prototype.handleSystem = function( msg ) {
-		const self = this;
-		const cbId = msg.callback;
-		const future = self.emit( msg.method, msg.data );
+		const self = this
+		const cbId = msg.callback
+		const future = self.emit( msg.method, msg.data )
 		if ( !cbId )
-			return;
+			return
 		
 		if ( !future ) {
-			self.returnCallback( null, null, cbId );
-			return;
+			self.returnCallback( null, null, cbId )
+			return
 		}
 		
 		future
 			.then( resBack )
-			.catch( errBack );
+			.catch( errBack )
 		
 		function resBack( res ) {
-			self.returnCallback( null, res, cbId );
+			self.returnCallback( null, res, cbId )
 		}
 		
 		function errBack( err ) {
-			self.returnCallback( err, null, cbId );
+			self.returnCallback( err, null, cbId )
 		}
 	}
 	
@@ -1130,32 +1130,49 @@ var friend = window.friend || {}; // already instanced stuff
 		self.authId    = msg.authId;
 		self.friendApp = msg.friendApp;
 		
-		await self.setLocale( null );
+		await self.setLocale( null )
 		
-		self.registered( msg );
-		self.initialize( msg );
+		self.registerMsg = msg
+		//self.registered( msg );
+		self.initialize( msg )
+		
+	}
+	
+	ns.AppEvent.prototype.ready = function() {
+		const self = this
+		if ( null == self.registerMsg )
+		{
+			console.log( 'app.ready - no registerMsg yet, wait 100' )
+			window.setTimeout(() => {
+				self.ready()
+			}, 100 )
+		}
+		
+		console.log( 'app.ready', self.registerMsg )
+		self.registered( self.registerMsg )
+		self.registerMsg
 		
 	}
 	
 	ns.AppEvent.prototype.registered = function( data ) {
-		const self = this;
+		const self = this
 		const msg = {
 			type             : 'notify',
 			data             : 'registered',
 			registerCallback : data.registerCallback,
-		};
-		self.sendMessage( msg );
+		}
+		self.sendMessage( msg )
 	}
 	
 	ns.AppEvent.prototype.handleNotify = function( msg ) {
 		const self = this;
-		const handler = self.notifyMap[ msg.method ];
+		const handler = self.notifyMap[ msg.method ]
 		if ( !handler ) {
 			//console.log( 'app.AppEvent.notify - no handler for ', msg );
-			return;
+			return
 		}
 		
-		handler( msg );
+		handler( msg )
 	}
 	
 	ns.AppEvent.prototype.closeView = function( msg ) {
@@ -1287,6 +1304,16 @@ var friend = window.friend || {}; // already instanced stuff
 	ns.Application.prototype.setSettings = function( settings ) {
 		const self = this;
 		self.appSettings = settings;
+	}
+	
+	ns.Application.prototype.setAppSetting = function( setting, value ) {
+		const self = this
+		self.appSettings[ setting ] = value
+		const uptd = {
+			type : 'app-settings',
+			data : self.appSettings,
+		}
+		self.toAllViews( uptd )
 	}
 	
 	ns.Application.prototype.setSingleInstance = function( setSingle ) {
@@ -2165,14 +2192,15 @@ window.Application = new fupLocal.Application();
 	
 	ns.Dormant.prototype.sendBack = function( err, data, event ) {
 		const self = this;
-		var msg = {
+		const msg = {
 			method     : 'callback',
 			callbackId : event.callbackId,
 			doorId     : event.doorId,
 			data       : data,
 			error      : err,
-		};
-		self.send( msg );
+		}
+		
+		self.send( msg )
 	}
 	
 	ns.Dormant.prototype.sendEvent = function( eventObj ) {

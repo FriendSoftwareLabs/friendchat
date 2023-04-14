@@ -408,6 +408,8 @@ var hello = window.hello || {};
 		self.init();
 	}
 	
+	ns.GroupUser.prototype.userTmpl = 'user-list-item-tmpl'
+	
 	// Public
 	
 	ns.GroupUser.prototype.show = function() {
@@ -506,42 +508,41 @@ var hello = window.hello || {};
 	];
 	
 	ns.GroupUser.prototype.init = function() {
-		const self = this;
-		self.statusId = friendUP.tool.uid( 'status' );
-		self.el = buildElement();
-		bindElement();
+		const self = this
+		self.statusId = friendUP.tool.uid( 'status' )
+		self.el = buildElement()
+		bindElement()
 		if ( self.state )
-			self.setState( self.state );
+			self.setState( self.state )
 		
-		delete self.state;
+		delete self.state
 		
 		function buildElement() {
-			const conf = {
-				id       : self.id,
-				statusId : self.statusId,
-				name     : self.name,
-			};
-			const el = hello.template.getElement( 'user-list-item-tmpl', conf );
+			const conf = self.buildElementConf()
+			const el = hello.template.getElement( self.userTmpl, conf )
 			return el;
 		}
-
+		
 		function bindElement() {
-			self.stateEl = self.el.querySelector( '.state > i' );
+			self.stateEl = self.el.querySelector( '.state > i' )
 			if ( self.isGuest )
-				return;
+				return
 			
-			self.el.addEventListener( 'click', userPoke, false );
-			/*
-			if ( 'DESKTOP' === window.View.deviceType )
-				self.el.addEventListener( 'click', userPoke, false );
-			else
-				self.el.addEventListener( 'touchend', userPoke, false );
-			*/
+			self.el.addEventListener( 'click', userPoke, false )
 			
 			function userPoke( e ) {
 				e.preventDefault();
 				self.handleClick( e );
 			}
+		}
+	}
+	
+	ns.GroupUser.prototype.buildElementConf = function() {
+		const self = this
+		return {
+			id       : self.id,
+			statusId : self.statusId,
+			name     : self.name,
 		}
 	}
 	
@@ -603,7 +604,8 @@ var hello = window.hello || {};
 		room,
 		guestAvatar,
 		containerId,
-		config
+		config,
+		showOther,
 	) {
 		const self = this;
 		library.component.EventEmitter.call( self );
@@ -619,14 +621,15 @@ var hello = window.hello || {};
 			config : config,
 		});
 		*/
-		self.conn = conn;
-		self.userList = userList || [];
-		self.adminList = adminList || [];
-		self.recentList = recentList || [];
-		self.guestList = guestList || [];
-		self.peerList = peerList || [];
-		self.identities = {};
-		self.containerId = containerId;
+		self.conn = conn
+		self.userList = userList || []
+		self.adminList = adminList || []
+		self.recentList = recentList || []
+		self.guestList = guestList || []
+		self.peerList = peerList || []
+		self.identities = {}
+		self.containerId = containerId
+		self.showOther = showOther || false
 		
 		self.users = {};
 		self.userIds = [];
@@ -639,8 +642,7 @@ var hello = window.hello || {};
 		self.groupsAssignedIds = [];
 		self.worgPri = 4;
 		
-		self.showOther = false;
-		self.userListActive = false;
+		self.userListActive = false
 		
 		self.init(
 			workgroups,
@@ -650,10 +652,12 @@ var hello = window.hello || {};
 	}
 	
 	ns.UserCtrl.prototype = Object.create( library.component.EventEmitter.prototype );
+	ns.UserCtrl.prototype.buildTmpl = 'user-ctrl-tmpl'
 	
 	ns.UserCtrl.prototype.initialize = async function( workgroups ) {
 		const self = this;
-		//await self.setWorkgroups( workgroups );
+		console.log( 'UserCtrl.initialize', workgroups )
+		await self.setWorkgroups( workgroups );
 		const worgWaits = self.groupsAssignedIds.map( wId => self.showWorgAssigned( wId ));
 		await Promise.all( worgWaits );
 		
@@ -886,23 +890,22 @@ var hello = window.hello || {};
 		room,
 		guestAvatar
 	) {
-		const self = this;
-		self.build();
-		//self.groupList = new library.component.ListOrder( 'user-groups', [ 'name' ]);
-		self.initBaseGroups();
-		self.initWorkgroups( worgs );
-		self.addId( room );
-		self.addUserCss( 'guest-user', guestAvatar );
-		self.addUserCss( 'default-user', guestAvatar );
-		self.bindConn();
-		//self.addActive();
+		const self = this
+		self.build()
+		self.initBaseGroups()
+		self.initWorkgroups( worgs )
+		self.addId( room )
+		self.addUserCss( 'guest-user', guestAvatar )
+		self.addUserCss( 'default-user', guestAvatar )
+		self.bindConn()
 	}
 	
 	ns.UserCtrl.prototype.build = function() {
 		const self = this;
 		const container = document.getElementById( self.containerId );
 		const conf = {};
-		self.el = hello.template.getElement( 'user-ctrl-tmpl', conf );
+		console.log( 'build', self.buildTmpl )
+		self.el = hello.template.getElement( self.buildTmpl, conf );
 		container.appendChild( self.el );
 		self.detached = document.getElementById( 'user-ctrl-detached' );
 	}
@@ -1169,6 +1172,7 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.setUserList = async function() {
 		const self = this;
+		console.log( 'setUserList', [ self.userList, self.showOther ])
 		if ( self.adminList ) {
 			const waitA = self.adminList.map( aId => {
 				return self.buildUser( aId );
@@ -1339,31 +1343,44 @@ var hello = window.hello || {};
 	ns.UserCtrl.prototype.buildUser = async function( userId, worgs ) {
 		const self = this;
 		if ( self.users[ userId ])
-			return;
+			return
 		
-		self.users[ userId ] = true;
-		let id = await self.getIdentity( userId );
+		self.users[ userId ] = true
+		let id = await self.getIdentity( userId )
 		if ( null != worgs )
-			id.workgroups = worgs;
+			id.workgroups = worgs
 		
-		const userItem = new library.component.GroupUser(
-			userId,
-			self.conn,
-			id,
-		);
-		self.users[ userId ] = userItem;
-		self.userIds.push( userId );
-		self.detached.appendChild( userItem.el );
+		const conf = self.buildGroupUserConf( id )
+		
+		console.log( 'buildUser', conf )
+		const GroupUser = conf.pop()
+		const userItem = new GroupUser( ...conf )
+		self.users[ userId ] = userItem
+		self.userIds.push( userId )
+		self.detached.appendChild( userItem.el )
 		if ( id.isOnline )
-			userItem.setStatus( 'online' );
+			userItem.setStatus( 'online' )
 		else
-			userItem.setStatus( 'offline' );
+			userItem.setStatus( 'offline' )
 		
-		self.setUserToGroup( userId );
-		const pIdx = self.peerList.indexOf( userId );
-		const isLive = ( -1 != pIdx );
+		self.setUserToGroup( userId )
+		const pIdx = self.peerList.indexOf( userId )
+		const isLive = ( -1 != pIdx )
 		if ( isLive )
-			self.setState( userId, 'live', true );
+			self.setState( userId, 'live', true )
+	}
+	
+	ns.UserCtrl.prototype.buildGroupUserConf = function( identity ) {
+		const self = this
+		console.log( 'UC.buildGroupUserConf', identity )
+		const conf = [ 
+			identity.clientId, 
+			self.conn, 
+			identity, 
+			library.component.GroupUser 
+		]
+		
+		return conf
 	}
 	
 	ns.UserCtrl.prototype.setUserToGroup = function( userId ) {
@@ -1596,9 +1613,11 @@ var hello = window.hello || {};
 			});
 			return;
 		}
+		
 		const curr = self.getGroup( user.group );
 		const to = self.getGroup( groupId );
 		
+		console.log( 'moveUserToGroup', user, groupId, to )
 		if ( user.group === groupId ) {
 			return;
 		}

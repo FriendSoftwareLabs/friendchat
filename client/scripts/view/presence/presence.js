@@ -53,7 +53,21 @@ library.view = library.view || {};
 				tit.classList.toggle( 'hidden', true )
 		}
 		
-		self.buildUserList()
+		// user list setup
+		let canShow = false
+		if ( null != window.View.appSettings.showUserList )
+			canShow = window.View.appSettings.showUserList
+		else {
+			const metre = document.getElementById( 'metre' )
+			const onePx = metre.clientWidth
+			const msgBox = document.getElementById( 'messages' )
+			const totPx = msgBox.clientWidth 
+			const usrPx = onePx * 12
+			const dedSpc = totPx - 960
+			canShow = usrPx < dedSpc
+		}
+		
+		self.buildUserList( canShow )
 		
 		// scroll to bottom on new message
 		self.messageScroller = new library.component.BottomScroller( 'messages' )
@@ -87,9 +101,10 @@ library.view = library.view || {};
 		
 		//
 		window.View.loaded()
+		
 	}
 	
-	ns.Presence.prototype.buildUserList = function() {
+	ns.Presence.prototype.buildUserList = function( show ) {
 		const self = this;
 		let tmpl = null;
 		const isDesktop = ( 'DESKTOP' === window.View.deviceType );
@@ -98,8 +113,15 @@ library.view = library.view || {};
 		else
 			tmpl = 'users-other-tmpl';
 		
+		let hideKlass = 'users-hide'
+		if ( show )
+			hideKlass = ''
+		const conf = {
+			hideKlass : hideKlass
+		}
+		
 		const appendEl = document.getElementById( 'main' );
-		const el = friend.template.getElement( tmpl, {});
+		const el = friend.template.getElement( tmpl, conf );
 		appendEl.appendChild( el );
 		
 		self.usersEl = document.getElementById( 'users-container' );
@@ -268,41 +290,51 @@ library.view = library.view || {};
 	ns.Presence.prototype.toggleUserList = function( force ) {
 		const self = this;
 		if ( null == force ) {
-			const isHidden = self.usersEl.classList.contains( 'users-hide' );
-			toggle( isHidden );
+			const isHidden = self.usersEl.classList.contains( 'users-hide' )
+			toggle( isHidden )
+			const pref = {
+				type : 'user-setting',
+				data : {
+					setting : 'showUserList',
+					value   : isHidden,
+				}
+			}
+			self.conn.send( pref )
 		} else
-			toggle( force );
+			toggle( force )
 		
 		function toggle( show ) {
 			//self.usersEl.classList.toggle( 'hidden', !show );
-			self.msgBuilder.pauseSmoothScrolling();
+			self.msgBuilder.pauseSmoothScrolling()
 			
 			//self.messagesEl.classList.toggle( 'SmoothScrolling', !show );
-			self.usersEl.classList.toggle( 'users-hide', !show );
-			const btnIcon = self.toggleUsersBtn.querySelector( 'i' );
-			btnIcon.classList.toggle( 'AvailableText', show );
-			self.users.setUserListActive( show );
+			self.usersEl.classList.toggle( 'users-hide', !show )
+			const btnIcon = self.toggleUsersBtn.querySelector( 'i' )
+			btnIcon.classList.toggle( 'AvailableText', show )
+			self.users.setUserListActive( show )
 		}
 	}
 	
 	ns.Presence.prototype.toggleUserListBtn = function( show ) {
-		const self = this;
-		self.toggleUsersBtn.classList.toggle( 'hidden', !show );
+		const self = this
+		self.toggleUsersBtn.classList.toggle( 'hidden', !show )
 	}
 
 	ns.Presence.prototype.bindConn = function() {
 		const self = this;
-		self.conn.on( 'initialize'     , initialize );
-		self.conn.on( 'state'          , state );
-		self.conn.on( 'online'         , online );
-		self.conn.on( 'offline'        , offline );
-		self.conn.on( 'chat'           , chat );
-		self.conn.on( 'persistent'     , persistent );
-		self.conn.on( 'title'          , title );
-		self.conn.on( 'mention-list'   , e => self.setMentionParsing( e ));
-		self.conn.on( 'at-list'        , e => self.setAtParsing( e ));
-		self.conn.on( 'identity-update', e => self.handleIdUpdate( e ));
-		self.conn.on( 'live-disable'   , e => self.handleLiveDisable( e ));
+		self.conn.on( 'initialize'      , initialize );
+		self.conn.on( 'state'           , state );
+		self.conn.on( 'online'          , online );
+		self.conn.on( 'offline'         , offline );
+		self.conn.on( 'chat'            , chat );
+		self.conn.on( 'persistent'      , persistent );
+		self.conn.on( 'title'           , title );
+		self.conn.on( 'mention-list'    , e => self.setMentionParsing( e ));
+		self.conn.on( 'at-list'         , e => self.setAtParsing( e ));
+		self.conn.on( 'identity-update' , e => self.handleIdUpdate( e ));
+		self.conn.on( 'live-disable'    , e => self.handleLiveDisable( e ));
+		self.conn.on( 'allowed-contacts', e => self.handleUpdateAllowed( e ))
+		self.conn.on( 'app-settings-update' , e => self.handleAppSettings( e ))
 		
 		function initialize( e ) {
 			try {
@@ -311,63 +343,60 @@ library.view = library.view || {};
 				console.log( 'initalize ex', ex );
 			}
 		}
-		function state( e      ) { self.handleState( e ); }
-		function online( e     ) { self.handleOnline( true ); }
-		function offline( e    ) { self.handleOnline( false ); }
-		function chat( e       ) { self.handleChat( e ); }
+		function state(      e ) { self.handleState( e ); }
+		function online(     e ) { self.handleOnline( true ); }
+		function offline(    e ) { self.handleOnline( false ); }
+		function chat(       e ) { self.handleChat( e ); }
 		function persistent( e ) { self.handlePersistent( e ); }
-		function title( e      ) { self.handleTitle( e ); }
+		function title(      e ) { self.handleTitle( e ); }
 	}
-	 
+	
 	ns.Presence.prototype.handleInitialize = async function( conf ) {
 		const self = this;
-		const isMobile = ( 'MOBILE' === window.View.deviceType );
+		const isMobile = ( 'MOBILE' === window.View.deviceType )
 		
-		hello.template = friend.template;
-		const state = conf.state;
+		hello.template = friend.template
+		const state = conf.state
 		
 		// things
-		self.clientId    = state.clientId;
-		self.isPrivate   = state.isPrivate;
-		self.isView      = state.isView;
-		self.persistent  = state.persistent;
-		self.room        = state.room;
-		self.ownerId     = state.ownerId;
-		self.userId      = state.userId;
-		self.contactId   = state.contactId;
+		self.room   = state.room
+		self.isView = state.isView
+		self.userId = state.userId
+		self.ownerId     = state.ownerId
+		self.clientId    = state.clientId
+		self.contactId   = state.contactId
+		self.isPrivate   = state.isPrivate
+		self.userAdmin   = state.userAdmin
+		self.persistent  = state.persistent
 		self.liveAllowed = ( null != state.liveAllowed ) ? state.liveAllowed : true
 		
-		let showInviter = true
 		if ( window?.View?.config?.appConf?.mode == 'jeanie' ) {
-			const am = document.getElementById( 'attachment-menu' );
+			const am = document.getElementById( 'attachment-menu' )
 			if ( null != am )
-				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true );
+				am.querySelector( 'button.Camera' ).classList.toggle( 'hidden', true )
 			
-			if ( state.workgroups?.assigned?.length )
-			{
-				showInviter = false
-			}
 		}
 		
 		// selecting constructors
-		let UserCtrl = library.component.UserCtrl;
-		let MsgBuilder = library.component.MsgBuilder;
-		const isWorkroom = ( state.workgroups && state.workgroups.workId );
+		let UserCtrl = library.component.UserCtrl
+		let MsgBuilder = library.component.MsgBuilder
+		const isWorkroom = ( state.workgroups && state.workgroups.workId )
 		if ( isWorkroom ) {
-			UserCtrl = ns.UserWorkCtrl;
-			MsgBuilder = ns.WorkMsgBuilder;
+			UserCtrl = ns.UserWorkCtrl
+			MsgBuilder = ns.WorkMsgBuilder
 		}
+		if ( window?.View?.config?.appConf?.mode == 'jeanie' )
+			UserCtrl = ns.UserJeanieCtrl
 		
-		if ( self.isPrivate ) {
-			MsgBuilder = ns.PrivateMsgBuilder;
-		}
+		if ( self.isPrivate )
+			MsgBuilder = ns.PrivateMsgBuilder
 		
 		//
 		if ( !self.isPrivate )
-			self.toggleUserListBtn( true );
+			self.toggleUserListBtn( true )
 		
-		if ( !self.isPrivate && !isWorkroom && ( self.userId === self.ownerId && showInviter ))
-			self.inviteBtn.classList.toggle( 'hidden', false );
+		if ( !self.isPrivate && !isWorkroom && ( self.userId === self.ownerId && self.userAdmin ))
+			self.inviteBtn.classList.toggle( 'hidden', false )
 		
 		//
 		self.users = new UserCtrl(
@@ -381,14 +410,15 @@ library.view = library.view || {};
 			state.room,
 			state.guestAvatar,
 			'users-position',
-			state.config
-		);
+			state.config,
+			state.allowedContacts,
+		)
 		
-		window.setTimeout( doInit, 1000 );
+		window.setTimeout( doInit, 1000 )
 		function doInit() {
-			self.users.initialize();
+			self.users.initialize()
 			if ( state.config && state.config.showUserList && !isMobile )
-				self.toggleUserList( true );
+				self.toggleUserList( true )
 		}
 		
 		//
@@ -939,6 +969,16 @@ library.view = library.view || {};
 		if ( null != self.liveStatus )
 			self.liveStatus.setLiveAllowed( !disable )
 		
+	}
+	
+	ns.Presence.prototype.handleUpdateAllowed = function( allowed ) {
+		const self = this
+		self.users.updateAllowedContacts( allowed )
+	}
+	
+	ns.Presence.prototype.handleAppSettings = function( appSettings ) {
+		const self = this
+		self.toggleUserList( appSettings.showUserList )
 	}
 	
 	// things
@@ -2588,6 +2628,169 @@ library.view = library.view || {};
 			*/
 		}
 	}
+	
+})( library.view );
+
+(function( ns, undefined ) {
+	ns.UserJeanieCtrl = function(
+		conn,
+		userList,
+		adminList,
+		recentList,
+		guestList,
+		peerList,
+		workgroups,
+		room,
+		guestAvatar,
+		containerId,
+		serverConfig,
+		allowedContacts,
+	) {
+		const self = this
+		console.log( 'UserJeanieCtrl', userList )
+		self.conf = serverConfig
+		self.allowedContacts = allowedContacts
+		/*
+		self.workId = null; // workgroup id for this room
+		self.superId = null; // super room workgroup id
+		self.subIds = []; // sub room workgroup ids
+		self.members = {};
+		self.memberList = {};
+		self.userToMembers = {};
+		self.memberToUser = {};
+		self.works = {};
+		self.workIds = [];
+		self.rooms = null;
+		*/
+		library.component.UserCtrl.call( self,
+			conn,
+			userList,
+			null,
+			null,
+			null,
+			peerList,
+			workgroups,
+			room,
+			guestAvatar,
+			containerId,
+			serverConfig,
+			true,
+		);
+	}
+	
+	ns.UserJeanieCtrl.prototype = Object.create( library.component.UserCtrl.prototype );
+	ns.UserJeanieCtrl.prototype.buildTmpl = 'user-ctrl-tmpl'
+	
+	ns.UserJeanieCtrl.prototype.updateAllowedContacts = function( allowed ) {
+		const self = this
+		self.allowedContacts = allowed
+		self.userIds.forEach( uId => self.users[ uId ].setCanOpen( allowed[ uId ]))
+	}
+	
+	
+	ns.UserJeanieCtrl.prototype.initBaseGroups = function() {
+		const self = this
+		self.addBaseGroup({
+			clientId     : 'members',
+			name         : View.i18n( 'i18n_members' ),
+			sectionKlass : 'base-group group-members',
+		})
+	}
+	
+	ns.UserJeanieCtrl.prototype.initWorkgroups = function() {}
+	
+	ns.UserJeanieCtrl.prototype.setUserToGroup = function( userId ) {
+		const self = this
+		const user = self.users[ userId ]
+		if ( null == user )
+			return
+		
+		self.moveUserToGroup( user.id, 'members' )
+	}
+	
+	ns.UserJeanieCtrl.prototype.buildGroupUserConf = function( identity ) {
+		const self = this
+		const uId = identity.clientId
+		let canOpen = true
+		if ( self.allowedContacts )
+			canOpen = self.allowedContacts[ uId ]
+		
+		const avatarId = self.getUserCssKlass( uId )
+		const conf = [
+			uId, 
+			self.conn, 
+			identity, 
+			avatarId, 
+			canOpen, 
+			library.view.GroupUserJeanie 
+		]
+		
+		return conf
+	}
+	
+})( library.view );
+
+(function( ns, undefined ) {
+	ns.GroupUserJeanie = function(
+		userId,
+		conn,
+		conf,
+		avatarId,
+		canOpen,
+	) {
+		const self = this
+		self.avatarId = avatarId
+		self.canOpen = canOpen
+		
+		library.component.GroupUser.call( self,
+			userId,
+			conn,
+			conf
+		)
+	}
+	
+	ns.GroupUserJeanie.prototype = Object.create( library.component.GroupUser.prototype )
+	ns.GroupUserJeanie.prototype.userTmpl = 'user-list-jini-tmpl'
+	ns.GroupUserJeanie.prototype.doOpenTxt = 'Click to open private chat'
+	ns.GroupUserJeanie.prototype.noOpenTxt = 'This person is not part of your team, only channel communication available'
+	
+	ns.GroupUserJeanie.prototype.setCanOpen = function( allow ) {
+		const self = this
+		if ( allow === self.canOpen )
+			return
+		
+		self.canOpen = allow
+		let tooptil = self.doOpenTxt
+		if ( !self.canOpen )
+			tooptil = self.noOpenTxt
+		
+		self.el.setAttribute( 'tootlip', tooptil )
+	}
+	
+	ns.GroupUserJeanie.prototype.buildElementConf = function() {
+		const self = this
+		let tooltip = self.doOpenTxt
+		if ( !self.canOpen )
+			tooltip = self.noOpenTxt
+			
+		return {
+			id       : self.id,
+			statusId : self.statusId,
+			name     : self.name,
+			avatarId : self.avatarId,
+			title    : tooltip,
+		}
+	}
+	
+	ns.GroupUserJeanie.prototype.yepClick = library.component.GroupUser.prototype.handleClick
+	ns.GroupUserJeanie.prototype.handleClick = function( e ) {
+		const self = this
+		if ( !self.canOpen )
+			return
+		
+		self.yepClick()
+	}
+	
 	
 })( library.view );
 

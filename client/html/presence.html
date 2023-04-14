@@ -66,6 +66,8 @@
 		</div>
 	</div>
 	<div id="main" class="main expand group row cover BorderBottom">
+		<div id="metre">
+		</div>
 		<div id="attachment-menu">
 			<button class="IconButton IconSmall fa-camera Camera">
 				{i18n_take_a_picture}
@@ -108,10 +110,10 @@
 </script>
 
 <!-- Users list desktop
-	
+hideKlass
 -->
 <script id="users-desktop-tmpl" type="text/html">
-	<div id="users-container" class="fortify group column cover BackgroundDefault users-hide">
+	<div id="users-container" class="fortify group column cover BackgroundDefault <%= hideKlass %>">
 		<div id="users-header" class="group row start BorderBottom">
 		</div>
 		<div id="users-position" class="expand BackgroundHeavy">
@@ -120,10 +122,10 @@
 </script>
 
 <!-- Users list for other devices
-
+hideKlass
 -->
 <script id="users-other-tmpl" type="text/html">
-<div id="users-container" class="group row cover users-hide">
+<div id="users-container" class="group row cover <%= hideKlass %>">
 	<div id="users-cover" class="expand">
 	</div>
 	<div id="users-content" class="fortify group column cover BackgroundDefault">
@@ -733,6 +735,31 @@ name,
 <script id="user-list-item-tmpl" type="text/html">
 <div id="<%= id %>" class="user-item group row MousePointer ListItemPlain">
 	<div id="<%= statusId %>" class=user-status>
+	</div>
+	<div class="name expand">
+		<%= name %>
+	</div>
+	<div class="state fortify center-child">
+		<i class="fa fa-fw"></i>
+	</div>
+</div>
+</script>
+
+<!-- GroupUserJeanie
+id,
+statusId,
+name,
+avatarId,
+title,
+-->
+<script id="user-list-jini-tmpl" type="text/html">
+<div id="<%= id %>" 
+	class="user-item group row MousePointer ListItemPlain <%= avatarId %>"
+	tootlip="<%= title %>"
+>
+	<div class="avatar">
+		<div id="<%= statusId %>" class=user-status-jini>
+		</div>
 	</div>
 	<div class="name expand">
 		<%= name %>

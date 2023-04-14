@@ -722,10 +722,12 @@ inherits from EventEmitter
 	ns.IdCache = function( parentConn, identities ) {
 		const self = this;
 		library.component.EventEmitter.call( self, eSink );
-		self.conn = null;
-		self.ids =  {};
-		self.idList = [];
-		self.loading = {};
+		self.conn = null
+		self.ids = {}
+		self.fIds = {}
+		self.idList = []
+		self.fIdList = []
+		self.loading = {}
 		
 		self.init( parentConn, identities );
 		
@@ -938,6 +940,15 @@ inherits from EventEmitter
 		return idList;
 	}
 	
+	ns.IdCache.prototype.getByFId = async function( fUserId ) {
+		const self = this
+		const id = self.fIds[ fUserId ]
+		if ( null == id )
+			throw 'ERR_NO_ID'
+		else
+			return id
+	}
+	
 	// Pri<ate
 	
 	ns.IdCache.prototype.init = function( parentConn, identities ) {
@@ -958,14 +969,24 @@ inherits from EventEmitter
 		if ( !id || !id.clientId )
 			return;
 		
-		const frozen = Object.freeze( id );
-		const cId = frozen.clientId;
-		const curr = self.ids[ cId ];
-		if ( !curr )
-			self.idList.push( cId );
+		const frozen = Object.freeze( id )
+		const cId = frozen.clientId
+		const fId = frozen.fUserId
+		if ( !fId )
+			console.log( 'IdCache.add - no fid', id )
 		
-		self.ids[ cId ] = frozen;
-		return frozen;
+		const inIds = !!self.ids[ cId ]
+		if ( !inIds )
+			self.idList.push( cId )
+		
+		const inFIds = !!self.fIds[ fId ]
+		if ( !inFIds )
+			self.fIdList.push( fId )
+		
+		self.ids[ cId ] = frozen
+		self.fIds[ fId ] = frozen
+		
+		return frozen
 	}
 	
 	ns.IdCache.prototype.remove = function( cId ) {

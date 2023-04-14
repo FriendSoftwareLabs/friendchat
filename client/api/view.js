@@ -869,7 +869,8 @@ var friend = window.friend || {};
 		const cssLoaded = self.setBaseCss();
 		self.connState = new api.ConnState( 'hello' );
 		
-		self.on( 'app-config', e => self.appConfUpdate( e ));
+		self.on( 'app-config', e => self.appConfUpdate( e ))
+		self.on( 'app-settings', e => self.appSettingsUpdate( e ))
 		
 		// mousedown listeing
 		document.body.addEventListener( 'mousedown', mouseDownThings, false );
@@ -965,6 +966,13 @@ var friend = window.friend || {};
 		const self = this;
 		self.appConf = update;
 		//self.emit( 'app-config', update );
+	}
+	
+	ns.View.prototype.appSettingsUpdate = function( update ) {
+		const self = this
+		console.log( 'appSettingsUpdate', update )
+		self.appSettings = update
+		self.emit( 'app-settings-update', update )
 	}
 	
 	ns.View.prototype.initLogSock = function() {

@@ -934,10 +934,27 @@ library.module = library.module || {};
 					name       : id.name,
 					avatar     : id.avatar,
 					isOnline   : id.isOnline,
-				};
+				}
 				return item;
 			}
 		}
+	}
+	
+	ns.Presence.prototype.getFriendContactActivity = async function( friendId ) {
+		const self = this
+		const id = await self.idc.getByFId( friendId )
+		const act = await self.activity.read( id.clientId )
+		if ( null == act )
+			return null
+		
+		const copy = {
+			roomId : id.clientId,
+		}
+		copy.message = Application.i18n( act.data.message )
+		copy.from = null
+		copy.timestamp = act.data.timestamp
+		copy.timeStr = library.tool.getChatTime( act.data.timestamp )
+		return copy
 	}
 	
 	ns.Presence.prototype.getFriendContact = function( friendId ) {
@@ -945,21 +962,21 @@ library.module = library.module || {};
 		return new Promise(( resolve, reject ) => {
 			const getFC = {
 				friendId : friendId,
-			};
+			}
 			const req = {
 				type : 'friend-get',
 				data : getFC,
-			};
+			}
 			self.acc.request( req )
 				.then( resolve )
-				.catch( reject );
-		});
+				.catch( reject )
+		})
 	}
 	
 	ns.Presence.prototype.addContact = async function( clientId ) {
 		const self = this;
 		if ( self.contacts[ clientId ]) {
-			return clientId;
+			return clientId
 		}
 		
 		const loader = self.contactLoading[ clientId ];
@@ -1427,6 +1444,7 @@ library.module = library.module || {};
 			self.setupIDC( state.identities );
 		}
 		
+		self.setWorkgroups( state.workgroups )
 		self.handleIdBacklog();
 		self.updateInvites( state.invites );
 		
@@ -1459,26 +1477,82 @@ library.module = library.module || {};
 		function refreshActivity() {
 			self.activity.refresh();
 		}
+		               
 		
 		function updateAccount( account ) {
 			self.account = account;
 			const id = account.identity;
 			if ( id.name !== self.identity.name )
-				updateName();
+				updateName()
 			
 			if ( id.avatar !== self.identity.avatar )
-				updateAvatar();
+				updateAvatar()
 			
-			const cId = id.clientId;
-			self.identity = id;
+			const cId = id.clientId
+			self.identity = id
 			
 			function updateName() {
-				
+				//
 			}
 			
 			function updateAvatar() {
-				
+				//
 			}
+		}
+	}
+	
+	ns.Presence.prototype.setWorkgroups = function( worgs ) {
+		const self = this
+		if ( null == worgs ) {
+			self.workgroups = {
+				ids : null,
+			}
+			
+			return
+		}
+		
+		self.workgroups = worgs
+		self.updateAllowedContacts()
+	}
+	
+	ns.Presence.prototype.updateAllowedContacts = function( noWait ) {
+		const self = this
+		if ( null != self.allowedContactsTimeout ) {
+			window.clearTimeout( self.allowedContactsTimeout )
+			wait()
+			return
+		}
+		
+		if ( !noWait ) {
+			wait()
+			return
+		}
+		
+		// worg members
+		const allowed = {}
+		if ( self.workgroups?.ids?.length ) {
+			self.workgroups.ids.forEach( wId => {
+				self.workgroups.members[ wId ].forEach( uId => allowed[ uId ] = true )
+			})
+		}
+		
+		// contacts
+		self.contactIds.forEach( uId => allowed[ uId ] = true )
+		
+		// list
+		self.allowedContacts = allowed
+		
+		// tell rooms
+		self.roomIds.forEach( rId => {
+			const room = self.rooms[ rId ]
+			room.updateAllowedContacts( self.allowedContacts )
+		})
+		
+		function wait() {
+			self.allowedContactsTimeout = window.setTimeout(( ) => {
+				self.allowedContactsTimeout = null
+				self.updateAllowedContacts( true )
+			}, 100 )
 		}
 	}
 	
@@ -1579,6 +1653,7 @@ library.module = library.module || {};
 		self.acc.on( 'join', joinedRoom );
 		self.acc.on( 'close', roomClosed );
 		self.acc.on( 'identity-update', e => self.handleIdUpdate( e ));
+		self.acc.on( 'workgroup-update', e => self.handleWorkgroupUpdate( e ))
 		
 		function initialize( e ) { self.handleAccountInit( e ); }
 		function relationsInit( e ) { self.handleRelationsInit( e ); }
@@ -2324,6 +2399,33 @@ library.module = library.module || {};
 			self.service.emitEvent( 'identityUpdate', id );
 	}
 	
+	ns.Presence.prototype.handleWorkgroupUpdate = function( uptd ) {
+		const self = this
+		console.log( 'handleWorkgroupUpdate', [ uptd, self.workgroups ])
+		if ( null == self.workgroups?.members )
+			return
+		
+		const wId = uptd.id
+		let curr = self.workgroups.members[ wId ]
+		console.log( 'curr', curr )
+		if ( null == curr )
+			return
+		
+		if ( uptd.add )
+			uptd.add.forEach( uId => curr.push( uId ))
+		
+		if ( uptd.remove ) {
+			const fresh = curr.filter( currId => {
+				return !uptd.remove.some( remId => remId === currId )
+			})
+			console.log( 'fresh' )
+			self.workgroups.members[ wId ] = fresh
+		}
+		
+		console.log( 'handleWorgptd afer', self.workgroups.members[ wId ])
+		self.updateAllowedContacts();
+	}
+	
 	ns.Presence.prototype.checkCurrentRooms = function( list ) {
 		const self = this;
 		if ( null == list )
@@ -2487,6 +2589,7 @@ library.module = library.module || {};
 			host       : host,
 			user       : self.identity,
 			userId     : self.accountId,
+			allowedContacts : self.allowedContacts,
 		};
 		
 		room = new library.contact.PresenceRoom( roomConf );
@@ -3463,7 +3566,7 @@ library.module = library.module || {};
 		const contact = data.contact;
 		const cState = data.cState;
 		if ( !contact ) {
-			var cIds = Object.keys( self.contacts );
+			const cIds = Object.keys( self.contacts );
 			if ( !cIds.length && !self.nullContact ) {
 				self.nullContact = true;
 				self.viewInfo( 'message', Application.i18n('i18n_no_contacts') );
@@ -3480,7 +3583,7 @@ library.module = library.module || {};
 		if ( self.contacts[ contact.clientId ])
 			return;
 		
-		var conf = {
+		const conf = {
 			moduleId          : self.clientId,
 			parentConn        : self.conn,
 			parentView        : self.parentView,
@@ -3515,6 +3618,8 @@ library.module = library.module || {};
 				data : contact,
 			},
 		});
+		
+		self.updateAllowedContacts()
 		
 		function checkAvatar( contact ) {
 			if ( contact.imagePath )

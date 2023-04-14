@@ -644,6 +644,11 @@ window.library.component = window.library.component || {};
 			execute : getIdentityFun,
 		}, 'Functions/' );
 		
+		const getActivity = new api.DoorFun({
+			title   : 'GetActivity',
+			execute : getActivityFun,
+		}, 'Functions/' )
+		
 		const openChat = new api.DoorFun({
 			title   : 'OpenChat',
 			execute : openChatFun,
@@ -660,6 +665,10 @@ window.library.component = window.library.component || {};
 		const roomMentions = new api.DoorEvent({
 			title : 'RoomMentions',
 		}, 'Events/' );
+		
+		const roomActivity = new api.DoorEvent({
+			title : 'RoomActivity',
+		}, 'Events/' )
 		
 		const roomViewOpen = new api.DoorEvent({
 			title : 'RoomViewOpen',
@@ -687,6 +696,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addFun( addUserToRoom )
 		hello.dormant.addFun( openChat )
 		hello.dormant.addFun( getIdentity )
+		hello.dormant.addFun( getActivity )
 		hello.dormant.addFun( openSettings )
 		hello.dormant.addFun( openRoomSettings )
 		
@@ -701,6 +711,7 @@ window.library.component = window.library.component || {};
 		hello.dormant.addEvent( roomUnread )
 		hello.dormant.addEvent( liveHasFocus )
 		hello.dormant.addEvent( roomMentions )
+		hello.dormant.addEvent( roomActivity )
 		
 		self.dormantEvents = {
 			'roomAdd'         : roomAdd,
@@ -711,6 +722,7 @@ window.library.component = window.library.component || {};
 			'viewClosed'      : roomViewClosed,
 			'roomUnread'      : roomUnread,
 			'roomMentions'    : roomMentions,
+			'roomActivity'    : roomActivity,
 			'roomLiveState'   : roomLiveState,
 			'liveHasFocus'    : liveHasFocus,
 			'identityUpdate'  : userUpdate,
@@ -810,6 +822,14 @@ window.library.component = window.library.component || {};
 				throw new Error( 'ERR_NO_SERVICE' )
 			
 			return await self.presence.getFriendContact( fUserId )
+		}
+		
+		async function getActivityFun( fUserId ) {
+			if ( null == self.presence )
+				throw new Error( 'ERR_NO_SERVICE' )
+			
+			
+			return await self.presence.getFriendContactActivity( fUserId )
 		}
 		
 		async function openSettingsFun() {
