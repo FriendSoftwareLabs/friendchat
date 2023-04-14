@@ -3518,6 +3518,7 @@ library.contact = library.contact || {};
 	ns.PresenceHidden.prototype.openChat = function() {
 		const self = this;
 		const initData = {
+			clientId    : self.clientId,
 			isPrivate   : true,
 			persistent  : true,
 			isHidden    : true,
@@ -4333,6 +4334,8 @@ library.contact = library.contact || {};
 		}
 		
 		const initData = {
+			room        : self.identity,
+			clientId    : self.clientId,
 			isPrivate   : self.isPrivate,
 			roomName    : self.identity.name,
 			persistent  : self.persistent,
