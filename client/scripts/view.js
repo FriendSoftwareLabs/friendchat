@@ -107,9 +107,10 @@ library.view = library.view || {};
 	}
 	
 	ns.PresenceChat.prototype.updateState = function( state ) {
-		const self = this;
-		self.isPrivate = !!state.isPrivate;
-		self.setTitle( state.roomName );
+		const self = this
+		console.log( 'PC.updateState', state )
+		self.isPrivate = !!state.isPrivate
+		self.setTitle( state.roomName )
 		
 		const data = {
 			state  : state,
@@ -119,8 +120,9 @@ library.view = library.view || {};
 		const init = {
 			type : 'initialize',
 			data : data,
-		};
-		self.view.send( init, true );
+		}
+		console.log( 'sending init', init )
+		self.view.send( init, true )
 	}
 	
 	ns.PresenceChat.prototype.close = function() {
