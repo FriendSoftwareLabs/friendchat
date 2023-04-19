@@ -964,7 +964,6 @@ library.module = library.module || {};
 		copy.message = Application.i18n( act.data.message )
 		copy.from = null
 		copy.timestamp = act.data.timestamp || act.data.time
-		//copy.timeStr = library.tool.getChatTime( act.data.timestamp )
 		
 		return copy
 	}
