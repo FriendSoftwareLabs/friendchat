@@ -943,17 +943,36 @@ library.module = library.module || {};
 	ns.Presence.prototype.getFriendContactActivity = async function( friendId ) {
 		const self = this
 		const id = await self.idc.getByFId( friendId )
-		const act = await self.activity.read( id.clientId )
-		if ( null == act )
-			return null
+		const cId = id.clientId
+		const act = await self.activity.read( cId )
+		let lm = null
+		if ( null == act ) {
+			const chat = self.getLocalChat( cId )
+			console.log( 'no activity, check chat', [ friendId, act, chat ])
+			if ( null == chat )
+				return null
+			
+			lm = chat.getLastMessage()
+			console.log( 'lm', lm )
+			if ( null == lm )
+				return null
+		}
 		
 		const copy = {
 			roomId : id.clientId,
 		}
-		copy.message = Application.i18n( act.data.message )
-		copy.from = null
-		copy.timestamp = act.data.timestamp
-		copy.timeStr = library.tool.getChatTime( act.data.timestamp )
+		
+		if ( act ) {
+			copy.message = Application.i18n( act.data.message )
+			copy.from = null
+			copy.timestamp = act.data.timestamp
+			//copy.timeStr = library.tool.getChatTime( act.data.timestamp )
+		} else {
+			copy.message = lm.message
+			copy.from = null
+			copy.timestamp = lm.time
+		}
+		
 		return copy
 	}
 	
