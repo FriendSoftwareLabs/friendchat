@@ -1620,6 +1620,7 @@ in a generic link expand wrapping with a bit of UI
 		if ( null != onError )
 			content.addEventListener( 'error', onError, false )
 		
+		console.log( 'LE.replace conf', conf )
 		if ( 'DESKTOP' != window.View.deviceType )
 			return
 		
