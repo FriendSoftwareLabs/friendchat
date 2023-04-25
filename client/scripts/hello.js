@@ -334,7 +334,6 @@ var hello = null;
 		self.app.on( 'userupdate', e => self.handleUserUpdate( e ))
 		self.app.on( 'conn-state', e => self.handleConnState( e ))
 		
-		console.log( 'listenSystemEvents done' )
 	}
 	
 	ns.Hello.prototype.finalizeConfig = function( hostConf ) {
@@ -1181,7 +1180,6 @@ var hello = null;
 	
 	ns.Hello.prototype.handlePushNotie = function( event ) {
 		const self = this
-		console.log( 'handlePushNotie', event )
 		if ( !event || !event.extra ) {
 			console.trace( 'hello.handlePushNotie - not valid event', event );
 			return false;
@@ -1314,15 +1312,19 @@ var hello = null;
 		*/
 		
 		function getPreView( extra ) {
-			const roomId = extra.roomId;
-			const roomName = extra.title;
-			let view = self.preViews[ roomId ];
+			const roomId = extra.roomId
+			const conf = {
+				roomId    : roomId,
+				name      : extra.title,
+				isPrivate : true,
+			}
+			let view = self.preViews[ roomId ]
 			if ( null != view )
-				return view;
+				return view
 			
-			view = new library.view.PresenceChat( null, roomName, true );
-			self.preViews[ roomId ] = view;
-			return view;
+			view = new library.view.PresenceChat( null, conf )
+			self.preViews[ roomId ] = view
+			return view
 		}
 	}
 	

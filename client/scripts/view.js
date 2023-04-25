@@ -27,14 +27,23 @@ library.view = library.view || {};
 
 // PresenceChat
 (function( ns, undefined ) {
-	ns.PresenceChat = function( state, roomTitle, isPrivate ) {
-		const self = this;
-		self.roomTitle = roomTitle || null;
-		self.isPrivate = !!isPrivate;
+	ns.PresenceChat = function( state, preConf ) {
+		const self = this
+		console.log( 'PC', [ state, preConf ])
+		if ( state ) {
+			self.roomId = state.clientId
+			self.roomTitle = state.roomName
+			self.isPrivate = state.isPrivate
+		}
+		else {
+			self.roomId = preConf.roomId
+			self.roomTitle = preConf.name
+			self.isPrivate = preConf.isPrivate
+		}
 		
-		self.drop = null;
+		self.drop = null
 		
-		self.init( state );
+		self.init( state )
 	}
 	
 	ns.PresenceChat.prototype =
@@ -98,9 +107,10 @@ library.view = library.view || {};
 	}
 	
 	ns.PresenceChat.prototype.updateState = function( state ) {
-		const self = this;
-		self.isPrivate = !!state.isPrivate;
-		self.setTitle( state.roomName );
+		const self = this
+		console.log( 'PC.updateState', state )
+		self.isPrivate = !!state.isPrivate
+		self.setTitle( state.roomName )
 		
 		const data = {
 			state  : state,
@@ -110,8 +120,9 @@ library.view = library.view || {};
 		const init = {
 			type : 'initialize',
 			data : data,
-		};
-		self.view.send( init, true );
+		}
+		console.log( 'sending init', init )
+		self.view.send( init, true )
 	}
 	
 	ns.PresenceChat.prototype.close = function() {
@@ -131,7 +142,6 @@ library.view = library.view || {};
 	
 	ns.PresenceChat.prototype.init = function( state ) {
 		const self = this;
-		self.roomId = state.clientId;
 		const dropConf = {
 			roomId : self.roomId,
 			toView : toView,
@@ -153,11 +163,6 @@ library.view = library.view || {};
 		}
 		
 		const filePath = 'html/presence.html';
-		if ( state ) {
-			self.roomTitle = state.roomName;
-			self.isPrivate = state.isPrivate;
-		}
-		
 		let viewWidth = 700;
 		if ( self.isPrivate )
 			viewWidth = 500;
