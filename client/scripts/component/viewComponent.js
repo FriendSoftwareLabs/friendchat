@@ -1620,9 +1620,14 @@ in a generic link expand wrapping with a bit of UI
 		if ( null != onError )
 			content.addEventListener( 'error', onError, false )
 		
-		console.log( 'LE.replace conf', conf )
-		if ( 'DESKTOP' != window.View.deviceType )
-			return
+		console.log( 'LE.replace conf', conf, conf.fileName.slice( -4 ) )
+		if ( 'DESKTOP' != window.View.deviceType ) {
+			if ( conf.type != 'file' )
+				return
+			
+			if ( '.pdf' != conf.fileName.slice( -4 ) )
+				return
+		}
 		
 		if ( null != opts )
 			opts.addEventListener( 'click', openOpts, false )
