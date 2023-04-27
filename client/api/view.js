@@ -494,10 +494,11 @@ var friend = window.friend || {};
 			method : 'openWindowByPath',
 			path   : path,
 			flags  : {
-				//context : self.id,
 				context : '$CURRENTVIEWID', // DONT ASK; DONT TELL
 			},
 		}
+		
+		console.log( 'view.openWindowByPath', open )
 		self.sendBase( open )
 	}
 	
@@ -510,13 +511,13 @@ var friend = window.friend || {};
 				fileInfo  : {
 					Path  : path,
 					flags : {
-						//context : self.id,
 						context : '$CURRENTVIEWID', // ^^^
 					},
 				},
 			},
 		}
 		
+		console.log( 'view.openWindowByFilename', open )
 		self.sendBase( open )
 	}
 	
