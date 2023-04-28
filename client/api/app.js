@@ -1973,6 +1973,7 @@ window.Application = new fupLocal.Application();
 // File
 (function( ns, undefined ) {
 	ns.File = function( path ) {
+		console.log( 'File', path )
 		const self = this
 		self.path = path
 		self.name = null
@@ -1991,12 +1992,17 @@ window.Application = new fupLocal.Application();
 				path : self.path,
 			}
 		}
+		
 		const data = await window.Application.sendAsync( msg, 'fileId' )
+		console.log( 'File.load', {
+			msg  : msg,
+			data : data,
+		})
 		return data
 	}
 	
 	ns.File.prototype.expose = function( roomId ) {
-		const self = this;
+		const self = this
 		return new Promise(( resolve, reject ) => {
 			const libConf = {
 				functionName : 'file/expose',
@@ -2007,13 +2013,16 @@ window.Application = new fupLocal.Application();
 				},
 				onSuccess : success,
 				onError   : err,
-			};
+			}
+			console.log( 'File.expose', libConf )
 			const lib = new api.Library( libConf );
 			function success( res ) {
-				self.exposeHash = res.hash;
-				self.name = res.name;
-				const link = self.getPublicLink();
-				resolve( link );
+				console.log( 'File.expose success', res )
+				self.exposeHash = res.hash
+				self.name = res.name
+				const link = self.getPublicLink()
+				
+				resolve( link )
 			}
 			function err( res ) {
 				console.log( 'File.expose.err', res );
@@ -2024,7 +2033,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.File.prototype.unshare = function( callback ) {
 		const self = this;
-		console.log( 'File.unshare - NYI', self.path );
+		console.log( 'File.unshare - NYI', self.path )
 	}
 	
 	// Private
@@ -2041,9 +2050,17 @@ window.Application = new fupLocal.Application();
 		let link = window.Application.domain 
 			+ '/sharedfile/' 
 			+ self.exposeHash 
-			+ '/' + self.name;
-		link = window.encodeURI( link );
-		return link;
+			+ '/' + self.name
+			
+		link = window.encodeURI( link )
+		
+		console.log( 'File.getPublicLink', {
+			domain : window.Application.domain,
+			hash   : self.exposeHash,
+			name   : self.name,
+			link   : link,
+		})
+		return link
 	}
 })( api );
 
