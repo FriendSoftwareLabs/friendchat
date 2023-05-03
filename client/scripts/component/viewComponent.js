@@ -1410,11 +1410,12 @@ in a generic link expand wrapping with a bit of UI
 			if ( !url || !url.length )
 				resolve( 'no u' )
 			
-		
+			
 			const extParts = url.split( '.' )
 			const fileExt = extParts.pop()
 			const fileParts = url.split( '/' )
 			let fileName = fileParts.pop()
+			fileName = window.decodeURIComponent( fileName )
 			fileName = junkToSpace( fileName )
 			
 			url = url.replace( /^http:/, 'https:' )
