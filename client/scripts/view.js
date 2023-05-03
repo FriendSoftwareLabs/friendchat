@@ -249,6 +249,7 @@ library.view = library.view || {};
 						return;
 					}
 					
+					console.log( 'attach to chat', link )
 					toChat( link );
 				});
 			}

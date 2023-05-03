@@ -2051,8 +2051,8 @@ window.Application = new fupLocal.Application();
 			+ '/sharedfile/' 
 			+ self.exposeHash 
 			+ '/' + self.name
-			
-		link = window.decodeURI( link )
+		
+		link = window.decodeURIComponent( link )
 		
 		console.log( 'File.getPublicLink', {
 			domain : window.Application.domain,
@@ -2060,6 +2060,7 @@ window.Application = new fupLocal.Application();
 			name   : self.name,
 			link   : link,
 		})
+		
 		return link
 	}
 })( api );

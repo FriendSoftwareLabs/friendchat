@@ -1183,7 +1183,6 @@ in a generic link expand wrapping with a bit of UI
 		
 		async function expandLink( a ) {
 			const url = a.href.toString()
-			console.log( 'expandLink', url )
 			let mime = null
 			try {
 				mime = await self.getMIME( url );
@@ -1213,6 +1212,8 @@ in a generic link expand wrapping with a bit of UI
 				fp       : null,
 			}
 			
+			console.log( 'epxandLink', info )
+			
 			replace( info )
 		}
 		
@@ -1225,6 +1226,8 @@ in a generic link expand wrapping with a bit of UI
 				console.log( 'LinkExpand.work - expandPath getFFileInfo ex', ex )
 				return null
 			}
+			
+			console.log( 'expandPath', [ fpath, fileInfo ] )
 			
 			const info = {
 				fp       : fp,

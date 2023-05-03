@@ -561,7 +561,7 @@ element to the LinkExpander
 		return null;
 		
 		function makeLink( url ) {
-			var link = document.createElement( 'a' )
+			const link = document.createElement( 'a' )
 			link.innerText = url
 			link.href = makeAbsoluteUrl( url )
 			link.target = '_blank'
@@ -663,6 +663,7 @@ these will need post-procsessing by PathExpand
 		return null
 		
 		function makeLink( path ) {
+			console.log( 'parser friendpath match', path )
 			const fp = document.createElement( 'fpath' );
 			fp.innerText = path;
 			return fp.outerHTML;
