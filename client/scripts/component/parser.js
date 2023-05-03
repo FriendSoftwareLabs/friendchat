@@ -561,6 +561,7 @@ element to the LinkExpander
 		return null;
 		
 		function makeLink( url ) {
+			console.log( 'parser LinkStd match', url )
 			const link = document.createElement( 'a' )
 			link.innerText = url
 			link.href = makeAbsoluteUrl( url )

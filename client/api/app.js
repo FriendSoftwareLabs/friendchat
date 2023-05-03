@@ -2052,7 +2052,7 @@ window.Application = new fupLocal.Application();
 			+ self.exposeHash 
 			+ '/' + self.name
 		
-		link = window.decodeURIComponent( link )
+		link = window.encodeURI( link )
 		
 		console.log( 'File.getPublicLink', {
 			domain : window.Application.domain,
