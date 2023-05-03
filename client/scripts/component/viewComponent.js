@@ -1212,7 +1212,10 @@ in a generic link expand wrapping with a bit of UI
 				fp       : null,
 			}
 			
-			console.log( 'epxandLink', info )
+			console.log( 'epxandLink', {
+				url  : url,
+				info : info,
+			})
 			
 			replace( info )
 		}
@@ -1329,6 +1332,7 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.checkShareLink = async function( url ) {
 		const self = this
+		console.log( 'checkShareLink', url )
 		// get hash
 		//const url = 'asd/sharefile/d342r34rf34f/file.jpg';
 		const rx = RegExp( '\\/sharedfile\\/([\\w\\d]+?)\\/', 'g' )
@@ -1352,6 +1356,7 @@ in a generic link expand wrapping with a bit of UI
 			return null
 		}
 		
+		console.log( 'checkShareLink fcore info', pj )
 		if ( null == pj.path )
 			return null
 		
@@ -1510,6 +1515,7 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.getFFileInfo = async function( fPath ) {
 		const self = this
+		console.log( 'getFFileInfo', fPath )
 		const ext = String( fPath.split( '.' ).pop()).toLowerCase()
 		const type = self.fExtMap[ ext ] || 'file'
 		let name = ''
