@@ -1183,6 +1183,7 @@ in a generic link expand wrapping with a bit of UI
 		
 		async function expandLink( a ) {
 			const url = a.href.toString()
+			console.log( 'expandLink, url', url )
 			let mime = null
 			try {
 				mime = await self.getMIME( url );
