@@ -1364,7 +1364,7 @@ in a generic link expand wrapping with a bit of UI
 			path : pj.path,
 		}
 		// check for Home:
-		if ( 0 == path.indexOf( 'Home:' ))
+		if ( 0 == fShare.path.indexOf( 'Home:' ))
 			fShare.readOnly = true
 		
 		return fShare
