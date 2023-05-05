@@ -1192,16 +1192,16 @@ in a generic link expand wrapping with a bit of UI
 			}
 			
 			let fileInfo = null
-			let fPath = null
+			let fShare = null
 			if ( -1 != url.indexOf( '/sharedfile/' )) {
 				try {
-					fPath = await self.checkShareLink( url )
+					fShare = await self.checkShareLink( url )
 				} catch( ex ) {
 					console.log( 'LinkExpand.work - checkShareLink ex', ex )
 				}
 				
-				if ( null != fPath )
-					fileInfo = await self.getFFileInfo( fPath )
+				if ( null != fShare )
+					fileInfo = await self.getFFileInfo( fShare )
 			}
 			
 			const info = {
@@ -1224,7 +1224,7 @@ in a generic link expand wrapping with a bit of UI
 			const fpath = fp.innerHTML
 			let fileInfo = null
 			try {
-				fileInfo = await self.getFFileInfo( fpath )
+				fileInfo = await self.getFFileInfo({ path : fpath })
 			} catch( ex ) {
 				console.log( 'LinkExpand.work - expandPath getFFileInfo ex', ex )
 				return null
@@ -1360,13 +1360,14 @@ in a generic link expand wrapping with a bit of UI
 		if ( null == pj.path )
 			return null
 		
-		const path = pj.path
-		
+		const fShare = {
+			path : pj.path,
+		}
 		// check for Home:
 		if ( 0 == path.indexOf( 'Home:' ))
-			return null
+			fShare.readOnly = true
 		
-		return path
+		return fShare
 		
 		async function finfofetch( hash ) {
 			const path = await window.View.callModule(
@@ -1514,8 +1515,9 @@ in a generic link expand wrapping with a bit of UI
 	return a promise that resolves to a k/v map with the things or throws
 	
 	*/
-	ns.LinkExpand.prototype.getFFileInfo = async function( fPath ) {
+	ns.LinkExpand.prototype.getFFileInfo = async function( fShare ) {
 		const self = this
+		const fPath = fShare.path
 		console.log( 'getFFileInfo', fPath )
 		const ext = String( fPath.split( '.' ).pop()).toLowerCase()
 		const type = self.fExtMap[ ext ] || 'file'
@@ -1534,14 +1536,14 @@ in a generic link expand wrapping with a bit of UI
 			drive = fPath.split( ':' )[ 0 ] + ':'
 		}
 		
-		// build fake mime object
 		const finfo = {
-			type   : type,
-			path   : fPath,
-			folder : folder,
-			name   : name,
-			ext    : ext,
-			drive  : drive,
+			type     : type,
+			path     : fPath,
+			folder   : folder,
+			name     : name,
+			ext      : ext,
+			drive    : drive,
+			readOnly : fShare.readOnly,
 		}
 		
 		return finfo
@@ -1570,6 +1572,7 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.replace = function( conf, el ) {
 		const self = this
+		console.log( 'replace conf', conf )
 		const href = conf.href
 		const type = conf.type
 		const content = conf.content
@@ -1589,7 +1592,7 @@ in a generic link expand wrapping with a bit of UI
 			saveToHome = true
 		
 		let openFolder = false
-		if ( null != conf.openPath )
+		if ( null != conf.openPath && true != conf.readOnly )
 			openFolder = true
 		
 		let hrefIcon = 'fa-external-link'
@@ -1633,11 +1636,13 @@ in a generic link expand wrapping with a bit of UI
 		
 		console.log( 'LE.replace conf', conf, conf.fileName.slice( -4 ) )
 		if ( 'DESKTOP' != window.View.deviceType ) {
-			if ( conf.type != 'file' )
+			if ( conf.type != 'file' && conf.type != 'image' )
 				return
 			
-			if ( '.pdf' != conf.fileName.slice( -4 ) )
-				return
+			if ( conf.type == 'file' ) {
+				if ( '.pdf' != conf.fileName.slice( -4 ) )
+					return
+			}
 		}
 		
 		if ( null != opts )
@@ -1811,6 +1816,7 @@ in a generic link expand wrapping with a bit of UI
 			href      : href,
 			content   : htmlElement,
 			fileName  : fileName,
+			readOnly  : conf?.fileInfo.readOnly,
 			bgDefault : true,
 			openPath  : openPath,
 			onClick   : onClick,
@@ -1948,6 +1954,7 @@ in a generic link expand wrapping with a bit of UI
 			href     : href,
 			openPath : openPath,
 			fileName : fileName,
+			readOnly : conf?.fileInfo.readOnly,
 			extIcon  : 'fa-download',
 			content  : el,
 			onClick  : onClick,
