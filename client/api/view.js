@@ -502,18 +502,23 @@ var friend = window.friend || {};
 		self.sendBase( open )
 	}
 	
-	ns.View.prototype.openFFile = function( path ) {
+	ns.View.prototype.openFFile = function( path, isUrl ) {
 		const self = this
+		let finfo = {
+			flags : {
+				context : '$CURRENTVIEWID', // ^^^
+			}
+		}
+		if ( isUrl )
+			finfo.Url = path
+		else
+			finfo.Path = path
+		
 		const open = {
 			type   : 'dos',
 			method : 'openWindowByFilename',
 			args   : {
-				fileInfo  : {
-					Path  : path,
-					flags : {
-						context : '$CURRENTVIEWID', // ^^^
-					},
-				},
+				fileInfo : finfo,
 			},
 		}
 		

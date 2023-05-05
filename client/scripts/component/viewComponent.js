@@ -1963,7 +1963,7 @@ in a generic link expand wrapping with a bit of UI
 		
 		function onClick( e ) {
 			if ( fileExt == 'pdf' && href && 'DESKTOP' != window.View.deviceType ) {
-				window.View.openFFile( href )
+				window.View.openFFile( href, true )
 				return
 			}
 			
@@ -1971,7 +1971,6 @@ in a generic link expand wrapping with a bit of UI
 				window.View.openFFilePath( openFile )
 				return
 			}
-			
 			
 			if ( href && conf.mime ) {
 				self.saveFile( href, conf.mime.fileName )
