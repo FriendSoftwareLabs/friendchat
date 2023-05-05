@@ -1634,7 +1634,7 @@ in a generic link expand wrapping with a bit of UI
 		if ( null != onError )
 			content.addEventListener( 'error', onError, false )
 		
-		console.log( 'LE.replace conf', conf, conf.fileName.slice( -4 ) )
+		console.log( 'LE.replace file type', conf, conf.fileName.slice( -4 ) )
 		if ( 'DESKTOP' != window.View.deviceType ) {
 			if ( conf.type != 'file' && conf.type != 'image' )
 				return
@@ -1901,6 +1901,7 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.expandFile = async function( conf ) {
 		const self = this
+		console.log( 'expandFile', conf )
 		let fileExt = ''
 		if ( conf.fileInfo )
 			fileExt = conf.fileInfo.ext
@@ -1961,10 +1962,15 @@ in a generic link expand wrapping with a bit of UI
 		}
 		
 		function onClick( e ) {
+			if ( fileExt == 'pdf' && href && 'DESKTOP' != window.View.deviceType ) {
+				window.View.openFFile( href )
+			}
+			
 			if ( openFile ) {
 				window.View.openFFilePath( openFile )
 				return
 			}
+			
 			
 			if ( href && conf.mime ) {
 				self.saveFile( href, conf.mime.fileName )
