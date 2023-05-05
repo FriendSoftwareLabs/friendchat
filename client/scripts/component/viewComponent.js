@@ -1964,6 +1964,7 @@ in a generic link expand wrapping with a bit of UI
 		function onClick( e ) {
 			if ( fileExt == 'pdf' && href && 'DESKTOP' != window.View.deviceType ) {
 				window.View.openFFile( href )
+				return
 			}
 			
 			if ( openFile ) {
