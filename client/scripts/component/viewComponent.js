@@ -25,7 +25,6 @@ var hello = window.hello || {};
 
 library.component = library.component || {};
 
-
 // FormOverlay
 // load and result screen for form submits
 ( function( ns, undefined ) {
@@ -1212,11 +1211,6 @@ in a generic link expand wrapping with a bit of UI
 				fp       : null,
 			}
 			
-			console.log( 'epxandLink', {
-				url  : url,
-				info : info,
-			})
-			
 			replace( info )
 		}
 		
@@ -1229,8 +1223,6 @@ in a generic link expand wrapping with a bit of UI
 				console.log( 'LinkExpand.work - expandPath getFFileInfo ex', ex )
 				return null
 			}
-			
-			console.log( 'expandPath', [ fpath, fileInfo ] )
 			
 			const info = {
 				fp       : fp,
@@ -1332,7 +1324,6 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.checkShareLink = async function( url ) {
 		const self = this
-		console.log( 'checkShareLink', url )
 		// get hash
 		//const url = 'asd/sharefile/d342r34rf34f/file.jpg';
 		const rx = RegExp( '\\/sharedfile\\/([\\w\\d]+?)\\/', 'g' )
@@ -1356,7 +1347,6 @@ in a generic link expand wrapping with a bit of UI
 			return null
 		}
 		
-		console.log( 'checkShareLink fcore info', pj )
 		if ( null == pj.path )
 			return null
 		
@@ -1518,7 +1508,6 @@ in a generic link expand wrapping with a bit of UI
 	ns.LinkExpand.prototype.getFFileInfo = async function( fShare ) {
 		const self = this
 		const fPath = fShare.path
-		console.log( 'getFFileInfo', fPath )
 		const ext = String( fPath.split( '.' ).pop()).toLowerCase()
 		const type = self.fExtMap[ ext ] || 'file'
 		let name = ''
@@ -1572,7 +1561,6 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.replace = function( conf, el ) {
 		const self = this
-		console.log( 'replace conf', conf )
 		const href = conf.href
 		const type = conf.type
 		const content = conf.content
@@ -1634,7 +1622,6 @@ in a generic link expand wrapping with a bit of UI
 		if ( null != onError )
 			content.addEventListener( 'error', onError, false )
 		
-		console.log( 'LE.replace file type', conf, conf.fileName.slice( -4 ) )
 		if ( 'DESKTOP' != window.View.deviceType ) {
 			if ( conf.type != 'file' && conf.type != 'image' )
 				return
@@ -1901,7 +1888,6 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.expandFile = async function( conf ) {
 		const self = this
-		console.log( 'expandFile', conf )
 		let fileExt = ''
 		if ( conf.fileInfo )
 			fileExt = conf.fileInfo.ext

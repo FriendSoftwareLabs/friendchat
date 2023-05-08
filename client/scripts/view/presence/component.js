@@ -656,7 +656,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.initialize = async function( workgroups ) {
 		const self = this;
-		console.log( 'UserCtrl.initialize', workgroups )
 		await self.setWorkgroups( workgroups );
 		const worgWaits = self.groupsAssignedIds.map( wId => self.showWorgAssigned( wId ));
 		await Promise.all( worgWaits );
@@ -904,7 +903,6 @@ var hello = window.hello || {};
 		const self = this;
 		const container = document.getElementById( self.containerId );
 		const conf = {};
-		console.log( 'build', self.buildTmpl )
 		self.el = hello.template.getElement( self.buildTmpl, conf );
 		container.appendChild( self.el );
 		self.detached = document.getElementById( 'user-ctrl-detached' );
@@ -1172,7 +1170,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.setUserList = async function() {
 		const self = this;
-		console.log( 'setUserList', [ self.userList, self.showOther ])
 		if ( self.adminList ) {
 			const waitA = self.adminList.map( aId => {
 				return self.buildUser( aId );
@@ -1352,7 +1349,6 @@ var hello = window.hello || {};
 		
 		const conf = self.buildGroupUserConf( id )
 		
-		console.log( 'buildUser', conf )
 		const GroupUser = conf.pop()
 		const userItem = new GroupUser( ...conf )
 		self.users[ userId ] = userItem
@@ -1372,7 +1368,6 @@ var hello = window.hello || {};
 	
 	ns.UserCtrl.prototype.buildGroupUserConf = function( identity ) {
 		const self = this
-		console.log( 'UC.buildGroupUserConf', identity )
 		const conf = [ 
 			identity.clientId, 
 			self.conn, 
@@ -1617,7 +1612,6 @@ var hello = window.hello || {};
 		const curr = self.getGroup( user.group );
 		const to = self.getGroup( groupId );
 		
-		console.log( 'moveUserToGroup', user, groupId, to )
 		if ( user.group === groupId ) {
 			return;
 		}
@@ -1844,7 +1838,7 @@ var hello = window.hello || {};
 		const el = document.getElementById( msg.msgId );
 		if ( !el ) {
 			console.log( 'no msg el to update', event );
-			return;
+			return
 		}
 		
 		let update = msg.message;

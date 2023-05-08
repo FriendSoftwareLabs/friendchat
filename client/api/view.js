@@ -498,7 +498,6 @@ var friend = window.friend || {};
 			},
 		}
 		
-		console.log( 'view.openWindowByPath', open )
 		self.sendBase( open )
 	}
 	
@@ -522,7 +521,6 @@ var friend = window.friend || {};
 			},
 		}
 		
-		console.log( 'view.openWindowByFilename', open )
 		self.sendBase( open )
 	}
 	
@@ -965,7 +963,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.handleScroll = function( e ) {
 		const self = this;
-		console.log( 'handleScroll, not handling lol', e );
+		//console.log( 'handleScroll, not handling lol', e );
 	}
 	
 	ns.View.prototype.appConfUpdate = function( update ) {
@@ -976,7 +974,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.appSettingsUpdate = function( update ) {
 		const self = this
-		console.log( 'appSettingsUpdate', update )
 		self.appSettings = update
 		self.emit( 'app-settings-update', update )
 	}

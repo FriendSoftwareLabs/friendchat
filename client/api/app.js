@@ -1142,13 +1142,11 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this
 		if ( null == self.registerMsg )
 		{
-			console.log( 'app.ready - no registerMsg yet, wait 100' )
 			window.setTimeout(() => {
 				self.ready()
 			}, 100 )
 		}
 		
-		console.log( 'app.ready', self.registerMsg )
 		self.registered( self.registerMsg )
 		self.registerMsg
 		
@@ -1973,7 +1971,6 @@ window.Application = new fupLocal.Application();
 // File
 (function( ns, undefined ) {
 	ns.File = function( path ) {
-		console.log( 'File', path )
 		const self = this
 		self.path = path
 		self.name = null
@@ -1994,10 +1991,6 @@ window.Application = new fupLocal.Application();
 		}
 		
 		const data = await window.Application.sendAsync( msg, 'fileId' )
-		console.log( 'File.load', {
-			msg  : msg,
-			data : data,
-		})
 		return data
 	}
 	
@@ -2014,10 +2007,8 @@ window.Application = new fupLocal.Application();
 				onSuccess : success,
 				onError   : err,
 			}
-			console.log( 'File.expose', libConf )
 			const lib = new api.Library( libConf );
 			function success( res ) {
-				console.log( 'File.expose success', res )
 				self.exposeHash = res.hash
 				self.name = res.name
 				const link = self.getPublicLink()
@@ -2053,14 +2044,6 @@ window.Application = new fupLocal.Application();
 			+ '/' + self.name
 		
 		link = window.encodeURI( link )
-		
-		console.log( 'File.getPublicLink', {
-			domain : window.Application.domain,
-			hash   : self.exposeHash,
-			name   : self.name,
-			link   : link,
-		})
-		
 		return link
 	}
 })( api );

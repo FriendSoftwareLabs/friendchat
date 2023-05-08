@@ -4313,12 +4313,6 @@ library.contact = library.contact || {};
 	
 	ns.PresenceContact.prototype.openChatView = function( notification, preView ) {
 		const self = this
-		console.log( 'openChatView', {
-			self    : self,
-			noti    : notification,
-			preView : preView,
-		})
-		
 		self.openChatPending = false
 		self.hasNotification = !!notification
 		

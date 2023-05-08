@@ -2647,7 +2647,6 @@ library.view = library.view || {};
 		allowedContacts,
 	) {
 		const self = this
-		console.log( 'UserJeanieCtrl', userList )
 		self.conf = serverConfig
 		self.allowedContacts = allowedContacts
 		/*
