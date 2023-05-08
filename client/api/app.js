@@ -1142,13 +1142,11 @@ var friend = window.friend || {}; // already instanced stuff
 		const self = this
 		if ( null == self.registerMsg )
 		{
-			console.log( 'app.ready - no registerMsg yet, wait 100' )
 			window.setTimeout(() => {
 				self.ready()
 			}, 100 )
 		}
 		
-		console.log( 'app.ready', self.registerMsg )
 		self.registered( self.registerMsg )
 		self.registerMsg
 		
@@ -1991,12 +1989,13 @@ window.Application = new fupLocal.Application();
 				path : self.path,
 			}
 		}
+		
 		const data = await window.Application.sendAsync( msg, 'fileId' )
 		return data
 	}
 	
 	ns.File.prototype.expose = function( roomId ) {
-		const self = this;
+		const self = this
 		return new Promise(( resolve, reject ) => {
 			const libConf = {
 				functionName : 'file/expose',
@@ -2007,13 +2006,14 @@ window.Application = new fupLocal.Application();
 				},
 				onSuccess : success,
 				onError   : err,
-			};
+			}
 			const lib = new api.Library( libConf );
 			function success( res ) {
-				self.exposeHash = res.hash;
-				self.name = res.name;
-				const link = self.getPublicLink();
-				resolve( link );
+				self.exposeHash = res.hash
+				self.name = res.name
+				const link = self.getPublicLink()
+				
+				resolve( link )
 			}
 			function err( res ) {
 				console.log( 'File.expose.err', res );
@@ -2024,7 +2024,7 @@ window.Application = new fupLocal.Application();
 	
 	ns.File.prototype.unshare = function( callback ) {
 		const self = this;
-		console.log( 'File.unshare - NYI', self.path );
+		console.log( 'File.unshare - NYI', self.path )
 	}
 	
 	// Private
@@ -2041,9 +2041,10 @@ window.Application = new fupLocal.Application();
 		let link = window.Application.domain 
 			+ '/sharedfile/' 
 			+ self.exposeHash 
-			+ '/' + self.name;
-		link = window.encodeURI( link );
-		return link;
+			+ '/' + self.name
+		
+		link = window.encodeURI( link )
+		return link
 	}
 })( api );
 

@@ -2410,13 +2410,11 @@ library.module = library.module || {};
 	
 	ns.Presence.prototype.handleWorkgroupUpdate = function( uptd ) {
 		const self = this
-		console.log( 'handleWorkgroupUpdate', [ uptd, self.workgroups ])
 		if ( null == self.workgroups?.members )
 			return
 		
 		const wId = uptd.id
 		let curr = self.workgroups.members[ wId ]
-		console.log( 'curr', curr )
 		if ( null == curr )
 			return
 		
@@ -2427,11 +2425,9 @@ library.module = library.module || {};
 			const fresh = curr.filter( currId => {
 				return !uptd.remove.some( remId => remId === currId )
 			})
-			console.log( 'fresh' )
 			self.workgroups.members[ wId ] = fresh
 		}
 		
-		console.log( 'handleWorgptd afer', self.workgroups.members[ wId ])
 		self.updateAllowedContacts();
 	}
 	

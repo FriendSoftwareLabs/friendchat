@@ -494,26 +494,30 @@ var friend = window.friend || {};
 			method : 'openWindowByPath',
 			path   : path,
 			flags  : {
-				//context : self.id,
 				context : '$CURRENTVIEWID', // DONT ASK; DONT TELL
 			},
 		}
+		
 		self.sendBase( open )
 	}
 	
-	ns.View.prototype.openFFile = function( path ) {
+	ns.View.prototype.openFFile = function( path, isUrl ) {
 		const self = this
+		let finfo = {
+			flags : {
+				context : '$CURRENTVIEWID', // ^^^
+			}
+		}
+		if ( isUrl )
+			finfo.Url = path
+		else
+			finfo.Path = path
+		
 		const open = {
 			type   : 'dos',
 			method : 'openWindowByFilename',
 			args   : {
-				fileInfo  : {
-					Path  : path,
-					flags : {
-						//context : self.id,
-						context : '$CURRENTVIEWID', // ^^^
-					},
-				},
+				fileInfo : finfo,
 			},
 		}
 		
@@ -959,7 +963,7 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.handleScroll = function( e ) {
 		const self = this;
-		console.log( 'handleScroll, not handling lol', e );
+		//console.log( 'handleScroll, not handling lol', e );
 	}
 	
 	ns.View.prototype.appConfUpdate = function( update ) {
@@ -970,7 +974,6 @@ var friend = window.friend || {};
 	
 	ns.View.prototype.appSettingsUpdate = function( update ) {
 		const self = this
-		console.log( 'appSettingsUpdate', update )
 		self.appSettings = update
 		self.emit( 'app-settings-update', update )
 	}

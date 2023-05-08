@@ -29,7 +29,6 @@ library.view = library.view || {};
 (function( ns, undefined ) {
 	ns.PresenceChat = function( state, preConf ) {
 		const self = this
-		console.log( 'PC', [ state, preConf ])
 		if ( state ) {
 			self.roomId = state.clientId
 			self.roomTitle = state.roomName
@@ -108,7 +107,6 @@ library.view = library.view || {};
 	
 	ns.PresenceChat.prototype.updateState = function( state ) {
 		const self = this
-		console.log( 'PC.updateState', state )
 		self.isPrivate = !!state.isPrivate
 		self.setTitle( state.roomName )
 		
@@ -121,7 +119,6 @@ library.view = library.view || {};
 			type : 'initialize',
 			data : data,
 		}
-		console.log( 'sending init', init )
 		self.view.send( init, true )
 	}
 	
@@ -249,6 +246,7 @@ library.view = library.view || {};
 						return;
 					}
 					
+					console.log( 'attach to chat', link )
 					toChat( link );
 				});
 			}
