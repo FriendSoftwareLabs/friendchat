@@ -3108,7 +3108,7 @@ var hello = window.hello || {};
 		
 		//self.container.insertBefore( day.el, beforeEl );
 		console.log( 'day', day )
-		await waitLol()
+		//await waitLol()
 		return day
 		
 		function waitLol() {
