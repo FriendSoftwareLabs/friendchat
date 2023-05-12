@@ -2628,9 +2628,11 @@ var hello = window.hello || {};
 		
 		//
 		
+		/*
 		const time = self.parseTime( event.time )
 		console.log( 'time', time )
 		//self.checkDay( time )
+		*/
 		
 		const pos = self.insertEvent( event )
 		const conf = {
@@ -2738,8 +2740,8 @@ var hello = window.hello || {};
 				firstMsg = event
 			}
 			
-			let time = self.parseTime( event.time )
-			let envelope = await self.getDay( time.day )
+			//let time = self.parseTime( event.time )
+			let day = await self.checkDay( event.time )
 			if ( prevEnvelope && ( envelope.id !== prevEnvelope.id )) {
 				prevEnvelope.firstMsg = firstMsg;
 				lastSpeakerId = null;
@@ -2847,13 +2849,11 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.addItem = function( el, msg ) {
 		const self = this;
-		
-		self.lastMsg = msg
-		envelope.el.appendChild( el );
-		self.bindItem( el.id );
+		self.container.appendChild( el )
+		self.bindItem( el.id )
 		
 		if ( msg.editId )
-			self.setEdit( msg );
+			self.setEdit( msg )
 	}
 	
 	ns.MsgBuilder.prototype.addLogItem = function( el, envelope, msg ) {
@@ -3087,36 +3087,29 @@ var hello = window.hello || {};
 		return false;
 	}
 	
-	ns.MsgBuilder.prototype.getDay = async function( envConf ) {
-		const self = this;
-		let envelope = self.envelopes[ envConf.id ];
-		if ( envelope )
-			return envelope;
+	ns.MsgBuilder.prototype.checkDay = function( timestamp ) {
+		const self = this
+		console.log( 'checkDay', timestamp )
+		const time = new Date( timestamp )
+		const midnightStamp = time.setHours( 0, 0, 0, 0 )
+		const dId = 'day-' + midnightStamp
+		let day = self.days[ dId ]
+		if ( null != day )
+			return day
 		
-		envelope = envConf;
-		const el = hello.template.getElement( 'time-envelope-tmpl', envConf );
-		envelope.el = el;
-		self.envelopes[ envelope.id ] = envelope;
-		self.envelopeOrder.push( envelope.id );
-		self.envelopeOrder.sort( oldFirst );
-		const index = self.envelopeOrder.indexOf( envelope.id );
-		const beforeId = self.envelopeOrder[( index + 1 )] || null;
-		let beforeEl = null;
-		if ( beforeId )
-			beforeEl = document.getElementById( beforeId );
-		
-		self.container.insertBefore( envelope.el, beforeEl );
-		await waitLol();
-		return envelope;
-		
-		function oldFirst( idA, idB ) {
-			let a = self.envelopes[ idA ];
-			let b = self.envelopes[ idB ];
-			if ( a.order > b.order )
-				return 1;
-			else
-				return -1;
+		day = {
+			type : 'day',
+			id   : dId,
+			time : midnightStamp,
+			date : self.getDayString( timestamp ),
 		}
+		day.el = hello.template.getElement( 'day-separator-tmpl', day )
+		self.container.appendChild( day.el )
+		
+		//self.container.insertBefore( day.el, beforeEl );
+		console.log( 'day', day )
+		await waitLol()
+		return day
 		
 		function waitLol() {
 			return new Promise( resolve => {
@@ -3149,26 +3142,23 @@ var hello = window.hello || {};
 	}
 	
 	ns.MsgBuilder.prototype.parseTime = function( timestamp ) {
-		const self = this;
-		const time = new Date( timestamp )
-		if ( !time )
-			return null
-		
-		const tokens = {
+		const self = this
+		const tiktok = {
 			time       : self.getClockStamp( timestamp ),
 			date       : self.getDateStamp( timestamp ),
-			dayId      : getDay( timestamp ),
+			dayId      : self.getDayId( timestamp ),
 			timestamp  : timestamp,
 		}
 		
-		return tokens
-		
-		function getDay( timestamp ) {
-			const time = new Date( timestamp )
-			const midnightStamp = time.setHours( 0, 0, 0, 0 )
-			const id = 'day-' + midnightStamp
-			return id
-		}
+		return tiktok
+	}
+	
+	ns.MsgBuilder.prototype.getDayId = function( timestamp ) {
+		const self = this
+		const time = new Date( timestamp )
+		const midnightStamp = time.setHours( 0, 0, 0, 0 )
+		const id = 'day-' + midnightStamp
+		return id
 	}
 	
 	ns.MsgBuilder.prototype.getClockStamp = function( timestamp ) {
@@ -3210,11 +3200,9 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.MsgBuilder.prototype.getDayString = function( time, dayTime ) {
+	ns.MsgBuilder.prototype.getDayString = function( timestamp ) {
 		const self = this;
-		const now = new Date();
-		const today = self.getDayNumeric( now );
-		console.log( 'envTime', today )
+		const today = new Date()
 		const yesterday = today - 1;
 		const isToday = ( envelopeTime === today );
 		const isYesterday = ( envelopeTime === yesterday );
