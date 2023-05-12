@@ -1808,7 +1808,7 @@ var hello = window.hello || {};
 		self.fpathEx = pathExpand || null
 		
 		self.conn = null
-		self.days = {}
+		self.days = []
 		self.eventOrder = []
 		self.events = {}
 		self.msgOverlays = {}
@@ -3093,7 +3093,7 @@ var hello = window.hello || {};
 		const time = new Date( timestamp )
 		const midnightStamp = time.setHours( 0, 0, 0, 0 )
 		const dId = 'day-' + midnightStamp
-		let day = self.days[ dId ]
+		let day = self.events[ dId ]
 		if ( null != day )
 			return day
 		
@@ -3103,6 +3103,10 @@ var hello = window.hello || {};
 			time : midnightStamp,
 			date : self.getDayString( timestamp ),
 		}
+		self.events[ dId ] = day
+		self.eventOrder.push( day )
+		self.days.push( dId )
+		
 		day.el = hello.template.getElement( 'day-separator-tmpl', day )
 		self.container.appendChild( day.el )
 		
@@ -3120,20 +3124,24 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.removeDay = function( dayId ) {
 		const self = this
-		const day = self.days[ dayId ]
+		const day = self.event[ dayId ]
 		if ( null == day )
 			return
 		
 		const del = day.el
-		delete self.days[ dayId ]
+		delete self.event[ dayId ]
+		
+		// remove from days
+		
+		// remove from eventOrder
+		
 		del.parentNode.removeChild( del )
 	}
 	
 	ns.MsgBuilder.prototype.updateDayDisplay = function() {
 		const self = this;
-		const dIds = Object.keys( self.days )
-		dIds.forEach( dId => {
-			const day = self.days[ dId ]
+		self.days.forEach( dId => {
+			const day = self.events[ dId ]
 			console.log( 'day', day )
 			const timeStr = self.getDayString( day.time )
 			day.el.querySelector( '.day-date' )
