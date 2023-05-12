@@ -3203,16 +3203,16 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.getDayString = function( timestamp ) {
 		const self = this;
 		const today = new Date()
-		const yesterday = today - 1;
-		const isToday = ( envelopeTime === today );
-		const isYesterday = ( envelopeTime === yesterday );
+		console.log( 'getDS today', today )
+		const isToday = false
+		const isYesterday = false
 		if ( isToday )
 			return View.i18n( 'i18n_today' );
 		
 		if ( isYesterday )
 			return View.i18n( 'i18n_yesterday' );
 		
-		return time.toLocaleDateString();
+		return today.toLocaleDateString()
 	}
 	
 	ns.MsgBuilder.prototype.updateRelationState = function( relations ) {
