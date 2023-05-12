@@ -2561,6 +2561,7 @@ var hello = window.hello || {};
 	}
 	
 	ns.MsgBuilder.prototype.insertEvent = function( event ) {
+		const self = this
 		console.log( 'insertEvent', [ event, self.lastMsg, self.eventOrder ])
 		self.events[ event.msgId ] = event
 		const pos = {
