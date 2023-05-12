@@ -1858,6 +1858,7 @@ in a generic link expand wrapping with a bit of UI
 	*/
 	ns.LinkExpand.prototype.expandVideo = async function( conf ) {
 		const self = this
+		console.log( 'expandVideo', conf )
 		if ( null == conf.a ) {
 			const content = await self.expandFile( conf )
 			return content
@@ -1866,8 +1867,12 @@ in a generic link expand wrapping with a bit of UI
 		const type = 'video'
 		const src = conf.a.href
 		const elConf = {
-			src : src,
+			src  : src,
+			type : 'video',
 		}
+		
+		if ( conf.fileExt == 'mov' )
+			elConf.type = 'video/mp4'
 		
 		const htmlElement = self.template.getElement( 'video-expand-tmpl', elConf )
 		return {

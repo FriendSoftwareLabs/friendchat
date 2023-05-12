@@ -1797,36 +1797,37 @@ var hello = window.hello || {};
 		linkExpand,
 		pathExpand
 	) {
-		const self = this;
-		self.containerId = containerId;
-		self.users = users;
-		self.userId = userId;
-		self.roomId = roomId;
-		self.input = input;
-		self.parser = parser || null;
-		self.linkEx = linkExpand || null;
-		self.fpathEx = pathExpand || null;
+		const self = this
+		self.containerId = containerId
+		self.users = users
+		self.userId = userId
+		self.roomId = roomId
+		self.input = input
+		self.parser = parser || null
+		self.linkEx = linkExpand || null
+		self.fpathEx = pathExpand || null
 		
 		self.conn = null
-		self.envelopes = {};
-		self.envelopeOrder = [];
-		self.msgOverlays = {};
-		self.supressConfirm = false;
-		self.userLastMsg = null;
+		self.days = {}
+		self.eventOrder = []
+		self.events = {}
+		self.msgOverlays = {}
+		self.supressConfirm = false
+		self.userLastMsg = null
 		
-		self.init( parentConn );
+		self.init( parentConn )
 	}
 	
 	// Public
 	
 	ns.MsgBuilder.prototype.handle = function( event ) {
-		const self = this;
-		const handler = self.eventMap[ event.type ];
+		const self = this
+		const handler = self.eventMap[ event.type ]
 		if ( !handler ) {
-			return null;
+			return null
 		}
 		
-		return handler( event.data );
+		return handler( event.data )
 	}
 	
 	ns.MsgBuilder.prototype.update = function( event, isEdit ) {
@@ -2228,9 +2229,9 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.close = function() {
 		const self = this;
-		if ( self.envelopeUpdate != null ) {
-			window.clearTimeout( self.envelopeUpdate );
-			delete self.envelopeUpdate;
+		if ( self.dayUpdate != null ) {
+			window.clearTimeout( self.dayUpdate );
+			delete self.dayUpdate;
 		}
 		
 		if ( self.conn )
@@ -2271,67 +2272,49 @@ var hello = window.hello || {};
 		}
 		
 		self.container = document.getElementById( self.containerId );
-		if ( !self.container )
-			throw new Error( 'MsgBuilder.init - container element not found for id: '
-				+ self.containerId );
-		
-		if ( !self.users || !hello.template ) {
-			console.log( 'MsgBuilder - missing things', self );
-			throw new Error( 'MsgBuilder - missing things ^^^' );
+		if ( !self.container ) {
+			throw new Error( 'MsgBuilder.init - container element not found for id: ',
+				 self.containerId )
 		}
 		
-		self.users.on( 'msg-target', e => self.handleMsgTarget( e ));
-		self.startEnvelopeUpdates();
+		if ( !self.users || !hello.template ) {
+			console.log( 'MsgBuilder - missing things', self )
+			throw new Error( 'MsgBuilder - missing things ^^^' )
+		}
+		
+		self.users.on( 'msg-target', e => self.handleMsgTarget( e ))
+		self.startDayUpdates()
 		
 		self.eventMap = {
-			'msg'          : msg,
-			'work-msg'     : msg,
-			'action'       : action,
-			'notification' : notie,
-			'log'          : log,
+			'msg'          : e => self.handleMsg( e ),
+			'work-msg'     : e => self.handleMsg( e ),
+			'action'       : e => self.handleAction( e ),
+			'notification' : e => self.handleNotie( e ),
+			'log'          : e => self.handleLog( e ),
 			'update'       : e => self.update( e ),
 			'edit'         : e => self.update( e, true ),
 			'remove'       : e => self.handleRemove( e ),
 			'confirm'      : e => self.handleConfirm( e ),
-		};
+		}
 		
-		function msg( e ) { return self.handleMsg( e ); }
-		function action( e ) { return self.handleAction( e ); }
-		function notie( e ) { return self.handleNotie( e ); }
-		function log( e ) { return self.handleLog( e ); }
+		self.logMap = {
+			'msg'          : e => self.buildMsg( e, true ),
+			'work-msg'     : e => self.buildWorkMsg( e, true ),
+			'action'       : e => self.buildAction( e, true ),
+			'notification' : e => self.buildNotie( e, true ),
+		}
 		
-		self.buildMap = {
-			'msg'          : logMsg,
-			'work-msg'     : logWorkMsg,
-			'action'       : logAction,
-			'notification' : logNotie,
-		};
-		
-		function logMsg( e ) { return self.buildMsg( e, true ); }
-		function logWorkMsg( e ) { return self.buildWorkMsg( e, true ); }
-		function logAction( e ) { return self.buildAction( e, true ); }
-		function logNotie( e ) { return self.buildNotie( e, true ); }
 	}
 	
 	ns.MsgBuilder.prototype.getFirstMsg = function() {
-		const self = this;
-		if ( !self.envelopeOrder.length )
-			return null;
-		
-		const firstEnvelopeId = self.envelopeOrder[ 0 ];
-		const firstEnvelope = self.envelopes[ firstEnvelopeId ];
-		return firstEnvelope.firstMsg || null;
+		const self = this
+		const msgId = self.eventOrder[ 1 ] // the first item will always be the day insert
+		return msgId || null
 	}
 	
 	ns.MsgBuilder.prototype.getLastMsg = function() {
 		const self = this;
-		if ( !self.envelopeOrder.length )
-			return null;
-		
-		const eo = self.envelopeOrder;
-		const lastEnvId = eo[ eo.length - 1 ];
-		const lastEnvelope = self.envelopes[ lastEnvId ];
-		return lastEnvelope.lastMsg || null;
+		return self.lastMsg
 	}
 	
 	ns.MsgBuilder.prototype.handleMsgTarget = function( data ) {
@@ -2549,25 +2532,25 @@ var hello = window.hello || {};
 		delete self.msgTargets;
 	}
 	
-	ns.MsgBuilder.prototype.startEnvelopeUpdates = function() {
+	ns.MsgBuilder.prototype.startDayUpdates = function() {
 		const self = this;
-		if ( self.envelopeUpdate != null )
-			return;
+		if ( self.dayUpdate != null )
+			return
 		
 		setNextUpdate();
 		
 		function setNextUpdate() {
-			const now = Date.now();
-			const midnight = new Date().setHours( 24, 0, 0, 0 ); // set time to nearest next midnight,
+			const now = Date.now()
+			const midnight = new Date().setHours( 24, 0, 0, 0 ) // set time to nearest next midnight,
 			// ..and it returns a timestamp of that midnight
-			const timeToMidnight = midnight - now;
-			self.envelopeUpdate = window.setTimeout( update, timeToMidnight );
+			const timeToMidnight = midnight - now
+			self.dayUpdate = window.setTimeout( update, timeToMidnight )
 		}
 		
 		function update() {
-			self.updateEnvelopeDate();
-			delete self.envelopeUpdate;
-			setNextUpdate();
+			self.updateDayDisplay()
+			delete self.dayUpdate
+			setNextUpdate()
 		}
 	}
 	
@@ -2577,42 +2560,101 @@ var hello = window.hello || {};
 		return !!el;
 	}
 	
-	ns.MsgBuilder.prototype.handleMsg = async function( event ) {
-		const self = this;
-		if ( self.exists( event.msgId ))
-			return;
+	ns.MsgBuilder.prototype.insertEvent = function( event ) {
+		console.log( 'insertEvent', [ event, self.lastMsg, self.eventOrder ])
+		self.events[ event.msgId ] = event
+		const pos = {
+			prevId : null,
+			nextId : null,
+		}
 		
+		const day = self.checkDay( event.time )
+		if ( null == self.lastMsg ) {
+			pos.prevId = day.id
+			pos.isLast = true
+			self.lastMsg = event
+			self.eventOrder.push( event )
+			return pos
+		}
+		
+		if ( self.lastMsg.time < event.time ) {
+			if ( day.time > self.lastMsg.time )
+				pos.prevId = day.id
+			else
+				pos.prevId = self.lastMsg.msgId
+			
+			pos.isLast = true
+			self.lastMsg = event
+			self.eventOrder.push( event )
+			
+			return pos
+		}
+		
+		let prev = null
+		let next = null
+		let mi = self.eventOrder.length
+		for( ; mi-- ; ) {
+			next = prev
+			const prev = self.eventOrder[ mi ]
+			if ( prev.time < event.time ) {
+				prev = self.eventOrder[ mi - 1 ]
+				break
+			}
+		}
+		
+		pos.prevId = prev?.msgId
+		pos.nextId = next?.msgId
+		self.eventOrder.splice( mi, 0, event )
+		
+		console.log( 'after for', {
+			pos : pos,
+			mi  : mi,
+			mo  : self.eventOrder,
+		})
+		
+		return pos
+	}
+	
+	ns.MsgBuilder.prototype.handleMsg = async function( event ) {
+		const self = this
+		if ( self.exists( event.msgId ))
+			return
+		
+		console.log( 'handleMsg', event )
 		// makes sure identity is available sync
-		const fromId = event.fromId;
-		const id = await self.users.getIdentity( fromId );
+		const fromId = event.fromId
+		const id = await self.users.getIdentity( fromId )
 		
 		//
-		if ( event.fromId === self.userId ) {
-			self.userLastMsg = event;
-		}
 		
-		const time = self.parseTime( event.time );
-		const envelope = await self.getEnvelope( time.envelope );
-		const isLastSpeaker = self.checkIsLastSpeaker( event, envelope );
+		const time = self.parseTime( event.time )
+		console.log( 'time', time )
+		//self.checkDay( time )
+		
+		const pos = self.insertEvent( event )
 		const conf = {
-			inGroup : isLastSpeaker,
-			event   : event,
-		};
-		
-		const el = self.buildMsg( conf );
-		if ( !el ) {
-			console.log( 'could not build el for msg', event );
-			return;
+			position : pos,
+			event    : event,
 		}
 		
-		envelope.lastSpeakerId = event.fromId;
+		const el = self.buildMsg( conf )
+		if ( !el ) {
+			console.log( 'could not build el for msg', event )
+			return
+		}
 		
-		self.addItem( el, envelope, event );
-		if ( self.contactId )
-			self.updateLastDelivered( event );
+		if ( event.fromId === self.userId )
+			self.userLastMsg = event
 		
-		self.confirmEvent( 'message', event.msgId );
-		return el;
+		self.lastSpeakerId = event.fromId
+		
+		self.addItem( el, pos, event )
+		
+		if ( self.contactId && pos.afterId == null )
+			self.updateLastDelivered( event )
+		
+		self.confirmEvent( 'message', event.msgId )
+		return el
 	}
 	
 	ns.MsgBuilder.prototype.handleAction = function( event ) {
@@ -2628,28 +2670,31 @@ var hello = window.hello || {};
 	}
 	
 	ns.MsgBuilder.prototype.handleLog = async function( log ) {
-		const self = this;
-		let events = log.data.events;
-		let newIds = log.data.ids;
-		let relations = log.data.relations;
-		if ( newIds )
-			self.users.addIdentities( newIds );
+		const self = this
+		console.log( 'handleLog, NYI weeu weeu weeu', log )
+		return
 		
-		self.pauseSmoothScrolling();
-		self.supressConfirm = true;
-		self.writingLogs = true;
+		let events = log.data.events
+		let newIds = log.data.ids
+		let relations = log.data.relations
+		if ( newIds )
+			self.users.addIdentities( newIds )
+		
+		self.pauseSmoothScrolling()
+		self.supressConfirm = true
+		self.writingLogs = true
 		
 		if ( 'before' === log.type )
-			await self.handleLogBefore( events );
+			await self.handleLogBefore( events )
 		else
-			await self.handleLogAfter( events );
+			await self.handleLogAfter( events )
 		
-		self.writingLogs = false;
-		self.supressConfirm = false;
-		let lMId = self.getLastMsgId();
-		self.confirmEvent( 'message', lMId );
+		self.writingLogs = false
+		self.supressConfirm = false
+		let lMId = self.getLastMsgId()
+		self.confirmEvent( 'message', lMId )
 		if ( relations )
-			self.updateRelationState( relations );
+			self.updateRelationState( relations )
 		
 	}
 	
@@ -2658,6 +2703,7 @@ var hello = window.hello || {};
 		if ( null == items.length )
 			return;
 		
+		console.log( 'handleLogBefore', items )
 		await self.prefetchIds( items );
 		
 		let lastSpeakerId = null;
@@ -2676,7 +2722,7 @@ var hello = window.hello || {};
 			prevEnvelope.firstMsg = firstMsg;
 		
 		async function handle( item, index ) {
-			const handler = self.buildMap[ item.type ];
+			const handler = self.logMap[ item.type ];
 			if ( !handler ) {
 				console.log( 'no handler for event', item );
 				return;
@@ -2688,11 +2734,11 @@ var hello = window.hello || {};
 			
 			// 
 			if ( null == firstMsg ) {
-				firstMsg = event;
+				firstMsg = event
 			}
 			
-			let time = self.parseTime( event.time );
-			let envelope = await self.getEnvelope( time.envelope );
+			let time = self.parseTime( event.time )
+			let envelope = await self.getDay( time.day )
 			if ( prevEnvelope && ( envelope.id !== prevEnvelope.id )) {
 				prevEnvelope.firstMsg = firstMsg;
 				lastSpeakerId = null;
@@ -2798,12 +2844,10 @@ var hello = window.hello || {};
 		self.container.classList.toggle( 'SmoothScrolling', setSmooth );
 	}
 	
-	ns.MsgBuilder.prototype.addItem = function( el, envelope, msg ) {
+	ns.MsgBuilder.prototype.addItem = function( el, msg ) {
 		const self = this;
-		if ( null == envelope.firstMsg )
-			envelope.firstMsg = msg;
 		
-		envelope.lastMsg = msg;
+		self.lastMsg = msg
 		envelope.el.appendChild( el );
 		self.bindItem( el.id );
 		
@@ -2829,9 +2873,28 @@ var hello = window.hello || {};
 		
 	}
 	
+	ns.MsgBuilder.prototype.checkMessageGroup = function( conf ) {
+		const self = this
+		console.log( 'checkMessageGroup', conf )
+		const pos = conf.position
+		if ( pos.prevId == null )
+			return false
+		
+		const curr = conf.event
+		const prev = self.events[ pos.prevId ]
+		if ( null == prev.fromId )
+			return false
+		
+		if ( prev.fromId != curr.fromId )
+			return false
+		
+		return true
+	}
+	
 	ns.MsgBuilder.prototype.buildMsg = function( conf, isLog ) {
-		const self = this;
-		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
+		const self = this
+		const inGrp = self.checkMessageGroup( conf )
+		const tmplId =  inGrp ? 'msg-tmpl' : 'msg-group-tmpl'
 		const msg = conf.event;
 		const uId = msg.fromId;
 		const mId = msg.msgId;
@@ -3023,7 +3086,7 @@ var hello = window.hello || {};
 		return false;
 	}
 	
-	ns.MsgBuilder.prototype.getEnvelope = async function( envConf ) {
+	ns.MsgBuilder.prototype.getDay = async function( envConf ) {
 		const self = this;
 		let envelope = self.envelopes[ envConf.id ];
 		if ( envelope )
@@ -3061,55 +3124,49 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.MsgBuilder.prototype.removeEnvelope = function( envId ) {
-		const self = this;
-		const envelope = self.envelopes[ envId ];
-		if ( null == envelope )
-			return;
+	ns.MsgBuilder.prototype.removeDay = function( dayId ) {
+		const self = this
+		const day = self.days[ dayId ]
+		if ( null == day )
+			return
 		
-		const eel = envelope.el;
-		delete self.envelopes[ envId ];
-		const eIdx = self.envelopeOrder.indexOf( envId );
-		self.envelopeOrder.splice( eIdx, 1 );
-		eel.parentNode.removeChild( eel );
+		const del = day.el
+		delete self.days[ dayId ]
+		del.parentNode.removeChild( del )
 	}
 	
-	ns.MsgBuilder.prototype.updateEnvelopeDate = function() {
+	ns.MsgBuilder.prototype.updateDayDisplay = function() {
 		const self = this;
-		self.envelopeOrder.forEach( eId => {
-			let env = self.envelopes[ eId ];
-			let timeStr = self.getEnvelopeDayString( env.time, env.order );
-			let timeEl = env.el.querySelector( '.envelope-date' );
-			timeEl.textContent = timeStr;
-		});
+		const dIds = Object.keys( self.days )
+		dIds.forEach( dId => {
+			const day = self.days[ dId ]
+			console.log( 'day', day )
+			const timeStr = self.getDayString( day.time )
+			day.el.querySelector( '.day-date' )
+				.textContent = timeStr
+		})
 	}
 	
 	ns.MsgBuilder.prototype.parseTime = function( timestamp ) {
 		const self = this;
-		const time = new Date( timestamp );
+		const time = new Date( timestamp )
 		if ( !time )
-			return null;
+			return null
 		
 		const tokens = {
 			time       : self.getClockStamp( timestamp ),
 			date       : self.getDateStamp( timestamp ),
-			envelope   : getEnvelope( time ),
+			dayId      : getDay( timestamp ),
 			timestamp  : timestamp,
-		};
+		}
 		
-		return tokens;
+		return tokens
 		
-		function getEnvelope( time ) {
-			const order = self.getEnvelopeTime( time );
-			const id = 'envelope-' + order.toString();
-			const date = self.getEnvelopeDayString( time, order );
-			const envelope = {
-				id    : id,
-				date  : date,
-				time  : time,
-				order : order,
-			};
-			return envelope;
+		function getDay( timestamp ) {
+			const time = new Date( timestamp )
+			const midnightStamp = time.setHours( 0, 0, 0, 0 )
+			const id = 'day-' + midnightStamp
+			return id
 		}
 	}
 	
@@ -3132,7 +3189,7 @@ var hello = window.hello || {};
 		return time.toLocaleDateString();
 	}
 	
-	ns.MsgBuilder.prototype.getEnvelopeTime = function( time ) {
+	ns.MsgBuilder.prototype.getDayNumeric = function( time ) {
 		const self = this;
 		const timeStr = getTimeStr( time );
 		const envTime = parseInt( timeStr, 10 );
@@ -3152,10 +3209,11 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.MsgBuilder.prototype.getEnvelopeDayString = function( time, envelopeTime ) {
+	ns.MsgBuilder.prototype.getDayString = function( time, dayTime ) {
 		const self = this;
 		const now = new Date();
-		const today = self.getEnvelopeTime( now );
+		const today = self.getDayNumeric( now );
+		console.log( 'envTime', today )
 		const yesterday = today - 1;
 		const isToday = ( envelopeTime === today );
 		const isYesterday = ( envelopeTime === yesterday );
@@ -3205,7 +3263,7 @@ var hello = window.hello || {};
 				return;
 			
 			const envId = envEl.id;
-			self.removeEnvelope( envId );
+			self.removeDay( envId );
 		}
 		
 		/*
