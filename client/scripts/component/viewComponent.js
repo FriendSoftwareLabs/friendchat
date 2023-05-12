@@ -1871,8 +1871,16 @@ in a generic link expand wrapping with a bit of UI
 			type : 'video',
 		}
 		
+		let ext = null
+		if ( conf.fileInfo )
+			ext = conf.fileInfo.ext
+		else
+			ext = conf.mime.ext
+		
 		console.log( 'conffffext', conf.fileInfo )
-		if ( conf.fileInfo?.ext == 'mov' )
+		if ( ext == 'mov' )
+			elConf.type = 'video/mov'
+		if ( ext == 'mp4' )
 			elConf.type = 'video/mp4'
 		
 		const htmlElement = self.template.getElement( 'video-expand-tmpl', elConf )
