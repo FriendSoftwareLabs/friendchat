@@ -2674,8 +2674,7 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLog = async function( log ) {
 		const self = this
-		console.log( 'handleLog, NYI weeu weeu weeu', log )
-		return
+		console.log( 'handleLog, weeu weeu weeu', log )
 		
 		let events = log.data.events
 		let newIds = log.data.ids
@@ -2703,6 +2702,9 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLogBefore = async function( items ) {
 		const self = this;
+		console.log( 'logbefore NYI', items )
+		return
+		
 		if ( null == items.length )
 			return;
 		
@@ -2786,11 +2788,11 @@ var hello = window.hello || {};
 	}
 	
 	ns.MsgBuilder.prototype.handleLogAfter = async function( items ) {
-		const self = this;
+		const self = this
 		if ( !items )
-			return;
+			return
 		
-		items.forEach( item => self.handle( item ));
+		items.forEach( item => self.handle( item ))
 	}
 	
 	ns.MsgBuilder.prototype.prefetchIds = async function( items ) {
