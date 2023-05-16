@@ -2686,7 +2686,7 @@ var hello = window.hello || {};
 		self.supressConfirm = true
 		self.writingLogs = true
 		
-		if ( 'before' === log.type )
+		if ( 'before' === log.type && null != self.lastMsg )
 			await self.handleLogBefore( events )
 		else
 			await self.handleLogAfter( events )
@@ -2702,24 +2702,21 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLogBefore = async function( items ) {
 		const self = this;
-		console.log( 'logbefore NYI', items )
-		return
-		
 		if ( null == items.length )
-			return;
+			return
 		
 		console.log( 'handleLogBefore', items )
-		await self.prefetchIds( items );
+		await self.prefetchIds( items )
 		
-		let lastSpeakerId = null;
-		let lastIndex = ( items.length - 1 );
-		let prevEnvelope = null;
-		let prevEvent = null;
-		let firstMsg = null;
-		let index = 0;
+		let lastSpeakerId = null
+		let lastIndex = ( items.length - 1 )
+		let prevEnvelope = null
+		let prevEvent = null
+		let firstMsg = null
+		let index = 0
 		for ( const item of items ) {
-			index++;
-			await handle( item, index );
+			index++
+			await handle( item, index )
 		}
 		
 		//items.forEach( handle );
