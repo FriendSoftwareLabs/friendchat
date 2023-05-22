@@ -2770,7 +2770,6 @@ var hello = window.hello || {};
 			}
 			
 			let insert = 0
-			let prev = null
 			self.eventOrder.some(( curr, i ) => {
 				if ( curr.time < event.time )
 					return false
