@@ -2711,9 +2711,9 @@ var hello = window.hello || {};
 		console.log( 'befsort', events )
 		
 		events.sort(( a, b ) => {
-			if ( a.time < b.time )
+			if ( a.data.time < b.data.time )
 				return -1
-			if ( a.time > b.time )
+			if ( a.data.time > b.data.time )
 				return 1
 			
 			return 0
@@ -2724,7 +2724,7 @@ var hello = window.hello || {};
 		let l = events.length
 		for( ; l-- ; ) {
 			const event = events[ l ]
-			self.insertEventBefore( event )
+			self.insertEventBefore( event.data )
 		}
 	}
 		
