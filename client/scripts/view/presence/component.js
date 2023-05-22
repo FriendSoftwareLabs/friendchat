@@ -2563,57 +2563,79 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.insertEvent = function( event ) {
 		const self = this
 		console.log( 'insertEvent', [ event, self.lastMsg, self.eventOrder ])
-		self.events[ event.msgId ] = event
-		const pos = {
-			prevId : null,
-			nextId : null,
+		
+		const pos = setPosition( event )
+		const conf = {
+			position : pos,
+			event    : event,
 		}
 		
-		const day = self.checkDay( event.time )
-		if ( null == self.lastMsg ) {
-			pos.prevId = day.id
-			pos.isLast = true
-			self.lastMsg = event
-			self.eventOrder.push( event )
-			return pos
-		}
+		const el = self.buildMsg( conf )
+		if ( !el ) 
+			throw { err : 'could not build el for msg', event : event }
 		
-		if ( self.lastMsg.time < event.time ) {
-			if ( day.time > self.lastMsg.time )
-				pos.prevId = day.id
-			else
-				pos.prevId = self.lastMsg.msgId
+		if ( pos.nextId == null ) {
+			if ( event.fromId === self.userId )
+				self.userLastMsg = event
 			
-			pos.isLast = true
-			self.lastMsg = event
-			self.eventOrder.push( event )
-			
-			return pos
+			self.lastSpeakerId = event.fromId
 		}
 		
-		let prev = null
-		let next = null
-		let mi = self.eventOrder.length
-		for( ; mi-- ; ) {
-			next = prev
-			const prev = self.eventOrder[ mi ]
-			if ( prev.time < event.time ) {
-				prev = self.eventOrder[ mi - 1 ]
-				break
+		self.addItem( el, pos, event )
+		
+		function setPosition( event ) {
+			self.events[ event.msgId ] = event
+			const pos = {
+				prevId : null,
+				nextId : null,
 			}
+			
+			const day = self.checkDay( event.time )
+			if ( null == self.lastMsg ) {
+				pos.prevId = day.id
+				pos.isLast = true
+				self.lastMsg = event
+				self.eventOrder.push( event )
+				return pos
+			}
+			
+			if ( self.lastMsg.time < event.time ) {
+				if ( day.time > self.lastMsg.time )
+					pos.prevId = day.id
+				else
+					pos.prevId = self.lastMsg.msgId
+				
+				pos.isLast = true
+				self.lastMsg = event
+				self.eventOrder.push( event )
+				
+				return pos
+			}
+			
+			let prev = null
+			let next = null
+			let mi = self.eventOrder.length
+			for( ; mi-- ; ) {
+				next = prev
+				prev = self.eventOrder[ mi ]
+				if ( prev.time < event.time ) {
+					prev = self.eventOrder[ mi - 1 ]
+					break
+				}
+			}
+			
+			pos.prevId = prev?.msgId
+			pos.nextId = next?.msgId
+			self.eventOrder.splice( mi, 0, event )
+			
+			console.log( 'after for', {
+				pos : pos,
+				mi  : mi,
+				mo  : self.eventOrder,
+			})
+			
+			return pos
 		}
-		
-		pos.prevId = prev?.msgId
-		pos.nextId = next?.msgId
-		self.eventOrder.splice( mi, 0, event )
-		
-		console.log( 'after for', {
-			pos : pos,
-			mi  : mi,
-			mo  : self.eventOrder,
-		})
-		
-		return pos
 	}
 	
 	ns.MsgBuilder.prototype.handleMsg = async function( event ) {
@@ -2622,38 +2644,14 @@ var hello = window.hello || {};
 			return
 		
 		console.log( 'handleMsg', event )
+		
 		// makes sure identity is available sync
 		const fromId = event.fromId
-		const id = await self.users.getIdentity( fromId )
+		await self.users.getIdentity( fromId )
 		
-		//
+		self.insertEvent( event )
 		
-		/*
-		const time = self.parseTime( event.time )
-		console.log( 'time', time )
-		//self.checkDay( time )
-		*/
-		
-		const pos = self.insertEvent( event )
-		const conf = {
-			position : pos,
-			event    : event,
-		}
-		
-		const el = self.buildMsg( conf )
-		if ( !el ) {
-			console.log( 'could not build el for msg', event )
-			return
-		}
-		
-		if ( event.fromId === self.userId )
-			self.userLastMsg = event
-		
-		self.lastSpeakerId = event.fromId
-		
-		self.addItem( el, pos, event )
-		
-		if ( self.contactId && pos.afterId == null )
+		if ( self.contactId && pos.nextId == null )
 			self.updateLastDelivered( event )
 		
 		self.confirmEvent( 'message', event.msgId )
@@ -2686,10 +2684,13 @@ var hello = window.hello || {};
 		self.supressConfirm = true
 		self.writingLogs = true
 		
+		// make sure all ids are available sync
+		await self.prefetchIds( items )
+		
 		if ( 'before' === log.type && null != self.lastMsg )
-			await self.handleLogBefore( events )
+			self.handleLogBefore( events )
 		else
-			await self.handleLogAfter( events )
+			self.handleLogAfter( events )
 		
 		self.writingLogs = false
 		self.supressConfirm = false
@@ -2700,47 +2701,99 @@ var hello = window.hello || {};
 		
 	}
 	
-	ns.MsgBuilder.prototype.handleLogBefore = async function( items ) {
-		const self = this;
-		if ( null == items.length )
+	ns.MsgBuilder.prototype.handleLogBefore = function( events ) {
+		const self = this
+		console.log( 'befsort', events )
+		
+		events.sort(( a, b ) => {
+			if ( a.time < b.time )
+				return -1
+			if ( a.time > b.time )
+				return 1
+			
+			return 0
+		})
+		
+		console.log( 'aftersort', events )
+		
+		let l = events.length
+		for( ; l-- ; ) {
+			const event = events[ l ]
+			self.insertEventBefore( event )
+		}
+	}
+		
+	ns.MsgBuilder.prototype.insertEventBefore = function( event ) {
+		const self = this
+		console.log( 'logbefore add', event )
+		if ( self.exists( event.msgId ))
+			return null
+		
+		// automates building events as a log event
+		const handler = self.logMap[ event.type ]
+		if ( !handler ) {
+			console.log( 'no handler for event', event )
 			return
-		
-		console.log( 'handleLogBefore', items )
-		await self.prefetchIds( items )
-		
-		let lastSpeakerId = null
-		let lastIndex = ( items.length - 1 )
-		let prevEnvelope = null
-		let prevEvent = null
-		let firstMsg = null
-		let index = 0
-		for ( const item of items ) {
-			index++
-			await handle( item, index )
 		}
 		
-		//items.forEach( handle );
-		if ( prevEnvelope )
-			prevEnvelope.firstMsg = firstMsg;
+		const pos = setPosition( event )
+		const conf = {
+			position : pos,
+			event    : event,
+		}
 		
-		async function handle( item, index ) {
-			const handler = self.logMap[ item.type ];
-			if ( !handler ) {
-				console.log( 'no handler for event', item );
-				return;
+		let el = handler( conf )
+		if ( !el ) {
+			console.log( 'no el, abort', event )
+			// do actual cleanup here i guess
+			return
+		}
+		
+		self.addItem( el, pos, event )
+		
+		return pos
+		
+		function setPosition( event ) {
+			self.events[ event.msgId ] = event
+			const pos = {
+				prevId : null,
+				nextId : null,
 			}
 			
-			const event = item.data;
-			if ( self.exists( event.msgId ))
-				return;
-			
-			// 
-			if ( null == firstMsg ) {
-				firstMsg = event
+			const day = self.checkDay( event.time )
+			if ( null == self.lastMsg ) {
+				pos.prevId = day.id
+				pos.isLast = true
+				self.lastMsg = event
+				self.eventOrder.push( event )
+				return pos
 			}
 			
-			//let time = self.parseTime( event.time )
-			let day = await self.checkDay( event.time )
+			let insert = 0
+			let prev = null
+			self.eventOrder.some(( curr, i ) => {
+				if ( curr.time < event.time )
+					return false
+				
+				insert = i
+				return true
+			})
+			
+			const prev = self.eventOrder[ insert - 1 ]
+			const next = self.eventOrder[ insert + 1 ]
+			pos.prevId = prev?.msgId
+			pos.nextId = next?.msgId
+			self.eventOrder.splice( insert, 0, event )
+			
+			console.log( 'before pos', {
+				pos    : pos,
+				insert : insert,
+				eo     : self.eventOrder,
+			})
+			
+			return pos
+			
+			/*-----------
 			if ( prevEnvelope && ( envelope.id !== prevEnvelope.id )) {
 				prevEnvelope.firstMsg = firstMsg;
 				lastSpeakerId = null;
@@ -2761,17 +2814,6 @@ var hello = window.hello || {};
 				event   : event,
 			};
 			
-			let el = handler( conf );
-			if ( !el ) {
-				console.log( 'no el, abort', event );
-				prevEnvelope = envelope;
-				if ( firstMsg.msgId === event.msgId )
-					firstMsg = null;
-				
-				return;
-			}
-			
-			self.addLogItem( el, envelope, event );
 			
 			if ( 'msg' === event.type )
 				lastSpeakerId = event.fromId;
@@ -2780,6 +2822,7 @@ var hello = window.hello || {};
 			
 			prevEnvelope = envelope;
 			prevEvent = item;
+			*/
 		}
 		//return el;
 	}
@@ -2846,31 +2889,13 @@ var hello = window.hello || {};
 		self.container.classList.toggle( 'SmoothScrolling', setSmooth );
 	}
 	
-	ns.MsgBuilder.prototype.addItem = function( el, msg ) {
+	ns.MsgBuilder.prototype.addItem = function( el, position, msg ) {
 		const self = this;
 		self.container.appendChild( el )
 		self.bindItem( el.id )
 		
 		if ( msg.editId )
 			self.setEdit( msg )
-	}
-	
-	ns.MsgBuilder.prototype.addLogItem = function( el, envelope, msg ) {
-		const self = this;
-		if ( !envelope.firstMsg )
-			envelope.lastMsg = msg;
-		
-		let fMsg = envelope.firstMsg;
-		let before = null;
-		if ( fMsg )
-			before = document.getElementById( fMsg.msgId );
-		
-		envelope.el.insertBefore( el, before );
-		self.bindItem( el.id );
-		
-		if ( msg.editId )
-			self.setEdit( msg );
-		
 	}
 	
 	ns.MsgBuilder.prototype.checkMessageGroup = function( conf ) {
@@ -3102,15 +3127,32 @@ var hello = window.hello || {};
 			time : midnightStamp,
 			date : self.getDayString( timestamp ),
 		}
-		self.events[ dId ] = day
-		self.eventOrder.push( day )
-		self.days.push( dId )
 		
+		let before = false
+		const first = self.days[ 0 ]
+		if ( day.time < first.time )
+			before = true
+		
+		self.events[ dId ] = day
 		day.el = hello.template.getElement( 'day-separator-tmpl', day )
-		self.container.appendChild( day.el )
+		
+		if ( before ) {
+			self.eventOrder.unshift( day )
+			self.days.unshift( dId )
+			const first = self.eventOrder[ 0 ]
+			self.container.insertBefore( day.el, first.el )
+		} else {
+			self.eventOrder.push( day )
+			self.days.push( dId )
+			self.container.appendChild( day.el )
+		}
+		
+		console.log( 'day', {
+			day    : day,
+			before : before
+		})
 		
 		//self.container.insertBefore( day.el, beforeEl );
-		console.log( 'day', day )
 		//await waitLol()
 		return day
 		
