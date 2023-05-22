@@ -2685,7 +2685,7 @@ var hello = window.hello || {};
 		self.writingLogs = true
 		
 		// make sure all ids are available sync
-		await self.prefetchIds( items )
+		await self.prefetchIds( events )
 		
 		if ( 'before' === log.type && null != self.lastMsg )
 			self.handleLogBefore( events )
