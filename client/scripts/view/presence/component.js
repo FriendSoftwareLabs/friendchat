@@ -2583,6 +2583,8 @@ var hello = window.hello || {};
 		
 		self.addItem( el, pos, event )
 		
+		return conf
+		
 		function setPosition( event ) {
 			self.events[ event.msgId ] = event
 			const pos = {
@@ -2649,13 +2651,16 @@ var hello = window.hello || {};
 		const fromId = event.fromId
 		await self.users.getIdentity( fromId )
 		
-		self.insertEvent( event )
+		const conf = self.insertEvent( event )
+		if ( null == conf )
+			return null
 		
-		if ( self.contactId && pos.nextId == null )
+		if ( self.contactId && conf?.position?.nextId == null )
 			self.updateLastDelivered( event )
 		
 		self.confirmEvent( 'message', event.msgId )
-		return el
+		
+		return conf.event.el
 	}
 	
 	ns.MsgBuilder.prototype.handleAction = function( event ) {
