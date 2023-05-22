@@ -3129,7 +3129,7 @@ var hello = window.hello || {};
 		
 		let before = false
 		const first = self.days[ 0 ]
-		if ( day.time < first.time )
+		if ( null != first && day.time < first.time )
 			before = true
 		
 		self.events[ dId ] = day
