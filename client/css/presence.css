@@ -245,22 +245,14 @@ body[mobile] #emojii-panel-button
 	padding-left: 0.5em;
 }
 
-.time-envelope {
-	padding : 0;
-}
-
-.time-envelope .envelope-date,
-.time-envelope .envelope-splitter {
-	padding : 0 1em;
-}
-
-.time-envelope .envelope-head {
-	padding : 1em 0;
+.day-separator {
+	
 }
 
 .msg-item {
 	padding  : 0.2em 0.6em;
 	position : relative;
+	align-self: flex-start;
 }
 
 .avatar-offset,
@@ -355,6 +347,10 @@ body[mobile] #emojii-panel-button
 
 .msg-things {
 	position: relative;
+}
+
+.msg-item .is-self {
+	align-self: flex-end;
 }
 
 .msg-item .msg-actions {

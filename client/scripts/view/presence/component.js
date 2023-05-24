@@ -2938,7 +2938,7 @@ var hello = window.hello || {};
 		}
 		
 		if ( uId === self.userId ) {
-			selfKlass = 'sw2 isSelf';
+			selfKlass = 'sw2 is-self';
 			canEdit = true;
 		}
 		
