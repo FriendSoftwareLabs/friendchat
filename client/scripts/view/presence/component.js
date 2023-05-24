@@ -3138,7 +3138,10 @@ var hello = window.hello || {};
 			self.eventOrder.unshift( day )
 			self.days.unshift( dId )
 			const first = self.eventOrder[ 0 ]
-			self.container.insertBefore( day.el, first.el )
+			const id = first.msgId || first.id
+			const fel = document.getElementById( id )
+			console.log( 'insert day before', [ first, id, fel ])
+			self.container.insertBefore( day.el, fel )
 		} else {
 			self.eventOrder.push( day )
 			self.days.push( dId )
