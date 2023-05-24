@@ -2894,8 +2894,14 @@ var hello = window.hello || {};
 	}
 	
 	ns.MsgBuilder.prototype.addItem = function( el, position, msg ) {
-		const self = this;
-		self.container.appendChild( el )
+		const self = this
+		if ( null == position.nextId )
+			self.container.appendChild( el )
+		else {
+			const next = self.events[ position.nextId ]
+			self.container.insertBefore( el, next )
+		}
+		
 		self.bindItem( el.id )
 		
 		if ( msg.editId )
