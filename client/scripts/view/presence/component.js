@@ -2895,11 +2895,13 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.addItem = function( el, position, msg ) {
 		const self = this
+		console.log( 'addItem', [ el, position, msg ])
 		if ( null == position.nextId )
 			self.container.appendChild( el )
 		else {
 			const next = self.events[ position.nextId ]
-			self.container.insertBefore( el, next )
+			console.log( 'next', next )
+			self.container.insertBefore( el, next.el )
 		}
 		
 		self.bindItem( el.id )
