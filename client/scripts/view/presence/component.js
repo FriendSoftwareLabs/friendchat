@@ -2784,7 +2784,7 @@ var hello = window.hello || {};
 			})
 			
 			const prev = self.eventOrder[ insert - 1 ]
-			const next = self.eventOrder[ insert + 1 ]
+			const next = self.eventOrder[ insert ]
 			pos.prevId = prev?.msgId
 			pos.nextId = next?.msgId
 			self.eventOrder.splice( insert, 0, event )
@@ -2895,12 +2895,13 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.addItem = function( el, position, msg ) {
 		const self = this
-		console.log( 'addItem', [ el, position, msg ])
-		if ( null == position.nextId )
+		console.log( 'addItem', [ msg, position ])
+		if ( null == position.nextId ) {
 			self.container.appendChild( el )
+		}
 		else {
 			const nel = document.getElementById( position.nextId )
-			console.log( 'next', nel )
+			console.log( 'next', self.events[ position.nextId ] )
 			self.container.insertBefore( el, nel )
 		}
 		
