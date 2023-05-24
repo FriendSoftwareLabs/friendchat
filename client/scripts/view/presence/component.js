@@ -2899,9 +2899,9 @@ var hello = window.hello || {};
 		if ( null == position.nextId )
 			self.container.appendChild( el )
 		else {
-			const next = self.events[ position.nextId ]
-			console.log( 'next', next )
-			self.container.insertBefore( el, next.el )
+			const nel = document.getElementById( position.nextId )
+			console.log( 'next', nel )
+			self.container.insertBefore( el, nel )
 		}
 		
 		self.bindItem( el.id )
