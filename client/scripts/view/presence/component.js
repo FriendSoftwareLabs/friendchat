@@ -2630,12 +2630,6 @@ var hello = window.hello || {};
 			pos.nextId = next?.msgId
 			self.eventOrder.splice( mi, 0, event )
 			
-			console.log( 'after for', {
-				pos : pos,
-				mi  : mi,
-				mo  : self.eventOrder,
-			})
-			
 			return pos
 		}
 	}
@@ -2644,8 +2638,6 @@ var hello = window.hello || {};
 		const self = this
 		if ( self.exists( event.msgId ))
 			return
-		
-		console.log( 'handleMsg', event )
 		
 		// makes sure identity is available sync
 		const fromId = event.fromId
@@ -2677,8 +2669,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLog = async function( log ) {
 		const self = this
-		console.log( 'handleLog, weeu weeu weeu', log )
-		
 		let events = log.data.events
 		let newIds = log.data.ids
 		let relations = log.data.relations
@@ -2708,8 +2698,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.handleLogBefore = function( events ) {
 		const self = this
-		console.log( 'befsort', events )
-		
 		events.sort(( a, b ) => {
 			if ( a.data.time < b.data.time )
 				return -1
@@ -2718,8 +2706,6 @@ var hello = window.hello || {};
 			
 			return 0
 		})
-		
-		console.log( 'aftersort', events )
 		
 		let l = events.length
 		for( ; l-- ; ) {
@@ -2730,7 +2716,6 @@ var hello = window.hello || {};
 		
 	ns.MsgBuilder.prototype.insertEventBefore = function( event ) {
 		const self = this
-		console.log( 'logbefore add', event )
 		if ( self.exists( event.msgId ))
 			return null
 		
@@ -2788,12 +2773,6 @@ var hello = window.hello || {};
 			pos.prevId = prev?.msgId
 			pos.nextId = next?.msgId
 			self.eventOrder.splice( insert, 0, event )
-			
-			console.log( 'before pos', {
-				pos    : pos,
-				insert : insert,
-				eo     : self.eventOrder,
-			})
 			
 			return pos
 			
@@ -3126,8 +3105,13 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.checkDay = function( timestamp ) {
 		const self = this
-		console.log( 'checkDay', timestamp )
 		const time = new Date( timestamp )
+		console.log( 'checkDay', [ 
+			timestamp,
+			time.getFullYear(),
+			time.getMonth(),
+			time.getDate(),
+		])
 		const midnightStamp = time.setHours( 0, 0, 0, 0 )
 		const dId = 'day-' + midnightStamp
 		let day = self.events[ dId ]
@@ -3149,6 +3133,7 @@ var hello = window.hello || {};
 		self.events[ dId ] = day
 		day.el = hello.template.getElement( 'day-separator-tmpl', day )
 		
+		console.log( 'add day', [ day, before ])
 		if ( before ) {
 			self.eventOrder.unshift( day )
 			self.days.unshift( dId )
@@ -3159,11 +3144,6 @@ var hello = window.hello || {};
 			self.days.push( dId )
 			self.container.appendChild( day.el )
 		}
-		
-		console.log( 'day', {
-			day    : day,
-			before : before
-		})
 		
 		//self.container.insertBefore( day.el, beforeEl );
 		//await waitLol()
