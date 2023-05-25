@@ -486,6 +486,7 @@ library.view = library.view || {};
 		const msgBuilderArgs = [
 			self.conn,
 			'messages',
+			self.messageScroller,
 			self.users,
 			self.userId,
 			self.clientId,
@@ -2092,6 +2093,7 @@ library.view = library.view || {};
 	ns.WorkMsgBuilder = function(
 		parentConn,
 		containerId,
+		scroller,
 		users,
 		userId,
 		roomId,
@@ -2109,6 +2111,7 @@ library.view = library.view || {};
 		library.component.MsgBuilder.call( self,
 			parentConn,
 			containerId,
+			scroller,
 			users,
 			userId,
 			roomId,
@@ -2418,6 +2421,7 @@ library.view = library.view || {};
 	ns.PrivateMsgBuilder = function(
 		parentConn,
 		containerId,
+		scroller,
 		users,
 		userId,
 		roomId,
@@ -2433,6 +2437,7 @@ library.view = library.view || {};
 		library.component.MsgBuilder.call( self,
 			parentConn,
 			containerId,
+			scroller,
 			users,
 			userId,
 			roomId,

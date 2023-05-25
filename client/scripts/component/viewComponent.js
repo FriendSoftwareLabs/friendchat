@@ -486,10 +486,28 @@ library.component = library.component || {};
 	}
 	
 	// public
+	
+	ns.BottomScroller.prototype.lock = function() {
+		const self = this
+		const el = self.element
+		const bound = el.getBoundingClientRect()
+		console.log( 'lock', {
+			bound : bound,
+			scrollH : el.scrollHeight,
+			scrollT : el.scrollTop
+			viewH   : el.viewHeight,
+		} )
+	}
+	
+	ns.BottomScroller.prototype.unlock = function() {
+		const self = this
+		console.log( 'unlock' )
+	}
+	
 	ns.BottomScroller.prototype.update = function() {
-		const self = this;
-		self.updateScrollTreshold();
-		self.scrollToBottom();
+		const self = this
+		self.updateScrollTreshold()
+		self.scrollToBottom()
 	}
 	
 	// private
@@ -504,7 +522,7 @@ library.component = library.component || {};
 			self.boxResize.observe( self.element );
 		}
 		
-		function scrollEvent( e ) {	self.checkIsAtBottom( e ); }
+		function scrollEvent( e ) {	self.handleScroll( e ); }
 		function resizeEvent( e ) { self.handleResize(); }
 		
 		self.observer = new window.MutationObserver( domMutated );
@@ -523,6 +541,7 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.handleResize = function( e ) {
 		const self = this;
+		console.log( 'handleResize', e )
 		if ( null != self.resizeTimeout ) {
 			window.clearTimeout( self.resizeTimeout );
 			self.resizeTimeout = null;
@@ -536,9 +555,15 @@ library.component = library.component || {};
 		}
 	}
 	
+	ns.BottomScroller.prototype.handleScroll = function( e ) {
+		const self = this
+		console.log( 'handleScroll', e )
+		self.checkIsAtBottom()
+	}
+	
 	ns.BottomScroller.prototype.onMutation = function( mutations ) {
 		const self = this;
-		//console.log( 'onMutation', mutations );
+		console.log( 'onMutation', mutations );
 		self.reposition();
 		
 		/*

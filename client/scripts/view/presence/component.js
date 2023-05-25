@@ -1789,6 +1789,7 @@ var hello = window.hello || {};
 	ns.MsgBuilder = function(
 		parentConn,
 		containerId,
+		scroller,
 		users,
 		userId,
 		roomId,
@@ -1799,6 +1800,7 @@ var hello = window.hello || {};
 	) {
 		const self = this
 		self.containerId = containerId
+		self.scroller = scroller
 		self.users = users
 		self.userId = userId
 		self.roomId = roomId
@@ -2675,12 +2677,13 @@ var hello = window.hello || {};
 		if ( newIds )
 			self.users.addIdentities( newIds )
 		
+		// make sure all ids are available sync
+		await self.prefetchIds( events )
+		
 		self.pauseSmoothScrolling()
 		self.supressConfirm = true
 		self.writingLogs = true
-		
-		// make sure all ids are available sync
-		await self.prefetchIds( events )
+		self.scroller.lock()
 		
 		if ( 'before' === log.type && null != self.lastMsg )
 			self.handleLogBefore( events )
@@ -2689,6 +2692,8 @@ var hello = window.hello || {};
 		
 		self.writingLogs = false
 		self.supressConfirm = false
+		self.scroller.unlock()
+		
 		let lMId = self.getLastMsgId()
 		self.confirmEvent( 'message', lMId )
 		if ( relations )
