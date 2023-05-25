@@ -494,7 +494,7 @@ library.component = library.component || {};
 		console.log( 'lock', {
 			bound : bound,
 			scrollH : el.scrollHeight,
-			scrollT : el.scrollTop
+			scrollT : el.scrollTop,
 			viewH   : el.viewHeight,
 		} )
 	}
