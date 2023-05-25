@@ -2683,16 +2683,17 @@ var hello = window.hello || {};
 		self.pauseSmoothScrolling()
 		self.supressConfirm = true
 		self.writingLogs = true
-		self.scroller.lock()
 		
-		if ( 'before' === log.type && null != self.lastMsg )
+		if ( 'before' === log.type && null != self.lastMsg ) {
+			self.scroller.lock()
 			self.handleLogBefore( events )
+			self.scroller.unlock()
+		}
 		else
 			self.handleLogAfter( events )
 		
 		self.writingLogs = false
 		self.supressConfirm = false
-		self.scroller.unlock()
 		
 		let lMId = self.getLastMsgId()
 		self.confirmEvent( 'message', lMId )

@@ -497,6 +497,7 @@ library.component = library.component || {};
 			scrollH : el.scrollHeight,
 			scrollT : el.scrollTop,
 		} )
+		self.lockHeight = el.scrollHeight
 	}
 	
 	ns.BottomScroller.prototype.unlock = function() {
@@ -508,6 +509,12 @@ library.component = library.component || {};
 			scrollH : el.scrollHeight,
 			scrollT : el.scrollTop,
 		} )
+		const delta = self.lockHeight - el.scrollHeight
+		console.log( 'height delta', delta )
+		el.scrollTo({
+			top      : delta,
+			behavior : "instant"
+		})
 		self.locked = false
 	}
 	
