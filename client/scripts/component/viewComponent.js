@@ -489,6 +489,7 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.lock = function() {
 		const self = this
+		self.locked = true
 		const el = self.element
 		const bound = el.getBoundingClientRect()
 		console.log( 'lock', {
@@ -502,6 +503,7 @@ library.component = library.component || {};
 	ns.BottomScroller.prototype.unlock = function() {
 		const self = this
 		console.log( 'unlock' )
+		self.locked = false
 	}
 	
 	ns.BottomScroller.prototype.update = function() {
@@ -541,7 +543,12 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.handleResize = function( e ) {
 		const self = this;
-		console.log( 'handleResize', e )
+		console.log( 'handleResize', [ e, self.locked ])
+		if ( self.locked ) {
+			e.preventDefault()
+			return
+		}
+		
 		if ( null != self.resizeTimeout ) {
 			window.clearTimeout( self.resizeTimeout );
 			self.resizeTimeout = null;
@@ -557,7 +564,12 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.handleScroll = function( e ) {
 		const self = this
-		console.log( 'handleScroll', e )
+		console.log( 'handleScroll', [ e, self.locked ])
+		if ( self.locked ) {
+			e.preventDefault()
+			return
+		}
+		
 		self.checkIsAtBottom()
 	}
 	
