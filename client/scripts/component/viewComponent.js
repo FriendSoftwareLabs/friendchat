@@ -496,13 +496,16 @@ library.component = library.component || {};
 			bound : bound,
 			scrollH : el.scrollHeight,
 			scrollT : el.scrollTop,
-			viewH   : el.viewHeight,
 		} )
 	}
 	
 	ns.BottomScroller.prototype.unlock = function() {
 		const self = this
-		console.log( 'unlock' )
+		console.log( 'unlock', {
+			bound : bound,
+			scrollH : el.scrollHeight,
+			scrollT : el.scrollTop,
+		} )
 		self.locked = false
 	}
 	
