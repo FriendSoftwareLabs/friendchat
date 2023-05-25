@@ -501,6 +501,8 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.unlock = function() {
 		const self = this
+		const el = self.element
+		const bound = el.getBoundingClientRect()
 		console.log( 'unlock', {
 			bound : bound,
 			scrollH : el.scrollHeight,
@@ -527,25 +529,25 @@ library.component = library.component || {};
 			self.boxResize.observe( self.element );
 		}
 		
-		function scrollEvent( e ) {	self.handleScroll( e ); }
-		function resizeEvent( e ) { self.handleResize(); }
+		function scrollEvent( e ) {	self.handleScroll( e ) }
+		function resizeEvent( e ) { self.handleResize( e ) }
 		
 		self.observer = new window.MutationObserver( domMutated );
 		self.observer.observe( self.element, {
 			attributes : true,
 			childList  : true,
 			subtree    : true,
-		});
+		})
 		function domMutated( e ) {
-			self.onMutation( e );
+			self.onMutation( e )
 		}
 		
-		self.updateScrollTreshold();
-		self.checkIsAtBottom();
+		self.updateScrollTreshold()
+		self.checkIsAtBottom()
 	}
 	
 	ns.BottomScroller.prototype.handleResize = function( e ) {
-		const self = this;
+		const self = this
 		console.log( 'handleResize', [ e, self.locked ])
 		if ( self.locked ) {
 			e.preventDefault()
@@ -553,15 +555,15 @@ library.component = library.component || {};
 		}
 		
 		if ( null != self.resizeTimeout ) {
-			window.clearTimeout( self.resizeTimeout );
-			self.resizeTimeout = null;
+			window.clearTimeout( self.resizeTimeout )
+			self.resizeTimeout = null
 		}
 		
-		self.resizeTimeout = window.setTimeout( update, 50 );
+		self.resizeTimeout = window.setTimeout( update, 50 )
 		function update() {
-			self.resizeTimeout = null;
-			self.updateScrollTreshold();
-			self.scrollToBottom();
+			self.resizeTimeout = null
+			self.updateScrollTreshold()
+			self.scrollToBottom()
 		}
 	}
 	
