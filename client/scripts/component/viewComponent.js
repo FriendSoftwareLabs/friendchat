@@ -509,7 +509,7 @@ library.component = library.component || {};
 			scrollH : el.scrollHeight,
 			scrollT : el.scrollTop,
 		} )
-		const delta = self.lockHeight - el.scrollHeight
+		const delta = el.scrollHeight - self.lockHeight
 		console.log( 'height delta', delta )
 		el.scrollTo({
 			top      : delta,
