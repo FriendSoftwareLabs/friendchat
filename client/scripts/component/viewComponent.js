@@ -555,7 +555,6 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.handleResize = function( e ) {
 		const self = this
-		console.log( 'handleResize', [ e, self.locked ])
 		if ( self.locked ) {
 			e.preventDefault()
 			return
@@ -576,7 +575,6 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.handleScroll = function( e ) {
 		const self = this
-		console.log( 'handleScroll', [ e, self.locked ])
 		if ( self.locked ) {
 			e.preventDefault()
 			return
@@ -587,7 +585,6 @@ library.component = library.component || {};
 	
 	ns.BottomScroller.prototype.onMutation = function( mutations ) {
 		const self = this;
-		console.log( 'onMutation', mutations );
 		self.reposition();
 		
 		/*
