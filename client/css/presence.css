@@ -246,7 +246,7 @@ body[mobile] #emojii-panel-button
 }
 
 .day-separator {
-	
+	padding : 1em 0;
 }
 
 .msg-item {

@@ -2957,15 +2957,15 @@ var hello = window.hello || {};
 			canDelete = true;
 		}
 		
-		let original = msg.message;
-		let message = null;
+		let original = msg.message
+		let message = null
 		if ( self.parser )
-			message = self.parser.work( original, isLog );
+			message = self.parser.work( original, isLog )
 		else
-			message = original;
+			message = original
 		
-		//const timeStr = self.getClockStamp( msg.time );
-		const time = new Date( msg.time )
+		const timeStr = self.getClockStamp( msg.time )
+		//const time = new Date( msg.time )
 		const timeStr = self.getDayString( time )
 		/*
 		console.log( 'buildMsg', {
