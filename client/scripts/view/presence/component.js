@@ -2960,7 +2960,8 @@ var hello = window.hello || {};
 		else
 			message = original;
 		
-		const timeStr = self.getClockStamp( msg.time );
+		//const timeStr = self.getClockStamp( msg.time );
+		const timeStr = self.getDayString()
 		/*
 		console.log( 'buildMsg', {
 			msg        : msg,
@@ -3132,7 +3133,8 @@ var hello = window.hello || {};
 		}
 		
 		let before = false
-		const first = self.days[ 0 ]
+		const firstId = self.days[ 0 ]
+		const first = self.events[ firstId ]
 		if ( null != first && day.time < first.time )
 			before = true
 		
@@ -3197,7 +3199,7 @@ var hello = window.hello || {};
 		const tiktok = {
 			time       : self.getClockStamp( timestamp ),
 			date       : self.getDateStamp( timestamp ),
-			dayId      : self.getDayId( timestamp ),
+			dayId      : self.getDayId( timestamp ).id,
 			timestamp  : timestamp,
 		}
 		
@@ -3208,8 +3210,14 @@ var hello = window.hello || {};
 		const self = this
 		const time = new Date( timestamp )
 		const midnightStamp = time.setHours( 0, 0, 0, 0 )
-		const id = 'day-' + midnightStamp
-		return id
+		const times = self.getDayNumeric( time )
+		const timeStr = times.join('' )
+		const id = 'day-' + timeStr
+		return {
+			stamp : midnightStamp,
+			str   : str,
+			id    : id,
+		}
 	}
 	
 	ns.MsgBuilder.prototype.getClockStamp = function( timestamp ) {
