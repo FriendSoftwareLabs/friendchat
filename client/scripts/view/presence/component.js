@@ -3139,7 +3139,7 @@ var hello = window.hello || {};
 		self.events[ dId ] = day
 		day.el = hello.template.getElement( 'day-separator-tmpl', day )
 		
-		console.log( 'add day', [ day, before ])
+		console.log( 'add day', [ day, before, self.days, self.events ])
 		if ( before ) {
 			self.eventOrder.unshift( day )
 			self.days.unshift( dId )
@@ -3232,17 +3232,25 @@ var hello = window.hello || {};
 	}
 	
 	ns.MsgBuilder.prototype.getDayNumeric = function( time ) {
-		const self = this;
-		const timeStr = getTimeStr( time );
-		const envTime = parseInt( timeStr, 10 );
-		return envTime;
+		const self = this
+		const tims = get( time )
+		return tims
+		
+		function get( time ) {
+			const tims = [
+				time.getFullYear(),
+				time.getMonth(),
+				time.getDate(),
+			]
+			return tims
+		}
 		
 		function getTimeStr( time ) {
 			let str = ''
 			+ pad( time.getFullYear())
 			+ pad(( time.getMonth() + 1 ))
 			+ pad( time.getDate());
-			return str;
+			return str
 		}
 		
 		function pad( time ) {
@@ -3252,18 +3260,41 @@ var hello = window.hello || {};
 	}
 	
 	ns.MsgBuilder.prototype.getDayString = function( timestamp ) {
-		const self = this;
+		const self = this
+		const check = new Date( timestamp )
+		cNum = self.getDayNumeric( check )
+		
 		const today = new Date()
-		console.log( 'getDS today', today )
-		const isToday = false
-		const isYesterday = false
+		tNum = self.getDayNumeric( today )
+		
+		console.log( 'getDS', {
+			check : cNum,
+			today : tNum,
+		})
+		
+		let isToday = true
+		let isYesterday = true
+		if ( cNum[ 2 ] !== tNum[ 2 ] )
+			isToday = false
+		if ( cNum[ 2 ] !== tNum[ 2 ] -1 )
+			isYesterday = false
+		
+		if ( !isToday && !isYesterday )
+			return check.toLocaleDateString()
+		
+		if ( cNum[ 1 ] !== tNum[ 1 ])
+			return check.toLocaleDateString()
+		
+		if ( cNum[ 0 ] !== tNum[ 0 ])
+			return check.toLocaleDateString()
+		
 		if ( isToday )
-			return View.i18n( 'i18n_today' );
+			return View.i18n( 'i18n_today' )
 		
 		if ( isYesterday )
-			return View.i18n( 'i18n_yesterday' );
+			return View.i18n( 'i18n_yesterday' )
 		
-		return today.toLocaleDateString()
+		return 'wat.jpg'
 	}
 	
 	ns.MsgBuilder.prototype.updateRelationState = function( relations ) {
