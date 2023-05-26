@@ -3197,6 +3197,7 @@ var hello = window.hello || {};
 		})
 	}
 	
+	/*
 	ns.MsgBuilder.prototype.parseTime = function( timestamp ) {
 		const self = this
 		const tiktok = {
@@ -3208,6 +3209,7 @@ var hello = window.hello || {};
 		
 		return tiktok
 	}
+	*/
 	
 	ns.MsgBuilder.prototype.getDayId = function( timestamp ) {
 		const self = this
@@ -3218,7 +3220,6 @@ var hello = window.hello || {};
 		return {
 			stamp : midnightStamp,
 			days  : times,
-			str   : timeStr,
 			id    : id,
 		}
 	}
