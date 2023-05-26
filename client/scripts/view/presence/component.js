@@ -3214,8 +3214,7 @@ var hello = window.hello || {};
 		const time = new Date( timestamp )
 		const midnightStamp = time.setHours( 0, 0, 0, 0 )
 		const times = self.getDayNumeric( time )
-		const timeStr = times.join('' )
-		const id = 'day-' + timeStr
+		const id = 'day-' + times
 		return {
 			stamp : midnightStamp,
 			days  : times,
@@ -3245,17 +3244,9 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.getDayNumeric = function( time ) {
 		const self = this
-		const tims = get( time )
+		const tStr = getTimeStr( time )
+		const tims = parseInt( tStr )
 		return tims
-		
-		function get( time ) {
-			const tims = [
-				time.getFullYear(),
-				( time.getMonth() + 1 ),
-				time.getDate(),
-			]
-			return tims
-		}
 		
 		function getTimeStr( time ) {
 			let str = ''
@@ -3284,29 +3275,13 @@ var hello = window.hello || {};
 			today : tNum,
 		})
 		
-		let isToday = true
-		let isYesterday = true
-		if ( cNum[ 2 ] !== tNum[ 2 ] )
-			isToday = false
-		if ( cNum[ 2 ] !== tNum[ 2 ] -1 )
-			isYesterday = false
-		
-		if ( !isToday && !isYesterday )
-			return check.toLocaleDateString()
-		
-		if ( cNum[ 1 ] !== tNum[ 1 ])
-			return check.toLocaleDateString()
-		
-		if ( cNum[ 0 ] !== tNum[ 0 ])
-			return check.toLocaleDateString()
-		
-		if ( isToday )
+		if ( cNum == tNum )
 			return View.i18n( 'i18n_today' )
 		
-		if ( isYesterday )
+		if ( cNum == tNum -1 )
 			return View.i18n( 'i18n_yesterday' )
 		
-		return 'wat.jpg'
+		return check.toLocaleDateString()
 	}
 	
 	ns.MsgBuilder.prototype.updateRelationState = function( relations ) {
