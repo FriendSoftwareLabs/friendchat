@@ -2966,7 +2966,7 @@ var hello = window.hello || {};
 		
 		const timeStr = self.getClockStamp( msg.time )
 		//const time = new Date( msg.time )
-		const timeStr = self.getDayString( time )
+		//const timeStr = self.getDayString( time )
 		/*
 		console.log( 'buildMsg', {
 			msg        : msg,
