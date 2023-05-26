@@ -3122,6 +3122,7 @@ var hello = window.hello || {};
 			time.getDate(),
 			midnight,
 		])
+		
 		const dId = midnight.id
 		let day = self.events[ dId ]
 		if ( null != day )
