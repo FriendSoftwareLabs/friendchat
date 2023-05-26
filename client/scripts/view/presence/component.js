@@ -3123,7 +3123,7 @@ var hello = window.hello || {};
 			midnight,
 		])
 		const dId = midnight.id
-		const day = self.events[ dId ]
+		let day = self.events[ dId ]
 		if ( null != day )
 			return day
 		
