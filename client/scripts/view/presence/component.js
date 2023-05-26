@@ -3262,10 +3262,10 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.getDayString = function( timestamp ) {
 		const self = this
 		const check = new Date( timestamp )
-		cNum = self.getDayNumeric( check )
+		const cNum = self.getDayNumeric( check )
 		
 		const today = new Date()
-		tNum = self.getDayNumeric( today )
+		const tNum = self.getDayNumeric( today )
 		
 		console.log( 'getDS', {
 			check : cNum,
