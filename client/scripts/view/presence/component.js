@@ -2777,7 +2777,7 @@ var hello = window.hello || {};
 			const perv = self.eventOrder[ insert - 1 ]
 			const next = self.eventOrder[ insert ]
 			if ( null != perv )
-				pos.prevId = perv.msgId perv.id
+				pos.prevId = perv.msgId || perv.id
 			
 			if ( null != next )
 				pos.nextId = next.msgId || next.id
