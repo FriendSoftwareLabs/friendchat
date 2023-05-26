@@ -3144,14 +3144,21 @@ var hello = window.hello || {};
 		self.events[ dId ] = day
 		day.el = hello.template.getElement( 'day-separator-tmpl', day )
 		
-		console.log( 'add day', [ day, before, self.days, self.events ])
+		console.log( 'add day', { 
+			day        : day, 
+			before     : before, 
+			days       : self.days, 
+			events     : self.events, 
+			eventOrder : self.eventOrder,
+		})
 		if ( before ) {
-			self.eventOrder.unshift( day )
-			self.days.unshift( dId )
 			const first = self.eventOrder[ 0 ]
+			console.log( 'add day before item', first )
 			const id = first.msgId || first.id
 			const fel = document.getElementById( id )
 			console.log( 'insert day before', [ first, id, fel ])
+			self.eventOrder.unshift( day )
+			self.days.unshift( dId )
 			self.container.insertBefore( day.el, fel )
 		} else {
 			self.eventOrder.push( day )
