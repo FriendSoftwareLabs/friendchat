@@ -3114,22 +3114,23 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.checkDay = function( timestamp ) {
 		const self = this
 		const time = new Date( timestamp )
+		const midnight = self.getDayId( timestamp )
 		console.log( 'checkDay', [ 
 			timestamp,
 			time.getFullYear(),
 			time.getMonth(),
 			time.getDate(),
+			midnight,
 		])
-		const midnightStamp = time.setHours( 0, 0, 0, 0 )
-		const dId = 'day-' + midnightStamp
-		let day = self.events[ dId ]
+		const dId = midnight.id
+		const day = self.events[ dId ]
 		if ( null != day )
 			return day
 		
 		day = {
 			type : 'day',
 			id   : dId,
-			time : midnightStamp,
+			time : midnight.stamp,
 			date : self.getDayString( timestamp ),
 		}
 		
@@ -3216,7 +3217,8 @@ var hello = window.hello || {};
 		const id = 'day-' + timeStr
 		return {
 			stamp : midnightStamp,
-			str   : str,
+			days  : times,
+			str   : timeStr,
 			id    : id,
 		}
 	}
@@ -3248,7 +3250,7 @@ var hello = window.hello || {};
 		function get( time ) {
 			const tims = [
 				time.getFullYear(),
-				time.getMonth(),
+				( time.getMonth() + 1 ),
 				time.getDate(),
 			]
 			return tims
