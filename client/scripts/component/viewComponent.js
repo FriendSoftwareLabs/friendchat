@@ -2284,6 +2284,44 @@ Friend disk paths, so do those things with them i guess
 		self.checkChange();
 	}
 	
+	ns.MultiInput.prototype.insert = function( str, pad ) {
+		const self = this
+		if ( null == str || '' == str )
+			return
+		
+		const curr = self.ta.value
+		const start = self.ta.selectionStart
+		const end = self.ta.selectionEnd
+		if ( pad )
+			str = addPadding( str, curr, start, end )
+		
+		const parts = []
+		parts.push( curr.slice( 0, start ))
+		parts.push( str )
+		parts.push( curr.slice( end ))
+		const uptd = parts.join( '' )
+		self.ta.value = uptd
+		
+		const cPos = start + str.length
+		self.ta.selectionStart = cPos
+		self.ta.selectionEnd = cPos
+		
+		function addPadding( insert, target, start, end ) {
+			const parts = []
+			const pre = target[ start - 1 ]
+			const post = target[ end ]
+			if ( ' ' != pre )
+				parts.push( ' ' )
+			
+			parts.push( insert )
+			
+			if ( ' ' != post )
+				parts.push( ' ' )
+			
+			return parts.join( '' )
+		}
+	}
+	
 	ns.MultiInput.prototype.focus = function() {
 		const self = this;
 		if ( !self.ta )
