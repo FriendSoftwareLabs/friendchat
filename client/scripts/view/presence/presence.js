@@ -527,7 +527,7 @@ library.view = library.view || {};
 		);
 		function onEmojii( str ) {
 			console.log( 'onEmojii', [ str, self.input ])
-			self.input.insert( str )
+			self.input.insert( str, true )
 			self.input.focus()
 		}
 		
