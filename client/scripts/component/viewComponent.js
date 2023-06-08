@@ -2299,12 +2299,10 @@ Friend disk paths, so do those things with them i guess
 		parts.push( curr.slice( 0, start ))
 		parts.push( str )
 		parts.push( curr.slice( end ))
-		console.log( 'MI.insert', [ str, curr, start, end, parts ])
 		const uptd = parts.join( '' )
 		self.ta.value = uptd
 		
 		const cPos = start + str.length
-		console.log( 'cpos', cPos )
 		self.ta.selectionStart = cPos
 		self.ta.selectionEnd = cPos
 		
@@ -2312,13 +2310,6 @@ Friend disk paths, so do those things with them i guess
 			const parts = []
 			const pre = target[ start - 1 ]
 			const post = target[ end ]
-			console.log( 'addPadding', {
-				inn : [ insert, target, start, end ],
-				pre : pre,
-				post : post,
-				prespace : ( ' ' == pre ),
-				postspace : ( ' ' == post ),
-			})
 			if ( ' ' != pre )
 				parts.push( ' ' )
 			
