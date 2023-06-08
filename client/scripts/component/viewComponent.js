@@ -2311,7 +2311,7 @@ Friend disk paths, so do those things with them i guess
 		function addPadding( insert, target, start, end ) {
 			const parts = []
 			const pre = target[ start - 1 ]
-			const post = target[ end + 1 ]
+			const post = target[ end ]
 			console.log( 'addPadding', {
 				inn : [ insert, target, start, end ],
 				pre : pre,
