@@ -2286,6 +2286,9 @@ Friend disk paths, so do those things with them i guess
 	
 	ns.MultiInput.prototype.insert = function( str, pad ) {
 		const self = this
+		if ( null == str || '' == str )
+			return
+		
 		const curr = self.ta.value
 		const start = self.ta.selectionStart
 		const end = self.ta.selectionEnd
@@ -2299,6 +2302,11 @@ Friend disk paths, so do those things with them i guess
 		console.log( 'MI.insert', [ str, curr, start, end, parts ])
 		const uptd = parts.join( '' )
 		self.ta.value = uptd
+		
+		const cPos = start + str.length
+		console.log( 'cpos', cPos )
+		self.ta.selectionStart = cPos
+		self.ta.selectionEnd = cPos
 		
 		function addPadding( insert, target, start, end ) {
 			const parts = []
