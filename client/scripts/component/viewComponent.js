@@ -2284,6 +2284,20 @@ Friend disk paths, so do those things with them i guess
 		self.checkChange();
 	}
 	
+	ns.MultiInput.prototype.insert = function( str ) {
+		const self = this
+		const curr = self.ta.value
+		const start = self.ta.selectionStart
+		const end = self.ta.selectionEnd
+		const parts = []
+		parts.push( curr.slice( 0, start ))
+		parts.push( str )
+		parts.push( curr.slice( end ))
+		console.log( 'MI.insert', [ str, curr, start, end, parts ])
+		const uptd = parts.join( '' )
+		self.ta.value = uptd
+	}
+	
 	ns.MultiInput.prototype.focus = function() {
 		const self = this;
 		if ( !self.ta )
