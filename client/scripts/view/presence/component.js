@@ -2677,7 +2677,7 @@ var hello = window.hello || {};
 			const now = Date.now()
 			const mnth = 1000 * 60 * 60 * 24 * 30
 			events = events.map( e => {
-				e.data.time = now - ( Math.random() * mnth )
+				e.data.time = Math.floor( now - ( Math.random() * mnth ))
 				return e
 			})
 		}
