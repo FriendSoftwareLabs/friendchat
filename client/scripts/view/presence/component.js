@@ -2679,7 +2679,7 @@ var hello = window.hello || {};
 			const mnth = 1000 * 60 * 60 * 24 * 30
 			console.log( 'handleLog test', [ now, mnth ])
 			events = events.map( e => {
-				e.time = now - ( Math.random() * mnth )
+				e.data.time = now - ( Math.random() * mnth )
 				return e
 			})
 		}
@@ -2980,9 +2980,9 @@ var hello = window.hello || {};
 		else
 			message = original
 		
-		const timeStr = self.getClockStamp( msg.time )
+		//const timeStr = self.getClockStamp( msg.time )
 		//const time = new Date( msg.time )
-		//const timeStr = self.getDayString( time )
+		const timeStr = self.getDayString( msg.time )
 		/*
 		console.log( 'buildMsg', {
 			msg        : msg,
