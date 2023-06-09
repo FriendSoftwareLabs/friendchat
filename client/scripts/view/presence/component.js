@@ -2621,6 +2621,7 @@ var hello = window.hello || {};
 			let mi = self.eventOrder.length
 			for( ; mi-- ; ) {
 				check = self.eventOrder[ mi ]
+				console.log( 'c', [ check, ( check.time < event.time ) ])
 				if ( check.time < event.time ) {
 					break
 				}
