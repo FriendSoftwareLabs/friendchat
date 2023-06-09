@@ -2629,8 +2629,11 @@ var hello = window.hello || {};
 			const prev = self.eventOrder[ mi - 1 ]
 			const next = self.eventOrder[ mi ]
 			console.log( 'check', [ mi, prev, event, next ])
-			pos.prevId = prev?.msgId
-			pos.nextId = next?.msgId
+			if ( prev )
+				pos.prevId = prev.msgId || prev.id
+			if ( next )
+				pos.nextId = next.msgId || next.id
+			
 			pos.index = mi
 			self.eventOrder.splice( mi, 0, event )
 			
