@@ -2981,8 +2981,10 @@ var hello = window.hello || {};
 			message = original
 		
 		//const timeStr = self.getClockStamp( msg.time )
-		//const time = new Date( msg.time )
-		const timeStr = self.getDayString( msg.time )
+		const time = new Date( msg.time )
+		//const timeStr = self.getDayString( msg.time )
+		const timeStr = time.toLocaleString()
+		
 		/*
 		console.log( 'buildMsg', {
 			msg        : msg,
