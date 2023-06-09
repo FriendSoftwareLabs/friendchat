@@ -2841,6 +2841,7 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.prefetchIds = async function( items ) {
 		const self = this;
+		console.log( 'prefetchIds', items )
 		let prefetchIds = {};
 		items.forEach( item => {
 			const msg = item.data;
