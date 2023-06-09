@@ -2617,18 +2617,18 @@ var hello = window.hello || {};
 				return pos
 			}
 			
-			let prev = null
-			let next = null
+			let check = null
 			let mi = self.eventOrder.length
 			for( ; mi-- ; ) {
-				next = prev
-				prev = self.eventOrder[ mi ]
-				if ( prev.time < event.time ) {
-					prev = self.eventOrder[ mi - 1 ]
+				check = self.eventOrder[ mi ]
+				if ( check.time < event.time ) {
 					break
 				}
 			}
 			
+			const prev = self.eventOrder[ mi - 1 ]
+			const next = self.eventOrder[ mi ]
+			console.log( 'check', [ mi, prev, event, next ])
 			pos.prevId = prev?.msgId
 			pos.nextId = next?.msgId
 			pos.index = mi
