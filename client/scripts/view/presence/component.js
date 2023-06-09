@@ -2627,16 +2627,17 @@ var hello = window.hello || {};
 				}
 			}
 			
-			const prev = self.eventOrder[ mi - 1 ]
-			const next = self.eventOrder[ mi ]
-			console.log( 'check', [ mi, prev, event, next ])
+			const prev = self.eventOrder[ mi ]
+			const insertAt = mi + 1
+			const next = self.eventOrder[ insertAt ]
+			console.log( 'check', [ insertAt, prev, event, next ])
 			if ( prev )
 				pos.prevId = prev.msgId || prev.id
 			if ( next )
 				pos.nextId = next.msgId || next.id
 			
-			pos.index = mi
-			self.eventOrder.splice( mi, 0, event )
+			pos.index = insertAt
+			self.eventOrder.splice( insertAt, 0, event )
 			
 			return pos
 		}
