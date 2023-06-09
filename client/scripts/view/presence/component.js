@@ -2566,8 +2566,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.insertEvent = function( event ) {
 		const self = this
-		console.log( 'insertEvent', [ event, self.lastMsg, self.eventOrder ])
-		
 		const pos = setPosition( event )
 		const conf = {
 			position : pos,
@@ -2632,6 +2630,7 @@ var hello = window.hello || {};
 			
 			pos.prevId = prev?.msgId
 			pos.nextId = next?.msgId
+			pos.index = mi
 			self.eventOrder.splice( mi, 0, event )
 			
 			return pos
@@ -2677,7 +2676,6 @@ var hello = window.hello || {};
 		if ( self.test ) {
 			const now = Date.now()
 			const mnth = 1000 * 60 * 60 * 24 * 30
-			console.log( 'handleLog test', [ now, mnth ])
 			events = events.map( e => {
 				e.data.time = now - ( Math.random() * mnth )
 				return e
@@ -2703,6 +2701,8 @@ var hello = window.hello || {};
 		}
 		else
 			self.handleLogAfter( events )
+		
+		console.log( 'event order after logs', self.eventOrder )
 		
 		self.writingLogs = false
 		self.supressConfirm = false
@@ -2897,9 +2897,8 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.addItem = function( el, position, msg ) {
 		const self = this
 		console.log( 'addItem', {
-			el  : el, 
-			msg : msg,
 			pos : position,
+			msg : msg,
 		})
 		if ( null == position.nextId ) {
 			self.container.appendChild( el )
