@@ -2680,6 +2680,7 @@ var hello = window.hello || {};
 			console.log( 'handleLog test', [ now, mnth ])
 			events = events.map( e => {
 				e.time = now - ( Math.random() * mnth )
+				return e
 			})
 		}
 		
@@ -2841,7 +2842,6 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.prefetchIds = async function( items ) {
 		const self = this;
-		console.log( 'prefetchIds', items )
 		let prefetchIds = {};
 		items.forEach( item => {
 			const msg = item.data;
