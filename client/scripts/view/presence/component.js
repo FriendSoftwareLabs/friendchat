@@ -2566,6 +2566,7 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.insertEvent = function( event ) {
 		const self = this
+		console.log( 'insertEvent', event )
 		const pos = setPosition( event )
 		const conf = {
 			position : pos,
