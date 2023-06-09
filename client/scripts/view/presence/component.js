@@ -1817,6 +1817,8 @@ var hello = window.hello || {};
 		self.supressConfirm = false
 		self.userLastMsg = null
 		
+		self.test = true
+		
 		self.init( parentConn )
 	}
 	
@@ -2672,6 +2674,15 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.handleLog = async function( log ) {
 		const self = this
 		let events = log.data.events
+		if ( self.test ) {
+			const now = Date.now()
+			const mnth = 1000 * 60 * 60 * 24 * 30
+			console.log( 'handleLog test', [ now, mnth ])
+			events = events.map( e => {
+				e.time = now - ( Math.random() * mnth )
+			})
+		}
+		
 		let newIds = log.data.ids
 		let relations = log.data.relations
 		if ( newIds )
@@ -2884,7 +2895,11 @@ var hello = window.hello || {};
 	
 	ns.MsgBuilder.prototype.addItem = function( el, position, msg ) {
 		const self = this
-		console.log( 'addItem', [ el, msg, position ])
+		console.log( 'addItem', {
+			el  : el, 
+			msg : msg,
+			pos : position,
+		})
 		if ( null == position.nextId ) {
 			self.container.appendChild( el )
 		}
@@ -2922,12 +2937,12 @@ var hello = window.hello || {};
 		const self = this
 		const inGrp = self.checkMessageGroup( conf )
 		const tmplId =  inGrp ? 'msg-tmpl' : 'msg-group-tmpl'
-		const msg = conf.event;
-		const uId = msg.fromId;
-		const mId = msg.msgId;
-		const user = self.users.getIdSync( self.userId );
-		const from = self.users.getIdSync( uId );
-		const isGuest = uId == null ? true : false;
+		const msg = conf.event
+		const uId = msg.fromId
+		const mId = msg.msgId
+		const user = self.users.getIdSync( self.userId )
+		const from = self.users.getIdSync( uId )
+		const isGuest = uId == null ? true : false
 		
 		let name = '';
 		let userKlass = '';

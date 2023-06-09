@@ -2179,12 +2179,12 @@ library.view = library.view || {};
 	}
 	
 	ns.WorkMsgBuilder.prototype.buildWorkMsg = function( conf ) {
-		const self = this;
-		const tmplId = 'work-msg-tmpl';
-		const msg = conf.event;
-		const uId = msg.fromId;
-		const fromUser = self.users.getIdSync( uId );
-		const selfUser = self.users.getIdSync( self.userId );
+		const self = this
+		const tmplId = 'work-msg-tmpl'
+		const msg = conf.event
+		const uId = msg.fromId
+		const fromUser = self.users.getIdSync( uId )
+		const selfUser = self.users.getIdSync( self.userId )
 		const mId = msg.msgId;
 		if ( !msg.targets ) {
 			console.log( 'WorkMsgBuilder.buildWorkMsg - no targets', conf );
@@ -2522,17 +2522,18 @@ library.view = library.view || {};
 	}
 	
 	ns.PrivateMsgBuilder.prototype.buildMsg = function( conf, isLog ) {
-		const self = this;
-		const msg = conf.event;
+		const self = this
+		const msg = conf.event
 		if ( 'delete' == msg.status )
-			return self.buildDeletedMsg( conf );
+			return self.buildDeletedMsg( conf )
 		
-		const tmplId =  conf.inGroup ? 'msg-tmpl' : 'msg-group-tmpl';
-		const uId = msg.fromId;
-		const mId = msg.msgId;
-		const user = self.users.getIdSync( self.userId );
-		const from = self.users.getIdSync( uId );
-		const isGuest = uId == null ? true : false;
+		const inGrp = self.checkMessageGroup( conf )
+		const tmplId =  inGrp ? 'msg-tmpl' : 'msg-group-tmpl'
+		const uId = msg.fromId
+		const mId = msg.msgId
+		const user = self.users.getIdSync( self.userId )
+		const from = self.users.getIdSync( uId )
+		const isGuest = uId == null ? true : false
 		
 		let name = '';
 		let userKlass = '';
@@ -2554,8 +2555,8 @@ library.view = library.view || {};
 		
 		if ( uId === self.userId ) {
 			selfKlass = 'sw2 isSelf';
-			canEdit = true;
-			canDelete = true;
+			canEdit = true
+			canDelete = true
 		}
 		
 		let original = msg.message;
