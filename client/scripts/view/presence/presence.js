@@ -527,8 +527,8 @@ library.view = library.view || {};
 			onEmojii
 		);
 		function onEmojii( str ) {
-			self.input.add( ' ' + str );
-			self.input.focus();
+			self.input.insert( str, true )
+			self.input.focus()
 		}
 		
 		// notify helper
