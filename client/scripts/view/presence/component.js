@@ -2677,7 +2677,10 @@ var hello = window.hello || {};
 			const now = Date.now()
 			const mnth = 1000 * 60 * 60 * 24 * 30
 			events = events.map( e => {
-				e.data.time = Math.floor( now - ( Math.random() * mnth ))
+				const rndDate = Math.floor( now - ( Math.random() * mnth ))
+				const time = new Date( rndDate )
+				e.data.time = rndDate
+				e.data.timeStr = time.toLocaleString()
 				return e
 			})
 		}
