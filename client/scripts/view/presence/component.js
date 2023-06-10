@@ -3165,22 +3165,51 @@ var hello = window.hello || {};
 			date : self.getDayString( timestamp ),
 		}
 		
+		/*
 		let before = false
 		const firstId = self.days[ 0 ]
 		const first = self.events[ firstId ]
 		if ( null != first && day.time < first.time )
 			before = true
-		
+		*/
+		self.days.push( dId )
 		self.events[ dId ] = day
 		day.el = hello.template.getElement( 'day-separator-tmpl', day )
 		
+		let inn = self.eventOrder.length
+		for( ; inn-- ; ) {
+			const check = self.eventOrder[ inn ]
+			console.log( 'd check', [ inn, check ])
+			if ( check.time < day.time )
+				break
+		}
+		
+		const prev = self.eventOrder[ inn ]
+		const next = self.eventOrder[ inn + 1 ]
 		console.log( 'add day', { 
-			day        : day, 
-			before     : before, 
-			days       : self.days, 
-			events     : self.events, 
-			eventOrder : self.eventOrder,
+			index : inn,
+			day   : day,
+			prev  : prev,
+			next  : next,
 		})
+		
+		if ( null == next ) {
+			self.eventOrder.push( day )
+			self.container.appendChild( day.el )
+			return day
+		}
+		
+		if ( null == prev )
+			self.eventOrder.unshift( day )
+		else
+			self.eventOrder.splice( inn + 1, null, day )
+		
+		const nextEl = document.getElementById(( next.id || next.msgId ))
+		self.container.insertBefore( day.el, nextEl )
+		
+		return day
+		
+		/*
 		if ( before ) {
 			const first = self.eventOrder[ 0 ]
 			console.log( 'add day before item', first )
@@ -3196,9 +3225,13 @@ var hello = window.hello || {};
 			self.container.appendChild( day.el )
 		}
 		
-		//self.container.insertBefore( day.el, beforeEl );
-		//await waitLol()
+		self.eventOrder.splice( inn, null, day )
+		
+		self.container.insertBefore( day.el, beforeEl );
+		await waitLol()
+		
 		return day
+		*/
 		
 		function waitLol() {
 			return new Promise( resolve => {
