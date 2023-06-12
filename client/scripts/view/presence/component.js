@@ -2586,6 +2586,10 @@ var hello = window.hello || {};
 		
 		self.addItem( el, pos, event )
 		
+		if ( pos.nextId ) {
+			console.log( 'has next id, check for rebuild', pos, self.eventOrder )
+		}
+		
 		return conf
 		
 		function setPosition( event ) {
@@ -2652,6 +2656,15 @@ var hello = window.hello || {};
 		const fromId = event.fromId
 		await self.users.getIdentity( fromId )
 		
+		if ( self.test ) {
+			const now = Date.now()
+			const mnth = 1000 * 60 * 60 * 24 * 30
+			const rndDate = Math.floor( now - ( Math.random() * mnth ))
+			const time = new Date( rndDate )
+			event.time = rndDate
+			event.timeStr = time.toLocaleString()
+		}
+		
 		const conf = self.insertEvent( event )
 		if ( null == conf )
 			return null
@@ -2679,17 +2692,6 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.handleLog = async function( log ) {
 		const self = this
 		let events = log.data.events
-		if ( self.test ) {
-			const now = Date.now()
-			const mnth = 1000 * 60 * 60 * 24 * 30
-			events = events.map( e => {
-				const rndDate = Math.floor( now - ( Math.random() * mnth ))
-				const time = new Date( rndDate )
-				e.data.time = rndDate
-				e.data.timeStr = time.toLocaleString()
-				return e
-			})
-		}
 		
 		let newIds = log.data.ids
 		let relations = log.data.relations
@@ -2733,6 +2735,18 @@ var hello = window.hello || {};
 			
 			return 0
 		})
+		
+		if ( self.test ) {
+			const now = Date.now()
+			const mnth = 1000 * 60 * 60 * 24 * 30
+			events = events.map( e => {
+				const rndDate = Math.floor( now - ( Math.random() * mnth ))
+				const time = new Date( rndDate )
+				e.data.time = rndDate
+				e.data.timeStr = time.toLocaleString()
+				return e
+			})
+		}
 		
 		let l = events.length
 		for( ; l-- ; ) {
