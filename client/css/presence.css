@@ -257,12 +257,13 @@ body[mobile] #emojii-panel-button
 
 .avatar-offset,
 .msg-item .avatar {
-	width  : 2.7em;
+	width  : 0;
 	height : 0;
 }
 
 .msg-item.msg-group .avatar {
-	height: 2.7em;
+	height : 2.7em;
+	width  : 2.7em;
 }
 
 .avatar {
@@ -277,8 +278,6 @@ body[mobile] #emojii-panel-button
 	border-radius : 3px;
 }
 
-
-
 .user-item .avatar {
 	position   : relative;
 	width      : 1.7em;
@@ -289,7 +288,6 @@ body[mobile] #emojii-panel-button
 .msg-item .msg-container {
 	padding-left : 0.5em;
 }
-
 
 .msg-item .content {
 	padding-left : 1em;
