@@ -2586,10 +2586,6 @@ var hello = window.hello || {};
 		
 		self.addItem( el, pos, event )
 		
-		if ( pos.nextId ) {
-			console.log( 'has next id, check for rebuild', pos, self.eventOrder )
-		}
-		
 		return conf
 		
 		function setPosition( event ) {
@@ -2647,6 +2643,28 @@ var hello = window.hello || {};
 		}
 	}
 	
+	ns.MsgBuilder.prototype.checkRebuild = async function( eventId, eventIndex ) {
+		const self = this
+		const prev = self.eventOrder[ eventIndex - 1 ]
+		const check = self.eventOrder[ eventIndex ]
+		const el = document.getElementById( eventId )
+		const isGroup = el.classList.contains( 'msg-group' )
+		console.log( 'checkRebuild', {
+			prev    : prev,
+			check   : check,
+			el      : el,
+			isGroup : isGroup,
+		})
+		
+		if ( isGroup )
+			return
+		
+		if ( prev.fromId === check.fromId )
+			return
+		
+		// rebuild to msg-group
+	}
+	
 	ns.MsgBuilder.prototype.handleMsg = async function( event ) {
 		const self = this
 		if ( self.exists( event.msgId ))
@@ -2673,6 +2691,12 @@ var hello = window.hello || {};
 			self.updateLastDelivered( event )
 		
 		self.confirmEvent( 'message', event.msgId )
+		
+		if ( pos.nextId ) {
+			const pos = conf.position
+			console.log( 'has next id, check for rebuild', pos, self.eventOrder )
+			self.checkRebuild( pos.nextId, pos.index )
+		}
 		
 		return conf.event.el
 	}
@@ -2959,7 +2983,8 @@ var hello = window.hello || {};
 	ns.MsgBuilder.prototype.buildMsg = function( conf, isLog ) {
 		const self = this
 		const inGrp = self.checkMessageGroup( conf )
-		const tmplId =  inGrp ? 'msg-tmpl' : 'msg-group-tmpl'
+		const gKlass = inGrp ? 'msg-group' : ''
+		const tmplId = 'msg-group-tmpl'
 		const msg = conf.event
 		const uId = msg.fromId
 		const mId = msg.msgId
@@ -3022,6 +3047,7 @@ var hello = window.hello || {};
 			msgId      : mId,
 			userKlass  : userKlass,
 			selfKlass  : selfKlass,
+			groupKlass : gKlass,
 			from       : name,
 			time       : timeStr,
 			message    : message,

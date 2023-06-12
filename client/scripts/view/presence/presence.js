@@ -2528,7 +2528,8 @@ library.view = library.view || {};
 			return self.buildDeletedMsg( conf )
 		
 		const inGrp = self.checkMessageGroup( conf )
-		const tmplId =  inGrp ? 'msg-tmpl' : 'msg-group-tmpl'
+		const gKlass =  inGrp ? 'msg-group' : ''
+		const tmplId = 'msg-group-tmpl'
 		const uId = msg.fromId
 		const mId = msg.msgId
 		const user = self.users.getIdSync( self.userId )
@@ -2572,6 +2573,7 @@ library.view = library.view || {};
 			msgId      : mId,
 			userKlass  : userKlass,
 			selfKlass  : selfKlass,
+			groupKlass : gKlass,
 			from       : name,
 			time       : timeStr,
 			message    : message,

@@ -289,6 +289,7 @@ date,
 msgId,
 userKlass,
 selfKlass,
+groupKlass,
 from,
 time,
 message,
@@ -297,7 +298,8 @@ msgActions,
 <script id="msg-group-tmpl" type="text/html">
 <div id="<%= msgId %>" class="<%= userKlass %> 
 							  <%= selfKlass %> 
-							  msg-item msg-group 
+							  <%= groupKlass %> 
+							  msg-item 
 							  ">
 	<div class="group-container group row left">
 		<div class="avatar fortify">
@@ -342,6 +344,7 @@ msgId,
 userKlass,
 selfKlass,
 time,
+message,
 msgActions,
 -->
 <script id="msg-tmpl" type="text/html">
