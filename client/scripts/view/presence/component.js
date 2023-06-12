@@ -2643,18 +2643,12 @@ var hello = window.hello || {};
 		}
 	}
 	
-	ns.MsgBuilder.prototype.checkRebuild = async function( eventId, eventIndex ) {
+	ns.MsgBuilder.prototype.checkRegroup = async function( eventId, eventIndex ) {
 		const self = this
 		const prev = self.eventOrder[ eventIndex - 1 ]
 		const check = self.eventOrder[ eventIndex ]
 		const el = document.getElementById( eventId )
 		const isGroup = el.classList.contains( 'msg-group' )
-		console.log( 'checkRebuild', {
-			prev    : prev,
-			check   : check,
-			el      : el,
-			isGroup : isGroup,
-		})
 		
 		if ( isGroup )
 			return
@@ -2663,6 +2657,11 @@ var hello = window.hello || {};
 			return
 		
 		// rebuild to msg-group
+		console.log( 'checkRegroup set in group', {
+			prev    : prev,
+			check   : check,
+			el      : el,
+		})
 		el.classList.toggle( 'msg-group', true )
 	}
 	
@@ -2696,7 +2695,7 @@ var hello = window.hello || {};
 		const pos = conf.position
 		if ( pos.nextId ) {
 			console.log( 'has next id, check for rebuild', pos, self.eventOrder )
-			self.checkRebuild( pos.nextId, pos.index )
+			self.checkRegroup( pos.nextId, pos.index + 1 )
 		}
 		
 		return conf.event.el
