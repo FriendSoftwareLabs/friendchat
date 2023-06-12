@@ -2528,7 +2528,7 @@ library.view = library.view || {};
 			return self.buildDeletedMsg( conf )
 		
 		const inGrp = self.checkMessageGroup( conf )
-		const gKlass =  inGrp ? 'msg-group' : ''
+		const gKlass =  inGrp ? '' : 'msg-group'
 		const tmplId = 'msg-group-tmpl'
 		const uId = msg.fromId
 		const mId = msg.msgId
