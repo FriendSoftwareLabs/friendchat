@@ -2677,7 +2677,7 @@ var hello = window.hello || {};
 		
 		if ( self.test ) {
 			const now = Date.now()
-			const mnth = 1000 * 60 * 60 * 24 * 30
+			const mnth = 1000 * 60 * 60 * 24 * 3
 			const rndDate = Math.floor( now - ( Math.random() * mnth ))
 			const time = new Date( rndDate )
 			event.time = rndDate
@@ -2763,7 +2763,7 @@ var hello = window.hello || {};
 		
 		if ( self.test ) {
 			const now = Date.now()
-			const mnth = 1000 * 60 * 60 * 24 * 30
+			const mnth = 1000 * 60 * 60 * 24 * 3
 			events = events.map( e => {
 				const rndDate = Math.floor( now - ( Math.random() * mnth ))
 				const time = new Date( rndDate )
