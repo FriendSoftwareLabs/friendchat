@@ -1817,7 +1817,7 @@ var hello = window.hello || {};
 		self.supressConfirm = false
 		self.userLastMsg = null
 		
-		self.test = true
+		self.test = false
 		
 		self.init( parentConn )
 	}
